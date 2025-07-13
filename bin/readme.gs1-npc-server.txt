@@ -83,6 +83,7 @@ playerdies
 compusdied
 warped
 washit	(hitobjects)
+wasshot
 npcwarped
 timeout
 triggeraction events
@@ -96,7 +97,6 @@ playerhurt
 weaponfired
 firedonhorse
 washit	(anything not hitobjects)
-wasshot
 waspelt
 wasthrown
 serverlistconnect
@@ -208,6 +208,16 @@ players[]
     .logintime
 players[] shorthand: e.g., playerhearts
 
+arrowscount
+arrows[]
+	.x
+	.y
+	.dx
+	.dy
+	.dir
+	.type
+	.from
+
 compuscount
 compus[]
 	.x
@@ -256,8 +266,6 @@ signs[]
 // Not implemented variables     //
 //-------------------------------//
 
-arrowscount
-arrows[]
 horses[]
 	.bombs
 	.bombpower
@@ -296,6 +304,7 @@ drawoverplayer
 drawovertrees
 drawunderplayer
 enableweapons
+explodebomb
 freezeplayer2
 hide
 hitobjects
@@ -359,6 +368,11 @@ setsleevecolor
 setstring
 setsword
 shoot (sending projectiles to the client)
+shootarrow
+shootball (gr extension - dir parameter)
+shootfireball
+shootfireblast
+shootnuke
 show
 showcharacter
 spyfire
@@ -381,10 +395,8 @@ copyflags
 copylevel
 copystrings
 deletelevel
-explodebomb
 hitcompu
 hitnpc
-removearrow
 removeguild
 removeguildmember
 saveinfo
@@ -393,11 +405,6 @@ savelog2
 setpm
 setz
 shoot (serverside processing of projectiles)
-shootarrow
-shootball
-shootfireball
-shootfireblast
-shootnuke
 showani
 showani2
 showimg
@@ -423,6 +430,7 @@ arraylen(array)
 ascii(string)
 cos(value)
 findnearestplayer(x, y)
+getangle(dx, dy)
 getareanpcs(x, y, width, height)
 getdir(dx, dy)
 getnearestplayer(x, y)
@@ -470,7 +478,6 @@ N_(string)
 base64decode(string)
 base64encode(string)
 findnearestplayers(x, y)
-getangle(dx, dy)
 getz(x, y)
 imgheight(image)
 imgwidth(image)

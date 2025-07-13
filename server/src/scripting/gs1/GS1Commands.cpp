@@ -132,7 +132,6 @@ static void fn_setchargender(GS1Visitor* visitor, std::string_view commandName, 
 static void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setgender(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setgif(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_sethead(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setimg(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setimgpart(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -272,7 +271,8 @@ static BuiltInCommandHandleMap GenerateMap()
 		{ hash("setcharprop"), &fn_setcharprop },
 		{ hash("setcoatcolor"), &fn_setcoatcolor },
 		{ hash("setgender"), &fn_setgender },
-		{ hash("setgif"), &fn_setgif },
+		{ hash("setgif"), &fn_setimg },
+		{ hash("setgifpart"), &fn_setimgpart },
 		{ hash("sethead"), &fn_sethead },
 		{ hash("setimg"), &fn_setimg },
 		{ hash("setimgpart"), &fn_setimgpart },
@@ -464,7 +464,7 @@ void fn_addguildmember(GS1Visitor* visitor, std::string_view commandName, const 
 void fn_addstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("addstring requires exactly two arguments: list and text.");
+		throw std::invalid_argument("invalid arguments: addstring list,text");
 
 	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
@@ -481,6 +481,9 @@ void fn_addstring(GS1Visitor* visitor, std::string_view commandName, const std::
 // Adds a weapon from a database to your inventory.
 void fn_addweapon(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: addweapon weaponname");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto weaponname = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -494,6 +497,9 @@ void fn_addweapon(GS1Visitor* visitor, std::string_view commandName, const std::
 // Attaches player to object (objecttype 0 = npcs, nothing else supported).
 void fn_attachplayertoobj(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 2)
+		throw std::invalid_argument("invalid arguments: attachplayertoobj objecttype,id");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto objecttype = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -524,8 +530,8 @@ void fn_blockagain(GS1Visitor* visitor, std::string_view commandName, const std:
 // Sends an event to an NPC.
 void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() != 2)
-		throw std::invalid_argument("callnpc requires at least two arguments: index and eventname.");
+	if (arguments.size() < 2)
+		throw std::invalid_argument("invalid arguments: callnpc index,eventname,params");
 
 	NPCID sourceNPC = 0;
 	if (visitor->getOriginalSource().second == ScriptObjectSourceType::NPC)
@@ -718,10 +724,11 @@ void fn_deletelevel(GS1Visitor* visitor, std::string_view commandName, const std
 }
 
 // deletestring list,index;
+// Deletes a string from a string list at the specified index.
 void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() != 3)
-		throw std::invalid_argument("deletestring requires exactly two arguments: list and index.");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("invalid arguments: deletestring list,index");
 
 	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
@@ -745,6 +752,7 @@ void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const st
 }
 
 // destroy;
+// Destroys and NPC.
 void fn_destroy(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (auto source = visitor->getOriginalSource().second; source == ScriptObjectSourceType::NPC)
@@ -755,6 +763,7 @@ void fn_destroy(GS1Visitor* visitor, std::string_view commandName, const std::ve
 }
 
 // detachplayer;
+// Detaches the player.
 void fn_detachplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
@@ -793,6 +802,7 @@ void fn_dontblock(GS1Visitor* visitor, std::string_view commandName, const std::
 }
 
 // drawoverplayer;
+// Configures the NPC to draw over the player.
 void fn_drawoverplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
@@ -804,6 +814,7 @@ void fn_drawoverplayer(GS1Visitor* visitor, std::string_view commandName, const 
 }
 
 // drawovertrees;
+// Configure the NPC to draw on the same layer as the player.
 void fn_drawovertrees(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
@@ -819,6 +830,7 @@ void fn_drawovertrees(GS1Visitor* visitor, std::string_view commandName, const s
 }
 
 // drawunderplayer;
+// Configure the NPC to draw under the player.
 void fn_drawunderplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
@@ -842,8 +854,12 @@ void fn_enableweapons(GS1Visitor* visitor, std::string_view commandName, const s
 }
 
 // explodebomb index;
+// Explodes the bomb at the specified index.
 void fn_explodebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: explodebomb index");
+
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -873,6 +889,7 @@ void fn_freezeplayer2(GS1Visitor* visitor, std::string_view commandName, const s
 }
 
 // hide;
+// Hides the NPC.
 void fn_hide(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
@@ -900,6 +917,9 @@ void fn_hitnpc(GS1Visitor* visitor, std::string_view commandName, const std::vec
 // Hit objects at a location.
 void fn_hitobjects(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 3)
+		throw std::invalid_argument("invalid arguments: hitobjects power,x,y");
+
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto power = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -915,6 +935,9 @@ void fn_hitobjects(GS1Visitor* visitor, std::string_view commandName, const std:
 // Hits a player in the level.
 void fn_hitplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 4)
+		throw std::invalid_argument("invalid arguments: hitplayer index,halfhearts,fromx,fromy");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
 		auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -940,6 +963,9 @@ void fn_hitplayer(GS1Visitor* visitor, std::string_view commandName, const std::
 // Hurts a player.
 void fn_hurt(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: hurt halfhearts");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto halfhearts = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -958,7 +984,7 @@ void fn_hurt(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
-		throw std::invalid_argument("insertstring requires exactly three arguments: list, index, and text.");
+		throw std::invalid_argument("invalid arguments: insertstring list,index,text");
 
 	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
@@ -994,7 +1020,7 @@ void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const st
 void fn_join(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("join requires exactly one argument: class.");
+		throw std::invalid_argument("invalid arguments: join class");
 
 	auto class_ = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto* server = BabyDI::Get<Server>();
@@ -1013,10 +1039,11 @@ void fn_join(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 }
 
 // lay itemname;
+// Lays the specified item at the feet of the NPC.
 void fn_lay(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("lay requires exactly one argument: itemname.");
+		throw std::invalid_argument("invalid arguments: lay itemname");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
@@ -1038,10 +1065,11 @@ void fn_lay(GS1Visitor* visitor, std::string_view commandName, const std::vector
 }
 
 // lay2 itemname,x,y;
+// Lays the specified item at the given x and y location.
 void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
-		throw std::invalid_argument("lay2 requires exactly three arguments: itemname, x, y.");
+		throw std::invalid_argument("invalid arguments: lay2 itemname,x,y");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1073,7 +1101,7 @@ void fn_message(GS1Visitor* visitor, std::string_view commandName, const std::ve
 void fn_move(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
-		throw std::invalid_argument("move requires exactly four arguments: dx, dy, time, options.");
+		throw std::invalid_argument("invalid arguments: move dx,dy,time,options");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
@@ -1105,7 +1133,7 @@ void fn_noplayeronwall(GS1Visitor* visitor, std::string_view commandName, const 
 void fn_putbomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
-		throw std::invalid_argument("putbomb requires exactly three arguments: power, x, y.");
+		throw std::invalid_argument("invalid arguments: putbomb power,x,y");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1121,7 +1149,7 @@ void fn_putbomb(GS1Visitor* visitor, std::string_view commandName, const std::ve
 void fn_putcomp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
-		throw std::invalid_argument("putcomp requires exactly three arguments: baddyname, x, y.");
+		throw std::invalid_argument("invalid arguments: putcomp baddyname,x,y");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1137,7 +1165,7 @@ void fn_putcomp(GS1Visitor* visitor, std::string_view commandName, const std::ve
 void fn_putexplosion(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
-		throw std::invalid_argument("putexplosion requires exactly three arguments: radius, x, y.");
+		throw std::invalid_argument("invalid arguments: putexplosion radius,x,y");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1153,7 +1181,7 @@ void fn_putexplosion(GS1Visitor* visitor, std::string_view commandName, const st
 void fn_putexplosion2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
-		throw std::invalid_argument("putexplosion2 requires exactly four arguments: power, radius, x, y.");
+		throw std::invalid_argument("invalid arguments: putexplosion2 power,radius,x,y");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1170,7 +1198,7 @@ void fn_putexplosion2(GS1Visitor* visitor, std::string_view commandName, const s
 void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
-		throw std::invalid_argument("puthorse requires exactly three arguments: imagefile, x, y.");
+		throw std::invalid_argument("invalid arguments: puthorse imagefile,x,y");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1186,7 +1214,7 @@ void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::v
 void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 5)
-		throw std::invalid_argument("putnewcomp requires exactly five arguments: baddyname, x, y, imagefile, and power.");
+		throw std::invalid_argument("invalid arguments: putnewcomp baddyname,x,y,imagefile,power");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1204,7 +1232,7 @@ void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std:
 void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
-		throw std::invalid_argument("putnpc requires exactly four arguments: imagefile, scriptfile, x, and y.");
+		throw std::invalid_argument("invalid arguments: putnpc imagefile,scriptfile,x,y");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1231,7 +1259,7 @@ void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vec
 void fn_putnpc2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
-		throw std::invalid_argument("putnpc2 requires exactly three arguments: x, y, and {script}.");
+		throw std::invalid_argument("invalid arguments: putnpc2 x,y,{ script }");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1256,7 +1284,7 @@ void fn_removearrow(GS1Visitor* visitor, std::string_view commandName, const std
 void fn_removebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("removebomb requires exactly one arguments: index.");
+		throw std::invalid_argument("invalid arguments: removebomb index");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1292,10 +1320,11 @@ void fn_removeguildmember(GS1Visitor* visitor, std::string_view commandName, con
 }
 
 // removehorse index;
+// Removes the horse from the level at the specified index.
 void fn_removehorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("removehorse requires exactly one arguments: index.");
+		throw std::invalid_argument("invalid arguments: removehorse index");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1305,10 +1334,11 @@ void fn_removehorse(GS1Visitor* visitor, std::string_view commandName, const std
 }
 
 // removeitem index;
+// Removes the item from the level at the specified index.
 void fn_removeitem(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("removeitem requires exactly one arguments: index.");
+		throw std::invalid_argument("invalid arguments: removeitem index");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1318,10 +1348,11 @@ void fn_removeitem(GS1Visitor* visitor, std::string_view commandName, const std:
 }
 
 // removestring list,text;
+// Removes all occurrences of the specified text from the string list.
 void fn_removestring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("removestring requires exactly two arguments: list and text.");
+		throw std::invalid_argument("invalid arguments: removestring list,text");
 
 	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
@@ -1348,8 +1379,12 @@ void fn_removestring(GS1Visitor* visitor, std::string_view commandName, const st
 }
 
 // removeweapon weaponname;
+// Removes the specified weapon from the player.
 void fn_removeweapon(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: removeweapon weaponname");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto weaponname = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -1360,10 +1395,11 @@ void fn_removeweapon(GS1Visitor* visitor, std::string_view commandName, const st
 }
 
 // replacestring list,index,text;
+// Replaces the string at the specified index in the list with the given text.
 void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
-		throw std::invalid_argument("replacestring requires exactly three arguments: list, index, and text.");
+		throw std::invalid_argument("invalid arguments: replacestring list,index,text");
 
 	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
@@ -1409,7 +1445,7 @@ void fn_savelog2(GS1Visitor* visitor, std::string_view commandName, const std::v
 void fn_say(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("say requires exactly one argument: signindex.");
+		throw std::invalid_argument("invalid arguments: say signindex");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1433,8 +1469,12 @@ void fn_say2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto message = visitor->getGameValueAs<std::string>(*arguments[0]);
-		string::eraseCharsMutate(message, "\r\n"sv);
+		std::string message;
+		if (arguments.size() != 0)
+		{
+			message = visitor->getGameValueAs<std::string>(*arguments[0]);
+			string::eraseCharsMutate(message, "\r\n"sv);
+		}
 
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
@@ -1446,6 +1486,9 @@ void fn_say2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 // Sends a private message to the player.
 void fn_sendpm(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: sendpm message");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto message = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -1461,7 +1504,10 @@ void fn_sendrpgmessage(GS1Visitor* visitor, std::string_view commandName, const 
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
-		auto message = visitor->getGameValueAs<std::string>(*arguments[0]);
+		std::string message;
+		if (arguments.size() != 0)
+			message = visitor->getGameValueAs<std::string>(*arguments[0]);
+
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->sendRPGMessage(message);
@@ -1472,7 +1518,10 @@ void fn_sendrpgmessage(GS1Visitor* visitor, std::string_view commandName, const 
 // Sends a message to the NC (NPC Control).
 void fn_sendtonc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	auto message = visitor->getGameValueAs<std::string>(*arguments[0]);
+	std::string message;
+	if (arguments.size() != 0)
+		message = visitor->getGameValueAs<std::string>(*arguments[0]);
+
 	auto* server = BabyDI::Get<Server>();
 	server->sendToNC(message);
 }
@@ -1481,7 +1530,10 @@ void fn_sendtonc(GS1Visitor* visitor, std::string_view commandName, const std::v
 // Sends a message to the RC (Remote Control).
 void fn_sendtorc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	auto message = visitor->getGameValueAs<std::string>(*arguments[0]);
+	std::string message;
+	if (arguments.size() != 0)
+		message = visitor->getGameValueAs<std::string>(*arguments[0]);
+
 	auto* server = BabyDI::Get<Server>();
 	server->sendToRC(message);
 }
@@ -1490,6 +1542,9 @@ void fn_sendtorc(GS1Visitor* visitor, std::string_view commandName, const std::v
 // Warps a player to a different server.
 void fn_serverwarp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: serverwarp servername");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto servername = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -1504,7 +1559,7 @@ void fn_serverwarp(GS1Visitor* visitor, std::string_view commandName, const std:
 void fn_set(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("set requires exactly one argument: flag.");
+		throw std::invalid_argument("invalid arguments: set flag");
 
 	if (auto* flag = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); flag != nullptr)
 	{
@@ -1533,6 +1588,9 @@ void fn_set(GS1Visitor* visitor, std::string_view commandName, const std::vector
 // Sets the animation for the player.
 void fn_setani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setani gani,attribs");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto gani = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -1547,8 +1605,8 @@ void fn_setani(GS1Visitor* visitor, std::string_view commandName, const std::vec
 void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("setarray requires exactly two arguments: var and size.");
-	
+		throw std::invalid_argument("invalid arguments: setarray var,size");
+
 	if (auto* var = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); var != nullptr)
 	{
 		auto size = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
@@ -1563,6 +1621,9 @@ void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::v
 // Sets the player's belt color.
 void fn_setbeltcolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setbeltcolor color");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto color = visitor->getGameValueAs<double>(*arguments[0]);
@@ -1580,6 +1641,9 @@ void fn_setbeltcolor(GS1Visitor* visitor, std::string_view commandName, const st
 // Sets the body image for the player.
 void fn_setbody(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setbody filename");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -1594,8 +1658,8 @@ void fn_setbody(GS1Visitor* visitor, std::string_view commandName, const std::ve
 // Sets the NPC character's animation.
 void fn_setcharani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() == 0)
-		throw std::invalid_argument("setcharani requires at least one argument: gani.");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setcharani gani,attribs");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
@@ -1611,7 +1675,7 @@ void fn_setcharani(GS1Visitor* visitor, std::string_view commandName, const std:
 void fn_setchargender(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("fn_setchargender requires at least one argument: gender.");
+		throw std::invalid_argument("invalid arguments: setchargender gender");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
@@ -1633,12 +1697,15 @@ void fn_setchargender(GS1Visitor* visitor, std::string_view commandName, const s
 // Sets an NPC' character property.
 void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() != 2)
-		throw std::invalid_argument("setcharprop requires exactly two arguments: messagecode and text.");
+	if (arguments.size() == 0)
+		throw std::invalid_argument("invalid arguments: setcharprop messagecode,text");
 
 	if (auto* messagecode = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); messagecode != nullptr)
 	{
-		auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
+		std::string text;
+		if (arguments.size() == 2)
+			text = visitor->getGameValueAs<std::string>(*arguments[1]);
+
 		messagecode->assign(text);
 	}
 }
@@ -1647,6 +1714,9 @@ void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std
 // Sets the player's coat color.
 void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setcoatcolor color");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto color = visitor->getGameValueAs<double>(*arguments[0]);
@@ -1664,6 +1734,9 @@ void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const st
 // Set's the player's gender (controls which voice is used).
 void fn_setgender(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setgender gender");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto gender = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -1681,15 +1754,13 @@ void fn_setgender(GS1Visitor* visitor, std::string_view commandName, const std::
 	}
 }
 
-// setgif image;
-void fn_setgif(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
-{
-	fn_setimg(visitor, commandName, arguments);
-}
-
 // sethead filename;
+// Sets the player's head image.
 void fn_sethead(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: sethead filename");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -1709,7 +1780,7 @@ void fn_sethead(GS1Visitor* visitor, std::string_view commandName, const std::ve
 void fn_setimg(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("setimg requires exactly one argument: filename.");
+		throw std::invalid_argument("invalid arguments: setimg filename");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
@@ -1721,10 +1792,11 @@ void fn_setimg(GS1Visitor* visitor, std::string_view commandName, const std::vec
 }
 
 // setimgpart filename,x,y,width,height;
+// Sets a part of the image for the NPC, allowing for more detailed control over the displayed image.
 void fn_setimgpart(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 5)
-		throw std::invalid_argument("setimgpart requires exactly five arguments: filename, x, y, width, height.");
+		throw std::invalid_argument("invalid arguments: setimgpart filename,x,y,width,height");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
@@ -1747,6 +1819,9 @@ void fn_setimgpart(GS1Visitor* visitor, std::string_view commandName, const std:
 // Warps the player to a new level specified by the filename.
 void fn_setlevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setlevel filename");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -1760,6 +1835,9 @@ void fn_setlevel(GS1Visitor* visitor, std::string_view commandName, const std::v
 // Warps the player to a new level specified by the filename and coordinates (x, y).
 void fn_setlevel2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 3)
+		throw std::invalid_argument("invalid arguments: setlevel2 filename,x,y");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -1776,6 +1854,9 @@ void fn_setlevel2(GS1Visitor* visitor, std::string_view commandName, const std::
 // Sets the big map for the player with the specified image file, levels file, and coordinates (x, y).
 void fn_setmap(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 4)
+		throw std::invalid_argument("invalid arguments: setmap imgfile,levelsfile,x,y");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto imgfile = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -1793,6 +1874,9 @@ void fn_setmap(GS1Visitor* visitor, std::string_view commandName, const std::vec
 // Sets the minimap for the player with the specified image file, levels file, and coordinates (x, y).
 void fn_setminimap(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 4)
+		throw std::invalid_argument("invalid arguments: setminimap imgfile,levelsfile,x,y");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto imgfile = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -1810,6 +1894,9 @@ void fn_setminimap(GS1Visitor* visitor, std::string_view commandName, const std:
 // Sets the direction of the player sprite.
 void fn_setplayerdir(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setplayerdir dir");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -1830,6 +1917,9 @@ void fn_setplayerdir(GS1Visitor* visitor, std::string_view commandName, const st
 // Sets a property for the player.
 void fn_setplayerprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 2)
+		throw std::invalid_argument("invalid arguments: setplayerprop messagecode,text");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		if (auto* messagecode = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); messagecode != nullptr)
@@ -1851,7 +1941,7 @@ void fn_setpm(GS1Visitor* visitor, std::string_view commandName, const std::vect
 void fn_setshape(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
-		throw std::invalid_argument("setshape requires exactly three arguments: type, width, height.");
+		throw std::invalid_argument("invalid arguments: setshape type,width,height");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
@@ -1868,10 +1958,11 @@ void fn_setshape(GS1Visitor* visitor, std::string_view commandName, const std::v
 }
 
 // setshield image,power;
+// Sets the player's shield image.
 void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("setshield requires exactly two arguments: image and power.");
+		throw std::invalid_argument("invalid arguments: setshield image,power");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
@@ -1888,7 +1979,7 @@ void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::
 void fn_setshoecolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("setshoecolor requires exactly one argument: color.");
+		throw std::invalid_argument("invalid arguments: setshoecolor color");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
@@ -1908,7 +1999,7 @@ void fn_setshoecolor(GS1Visitor* visitor, std::string_view commandName, const st
 void fn_setshootparams(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		return;
+		throw std::invalid_argument("invalid arguments: setshootparams params");
 
 	auto params = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto* server = BabyDI::Get<Server>();
@@ -1920,7 +2011,7 @@ void fn_setshootparams(GS1Visitor* visitor, std::string_view commandName, const 
 void fn_setskincolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("setskincolor requires exactly one argument: color.");
+		throw std::invalid_argument("invalid arguments: setskincolor color");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
@@ -1940,7 +2031,7 @@ void fn_setskincolor(GS1Visitor* visitor, std::string_view commandName, const st
 void fn_setsleevecolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("setsleevecolor requires exactly one argument: color.");
+		throw std::invalid_argument("invalid arguments: setshoecolor color");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
@@ -1959,13 +2050,15 @@ void fn_setsleevecolor(GS1Visitor* visitor, std::string_view commandName, const 
 // Sets a string variable with the given text.
 void fn_setstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() != 2)
-		throw std::invalid_argument("setstring requires exactly two arguments: var and text.");
+	if (arguments.size() == 0)
+		throw std::invalid_argument("invalid arguments: setstring var,text");
 
 	// Assign the string.
 	if (auto* var = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); var != nullptr)
 	{
-		auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
+		std::string text;
+		if (arguments.size() == 2)
+			text = visitor->getGameValueAs<std::string>(*arguments[1]);
 
 		// Special handling for prefixed variables.
 		// Maybe think of a way to do this automatically on the assign rather than doing this.
@@ -1999,6 +2092,9 @@ void fn_setstring(GS1Visitor* visitor, std::string_view commandName, const std::
 // Sets the players sword image and power.
 void fn_setsword(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 2)
+		throw std::invalid_argument("invalid arguments: setsword image,power");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto image = visitor->getGameValueAs<std::string>(*arguments[0]);
@@ -2016,10 +2112,11 @@ void fn_setz(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 }
 
 // shoot x,y,z,angle,zangle,power,gani,ganiparams;
+// Creates a shoot style projectile.
 void fn_shoot(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() < 7)
-		return;
+		throw std::invalid_argument("invalid arguments: shoot x,y,z,angle,zangle,power,gani,ganiparams");
 
 	auto level = visitor->findCurrentLevel();
 	if (level == nullptr)
@@ -2045,6 +2142,9 @@ void fn_shoot(GS1Visitor* visitor, std::string_view commandName, const std::vect
 // Shoots an arrow in the specified direction.
 void fn_shootarrow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: shootarrow dir");
+
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -2090,6 +2190,9 @@ void fn_shootball(GS1Visitor* visitor, std::string_view commandName, const std::
 // Shoots a fireball in the specified direction.
 void fn_shootfireball(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: shootfireball dir");
+
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -2110,6 +2213,9 @@ void fn_shootfireball(GS1Visitor* visitor, std::string_view commandName, const s
 // Shoots a fireblast in the specified direction.
 void fn_shootfireblast(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: shootfireblast dir");
+
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -2130,6 +2236,9 @@ void fn_shootfireblast(GS1Visitor* visitor, std::string_view commandName, const 
 // Shoots a nuke in the specified direction.
 void fn_shootnuke(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: shootnuke dir");
+
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -2210,6 +2319,9 @@ void fn_sleep(GS1Visitor* visitor, std::string_view commandName, const std::vect
 // Sends a spyfire explosion from the player.
 void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 2)
+		throw std::invalid_argument("invalid arguments: spyfire length,power");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto length = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])) & 0b11111;
@@ -2230,6 +2342,9 @@ void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::ve
 // Takes an item on the level in a 10-tile radius from the NPC.
 void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: take itemname");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
@@ -2281,8 +2396,12 @@ void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 }
 
 // take2 index;
+// Takes an item at the specified index on the level.
 void fn_take2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: take2 index");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
@@ -2371,7 +2490,7 @@ void fn_timershow(GS1Visitor* visitor, std::string_view commandName, const std::
 void fn_tokenize(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("tokenize requires exactly one argument: text.");
+		throw std::invalid_argument("invalid arguments: tokenize text");
 
 	auto text = visitor->getGameValueAs<std::string>(*arguments[0]);
 	visitor->tokenizeTokens = string::splitHard(text, " "sv);
@@ -2382,7 +2501,7 @@ void fn_tokenize(GS1Visitor* visitor, std::string_view commandName, const std::v
 void fn_tokenize2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("tokenize2 requires exactly two arguments: delims and text.");
+		throw std::invalid_argument("invalid arguments: tokenize2 delims,text");
 
 	auto delims = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
@@ -2393,8 +2512,8 @@ void fn_tokenize2(GS1Visitor* visitor, std::string_view commandName, const std::
 // Sends out a trigger action.
 void fn_triggeraction(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() < 3)
-		throw std::invalid_argument("triggeraction requires at least three arguments: x, y, action.");
+	if (arguments.size() < 4)
+		throw std::invalid_argument("invalid arguments: triggeraction x,y,action,params");
 
 	auto x = visitor->getGameValueAs<double>(*arguments[0]);
 	auto y = visitor->getGameValueAs<double>(*arguments[1]);
@@ -2436,7 +2555,7 @@ void fn_unfreezeplayer(GS1Visitor* visitor, std::string_view commandName, const 
 void fn_unset(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("unset requires exactly one argument: flag.");
+		throw std::invalid_argument("invalid arguments: unset flag");
 
 	if (auto* flag = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); flag != nullptr)
 	{
@@ -2482,6 +2601,9 @@ void fn_updateterrain(GS1Visitor* visitor, std::string_view commandName, const s
 // Warps an NPC to a new level.
 void fn_warpto(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() != 3)
+		throw std::invalid_argument("invalid arguments: warpto levelname,x,y");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);

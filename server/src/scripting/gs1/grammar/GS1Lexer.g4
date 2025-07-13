@@ -14,7 +14,7 @@ lexer grammar GS1Lexer;
 @lexer::context
 {
 // --------------------------------------------------------
-constexpr std::array<std::string_view, 201> builtInCommands = {
+constexpr std::array<std::string_view, 202> builtInCommands = {
     "addguildmember",
     "addstring",
     "addtiledef",
@@ -141,13 +141,14 @@ constexpr std::array<std::string_view, 201> builtInCommands = {
     "setcoloreffect",
     "setcursor ",
     "setcursor2",
-    "seteffect",
-    "seteffectmode ",
+    "seteffect ",
+    "seteffectmode",
     "setfocus",
     "setgender",
     "setgif ",
+	"setgifpart",
     "sethead",
-    "setimg",
+    "setimg ",
     "setimgpart",
     "setletters",
     "setlevel ",
@@ -158,7 +159,7 @@ constexpr std::array<std::string_view, 201> builtInCommands = {
     "setplayerdir",
     "setplayerprop",
     "setpm",
-    "setshape",
+    "setshape ",
     "setshape2",
     "setshield",
     "setshoecolor",
