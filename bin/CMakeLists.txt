@@ -132,7 +132,6 @@ install(DIRECTORY DESTINATION "./servers/default/world/images")
 install(DIRECTORY DESTINATION "./servers/default/world/shields")
 install(DIRECTORY DESTINATION "./servers/default/world/sounds")
 install(DIRECTORY DESTINATION "./servers/default/world/swords")
-install(DIRECTORY DESTINATION "./servers/default/world/levels")
 
 install(DIRECTORY DESTINATION "./servers/default/world/global")
 install(DIRECTORY DESTINATION "./servers/default/world/global/bodies")

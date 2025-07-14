@@ -13,7 +13,7 @@ COPY --chown=1001:1001 ./ /tmp/gserver
 
 RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
     && apt update \
-    && apt install -y libssl-dev libzstd-dev cmake git ninja-build openjdk-17-jre gcc g++ \
+    && apt install -y libssl-dev libzstd-dev cmake git ninja-build openjdk-21-jre gcc g++ \
     && git clone https://github.com/microsoft/vcpkg $VCPKG_ROOT \
 	&& cd $VCPKG_ROOT \
 	&& sh bootstrap-vcpkg.sh -disableMetrics \
