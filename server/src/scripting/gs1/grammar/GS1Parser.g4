@@ -63,28 +63,28 @@ void add_identifier(std::string identifier)
 
 program
 	: EOF
-	| (statement END?)+
+	| block+
 	;
 
 block
-	: TOKEN_BRACE_LEFT (statement END?)* TOKEN_BRACE_RIGHT
-	| statement END?
+	: TOKEN_BRACE_LEFT statement* TOKEN_BRACE_RIGHT
+	| statement
 	;
 
 statement
-	: TOKEN_BRACE_LEFT (statement END?)* TOKEN_BRACE_RIGHT
-	| ( END
-		| ifStatement
+	: END
+	| ( ifStatement
 		| forStatement
 		| whileStatement
 		| withStatement
 		| functionDefinition
-		| flowStatement
+		)
+	| ( flowStatement
 		| builtinCommandStatement
 		| userFunctionStatement
 		| assignmentStatement
 		| expression
-		)
+		) (END | EOF)
 	;
 
 //----------------------------------------------------------
@@ -131,7 +131,7 @@ userFunctionStatement
 //----------------------------------------------------------
 
 builtinCommandStatement
-	: COMMAND builtInCommandExpression (TOKEN_COMMA builtInCommandExpression?)*				# StatementBuiltInCommand
+	: COMMAND builtInCommandExpression (TOKEN_COMMA builtInCommandExpression)*				# StatementBuiltInCommand
 	| COMMAND																				# StatementBuiltInCommand
 	;
 
@@ -213,7 +213,7 @@ primaryExpression
 //----------------------------------------------------------
 
 builtin_function
-	: FUNCTION TOKEN_PAREN_LEFT expression (TOKEN_COMMA expression?)* TOKEN_PAREN_RIGHT		# BuiltInFunctionCall
+	: FUNCTION TOKEN_PAREN_LEFT expression (TOKEN_COMMA expression)* TOKEN_PAREN_RIGHT		# BuiltInFunctionCall
 	;
 
 identifier_access
@@ -255,7 +255,7 @@ assignment_operator
 	;
 
 array_literal
-	: TOKEN_BRACE_LEFT expression (TOKEN_COMMA expression)* TOKEN_BRACE_RIGHT				# ArrayLiteral
+	: TOKEN_BRACE_LEFT expression (TOKEN_COMMA expression)* END? TOKEN_BRACE_RIGHT			# ArrayLiteral
 	;
 
 literal_literal

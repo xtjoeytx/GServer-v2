@@ -237,29 +237,49 @@ constexpr bool isBuiltInCommand(std::string_view name)
 // Allow injected tokens.
 virtual std::unique_ptr<antlr4::Token> nextToken() override
 {
-	if (m_pickQueuedTokens && !m_pendingTokens.empty())
+	// If we have a before token queued, return it.
+	if (!m_pendingTokensBefore.empty())
 	{
-		auto token = std::move(m_pendingTokens.front());
-		m_pendingTokens.pop_front();
+		auto token = std::move(m_pendingTokensBefore.front());
+		m_pendingTokensBefore.pop_front();
 		return token;
 	}
 
-	if (m_pickQueuedTokens)
-		m_pickQueuedTokens = false;
+	// Check for any after tokens now.
+	if (!m_pendingTokensAfter.empty())
+	{
+		auto token = std::move(m_pendingTokensAfter.front());
+		m_pendingTokensAfter.pop_front();
+		return token;
+	}
 
+	// Get the next token.
 	auto next = antlr4::Lexer::nextToken();
 #if DEBUG
 	auto text = next->getText();
 #endif
-	if (!m_pendingTokens.empty())
-		m_pickQueuedTokens = true;
 
+	// If we have before tokens queued, save this one for later and return the queued token.
+	if (!m_pendingTokensBefore.empty())
+	{
+		auto token = std::move(m_pendingTokensBefore.front());
+		m_pendingTokensBefore.pop_front();
+		m_pendingTokensBefore.push_front(std::move(next));
+		return token;
+	}
+
+	// Return our token.
 	return next;
 }
 
-void emitIdentifier(size_t type, std::string_view name)
+void emitIdentifierBefore(size_t type, std::string_view name)
 {
-	m_pendingTokens.emplace_back(_factory->create(type, ""));
+	m_pendingTokensBefore.emplace_back(_factory->create(type, ""));
+}
+
+void emitIdentifierAfter(size_t type, std::string_view name)
+{
+	m_pendingTokensAfter.emplace_back(_factory->create(type, ""));
 }
 
 int breakpoint()
@@ -334,11 +354,11 @@ void popNextMode(bool terminateEarly = false)
 
 		switch (mode)
 		{
-			case 'V': setMode(IN_PARAM_V); emitIdentifier(GS1Lexer::IDENTIFIER, getText()); break;
+			case 'V': setMode(IN_PARAM_V); emitIdentifierAfter(GS1Lexer::IDENTIFIER, getText()); break;
 			case 'E': setMode(IN_PARAM_E); break;
 			case 'P': setMode(IN_PARAM_E); currentState.commaPop = false; break;
-			case 'S': setMode(IN_PARAM_S); emitIdentifier(GS1Lexer::STRING, getText()); break;
-			case 'L': setMode(IN_PARAM_L); emitIdentifier(GS1Lexer::STRING, getText()); break;
+			case 'S': setMode(IN_PARAM_S); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
+			case 'L': setMode(IN_PARAM_L); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
 			case 'M': setMode(IN_PARAM_M); break;
 			case 'B': setMode(IN_PARAM_B); break;
 			case 'I': setMode(IN_PARAM_I); break;
@@ -358,8 +378,8 @@ void popNextMode(bool terminateEarly = false)
 size_t m_bracketCount = 0;
 std::deque<CommandState> m_commandStates;
 
-bool m_pickQueuedTokens = false;
-std::deque<std::unique_ptr<antlr4::Token>> m_pendingTokens{};
+std::deque<std::unique_ptr<antlr4::Token>> m_pendingTokensBefore{};
+std::deque<std::unique_ptr<antlr4::Token>> m_pendingTokensAfter{};
 // --------------------------------------------------------
 }
 
@@ -744,7 +764,7 @@ OP_LOGICALNOT	: '!';
 TOKEN_BRACKET_LEFT  : '[';
 TOKEN_BRACKET_RIGHT : ']';
 TOKEN_BRACE_LEFT	: '{';
-TOKEN_BRACE_RIGHT	: '}';
+TOKEN_BRACE_RIGHT	: '}' { emitIdentifierBefore(GS1Lexer::END, getText()); };
 TOKEN_PAREN_LEFT	: '(';
 TOKEN_PAREN_RIGHT	: ')';
 TOKEN_COMMA			: ',';
@@ -901,9 +921,9 @@ fragment WHITESPACE
 mode IN_PARAM_V;
 
 PARAM_V_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
+PARAM_V_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?          { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_V_POP_PAREN_LEFT  : TOKEN_PAREN_LEFT  { isNextArgLeftParen() }? { popNextMode(); popNextMode(); } -> type(TOKEN_PAREN_LEFT);
 PARAM_V_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }?         { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_V_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?          { popNextMode(true); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_V_POP_END         : END               { canCmdPop() }?          { popNextMode(true); } -> type(END);
 PARAM_V_POP_COMMA       : TOKEN_COMMA                                 { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_V_FUNC_GROUP_1    : FUNC_GROUP_1 { pushCommand("(P)"); }    -> type(FUNCTION);
@@ -943,8 +963,8 @@ PARAM_V_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 mode IN_PARAM_E;
 
 PARAM_E_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
+PARAM_E_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?                         { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_E_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() && m_bracketCount == 0 }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_E_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?                         { popNextMode(true); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_E_POP_END         : END               { canCmdPop() }?                         { popNextMode(true); } -> type(END);
 PARAM_E_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }?                       { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_E_COMMA           : TOKEN_COMMA       { !canCommaPop() }?   -> type(TOKEN_COMMA);
@@ -996,8 +1016,8 @@ PARAM_E_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_PARAM_S;
 
+PARAM_S_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?   { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_S_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }?  { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_S_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?   { popNextMode(true); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_S_POP_END         : END               { canCmdPop() }?   { popNextMode(true); } -> type(END);
 PARAM_S_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }? { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_S_MC_NOINDEX      : MC_NOINDEX                              -> type(MESSAGECODE);
@@ -1018,10 +1038,10 @@ PARAM_S_STRING_LITERAL_END2 : ~[#};]+ { canCmdPop()  && !canCommaPop() }? -> typ
 // --------------------------------------------------------
 mode IN_PARAM_L;
 
+PARAM_L_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_L_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_L_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_L_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
-PARAM_L_COMMA           : TOKEN_COMMA   { emitIdentifier(GS1Lexer::STRING, getText()); } -> type(TOKEN_COMMA);
+PARAM_L_COMMA           : TOKEN_COMMA   { emitIdentifierAfter(GS1Lexer::STRING, getText()); } -> type(TOKEN_COMMA);
 PARAM_L_MC_NOINDEX      : MC_NOINDEX                              -> type(MESSAGECODE);
 PARAM_L_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGECODE);
 PARAM_L_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
@@ -1039,8 +1059,8 @@ PARAM_L_STRING_LITERAL2  : ~[#};,]+ { canCmdPop() }?  -> type(STRING);
 mode IN_PARAM_M;
 
 PARAM_M_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
+PARAM_M_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_M_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_M_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_M_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
 PARAM_M_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_M_MC_NOINDEX      : MC_NOINDEX                              -> type(MESSAGECODE);
@@ -1084,8 +1104,8 @@ PARAM_M_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT);
 mode IN_PARAM_B;
 
 PARAM_B_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
+PARAM_B_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_B_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_B_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_B_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
 PARAM_B_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_B_BADDY           : BADDY -> type(BADDY);
@@ -1094,8 +1114,8 @@ PARAM_B_BADDY           : BADDY -> type(BADDY);
 mode IN_PARAM_I;
 
 PARAM_I_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
+PARAM_I_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_I_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_I_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_I_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
 PARAM_I_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_I_ITEM            : ITEMNAMES -> type(ITEM);
@@ -1104,8 +1124,8 @@ PARAM_I_ITEM            : ITEMNAMES -> type(ITEM);
 mode IN_PARAM_C;
 
 PARAM_C_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
+PARAM_C_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_C_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_C_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_C_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
 PARAM_C_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_C_COLOR           : COLORS -> type(COLOR);
@@ -1114,8 +1134,8 @@ PARAM_C_COLOR           : COLORS -> type(COLOR);
 mode IN_PARAM_G;
 
 PARAM_G_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
+PARAM_G_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_G_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_G_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_G_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
 PARAM_G_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_G_GENDER          : GENDERS -> type(GENDER);
@@ -1124,8 +1144,8 @@ PARAM_G_GENDER          : GENDERS -> type(GENDER);
 mode IN_PARAM_U;
 
 PARAM_U_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
+PARAM_U_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_U_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_U_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_U_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
 PARAM_U_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_U_CARRY           : CARRYNAMES -> type(CARRY);
@@ -1134,8 +1154,8 @@ PARAM_U_CARRY           : CARRYNAMES -> type(CARRY);
 mode IN_PARAM_D;
 
 PARAM_D_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
+PARAM_D_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_D_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_D_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_D_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
 PARAM_D_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_D_DIR             : DIR -> type(DIRECTION);
@@ -1189,7 +1209,7 @@ mode IN_PARAM_Z;
 
 PARAM_Z_START           : TOKEN_BRACE_LEFT  { m_bracketCount == 0 }? { ++m_bracketCount; } -> channel(HIDDEN);
 PARAM_Z_POP_END         : END               { m_bracketCount == 0 }? { popNextMode(); }    -> type(END);
-PARAM_Z_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { m_bracketCount == 1 }? { --m_bracketCount; popNextMode(); } -> channel(HIDDEN);
+PARAM_Z_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { m_bracketCount == 1 }? { --m_bracketCount; popNextMode(); emitIdentifierBefore(GS1Lexer::END, getText()); } -> channel(HIDDEN);
 PARAM_Z_BRACE_LEFT      : TOKEN_BRACE_LEFT                           { ++m_bracketCount; } -> type(STRING);
 PARAM_Z_BRACE_RIGHT     : TOKEN_BRACE_RIGHT                          { --m_bracketCount; } -> type(STRING);
 PARAM_Z_END             : END               { m_bracketCount != 0 }? -> type(STRING);
