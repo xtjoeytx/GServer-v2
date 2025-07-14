@@ -413,12 +413,12 @@ std::format_context::iterator PropertyTileCoordinate::format(std::format_context
 
 CString PropertyTileCoordinateZ::serialize() const
 {
-	return CString() >> (char)(std::min(85 * 2, std::max(-25 * 2, (pixelCoordinate / 8))) + 50);
+	return CString() >> (char)(std::min(170, std::max(-50, (pixelCoordinate / 16))) + 50);
 }
 
 void PropertyTileCoordinateZ::deserialize(CString& data)
 {
-	pixelCoordinate = (data.readGUChar() - 50) * 8;
+	pixelCoordinate = (data.readGUChar() - 50) * 16;
 }
 
 void PropertyTileCoordinateZ::apply(const GameValue& gameValue)

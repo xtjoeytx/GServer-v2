@@ -334,7 +334,7 @@ void Player::cleanup()
 	if (m_playerSock != nullptr)
 		m_fileQueue.sendCompress();
 
-	if (m_id >= 0 && m_server != nullptr && m_loaded)
+	if (m_id > 0 && m_server != nullptr && m_loaded)
 	{
 		// Save account.
 		if (isClient() && !account.loadOnly)

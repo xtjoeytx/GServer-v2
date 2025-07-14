@@ -164,6 +164,9 @@ Server::~Server()
 
 int Server::init(const CString& serverip, const CString& serverport, const CString& localip, const CString& serverinterface)
 {
+	// Register the server start time.
+	m_serverStartTime = std::chrono::system_clock::now();
+
 	// Load the config files.
 	int ret = loadConfigFiles();
 	if (ret) return ret;
@@ -234,9 +237,6 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 
 	// Register ourself with the socket manager.
 	m_sockManager.registerSocket((CSocketStub*)this);
-
-	// Register the server start time.
-	m_serverStartTime = std::chrono::system_clock::now();
 
 	// Start the timers.
 	m_timedEvents.start();
@@ -1171,6 +1171,10 @@ bool Server::deletePlayer(PlayerPtr player)
 	// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
 	if (hasNPCServer())
 		m_npcServer->playerLogout(player);
+
+	// Leave the level.
+	if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr)
+		client->leaveLevel();
 
 	// Add the player to the set of players to delete.
 	getServerList().deletePlayer(player);

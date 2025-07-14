@@ -157,14 +157,8 @@ PlayerClient::~PlayerClient()
 
 void PlayerClient::cleanup()
 {
-	if (m_id >= 0 && m_server != nullptr && m_loaded)
+	if (m_id > 0 && m_server != nullptr && m_loaded)
 	{
-		// Queue up the logout event.
-		m_server->queueNPCEvent({}, ScriptEventType::PLAYERLOGOUT, source::FromPlayer(m_id));
-
-		// Remove from the level.
-		leaveLevel();
-
 		// Adjust carried NPC location.
 		if (m_carryNPC != 0)
 		{
@@ -540,15 +534,6 @@ bool PlayerClient::sendLogin()
 	if (m_server->getServerList().getConnected())
 		sendPacket(CString() >> (char)PLO_SERVERLISTCONNECTED);
 
-	// Send the level to the player.
-	// warp will call sendCompress() for us.
-	if (!warp(account.level, { account.character.pixelX, account.character.pixelY }) && m_currentLevel.expired())
-	{
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
-		log::printLine(log::server, "** Cannot find level for {}.", account.name);
-		return false;
-	}
-
 	// Send the bigmap if it was set.
 	if (m_versionId >= CLVER_2_1)
 	{
@@ -601,16 +586,27 @@ bool PlayerClient::sendLogin()
 		sendPacket(pliconPacket.remove(pliconPacket.length() - 1, 1));
 	}
 
+	// Ask for processes. This causes windows v6 clients to crash
+	/*
+	if (m_versionId < CLVER_6_015)
+		sendPacket(CString() >> (char)PLO_LISTPROCESSES);
+	*/
+
+	// Send the level to the player.
+	// warp will call sendCompress() for us.
+	if (!warp(account.level, { account.character.pixelX, account.character.pixelY }) && m_currentLevel.expired())
+	{
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
+		log::printLine(log::server, "** Cannot find level for {}.", account.name);
+		return false;
+	}
+
 	// Exchange props with everybody on the server.
 	exchangeMyPropsWithOthers();
 
 	// Record prop mod time.
 	auto curTime = currentTime();
 	std::ranges::for_each(modTime, [&curTime](auto& modTime) { modTime = curTime; });
-
-	// Ask for processes. This causes windows v6 clients to crash
-	if (m_versionId < CLVER_6_015)
-		sendPacket(CString() >> (char)PLO_LISTPROCESSES);
 
 	m_fileQueue.sendCompress(true);
 

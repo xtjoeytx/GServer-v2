@@ -150,11 +150,23 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (curCommand == "LEVEL")
 			npcLevel = curLine.readString("");
 		else if (curCommand == "X")
+		{
 			npc->character.pixelX = int(strtofloat(curLine.readString("")) * 16);
+			npc->modTime[PROPID(NPCProp::X)] = updateTime;
+			npc->modTime[PROPID(NPCProp::X2)] = updateTime;
+		}
 		else if (curCommand == "Y")
+		{
 			npc->character.pixelY = int(strtofloat(curLine.readString("")) * 16);
+			npc->modTime[PROPID(NPCProp::Y)] = updateTime;
+			npc->modTime[PROPID(NPCProp::Y2)] = updateTime;
+		}
 		else if (curCommand == "Z")
+		{
 			npc->character.pixelZ = int(strtofloat(curLine.readString("")) * 16);
+			npc->modTime[PROPID(NPCProp::Z)] = updateTime;
+			npc->modTime[PROPID(NPCProp::Z2)] = updateTime;
+		}
 		else if (curCommand == "MAPX")
 		{
 			//gmaplevelx = strtoint(curLine.readString(""));

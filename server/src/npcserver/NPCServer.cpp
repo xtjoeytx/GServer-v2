@@ -309,6 +309,7 @@ std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::str
 	npc->setPropWith<NPCProp::X>(SetBy::SERVER, location.x());
 	npc->setPropWith<NPCProp::Y>(SetBy::SERVER, location.y());
 	npc->level = level;
+
 	level->addNPC(npc);
 	m_server->addNPC(npc, true);
 	m_globalNPCList[npc->id] = npc;
