@@ -813,7 +813,7 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 
 	std::erase_if(results, [](const PropertySendResults::value_type& res)
 	{
-		return canSendProp((NPCProp)res.first.propId);
+		return !canSendProp((NPCProp)res.first.propId);
 	});
 	
 	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId)
