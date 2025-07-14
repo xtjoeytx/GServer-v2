@@ -8,109 +8,78 @@ For their additional work on the old gserver, special thanks go to:
 	
 ## Building
 
-### On *nix machines
-just run the build-v8-(mac/linux) script:
+### Required dependencies
+- C++23 compiler (min supported: GCC 14, Clang 18, MSVC 2022 17.7)
+- Java JRE
+- CMake
+- Ninja build system
+- vcpkg (https://vcpkg.io/en/getting-started)
+
+Linux users can install `openjdk-21-jre` or similar via their package manager, Windows users can install from [Microsoft](https://learn.microsoft.com/en-us/java/openjdk/download) or via `winget`.
+
+vcpkg needs to be installed and the `VCPKG_ROOT` environment variable needs to be set to the location where it exists.
+The directory should be writable by the user running the build (unless you want to spend extra time reading documentation and configuring the software).
+
+### Build with CMake
+
+If using command-line cmake, you would start a build like so:
 ```
-cd dependencies/
-./build-v8-linux
+cmake --preset "Release x64" -G Ninja -B build -DVCPKG_TARGET_TRIPLET=x64-windows-static
 ```
 
-### On Windows, using GCC
-Currently, v8 is too much of a pain to build for this method to be viable. We suggest you use MSVC/MSBuild and nuget instead.
+On a Linux build, you would use `x64-linux` as the `VCPKG_TARGET_TRIPLET`.
 
-### On Windows, using MSVC/MSBuild with VSCode
-#### Setup the environment:
-Install [Visual Studio 2022](https://learn.microsoft.com/en-us/visualstudio/install/install-visual-studio?view=vs-2022).
-
-- Install the "Desktop development with C++" workload.
-- Install the "C++ CMake tools for Windows" component.
-- Install the "NuGet package manager" component.
-- Install the "Windows SDK" component.
-- Install and configure [vcpkg](https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-vs?pivots=shell-powershell) (follow step 1, then set up the `VCPKG_ROOT` environment variable).
-
-#### Building the server with NPC-server support enabled
-A folder called GServer-v2 will be created. Remember to update the Visual Studio installation path to your Visual Studio installation path.
-```
-git clone https://github.com/xtjoeytx/GServer-v2
-cd GServer-v2
-git submodule update --init --recursive
-
-"%programfiles(x86)%\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
-
-cmake .. -G "Visual Studio 17 2022" -A x64
-cmake --build .
-```
+IDEs such as Visual Studio and CLion have CMake support built-in and can be used to easily build and configure the projects.
 
 ## Quick Start Instructions
 
 How-to setup a server:
 
-1) Under the accounts folder, rename the text file 'YOURACCOUNT.txt' to your account name.  For example: 'KuJi.txt'
-2) Modify defaultaccount.txt to your liking.  This is the default settings new players will start with.  It can also be modified via RC.
-3) Open config/serveroptions.txt and edit it to your liking.  Be sure to modify the settings under "Private server options".  Help for what these options do are available on the forums and in the file itself.
-4) Find the line that starts with "staff=" in config/serveroptions.txt.  Replace YOURACCOUNT with your account name.  Anybody who needs RC access must be added to this line with their account names separated by commas.  Additionally, RC users must have their IP range changed to at least *.*.*.* in their account to connect.
-5) Port forward if needed. (Many threads on this topic exist in the forums.  If you are having trouble, seek them out.  Try the tutorials forum.)  Basically, if you are behind a router and your computer isn't set to be the "DMZ", you will need to port forward.
-6) Run gserver2.exe -- enjoy.
-7) Report any bugs on http://www.graal.in/
+1. Under the accounts folder, rename the text file 'YOURACCOUNT.txt' to your account name.  For example: 'KuJi.txt'
+2. Modify defaultaccount.txt to your liking.  This is the default settings new players will start with.  It can also be modified via RC.
+3. Open config/serveroptions.txt and edit it to your liking.  Be sure to modify the settings under "Private server options".  Help for what these options do are available on the forums and in the file itself.
+4. Find the line that starts with "staff=" in config/serveroptions.txt.  Replace YOURACCOUNT with your account name.  Anybody who needs RC access must be added to this line with their account names separated by commas.  Additionally, RC users must have their IP range changed to at least *.*.*.* in their account to connect.
+5. Run gserver2.exe -- enjoy.
+6. Report any bugs on http://www.graal.in/
 
-## servers.txt
-
-The gserver can run multiple servers at once without needing to spawn separate processes.  This is accomplished by the servers.txt file.  This file will tell the gserver how many servers to run and where they are located, as well as some optional ip and port overrides.
-
-The file looks like this:
-```
-    servercount = 1
-    server_1 = default
-    server_1_ip = myserver.com
-    server_1_port = 12345
-    server_1_localip = 127.0.0.1
-    server_1_interface = 192.168.2.1
-```
-servercount specifies the number of servers.  In the default file, that is 1 server.
-**server_#** specifies the directory the server is under.
-**server_#_ip** specifies an optional ip address override.
-**server_#_port** specifies an optional port override.
-**server_#_localip** specifies an optional localip override.
-**server_#_interface** specifies an optional interface override.
-
-All of the optional overrides will take precedence over the options defined in **serveroptions.txt**.
-
-## Special Graal Reborn NPC commands |
-
+## Special Graal Reborn NPC commands
 
 The Graal Reborn gserver has a couple special NPC commands built in.
 
 join somefile;
-    Much like official Graal's server-side join command, this command searches for somefile.txt and appends the contents to the end of the NPC script.
+    Clientside support for the join command.  When in classic mode, this command searches for somefile.txt and appends the contents to the end of the NPC script.  When in npc-server mode, this appends the script of the class.
 
 singleplayer
     This command is like the sparringzone command.  When placed by itself with no semi-colon inside an NPC, it signifies that the level is "singleplayer."  (SEE: Singleplayer Levels).
 
 ## Singleplayer Levels
 
-The Graal Reborn gserver has the ability to toggle a level as "singleplayer."  In this mode, the user cannot see any other player in the level.  Any changes they make to the level are not replicated to other users.  They are, in essence, in a level by themselves.
+The Graal Reborn gserver has the ability to toggle a level as "singleplayer."  In this mode, the user cannot see any other player in the level.
+Any changes they make to the level are not replicated to other users.  They are, in essence, in a level by themselves.
 
 To activate singleplayer mode, add an NPC to the level and add the single command "singleplayer" to the level, much like how the "sparringzone" command works.
 
 ## Group Maps
 
-Like singleplayer levels, group maps allow only players in a group to see each other in a level.  Player groups can be managed via the gr.setgroup and gr.setlevelgroup triggeractions (SEE: Graal Reborn special triggeractions).
+Like singleplayer levels, group maps allow only players in a group to see each other in a level.
+Player groups can be managed via the gr.setgroup and gr.setlevelgroup triggeractions (SEE: Graal Reborn special triggeractions).
 
-Individual levels cannot be set as group levels; instead, an entire map must be specified as a group map.  The "groupmaps" server option specifies a comma-delimited list of maps that can contain groups.
+Individual levels cannot be set as group levels; instead, an entire map must be specified as a group map.
+The "groupmaps" server option specifies a comma-delimited list of maps that can contain groups.
 
 ## Graal Reborn special client flags
 
 There are a few special client flags built into the gserver.  These are:
-gr.x
-gr.y
-gr.z
+- gr.x
+- gr.y
+- gr.z
 
-These flags are used by the -gr_movement weapon included in the server weapons folder to simulate the smooth movement as found in the Graal clients 2.3 and up.
+These flags are used by the `-gr_movement` weapon included in the server weapons folder to simulate the smooth movement as found in the Graal clients 2.3 and up.
 
 If you don't want the gserver to recognize these flags, set the flaghack_movement setting to false in serveroptions.txt.
 
 Also, if flaghack_ip is enabled in the serveroptions.txt file, you can gain access to the following:
-gr.ip
+- gr.ip
 
 ## Graal Reborn special triggeractions
 
@@ -197,10 +166,3 @@ The Graal Reborn gserver has a couple unique triggeractions built into it.  They
 
     triggeraction 0,0,gr.npc.setpos,id,x,y;
         Sets an NPC's position.
-
-## Weapon bytecode
-
-Place weapon bytecode in the weapon_bytecode/ folder.  Inside each weapon file in weapons/, add the following:
-BYTECODE name_of_file
-
-The gserver will load weapon_bytecode/name_of_file and use the bytecode contained there-in.
