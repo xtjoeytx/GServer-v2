@@ -42,6 +42,7 @@ set(
 	"include/level/LevelHorse.h"
 	"include/level/LevelItem.h"
 	"include/level/LevelLink.h"
+	"include/level/LevelShoot.h"
 	"include/level/LevelSign.h"
 	"include/level/LevelTiles.h"
 	"include/level/Map.h"

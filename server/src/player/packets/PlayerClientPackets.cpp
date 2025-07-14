@@ -1282,12 +1282,13 @@ HandlePacketResult PlayerClient::msgPLI_MAPINFO(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 {
-	ShootPacketNew newPacket{};
+	ShootPacketWrapper newPacket{};
 	[[maybe_unused]] int unknown = pPacket.readGInt(); // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
 
-	newPacket.pixelx = 16 * pPacket.readGChar();        // 16 * ((float)pPacket.readGUChar() / 2.0f);
-	newPacket.pixely = 16 * pPacket.readGChar();        // 16 * ((float)pPacket.readGUChar() / 2.0f);
-	newPacket.pixelz = 16 * (pPacket.readGChar() - 50); // 16 * ((float)pPacket.readGUChar() / 2.0f);
+	newPacket.position.x() = 8 * pPacket.readGChar();
+	newPacket.position.y() = 8 * pPacket.readGChar();
+	newPacket.position.z() = 16 * (pPacket.readGChar() - 50);
+
 	// TODO: calculate offsetx from pixelx/pixely/ - level offset
 	newPacket.offsetx = 0;
 	newPacket.offsety = 0;
@@ -1297,12 +1298,15 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 	//if (newPacket.pixely < 0) {
 	//	newPacket.offsety = -1;
 	//}
-	newPacket.sangle = pPacket.readGUChar();  // 0-pi = 0-220
-	newPacket.sanglez = pPacket.readGUChar(); // 0-pi = 0-220
-	newPacket.speed = pPacket.readGUChar();   // speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
-	newPacket.gravity = 8;
+
+	newPacket.sangle = pPacket.readGUChar();  // 0 to 2*pi  = 0-220
+	newPacket.sanglez = pPacket.readGUChar(); // -pi to pi  = 0-220
+	newPacket.power = pPacket.readGUChar();   // power = 44 pixel increments
+	newPacket.gravity = static_cast<uint8_t>(m_server->Scripting.variables.getValue<double>("gravity").value_or(2.0));
 	newPacket.gani = pPacket.readChars(pPacket.readGUChar());
-	[[maybe_unused]] unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+
+	// This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+	[[maybe_unused]] unsigned char someParam = pPacket.readGUChar();
 	newPacket.shootParams = pPacket.readString("");
 
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
@@ -1311,38 +1315,26 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 	m_server->sendPacketToLevelArea(oldPacketBuf, self(), { m_id }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
 	m_server->sendPacketToLevelArea(newPacketBuf, self(), { m_id }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
 
-	// ActionProjectile on server.
-	// TODO(joey): This is accurate, but have not figured out power/zangle stuff yet.
-
-	//this.speed = (this.power > 0 ? 0 : 20 * 0.05);
-	//this.horzspeed = cos(this.zangle) * this.speed;
-	//this.vertspeed = sin(this.zangle) * this.speed;
-	//this.newx = playerx + 1.5; // offset
-	//this.newy = playery + 2; // offset
-	//function CalcPos() {
-	//	this.newx = this.newx + (cos(this.angle) * this.horzspeed);
-	//	this.newy = this.newy - (sin(this.angle) * this.horzspeed);
-	//	setplayerprop #c, Positions #v(this.newx), #v(this.newy);
-	//	if (onwall(this.newx, this.newy)) {
-	//		this.calcpos = 0;
-	//		this.hittime = timevar2;
-	//	}
-	//}
+	if (m_server->hasNPCServer())
+	{
+		if (auto level = getLevel(); level != nullptr)
+			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravity, newPacket.gani, source::FromPlayer(m_id));
+	}
 
 	return HandlePacketResult::Handled;
 }
 
 HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 {
-	ShootPacketNew newPacket{};
-	newPacket.pixelx = pPacket.readGUShort();
-	newPacket.pixely = pPacket.readGUShort();
-	newPacket.pixelz = pPacket.readGUShort();
+	ShootPacketWrapper newPacket{};
+	newPacket.position.x() = static_cast<int16_t>(pPacket.readGUShort());
+	newPacket.position.y() = static_cast<int16_t>(pPacket.readGUShort());
+	newPacket.position.z() = static_cast<int16_t>(pPacket.readGUShort());
 	newPacket.offsetx = pPacket.readGChar();  // level offset x
 	newPacket.offsety = pPacket.readGChar();  // level offset y
-	newPacket.sangle = pPacket.readGUChar();  // 0-pi = 0-220
-	newPacket.sanglez = pPacket.readGUChar(); // 0-pi = 0-220
-	newPacket.speed = pPacket.readGUChar();   // speed = pixels per 0.05 seconds.  In gscript, each value of 1 translates to 44 pixels.
+	newPacket.sangle = pPacket.readGUChar();  // 0 to 2*pi  = 0-220
+	newPacket.sanglez = pPacket.readGUChar(); // -pi to pi  = 0-220
+	newPacket.power = pPacket.readGUChar();   // power = 44 pixel increments
 	newPacket.gravity = pPacket.readGUChar();
 	newPacket.gani = pPacket.readChars(pPacket.readGUShort());
 	[[maybe_unused]] unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
@@ -1353,6 +1345,12 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 
 	m_server->sendPacketToLevelArea(oldPacketBuf, self(), { m_id }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
 	m_server->sendPacketToLevelArea(newPacketBuf, self(), { m_id }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
+
+	if (m_server->hasNPCServer())
+	{
+		if (auto level = getLevel(); level != nullptr)
+			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravity / 16.0f, newPacket.gani, source::FromPlayer(m_id));
+	}
 
 	return HandlePacketResult::Handled;
 }

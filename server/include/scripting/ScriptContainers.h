@@ -768,6 +768,13 @@ public:
 	/// @return A weak pointer to the requested GameVariable, or an empty weak pointer if not found.
 	virtual const std::weak_ptr<GameVariable> get(std::string_view name) const noexcept;
 
+	/// @brief Retrieves the value associated with the specified name, if it exists.
+	/// @tparam T The type to which the value should be converted.
+	/// @param name The name of the value to retrieve.
+	/// @return An optional containing the value of type GameValue if found; otherwise, an empty optional.
+	template<ValidGameValue T>
+	[[inline]] const std::optional<T> getValue(const std::string_view name) const noexcept;
+
 	/// @brief Retrieves a game variable by name, or adds it if it does not exist.
 	/// @param name The name of the game variable to retrieve or add.
 	/// @return A weak pointer to the retrieved or newly added GameVariable.
@@ -805,6 +812,18 @@ public:
 private:
 	void stub_new(GameVariable& variable, const GameValue& value);
 };
+
+//----------------------------
+
+template<ValidGameValue T>
+inline const std::optional<T> GameVariableStore::getValue(const std::string_view name) const noexcept
+{
+	if (store.empty()) return std::nullopt;
+	auto it = store.find(name);
+	if (it == store.end()) return std::nullopt;
+	it->second->update();
+	return it->second->get<T>();
+}
 
 ////////////////////////////////////////////////////////////
 // ScriptEvent

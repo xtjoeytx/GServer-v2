@@ -13,7 +13,9 @@
 #include <iterator>
 #include <map>
 #include <memory>
+#include <numbers>
 #include <optional>
+#include <ranges>
 #include <set>
 #include <string_view>
 #include <string>
@@ -33,6 +35,7 @@
 #include <Server.h>
 #include <level/Level.h>
 #include <level/LevelItem.h>
+#include <level/LevelShoot.h>
 #include <level/Map.h>
 #include <loader/flatfile/FlatFileAccountLoader.h>
 #include <loader/flatfile/FlatFileNPCLoader.h>
@@ -1810,23 +1813,24 @@ void Server::TS_Save()
 	}
 }
 
-void Server::sendShootToOneLevel(std::shared_ptr<Level> level, float x, float y, float z, float angle, float zangle, float strength, std::string_view gani, std::string_view ganiArgs) const
+void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level) const
 {
-	if (level == nullptr)
+	if (shoot == nullptr || level == nullptr)
 		return;
 
-	ShootPacketNew newPacket{};
-	newPacket.pixelx = (int16_t)(x * 16);
-	newPacket.pixely = (int16_t)(y * 16);
-	newPacket.pixelz = (int16_t)(z * 16);
+	float pi = std::numbers::pi_v<float>;
+	float halfpi = pi / 2;
+
+	ShootPacketWrapper newPacket{};
+	newPacket.source = (shoot->from.second == ScriptObjectSourceType::NPC ? shoot->from.first : 0);
+	newPacket.position = toPixelPosition(shoot->position);
 	newPacket.offsetx = 0;
 	newPacket.offsety = 0;
-	newPacket.sangle = (int8_t)angle;
-	newPacket.sanglez = (int8_t)zangle;
-	newPacket.speed = (int8_t)strength;
-	newPacket.gravity = 8;
-	newPacket.gani = gani;
-	newPacket.ganiArgs = ganiArgs;
+	newPacket.sangle = static_cast<uint8_t>(220 * (std::clamp(shoot->angle, 0.0f, 2 * pi) / (2 * pi)));
+	newPacket.sanglez = std::clamp(110 + static_cast<uint8_t>(110 * (std::clamp(shoot->zangle, -halfpi, halfpi) / halfpi)), 0, 220);
+	newPacket.power = shoot->powerIn44Pixels;
+	newPacket.gravity = static_cast<uint8_t>(shoot->gravity * 16);
+	newPacket.gani = shoot->gani;
 	newPacket.shootParams = string::toCSV(getShootParams());
 
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)0 << newPacket.constructShootV1();

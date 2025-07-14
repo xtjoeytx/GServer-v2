@@ -212,63 +212,37 @@ std::array<std::string, 255> OutputPacketNamesArray = FillPutputPacketNamesArray
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ShootPacketNew::debug()
+CString ShootPacketWrapper::constructShootV1() const
 {
-	/*
-	printf("Shoot: %f, %f, %f with gani %s: (len=%d)\n", (float)pixelx / 16.0f, (float)pixely / 16.0f, (float)pixelz / 16.0f, gani.c_str(), gani.length());
-	printf("\t Offset: %d, %d\n", offsetx, offsety);
-	printf("\t Angle: %d\n", sangle);
-	printf("\t Z-Angle: %d\n", sanglez);
-	printf("\t Power: %d\n", speed);
-	printf("\t Gravity: %d\n", gravity);
-	printf("\t Gani: %s (len: %d)\n", gani.c_str(), gani.length());
-	printf("\t Shoot Params: %s (len: %d)\n", shootParams.c_str(), shootParams.length());
-	*/
-}
-
-CString ShootPacketNew::constructShootV1() const
-{
-	CString ganiTemp{};
-	ganiTemp << gani;
-	if (!ganiArgs.empty())
-	{
-		ganiTemp << "," << ganiArgs;
-	}
 	CString packet;
-	packet.writeGInt(0); // shoot-id?
-	packet.writeGChar(pixelx / 16);
-	packet.writeGChar(pixely / 16);
-	packet.writeGChar((pixelz / 16) + 50);
+	packet.writeGInt(source);
+	packet.writeGChar(position.x() / 8);
+	packet.writeGChar(position.y() / 8);
+	packet.writeGChar((position.z() / 16) + 50);
 	packet.writeGChar(sangle);
 	packet.writeGChar(sanglez);
-	packet.writeGChar(speed);
-	packet.writeGChar(ganiTemp.length());
-	packet.write(ganiTemp);
+	packet.writeGChar(power);
+	packet.writeGChar(gani.length());
+	packet.write(gani);
 	packet.writeGChar(shootParams.length());
 	packet.write(shootParams);
 	return packet;
 }
 
-CString ShootPacketNew::constructShootV2() const
+CString ShootPacketWrapper::constructShootV2() const
 {
-	CString ganiTemp{};
-	ganiTemp << gani;
-	if (!ganiArgs.empty())
-	{
-		ganiTemp << "," << ganiArgs;
-	}
 	CString packet;
-	packet.writeGShort(pixelx);
-	packet.writeGShort(pixely);
-	packet.writeGShort(pixelz);
+	packet.writeGShort(position.x());
+	packet.writeGShort(position.y());
+	packet.writeGShort(position.z());
 	packet.writeChar(offsetx + 32);
 	packet.writeChar(offsety + 32);
 	packet.writeGChar(sangle);
 	packet.writeGChar(sanglez);
-	packet.writeGChar(speed);
+	packet.writeGChar(power);
 	packet.writeGChar(gravity);
-	packet.writeGShort(ganiTemp.length());
-	packet.write(ganiTemp);
+	packet.writeGShort(gani.length());
+	packet.write(gani);
 	packet.writeGChar(shootParams.length());
 	packet.write(shootParams);
 	return packet;

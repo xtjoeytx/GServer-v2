@@ -6,6 +6,7 @@
 #include <format>
 #include <iterator>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <ranges>
 #include <stdexcept>
@@ -2111,31 +2112,30 @@ void fn_setz(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 	throw unimplemented_error("setz is not implemented yet.");
 }
 
-// shoot x,y,z,angle,zangle,power,gani,ganiparams;
+// shoot x,y,z,angle,zangle,power,gani,ganiattribs;
 // Creates a shoot style projectile.
 void fn_shoot(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() < 7)
-		throw std::invalid_argument("invalid arguments: shoot x,y,z,angle,zangle,power,gani,ganiparams");
+		throw std::invalid_argument("invalid arguments: shoot x,y,z,angle,zangle,power,gani,ganiattribs");
 
 	auto level = visitor->findCurrentLevel();
 	if (level == nullptr)
 		return;
 
-	auto x = visitor->getGameValueAs<double>(*arguments[0]);
-	auto y = visitor->getGameValueAs<double>(*arguments[1]);
-	auto z = visitor->getGameValueAs<double>(*arguments[2]);
-	auto angle = static_cast<float>(visitor->getGameValueAs<double>(*arguments[3]));
-	auto zangle = static_cast<float>(visitor->getGameValueAs<double>(*arguments[4]));
-	auto power = static_cast<float>(visitor->getGameValueAs<double>(*arguments[5]));
+	auto pi = std::numbers::pi;
+
+	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto z = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[2]) * 16);
+	auto angle = static_cast<float>(std::clamp(visitor->getGameValueAs<double>(*arguments[3]), 0.0, 2 * pi));
+	auto zangle = static_cast<float>(std::clamp(visitor->getGameValueAs<double>(*arguments[4]), -(pi / 2), (pi / 2)));
+	auto power = static_cast<uint8_t>(std::clamp(visitor->getGameValueAs<double>(*arguments[5]), 0.0, 5.0) * 44);
 	auto gani = visitor->getGameValueAs<std::string>(*arguments[6]);
 
-	std::string ganiparams;
-	if (arguments.size() > 7)
-		ganiparams = visitor->getGameValueAs<std::string>(*arguments[7]);
-
 	auto* server = BabyDI::Get<Server>();
-	server->sendShootToOneLevel(level, x, y, z, angle, zangle, power, gani, ganiparams);
+	auto gravity = static_cast<float>(server->Scripting.variables.getValue<double>("gravity").value_or(2.0));
+	level->addShoot(inform_client, { x, y, z }, angle, zangle, power, gravity, gani, visitor->getOriginalSource());
 }
 
 // shootarrow dir;

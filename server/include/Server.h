@@ -243,7 +243,7 @@ public:
 	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;
 
 public:
-	void sendShootToOneLevel(std::shared_ptr<Level> level, float x, float y, float z, float angle, float zangle, float strength, std::string_view gani, std::string_view ganiArgs) const;
+	void sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level) const;
 
 public:
 	// Translation Management

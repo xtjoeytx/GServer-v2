@@ -23,6 +23,7 @@
 #include <level/LevelHorse.h>
 #include <level/LevelItem.h>
 #include <level/LevelLink.h>
+#include <level/LevelShoot.h>
 #include <level/LevelSign.h>
 #include <level/LevelTiles.h>
 #include <scripting/ScriptContainers.h>
@@ -85,10 +86,7 @@ public:
 	//! \return The players on the level.
 	std::deque<PlayerID>& getPlayers() { return m_players; }
 
-	//! Gets a vector full of the level npc ids.
-	//! \return The level npcs.
 	auto& getNPCs() { return m_npcs; }
-
 	auto& getArrows() { return m_arrows; }
 	auto& getBaddies() { return m_baddies; }
 	auto& getBombs() { return m_bombs; }
@@ -130,6 +128,11 @@ public:
 	//! Gets the status on whether players are on the level.
 	//! \return The level has players.  If true, the level has players on it.
 	bool hasPlayers() const { return !m_players.empty(); }
+
+	Dimension<uint32_t> getSize() const
+	{
+		return { 1024, 1024 };
+	}
 
 	//! Gets if the player is the current level leader.
 	//! \param id The player id to check.
@@ -182,6 +185,13 @@ public:
 	//! \param player The player who initiated this board change.
 	//! \return True if it succeeds, false if it doesn't.
 	bool alterBoard(CString& tileData, const Rectangle<uint8_t, uint8_t>& area, Player* player);
+
+public:
+	LevelShoot* addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from);
+	LevelShoot* addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from);
+	LevelShoot* addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from);
+	bool removeShoot(uint8_t index);
+	LevelShoot* getShoot(uint8_t index) const;
 
 public:
 	LevelArrow* addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObjectSource from);
@@ -252,6 +262,7 @@ public:
 	void setMap(std::weak_ptr<Map> pMap, int pMapX = 0, int pMapY = 0);
 
 public:
+	bool moveShoot(LevelShoot* shoot, int iterations);
 	bool moveArrow(LevelArrow* arrow, int iterations);
 
 public:
@@ -292,6 +303,7 @@ private:
 	std::vector<LevelHorse> m_horses;
 	std::vector<LevelItem> m_items;
 	std::vector<LevelLink> m_links;
+	std::vector<LevelShoot> m_shoots;
 	std::vector<LevelSign> m_signs;
 	std::vector<NPCID> m_npcs;
 	std::deque<PlayerID> m_players;

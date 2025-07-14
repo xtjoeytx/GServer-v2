@@ -63,8 +63,8 @@ public:
 public:
 	[[inline]] void addEventToControlNPC(ScriptEventType type, ScriptObjectSource source, string::NotForwardRangeNotString auto&&... args);
 	[[inline]] void addEventToControlNPC(ScriptEventType type, ScriptObjectSource source, string::ForwardRangeNotString auto&& range);
-	[[inline]] void addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, Position<int16_t> pos, auto&& arg1, auto&&... args);
-	[[inline]] void addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, Position<int16_t> pos, std::ranges::forward_range auto&& range);
+	[[inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, PixelPosition pos, auto&& arg1, auto&&... args);
+	[[inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, PixelPosition pos, std::ranges::forward_range auto&& range);
 
 public:
 	void playerLogin(std::shared_ptr<Player> player);
@@ -197,38 +197,48 @@ inline void NPCServer::addEventToControlNPC(ScriptEventType type, ScriptObjectSo
 	}
 }
 
-inline void NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, Position<int16_t> pos, auto&& arg1, auto&&... args)
+inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, PixelPosition pos, auto&& arg1, auto&&... args)
 {
 	auto levelPtr = level.lock();
 	if (levelPtr == nullptr)
-		return;
+		return 0;
 
+	size_t count = 0;
 	for (const auto& id : levelPtr->getNPCs())
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{
 			Rectangle<int16_t, uint16_t> npcRect = { { npc->character.pixelX, npc->character.pixelY }, npc->shape };
 			if (positionInRectangle(pos, npcRect))
+			{
+				++count;
 				npc->scripting.events.addEvent(type, source, std::forward<decltype(arg1)>(arg1), std::forward<decltype(args)...>(args)...);
+			}
 		}
 	}
+	return count;
 }
 
-inline void NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, Position<int16_t> pos, std::ranges::forward_range auto&& range)
+inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, PixelPosition pos, std::ranges::forward_range auto&& range)
 {
 	auto levelPtr = level.lock();
 	if (levelPtr == nullptr)
-		return;
+		return 0;
 
+	size_t count = 0;
 	for (const auto& id : levelPtr->getNPCs())
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{
 			Rectangle<int16_t, uint16_t> npcRect = { { npc->character.pixelX, npc->character.pixelY }, npc->shape };
 			if (positionInRectangle(pos, npcRect))
+			{
+				++count;
 				npc->scripting.events.addEvent(type, source, std::forward<decltype(range)>(range));
+			}
 		}
 	}
+	return count;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

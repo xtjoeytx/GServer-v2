@@ -53,7 +53,17 @@ void setReadOnlyGlobalVariables(GameVariableStore& variableStore)
 		}, {}
 	});
 
-	// gravity       the rate at which shot projectiles fall (default Z loss of 2 tiles per second)
+	/*
+		gravity       the rate at which shot projectiles fall (default Z loss of 2 tiles per second)
+		nwday
+		nwhour
+		nwmin
+		nwmonth
+		nwtime
+		nwweek
+		nwweekday
+		nwyear
+	*/
 }
 
 void setNPCVariables(GameVariableStore& variableStore, std::weak_ptr<NPC> npc)

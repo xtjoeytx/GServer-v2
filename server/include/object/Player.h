@@ -122,26 +122,21 @@ enum class GameStatsFlags : uint32_t
 
 //----------------------------
 
-struct ShootPacketNew
+struct ShootPacketWrapper
 {
-	// shoot(float x, float y, float z, float angle, float zangle, float strength, str ani, str aniparams)
-	int16_t pixelx;
-	int16_t pixely;
-	int16_t pixelz;
+	NPCID source;
+	PixelPosition position;
 	int8_t offsetx;
 	int8_t offsety;
-	int8_t sangle;
-	int8_t sanglez;
-	int8_t speed;
-	int8_t gravity;
+	uint8_t sangle;
+	uint8_t sanglez;
+	uint8_t power;
+	uint8_t gravity;
 	std::string gani;
-	std::string ganiArgs;
 	std::string shootParams;
 
 	CString constructShootV1() const;
 	CString constructShootV2() const;
-
-	void debug();
 };
 
 struct CachedLevel

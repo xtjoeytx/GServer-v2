@@ -476,7 +476,7 @@ CMD_SETSHAPE2            : 'setshape2'            { pushCommand("EEE"); } -> typ
 CMD_WRAPTEXT             : 'wraptext'             { pushCommand("ESS"); } -> type(COMMAND);
 CMD_WRAPTEXT2            : 'wraptext2'            { pushCommand("EESS"); } -> type(COMMAND);
 CMD_SETSHOOTPARAMS       : 'setshootparams'       { pushCommand("L"); } -> type(COMMAND);
-CMD_SHOOT                : 'shoot'                { pushCommand("EEEEESS"); } -> type(COMMAND);
+CMD_SHOOT                : 'shoot'                { pushCommand("EEEEEES"); } -> type(COMMAND);
 CMD_SETLEVEL             : 'setlevel '            { pushCommand("S"); } -> type(COMMAND);
 CMD_SETLEVEL2            : 'setlevel2'            { pushCommand("SEE"); } -> type(COMMAND);
 CMD_SETURLLEVEL          : 'seturllevel'          { pushCommand("S"); } -> type(COMMAND);

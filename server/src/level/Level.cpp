@@ -8,6 +8,7 @@
 #include <fstream>
 #include <list>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <ostream>
 #include <string_view>
@@ -32,6 +33,7 @@
 #include <level/LevelHorse.h>
 #include <level/LevelItem.h>
 #include <level/LevelLink.h>
+#include <level/LevelShoot.h>
 #include <level/LevelSign.h>
 #include <level/LevelTiles.h>
 #include <level/Map.h>
@@ -45,6 +47,7 @@
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
+#include <utilities/Log.h>
 #include <utilities/PropsContainer.h>
 #include <utilities/StringUtils.h>
 #include <utilities/TimeoutGenerator.h>
@@ -95,6 +98,9 @@ Level::~Level()
 		}
 		m_npcs.clear();
 	}
+
+	// Delete shoots.
+	m_shoots.clear();
 
 	// Delete arrows.
 	m_arrows.clear();
@@ -212,6 +218,9 @@ bool Level::reload()
 			}
 		}
 	}
+
+	// Delete shoots.
+	m_shoots.clear();
 
 	// Delete arrows.
 	m_arrows.clear();
@@ -451,7 +460,7 @@ void Level::doTimedEvents()
 
 void Level::doFrameEvents(precise_clock::time_point time)
 {
-	// Don't bother with arrow processing if we don't have an npc-server.
+	// Don't bother with shoot and arrow processing if we don't have an npc-server.
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
 		return;
 
@@ -468,18 +477,29 @@ void Level::doFrameEvents(precise_clock::time_point time)
 	// Subtract our iterations.
 	m_frameEventDuration -= iterations * 50ms;
 
+	// Run shoot events.
+	std::vector<size_t> deletedItems;
+	for (size_t i = 0; i < m_shoots.size(); ++i)
+	{
+		if (!moveShoot(&m_shoots[i], iterations))
+			deletedItems.push_back(i);
+	}
+	std::erase_if(m_shoots, [this, &deletedItems](const LevelShoot& shoot)
+	{
+		return std::find(deletedItems.begin(), deletedItems.end(), &shoot - &m_shoots[0]) != deletedItems.end();
+	});
+
 	// Run arrow events.
-	std::vector<size_t> deletedArrows;
+	deletedItems.clear();
 	for (size_t i = 0; i < m_arrows.size(); ++i)
 	{
 		if (!moveArrow(&m_arrows[i], iterations))
-			deletedArrows.push_back(i);
+			deletedItems.push_back(i);
 	}
-	std::erase_if(m_arrows, [this, &deletedArrows](const LevelArrow& arrow)
+	std::erase_if(m_arrows, [this, &deletedItems](const LevelArrow& arrow)
 	{
-		return std::find(deletedArrows.begin(), deletedArrows.end(), &arrow - &m_arrows[0]) != deletedArrows.end();
+		return std::find(deletedItems.begin(), deletedItems.end(), &arrow - &m_arrows[0]) != deletedItems.end();
 	});
-	deletedArrows.clear();
 }
 
 //----------------------------
@@ -809,6 +829,55 @@ bool Level::alterBoard(CString& tileData, const Rectangle<uint8_t, uint8_t>& are
 	// Should we do it that way still?
 	m_boardChanges.push_back(LevelBoardChange(area.position.x(), area.position.y(), area.size.width(), area.size.height(), tileData, oldTiles, (doRespawn ? respawnTime : -1)));
 	return true;
+}
+
+//----------------------------
+
+LevelShoot* Level::addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
+{
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return nullptr;
+
+	auto result = addShoot(position, angle, zangle, power, gravity, gani, from);
+	if (result != nullptr)
+		BabyDI::Get<Server>()->sendShootToOneLevel(result, shared_from_this());
+
+	return result;
+}
+
+LevelShoot* Level::addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
+{
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return nullptr;
+
+	LevelShoot newShoot{ .position = toTilePosition(position), .angle = angle, .zangle = zangle, .powerIn44Pixels = power, .gani = gani, .gravity = gravity, .from = from};
+	if (newShoot.gani.back() == ',')
+		newShoot.gani.pop_back();
+	newShoot.calculateSpeeds();
+	m_shoots.emplace_back(std::move(newShoot));
+	return &m_shoots.back();
+}
+
+LevelShoot* Level::addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
+{
+	auto pi = std::numbers::pi_v<float>;
+	return addShoot(position, (angle / 220.0f) * (2 * pi), ((zangle / 110.0f) - 1.0f) * (pi/2), power, gravity, gani, from);
+}
+
+bool Level::removeShoot(uint8_t index)
+{
+	if (index >= m_shoots.size())
+		return false;
+
+	m_shoots.erase(m_shoots.begin() + index);
+	return true;
+}
+
+LevelShoot* Level::getShoot(uint8_t index) const
+{
+	if (index >= m_shoots.size())
+		return nullptr;
+	return const_cast<LevelShoot*>(&m_shoots[index]);
 }
 
 //----------------------------
@@ -1469,6 +1538,74 @@ void Level::setMap(std::weak_ptr<Map> pMap, int pMapX, int pMapY)
 
 //----------------------------
 
+bool Level::moveShoot(LevelShoot* shoot, int iterations)
+{
+	if (shoot == nullptr)
+		return false;
+
+	for (int i = 0; i < iterations; ++i)
+	{
+		// Move the shoot.
+		shoot->move();
+
+		// If the shoot has gone out of bounds, delete it.
+		if (shoot->position.x() < 0 || shoot->position.x() > (getSize().width() / 16.0f) || shoot->position.y() < 0 || shoot->position.y() > (getSize().height() / 16.0f))
+			return false;
+
+		// If the Z is <= 3, and we aren't going up, check for walls and NPCs.
+		if (shoot->position.z() <= 3.0f && (DoubleIsZero(shoot->movementPerFrame.z()) || shoot->movementPerFrame.z() <= 0.0))
+		{
+			auto server = BabyDI::Get<Server>();
+			bool collided = false;
+			std::string eventParams;
+
+			auto constructEventParams = [&collided, &eventParams, &shoot]()
+			{
+				if (!eventParams.empty()) return;
+				collided = true;
+				eventParams = std::format("{},{}", shoot->position.x(), shoot->position.y());
+				if (!shoot->shootParams.empty())
+				{
+					eventParams += ",";
+					eventParams += string::toCSV(shoot->shootParams);
+				}
+			};
+
+			// Check for NPC collisions.
+			PixelPosition searchPosition = toPixelPosition(shoot->position).translate(8_i16, 16_i16);
+			bool fromPlayer = (shoot->from.second == ScriptObjectSourceType::PLAYER);
+			auto npcs = findIntersectingNPCsForCollision({ searchPosition, { 32_ui16, 32_ui16 } });
+			for (const auto& npc : npcs)
+			{
+				if (shoot->from.second == ScriptObjectSourceType::NPC && shoot->from.first == npc)
+					continue;
+				if (auto npcPtr = server->getNPC(npc); npcPtr != nullptr)
+				{
+					constructEventParams();
+					npcPtr->scripting.events.addEvent(ScriptEventType::TRIGGERACTION, shoot->from, (fromPlayer ? "projectile" : "sprojectile"), eventParams);
+				}
+			}
+
+			// Check for wall collisions.
+			if (!collided && isOnWall2({ toWholeTilePosition(searchPosition), { 1_ui8, 1_ui8 } }))
+				constructEventParams();
+
+			// Check if we hit the ground.
+			if (DoubleIsZero(shoot->position.z()) || shoot->position.z() < 0)
+				constructEventParams();
+
+			// We collided, so tell the control-NPC and delete the shoot projectile.
+			if (collided)
+			{
+				server->getNPCServer()->addEventToControlNPC(ScriptEventType::TRIGGERACTION, shoot->from, (fromPlayer ? "projectile" : "sprojectile"), eventParams);
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 bool Level::moveArrow(LevelArrow* arrow, int iterations)
 {
 	if (arrow == nullptr)
@@ -1480,7 +1617,7 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 		arrow->position.translate(arrow->speed.x(), arrow->speed.y());
 
 		// If the arrow has gone out of bounds, delete it.
-		if (arrow->position.x() < 0 || arrow->position.x() > 1024 || arrow->position.y() < 0 || arrow->position.y() > 1024)
+		if (arrow->position.x() < 0 || arrow->position.x() > getSize().width() || arrow->position.y() < 0 || arrow->position.y() > getSize().height())
 			return false;
 
 		bool produceExplosion = false;
