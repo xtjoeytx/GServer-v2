@@ -43,6 +43,22 @@ static constexpr std::array<uint8_t, 10> savePackets = { 23, 24, 25, 26, 27, 28,
 
 static std::string_view toWeaponName(std::string_view code);
 
+static bool canSendProp(NPCProp prop)
+{
+	static Server* server = nullptr;
+	if (server == nullptr)
+		server = BabyDI::Get<Server>();
+
+	if (server->Generation == ServerGeneration::ORIGINAL && PROPID(prop) > PROPID(NPCProp::BODYIMAGE))
+		return false;
+	if (prop == NPCProp::SCRIPTER || prop == NPCProp::NAME)
+		return false;
+	if (prop == NPCProp::CLASS && (server->Generation == ServerGeneration::ORIGINAL || server->Generation == ServerGeneration::CLASSIC))
+		return false;
+
+	return true;
+}
+
 //----------------------------
 
 #ifdef PACKETLOGGING
@@ -795,6 +811,11 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 	CString sendAll, sendLevel, sendSource;
 	auto server = BabyDI::Get<Server>();
 
+	std::erase_if(results, [](const PropertySendResults::value_type& res)
+	{
+		return canSendProp((NPCProp)res.first.propId);
+	});
+	
 	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId)
 	{
 		return this->getProp((NPCProp)propId);
@@ -862,6 +883,9 @@ CString NPC::getModifiedPropsPacket() const
 	CString result;
 	for (auto i = 0; i < NPCPROP_COUNT; ++i)
 	{
+		if (!canSendProp((NPCProp)i))
+			continue;
+
 		if (modTime[i] != m_savedModTime[i])
 		{
 			DO_PACKETLOG(if (!printedHeader) { printedHeader = true; log::printBlock(log::networkdump, "NPC::getModifiedPropsPacket:\n"); log::printBlock(log::networkdump, "  NPCProp::ID: value: {}\n", id); });
@@ -907,6 +931,9 @@ CString NPC::getAllPropsPacket(clock::time_point newTime) const
 
 	for (int i = 0; i < pmax; i++)
 	{
+		if (!canSendProp((NPCProp)i))
+			continue;
+
 		if (modTime[i] != clock::time_point::min() && modTime[i] >= newTime)
 		{
 			if (i == PROPID(NPCProp::GANI) && !isCharacter())
