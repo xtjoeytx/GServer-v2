@@ -1660,7 +1660,11 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 	if (testForLinks(result, movementDirection))
 		return;
 
-	static Position<int16_t> touchTest[] = { { 24, 16 }, { 0, 32 }, { 24, 56 }, { 48, 32 } };
+	// Subtract an extra 1 pixel from the top touch test since the 2.31 client was rendering the location of the NPC weirdly.
+	// When a pixel coordinate of 223 was sent (tile 13.9375), the client would render the NPC at y=14 and break the collision detection.
+	// Oddly enough, it renders in the correct spot on a reconnect.  By allowing a single extra pixel on the touch test, this problem is resolved.
+	static Position<int16_t> touchTest[] = { { 24, 16 - 1 }, { 0, 32 }, { 24, 56 }, { 48, 32 } };
+
 	Position<int16_t> testPosPixels = { static_cast<int16_t>(account.character.pixelX + touchTest[movementDirection].x()), static_cast<int16_t>(account.character.pixelY + touchTest[movementDirection].y()) };
 	if (auto level = getLevel(); level != nullptr)
 	{
