@@ -92,10 +92,7 @@ triggeraction events
 // Not implemented events        //
 //-------------------------------//
 
-playerendreading
 playerhurt
-weaponfired
-firedonhorse
 washit	(anything not hitobjects)
 waspelt
 wasthrown
@@ -132,7 +129,6 @@ carriesstone
 carriesvase
 playerswimming
 playertrial
-followsplayer
 peltwithblackstone
 peltwithbush
 peltwithnpc
@@ -158,6 +154,7 @@ board[]
 paramscount
 levelorigx
 levelorigy
+actionplayer
 
 npcs[]
     .id
@@ -272,7 +269,6 @@ horses[]
 	.type
 tiles[x,y]
 gravity
-actionplayer
 playerhurtpower
 players[]
     .saysnumber
@@ -367,7 +363,7 @@ setskincolor
 setsleevecolor
 setstring
 setsword
-shoot (sending projectiles to the client)
+shoot
 shootarrow
 shootball (gr extension - dir parameter)
 shootfireball
@@ -404,7 +400,6 @@ savelog
 savelog2
 setpm
 setz
-shoot (serverside processing of projectiles)
 showani
 showani2
 showimg
@@ -479,19 +474,9 @@ base64decode(string)
 base64encode(string)
 findnearestplayers(x, y)
 getz(x, y)
-imgheight(image)
-imgwidth(image)
-keydown(key)
-keydown2(keycode, ignorecase)
 playersays(???)
 playersays2(???)
-screenx(x, y)
-screeny(x, y)
-textheight(zoom, font, style)
-textwidth(zoom, font, style, text)
 tiletype(x, y)
-worldx(x, y)
-worldy(x, y)
 
 ///////////////////////////////////
 // Implemented message codes     //
@@ -533,7 +518,5 @@ worldy(x, y)
 
 #Q(guild_name, account_name)  [Read]
 #G | #G(index)                [Read]
-#D | #D(filename)
-#i(image) | #i(image, x, y, width, height)
 #K(key_index)
 #k(key_index)

@@ -485,7 +485,11 @@ int Server::loadConfigFiles()
 
 		// Load Settings
 		log::printLine(log::server, "Loading settings...");
-		loadSettings();
+		{
+			auto indentsettings = log::server.indent();
+			loadSettings();
+			log::printLine(log::server, "Server generation: {}", ServerGenerationNames[(size_t)Generation]);
+		}
 
 		// Load Admin Settings
 		log::printLine(log::server, "Loading admin settings...");
@@ -527,8 +531,6 @@ int Server::loadConfigFiles()
 
 void Server::loadSettings()
 {
-	auto indent = log::server.indent();
-
 	if (!m_settings.isOpened())
 	{
 		m_settings.setSeparator("=");
@@ -547,7 +549,6 @@ void Server::loadSettings()
 	auto generation = m_settings.getStr("generation", "classic").toLower();
 	if (auto it = std::ranges::find(ServerGenerationNames, generation.toStringView()); it != std::ranges::end(ServerGenerationNames))
 		Generation = static_cast<ServerGeneration>(std::distance(ServerGenerationNames.begin(), it));
-	log::printLine(log::server, "Server generation: {}", generation);
 
 	// Send our ServerHQ info in case we got changed the staffonly setting.
 	getServerList().sendServerHQ();

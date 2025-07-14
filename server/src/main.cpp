@@ -177,6 +177,7 @@ int main(int argc, char* argv[])
 		auto* server = BabyDI_PROVIDE(Server, new Server(overrideServer));
 
 		// Program announcements.
+		log::printLine(log::server, "------------------------------ START ------------------------------");
 		log::printLine(log::server, "{} {} version {}", APP_VENDOR, APP_NAME, APP_VERSION);
 		log::printLine(log::server, "Programmed by {}.", APP_CREDITS);
 		log::printLine(log::server, "");
