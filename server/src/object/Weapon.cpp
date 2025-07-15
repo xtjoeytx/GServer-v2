@@ -221,6 +221,9 @@ Weapon& Weapon::updateWeapon(std::string_view image, std::string_view script)
 	};
 	m_header = string::toCSV(headerParts);
 
+	// Queue the created event.
+	scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
+
 	return *this;
 }
 
@@ -346,12 +349,21 @@ void Weapon::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) 
 	if (events.queue().empty())
 		return;
 
-	m_script.executeEvents(events, source);
-	for (auto& scriptClassPtr : m_joinedClasses)
+	ScriptEventQueue eventQueue{ events };
+	m_script.executeEvents(eventQueue, source);
+
+	for (auto& [handle, scriptClassPtr] : m_joinedClasses)
 	{
 		if (auto scriptClass = scriptClassPtr.lock(); scriptClass != nullptr)
-			scriptClass->getScript().executeEvents(events, source);
+		{
+			ScriptEventQueue classQueue{ events };
+			scriptClass->getScript().executeEvents(classQueue, source);
+		}
 	}
+
+	// Erase the event queue.
+	while (!events.queue().empty())
+		events.queue().pop_back();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
