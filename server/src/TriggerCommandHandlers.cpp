@@ -34,7 +34,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		if (!hasNPCServer())
 			return false;
 
-		if (triggerData.size() > 2)
+		if (triggerData.size() >= 2)
 		{
 			// triggeraction 0,0,serverside,weaponname,params...;
 			// Triggers on a player's weapons.
