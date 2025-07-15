@@ -98,6 +98,11 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCRESET(CString& pPacket)
 	auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr && npc->storageType == NPCStorageType::DATABASE)
 	{
+		if (auto level = npc->level.lock(); level != nullptr)
+		{
+			CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)level->levelName.length() << level->levelName >> (int)npc->id;
+			m_server->sendPacketToLevelAndPastVisitorsAfter(level.get(), clock::to_time_t(npc->lastUpdateTime), packet);
+		}
 		npc->resetToInitialState();
 		npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
 
@@ -195,6 +200,8 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 	auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr)
 	{
+		auto lastUpdateTime = npc->lastUpdateTime;
+
 		npc->setScript(npcScript.toStringView());
 		m_server->getNPCLoader().saveNPC(npc);
 		npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
@@ -202,6 +209,8 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 		std::string logMsg = std::format("NPC script of {} updated by {}", npc->name, account.name);
 		log::printLine(log::npc, logMsg);
 		m_server->sendToNC(logMsg);
+
+		npc->sendScriptUpdatesToLevel(lastUpdateTime);
 	}
 
 	return HandlePacketResult::Handled;

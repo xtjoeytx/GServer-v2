@@ -55,6 +55,10 @@ ScriptClass& ScriptClass::setScript(std::string_view classScript)
 
 	// Set the modification time to now.
 	modTime = std::chrono::system_clock::now();
+
+	// Send out events.
+	onScriptModified.post(this);
+
 	return *this;
 }
 

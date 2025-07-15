@@ -211,7 +211,7 @@ inline std::string& trimLeftMutate(std::string& str)
 	// Find first non-space.
 	const auto p = str.c_str();
 	size_t idx = 0;
-	while (idx < str.length() && std::isspace(int(p[idx])))
+	while (idx < str.length() && (std::isspace(int(p[idx])) || p[idx] == '\r' || p[idx] == '\n'))
 		++idx;
 
 	// No whitespace.
@@ -239,7 +239,7 @@ inline std::string& trimRightMutate(std::string& str)
 	// Find last non-space.
 	const auto p = str.c_str();
 	size_t idx = str.length();
-	while (idx > 0 && std::isspace(int(p[idx - 1])))
+	while (idx > 0 && (std::isspace(int(p[idx - 1])) || p[idx - 1] == '\r' || p[idx - 1] == '\n'))
 		--idx;
 
 	// No whitespace.
@@ -267,9 +267,9 @@ inline std::string& trimMutate(std::string& str)
 	// Find first and last non-space.
 	const auto p = str.c_str();
 	size_t front = 0, back = str.length();
-	while (front < str.length() && std::isspace(static_cast<int>(static_cast<uint8_t>(p[front]))))
+	while (front < str.length() && (std::isspace(static_cast<int>(static_cast<uint8_t>(p[front]))) || p[front] == '\r' || p[front] == '\n'))
 		++front;
-	while (front < back && std::isspace(static_cast<int>(static_cast<uint8_t>(p[back - 1]))))
+	while (front < back && (std::isspace(static_cast<int>(static_cast<uint8_t>(p[back - 1]))) || p[back - 1] == '\r' || p[back - 1] == '\n'))
 		--back;
 
 	// No whitespace.

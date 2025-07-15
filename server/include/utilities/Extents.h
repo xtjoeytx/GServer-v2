@@ -236,6 +236,6 @@ inline constexpr WholeTilePosition toWholeTilePosition(const Position<Type>& pos
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-}; // end namespace preagonal
+} // end namespace preagonal
 
 #endif // EXTENTS_H

@@ -1505,6 +1505,8 @@ bool PlayerClient::leaveLevel(bool resetCache)
 	auto levelp = m_currentLevel.lock();
 	if (!levelp) return true;
 
+	time_t curTime = clock::to_time_t(clock::now());
+
 	// Save the time we left the level for the client-side caching.
 	bool found = false;
 	for (auto& cl : m_cachedLevels)
@@ -1512,12 +1514,12 @@ bool PlayerClient::leaveLevel(bool resetCache)
 		auto cllevel = cl->level.lock();
 		if (cllevel == levelp)
 		{
-			cl->modTime = (resetCache ? 0 : time(0));
+			cl->modTime = (resetCache ? 0 : curTime);
 			found = true;
 			break;
 		}
 	}
-	if (!found) m_cachedLevels.push_back(std::make_unique<CachedLevel>(m_currentLevel, time(0)));
+	if (!found) m_cachedLevels.push_back(std::make_unique<CachedLevel>(m_currentLevel, curTime));
 
 	// Remove self from list of players in level.
 	levelp->removePlayer(m_id);
@@ -1539,7 +1541,7 @@ bool PlayerClient::leaveLevel(bool resetCache)
 		{
 			levelp->removeNPC(m_carryNPC);
 			CString deletePacket = CString() >> (char)PLO_NPCDEL << (short)m_carryNPC;
-			m_server->sendPacketToOneLevel(deletePacket, levelp, { m_id });
+			m_server->sendPacketToLevelAndPastVisitorsAfter(levelp.get(), clock::to_time_t(npc->lastUpdateTime), deletePacket);
 		}
 	}
 
@@ -1565,6 +1567,7 @@ bool PlayerClient::leaveLevel(bool resetCache)
 
 time_t PlayerClient::getCachedLevelModTime(const Level* level) const
 {
+	if (level == nullptr) return 0;
 	for (auto& cl : m_cachedLevels)
 	{
 		auto cllevel = cl->level.lock();
@@ -1576,6 +1579,7 @@ time_t PlayerClient::getCachedLevelModTime(const Level* level) const
 
 void PlayerClient::resetLevelCache(const Level* level)
 {
+	if (level == nullptr) return;
 	for (auto& cl : m_cachedLevels)
 	{
 		auto cllevel = cl->level.lock();

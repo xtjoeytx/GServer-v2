@@ -31,6 +31,7 @@
 #include <UpdatePackage.h>
 #include <animation/GameAni.h>
 #include <level/Level.h>
+#include <level/LevelShoot.h>
 #include <loader/IAccountLoader.h>
 #include <loader/INPCLoader.h>
 #include <misc/UPNP.h>
@@ -241,6 +242,7 @@ public:
 	void sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;
+	void sendPacketToLevelAndPastVisitorsAfter(Level* level, time_t modTime, const CString& packet) const;
 
 public:
 	void sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level) const;
@@ -257,6 +259,7 @@ public:
 	std::shared_ptr<Weapon> getWeapon(std::string_view name);
 	bool NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj);
 	bool NC_DelWeapon(std::string_view pWeaponName);
+	void updateWeaponForPlayers(Weapon* weapon);
 	void updateWeaponForPlayers(std::shared_ptr<Weapon> weapon);
 	void updateClassForPlayers(std::shared_ptr<ScriptClass> scriptClass);
 

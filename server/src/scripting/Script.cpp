@@ -258,7 +258,7 @@ void Script::split(std::string& source) noexcept
 		clientside = determineClientSideLocation(source);
 
 	// Do clientside script joins.
-	if (server->getSettings().getBool("clientsidejoins", true) && clientside != source.end())
+	if (!hasServerSide && server->getSettings().getBool("clientsidejoins", true) && clientside != source.end())
 	{
 		auto joinedScript = performClientSideJoinHack(std::string_view{ clientside, source.end() });
 		source.replace(clientside, source.end(), joinedScript);

@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <string_view>
 #include <string>
@@ -20,7 +21,9 @@
 #include <object/NPC.h>
 #include <object/Weapon.h>
 #include <scripting/Script.h>
+#include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
@@ -191,6 +194,7 @@ bool Weapon::saveWeapon()
 
 Weapon& Weapon::updateWeapon(std::string_view image, std::string_view script)
 {
+	setJoinedClasses("");
 	m_script = std::move(Script{ name, script });
 	this->image = image;
 	modTime = clock::now();
@@ -240,7 +244,8 @@ CString Weapon::getAddWeaponPacket() const
 	// Classic weapons.
 	if (m_script.getClientByteCode().empty())
 	{
-		weaponPacket >> (char)NPCProp::SCRIPT >> (short)m_script.getClientSide().length() << m_script.getClientSide();
+		std::string script = getClientSideScript();
+		weaponPacket >> (char)NPCProp::SCRIPT >> (short)script.length() << script;
 	}
 	// If we have bytecode, send the weapon headers.
 	else
@@ -272,16 +277,25 @@ CString Weapon::getWeaponByteCodePacket() const
 
 std::string Weapon::getJoinedClasses() const
 {
+	bool hasExpired = false;
 	std::string result;
-	for (const auto& classPtr : m_joinedClasses)
+	for (const auto& [handle, classPtr] : m_joinedClasses)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
 			result += scriptClass->name;
 			result += ",";
 		}
+		else hasExpired = true;
 	}
 	result.pop_back();
+
+	// If we have expired, clear them out.
+	if (hasExpired)
+	{
+		std::erase_if(m_joinedClasses, [this](const decltype(m_joinedClasses)::value_type& pair) { return pair.second.expired(); });
+	}
+
 	return result;
 }
 
@@ -290,7 +304,14 @@ void Weapon::setJoinedClasses(std::string_view classes)
 	auto server = BabyDI::Get<Server>();
 	if (server == nullptr || !server->hasNPCServer()) return;
 
+	for (const auto& [handle, classPtr] : m_joinedClasses)
+	{
+		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
+			scriptClass->onScriptModified.unsubscribe(handle);
+	}
+
 	m_joinedClasses.clear();
+
 	while (!classes.empty())
 	{
 		auto className = string::extractLine(classes, ',');
@@ -298,18 +319,18 @@ void Weapon::setJoinedClasses(std::string_view classes)
 			continue;
 
 		className = string::trim(className);
-		auto scriptClass = server->getNPCServer()->getClass(className);
-		if (!scriptClass.expired())
-			m_joinedClasses.push_back(scriptClass);
-
-		// TODO(Nalin): Need a way to handle this on weapons.
-		// modTime[PROPID(NPCProp::CLASS)] = currentTime();
+		if (auto scriptClass = server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+		{
+			auto handle = scriptClass->onScriptModified.subscribe(std::bind(&Weapon::updateScriptClass, this, std::placeholders::_1));
+			m_joinedClasses.emplace_back(handle, scriptClass);
+			server->updateWeaponForPlayers(this);
+		}
 	}
 }
 
 void Weapon::joinClass(std::string_view className)
 {
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const auto& classPtr) { return classPtr.lock()->name == className; });
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
 	if (it != m_joinedClasses.end())
 		return;
 
@@ -317,20 +338,21 @@ void Weapon::joinClass(std::string_view className)
 	if (server == nullptr || !server->hasNPCServer())
 		return;
 
-	auto scriptClass = server->getNPCServer()->getClass(std::string{ className });
-	if (scriptClass.expired())
+	if (auto scriptClass = server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+	{
+		auto handle = scriptClass->onScriptModified.subscribe(std::bind(&Weapon::updateScriptClass, this, std::placeholders::_1));
+		m_joinedClasses.emplace_back(handle, scriptClass);
+		server->updateWeaponForPlayers(this);
+	}
+	else
 	{
 		log::printLine(log::npc, "Error: Weapon '{}' tried to join class '{}', but it does not exist.", name, className);
-		return;
 	}
-
-	m_joinedClasses.push_back(scriptClass);
-	server->updateWeaponForPlayers(server->getWeapon(name));
 }
 
 void Weapon::leaveClass(std::string_view className)
 {
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const auto& classPtr) { return classPtr.lock()->name == className; });
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
 	if (it == m_joinedClasses.end())
 		return;
 
@@ -338,8 +360,35 @@ void Weapon::leaveClass(std::string_view className)
 	if (server == nullptr || !server->hasNPCServer())
 		return;
 
+	if (auto scriptClass = it->second.lock(); scriptClass != nullptr)
+		scriptClass->onScriptModified.unsubscribe(it->first);
+
 	m_joinedClasses.erase(it);
-	server->updateWeaponForPlayers(server->getWeapon(name));
+	server->updateWeaponForPlayers(this);
+}
+
+std::string Weapon::getClientSideScript() const
+{
+	std::string result{ m_script.getClientSide() };
+	for (const auto& [handle, classPtr] : m_joinedClasses)
+	{
+		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
+		{
+			const auto& clientSide = scriptClass->getScript().getClientSide();
+			if (!clientSide.empty())
+			{
+				result += "\xa7";
+				result += clientSide;
+			}
+		}
+	}
+	return result;
+}
+
+void Weapon::updateScriptClass(ScriptClass* scriptClass)
+{
+	auto server = BabyDI::Get<Server>();
+	server->updateWeaponForPlayers(this);
 }
 
 //----------------------------

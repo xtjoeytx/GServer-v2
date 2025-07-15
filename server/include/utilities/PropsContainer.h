@@ -503,7 +503,6 @@ struct PropertyTileCoordinateZ : public PropertyBase
 struct PropertyGS1Script : public PropertyBase
 {
 	PropertyGS1Script() = default;
-	PropertyGS1Script(std::string script) : script(std::move(script)) {}
 	PropertyGS1Script(std::string&& script) : script(std::move(script)) {}
 	PropertyGS1Script(std::string_view script) : script(script) {}
 

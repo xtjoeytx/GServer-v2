@@ -6,6 +6,7 @@
 #include <memory>
 #include <string_view>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <CString.h>
@@ -15,6 +16,7 @@
 #include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Events.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -50,6 +52,10 @@ public:
 	void joinClass(std::string_view className);
 	void leaveClass(std::string_view className);
 
+protected:
+	std::string getClientSideScript() const;
+	void updateScriptClass(ScriptClass* scriptClass);
+
 public:
 	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
 
@@ -71,7 +77,7 @@ protected:
 	std::string m_desKey;
 	std::string m_header;
 
-	std::vector<std::weak_ptr<ScriptClass>> m_joinedClasses;
+	mutable std::vector<std::pair<EventHandle, std::weak_ptr<ScriptClass>>> m_joinedClasses;
 };
 using TWeaponPtr = std::shared_ptr<Weapon>;
 

@@ -95,7 +95,9 @@ void NPC::setScript(std::string_view script)
 	//auto profile = log::Profile(log::server, "NPC::setScript");
 
 	auto server = BabyDI::Get<Server>();
+	setJoinedClasses("");
 	m_script = std::move(Script{ name, script });
+	modTime[PROPID(NPCProp::SCRIPT)] = server->getFrameStartTime();
 
 	auto clientside = m_script.getClientSide();
 
@@ -119,11 +121,11 @@ void NPC::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) con
 	if (events.queue().empty())
 		return;
 
-	ScriptEventQueue npcQueue{ events };
-	m_script.executeEvents(npcQueue, source);
+	ScriptEventQueue eventQueue{ events };
+	m_script.executeEvents(eventQueue, source);
 
 	// Execute classes.
-	for (auto& scriptClassPtr : m_joinedClasses)
+	for (auto& [handle, scriptClassPtr] : m_joinedClasses)
 	{
 		if (auto scriptClass = scriptClassPtr.lock(); scriptClass != nullptr)
 		{
@@ -223,8 +225,9 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 	const auto& curTime = server->getFrameStartTime();
 	clock::time_point oldTime = modTime[PROPID(prop)];
 	modTime[PROPID(prop)] = curTime;
+	lastUpdateTime = curTime;
 
-#define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); modTime[PROPID(prop)] = oldTime; return result; } while(false)
+#define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); modTime[PROPID(prop)] = oldTime; lastUpdateTime = oldTime; return result; } while(false)
 
 	switch (prop)
 	{
@@ -970,24 +973,51 @@ CString NPC::getAllPropsPacket(clock::time_point newTime) const
 
 //----------------------------
 
+std::string NPC::getClientSideScript() const
+{
+	std::string result{ m_script.getClientSide() };
+	for (const auto& [handle, classPtr] : m_joinedClasses)
+	{
+		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
+		{
+			const auto& clientSide = scriptClass->getScript().getClientSide();
+			if (!clientSide.empty())
+			{
+				result += "\xa7";
+				result += clientSide;
+			}
+		}
+	}
+	return result;
+}
+
 std::string NPC::getJoinedClasses() const
 {
+	bool hasExpired = false;
 	std::string result;
-	for (const auto& classPtr : m_joinedClasses)
+	for (const auto& [handle, classPtr] : m_joinedClasses)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
 			result += scriptClass->name;
 			result += ",";
 		}
+		else hasExpired = true;
 	}
 	result.pop_back();
+
+	// If we have expired, clear them out.
+	if (hasExpired)
+	{
+		std::erase_if(m_joinedClasses, [this](const decltype(m_joinedClasses)::value_type& pair) { return pair.second.expired(); });
+	}
+
 	return result;
 }
 
 bool NPC::hasJoinedClass(std::string_view className) const
 {
-	for (const auto& classPtr : m_joinedClasses)
+	for (const auto& [handle, classPtr] : m_joinedClasses)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr && scriptClass->name == className)
 			return true;
@@ -1000,7 +1030,14 @@ void NPC::setJoinedClasses(std::string_view classes)
 	auto server = BabyDI::Get<Server>();
 	if (server == nullptr || !server->hasNPCServer()) return;
 
+	for (const auto& [handle, classPtr] : m_joinedClasses)
+	{
+		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
+			scriptClass->onScriptModified.unsubscribe(handle);
+	}
+
 	m_joinedClasses.clear();
+
 	while (!classes.empty())
 	{
 		auto className = string::extractLine(classes, ',');
@@ -1008,17 +1045,20 @@ void NPC::setJoinedClasses(std::string_view classes)
 			continue;
 
 		className = string::trim(className);
-		auto scriptClass = server->getNPCServer()->getClass(className);
-		if (!scriptClass.expired())
-			m_joinedClasses.push_back(scriptClass);
-
-		modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
+		if (auto scriptClass = server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+		{
+			auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
+			m_joinedClasses.emplace_back(handle, scriptClass);
+			sendScriptUpdatesToLevel(lastUpdateTime);
+			modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
+			lastUpdateTime = server->getFrameStartTime();
+		}
 	}
 }
 
 void NPC::joinClass(std::string_view className)
 {
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const auto& classPtr) { return classPtr.lock()->name == className; });
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
 	if (it != m_joinedClasses.end())
 		return;
 
@@ -1026,20 +1066,23 @@ void NPC::joinClass(std::string_view className)
 	if (server == nullptr || !server->hasNPCServer())
 		return;
 
-	auto scriptClass = server->getNPCServer()->getClass(std::string{ className });
-	if (scriptClass.expired())
+	if (auto scriptClass = server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+	{
+		auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
+		m_joinedClasses.emplace_back(handle, scriptClass);
+		sendScriptUpdatesToLevel(lastUpdateTime);
+		modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
+		lastUpdateTime = server->getFrameStartTime();
+	}
+	else
 	{
 		log::printLine(log::npc, "Error: NPC '{}' tried to join class '{}', but it does not exist.", name, className);
-		return;
 	}
-
-	m_joinedClasses.push_back(scriptClass);
-	modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
 }
 
 void NPC::leaveClass(std::string_view className)
 {
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const auto& classPtr) { return classPtr.lock()->name == className; });
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
 	if (it == m_joinedClasses.end())
 		return;
 
@@ -1047,9 +1090,42 @@ void NPC::leaveClass(std::string_view className)
 	if (server == nullptr || !server->hasNPCServer())
 		return;
 
+	if (auto scriptClass = it->second.lock(); scriptClass != nullptr)
+	{
+		scriptClass->onScriptModified.unsubscribe(it->first);
+		sendScriptUpdatesToLevel(lastUpdateTime);
+		modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
+		lastUpdateTime = server->getFrameStartTime();
+	}
+
 	m_joinedClasses.erase(it);
-	modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
 }
+
+void NPC::sendScriptUpdatesToLevel(clock::time_point when) const
+{
+	if (auto npclevel = level.lock(); npclevel != nullptr)
+	{
+		auto server = BabyDI::Get<Server>();
+		CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)npclevel->levelName.length() << npclevel->levelName >> (int)id;
+		server->sendPacketToLevelAndPastVisitorsAfter(npclevel.get(), clock::to_time_t(when), packet);
+		server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), npclevel);
+	}
+}
+
+void NPC::updateScriptClass(ScriptClass* scriptClass)
+{
+	auto server = BabyDI::Get<Server>();
+	if (server == nullptr || scriptClass == nullptr || !server->hasNPCServer())
+		return;
+	if (scriptClass->getScript().getClientSide().empty())
+		return;
+
+	sendScriptUpdatesToLevel(lastUpdateTime);
+	modTime[PROPID(NPCProp::SCRIPT)] = server->getFrameStartTime();
+	lastUpdateTime = server->getFrameStartTime();
+}
+
+//----------------------------
 
 void NPC::resetToInitialState()
 {
@@ -1076,6 +1152,7 @@ void NPC::resetToInitialState()
 	std::ranges::for_each(props, [this, now = server->getServerStartTime()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
 
 	m_savedModTime = modTime;
+	lastUpdateTime = server->getServerStartTime();
 
 	// Clear the variables.
 	scripting.variables.store.clear();

@@ -238,7 +238,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	if (npc == nullptr && event.initiator.second == ScriptObjectSourceType::NPC)
 		npc = server->getNPC(event.initiator.first);
 	if (level == nullptr)
-		level = (player != nullptr ? player->getLevel() : npc->level.lock());
+		level = (player != nullptr ? player->getLevel() : (npc != nullptr ? npc->level.lock() : nullptr));
 
 	// Determine the "who" for error messages.
 	if (npc != nullptr)

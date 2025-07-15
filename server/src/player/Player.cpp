@@ -1,5 +1,3 @@
-#include <sys/stat.h>
-
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -494,20 +492,17 @@ bool Player::sendFile(const CString& pFile)
 
 bool Player::sendFile(const CString& pPath, const CString& pFile)
 {
-	CString filepath = CString() << pPath << pFile;
-	CString fileData;
-	fileData.load(filepath);
+	std::filesystem::path filePath{ pPath.toString() };
+	std::filesystem::path fileName{ pFile.toString() };
+	auto fullPath = filePath / fileName;
 
-	time_t modTime = 0;
-	struct stat fileStat;
-	if (stat(filepath.text(), &fileStat) != -1)
-		modTime = fileStat.st_mtime;
+	CString fileData;
+	fileData.load(fullPath.string());
 
 	// See if the file exists.
 	if (fileData.length() == 0)
 	{
 		sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
-
 		return false;
 	}
 
@@ -542,10 +537,14 @@ bool Player::sendFile(const CString& pPath, const CString& pFile)
 		sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.length());
 	}
 
+	// Get the file mod time.
+	auto writeTime = std::filesystem::last_write_time(fullPath);
+	time_t modTime = clock::to_time_t(std::chrono::clock_cast<std::chrono::system_clock>(writeTime));
+
 	// Send the file now.
 	while (fileData.length() != 0)
 	{
-		int sendSize = clip(32000, 0, fileData.length());
+		int sendSize = std::clamp(fileData.length(), 0, 32000);
 		if (isClient() && m_versionId < CLVER_2_14) sendSize = fileData.length();
 
 		// Older client versions didn't send the modTime.

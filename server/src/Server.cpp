@@ -1103,9 +1103,10 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 		bool isOnGmap = map != nullptr && map->isGmap();
 		std::string tmpLvlName = (isOnGmap ? map->getMapName() : level->levelName);
 
+		auto lastUpdateTime = clock::to_time_t(npc->lastUpdateTime);
 		for (auto& [pid, p]: m_playerList)
 		{
-			if (auto playerClient = std::dynamic_pointer_cast<PlayerClient>(p); playerClient != nullptr)
+			if (auto playerClient = std::dynamic_pointer_cast<PlayerClient>(p); playerClient != nullptr && playerClient->getCachedLevelModTime(level.get()) >= lastUpdateTime)
 			{
 				if (playerClient->getComputedLevelName() != tmpLvlName)
 					p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->id);
@@ -1620,6 +1621,17 @@ void Server::sendPacketToType(int who, const CString& pPacket, Player* pPlayer) 
 	}
 }
 
+void Server::sendPacketToLevelAndPastVisitorsAfter(Level* level, time_t modTime, const CString& packet) const
+{
+	if (!running) return;
+	for (const auto& [id, player] : players_of_type<PlayerClient>(m_playerList))
+	{
+		auto playerLevel = player->getLevel();
+		if (player->getCachedLevelModTime(level) > modTime || (playerLevel != nullptr && playerLevel.get() == level))
+			player->sendPacket(packet);
+	}
+}
+
 /*
 	NPC-Server Functionality
 */
@@ -1658,8 +1670,11 @@ bool Server::NC_DelWeapon(std::string_view pWeaponName)
 	return true;
 }
 
-void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> weapon)
+void Server::updateWeaponForPlayers(Weapon* weapon)
 {
+	if (weapon == nullptr)
+		return;
+
 	CString weaponPacket = weapon->getAddWeaponPacket();
 
 	// Update Weapons
@@ -1675,6 +1690,11 @@ void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> weapon)
 				player->sendPacket(weaponPacket);
 		}
 	}
+}
+
+void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> weapon)
+{
+	updateWeaponForPlayers(weapon.get());
 }
 
 // TODO(Nalin): This should probably be in the NPCServer class.

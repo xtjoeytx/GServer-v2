@@ -17,9 +17,10 @@
 #include <object/Character.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptContainers.h>
-#include <utilities/PropsContainer.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Events.h>
 #include <utilities/Extents.h>
+#include <utilities/PropsContainer.h>
 
 using namespace preagonal::props;
 
@@ -277,11 +278,16 @@ public:
 	[[inline]] CString getPropsPacketFor() const;
 
 public:
+	std::string getClientSideScript() const;
 	std::string getJoinedClasses() const;
 	bool hasJoinedClass(std::string_view className) const;
 	void setJoinedClasses(std::string_view classes);
 	void joinClass(std::string_view className);
 	void leaveClass(std::string_view className);
+	void sendScriptUpdatesToLevel(clock::time_point when) const;
+
+protected:
+	void updateScriptClass(ScriptClass* scriptClass);
 
 public:
 	void constructScriptParameters();
@@ -328,6 +334,7 @@ public:
 	Character character;
 	std::array<uint8_t, 10> saves;
 	std::array<clock::time_point, NPCPROP_COUNT> modTime;
+	clock::time_point lastUpdateTime;
 	NPCWarpRestrictions warpRestrictions = NPCWarpRestrictions::ALLOWED;
 	ScriptContainer scripting;
 	std::string scripter;
@@ -338,7 +345,7 @@ private:
 	bool m_blockPositionUpdates = false;
 
 	Script m_script;
-	std::vector<std::weak_ptr<ScriptClass>> m_joinedClasses;
+	mutable std::vector<std::pair<EventHandle, std::weak_ptr<ScriptClass>>> m_joinedClasses;
 
 	std::string m_initialImage;
 	std::weak_ptr<Level> m_initialLevel;
@@ -376,7 +383,7 @@ inline Rectangle<int16_t, uint16_t> NPC::getCollisionBoundingBox() const noexcep
 // Defines the mapping of NPCProp to PropertyContainer.
 #define FOR_LIST_OF_NPC_PROPS(DO) \
 	DO(NPCProp::IMAGE,		PropertyString,				image) \
-	DO(NPCProp::SCRIPT,		PropertyGS1Script,			m_script.getClientSide()) \
+	DO(NPCProp::SCRIPT,		PropertyGS1Script,			getClientSideScript()) \
 	DO(NPCProp::X,			PropertyTileCoordinate,		character.pixelX) \
 	DO(NPCProp::Y,			PropertyTileCoordinate,		character.pixelY) \
 	DO(NPCProp::POWER,		PropertyNumeric<GBYTE1>,	character.hitpointsInHalves) \

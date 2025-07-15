@@ -3,13 +3,15 @@
 
 #include <chrono>
 #include <cstdint>
-#include <string>
+#include <memory>
 #include <string_view>
+#include <string>
 
 #include <CString.h>
 
 #include <scripting/Script.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Events.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -32,6 +34,9 @@ public:
 public:
 	const std::string name;
 	clock::time_point modTime;
+
+public:
+	EventDispatcher<ScriptClass*> onScriptModified;
 
 private:
 	Script m_script;
