@@ -19,7 +19,7 @@ Make sure the server generation is set appropriately in the `serveroptions.txt` 
 
     generation = classic
 
-See: [server.md](server.md) for more information.
+See: [server.md](server.md#server-generation) for more information about server generations.
 
 ## Script languages
 
