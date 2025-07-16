@@ -47,7 +47,7 @@ class EventHandleImpl : public EventHandleBase
 {
 public:
 	EventHandleImpl(EventDispatcherBase* dispatcher, size_t id, std::function<void(A...)> callback)
-		: m_callback(callback), EventHandleBase(dispatcher, id)
+		: EventHandleBase(dispatcher, id), m_callback(callback)
 	{};
 
 	~EventHandleImpl()

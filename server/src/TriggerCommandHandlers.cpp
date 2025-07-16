@@ -49,7 +49,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		if (!hasNPCServer())
 			return false;
 
-		if (triggerData.size() > 2)
+		if (triggerData.size() >= 2)
 		{
 			// triggeraction 0,0,servernpc,npcname,params...;
 			if (auto npcServer = getNPCServer(); npcServer != nullptr)
@@ -98,7 +98,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 	// Guild management
 	builder.registerCommand("gr.addguildmember", [&](Player* player, std::vector<std::string>& triggerData)
 	{
-		if (!getSettings().getBool("triggerhack_weapons", false))
+		if (!getSettings().getBool("triggerhack_guilds", false))
 			return false;
 
 		CString guild, account, nick;

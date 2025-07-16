@@ -2149,7 +2149,6 @@ void fn_shootarrow(GS1Visitor* visitor, std::string_view commandName, const std:
 	{
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-		auto server = BabyDI::Get<Server>();
 		const auto& source = visitor->getOriginalSource();
 		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
 
@@ -2174,7 +2173,6 @@ void fn_shootball(GS1Visitor* visitor, std::string_view commandName, const std::
 	{
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-		auto server = BabyDI::Get<Server>();
 		const auto& source = visitor->getOriginalSource();
 		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
 
@@ -2197,7 +2195,6 @@ void fn_shootfireball(GS1Visitor* visitor, std::string_view commandName, const s
 	{
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-		auto server = BabyDI::Get<Server>();
 		const auto& source = visitor->getOriginalSource();
 		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
 
@@ -2220,7 +2217,6 @@ void fn_shootfireblast(GS1Visitor* visitor, std::string_view commandName, const 
 	{
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-		auto server = BabyDI::Get<Server>();
 		const auto& source = visitor->getOriginalSource();
 		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
 
@@ -2243,7 +2239,6 @@ void fn_shootnuke(GS1Visitor* visitor, std::string_view commandName, const std::
 	{
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-		auto server = BabyDI::Get<Server>();
 		const auto& source = visitor->getOriginalSource();
 		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
 
