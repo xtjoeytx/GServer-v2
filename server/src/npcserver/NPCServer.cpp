@@ -64,6 +64,7 @@ void NPCServer::initialize()
 	m_server->getAccountLoader().loadAccount("(npcserver)", account);
 	account.character.headImage = settings.getStr("staffhead", "head25.png").toString();
 	account.character.nickName = std::format("{} (Server)", nickname);
+	account.level = "";
 	m_npcServerPlayer->setLoaded(true);
 
 	// Add the npc-server player to the player list.
