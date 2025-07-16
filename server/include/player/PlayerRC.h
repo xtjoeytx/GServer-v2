@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <string_view>
@@ -136,7 +137,7 @@ public:
 
 protected:
 	bool m_isFtp = false;
-	std::map<CString, CString> m_rcLargeFiles;
+	std::map<std::filesystem::path, CString> m_rcLargeFiles;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

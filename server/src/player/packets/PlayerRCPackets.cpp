@@ -1,17 +1,7 @@
-#if defined(_WIN32) || defined(_WIN64)
-	#include <direct.h>
-	#define mkdir _mkdir
-	#define rmdir _rmdir
-#else
-	#include <unistd.h>
-	#include <sys/stat.h>
-#endif
-
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <functional>
@@ -52,21 +42,18 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-static void updateFile(Player* player, Server* server, const CString& dir, const CString& file)
+static void updateFile(Player* player, Server* server, const std::filesystem::path& dir, const std::filesystem::path& file)
 {
 	auto& settings = server->getSettings();
-	CString fullPath(dir);
-	fullPath << file;
-
-	// Find the file extension.
-	CString ext = getExtension(file);
+	std::string fileName = file.string();
+	std::string fullPath = (dir / file).string();
 
 	// Check and see if it is an account.
 	if (dir == "accounts/")
 	{
 		FileSystem* fs = server->getAccountsFileSystem();
-		if (fs->find(file).isEmpty())
-			fs->addFile(CString() << dir << file);
+		if (fs->find(fileName).isEmpty())
+			fs->addFile(fullPath);
 		return;
 	}
 
@@ -76,9 +63,9 @@ static void updateFile(Player* player, Server* server, const CString& dir, const
 	if (settings.getBool("nofoldersconfig", false))
 	{
 		FileSystem* fs = server->getFileSystem();
-		if (fs->find(file).isEmpty())
+		if (fs->find(fileName).isEmpty())
 		{
-			fs->addFile(CString() << dir << file);
+			fs->addFile(fullPath);
 			isNewFile = true;
 		}
 	}
@@ -92,20 +79,19 @@ static void updateFile(Player* player, Server* server, const CString& dir, const
 			CString folder("world/");
 			folder << folderConfig.readString("").trim();
 
-			if (fullPath.match(folder))
+			if (CString(fullPath).match(folder))
 			{
 				FileSystem* fs = server->getFileSystemByType(type);
 				FileSystem* fs2 = server->getFileSystem();
 
 				// See if it exists in that file system.
-				if (fs->find(file).isEmpty())
+				if (fs->find(fileName).isEmpty())
 				{
-					if (fs2->find(file).isEmpty())
+					if (fs2->find(fileName).isEmpty())
 						fs2->addFile(fullPath);
 
 					fs->addFile(fullPath);
 					isNewFile = true;
-					//printf("adding {} to {}", file.text(), type.text());
 					break;
 				}
 			}
@@ -114,14 +100,15 @@ static void updateFile(Player* player, Server* server, const CString& dir, const
 
 	// If it is a level, see if we can update it.
 	// TODO: Should combine all server options loading/saving into one function in Server.
+	auto ext = file.extension();
 	if (ext == ".nw" || ext == ".graal" || ext == ".zelda")
 	{
-		auto l = Level::findLevel(file, server);
+		auto l = Level::findLevel(fileName, server);
 		if (l) l->reload();
 	}
 	else if (ext == ".gupd")
-		server->getPackageManager().findOrAddResource(file.text())->reload(server);
-	else if (ext == ".dump" || dir.findi(CString("weapons")) > -1)
+		server->getPackageManager().findOrAddResource(fileName)->reload(server);
+	else if (ext == ".dump" || CString(dir.string()).findi(CString("weapons")) > -1)
 		server->loadWeapons(true);
 	else if (file == "serveroptions.txt")
 	{
@@ -147,14 +134,13 @@ static void updateFile(Player* player, Server* server, const CString& dir, const
 		// Check if this is a file that previously existed on the server so we
 		// can notify existing clients that the file was updated.
 		auto fileSystem = server->getFileSystem(FS_FILE);
-		if (!isNewFile && !fileSystem->find(file).isEmpty())
+		if (!isNewFile && !fileSystem->find(fileName).isEmpty())
 		{
 			// Game files
 			const auto& playerList = server->getPlayerList();
-			auto fileName = file.toString();
 
 			CString updatePacket;
-			updatePacket >> (char)PLO_UPDATEPACKAGEISUPDATED << file << "\n";
+			updatePacket >> (char)PLO_UPDATEPACKAGEISUPDATED << fileName << "\n";
 
 			// Ganis need to be recompiled on update
 			CString bytecodePacket;
@@ -1657,11 +1643,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 		if (i->empty()) continue;
 		mkdir_path << *i << '/';
 
-#if defined(_WIN32) || defined(_WIN64)
-		(void)mkdir(mkdir_path.text());
-#else
-		mkdir(mkdir_path.text(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-#endif
+		std::filesystem::create_directory(mkdir_path.toString());
 	}
 
 	// Construct the file list.
@@ -1715,9 +1697,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 	}
 
 	// Send file.
-	CString file = pPacket.readString("");
-	CString filepath = CString() << account.lastFolderAccessed << file;
-	CString checkFile = CString() << account.lastFolderAccessed << file;
+	std::filesystem::path file{ pPacket.readString("").toString()};
+	std::filesystem::path lastFolderAccessed{ account.lastFolderAccessed };
+	CString checkFile = (lastFolderAccessed / file).string();
 
 	// Don't let us download/view important files.
 	if (!account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
@@ -1732,10 +1714,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 		}
 	}
 
-	this->sendFile(account.lastFolderAccessed, file);
+	this->sendFile(account.lastFolderAccessed, file.string());
 
-	log::printLine(log::rc, "{} downloaded file {}", account.name, file.text());
-	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Downloaded file " << file);
+	log::printLine(log::rc, "{} downloaded file {}", account.name, file.string());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Downloaded file " << file.string());
 
 	return HandlePacketResult::Handled;
 }
@@ -1748,10 +1730,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	CString file = pPacket.readChars(pPacket.readGUChar());
-	CString filepath = account.lastFolderAccessed;
+	std::filesystem::path file{ pPacket.readChars(pPacket.readGUChar()).toString()};
+	std::filesystem::path lastFolderAccessed{ account.lastFolderAccessed };
 	CString fileData = pPacket.subString(pPacket.readPos());
-	CString checkFile = CString() << account.lastFolderAccessed << file;
+	CString checkFile = (lastFolderAccessed / file).string();
 
 	// Check if this is a protected file.
 	bool isProtected = false;
@@ -1789,13 +1771,13 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	if (m_rcLargeFiles.find(file) == m_rcLargeFiles.end())
 	{
 		// Normal file. Save it and display our message.
-		fileData.save(filepath << file);
+		fileData.save(checkFile);
 
-		log::printLine(log::rc, "{} uploaded file {}", account.name, file.text());
-		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file);
+		log::printLine(log::rc, "{} uploaded file {}", account.name, file.string());
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file.string());
 
 		// Update file.
-		updateFile(this, m_server, account.lastFolderAccessed, file);
+		updateFile(this, m_server, lastFolderAccessed, file);
 	}
 	else
 	{
@@ -1814,43 +1796,36 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	CString source;
-	CString destination;
-	CString dir(pPacket.readChars(pPacket.readGUChar()));
-	CString file(pPacket.readString(""));
-
-	// Fix file.
-	file.removeAllI("\"");
-
-	// Add trailing directory slash if it is missing.
-	if (dir[dir.length() - 1] != '\\' && dir[dir.length() - 1] != '/')
-		dir << "/";
+	std::filesystem::path dir{ pPacket.readChars(pPacket.readGUChar()).toString() };
+	std::filesystem::path file{ pPacket.readString("").toString()};
+	std::filesystem::path lastFolderAccessed{ account.lastFolderAccessed };
 
 	// Assemble destination and source.
-	destination << dir << file;
-	source << account.lastFolderAccessed << file;
+	auto destination = dir / file;
+	auto source = lastFolderAccessed / file;
 
 	// Don't let us move important files.
-	for (const auto& file : ImportantFiles)
+	for (const auto& importantFile : ImportantFiles)
 	{
-		if (source == file)
+		if (source == importantFile)
 		{
-			sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to move file " << source);
+			sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to move file " << source.string());
 			return HandlePacketResult::Handled;
 		}
 	}
 
-	log::printLine(log::rc, "{} moved file {} to {}", account.name, source.text(), destination.text());
+	std::error_code ec;
+	std::filesystem::rename(source, destination, ec);
 
-	// Save the new file now.
-	CString temp;
-	temp.load(source);
-	if (temp.save(destination) == false)
+	if (ec)
+	{
+		log::printLine(log::rc, "Error moving file: {}", ec.message());
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Error moving file: " << ec.message());
 		return HandlePacketResult::Handled;
+	}
 
-	// Remove the old file.
-	std::filesystem::remove(source.toStringView());
-
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Moved file " << source.string() << " to " << destination.string());
+	log::printLine(log::rc, "{} moved file {} to {}", account.name, source.string(), destination.string());
 	return HandlePacketResult::Handled;
 }
 
@@ -1994,7 +1969,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILESTART(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	CString file = pPacket.readString("");
+	std::filesystem::path file{ pPacket.readString("").toString() };
 	m_rcLargeFiles[file] = CString();
 
 	return HandlePacketResult::Handled;
@@ -2008,18 +1983,18 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	CString file = pPacket.readString("");
-	CString filepath = CString() << account.lastFolderAccessed << file;
+	std::filesystem::path file{ pPacket.readString("").toString() };
+	std::filesystem::path filePath = std::filesystem::path{ account.lastFolderAccessed } / file;
 
 	// Save the file.
-	m_rcLargeFiles[file].save(filepath);
+	m_rcLargeFiles[file].save(filePath.string());
 
 	// Remove the data from memory.
-	for (std::map<CString, CString>::iterator i = m_rcLargeFiles.begin(); i != m_rcLargeFiles.end(); ++i)
+	for (auto it = m_rcLargeFiles.begin(); it != m_rcLargeFiles.end(); ++it)
 	{
-		if (i->first == file)
+		if (it->first == file)
 		{
-			m_rcLargeFiles.erase(i);
+			m_rcLargeFiles.erase(it);
 			break;
 		}
 	}
@@ -2027,34 +2002,30 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 	// Update file.
 	updateFile(this, m_server, account.lastFolderAccessed, file);
 
-	log::printLine(log::rc, "{} uploaded large file {}", account.name, file.text());
-	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded large file " << file);
+	log::printLine(log::rc, "{} uploaded large file {}", account.name, file.string());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded large file " << file.string());
 
 	return HandlePacketResult::Handled;
 }
 
 HandlePacketResult PlayerRC::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 {
-	CString folder = pPacket.readString("");
-	CString folderpath = folder;
-	FileSystem::fixPathSeparators(folderpath);
-	folderpath.removeI(folderpath.length() - 1);
+	std::filesystem::path folder{ pPacket.readString("").toString() };
 	if (isClient())
 	{
-		log::printLine(log::rc, "[Hack] {} attempted to delete a folder through the File Browser: {}", account.name, folder.text());
+		log::printLine(log::rc, "[Hack] {} attempted to delete a folder through the File Browser: {}", account.name, folder.string());
 		return HandlePacketResult::Handled;
 	}
 
 	// Try to remove folder.
-	if (rmdir(folderpath.text()))
+	if (!std::filesystem::remove(folder))
 	{
-		perror("Error removing folder");
-		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Error removing " << folder << ".  Folder may not exist or may not be empty.");
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Error removing " << folder.string() << ".  Folder may not exist or may not be empty.");
 		return HandlePacketResult::Handled;
 	}
 
-	log::printLine(log::rc, "{} removed folder {}", account.name, folder.text());
-	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Folder " << folder << " has been removed.\n");
+	log::printLine(log::rc, "{} removed folder {}", account.name, folder.string());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Folder " << folder.string() << " has been removed.\n");
 	msgPLI_RC_FILEBROWSER_START(CString() << "");
 
 	return HandlePacketResult::Handled;
