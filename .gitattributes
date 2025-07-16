@@ -1,2 +1,6 @@
-* test eol=lf
-bin/servers/* binary
+* text=auto
+*.cpp text
+*.h text
+*.exe binary
+bin/servers/** binary
+*.gitignore text
