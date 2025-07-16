@@ -20,11 +20,11 @@
 #
 
 if(V8NPCSERVER)
-	file(GLOB DOCS
+	file(GLOB V8DOCS
 		 ../docs/v8-npcserver.txt
 		 )
 
-	install(FILES ${DOCS} DESTINATION "./docs")
+	install(FILES ${V8DOCS} DESTINATION "./docs")
 
 	file(GLOB SERVERS_DEFAULT_NPCS
 		 servers/default/npcs/npcControl-NPC.txt
@@ -42,30 +42,35 @@ if(V8NPCSERVER)
 	install(DIRECTORY DESTINATION "./servers/default/scripts")
 endif()
 
+# Base directory
 file(GLOB TEXT
 	 changelog.txt
 	 miniupnp_licence.txt
-	 readme.gs1-npc-server.txt
 	 readme.txt
 	 startupserver.txt
 	 )
-
 install(FILES ${TEXT} DESTINATION ".")
 
+# docs/
+install(DIRECTORY "./docs"
+		DESTINATION "./docs"
+		FILES_MATCHING PATTERN "*.md")
+
+# servers/default/
 file(GLOB SERVERS_DEFAULT
 	 servers/default/serverflags.txt
 	 )
-
 install(FILES ${SERVERS_DEFAULT} DESTINATION "./servers/default")
 
+# servers/default/accounts/
 file(GLOB SERVERS_DEFAULT_ACCOUNTS
 	 servers/default/accounts/(npcserver).txt
 	 servers/default/accounts/defaultaccount.txt
 	 servers/default/accounts/YOURACCOUNT.txt
 	 )
-
 install(FILES ${SERVERS_DEFAULT_ACCOUNTS} DESTINATION "./servers/default/accounts")
 
+# servers/default/config/
 file(GLOB SERVERS_DEFAULT_CONFIG
 	 servers/default/config/adminconfig.txt
 	 servers/default/config/allowedversions.txt
@@ -80,50 +85,57 @@ file(GLOB SERVERS_DEFAULT_CONFIG
 	 )
 install(FILES ${SERVERS_DEFAULT_CONFIG} DESTINATION "./servers/default/config")
 
+# servers/default/documents/
 file(GLOB SERVERS_DEFAULT_DOCUMENTS
 	 servers/default/documents/docu_wordfilter.txt
 	 servers/default/documents/rules.txt
 	 )
 install(FILES ${SERVERS_DEFAULT_DOCUMENTS} DESTINATION "./servers/default/documents")
 
+# servers/default/execscripts/
 file(GLOB SERVERS_DEFAULT_EXECSCRIPTS
 	 servers/default/execscripts/readme.txt
 	 )
 install(FILES ${SERVERS_DEFAULT_EXECSCRIPTS} DESTINATION "./servers/default/execscripts")
 
+# servers/default/guilds/
 file(GLOB SERVERS_DEFAULT_GUILDS
 	 servers/default/guilds/guildExample.txt
 	 )
 install(FILES ${SERVERS_DEFAULT_GUILDS} DESTINATION "./servers/default/guilds")
 
+# servers/default/logs/
 file(GLOB SERVERS_DEFAULT_LOGS
 	 servers/default/logs/rclog.txt
 	 servers/default/logs/serverlog.txt
 	 )
 install(FILES ${SERVERS_DEFAULT_LOGS} DESTINATION "./servers/default/logs")
 
+# servers/default/npcs/
 file(GLOB SERVERS_DEFAULT_NPCS
 	servers/default/npcs/npcControl-NPC.txt
 	)
 install(FILES ${SERVERS_DEFAULT_NPCS} DESTINATION "./servers/default/npcs")
 
+# servers/default/translations/
 install(DIRECTORY "./servers/default/translations"
 		DESTINATION "./servers/default/"
 		FILES_MATCHING PATTERN "*.po")
 
+# servers/default/weapons/
 file(GLOB SERVERS_DEFAULT_WEAPONS
 	 servers/default/weapons/weapon-gr_movement.txt
 	 )
-
 install(FILES ${SERVERS_DEFAULT_WEAPONS} DESTINATION "./servers/default/weapons")
 
+# servers/default/world/
 file(GLOB SERVERS_DEFAULT_WORLD
 	 servers/default/world/onlinestartlocal.nw
 	 servers/default/world/readme.txt
 	 )
-
 install(FILES ${SERVERS_DEFAULT_WORLD} DESTINATION "./servers/default/world")
 
+# servers/default/world/*
 install(DIRECTORY DESTINATION "./servers/default/world/bodies")
 install(DIRECTORY DESTINATION "./servers/default/world/ganis")
 install(DIRECTORY DESTINATION "./servers/default/world/hats")
@@ -133,6 +145,7 @@ install(DIRECTORY DESTINATION "./servers/default/world/shields")
 install(DIRECTORY DESTINATION "./servers/default/world/sounds")
 install(DIRECTORY DESTINATION "./servers/default/world/swords")
 
+# servers/default/world/global/*
 install(DIRECTORY DESTINATION "./servers/default/world/global")
 install(DIRECTORY DESTINATION "./servers/default/world/global/bodies")
 install(DIRECTORY DESTINATION "./servers/default/world/global/heads")

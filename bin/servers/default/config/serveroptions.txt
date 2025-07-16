@@ -216,12 +216,12 @@ clientsidelinks = false
 # If true, emulates joins on clientside code.
 # If serverside is true, it joins a class (the class code will become clientside).
 # If serverside is false, the server looks for a .txt file with the same name as the join.
-clientsidejoins = true
+clientsidejoins = false
 
 # Enables triggeraction hacks.
 triggerhack_weapons = false		# gr.addweapon, gr.deleteweapon
 triggerhack_guilds = false		# gr.addguildmember, gr.removeguildmember, gr.removeguild, gr.setguild
-triggerhack_groups = true		# gr.setgroup, gr.setlevelgroup
+triggerhack_groups = false		# gr.setgroup, gr.setlevelgroup
 triggerhack_files = false		# gr.appendfile, gr.writefile
 triggerhack_rc = false			# gr.rcchat
 triggerhack_execscript = false	# gr.es_clear, gr.es_set, gr.es_append, gr.es
