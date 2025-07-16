@@ -53,7 +53,7 @@ install(FILES ${TEXT} DESTINATION ".")
 
 # docs/
 install(DIRECTORY "./docs"
-		DESTINATION "./docs"
+		DESTINATION "."
 		FILES_MATCHING PATTERN "*.md")
 
 # servers/default/
