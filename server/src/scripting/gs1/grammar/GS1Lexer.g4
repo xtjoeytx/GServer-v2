@@ -613,7 +613,6 @@ FUNC_GROUP_1
 		| 'onwall2'
 		| 'onwater'
 		| 'groundsheight'
-		| 'waterheight'
 		| 'keydown'
 		| 'keydown2'
 		| 'arraylen'
@@ -687,6 +686,10 @@ FUNC_GROUP_3
 FUNC_GROUP_4 : ('textwidth' | 'textheight') { pushCommand("(ESSS)"); } -> type(FUNCTION);
 FUNC_GROUP_5 : 'lindexof'  { pushCommand("(SV)"); } -> type(FUNCTION);
 FUNC_GROUP_6 : 'sarraylen' { pushCommand("(V)"); }  -> type(FUNCTION);
+
+// playersays(real,string)
+// playersays2(real,string)
+// getflagkeys(string)
 
 MC_NOINDEX		: '#' ([angcmWw1235678LFfpbND] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 MC_SIMPLE		: '#' ([angcmWw1235678ptKkGNQ] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { pushCommand("(P)"); } -> type(MESSAGECODE);

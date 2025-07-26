@@ -55,6 +55,7 @@ void setReadOnlyGlobalVariables(GameVariableStore& variableStore)
 
 	/*
 		gravity       the rate at which shot projectiles fall (default Z loss of 2 tiles per second)
+		waterheight
 		nwday
 		nwhour
 		nwmin

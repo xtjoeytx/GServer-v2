@@ -107,7 +107,6 @@ static GS1ScriptValue fn_textwidth(GS1Visitor* visitor, std::string_view functio
 static GS1ScriptValue fn_tiletype(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_vecx(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_vecy(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_waterheight(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_worldx(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_worldy(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 
@@ -179,7 +178,6 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{ hash("tiletype"), &fn_tiletype },
 		{ hash("vecx"), &fn_vecx },
 		{ hash("vecy"), &fn_vecy },
-		{ hash("waterheight"), &fn_waterheight },
 		{ hash("worldx"), &fn_worldx },
 		{ hash("worldy"), &fn_worldy },
 	};
@@ -1253,12 +1251,6 @@ GS1ScriptValue fn_vecy(GS1Visitor* visitor, std::string_view messageCode, const 
 	static double vecValues[] = { -1.0, 0.0, 1.0, 0.0 };
 	auto dir = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0])) % 4;
 	return vecValues[dir];
-}
-
-// might just be a flag like gravity
-GS1ScriptValue fn_waterheight(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	throw unimplemented_error("Built-in function waterheight not implemented");
 }
 
 // worldx(x, y)
