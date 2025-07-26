@@ -1186,6 +1186,9 @@ void NPC::constructScriptParameters()
 	scriptParameters.try_emplace("hearts", set_temporary, "hearts",
 		gameVariableGetter([this]() { return character.hitpointsInHalves / 2.0; }),
 		gameVariableSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<size_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
+	scriptParameters.try_emplace("hp", set_temporary, "hp",
+		gameVariableGetter([this]() { return character.hitpointsInHalves / 2.0; }),
+		gameVariableSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<size_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
 	scriptParameters.try_emplace("x", set_temporary, "x",
 		gameVariableGetter([this]() { return character.pixelX / 16.0; }),
 		gameVariableSetter(this, PROPOPT(NPCProp::X2), [this](const GameValue& value, std::optional<size_t>) { character.pixelX = value.get<double>().value_or(0.0) * 16; }));

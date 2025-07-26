@@ -1048,8 +1048,12 @@ void Player::constructScriptParameters()
 	scriptParameters.try_emplace("attachid", set_temporary, "attachid", gameVariableGetter(m_attachNPC), GameVariable::func_set{});
 	scriptParameters.try_emplace("attachtype", set_temporary, "attachtype", GameValue{ 1.0 });
 	scriptParameters.try_emplace("fullhearts", set_temporary, "fullhearts", gameVariableGetter(account.maxHitpoints), gameVariableSetter(this, PROPOPT(PlayerProp::MAXPOWER), account.maxHitpoints));
+	scriptParameters.try_emplace("maxhp", set_temporary, "maxhp", gameVariableGetter(account.maxHitpoints), gameVariableSetter(this, PROPOPT(PlayerProp::MAXPOWER), account.maxHitpoints));
 
 	scriptParameters.try_emplace("hearts", set_temporary, "hearts",
+		gameVariableGetter([this]() { return account.character.hitpointsInHalves / 2.0; }),
+		gameVariableSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<size_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
+	scriptParameters.try_emplace("hp", set_temporary, "hp",
 		gameVariableGetter([this]() { return account.character.hitpointsInHalves / 2.0; }),
 		gameVariableSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<size_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
 	scriptParameters.try_emplace("x", set_temporary, "x",
