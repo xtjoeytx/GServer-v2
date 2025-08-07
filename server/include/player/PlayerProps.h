@@ -107,7 +107,7 @@ enum class PlayerListCategory : uint8_t
 	EXTERNAL    = 0b0001,
 	CHANNEL     = 0b0010,
 	CHANNELUSER = 0b0100,
-	CHANNELOPEN = 0b1000,
+	CHANNELOPEN = 0b1010,
 };
 
 // Gani attributes in order of their property number.
