@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <any>
+#include <array>
 #include <format>
 #include <iterator>
 #include <string_view>
@@ -8,7 +9,6 @@
 
 #include <BabyDI.h>
 #include <CString.h>
-#include <IUtil.h>
 
 #include <FileSystem.h>
 #include <Server.h>
@@ -29,6 +29,8 @@ constexpr std::string_view clientSideTerminator = "//#CLIENTSIDE"sv;
 
 static std::string performClientSideJoinHack(std::string_view code)
 {
+	static const std::array<char, 5> blockStarters = { '\n', '\xa7', ')', '{', ';' };
+
 	std::string result;
 	std::vector<std::string_view> joins;
 
@@ -58,7 +60,7 @@ static std::string performClientSideJoinHack(std::string_view code)
 					continue;
 				}
 				// Look for the start of a block or a newline.
-				else if (!(code[block_start] == '\n' || code[block_start] == '\xa7' || code[block_start] == '{'))
+				else if (!std::ranges::contains(blockStarters, code[block_start]))
 				{
 					join_is_start_of_block = false;
 					break;
@@ -76,20 +78,48 @@ static std::string performClientSideJoinHack(std::string_view code)
 		}
 
 		// Copy the code before the join.
-		// Then, add a semi-colon.  We are going to remove the join entirely.
 		result += code.substr(start, end - start);
-		result += ";";
 
 		// Get the name of the join.
 		start = end + 5; // 5 = strlen("join ")
 		end = code.find(";", start);
 		if (end == std::string_view::npos)
+		{
+			result += "join ";
+			result += code.substr(start);
 			break;
+		}
 
 		// Save the join to the list of joins.
 		std::string_view join = string::trim(code.substr(start, end - start));
 		if (!join.empty())
-			joins.push_back(join);
+		{
+			bool in_sign = false;
+
+			// A simple check to make sure we aren't in a say2 sign.
+			// This won't identify when the join keyword is used as the first word in the last line of a sign.
+			// TODO: Improve this check.
+			if (auto line_end = code.find('\n', start); line_end != std::string_view::npos)
+			{
+				if (auto sign_check = code.find("#b", start); sign_check < line_end)
+					in_sign = true;
+			}
+
+			// If we are in a sign, add the join back in.
+			if (in_sign)
+			{
+				result += "join ";
+				result += join;
+			}
+			// Otherwise, add the join to our joins list.
+			else
+			{
+				joins.push_back(join);
+			}
+
+			// Make sure the semi-colon stays.
+			result += ";";
+		}
 
 		start = end + 1;
 	}
