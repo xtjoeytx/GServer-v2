@@ -72,6 +72,11 @@ inline constexpr uint8_t operator""_ui8(unsigned long long val)
 	return static_cast<uint8_t>(val);
 }
 
+inline constexpr int8_t operator""_i8(unsigned long long val)
+{
+	return static_cast<int8_t>(val);
+}
+
 inline constexpr uint16_t operator""_ui16(unsigned long long val)
 {
 	return static_cast<uint16_t>(val);
@@ -80,6 +85,16 @@ inline constexpr uint16_t operator""_ui16(unsigned long long val)
 inline constexpr int16_t operator""_i16(unsigned long long val)
 {
 	return static_cast<int16_t>(val);
+}
+
+inline constexpr uint32_t operator""_ui32(unsigned long long val)
+{
+	return static_cast<uint32_t>(val);
+}
+
+inline constexpr int32_t operator""_i32(unsigned long long val)
+{
+	return static_cast<int32_t>(val);
 }
 
 //----------------------------

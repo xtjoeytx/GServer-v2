@@ -332,7 +332,7 @@ LevelPtr LevelLoader::loadZelda(LevelPtr level, FileSystem* fileSystem, CString&
 			}
 
 			// Add the baddy.
-			LevelBaddy* baddy = level->addBaddy(toPixelPosition((float)x, (float)y), static_cast<BaddyType>(type));
+			LevelBaddy* baddy = level->addBaddy(toLocalPixelPosition((float)x, (float)y), static_cast<BaddyType>(type));
 			if (baddy == nullptr)
 				continue;
 
@@ -360,7 +360,7 @@ LevelPtr LevelLoader::loadZelda(LevelPtr level, FileSystem* fileSystem, CString&
 			uint8_t y = line.readGChar();
 			CString text = line.readString("");
 
-			level->addSign(WholeTilePosition{ x, y }, text, true);
+			level->addSign(LocalWholeTilePosition{ x, y }, text, true);
 		}
 	}
 
@@ -438,7 +438,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 			}
 
 			// Add the baddy.
-			LevelBaddy* baddy = level->addBaddy(toPixelPosition((float)x, (float)y), static_cast<BaddyType>(type));
+			LevelBaddy* baddy = level->addBaddy(toLocalPixelPosition((float)x, (float)y), static_cast<BaddyType>(type));
 			if (baddy == nullptr)
 				continue;
 
@@ -498,7 +498,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 			char item = line.readGChar();
 			char signindex = line.readGChar();
 
-			level->addChest(WholeTilePosition{ x, y }, LevelItemType(item), signindex);
+			level->addChest(LocalWholeTilePosition{ x, y }, LevelItemType(item), signindex);
 		}
 	}
 
@@ -513,7 +513,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 			uint8_t y = line.readGChar();
 			CString text = line.readString("");
 
-			level->addSign(WholeTilePosition{ x, y }, text, true);
+			level->addSign(LocalWholeTilePosition{ x, y }, text, true);
 		}
 	}
 
@@ -582,7 +582,7 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 				uint8_t chestx = strtoint(curLine[1]);
 				uint8_t chesty = strtoint(curLine[2]);
 				char signidx = strtoint(curLine[4]);
-				level->addChest(WholeTilePosition{ chestx, chesty }, itemType, signidx);
+				level->addChest(LocalWholeTilePosition{ chestx, chesty }, itemType, signidx);
 			}
 		}
 		else if (curLine[0] == "LINK")
@@ -671,7 +671,7 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 			}
 
 			// Add the new sign.
-			level->addSign(WholeTilePosition{ x, y }, text);
+			level->addSign(LocalWholeTilePosition{ x, y }, text);
 		}
 		else if (curLine[0] == "BADDY")
 		{
@@ -683,7 +683,7 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 			int type = strtoint(curLine[3]);
 
 			// Add the baddy.
-			LevelBaddy* baddy = level->addBaddy(toPixelPosition((float)x, (float)y), static_cast<BaddyType>(type));
+			LevelBaddy* baddy = level->addBaddy(toLocalPixelPosition((float)x, (float)y), static_cast<BaddyType>(type));
 			if (baddy == nullptr)
 				continue;
 

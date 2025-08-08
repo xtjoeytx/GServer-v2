@@ -61,7 +61,7 @@ HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 	if (auto level = m_server->getLevel(newLevel.toStringView()); level != nullptr)
 		enterLevel(level, pos, modTime);
 	else if (auto level = getLevel(); level != nullptr)
-		warp(level->levelName, {account.character.pixelX, account.character.pixelY});
+		warp(level->levelName, account.character.getLocalPosition());
 	else
 	{
 		CString unstickLevel = m_server->getSettings().getStr("unstickmelevel", "onlinestartlocal.nw");
@@ -123,7 +123,7 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 	// Send the item now.
 	// TODO: Make this a more generic function.
 	if (dropItem != LevelItemType::INVALID)
-		level->addItem(inform_client, toPixelPosition(loc[0], loc[1]), dropItem);
+		level->addItem(inform_client, toPixelPosition({ 0, 0 }, Position<uint8_t>{ loc[0], loc[1] }), dropItem);
 
 	return HandlePacketResult::Handled;
 }
@@ -202,7 +202,7 @@ HandlePacketResult PlayerClient::msgPLI_BOMBDEL(CString& pPacket)
 
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 	if (auto level = getLevel(); level != nullptr)
-		level->removeBomb(toPixelPosition(loc[0], loc[1]));
+		level->removeBomb(toPixelPosition({ 0, 0 }, loc[0], loc[1]));
 
 	return HandlePacketResult::Handled;
 }
@@ -218,7 +218,7 @@ HandlePacketResult PlayerClient::msgPLI_HORSEADD(CString& pPacket)
 	CString image = pPacket.readString("");
 
 	auto level = getLevel();
-	level->addHorse(image, toPixelPosition(loc[0], loc[1]), hdir, hbushes);
+	level->addHorse(image, toPixelPosition({ 0, 0 }, loc[0], loc[1]), hdir, hbushes);
 	return HandlePacketResult::Handled;
 }
 
@@ -229,7 +229,7 @@ HandlePacketResult PlayerClient::msgPLI_HORSEDEL(CString& pPacket)
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 
 	if (auto level = getLevel(); level != nullptr)
-		level->removeHorse(toPixelPosition(loc[0], loc[1]));
+		level->removeHorse(toPixelPosition({ 0, 0 }, loc[0], loc[1]));
 
 	return HandlePacketResult::Handled;
 }
@@ -278,10 +278,10 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 	LevelItemType itemType = LevelItem::getItemId(item);
 
 	if (m_server->hasNPCServer())
-		dropItem(toPixelPosition(loc[0], loc[1]), itemType);
+		dropItem(toPixelPosition({ 0, 0 }, loc[0], loc[1]), itemType);
 	else if (auto level = getLevel(); level != nullptr)
 	{
-		level->addItem(toPixelPosition(loc[0], loc[1]), itemType);
+		level->addItem(toPixelPosition({ 0, 0 }, loc[0], loc[1]), itemType);
 		m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)item, m_currentLevel, { m_id });
 	}
 
@@ -296,7 +296,7 @@ HandlePacketResult PlayerClient::msgPLI_ITEMDEL(CString& pPacket)
 
 	// Remove the item from the level, getting the type of the item in the process.
 	auto level = getLevel();
-	LevelItemType item = level->removeItem(toPixelPosition(loc[0], loc[1]));
+	LevelItemType item = level->removeItem(toPixelPosition({ 0, 0 }, loc[0], loc[1]));
 	if (item == LevelItemType::INVALID) return HandlePacketResult::Handled;
 
 	// If this is a PLI_ITEMTAKE packet, give the item to the player.
@@ -445,7 +445,7 @@ HandlePacketResult PlayerClient::msgPLI_BADDYADD(CString& pPacket)
 
 	// Add the baddy.
 	auto level = getLevel();
-	LevelBaddy* baddy = level->addBaddy(toPixelPosition(loc[0], loc[1]), static_cast<BaddyType>(bType));
+	LevelBaddy* baddy = level->addBaddy(toLocalPixelPosition(loc[0], loc[1]), static_cast<BaddyType>(bType));
 	if (baddy == nullptr) return HandlePacketResult::Handled;
 
 	// Set the baddy props.
@@ -492,7 +492,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 			{
 				if (m_versionId >= CLVER_2_3) return HandlePacketResult::Handled;
 				float pos = (float)atof(flagValue.text());
-				if (pos != getX())
+				if (pos != (account.character.localPixelX / 16.0f))
 				{
 					if (pos == -22) pos = -21.5f;
 					if (pos == 116) pos = 115.5f;
@@ -506,7 +506,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 			{
 				if (m_versionId >= CLVER_2_3) return HandlePacketResult::Handled;
 				float pos = (float)atof(flagValue.text());
-				if (pos != getY())
+				if (pos != (account.character.localPixelX / 16.0f))
 				{
 					if (pos == -22) pos = -21.5f;
 					if (pos == 116) pos = 115.5f;
@@ -520,7 +520,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 			{
 				if (m_versionId >= CLVER_2_3) return HandlePacketResult::Handled;
 				float pos = (float)atof(flagValue.text());
-				if (pos != getZ())
+				if (pos != (account.character.localPixelZ / 16.0f))
 					m_grMovementPackets >> (char)PlayerProp::Z >> (char)((pos + 0.5f) + 50.0f) << "\n";
 				return HandlePacketResult::Handled;
 			}
@@ -612,7 +612,7 @@ HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 
 	if (auto level = getLevel(); level)
 	{
-		if (auto chest = level->getChest(WholeTilePosition{ cX, cY }); chest.has_value())
+		if (auto chest = level->getChest(LocalWholeTilePosition{ cX, cY }); chest.has_value())
 		{
 			if (!account.hasChest(level->levelName, cX, cY))
 			{
@@ -1010,7 +1010,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 		(float)pPacket.readGUChar() / 2.0f,
 		(float)pPacket.readGUChar() / 2.0f
 	};
-	Position<int16_t> pixelLoc = { static_cast<int16_t>(loc[0] * 16), static_cast<int16_t>(loc[1] * 16) };
+	LocalPixelPosition pixelLoc = { static_cast<int16_t>(loc[0] * 16), static_cast<int16_t>(loc[1] * 16) };
 
 	// Tokenize the actions.
 	auto actionData = pPacket.readString("").toString();
@@ -1266,7 +1266,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 
 			// Trigger on level NPCs.
 			if (m_server->hasNPCServer())
-				m_server->getNPCServer()->addEventToLevelNPCsAtPosition(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), level, pixelLoc, actions);
+				m_server->getNPCServer()->addEventToLevelNPCsAtPosition(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), level, toPixelPosition({ 0, 0 }, pixelLoc), actions);
 		}
 	}
 

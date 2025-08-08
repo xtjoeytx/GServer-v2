@@ -9,7 +9,6 @@
 #include <CString.h>
 
 #include <object/Character.h>
-#include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -36,7 +35,7 @@ public:
 	[[inline]] void setHeight(uint8_t height = 0);
 
 public:
-	Position<int16_t> getDestinationForCharacter(Character& character) const;
+	LocalPixelPosition getDestinationForCharacter(Character& character) const;
 	[[inline]] const std::string& getDestinationLevel() const;
 	[[inline]] const std::string& getDestinationX() const;
 	[[inline]] const std::string& getDestinationY() const;

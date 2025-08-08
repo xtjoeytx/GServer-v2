@@ -438,7 +438,7 @@ static std::optional<PixelPosition> getPositionForArrow(const ScriptObjectSource
 	{
 		if (auto npc = server->getNPC(source.first); npc != nullptr)
 		{
-			PixelPosition sourcePosition = { npc->character.pixelX, npc->character.pixelY };
+			PixelPosition sourcePosition = npc->character.getGlobalPosition();
 			if (npc->isCharacter())
 			{
 				int16_t dX = (dir == 1 ? -24 : (dir == 3 ? 24 : 0));
@@ -976,7 +976,10 @@ void fn_hurt(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-			server->hitPlayer(player->getId(), halfhearts, player->getX() + 1.5, player->getY() + 2, server->getNPC(npcId));
+		{
+			auto tilePos = toTilePosition(player->account.character.getLocalPosition());
+			server->hitPlayer(player->getId(), halfhearts, tilePos.x() + 1.5, tilePos.y() + 2, server->getNPC(npcId));
+		}
 	}
 }
 
@@ -1053,7 +1056,7 @@ void fn_lay(GS1Visitor* visitor, std::string_view commandName, const std::vector
 		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			PixelPosition layPosition{ npc->character.pixelX, npc->character.pixelY };
+			PixelPosition layPosition = npc->character.getGlobalPosition();
 
 			// Characters lay (+0.5, +3) no matter which direction they are looking.
 			if (npc->isCharacter())
@@ -1077,7 +1080,7 @@ void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 		auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addItem(inform_client, toPixelPosition((float)x, (float)y), static_cast<LevelItemType>(itemname));
+		level->addItem(inform_client, toPixelPosition({ 0, 0 }, (float)x, (float)y), static_cast<LevelItemType>(itemname));
 	}
 }
 
@@ -1141,7 +1144,7 @@ void fn_putbomb(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		auto power = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 1_ui8, 3_ui8);
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addBomb(inform_client, toPixelPosition((float)x, (float)y), power);
+		level->addBomb(inform_client, toPixelPosition({ 0, 0 }, (float)x, (float)y), power);
 	}
 }
 
@@ -1157,7 +1160,7 @@ void fn_putcomp(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		uint8_t baddyname = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->putNewBaddy(toPixelPosition((float)x, (float)y), static_cast<BaddyType>(baddyname));
+		level->putNewBaddy(toLocalPixelPosition((float)x, (float)y), static_cast<BaddyType>(baddyname));
 	}
 }
 
@@ -1173,7 +1176,7 @@ void fn_putexplosion(GS1Visitor* visitor, std::string_view commandName, const st
 		auto radius = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addExplosion(inform_client, toPixelPosition((float)x, (float)y), visitor->getCurrentSource(), radius, 1);
+		level->addExplosion(inform_client, toPixelPosition({ 0, 0 }, (float)x, (float)y), visitor->getCurrentSource(), radius, 1);
 	}
 }
 
@@ -1190,7 +1193,7 @@ void fn_putexplosion2(GS1Visitor* visitor, std::string_view commandName, const s
 		auto radius = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto x = visitor->getGameValueAs<double>(*arguments[2]);
 		auto y = visitor->getGameValueAs<double>(*arguments[3]);
-		level->addExplosion(inform_client, toPixelPosition((float)x, (float)y), visitor->getCurrentSource(), radius, power);
+		level->addExplosion(inform_client, toPixelPosition({ 0, 0 }, (float)x, (float)y), visitor->getCurrentSource(), radius, power);
 	}
 }
 
@@ -1206,7 +1209,7 @@ void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::v
 		auto imagefile = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addHorse(inform_client, imagefile, toPixelPosition((float)x, (float)y), 2, 0);
+		level->addHorse(inform_client, imagefile, toPixelPosition({ 0, 0 }, (float)x, (float)y), 2, 0);
 	}
 }
 
@@ -1224,7 +1227,7 @@ void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std:
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
 		auto imagefile = visitor->getGameValueAs<std::string>(*arguments[3]);
 		auto power = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[4]));
-		level->putNewBaddy(toPixelPosition((float)x, (float)y), static_cast<BaddyType>(baddyname), power, imagefile);
+		level->putNewBaddy(toLocalPixelPosition((float)x, (float)y), static_cast<BaddyType>(baddyname), power, imagefile);
 	}
 }
 
@@ -1828,7 +1831,7 @@ void fn_setlevel(GS1Visitor* visitor, std::string_view commandName, const std::v
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
-			player->warp(filename, { player->account.character.pixelX, player->account.character.pixelY });
+			player->warp(filename, player->account.character.getLocalPosition());
 	}
 }
 
@@ -2328,7 +2331,7 @@ void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		{
 			server->sendPacketToLevelArea(CString() >> (char)PLO_FIRESPY >> (short)source.value().first >> (char)(length_power), player);
 			if (auto level = player->getLevel(); level != nullptr)
-				level->addSpyFire({ player->account.character.pixelX, player->account.character.pixelY }, source.value(), player->account.character.direction, length, power);
+				level->addSpyFire(player->account.character.getGlobalPosition(), source.value(), player->account.character.direction, length, power);
 		}
 	}
 }
@@ -2350,7 +2353,7 @@ void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 				auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
 
 				// Get our search position.
-				PixelPosition searchPosition = { npc->character.pixelX, npc->character.pixelY };
+				PixelPosition searchPosition = npc->character.getGlobalPosition();
 				if (npc->isCharacter())
 					searchPosition.translate(static_cast<int16_t>(8), static_cast<int16_t>(16 * 3));
 

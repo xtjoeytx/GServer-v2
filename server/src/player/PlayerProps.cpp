@@ -247,8 +247,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			// Hack to allow spin to hurt things.
 			if (account.character.gani == "spin")
 			{
-				float tX = static_cast<float>(account.character.pixelX / 16.0f) + 1.5f;
-				float tY = static_cast<float>(account.character.pixelY / 16.0f) + 2.0f;
+				float tX = static_cast<float>(account.character.localPixelX / 16.0f) + 1.5f;
+				float tY = static_cast<float>(account.character.localPixelY / 16.0f) + 2.0f;
 				m_server->hitObjectsAtPoint({ tX, tY + 2.0f }, account.character.swordPower, level, shared_from_this());
 				m_server->hitObjectsAtPoint({ tX, tY - 2.0f }, account.character.swordPower, level, shared_from_this());
 				m_server->hitObjectsAtPoint({ tX + 2.0f, tY }, account.character.swordPower, level, shared_from_this());
@@ -328,11 +328,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (coordProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			if (account.character.pixelX == coordProp->pixelCoordinate)
+			if (account.character.localPixelX == coordProp->pixelCoordinate)
 				break;
 
-			auto movementDirection = static_cast<uint8_t>(2 + std::clamp(coordProp->pixelCoordinate - account.character.pixelX, -1, 1));
-			account.character.pixelX = coordProp->pixelCoordinate;
+			auto movementDirection = static_cast<uint8_t>(2 + std::clamp(coordProp->pixelCoordinate - account.character.localPixelX, -1, 1));
+			account.character.localPixelX = coordProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);
 			result.resultPropIds.push_back(PROPID(PlayerProp::X2));
 
@@ -350,11 +350,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (coordProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			if (account.character.pixelY == coordProp->pixelCoordinate)
+			if (account.character.localPixelY == coordProp->pixelCoordinate)
 				break;
 
-			auto movementDirection = static_cast<uint8_t>(1 + std::clamp(coordProp->pixelCoordinate - account.character.pixelY, -1, 1));
-			account.character.pixelY = coordProp->pixelCoordinate;
+			auto movementDirection = static_cast<uint8_t>(1 + std::clamp(coordProp->pixelCoordinate - account.character.localPixelY, -1, 1));
+			account.character.localPixelY = coordProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);
 			result.resultPropIds.push_back(PROPID(PlayerProp::Y2));
 
@@ -372,7 +372,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (zProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			account.character.pixelZ = zProp->pixelCoordinate;
+			account.character.localPixelZ = zProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);
 			result.resultPropIds.push_back(PROPID(PlayerProp::Z2));
 
@@ -714,7 +714,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			{
 				auto& newLevelName = cmap->getLevelAt(numProp->value, level->getMapY());
 				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
-					enterLevel(m_server->getLevel(newLevelName), { account.character.pixelX, account.character.pixelY }, player->getCachedLevelModTime(newLevel.get()));
+					enterLevel(m_server->getLevel(newLevelName), account.character.getLocalPosition(), player->getCachedLevelModTime(newLevel.get()));
 			}
 			break;
 		}
@@ -732,7 +732,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			{
 				auto& newLevelName = cmap->getLevelAt(level->getMapX(), numProp->value);
 				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
-					enterLevel(m_server->getLevel(newLevelName), { account.character.pixelX, account.character.pixelY }, player->getCachedLevelModTime(newLevel.get()));
+					enterLevel(m_server->getLevel(newLevelName), account.character.getLocalPosition(), player->getCachedLevelModTime(newLevel.get()));
 			}
 			break;
 		}
@@ -844,11 +844,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (pixelProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			if (account.character.pixelX == pixelProp->pixelCoordinate)
+			if (account.character.localPixelX == pixelProp->pixelCoordinate)
 				break;
 
-			auto movementDirection = static_cast<uint8_t>(2 + std::clamp(pixelProp->pixelCoordinate - account.character.pixelX, -1, 1));
-			account.character.pixelX = pixelProp->pixelCoordinate;
+			auto movementDirection = static_cast<uint8_t>(2 + std::clamp(pixelProp->pixelCoordinate - account.character.localPixelX, -1, 1));
+			account.character.localPixelX = pixelProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);
 			result.resultPropIds.push_back(PROPID(PlayerProp::X));
 
@@ -866,11 +866,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (pixelProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			if (account.character.pixelY == pixelProp->pixelCoordinate)
+			if (account.character.localPixelY == pixelProp->pixelCoordinate)
 				break;
 
-			auto movementDirection = static_cast<uint8_t>(1 + std::clamp(pixelProp->pixelCoordinate - account.character.pixelY, -1, 1));
-			account.character.pixelY = pixelProp->pixelCoordinate;
+			auto movementDirection = static_cast<uint8_t>(1 + std::clamp(pixelProp->pixelCoordinate - account.character.localPixelY, -1, 1));
+			account.character.localPixelY = pixelProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);
 			result.resultPropIds.push_back(PROPID(PlayerProp::Y));
 
@@ -888,7 +888,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (pixelProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			account.character.pixelZ = pixelProp->pixelCoordinate;
+			account.character.localPixelZ = pixelProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);
 			result.resultPropIds.push_back(PROPID(PlayerProp::Z));
 
@@ -1099,7 +1099,7 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 	if (isLoaded() && isClient())
 	{
 		if (auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr)
-			player->warp(account.level, { static_cast<int16_t>(getX() * 16), static_cast<int16_t>(getY() * 16) }, 0);
+			player->warp(account.level, account.character.getLocalPosition(), 0);
 	}
 }
 

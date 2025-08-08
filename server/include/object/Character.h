@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 
-#undef TRANSPARENT
+#include <utilities/Extents.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -15,9 +15,11 @@ namespace preagonal
 
 struct Character
 {
-	int16_t pixelX = 488;	// 30.5
-	int16_t pixelY = 480;	// 30
-	int16_t pixelZ = 0;
+	int16_t localPixelX = 488;	// 30.5
+	int16_t localPixelY = 480;	// 30
+	int16_t localPixelZ = 0;
+	uint8_t mapX = 0;
+	uint8_t mapY = 0;
 	uint8_t ap = 50;
 	uint8_t mp = 0;
 	uint32_t gralats = 0;
@@ -42,6 +44,16 @@ struct Character
 	std::string shieldImage{ "shield1.png" };
 	std::string bowImage{ "bow1.png" };
 	std::string ganiAttributes[30];
+
+	LocalPixelPosition getLocalPosition() const noexcept
+	{
+		return { localPixelX, localPixelY, localPixelZ };
+	}
+
+	PixelPosition getGlobalPosition() const noexcept
+	{
+		return { static_cast<int32_t>((mapX * 1024) + localPixelX), static_cast<int32_t>((mapY * 1024) + localPixelY), static_cast<int32_t>(localPixelZ) };
+	}
 };
 
 //----------------------------

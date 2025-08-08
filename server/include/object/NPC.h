@@ -200,7 +200,7 @@ public:
 	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
 
 public:
-	bool warp(LevelPtr level, const PixelPosition& position);
+	bool warp(LevelPtr level, const LocalPixelPosition& position);
 
 public:
 	/// @brief Records the current modification time of all properties.
@@ -296,8 +296,8 @@ public:
 public:
 	const std::string& getWeaponName() const noexcept { return m_weaponName; }
 	bool isCharacter() const noexcept { return image == "#c#"; }
-	[[inline]] Rectangle<int16_t, uint16_t> getBoundingBox() const noexcept;
-	[[inline]] Rectangle<int16_t, uint16_t> getCollisionBoundingBox() const noexcept;
+	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
+	[[inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
 	std::string getLevelName() const;
 	Position<uint8_t> getGmapPosition() const;
 	std::vector<std::string> getVariableDump() const;
@@ -364,18 +364,18 @@ inline void NPC::recordCurrentPropModTime()
 	m_savedModTime = modTime;
 }
 
-inline Rectangle<int16_t, uint16_t> NPC::getBoundingBox() const noexcept
+inline PixelRectangleArea NPC::getBoundingBox() const noexcept
 {
-	return { { character.pixelX, character.pixelY }, shape };
+	return { character.getGlobalPosition(), shape };
 }
 
-inline Rectangle<int16_t, uint16_t> NPC::getCollisionBoundingBox() const noexcept
+inline PixelRectangleArea NPC::getCollisionBoundingBox() const noexcept
 {
 	// Character NPCs have a specific bounding box.
 	if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
-		return { { character.pixelX + 8, character.pixelY + 16 }, { 32, 32 } };
+		return { character.getGlobalPosition().translate(8, 16), { 32, 32 } };
 
-	return { { character.pixelX, character.pixelY }, shape };
+	return { character.getGlobalPosition(), shape};
 }
 
 //----------------------------
@@ -384,8 +384,8 @@ inline Rectangle<int16_t, uint16_t> NPC::getCollisionBoundingBox() const noexcep
 #define FOR_LIST_OF_NPC_PROPS(DO) \
 	DO(NPCProp::IMAGE,		PropertyString,				image) \
 	DO(NPCProp::SCRIPT,		PropertyGS1Script,			getClientSideScript()) \
-	DO(NPCProp::X,			PropertyTileCoordinate,		character.pixelX) \
-	DO(NPCProp::Y,			PropertyTileCoordinate,		character.pixelY) \
+	DO(NPCProp::X,			PropertyTileCoordinate,		character.localPixelX) \
+	DO(NPCProp::Y,			PropertyTileCoordinate,		character.localPixelY) \
 	DO(NPCProp::POWER,		PropertyNumeric<GBYTE1>,	character.hitpointsInHalves) \
 	DO(NPCProp::RUPEES,		PropertyNumeric<GBYTE3>,	character.gralats) \
 	DO(NPCProp::ARROWS,		PropertyNumeric<GBYTE1>,	character.arrows) \
@@ -425,7 +425,7 @@ inline Rectangle<int16_t, uint16_t> NPC::getCollisionBoundingBox() const noexcep
 	DO(NPCProp::GATTRIB5,	PropertyString,				character.ganiAttributes[4]) \
 	DO(NPCProp::GMAPLEVELX,	PropertyNumeric<GBYTE1>,	getGmapPosition().x()) \
 	DO(NPCProp::GMAPLEVELY,	PropertyNumeric<GBYTE1>,	getGmapPosition().y()) \
-	DO(NPCProp::Z,			PropertyTileCoordinateZ,	character.pixelZ) \
+	DO(NPCProp::Z,			PropertyTileCoordinateZ,	character.localPixelZ) \
 	DO(NPCProp::GATTRIB6,	PropertyString,				character.ganiAttributes[5]) \
 	DO(NPCProp::GATTRIB7,	PropertyString,				character.ganiAttributes[6]) \
 	DO(NPCProp::GATTRIB8,	PropertyString,				character.ganiAttributes[7]) \
@@ -457,9 +457,9 @@ inline Rectangle<int16_t, uint16_t> NPC::getCollisionBoundingBox() const noexcep
 	DO(NPCProp::GATTRIB29,	PropertyString,				character.ganiAttributes[28]) \
 	DO(NPCProp::GATTRIB30,	PropertyString,				character.ganiAttributes[29]) \
 	DO(NPCProp::CLASS,		PropertyString,				getJoinedClasses()) \
-	DO(NPCProp::X2,			PropertyPixelCoordinate,	character.pixelX) \
-	DO(NPCProp::Y2,			PropertyPixelCoordinate,	character.pixelY) \
-	DO(NPCProp::Z2,			PropertyPixelCoordinate,	character.pixelZ)
+	DO(NPCProp::X2,			PropertyPixelCoordinate,	character.localPixelX) \
+	DO(NPCProp::Y2,			PropertyPixelCoordinate,	character.localPixelY) \
+	DO(NPCProp::Z2,			PropertyPixelCoordinate,	character.localPixelZ)
 
 //----------------------------
 

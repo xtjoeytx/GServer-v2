@@ -141,7 +141,7 @@ void NPC::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) con
 
 //----------------------------
 
-bool NPC::warp(LevelPtr newLevel, const PixelPosition& position)
+bool NPC::warp(LevelPtr newLevel, const LocalPixelPosition& position)
 {
 	if (newLevel == nullptr)
 		return false;
@@ -268,7 +268,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (coordProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
-			character.pixelX = coordProp->pixelCoordinate;
+			character.localPixelX = coordProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::X2));
 
 			// Do collision testing.
@@ -282,7 +282,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (coordProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
-			character.pixelY = coordProp->pixelCoordinate;
+			character.localPixelY = coordProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::Y2));
 
 			// Do collision testing.
@@ -296,7 +296,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (zProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
-			character.pixelZ = zProp->pixelCoordinate;
+			character.localPixelZ = zProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::Z2));
 
 			// No collision testing for Z movement.
@@ -433,8 +433,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			// Hack to allow spin to hurt things.
 			if (character.gani == "spin")
 			{
-				float tX = static_cast<float>(character.pixelX / 16.0f) + 1.5f;
-				float tY = static_cast<float>(character.pixelY / 16.0f) + 2.0f;
+				float tX = static_cast<float>(character.localPixelX / 16.0f) + 1.5f;
+				float tY = static_cast<float>(character.localPixelY / 16.0f) + 2.0f;
 				server->hitObjectsAtPoint({ tX, tY + 2.0f }, character.swordPower, level, nullptr);
 				server->hitObjectsAtPoint({ tX, tY - 2.0f }, character.swordPower, level, nullptr);
 				server->hitObjectsAtPoint({ tX + 2.0f, tY }, character.swordPower, level, nullptr);
@@ -760,7 +760,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (pixelProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
-			character.pixelX = pixelProp->pixelCoordinate;
+			character.localPixelX = pixelProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::X));
 
 			// Do collision testing.
@@ -774,7 +774,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (pixelProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
-			character.pixelY = pixelProp->pixelCoordinate;
+			character.localPixelY = pixelProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::Y));
 
 			// Do collision testing.
@@ -788,7 +788,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (pixelProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
-			character.pixelZ = pixelProp->pixelCoordinate;
+			character.localPixelZ = pixelProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::Z));
 
 			// Do collision testing.
@@ -1160,7 +1160,7 @@ void NPC::resetToInitialState()
 	// Warp.
 	if (auto initialLevel = m_initialLevel.lock(); initialLevel != nullptr)
 	{
-		warp(initialLevel, { character.pixelX, character.pixelY });
+		warp(initialLevel, character.getLocalPosition());
 	}
 }
 
@@ -1190,14 +1190,14 @@ void NPC::constructScriptParameters()
 		gameVariableGetter([this]() { return character.hitpointsInHalves / 2.0; }),
 		gameVariableSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<size_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
 	scriptParameters.try_emplace("x", set_temporary, "x",
-		gameVariableGetter([this]() { return character.pixelX / 16.0; }),
-		gameVariableSetter(this, PROPOPT(NPCProp::X2), [this](const GameValue& value, std::optional<size_t>) { character.pixelX = value.get<double>().value_or(0.0) * 16; }));
+		gameVariableGetter([this]() { return character.getGlobalPosition().x() / 16.0; }),
+		gameVariableSetter(this, PROPOPT(NPCProp::X2), [this](const GameValue& value, std::optional<size_t>) { character.localPixelX = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("y", set_temporary, "y",
-		gameVariableGetter([this]() { return character.pixelY / 16.0; }),
-		gameVariableSetter(this, PROPOPT(NPCProp::Y2), [this](const GameValue& value, std::optional<size_t>) { character.pixelY = value.get<double>().value_or(0.0) * 16; }));
+		gameVariableGetter([this]() { return character.getGlobalPosition().y() / 16.0; }),
+		gameVariableSetter(this, PROPOPT(NPCProp::Y2), [this](const GameValue& value, std::optional<size_t>) { character.localPixelY = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("z", set_temporary, "z",
-		gameVariableGetter([this]() { return character.pixelZ / 16.0; }),
-		gameVariableSetter(this, PROPOPT(NPCProp::Z2), [this](const GameValue& value, std::optional<size_t>) { character.pixelZ = value.get<double>().value_or(0.0) * 16; }));
+		gameVariableGetter([this]() { return character.localPixelZ / 16.0; }),
+		gameVariableSetter(this, PROPOPT(NPCProp::Z2), [this](const GameValue& value, std::optional<size_t>) { character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
 
 	scriptParameters.try_emplace("timeout", set_temporary, "timeout",
 		gameVariableGetter([this]() { return timeout.count() / 1000.0; }),
@@ -1290,8 +1290,8 @@ void NPC::testForLinks(SetResults& result)
 	auto map = levelPtr->getMap();
 	if (map != nullptr)
 	{
-		uint32_t mapPixelX = character.pixelX + 1024 * levelPtr->getMapX();
-		uint32_t mapPixelY = character.pixelY + 1024 * levelPtr->getMapY();
+		uint32_t mapPixelX = character.localPixelX + 1024 * levelPtr->getMapX();
+		uint32_t mapPixelY = character.localPixelY + 1024 * levelPtr->getMapY();
 		uint8_t mapx = static_cast<uint8_t>(mapPixelX / 1024);
 		uint8_t mapy = static_cast<uint8_t>(mapPixelY / 1024);
 
@@ -1304,15 +1304,15 @@ void NPC::testForLinks(SetResults& result)
 					result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
 					result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
 					level = newLevel;
-					character.pixelX = mapPixelX % 1024;
-					character.pixelY = mapPixelY % 1024;
+					character.localPixelX = mapPixelX % 1024;
+					character.localPixelY = mapPixelY % 1024;
 					informNPCWarped();
 				}
 			}
 			else
 			{
-				character.pixelX = std::clamp(character.pixelX, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
-				character.pixelY = std::clamp(character.pixelY, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
+				character.localPixelX = std::clamp(character.localPixelX, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
+				character.localPixelY = std::clamp(character.localPixelY, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
 				informNPCOnlyMoved();
 			}
 			return;
@@ -1322,7 +1322,7 @@ void NPC::testForLinks(SetResults& result)
 	if (warpRestrictions == NPCWarpRestrictions::ALLOWED)
 	{
 		static Position<int> touchTest[] = { { 2, 1 }, { 0, 2 }, { 2, 4 }, { 3, 2 } };
-		WholeTilePosition testPos{ (uint8_t)std::clamp((character.pixelX / 16) + touchTest[character.direction].x(), 0, 63), (uint8_t)std::clamp((character.pixelY / 16) + touchTest[character.direction].y(), 0, 63) };
+		LocalWholeTilePosition testPos{ (uint8_t)std::clamp((character.localPixelX / 16) + touchTest[character.direction].x(), 0, 63), (uint8_t)std::clamp((character.localPixelY / 16) + touchTest[character.direction].y(), 0, 63) };
 		if (auto linkTouched = levelPtr->getLink(testPos, map != nullptr); linkTouched.has_value())
 		{
 			if (auto newLevel = server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)
@@ -1334,8 +1334,8 @@ void NPC::testForLinks(SetResults& result)
 
 				level = newLevel;
 				auto pos = linkTouched.value()->getDestinationForCharacter(character);
-				character.pixelX = pos.x();
-				character.pixelY = pos.y();
+				character.localPixelX = pos.x();
+				character.localPixelY = pos.y();
 				informNPCWarped();
 			}
 		}

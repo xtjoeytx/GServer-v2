@@ -142,28 +142,28 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (curCommand == "STARTLEVEL")
 			npcInitialLevel = curLine.readString("");
 		else if (curCommand == "STARTX")
-			npc->m_initialCharacter.pixelX = int(strtofloat(curLine.readString("")) * 16);
+			npc->m_initialCharacter.localPixelX = int(strtofloat(curLine.readString("")) * 16);
 		else if (curCommand == "STARTY")
-			npc->m_initialCharacter.pixelY = int(strtofloat(curLine.readString("")) * 16);
+			npc->m_initialCharacter.localPixelY = int(strtofloat(curLine.readString("")) * 16);
 		else if (curCommand == "STARTZ")
-			npc->m_initialCharacter.pixelZ = int(strtofloat(curLine.readString("")) * 16);
+			npc->m_initialCharacter.localPixelZ = int(strtofloat(curLine.readString("")) * 16);
 		else if (curCommand == "LEVEL")
 			npcLevel = curLine.readString("");
 		else if (curCommand == "X")
 		{
-			npc->character.pixelX = int(strtofloat(curLine.readString("")) * 16);
+			npc->character.localPixelX = int(strtofloat(curLine.readString("")) * 16);
 			npc->modTime[PROPID(NPCProp::X)] = updateTime;
 			npc->modTime[PROPID(NPCProp::X2)] = updateTime;
 		}
 		else if (curCommand == "Y")
 		{
-			npc->character.pixelY = int(strtofloat(curLine.readString("")) * 16);
+			npc->character.localPixelY = int(strtofloat(curLine.readString("")) * 16);
 			npc->modTime[PROPID(NPCProp::Y)] = updateTime;
 			npc->modTime[PROPID(NPCProp::Y2)] = updateTime;
 		}
 		else if (curCommand == "Z")
 		{
-			npc->character.pixelZ = int(strtofloat(curLine.readString("")) * 16);
+			npc->character.localPixelZ = int(strtofloat(curLine.readString("")) * 16);
 			npc->modTime[PROPID(NPCProp::Z)] = updateTime;
 			npc->modTime[PROPID(NPCProp::Z2)] = updateTime;
 		}
@@ -424,15 +424,15 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 			<< CString(npc->imagePart.size.width()) << " " << CString(npc->imagePart.size.height()) << NL;
 	}
 	fileData << "STARTLEVEL " << initialLevelName << NL;
-	fileData << "STARTX " << CString((float)npc->m_initialCharacter.pixelX / 16.0f) << NL;
-	fileData << "STARTY " << CString((float)npc->m_initialCharacter.pixelY / 16.0f) << NL;
-	fileData << "STARTZ " << CString((float)npc->m_initialCharacter.pixelZ / 16.0f) << NL;
+	fileData << "STARTX " << CString((float)npc->m_initialCharacter.localPixelX / 16.0f) << NL;
+	fileData << "STARTY " << CString((float)npc->m_initialCharacter.localPixelY / 16.0f) << NL;
+	fileData << "STARTZ " << CString((float)npc->m_initialCharacter.localPixelZ / 16.0f) << NL;
 	if (level)
 	{
 		fileData << "LEVEL " << level->levelName << NL;
-		fileData << "X " << CString((float)npc->character.pixelX / 16.0f) << NL;
-		fileData << "Y " << CString((float)npc->character.pixelY / 16.0f) << NL;
-		fileData << "Z " << CString((float)npc->character.pixelZ / 16.0f) << NL;
+		fileData << "X " << CString((float)npc->character.localPixelX / 16.0f) << NL;
+		fileData << "Y " << CString((float)npc->character.localPixelY / 16.0f) << NL;
+		fileData << "Z " << CString((float)npc->character.localPixelZ / 16.0f) << NL;
 	}
 	fileData << "NICK " << npc->character.nickName << NL;
 	fileData << "ANI " << npc->character.gani << NL;

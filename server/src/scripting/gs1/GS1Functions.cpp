@@ -586,7 +586,8 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messag
 		{
 			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
 			{
-				auto distance = std::hypot(player->getX() - x, player->getY() - y);
+				TilePosition playerPos = toTilePosition(player->account.character.getGlobalPosition());
+				auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
 				if (distance < std::get<1>(nearestPlayer))
 					nearestPlayer = { id, distance };
 			}
@@ -714,7 +715,8 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view message
 		{
 			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
 			{
-				auto distance = std::hypot(player->getX() - x, player->getY() - y);
+				TilePosition playerPos = toTilePosition(player->account.character.getGlobalPosition());
+				auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
 				if (distance < std::get<1>(nearestPlayer))
 					nearestPlayer = { id, distance };
 			}
@@ -753,7 +755,8 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messag
 				if (!flag.empty() && !player->account.variables.contains(flag))
 					continue;
 
-				auto distance = std::hypot(player->getX() - x, player->getY() - y);
+				TilePosition playerPos = toTilePosition(player->account.character.getGlobalPosition());
+				auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
 				playersByDistance.emplace(distance, id);
 			}
 		}

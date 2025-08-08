@@ -130,11 +130,11 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 		else if (section == "LEVEL")
 			account.level = val;
 		else if (section == "X")
-			account.character.pixelX = static_cast<int16_t>(string::toFloat(val) * 16);
+			account.character.localPixelX = static_cast<int16_t>(string::toFloat(val) * 16);
 		else if (section == "Y")
-			account.character.pixelY = static_cast<int16_t>(string::toFloat(val) * 16);
+			account.character.localPixelY = static_cast<int16_t>(string::toFloat(val) * 16);
 		else if (section == "Z")
-			account.character.pixelZ = static_cast<int16_t>(string::toFloat(val) * 16);
+			account.character.localPixelZ = static_cast<int16_t>(string::toFloat(val) * 16);
 		else if (section == "MAXHP")
 			account.maxHitpoints = toByte(val);
 		else if (section == "HP")
@@ -277,10 +277,10 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 			account.level = settings.getStr("startlevel", "onlinestartlocal.nw").toString();
 
 		if (settings.exists("startx"))
-			account.character.pixelX = static_cast<int16_t>(settings.getFloat("startx", 30.0f) * 16);
+			account.character.localPixelX = static_cast<int16_t>(settings.getFloat("startx", 30.0f) * 16);
 
 		if (settings.exists("starty"))
-			account.character.pixelY = static_cast<int16_t>(settings.getFloat("starty", 30.5f) * 16);
+			account.character.localPixelY = static_cast<int16_t>(settings.getFloat("starty", 30.5f) * 16);
 
 		// Save our account now and add it to the file system.
 		if (!account.loadOnly)
@@ -309,9 +309,9 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "NICK", account.character.nickName);
 	writeLine(newFile, "COMMUNITYNAME", account.communityName, account.name);
 	writeLine(newFile, "LEVEL", account.level);
-	writeLine(newFile, "X", account.character.pixelX / 16.0f);
-	writeLine(newFile, "Y", account.character.pixelY / 16.0f);
-	writeLine(newFile, "Z", account.character.pixelZ / 16.0f, 0.0f);
+	writeLine(newFile, "X", account.character.localPixelX / 16.0f);
+	writeLine(newFile, "Y", account.character.localPixelY / 16.0f);
+	writeLine(newFile, "Z", account.character.localPixelZ / 16.0f, 0.0f);
 	writeLine(newFile, "MAXHP", account.maxHitpoints);
 	writeLine(newFile, "HP", account.character.hitpointsInHalves / 2.0f);
 	writeLine(newFile, "ANI", account.character.gani);

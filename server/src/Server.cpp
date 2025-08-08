@@ -1024,8 +1024,8 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 
 	// Set NPC props.
 	newNPC->level = level;
-	newNPC->character.pixelX = x * 16;
-	newNPC->character.pixelY = y * 16;
+	newNPC->character.localPixelX = x * 16;
+	newNPC->character.localPixelY = y * 16;
 	newNPC->image = image;
 
 	// If the level is a gmap, set the modTime on the level props.
@@ -1050,7 +1050,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	}
 
 #ifdef DEBUG
-	log::printLine(log::server, "Adding NPC [{}] '{}' at ({}, {}) in level '{}'.", newNPC->id, newNPC->name, newNPC->character.pixelX, newNPC->character.pixelY, levelPtr ? levelPtr->levelName : "null");
+	log::printLine(log::server, "Adding NPC [{}] '{}' at ({}, {}) in level '{}'.", newNPC->id, newNPC->name, newNPC->character.localPixelX, newNPC->character.localPixelY, levelPtr ? levelPtr->levelName : "null");
 #endif
 
 	// Send the NPC's props to everybody in range.
@@ -1134,13 +1134,13 @@ void Server::moveNPC(std::shared_ptr<NPC> npc, float dx, float dy, float duratio
 		auto timeIn50msIncrements = static_cast<uint16_t>(duration / 0.05);
 
 		CString packet;
-		packet >> (char)(npc->character.pixelX / 8.0f) >> (char)(npc->character.pixelY / 8.0f);
+		packet >> (char)(npc->character.localPixelX / 8.0f) >> (char)(npc->character.localPixelY / 8.0f);
 		packet >> (char)moveDX >> (char)moveDY;
 		packet >> (short)timeIn50msIncrements;
 		packet >> (char)options;
 
-		npc->character.pixelX += dx * 16;
-		npc->character.pixelY += dy * 16;
+		npc->character.localPixelX += dx * 16;
+		npc->character.localPixelY += dy * 16;
 
 		//sendPacketToLevelOrGmap(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, level);
 		sendPacketToLevelArea(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, level);
@@ -1844,7 +1844,7 @@ void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level
 
 	ShootPacketWrapper newPacket{};
 	newPacket.source = (shoot->from.second == ScriptObjectSourceType::NPC ? shoot->from.first : 0);
-	newPacket.position = toPixelPosition(shoot->position);
+	newPacket.position = toPixelPosition({ 0, 0 }, shoot->position);
 	newPacket.offsetx = 0;
 	newPacket.offsety = 0;
 	newPacket.sangle = static_cast<uint8_t>(220 * (std::clamp(shoot->angle, 0.0f, 2 * pi) / (2 * pi)));

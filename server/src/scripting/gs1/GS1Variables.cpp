@@ -107,7 +107,7 @@ void setPlayerVariables(GameVariableStore& variableStore, std::weak_ptr<PlayerCl
 		{
 			if (player.expired()) return 0.0;
 			if (auto npc = server->getNPC(player.lock()->getAttachedNPC()); npc != nullptr)
-				return -npc->character.pixelX / 16.0;
+				return -npc->character.localPixelX / 16.0;
 			return 0.0;
 		}, {}
 	});
@@ -116,7 +116,7 @@ void setPlayerVariables(GameVariableStore& variableStore, std::weak_ptr<PlayerCl
 		{
 			if (player.expired()) return 0.0;
 			if (auto npc = server->getNPC(player.lock()->getAttachedNPC()); npc != nullptr)
-				return -npc->character.pixelY / 16.0;
+				return -npc->character.localPixelY / 16.0;
 			return 0.0;
 		}, {}
 	});

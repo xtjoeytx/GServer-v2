@@ -1057,14 +1057,14 @@ void Player::constructScriptParameters()
 		gameVariableGetter([this]() { return account.character.hitpointsInHalves / 2.0; }),
 		gameVariableSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<size_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
 	scriptParameters.try_emplace("x", set_temporary, "x",
-		gameVariableGetter([this]() { return account.character.pixelX / 16.0; }),
-		gameVariableSetter(this, PROPOPT(PlayerProp::X2), [this](const GameValue& value, std::optional<size_t>) { account.character.pixelX = value.get<double>().value_or(0.0) * 16; }));
+		gameVariableGetter([this]() { return account.character.getGlobalPosition().x() / 16.0; }),
+		gameVariableSetter(this, PROPOPT(PlayerProp::X2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelX = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("y", set_temporary, "y",
-		gameVariableGetter([this]() { return account.character.pixelY / 16.0; }),
-		gameVariableSetter(this, PROPOPT(PlayerProp::Y2), [this](const GameValue& value, std::optional<size_t>) { account.character.pixelY = value.get<double>().value_or(0.0) * 16; }));
+		gameVariableGetter([this]() { return account.character.getGlobalPosition().y() / 16.0; }),
+		gameVariableSetter(this, PROPOPT(PlayerProp::Y2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelY = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("z", set_temporary, "z",
-		gameVariableGetter([this]() { return account.character.pixelZ / 16.0; }),
-		gameVariableSetter(this, PROPOPT(PlayerProp::Z2), [this](const GameValue& value, std::optional<size_t>) { account.character.pixelZ = value.get<double>().value_or(0.0) * 16; }));
+		gameVariableGetter([this]() { return account.character.localPixelZ / 16.0; }),
+		gameVariableSetter(this, PROPOPT(PlayerProp::Z2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
 
 	scriptParameters.try_emplace("headset", set_temporary, "headset",
 		gameVariableGetter(

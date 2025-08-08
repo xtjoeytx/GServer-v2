@@ -200,9 +200,9 @@ public:
 	LevelArrow* getArrow(uint8_t index) const;
 
 public:
-	LevelBaddy* addBaddy(const PixelPosition& position, BaddyType type);
-	LevelBaddy* putNewBaddy(const PixelPosition& position, BaddyType type);
-	LevelBaddy* putNewBaddy(const PixelPosition& position, BaddyType type, uint8_t power, std::string_view image = {});
+	LevelBaddy* addBaddy(const LocalPixelPosition& position, BaddyType type);
+	LevelBaddy* putNewBaddy(const LocalPixelPosition& position, BaddyType type);
+	LevelBaddy* putNewBaddy(const LocalPixelPosition& position, BaddyType type, uint8_t power, std::string_view image = {});
 	bool removeBaddy(uint8_t pId);
 	bool removeAllBaddies();
 	LevelBaddy* getBaddy(uint8_t id) const;
@@ -216,10 +216,10 @@ public:
 	LevelBomb* getBomb(size_t index) const;
 
 public:
-	LevelChest* addChest(const WholeTilePosition& position, const LevelItemType itemType, const int signIndex);
+	LevelChest* addChest(const LocalWholeTilePosition& position, const LevelItemType itemType, const int signIndex);
 	bool removeChest(size_t index);
 	LevelChest* getChest(size_t index) const;
-	std::optional<const LevelChest*> getChest(const WholeTilePosition& position) const;
+	std::optional<const LevelChest*> getChest(const LocalWholeTilePosition& position) const;
 	CString getChestStr(LevelChest* chest) const;
 
 public:
@@ -251,10 +251,10 @@ public:
 	LevelLink* addLink();
 	LevelLink* addLink(const std::vector<CString>& pLink);
 	bool removeLink(uint32_t index);
-	std::optional<const LevelLink*> getLink(const WholeTilePosition& position, bool excludeOverworld = false) const;
+	std::optional<const LevelLink*> getLink(const LocalWholeTilePosition& position, bool excludeOverworld = false) const;
 
 public:
-	LevelSign* addSign(const WholeTilePosition& position, const CString& sign, bool encoded = false);
+	LevelSign* addSign(const LocalWholeTilePosition& position, const CString& sign, bool encoded = false);
 	bool removeSign(uint32_t index);
 	LevelSign* getSign(size_t index) const;
 
@@ -266,10 +266,10 @@ public:
 	bool moveArrow(LevelArrow* arrow, int iterations);
 
 public:
-	bool isOnWall(const WholeTilePosition& tilePosition);
+	bool isOnWall(const LocalWholeTilePosition& tilePosition);
 	bool isOnWall2(const Rectangle<uint8_t, uint8_t>& tileArea, uint8_t flags = 0);
-	bool isOnWater(const WholeTilePosition& tilePosition);
-	bool isOnPlayer(const WholeTilePosition& tilePosition);
+	bool isOnWater(const LocalWholeTilePosition& tilePosition);
+	bool isOnPlayer(const LocalWholeTilePosition& tilePosition);
 	bool isOnPlayer(const Rectangle<uint8_t, uint8_t>& tileArea);
 
 	std::vector<NPCID> findIntersectingNPCs(const PixelPosition& position, bool includeInvisible = false);

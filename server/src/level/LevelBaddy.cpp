@@ -34,7 +34,7 @@ constexpr const int baddyPower[baddytypes] = {
 	1, 1, 6, 12, 8
 };
 
-LevelBaddy::LevelBaddy(const PixelPosition& position, BaddyType type, std::weak_ptr<Level> level)
+LevelBaddy::LevelBaddy(const LocalPixelPosition& position, BaddyType type, std::weak_ptr<Level> level)
 	: type(type), position(position), m_level(level), m_originalPosition(position)
 {
 	if (PROPID(type) > baddytypes) type = BaddyType::GRAYSOLDIER;
@@ -81,7 +81,7 @@ void LevelBaddy::dropItem() const
 	if (itemType != LevelItemType::INVALID)
 	{
 		if (auto lvl = m_level.lock(); lvl)
-			lvl->addItem(inform_client, position, itemType);
+			lvl->addItem(inform_client, toPixelPosition({ 0, 0 }, position), itemType);
 	}
 }
 

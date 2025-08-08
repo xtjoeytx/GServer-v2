@@ -82,7 +82,7 @@ class Level;
 class LevelBaddy
 {
 public:
-	LevelBaddy(const PixelPosition& position, BaddyType type, std::weak_ptr<Level> level);
+	LevelBaddy(const LocalPixelPosition& position, BaddyType type, std::weak_ptr<Level> level);
 
 	void reset();
 	void dropItem() const;
@@ -105,7 +105,7 @@ public:
 public:
 	uint8_t id;
 	BaddyType type;
-	PixelPosition position;
+	LocalPixelPosition position;
 	BaddyMode mode;
 	uint8_t power;
 	uint8_t animation;
@@ -122,7 +122,7 @@ public:
 
 private:
 	std::weak_ptr<Level> m_level;
-	Position<int16_t> m_originalPosition;
+	LocalPixelPosition m_originalPosition;
 	bool m_canRespawn = true;
 	bool m_hasCustomImage = false;
 };

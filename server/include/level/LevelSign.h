@@ -19,14 +19,14 @@ class Player;
 
 struct LevelSign
 {
-	LevelSign(const WholeTilePosition& position, std::string_view signText, bool signTextIsEncoded = false);
+	LevelSign(const LocalWholeTilePosition& position, std::string_view signText, bool signTextIsEncoded = false);
 	CString getSignPacket(Player* player = nullptr) const;
 	void setText(std::string_view signText, bool signTextIsEncoded = false);
 
 	float getTileX() const { return (float)position.x(); }
 	float getTileY() const { return (float)position.y(); }
 
-	WholeTilePosition position;
+	LocalWholeTilePosition position;
 	std::string text;
 	std::string unformattedText;
 

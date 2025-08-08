@@ -4,7 +4,6 @@
 #include <cstdint>
 
 #include <level/LevelItem.h>
-#include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -17,7 +16,7 @@ struct LevelChest
 	float getTileX() const { return (float)position.x(); }
 	float getTileY() const { return (float)position.y(); }
 
-	WholeTilePosition position;
+	LocalWholeTilePosition position;
 	LevelItemType item;
 	uint8_t sign;
 };

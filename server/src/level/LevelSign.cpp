@@ -4,7 +4,6 @@
 
 #include <level/LevelSign.h>
 #include <object/Player.h>
-#include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,7 +119,7 @@ CString encodeSign(const CString& pSignText)
 	return retVal;
 }
 
-LevelSign::LevelSign(const WholeTilePosition& position, std::string_view signText, bool signTextIsEncoded)
+LevelSign::LevelSign(const LocalWholeTilePosition& position, std::string_view signText, bool signTextIsEncoded)
 	: position(position), unformattedText(signText)
 {
 	if (signTextIsEncoded)

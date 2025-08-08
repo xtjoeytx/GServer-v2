@@ -230,7 +230,7 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, Scr
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{
-			Rectangle<int16_t, uint16_t> npcRect = { { npc->character.pixelX, npc->character.pixelY }, npc->shape };
+			LocalPixelRectangleArea npcRect = { npc->character.getLocalPosition(), npc->shape };
 			if (positionInRectangle(pos, npcRect))
 			{
 				++count;

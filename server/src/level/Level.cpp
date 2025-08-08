@@ -286,7 +286,7 @@ bool Level::reload()
 	for (auto& id : oldplayers)
 	{
 		if (auto p = server->getPlayer<PlayerClient>(id); p)
-			p->warp((ret ? levelName : uLevel), { static_cast<int16_t>((ret ? p->getX() : uX) * 16), static_cast<int16_t>((ret ? p->getY() : uY) * 16) });
+			p->warp((ret ? levelName : uLevel), ret ? p->account.character.getLocalPosition() : toLocalPixelPosition(uX, uY));
 	}
 
 	return ret;
@@ -412,11 +412,13 @@ void Level::saveLevel(const std::string& filename)
 		if (image.empty())
 			image = "-"; // No image is represented by "-"
 
-		fileStream << "NPC" << s << image << s << (npc->character.pixelX / 16.0f) << s << (npc->character.pixelY / 16.0f) << std::endl;
+		fileStream << "NPC" << s << image << s << (npc->character.localPixelX / 16.0f) << s << (npc->character.localPixelY / 16.0f) << std::endl;
 		fileStream << npc->getScript().getOriginalSource() << std::endl;
 		fileStream << "NPCEND" << std::endl;
 	}
 }
+
+//----------------------------
 
 void Level::doTimedEvents()
 {
@@ -932,7 +934,7 @@ LevelArrow* Level::getArrow(uint8_t index) const
 
 //----------------------------
 
-LevelBaddy* Level::addBaddy(const PixelPosition& position, BaddyType type)
+LevelBaddy* Level::addBaddy(const LocalPixelPosition& position, BaddyType type)
 {
 	// Find the next available baddy that can be used.
 	size_t nextIndex = 0;
@@ -961,7 +963,7 @@ LevelBaddy* Level::addBaddy(const PixelPosition& position, BaddyType type)
 	return &m_baddies[nextIndex];
 }
 
-LevelBaddy* Level::putNewBaddy(const PixelPosition& position, BaddyType type)
+LevelBaddy* Level::putNewBaddy(const LocalPixelPosition& position, BaddyType type)
 {
 	auto baddy = addBaddy(position, type);
 	if (baddy == nullptr)
@@ -978,7 +980,7 @@ LevelBaddy* Level::putNewBaddy(const PixelPosition& position, BaddyType type)
 	return baddy;
 }
 
-LevelBaddy* Level::putNewBaddy(const PixelPosition& position, BaddyType type, uint8_t power, std::string_view image)
+LevelBaddy* Level::putNewBaddy(const LocalPixelPosition& position, BaddyType type, uint8_t power, std::string_view image)
 {
 	auto baddy = addBaddy(position, type);
 	if (baddy == nullptr)
@@ -1126,7 +1128,7 @@ LevelBomb* Level::getBomb(size_t index) const
 
 //----------------------------
 
-LevelChest* Level::addChest(const WholeTilePosition& position, const LevelItemType itemType, const int signIndex)
+LevelChest* Level::addChest(const LocalWholeTilePosition& position, const LevelItemType itemType, const int signIndex)
 {
 	LevelChest newChest{ .position = position, .item = itemType, .sign = (uint8_t)signIndex };
 	m_chests.push_back(std::move(newChest));
@@ -1149,7 +1151,7 @@ LevelChest* Level::getChest(size_t index) const
 	return const_cast<LevelChest*>(&m_chests[index]);
 }
 
-std::optional<const LevelChest*> Level::getChest(const WholeTilePosition& position) const
+std::optional<const LevelChest*> Level::getChest(const LocalWholeTilePosition& position) const
 {
 	for (const auto& chest : m_chests)
 	{
@@ -1390,7 +1392,7 @@ LevelItem* Level::addItem(const PixelPosition& position, LevelItemType item)
 			TilePosition loc = toTilePosition(position).translate(-0.5f, -1.0f);
 
 			// Find existing rupees, and add to the npc.
-			PixelRectangleArea searchArea{ toPixelPosition(loc).translate(-2 * 16, -2 * 16), { 6 * 16, 6 * 16 } };
+			PixelRectangleArea searchArea{ toPixelPosition({ 0, 0 }, loc).translate(-2 * 16, -2 * 16), { 6 * 16, 6 * 16 } };
 			auto npcList = findIntersectingNPCs(searchArea);
 			for (auto& npcId : npcList)
 			{
@@ -1484,7 +1486,7 @@ bool Level::removeLink(uint32_t index)
 	return true;
 }
 
-std::optional<const LevelLink*> Level::getLink(const WholeTilePosition& position, bool excludeOverworld) const
+std::optional<const LevelLink*> Level::getLink(const LocalWholeTilePosition& position, bool excludeOverworld) const
 {
 	for (const auto& link : m_links)
 	{
@@ -1504,7 +1506,7 @@ std::optional<const LevelLink*> Level::getLink(const WholeTilePosition& position
 
 //----------------------------
 
-LevelSign* Level::addSign(const WholeTilePosition& position, const CString& sign, bool encoded)
+LevelSign* Level::addSign(const LocalWholeTilePosition& position, const CString& sign, bool encoded)
 {
 	LevelSign newSign{ position, sign, encoded };
 	m_signs.emplace_back(std::move(newSign));
@@ -1572,7 +1574,7 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 			};
 
 			// Check for NPC collisions.
-			PixelPosition searchPosition = toPixelPosition(shoot->position).translate(8_i16, 16_i16);
+			PixelPosition searchPosition = toPixelPosition({ 0, 0 }, shoot->position).translate(8_i16, 16_i16);
 			bool fromPlayer = (shoot->from.second == ScriptObjectSourceType::PLAYER);
 			auto npcs = findIntersectingNPCsForCollision({ searchPosition, { 32_ui16, 32_ui16 } });
 			for (const auto& npc : npcs)
@@ -1587,7 +1589,7 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 			}
 
 			// Check for wall collisions.
-			if (!collided && isOnWall2({ toWholeTilePosition(searchPosition), { 1_ui8, 1_ui8 } }))
+			if (!collided && isOnWall2({ toLocalWholeTilePosition(searchPosition), { 1_ui8, 1_ui8 } }))
 				constructEventParams();
 
 			// Check if we hit the ground.
@@ -1617,13 +1619,15 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 		arrow->position.translate(arrow->speed.x(), arrow->speed.y());
 
 		// If the arrow has gone out of bounds, delete it.
-		if (arrow->position.x() < 0 || arrow->position.x() > getSize().width() || arrow->position.y() < 0 || arrow->position.y() > getSize().height())
+		// TODO: Maybe just set a max range and make it behave like a shoot?  Like the sync distance?  Or 2 levels distance?
+		auto localPosition = toLocalPixelPosition(arrow->position);
+		if (localPosition.x() < 0 || localPosition.x() > 1024 || localPosition.y() < 0 || localPosition.y() > 1024)
 			return false;
 
 		bool produceExplosion = false;
 
 		// Check for NPC collision.
-		PixelRectangleArea searchBox = { translatePosition(arrow->position, 16_i16, 0_i16), { 32_ui16, 32_ui16  } };
+		PixelRectangleArea searchBox = { translatePosition(arrow->position, 16_i32, 0_i32), { 32_ui16, 32_ui16  } };
 		auto npcs = findIntersectingNPCsForCollision(searchBox);
 		for (const auto& npc : npcs)
 		{
@@ -1639,7 +1643,7 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 		// If the arrow is a fireblast or nukeshot, check for walls.
 		if (!produceExplosion && (arrow->type == arrowTypeFireblast || arrow->type == arrowTypeNukeshot))
 		{
-			if (isOnWall(toWholeTilePosition(arrow->position).translate(1_ui8, 0_ui8)))
+			if (isOnWall(toLocalWholeTilePosition(arrow->position).translate(1_ui8, 0_ui8)))
 				produceExplosion = true;
 		}
 
@@ -1656,7 +1660,7 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 
 //----------------------------
 
-bool Level::isOnWall(const WholeTilePosition& tilePosition)
+bool Level::isOnWall(const LocalWholeTilePosition& tilePosition)
 {
 	if (tilePosition.x() > 63 || tilePosition.y() > 63)
 		return true;
@@ -1677,12 +1681,12 @@ bool Level::isOnWall2(const Rectangle<uint8_t, uint8_t>& tileArea, uint8_t flags
 	return false;
 }
 
-bool Level::isOnWater(const WholeTilePosition& tilePosition)
+bool Level::isOnWater(const LocalWholeTilePosition& tilePosition)
 {
 	return (tiletypes[getTiles(0)[static_cast<size_t>(tilePosition.y()) * 64 + tilePosition.x()]] == 11);
 }
 
-bool Level::isOnPlayer(const WholeTilePosition& tilePosition)
+bool Level::isOnPlayer(const LocalWholeTilePosition& tilePosition)
 {
 	for (const auto& playerId : m_players)
 	{

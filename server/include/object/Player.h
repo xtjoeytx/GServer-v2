@@ -185,12 +185,9 @@ public:
 	const std::string& getServerName() const { return m_serverName; }
 	const std::string& getPlatform() const { return m_os; }
 	int64_t getDeviceId() const { return m_deviceId; }
-	float getX() const { return account.character.pixelX / 16.0f; }
-	float getY() const { return account.character.pixelY / 16.0f; }
-	float getZ() const { return account.character.pixelZ / 16.0f; }
 	NPCID getCarryNPC() const { return m_carryNPC; }
 	NPCID getAttachedNPC() const { return m_attachNPC; }
-	[[inline]] Rectangle<int16_t, uint16_t> getBoundingBox() const noexcept;
+	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
 
 	// Set Properties
 	void setNick(CString pNickName, bool force = false);
@@ -506,9 +503,9 @@ inline void Player::setId(PlayerID pId)
 	m_id = pId;
 }
 
-inline Rectangle<int16_t, uint16_t> Player::getBoundingBox() const noexcept
+inline PixelRectangleArea Player::getBoundingBox() const noexcept
 {
-	return { { account.character.pixelX, account.character.pixelY }, { 48, 48 } };
+	return { account.character.getGlobalPosition(), { 48, 48 } };
 }
 
 inline bool Player::inChatChannel(const std::string& channel) const
@@ -554,8 +551,8 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::CURCHAT,		PropertyString,				account.character.chatMessage) \
 	DO(PlayerProp::COLORS,		PropertyColors,				account.character.colors) \
 	DO(PlayerProp::ID,			PropertyNumeric<GBYTE2>,	m_id) \
-	DO(PlayerProp::X,			PropertyTileCoordinate,		account.character.pixelX) \
-	DO(PlayerProp::Y,			PropertyTileCoordinate,		account.character.pixelY) \
+	DO(PlayerProp::X,			PropertyTileCoordinate,		account.character.localPixelX) \
+	DO(PlayerProp::Y,			PropertyTileCoordinate,		account.character.localPixelY) \
 	DO(PlayerProp::SPRITE,		PropertySprite,				account.character.sprite, account.character.direction) \
 	DO(PlayerProp::STATUS,		PropertyNumeric<GBYTE1>,	account.status) \
 	DO(PlayerProp::CARRYSPRITE,	PropertyNumeric<GBYTE1>,	m_carrySprite) \
@@ -584,7 +581,7 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::ATTACHNPC,	PropertyAttachNPC,			m_attachNPC) \
 	DO(PlayerProp::GMAPLEVELX,	PropertyNumeric<GBYTE1>) \
 	DO(PlayerProp::GMAPLEVELY,	PropertyNumeric<GBYTE1>) \
-	DO(PlayerProp::Z,			PropertyTileCoordinateZ,	account.character.pixelZ) \
+	DO(PlayerProp::Z,			PropertyTileCoordinateZ,	account.character.localPixelZ) \
 	DO(PlayerProp::GATTRIB6,	PropertyString,				account.character.ganiAttributes[5]) \
 	DO(PlayerProp::GATTRIB7,	PropertyString,				account.character.ganiAttributes[6]) \
 	DO(PlayerProp::GATTRIB8,	PropertyString,				account.character.ganiAttributes[7]) \
@@ -617,9 +614,9 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::OSTYPE,		PropertyString,				m_os) \
 	DO(PlayerProp::TEXTCODEPAGE,PropertyNumeric<GBYTE3>,	m_envCodePage) \
 	DO(PlayerProp::ONLINESECS2,	PropertyNumeric<GBYTE5>) \
-	DO(PlayerProp::X2,			PropertyPixelCoordinate,	account.character.pixelX) \
-	DO(PlayerProp::Y2,			PropertyPixelCoordinate,	account.character.pixelY) \
-	DO(PlayerProp::Z2,			PropertyPixelCoordinate,	account.character.pixelZ) \
+	DO(PlayerProp::X2,			PropertyPixelCoordinate,	account.character.localPixelX) \
+	DO(PlayerProp::Y2,			PropertyPixelCoordinate,	account.character.localPixelY) \
+	DO(PlayerProp::Z2,			PropertyPixelCoordinate,	account.character.localPixelZ) \
 	DO(PlayerProp::PLAYERLISTCATEGORY, PropertyNumeric<GBYTE1>, (uint8_t)m_playerListCategory) \
 	DO(PlayerProp::COMMUNITYNAME, PropertyString,			account.communityName)
 

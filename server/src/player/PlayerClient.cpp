@@ -165,8 +165,8 @@ void PlayerClient::cleanup()
 			if (auto npc = m_server->getNPC(m_carryNPC); npc)
 			{
 				npc->sendPropsFromResults(
-					npc->setPropWith<NPCProp::X2>(SetBy::CLIENT, static_cast<int16_t>(account.character.pixelX + 8)),
-					npc->setPropWith<NPCProp::Y2>(SetBy::CLIENT, static_cast<int16_t>(account.character.pixelY + 16))
+					npc->setPropWith<NPCProp::X2>(SetBy::CLIENT, static_cast<int16_t>(account.character.localPixelX + 8)),
+					npc->setPropWith<NPCProp::Y2>(SetBy::CLIENT, static_cast<int16_t>(account.character.localPixelY + 16))
 				);
 			}
 			m_carryNPC = 0;
@@ -594,7 +594,7 @@ bool PlayerClient::sendLogin()
 
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
-	if (!warp(account.level, { account.character.pixelX, account.character.pixelY }) && m_currentLevel.expired())
+	if (!warp(account.level, account.character.getLocalPosition()) && m_currentLevel.expired())
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
 		log::printLine(log::server, "** Cannot find level for {}.", account.name);
@@ -906,7 +906,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 			auto player = m_server->getPlayer<PlayerClient>(chatParse[1], PLTYPE_ANYCLIENT);
 			if (player && player->getLevel())
-				warp(player->getLevel()->levelName, { player->account.character.pixelX, player->account.character.pixelY });
+				warp(player->getLevel()->levelName, player->account.character.getLocalPosition());
 		}
 		// To x/y location
 		else if (chatParse.size() == 3)
@@ -945,7 +945,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		}
 
 		auto p = m_server->getPlayer<PlayerClient>(chatParse[1], PLTYPE_ANYCLIENT);
-		if (p) p->warp(account.level, { account.character.pixelX, account.character.pixelY });
+		if (p) p->warp(account.level, account.character.getLocalPosition());
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
@@ -1110,7 +1110,7 @@ std::shared_ptr<Level> PlayerClient::getLevel() const
 	return {};
 }
 
-bool PlayerClient::warp(std::string_view levelName, Position<int16_t> pos, time_t modTime)
+bool PlayerClient::warp(std::string_view levelName, LocalPixelPosition pos, time_t modTime)
 {
 	// Save our current level.
 	auto currentLevel = m_currentLevel.lock();
@@ -1141,8 +1141,8 @@ bool PlayerClient::warp(std::string_view levelName, Position<int16_t> pos, time_
 		m_pmap = newLevel->getMap();
 
 	// Set the player's position.
-	account.character.pixelX = pos.x();
-	account.character.pixelY = pos.y();
+	account.character.localPixelX = pos.x();
+	account.character.localPixelY = pos.y();
 
 	// Tell the client their new level.
 	if (auto map = m_pmap.lock(); map && map->getType() == MapType::GMAP && m_versionId >= CLVER_2_1)
@@ -1162,7 +1162,7 @@ bool PlayerClient::warp(std::string_view levelName, Position<int16_t> pos, time_
 	return true;
 }
 
-bool PlayerClient::enterLevel(std::shared_ptr<Level> level, Position<int16_t> pos, time_t modTime)
+bool PlayerClient::enterLevel(std::shared_ptr<Level> level, LocalPixelPosition pos, time_t modTime)
 {
 	leaveLevel();
 	m_currentLevel = level;
@@ -1229,8 +1229,8 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, Position<int16_t> po
 	account.level = level->levelName;
 
 	// Set the player's position.
-	account.character.pixelX = pos.x();
-	account.character.pixelY = pos.y();
+	account.character.localPixelX = pos.x();
+	account.character.localPixelY = pos.y();
 
 	// Send the level now.
 	bool succeed = true;
@@ -1669,7 +1669,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 	// Oddly enough, it renders in the correct spot on a reconnect.  By allowing a single extra pixel on the touch test, this problem is resolved.
 	static Position<int16_t> touchTest[] = { { 24, 16 - 1 }, { 0, 32 }, { 24, 56 }, { 48, 32 } };
 
-	Position<int16_t> testPosPixels = { static_cast<int16_t>(account.character.pixelX + touchTest[movementDirection].x()), static_cast<int16_t>(account.character.pixelY + touchTest[movementDirection].y()) };
+	PixelPosition testPosPixels = account.character.getGlobalPosition().translate(touchTest[movementDirection].x(), touchTest[movementDirection].y());
 	if (auto level = getLevel(); level != nullptr)
 	{
 		// Test for NPC touch.
@@ -1709,8 +1709,8 @@ bool PlayerClient::testForSigns(SetResults& result, uint8_t movementDirection)
 		{
 			for (const auto& sign : level->getSigns())
 			{
-				TilePosition signTilePos = toTilePosition(sign.position);
-				if (getY() == signTilePos.y() && getX() >= signTilePos.x() - 1.5f && getX() <= signTilePos.x() + 0.5f)
+				LocalPixelPosition signPos = toLocalPixelPosition(sign.getTileX(), sign.getTileY());
+				if (account.character.localPixelY == signPos.y() && account.character.localPixelX >= signPos.x() - 24 && account.character.localPixelX <= signPos.x() + 8)
 				{
 					sendSignMessage(sign.unformattedText);
 					return true;
@@ -1740,7 +1740,8 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 		return false;
 
 	// Test for links.
-	WholeTilePosition testPosTiles = { (uint8_t)std::clamp((account.character.pixelX + touchTest[movementDirection].x()) / 16, 0, 63), (uint8_t)std::clamp((account.character.pixelY + touchTest[movementDirection].y()) / 16, 0, 63) };
+	LocalPixelPosition testPos = account.character.getLocalPosition().translate(touchTest[movementDirection].x(), touchTest[movementDirection].y());
+	LocalWholeTilePosition testPosTiles = toLocalWholeTilePosition(testPos);
 	if (auto linkTouched = level->getLink(testPosTiles, map != nullptr); linkTouched.has_value())
 	{
 		if (auto newLevel = m_server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)
@@ -1783,6 +1784,8 @@ void PlayerClient::dropItemsOnDeath()
 	account.character.bombs -= (drop_bombs * 5);
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::RUPEESCOUNT >> (int)account.character.gralats >> (char)PlayerProp::ARROWSCOUNT >> (char)account.character.arrows >> (char)PlayerProp::BOMBSCOUNT >> (char)account.character.bombs);
 
+	TilePosition localTilePos = toTilePosition(account.character.getLocalPosition());
+
 	// Add gralats to the level.
 	while (drop_gralats != 0)
 	{
@@ -1808,8 +1811,8 @@ void PlayerClient::dropItemsOnDeath()
 			item = 0;
 		}
 
-		float pX = getX() + 1.5f + (rand() % 8) - 2.0f;
-		float pY = getY() + 2.0f + (rand() % 8) - 2.0f;
+		float pX = localTilePos.x() + 1.5f + (rand() % 8) - 2.0f;
+		float pY = localTilePos.y() + 2.0f + (rand() % 8) - 2.0f;
 
 		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)item;
 		packet.readGChar(); // So msgPLI_ITEMADD works.
@@ -1821,8 +1824,8 @@ void PlayerClient::dropItemsOnDeath()
 	// Add arrows and bombs to the level.
 	for (int i = 0; i < drop_arrows; ++i)
 	{
-		float pX = getX() + 1.5f + (rand() % 8) - 2.0f;
-		float pY = getY() + 2.0f + (rand() % 8) - 2.0f;
+		float pX = localTilePos.x() + 1.5f + (rand() % 8) - 2.0f;
+		float pY = localTilePos.y() + 2.0f + (rand() % 8) - 2.0f;
 
 		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)4; // 4 = arrows
 		packet.readGChar();                                                                             // So msgPLI_ITEMADD works.
@@ -1832,8 +1835,8 @@ void PlayerClient::dropItemsOnDeath()
 	}
 	for (int i = 0; i < drop_bombs; ++i)
 	{
-		float pX = getX() + 1.5f + (rand() % 8) - 2.0f;
-		float pY = getY() + 2.0f + (rand() % 8) - 2.0f;
+		float pX = localTilePos.x() + 1.5f + (rand() % 8) - 2.0f;
+		float pY = localTilePos.y() + 2.0f + (rand() % 8) - 2.0f;
 
 		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)3; // 3 = bombs
 		packet.readGChar();                                                                             // So msgPLI_ITEMADD works.

@@ -281,14 +281,14 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		if (npc)
 		{
 			CString packet;
-			packet >> (char)(npc->character.pixelX / 8.0f) >> (char)(npc->character.pixelY / 8.0f);
+			packet >> (char)(npc->character.localPixelX / 8.0f) >> (char)(npc->character.localPixelY / 8.0f);
 			packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
 			packet >> (short)(duration / 0.05f);
 			packet >> (char)options;
 			sendPacketToLevelOrGmap(CString() >> (char)PLO_MOVE >> (int)id << packet, getPlayer<PlayerClient>(player->getId()));
 
-			npc->character.pixelX += dx * 16;
-			npc->character.pixelY += dy * 16;
+			npc->character.localPixelX += dx * 16;
+			npc->character.localPixelY += dy * 16;
 			//npc->setPropsFromPacket(CString() >> (char)NPCPROP_X >> (char)((npc->getX() + dx) * 2) >> (char)NPCPROP_Y >> (char)((npc->getY() + dy) * 2));
 		}
 		return true;
@@ -306,8 +306,8 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		auto npc = getNPC(id);
 		if (npc)
 		{
-			npc->character.pixelX = static_cast<int16_t>(x * 16.0);
-			npc->character.pixelY = static_cast<int16_t>(y * 16.0);
+			npc->character.localPixelX = static_cast<int16_t>(x * 16.0);
+			npc->character.localPixelY = static_cast<int16_t>(y * 16.0);
 
 			// Send the prop packet to the level.
 			CString packet;
