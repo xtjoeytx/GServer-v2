@@ -1495,10 +1495,10 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 		{
 			// If we are out of the limits of the map, just delete it.
 			auto mapSize = getMapSizeInParts();
-			if (localPosition.x() < 0 && mapPosition.x() == 0 ||
-				localPosition.y() < 0 && mapPosition.y() == 0 ||
-				localPosition.x() > 1024 && mapPosition.x() == mapSize.width() - 1 ||
-				localPosition.y() > 1024 && mapPosition.y() == mapSize.height() - 1)
+			if ((localPosition.x() < 0 && mapPosition.x() == 0) ||
+				(localPosition.y() < 0 && mapPosition.y() == 0) ||
+				(localPosition.x() > 1024 && mapPosition.x() == mapSize.width() - 1) ||
+				(localPosition.y() > 1024 && mapPosition.y() == mapSize.height() - 1))
 			{
 				return false;
 			}
@@ -1943,8 +1943,8 @@ std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& p
 	auto server = BabyDI::Get<Server>();
 	bool syncInside = server->getSettings().getBool("syncbydistanceinside", false);
 
-	int syncx = server->getSettings().getInt("syncdistancex", 192);
-	int syncy = server->getSettings().getInt("syncdistancey", 192);
+	unsigned int syncx = (unsigned int)server->getSettings().getInt("syncdistancex", 192);
+	unsigned int syncy = (unsigned int)server->getSettings().getInt("syncdistancey", 192);
 	auto mapSize = getMapSizeInTiles();
 	auto tilePosition = toTilePosition(position);
 
@@ -1960,7 +1960,7 @@ std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& p
 	{
 		if (auto player = server->getPlayer(playerId); player != nullptr)
 		{
-			auto otherTilePosition = player->account.character.getTilePosition();
+			auto otherTilePosition = player->getTilePosition();
 			return std::abs(tilePosition.x() - otherTilePosition.x()) <= syncx && std::abs(tilePosition.y() - otherTilePosition.y()) <= syncy;
 		}
 		return false;
@@ -2000,16 +2000,16 @@ std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& positio
 		co_return;
 	}
 
-	int syncx = server->getSettings().getInt("syncdistancex", 192);
-	int syncy = server->getSettings().getInt("syncdistancey", 192);
+	unsigned int syncx = (unsigned int)server->getSettings().getInt("syncdistancex", 192);
+	unsigned int syncy = (unsigned int)server->getSettings().getInt("syncdistancey", 192);
 	auto mapSize = getMapSizeInTiles();
+	auto tilePosition = toTilePosition(position);
 
 	auto npcInRange = [&](const NPCID& npcId)
 	{
 		if (auto npc = server->getNPC(npcId); npc != nullptr)
 		{
-			auto otherTilePosition = npc->character.getTilePosition();
-			auto tilePosition = toTilePosition(position);
+			auto otherTilePosition = npc->getTilePosition();
 			return std::abs(tilePosition.x() - otherTilePosition.x()) <= syncx && std::abs(tilePosition.y() - otherTilePosition.y()) <= syncy;
 		}
 		return false;
@@ -2025,7 +2025,6 @@ std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& positio
 			co_return;
 		}
 
-		auto tilePosition = toTilePosition(position);
 		for (const auto& npcId : m_npcs)
 		{
 			if (npcInRange(npcId))
