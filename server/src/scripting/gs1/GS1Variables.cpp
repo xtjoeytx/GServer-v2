@@ -1,9 +1,9 @@
+#include <algorithm>
 #include <any>
 #include <chrono>
 #include <format>
 #include <iterator>
 #include <memory>
-#include <optional>
 #include <ranges>
 #include <utility>
 #include <vector>
@@ -107,7 +107,7 @@ void setPlayerVariables(GameVariableStore& variableStore, std::weak_ptr<PlayerCl
 		{
 			if (player.expired()) return 0.0;
 			if (auto npc = server->getNPC(player.lock()->getAttachedNPC()); npc != nullptr)
-				return -npc->character.localPixelX / 16.0;
+				return -npc->character.getGlobalPosition().x() / 16.0;
 			return 0.0;
 		}, {}
 	});
@@ -116,7 +116,7 @@ void setPlayerVariables(GameVariableStore& variableStore, std::weak_ptr<PlayerCl
 		{
 			if (player.expired()) return 0.0;
 			if (auto npc = server->getNPC(player.lock()->getAttachedNPC()); npc != nullptr)
-				return -npc->character.localPixelY / 16.0;
+				return -npc->character.getGlobalPosition().y() / 16.0;
 			return 0.0;
 		}, {}
 	});
@@ -134,27 +134,29 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 		return;
 
 	// players
-	variableStore.add(GameVariable{ "playerscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getPlayers().size()); }, {} });
+	variableStore.add(GameVariable{ "playerscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getMapPlayerCount()); }, {} });
 	variableStore.add(GameVariable{ "players",
 		[level](auto) -> GameValue
 		{
 			if (level.expired()) return std::vector<ScriptObjectSource>{};
-			auto playerObjects = level.lock()->getPlayers()
+			auto playerObjects = level.lock()->getMapPlayers()
 				| std::views::transform([](const PlayerID& id) { return ScriptObjectSource{ std::make_pair((size_t)id, ScriptObjectSourceType::PLAYER) }; });
-			std::vector<ScriptObjectSource> players{ std::ranges::begin(playerObjects), std::ranges::end(playerObjects) };
+			std::vector<ScriptObjectSource> players;
+			std::ranges::copy(playerObjects, std::back_inserter(players));
 			return players;
 		}, {}
 	});
 
 	// npcs
-	variableStore.add(GameVariable{ "npcscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getNPCs().size()); } , {} });
+	variableStore.add(GameVariable{ "npcscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getMapNPCCount()); } , {} });
 	variableStore.add(GameVariable{ "npcs",
 		[level](auto) -> GameValue
 		{
 			if (level.expired()) return std::vector<ScriptObjectSource>{};
-			auto npcObjects = level.lock()->getNPCs()
+			auto npcObjects = level.lock()->getMapNPCs()
 				| std::views::transform([](const NPCID& id) { return ScriptObjectSource{ std::make_pair((size_t)id, ScriptObjectSourceType::NPC) }; });
-			std::vector<ScriptObjectSource> npcs{ std::ranges::begin(npcObjects), std::ranges::end(npcObjects) };
+			std::vector<ScriptObjectSource> npcs;
+			std::ranges::copy(npcObjects, std::back_inserter(npcs));
 			return npcs;
 		}, {}
 	});
@@ -168,84 +170,84 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 			auto objects = level.lock()->getBaddies()
 				| std::views::filter([](const LevelBaddy& baddy) { return baddy.mode != BaddyMode::DEAD; })
 				| std::views::transform([](const LevelBaddy& baddy) { return ScriptObjectSource{ std::make_pair((size_t)baddy.id, ScriptObjectSourceType::BADDY) }; });
-			std::vector<ScriptObjectSource> objectList{ std::begin(objects), std::end(objects) };
+			std::vector<ScriptObjectSource> objectList{ std::ranges::begin(objects), std::ranges::end(objects) };
 			return objectList;
 		}, {}
 	});
 
 	// bombs
-	variableStore.add(GameVariable{ "bombscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getBombs().size()); } , {} });
+	variableStore.add(GameVariable{ "bombscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getMapBombCount()); } , {} });
 	variableStore.add(GameVariable{ "bombs",
 		[level](auto) -> GameValue
 		{
 			auto levelPtr = level.lock();
 			std::vector<ScriptObjectSource> objectList{};
-			for (size_t i = 0; levelPtr && i < levelPtr->getBombs().size(); ++i)
+			for (size_t i = 0; levelPtr && i < levelPtr->getMapBombCount(); ++i)
 				objectList.emplace_back(std::make_pair(i, ScriptObjectSourceType::BOMB));
 			return objectList;
 		}, {}
 	});
 
 	// arrows
-	variableStore.add(GameVariable{ "arrowscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getArrows().size()); } , {} });
+	variableStore.add(GameVariable{ "arrowscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getMapArrowCount()); } , {} });
 	variableStore.add(GameVariable{ "arrows",
 		[level](auto) -> GameValue
 		{
 			auto levelPtr = level.lock();
 			std::vector<ScriptObjectSource> objectList{};
-			for (size_t i = 0; levelPtr && i < levelPtr->getArrows().size(); ++i)
+			for (size_t i = 0; levelPtr && i < levelPtr->getMapArrowCount(); ++i)
 				objectList.emplace_back(std::make_pair(i, ScriptObjectSourceType::ARROW));
 			return objectList;
 		}, {}
 	});
 
 	// items
-	variableStore.add(GameVariable{ "itemscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getItems().size()); } , {} });
+	variableStore.add(GameVariable{ "itemscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getMapItemCount()); } , {} });
 	variableStore.add(GameVariable{ "items",
 		[level](auto) -> GameValue
 		{
 			auto levelPtr = level.lock();
 			std::vector<ScriptObjectSource> objectList{};
-			for (size_t i = 0; levelPtr && i < levelPtr->getItems().size(); ++i)
+			for (size_t i = 0; levelPtr && i < levelPtr->getMapItemCount(); ++i)
 				objectList.emplace_back(std::make_pair(i, ScriptObjectSourceType::ITEM));
 			return objectList;
 		}, {}
 	});
 
 	// explos
-	variableStore.add(GameVariable{ "exploscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getExplosions().size()); } , {} });
+	variableStore.add(GameVariable{ "exploscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getMapExplosionCount()); } , {} });
 	variableStore.add(GameVariable{ "explos",
 		[level](auto) -> GameValue
 		{
 			auto levelPtr = level.lock();
 			std::vector<ScriptObjectSource> objectList{};
-			for (size_t i = 0; levelPtr && i < levelPtr->getExplosions().size(); ++i)
+			for (size_t i = 0; levelPtr && i < levelPtr->getMapExplosionCount(); ++i)
 				objectList.emplace_back(std::make_pair(i, ScriptObjectSourceType::EXPLOSION));
 			return objectList;
 		}, {}
 	});
 
 	// horses
-	variableStore.add(GameVariable{ "horsescount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getHorses().size()); } , {} });
+	variableStore.add(GameVariable{ "horsescount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getMapHorseCount()); } , {} });
 	variableStore.add(GameVariable{ "horses",
 		[level](auto) -> GameValue
 		{
 			auto levelPtr = level.lock();
 			std::vector<ScriptObjectSource> objectList{};
-			for (size_t i = 0; levelPtr && i < levelPtr->getHorses().size(); ++i)
+			for (size_t i = 0; levelPtr && i < levelPtr->getMapHorseCount(); ++i)
 				objectList.emplace_back(std::make_pair(i, ScriptObjectSourceType::HORSE));
 			return objectList;
 		}, {}
 	});
 
 	// signs
-	variableStore.add(GameVariable{ "signscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getSigns().size()); } , {} });
+	variableStore.add(GameVariable{ "signscount", [level](auto) -> GameValue { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getMapSignCount()); } , {} });
 	variableStore.add(GameVariable{ "signs",
 		[level](auto) -> GameValue
 		{
 			auto levelPtr = level.lock();
 			std::vector<ScriptObjectSource> objectList{};
-			for (size_t i = 0; levelPtr && i < levelPtr->getSigns().size(); ++i)
+			for (size_t i = 0; levelPtr && i < levelPtr->getMapSignCount(); ++i)
 				objectList.emplace_back(std::make_pair(i, ScriptObjectSourceType::SIGN));
 			return objectList;
 		}, {}

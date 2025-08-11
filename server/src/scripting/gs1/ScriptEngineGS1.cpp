@@ -1,6 +1,7 @@
 #include <any>
 #include <exception>
 #include <format>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -72,8 +73,13 @@ PlayerPtr getPlayerFromSource(const ScriptObjectSource& source, std::optional<si
 	{
 		if (index.has_value())
 		{
-			if (auto level = server->getLevel(player->account.level); level != nullptr && index.value() < level->getPlayers().size())
-				player = server->getPlayer(level->getPlayers().at(index.value()));
+			if (auto level = server->getLevel(player->account.level); level != nullptr && index.value() < level->getMapPlayerCount())
+			{
+				auto mapPlayers = level->getMapPlayers();
+				auto iter = mapPlayers.begin();
+				std::ranges::advance(iter, index.value(), mapPlayers.end());
+				player = server->getPlayer(*iter);
+			}
 		}
 		return player;
 	}
@@ -98,8 +104,13 @@ NPCPtr getNPCFromSource(const ScriptObjectSource& source, std::optional<size_t> 
 	{
 		if (index.has_value())
 		{
-			if (auto level = npc->level.lock(); level != nullptr && index.value() < level->getNPCs().size())
-				npc = server->getNPC(level->getNPCs().at(index.value()));
+			if (auto level = npc->level.lock(); level != nullptr && index.value() < level->getMapNPCCount())
+			{
+				auto mapNPCs = level->getMapNPCs();
+				auto iter = mapNPCs.begin();
+				std::ranges::advance(iter, index.value(), mapNPCs.end());
+				npc = server->getNPC(*iter);
+			}
 		}
 		return npc;
 	}

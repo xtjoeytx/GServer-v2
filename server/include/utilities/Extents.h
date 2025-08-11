@@ -186,7 +186,12 @@ inline PixelPosition toPixelPosition(const PixelPosition& origin, std::floating_
 	// Enforce half tile increments.  We will never have a float position that isn't a half tile.
 	int32_t halfTileX = static_cast<int32_t>(x * 2);
 	int32_t halfTileY = static_cast<int32_t>(y * 2);
-	return PixelPosition{ static_cast<int32_t>(origin.x() + (halfTileX * 8)), static_cast<int32_t>(origin.y() + (halfTileY * 8)), static_cast<int32_t>(origin.z())};
+	return PixelPosition{ static_cast<int32_t>(origin.x() + (halfTileX * 8)), static_cast<int32_t>(origin.y() + (halfTileY * 8)), static_cast<int32_t>(origin.z()) };
+}
+
+inline PixelPosition toPixelPosition(const TilePosition& position)
+{
+	return PixelPosition{ static_cast<int32_t>(position.x() * 16), static_cast<int32_t>(position.y() * 16), static_cast<int32_t>(position.z() * 16) };
 }
 
 template<typename Type>
@@ -349,49 +354,49 @@ inline Position<Type> operator/(const Position<Type>& left, const Position<Other
 template<typename Type>
 inline Dimension<Type> operator*(const Dimension<Type>& left, int right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.x() * right), static_cast<Type>(left.y() * right), static_cast<Type>(left.z() * right) };
+	return Dimension<Type>{ static_cast<Type>(left.width() * right), static_cast<Type>(left.height() * right) };
 }
 
 template<typename Type>
 inline Dimension<Type> operator+(const Dimension<Type>& left, int right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.x() + right), static_cast<Type>(left.y() + right), static_cast<Type>(left.z() + right) };
+	return Dimension<Type>{ static_cast<Type>(left.width() + right), static_cast<Type>(left.height() + right) };
 }
 
 template<typename Type>
 inline Dimension<Type> operator-(const Dimension<Type>& left, int right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.x() - right), static_cast<Type>(left.y() - right), static_cast<Type>(left.z() - right) };
+	return Dimension<Type>{ static_cast<Type>(left.width() - right), static_cast<Type>(left.height() - right) };
 }
 
 template<typename Type>
 inline Dimension<Type> operator/(const Dimension<Type>& left, int right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.x() / right), static_cast<Type>(left.y() / right), static_cast<Type>(left.z() / right) };
+	return Dimension<Type>{ static_cast<Type>(left.width() / right), static_cast<Type>(left.height() / right) };
 }
 
 template<typename Type, typename OtherType>
 inline Dimension<Type> operator*(const Dimension<Type>& left, const Dimension<Type>& right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.x() * right.x()), static_cast<Type>(left.y() * right.y()), static_cast<Type>(left.z() * right.z()) };
+	return Dimension<Type>{ static_cast<Type>(left.width() * right.width()), static_cast<Type>(left.height() * right.height()) };
 }
 
 template<typename Type, typename OtherType>
 inline Dimension<Type> operator+(const Dimension<Type>& left, const Dimension<Type>& right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.x() + right.x()), static_cast<Type>(left.y() + right.y()), static_cast<Type>(left.z() + right.z()) };
+	return Dimension<Type>{ static_cast<Type>(left.width() + right.width()), static_cast<Type>(left.height() + right.height()) };
 }
 
 template<typename Type, typename OtherType>
 inline Dimension<Type> operator-(const Dimension<Type>& left, const Dimension<Type>& right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.x() - right.x()), static_cast<Type>(left.y() - right.y()), static_cast<Type>(left.z() - right.z()) };
+	return Dimension<Type>{ static_cast<Type>(left.width() - right.width()), static_cast<Type>(left.height() - right.height()) };
 }
 
 template<typename Type, typename OtherType>
 inline Dimension<Type> operator/(const Dimension<Type>& left, const Dimension<Type>& right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.x() / right.x()), static_cast<Type>(left.y() / right.y()), static_cast<Type>(left.z() / right.z()) };
+	return Dimension<Type>{ static_cast<Type>(left.width() / right.width()), static_cast<Type>(left.height() / right.height()) };
 }
 
 ////////////////////////////////////////////////////////////////////////////////

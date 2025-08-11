@@ -18,9 +18,9 @@ public:
 	static LevelPtr loadLevelInto(LevelPtr level, const std::filesystem::path& levelName);
 
 private:
-	static LevelPtr loadGraal(LevelPtr level, FileSystem* fileSystem, CString& fileData);
-	static LevelPtr loadZelda(LevelPtr level, FileSystem* fileSystem, CString& fileData);
-	static LevelPtr loadNW(LevelPtr level, FileSystem* fileSystem, CString& fileData);
+	static LevelPtr loadGraal(LevelPtr level, std::string_view fileVersion, FileSystem* fileSystem, CString& fileData);
+	static LevelPtr loadZelda(LevelPtr level, std::string_view fileVersion, FileSystem* fileSystem, CString& fileData);
+	static LevelPtr loadNW(LevelPtr level, std::string_view fileVersion, FileSystem* fileSystem, CString& fileData);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

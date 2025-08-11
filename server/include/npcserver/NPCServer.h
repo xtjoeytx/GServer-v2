@@ -204,7 +204,7 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, Scr
 		return 0;
 
 	size_t count = 0;
-	for (const auto& id : levelPtr->getNPCs())
+	for (const auto& id : levelPtr->findInRangeNPCs(pos))
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{
@@ -226,7 +226,7 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, Scr
 		return 0;
 
 	size_t count = 0;
-	for (const auto& id : levelPtr->getNPCs())
+	for (const auto& id : levelPtr->findInRangeNPCs(pos))
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{

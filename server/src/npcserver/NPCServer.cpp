@@ -168,7 +168,7 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 				propsPacket.clear();
 				propsPacket.writeGChar((char)PLO_NPCPROPS) >> (int)npc->id << npc->getModifiedPropsPacket();
 				if (propsPacket.length() > 4)
-					m_server->sendPacketToLevelArea(propsPacket, level);
+					m_server->sendPacketToNearby(propsPacket, npc->getGlobalPosition(), level);
 			}
 		}
 	}
@@ -186,7 +186,7 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 			if (propsPacket.isEmpty()) continue;
 
 			player->sendPacket(CString() >> (char)PLO_PLAYERPROPS << propsPacket);
-			m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << propsPacket, playerClient->getLevel(), { player->getId() });
+			m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << propsPacket, playerClient->getGlobalPosition(), playerClient->getLevel(), { player->getId() });
 		}
 	}
 
@@ -311,7 +311,16 @@ std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::str
 	npc->setPropWith<NPCProp::Y>(SetBy::SERVER, location.y());
 	npc->level = level;
 
-	level->addNPC(npc);
+	if (level)
+	{
+		if (level->isOnGmap())
+		{
+			npc->setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, level->mapPosition.x());
+			npc->setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, level->mapPosition.y());
+		}
+		level->addNPC(npc);
+	}
+
 	m_server->addNPC(npc, true);
 	m_globalNPCList[npc->id] = npc;
 

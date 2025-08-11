@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <memory>
 #include <string_view>
@@ -5,12 +8,13 @@
 #include <BabyDI.h>
 #include <CString.h>
 #include <IEnums.h>
-#include <IUtil.h>
 
 #include <Server.h>
 #include <level/Level.h>
 #include <level/LevelBaddy.h>
 #include <level/LevelItem.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/StringUtils.h>
@@ -81,7 +85,7 @@ void LevelBaddy::dropItem() const
 	if (itemType != LevelItemType::INVALID)
 	{
 		if (auto lvl = m_level.lock(); lvl)
-			lvl->addItem(inform_client, toPixelPosition({ 0, 0 }, position), itemType);
+			lvl->addItem(inform_client, toPixelPosition(lvl->getMapPixelOffset(), position), itemType);
 	}
 }
 
@@ -228,7 +232,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 					if (auto level = m_level.lock(); level != nullptr)
 					{
 						if (!level->hasLivingBaddies())
-							server->queueNPCEvent(level, ScriptEventType::COMPUSDIED, source::FromLevel(level));
+							server->queueNPCEventLocal(level, ScriptEventType::COMPUSDIED, source::FromLevel(level));
 					}
 				};
 

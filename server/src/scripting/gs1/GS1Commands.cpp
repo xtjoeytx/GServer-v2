@@ -23,6 +23,7 @@
 
 #include <BabyDI.h>
 #include <Server.h>
+#include <level/LevelArrow.h>
 #include <level/LevelBaddy.h>
 #include <level/LevelItem.h>
 #include <npcserver/NPCServer.h>
@@ -551,10 +552,12 @@ void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		}
 
 		auto* server = BabyDI::Get<Server>();
-		auto& levelNPCs = level->getNPCs();
-		if (index < levelNPCs.size())
+		if (index < level->getMapNPCCount())
 		{
-			if (auto npc = server->getNPC(levelNPCs[index]); npc != nullptr)
+			auto mapNPCs = level->getMapNPCs();
+			auto iter = mapNPCs.begin();
+			std::ranges::advance(iter, index, mapNPCs.end());
+			if (auto npc = server->getNPC(*iter); npc != nullptr)
 				npc->scripting.events.addEvent(ScriptEventType::CUSTOM, source::FromNPC(sourceNPC), eventAndParams);
 		}
 	}
@@ -951,9 +954,10 @@ void fn_hitplayer(GS1Visitor* visitor, std::string_view commandName, const std::
 		{
 			if (auto level = npc->level.lock(); level != nullptr)
 			{
-				auto playerIdIter = level->getPlayers().begin();
-				std::advance(playerIdIter, index);
-				if (playerIdIter != level->getPlayers().end())
+				auto mapPlayers = level->getMapPlayers();
+				auto playerIdIter = mapPlayers.begin();
+				std::ranges::advance(playerIdIter, index, mapPlayers.end());
+				if (playerIdIter != mapPlayers.end())
 					server->hitPlayer(*playerIdIter, halfhearts, fromx, fromy, npc);
 			}
 		}
@@ -1080,7 +1084,7 @@ void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 		auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addItem(inform_client, toPixelPosition({ 0, 0 }, (float)x, (float)y), static_cast<LevelItemType>(itemname));
+		level->addItem(inform_client, toPixelPosition(level->getMapPixelOffset(), (float)x, (float)y), static_cast<LevelItemType>(itemname));
 	}
 }
 
@@ -1144,7 +1148,7 @@ void fn_putbomb(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		auto power = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 1_ui8, 3_ui8);
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addBomb(inform_client, toPixelPosition({ 0, 0 }, (float)x, (float)y), power);
+		level->addBomb(inform_client, toPixelPosition(level->getMapPixelOffset(), (float)x, (float)y), power);
 	}
 }
 
@@ -1176,7 +1180,7 @@ void fn_putexplosion(GS1Visitor* visitor, std::string_view commandName, const st
 		auto radius = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addExplosion(inform_client, toPixelPosition({ 0, 0 }, (float)x, (float)y), visitor->getCurrentSource(), radius, 1);
+		level->addExplosion(inform_client, toPixelPosition(level->getMapPixelOffset(), (float)x, (float)y), visitor->getCurrentSource(), radius, 1);
 	}
 }
 
@@ -1193,7 +1197,7 @@ void fn_putexplosion2(GS1Visitor* visitor, std::string_view commandName, const s
 		auto radius = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto x = visitor->getGameValueAs<double>(*arguments[2]);
 		auto y = visitor->getGameValueAs<double>(*arguments[3]);
-		level->addExplosion(inform_client, toPixelPosition({ 0, 0 }, (float)x, (float)y), visitor->getCurrentSource(), radius, power);
+		level->addExplosion(inform_client, toPixelPosition(level->getMapPixelOffset(), (float)x, (float)y), visitor->getCurrentSource(), radius, power);
 	}
 }
 
@@ -1209,7 +1213,7 @@ void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::v
 		auto imagefile = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addHorse(inform_client, imagefile, toPixelPosition({ 0, 0 }, (float)x, (float)y), 2, 0);
+		level->addHorse(inform_client, imagefile, toPixelPosition(level->getMapPixelOffset(), (float)x, (float)y), 2, 0);
 	}
 }
 
@@ -2329,9 +2333,11 @@ void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 		{
-			server->sendPacketToLevelArea(CString() >> (char)PLO_FIRESPY >> (short)source.value().first >> (char)(length_power), player);
 			if (auto level = player->getLevel(); level != nullptr)
+			{
+				server->sendPacketToNearby(CString() >> (char)PLO_FIRESPY >> (short)source.value().first >> (char)(length_power), player->account.character.getGlobalPosition(), level);
 				level->addSpyFire(player->account.character.getGlobalPosition(), source.value(), player->account.character.direction, length, power);
+			}
 		}
 	}
 }

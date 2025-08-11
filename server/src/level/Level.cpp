@@ -1,16 +1,19 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <ctime>
 #include <deque>
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <generator>
 #include <list>
 #include <memory>
 #include <numbers>
 #include <optional>
 #include <ostream>
+#include <ranges>
 #include <string_view>
 #include <string>
 #include <utility>
@@ -47,7 +50,6 @@
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
-#include <utilities/Log.h>
 #include <utilities/PropsContainer.h>
 #include <utilities/StringUtils.h>
 #include <utilities/TimeoutGenerator.h>
@@ -57,10 +59,6 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-/*
-	Global Variables
-*/
-//CString base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 short respawningTiles[] = {
 	0x1ff, // grass
 	0x3ff, // grass
@@ -136,42 +134,6 @@ Level::~Level()
 }
 
 //----------------------------
-
-std::shared_ptr<Level> Level::findLevel(std::string_view levelName, bool loadAbsolute)
-{
-	auto server = BabyDI::Get<Server>();
-	auto& levelList = server->getLevelList();
-
-	// TODO(joey): Maybe its time for a hashmap, even if a duplicate level name occurs
-	// 	this is still going to break on the first occurrence.
-
-	// Find Appropriate Level by Name
-	std::string lowerCaseLevel = string::toLower(levelName);
-	if (auto it = levelList.find(lowerCaseLevel); it != levelList.end())
-		return it->second;
-
-	if (loadAbsolute)
-	{
-		FileSystem* fileSystem = server->getFileSystem();
-		if (!server->getSettings().getBool("nofoldersconfig", false))
-			fileSystem = server->getFileSystem(FS_LEVEL);
-
-		if (fileSystem->find(levelName).trim().length() == 0)
-		{
-			fileSystem->addFile(levelName);
-			fileSystem->addDir(getPath(levelName), "*", true);
-		}
-	}
-
-	// Load New Level
-	auto level = LevelLoader::loadLevel(std::filesystem::path{ levelName });
-	if (level == nullptr)
-		return nullptr;
-
-	// Return Level
-	levelList.insert(std::make_pair(lowerCaseLevel, level));
-	return level;
-}
 
 std::shared_ptr<Level> Level::createLevel(uint16_t fillTile, std::string_view levelName)
 {
@@ -399,7 +361,7 @@ void Level::saveLevel(const std::string& filename)
 		fileStream << "BADDYEND" << std::endl;
 	}
 
-	for (const auto& npcId : getNPCs())
+	for (const auto& npcId : m_npcs)
 	{
 		auto npc = server->getNPC(npcId);
 
@@ -506,45 +468,12 @@ void Level::doFrameEvents(precise_clock::time_point time)
 
 //----------------------------
 
-uint8_t Level::getGmapX() const
-{
-	if (auto map = m_map.lock(); map && map->isGmap())
-		return m_mapX;
-	return 0;
-}
-
-uint8_t Level::getGmapY() const
-{
-	if (auto map = m_map.lock(); map && map->isGmap())
-		return m_mapY;
-	return 0;
-}
-
-bool Level::isPlayerLeader(PlayerID id) const
-{
-	if (m_players.empty())
-		return false;
-	return m_players.front() == id;
-}
-
-bool Level::hasLivingBaddies() const
-{
-	for (const auto& baddy : m_baddies)
-	{
-		if (baddy.mode != BaddyMode::DEAD)
-			return true;
-	}
-	return false;
-}
-
-//----------------------------
-
 CString Level::getBaddyPacket()
 {
 	CString retVal;
 	for (const auto& baddy : m_baddies)
 	{
-		retVal >> (char)PLO_BADDYPROPS >> (char)baddy.id << baddy.getProps() << "\n";
+		retVal >> (char)PLO_BADDYPROPS >> (char)baddy.id << baddy.getProps();
 	}
 	return retVal;
 }
@@ -554,7 +483,6 @@ CString Level::getBoardPacket()
 	CString retVal;
 	retVal.writeGChar(PLO_BOARDPACKET);
 	retVal.write((char*)m_tiles[0], sizeof(short[4096]));
-	retVal << "\n";
 
 	return retVal;
 }
@@ -567,7 +495,6 @@ CString Level::getLayerPacket(int layer)
 	// TODO: Only send the tiles that has been placed on the layer
 	retVal << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
 	retVal.write((char*)m_tiles[layer], sizeof(short[4096]));
-	retVal << "\n";
 
 	return retVal;
 }
@@ -653,13 +580,33 @@ void Level::sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point t
 
 //----------------------------
 
+bool Level::isPlayerLeader(PlayerID id) const
+{
+	if (m_players.empty())
+		return false;
+	return m_players.front() == id;
+}
+
+bool Level::hasLivingBaddies() const
+{
+	for (const auto& baddy : m_baddies)
+	{
+		if (baddy.mode != BaddyMode::DEAD)
+			return true;
+	}
+	return false;
+}
+
+//----------------------------
+
 int Level::addPlayer(PlayerID id)
 {
 	m_players.push_back(id);
 
 	// Set the player enters event on all the NPCs.
 	auto server = BabyDI::Get<Server>();
-	server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERENTERS, source::FromPlayer(id));
+	if (auto player = server->getPlayer(id); player != nullptr)
+		server->queueNPCEvent(shared_from_this(), player->getGlobalPosition(), ScriptEventType::PLAYERENTERS, source::FromPlayer(id));
 
 	return static_cast<int>(m_players.size() - 1);
 }
@@ -670,7 +617,8 @@ void Level::removePlayer(PlayerID id)
 
 	// Set the player leaves event on all the NPCs.
 	auto server = BabyDI::Get<Server>();
-	server->queueNPCEvent(shared_from_this(), ScriptEventType::PLAYERLEAVES, source::FromPlayer(id));
+	if (auto player = server->getPlayer(id); player != nullptr)
+		server->queueNPCEvent(shared_from_this(), player->getGlobalPosition(), ScriptEventType::PLAYERLEAVES, source::FromPlayer(id));
 }
 
 //----------------------------
@@ -835,55 +783,6 @@ bool Level::alterBoard(CString& tileData, const Rectangle<uint8_t, uint8_t>& are
 
 //----------------------------
 
-LevelShoot* Level::addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
-{
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
-		return nullptr;
-
-	auto result = addShoot(position, angle, zangle, power, gravity, gani, from);
-	if (result != nullptr)
-		BabyDI::Get<Server>()->sendShootToOneLevel(result, shared_from_this());
-
-	return result;
-}
-
-LevelShoot* Level::addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
-{
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
-		return nullptr;
-
-	LevelShoot newShoot{ .position = toTilePosition(position), .angle = angle, .zangle = zangle, .powerIn44Pixels = power, .gani = gani, .gravity = gravity, .from = from};
-	if (newShoot.gani.back() == ',')
-		newShoot.gani.pop_back();
-	newShoot.calculateSpeeds();
-	m_shoots.emplace_back(std::move(newShoot));
-	return &m_shoots.back();
-}
-
-LevelShoot* Level::addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
-{
-	auto pi = std::numbers::pi_v<float>;
-	return addShoot(position, (angle / 220.0f) * (2 * pi), ((zangle / 110.0f) - 1.0f) * (pi/2), power, gravity, gani, from);
-}
-
-bool Level::removeShoot(uint8_t index)
-{
-	if (index >= m_shoots.size())
-		return false;
-
-	m_shoots.erase(m_shoots.begin() + index);
-	return true;
-}
-
-LevelShoot* Level::getShoot(uint8_t index) const
-{
-	if (index >= m_shoots.size())
-		return nullptr;
-	return const_cast<LevelShoot*>(&m_shoots[index]);
-}
-
-//----------------------------
-
 LevelArrow* Level::addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObjectSource from)
 {
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
@@ -971,10 +870,10 @@ LevelBaddy* Level::putNewBaddy(const LocalPixelPosition& position, BaddyType typ
 
 	auto server = BabyDI::Get<Server>();
 	CString packet = CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps();
-	for (auto& player : m_players)
+	for (auto& playerId : m_players)
 	{
-		if (auto p = server->getPlayer(player); p)
-			p->sendPacket(packet);
+		if (auto player = server->getPlayer(playerId); player)
+			player->sendPacket(packet);
 	}
 
 	return baddy;
@@ -991,10 +890,10 @@ LevelBaddy* Level::putNewBaddy(const LocalPixelPosition& position, BaddyType typ
 
 	auto server = BabyDI::Get<Server>();
 	CString packet = CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps();
-	for (auto& player : m_players)
+	for (auto& playerId : m_players)
 	{
-		if (auto p = server->getPlayer(player); p)
-			p->sendPacket(packet);
+		if (auto player = server->getPlayer(playerId); player)
+			player->sendPacket(packet);
 	}
 
 	return baddy;
@@ -1019,8 +918,8 @@ bool Level::removeBaddy(uint8_t pId)
 	CString props = CString() >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
 	for (const auto& playerId : m_players)
 	{
-		auto player = server->getPlayer(playerId);
-		player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy.id << props);
+		if (auto player = server->getPlayer(playerId); player != nullptr)
+			player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy.id << props);
 	}
 	return true;
 }
@@ -1042,8 +941,8 @@ bool Level::removeAllBaddies()
 		propsPacket >> (char)PLO_BADDYPROPS >> (char)baddy.id >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
 		for (const auto& playerId : m_players)
 		{
-			auto player = server->getPlayer(playerId);
-			player->sendPacket(propsPacket);
+			if (auto player = server->getPlayer(playerId); player != nullptr)
+				player->sendPacket(propsPacket);
 		}
 	}
 	return true;
@@ -1162,7 +1061,7 @@ std::optional<const LevelChest*> Level::getChest(const LocalWholeTilePosition& p
 	return std::nullopt;
 }
 
-CString Level::getChestStr(LevelChest* chest) const
+std::string Level::getChestFormattedForSave(LevelChest* chest) const
 {
 	return std::format("{}:{}:{}", chest->getTileX(), chest->getTileY(), levelName);
 }
@@ -1392,7 +1291,7 @@ LevelItem* Level::addItem(const PixelPosition& position, LevelItemType item)
 			TilePosition loc = toTilePosition(position).translate(-0.5f, -1.0f);
 
 			// Find existing rupees, and add to the npc.
-			PixelRectangleArea searchArea{ toPixelPosition({ 0, 0 }, loc).translate(-2 * 16, -2 * 16), { 6 * 16, 6 * 16 } };
+			PixelRectangleArea searchArea{ toPixelPosition(loc).translate(-2 * 16, -2 * 16), { 6 * 16, 6 * 16 } };
 			auto npcList = findIntersectingNPCs(searchArea);
 			for (auto& npcId : npcList)
 			{
@@ -1464,15 +1363,9 @@ LevelItem* Level::getItem(size_t index) const
 
 //----------------------------
 
-LevelLink* Level::addLink()
+LevelLink* Level::addLink(const std::vector<CString>& link)
 {
-	m_links.emplace_back();
-	return &m_links.back();
-}
-
-LevelLink* Level::addLink(const std::vector<CString>& pLink)
-{
-	LevelLink newLink{ pLink };
+	LevelLink newLink{ link };
 	m_links.emplace_back(std::move(newLink));
 	return &m_links.back();
 }
@@ -1506,6 +1399,64 @@ std::optional<const LevelLink*> Level::getLink(const LocalWholeTilePosition& pos
 
 //----------------------------
 
+LevelShoot* Level::addShoot(LevelShoot* existingShoot)
+{
+	if (existingShoot == nullptr)
+		return nullptr;
+
+	m_shoots.push_back(*existingShoot);
+	return &m_shoots.back();
+}
+
+LevelShoot* Level::addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
+{
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return nullptr;
+
+	auto result = addShoot(position, angle, zangle, power, gravity, gani, from);
+	if (result != nullptr)
+		BabyDI::Get<Server>()->sendShootToOneLevel(result, shared_from_this());
+
+	return result;
+}
+
+LevelShoot* Level::addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
+{
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+		return nullptr;
+
+	LevelShoot newShoot{ .position = toTilePosition(position), .angle = angle, .zangle = zangle, .powerIn44Pixels = power, .gani = gani, .gravity = gravity, .from = from};
+	if (newShoot.gani.back() == ',')
+		newShoot.gani.pop_back();
+	newShoot.calculateSpeeds();
+	m_shoots.emplace_back(std::move(newShoot));
+	return &m_shoots.back();
+}
+
+LevelShoot* Level::addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
+{
+	auto pi = std::numbers::pi_v<float>;
+	return addShoot(position, (angle / 220.0f) * (2 * pi), ((zangle / 110.0f) - 1.0f) * (pi/2), power, gravity, gani, from);
+}
+
+bool Level::removeShoot(uint8_t index)
+{
+	if (index >= m_shoots.size())
+		return false;
+
+	m_shoots.erase(m_shoots.begin() + index);
+	return true;
+}
+
+LevelShoot* Level::getShoot(uint8_t index) const
+{
+	if (index >= m_shoots.size())
+		return nullptr;
+	return const_cast<LevelShoot*>(&m_shoots[index]);
+}
+
+//----------------------------
+
 LevelSign* Level::addSign(const LocalWholeTilePosition& position, const CString& sign, bool encoded)
 {
 	LevelSign newSign{ position, sign, encoded };
@@ -1531,15 +1482,6 @@ LevelSign* Level::getSign(size_t index) const
 
 //----------------------------
 
-void Level::setMap(std::weak_ptr<Map> pMap, int pMapX, int pMapY)
-{
-	m_map = pMap;
-	m_mapX = pMapX;
-	m_mapY = pMapY;
-}
-
-//----------------------------
-
 bool Level::moveShoot(LevelShoot* shoot, int iterations)
 {
 	if (shoot == nullptr)
@@ -1547,12 +1489,48 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 
 	for (int i = 0; i < iterations; ++i)
 	{
+		// If the shoot is out of bounds, try to move it to the new level, else delete it.
+		auto localPosition = toLocalPixelPosition(shoot->position);
+		if (localPosition.x() < 0 || localPosition.x() > 1024 || localPosition.y() < 0 || localPosition.y() > 1024)
+		{
+			// If we are out of the limits of the map, just delete it.
+			auto mapSize = getMapSizeInParts();
+			if (localPosition.x() < 0 && mapPosition.x() == 0 ||
+				localPosition.y() < 0 && mapPosition.y() == 0 ||
+				localPosition.x() > 1024 && mapPosition.x() == mapSize.width() - 1 ||
+				localPosition.y() > 1024 && mapPosition.y() == mapSize.height() - 1)
+			{
+				return false;
+			}
+
+			// Move to the new level.
+			if (m_map)
+			{
+				LevelPtr nextLevel;
+				if (localPosition.x() < 0)
+					nextLevel = m_map->getLevelAt(static_cast<uint8_t>(mapPosition.x() - 1), mapPosition.y());
+				else if (localPosition.x() > 1024)
+					nextLevel = m_map->getLevelAt(static_cast<uint8_t>(mapPosition.x() + 1), mapPosition.y());
+				else if (localPosition.y() < 0)
+					nextLevel = m_map->getLevelAt(mapPosition.x(), static_cast<uint8_t>(mapPosition.y() - 1));
+				else if (localPosition.y() > 1024)
+					nextLevel = m_map->getLevelAt(mapPosition.x(), static_cast<uint8_t>(mapPosition.y() + 1));
+
+				if (nextLevel != nullptr)
+				{
+					auto newShoot = nextLevel->addShoot(shoot);
+
+					// If the new level was already processed this frame, have it process the new shoot.
+					if (newShoot != nullptr && nextLevel->getLastFrameTime() == m_lastFrameTime)
+						nextLevel->moveShoot(newShoot, iterations);
+				}
+			}
+
+			return false;
+		}
+
 		// Move the shoot.
 		shoot->move();
-
-		// If the shoot has gone out of bounds, delete it.
-		if (shoot->position.x() < 0 || shoot->position.x() > (getSize().width() / 16.0f) || shoot->position.y() < 0 || shoot->position.y() > (getSize().height() / 16.0f))
-			return false;
 
 		// If the Z is <= 3, and we aren't going up, check for walls and NPCs.
 		if (shoot->position.z() <= 3.0f && (DoubleIsZero(shoot->movementPerFrame.z()) || shoot->movementPerFrame.z() <= 0.0))
@@ -1574,7 +1552,7 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 			};
 
 			// Check for NPC collisions.
-			PixelPosition searchPosition = toPixelPosition({ 0, 0 }, shoot->position).translate(8_i16, 16_i16);
+			PixelPosition searchPosition = toPixelPosition(shoot->position).translate(8_i16, 16_i16);
 			bool fromPlayer = (shoot->from.second == ScriptObjectSourceType::PLAYER);
 			auto npcs = findIntersectingNPCsForCollision({ searchPosition, { 32_ui16, 32_ui16 } });
 			for (const auto& npc : npcs)
@@ -1712,17 +1690,370 @@ bool Level::isOnPlayer(const Rectangle<uint8_t, uint8_t>& tileArea)
 	return false;
 }
 
-std::vector<NPCID> Level::findIntersectingNPCs(const PixelPosition& position, bool includeInvisible)
+//----------------------------
+
+std::generator<const PlayerID&> Level::getMapPlayers() const noexcept
+{
+	if (!isOnGmap())
+		co_yield std::ranges::elements_of(m_players);
+	else
+	{
+		for (const auto& levelPtr : m_map->getAllLevels())
+			co_yield std::ranges::elements_of(levelPtr->m_players);
+	}
+}
+
+std::generator<const NPCID&> Level::getMapNPCs() const noexcept
+{
+	if (!isOnGmap())
+		co_yield std::ranges::elements_of(m_npcs);
+	else
+	{
+		for (const auto& levelPtr : m_map->getAllLevels())
+			co_yield std::ranges::elements_of(levelPtr->m_npcs);
+	}
+}
+
+std::generator<LevelArrow&> Level::getMapArrows() noexcept
+{
+	if (!isOnGmap())
+		co_yield std::ranges::elements_of(m_arrows);
+	else
+	{
+		for (const auto& levelPtr : m_map->getAllLevels())
+			co_yield std::ranges::elements_of(levelPtr->m_arrows);
+	}
+}
+
+std::generator<LevelBomb&> Level::getMapBombs() noexcept
+{
+	if (!isOnGmap())
+		co_yield std::ranges::elements_of(m_bombs);
+	else
+	{
+		for (const auto& levelPtr : m_map->getAllLevels())
+			co_yield std::ranges::elements_of(levelPtr->m_bombs);
+	}
+}
+
+std::generator<LevelExplosion&> Level::getMapExplosions() noexcept
+{
+	if (!isOnGmap())
+		co_yield std::ranges::elements_of(m_explosions);
+	else
+	{
+		for (const auto& levelPtr : m_map->getAllLevels())
+			co_yield std::ranges::elements_of(levelPtr->m_explosions);
+	}
+}
+
+std::generator<LevelHorse&> Level::getMapHorses() noexcept
+{
+	if (!isOnGmap())
+		co_yield std::ranges::elements_of(m_horses);
+	else
+	{
+		for (const auto& levelPtr : m_map->getAllLevels())
+			co_yield std::ranges::elements_of(levelPtr->m_horses);
+	}
+}
+
+std::generator<LevelItem&> Level::getMapItems() noexcept
+{
+	if (!isOnGmap())
+		co_yield std::ranges::elements_of(m_items);
+	else
+	{
+		for (const auto& levelPtr : m_map->getAllLevels())
+			co_yield std::ranges::elements_of(levelPtr->m_items);
+	}
+}
+
+std::generator<LevelSign&> Level::getMapSigns() noexcept
+{
+	if (!isOnGmap())
+		co_yield std::ranges::elements_of(m_signs);
+	else
+	{
+		for (const auto& levelPtr : m_map->getAllLevels())
+			co_yield std::ranges::elements_of(levelPtr->m_signs);
+	}
+}
+
+size_t Level::getMapPlayerCount() const noexcept
+{
+	if (!isOnGmap())
+		return m_players.size();
+
+	size_t result = 0;
+	for (const auto& levelPtr : m_map->getAllLevels())
+		result += levelPtr->m_players.size();
+
+	return result;
+}
+
+size_t Level::getMapNPCCount() const noexcept
+{
+	if (!isOnGmap())
+		return m_npcs.size();
+
+	size_t result = 0;
+	for (const auto& levelPtr : m_map->getAllLevels())
+		result += levelPtr->m_npcs.size();
+
+	return result;
+}
+
+size_t Level::getMapArrowCount() const noexcept
+{
+	if (!isOnGmap())
+		return m_arrows.size();
+
+	size_t result = 0;
+	for (const auto& levelPtr : m_map->getAllLevels())
+		result += levelPtr->m_arrows.size();
+
+	return result;
+}
+
+size_t Level::getMapBombCount() const noexcept
+{
+	if (!isOnGmap())
+		return m_bombs.size();
+
+	size_t result = 0;
+	for (const auto& levelPtr : m_map->getAllLevels())
+		result += levelPtr->m_bombs.size();
+
+	return result;
+}
+
+size_t Level::getMapExplosionCount() const noexcept
+{
+	if (!isOnGmap())
+		return m_explosions.size();
+
+	size_t result = 0;
+	for (const auto& levelPtr : m_map->getAllLevels())
+		result += levelPtr->m_explosions.size();
+
+	return result;
+}
+
+size_t Level::getMapHorseCount() const noexcept
+{
+	if (!isOnGmap())
+		return m_horses.size();
+
+	size_t result = 0;
+	for (const auto& levelPtr : m_map->getAllLevels())
+		result += levelPtr->m_horses.size();
+
+	return result;
+}
+
+size_t Level::getMapItemCount() const noexcept
+{
+	if (!isOnGmap())
+		return m_items.size();
+
+	size_t result = 0;
+	for (const auto& levelPtr : m_map->getAllLevels())
+		result += levelPtr->m_items.size();
+
+	return result;
+}
+
+size_t Level::getMapSignCount() const noexcept
+{
+	if (!isOnGmap())
+		return m_signs.size();
+
+	size_t result = 0;
+	for (const auto& levelPtr : m_map->getAllLevels())
+		result += levelPtr->m_signs.size();
+
+	return result;
+}
+
+std::optional<LevelArrow*> Level::getMapArrow(size_t index) noexcept
+{
+	auto objects = getMapArrows();
+	auto iter = objects.begin();
+	std::ranges::advance(iter, index, objects.end());
+	if (iter == objects.end())
+		return std::nullopt;
+	return std::make_optional(&(*iter));
+}
+
+std::optional<LevelBomb*> Level::getMapBomb(size_t index) noexcept
+{
+	auto objects = getMapBombs();
+	auto iter = objects.begin();
+	std::ranges::advance(iter, index, objects.end());
+	if (iter == objects.end())
+		return std::nullopt;
+	return std::make_optional(&(*iter));
+}
+
+std::optional<LevelExplosion*> Level::getMapExplosion(size_t index) noexcept
+{
+	auto objects = getMapExplosions();
+	auto iter = objects.begin();
+	std::ranges::advance(iter, index, objects.end());
+	if (iter == objects.end())
+		return std::nullopt;
+	return std::make_optional(&(*iter));
+}
+
+std::optional<LevelHorse*> Level::getMapHorse(size_t index) noexcept
+{
+	auto objects = getMapHorses();
+	auto iter = objects.begin();
+	std::ranges::advance(iter, index, objects.end());
+	if (iter == objects.end())
+		return std::nullopt;
+	return std::make_optional(&(*iter));
+}
+
+std::optional<LevelItem*> Level::getMapItem(size_t index) noexcept
+{
+	auto objects = getMapItems();
+	auto iter = objects.begin();
+	std::ranges::advance(iter, index, objects.end());
+	if (iter == objects.end())
+		return std::nullopt;
+	return std::make_optional(&(*iter));
+}
+
+std::optional<LevelSign*> Level::getMapSign(size_t index) noexcept
+{
+	auto objects = getMapSigns();
+	auto iter = objects.begin();
+	std::ranges::advance(iter, index, objects.end());
+	if (iter == objects.end())
+		return std::nullopt;
+	return std::make_optional(&(*iter));
+}
+
+//----------------------------
+
+std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& position) const noexcept
+{
+	auto server = BabyDI::Get<Server>();
+	bool syncInside = server->getSettings().getBool("syncbydistanceinside", false);
+
+	int syncx = server->getSettings().getInt("syncdistancex", 192);
+	int syncy = server->getSettings().getInt("syncdistancey", 192);
+	auto mapSize = getMapSizeInTiles();
+	auto tilePosition = toTilePosition(position);
+
+	// If this is an inside level and we aren't going to sync by distance inside,
+	// or the sync distance is larger than the level, return all the level players.
+	if (m_map == nullptr && (!syncInside || (syncx >= mapSize.width() && syncy >= mapSize.height())))
+	{
+		co_yield std::ranges::elements_of(m_players);
+		co_return;
+	}
+
+	auto playerInRange = [&](const PlayerID& playerId)
+	{
+		if (auto player = server->getPlayer(playerId); player != nullptr)
+		{
+			auto otherTilePosition = player->account.character.getTilePosition();
+			return std::abs(tilePosition.x() - otherTilePosition.x()) <= syncx && std::abs(tilePosition.y() - otherTilePosition.y()) <= syncy;
+		}
+		return false;
+	};
+
+	// Inside level.
+	if (m_map == nullptr)
+	{
+		for (const auto& playerId : m_players)
+		{
+			if (playerInRange(playerId))
+				co_yield playerId;
+		}
+		co_return;
+	}
+
+	// Gmap/bigmap levels.
+	for (LevelPtr level : m_map->getLevelsInRange(toTilePosition(position), syncx, syncy))
+	{
+		for (const auto& playerId : level->m_players)
+		{
+			if (playerInRange(playerId))
+				co_yield playerId;
+		}
+	}
+}
+
+std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& position) const noexcept
+{
+	auto server = BabyDI::Get<Server>();
+	bool syncInside = server->getSettings().getBool("syncbydistanceinside", false);
+
+	// If this is an inside level and we aren't going to sync by distance inside, return all level NPCs.
+	if (!isOnGmap() && !syncInside)
+	{
+		co_yield std::ranges::elements_of(m_npcs);
+		co_return;
+	}
+
+	int syncx = server->getSettings().getInt("syncdistancex", 192);
+	int syncy = server->getSettings().getInt("syncdistancey", 192);
+	auto mapSize = getMapSizeInTiles();
+
+	auto npcInRange = [&](const NPCID& npcId)
+	{
+		if (auto npc = server->getNPC(npcId); npc != nullptr)
+		{
+			auto otherTilePosition = npc->character.getTilePosition();
+			auto tilePosition = toTilePosition(position);
+			return std::abs(tilePosition.x() - otherTilePosition.x()) <= syncx && std::abs(tilePosition.y() - otherTilePosition.y()) <= syncy;
+		}
+		return false;
+	};
+
+	// Inside level (or bigmap), so just check the NPCs for the level.
+	if (m_map == nullptr || m_map->isBigMap())
+	{
+		// Sync is greater than the level bounds so return all the NPCs.
+		if (syncx >= mapSize.width() && syncy >= mapSize.height())
+		{
+			co_yield std::ranges::elements_of(m_npcs);
+			co_return;
+		}
+
+		auto tilePosition = toTilePosition(position);
+		for (const auto& npcId : m_npcs)
+		{
+			if (npcInRange(npcId))
+				co_yield npcId;
+		}
+		co_return;
+	}
+
+	// Gmaps.
+	for (LevelPtr level : m_map->getLevelsInRange(toTilePosition(position), syncx, syncy))
+	{
+		for (const auto& npcId : level->m_npcs)
+		{
+			if (npcInRange(npcId))
+				co_yield npcId;
+		}
+	}
+}
+
+std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelPosition& position, bool includeInvisible) const noexcept
 {
 	return findIntersectingNPCs({ { position.x(), position.y() }, { 0, 0 } }, includeInvisible);
 }
 
-std::vector<NPCID> Level::findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible)
+std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible) const noexcept
 {
-	std::vector<NPCID> results;
-
-	auto* server = BabyDI::Get<Server>();
-	for (const auto& npcId : m_npcs)
+	auto server = BabyDI::Get<Server>();
+	for (const auto& npcId : findInRangeNPCs(area.position))
 	{
 		if (auto npc = server->getNPC(npcId); npc != nullptr)
 		{
@@ -1732,24 +2063,20 @@ std::vector<NPCID> Level::findIntersectingNPCs(const PixelRectangleArea& area, b
 
 			// Check if the NPC intersects with the area.
 			if (rectanglesIntersect(area, npc->getBoundingBox()))
-				results.push_back(npcId);
+				co_yield npcId;
 		}
 	}
-
-	return results;
 }
 
-std::vector<NPCID> Level::findIntersectingNPCsForCollision(const PixelPosition& position)
+std::generator<const NPCID&> Level::findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept
 {
 	return findIntersectingNPCsForCollision({ { position.x(), position.y() }, { 0, 0 } });
 }
 
-std::vector<NPCID> Level::findIntersectingNPCsForCollision(const PixelRectangleArea& area)
+std::generator<const NPCID&> Level::findIntersectingNPCsForCollision(const PixelRectangleArea& area) const noexcept
 {
-	std::vector<NPCID> results;
-
-	auto* server = BabyDI::Get<Server>();
-	for (const auto& npcId : m_npcs)
+	auto server = BabyDI::Get<Server>();
+	for (const auto& npcId : findInRangeNPCs(area.position))
 	{
 		if (auto npc = server->getNPC(npcId); npc != nullptr)
 		{
@@ -1759,11 +2086,9 @@ std::vector<NPCID> Level::findIntersectingNPCsForCollision(const PixelRectangleA
 
 			// Check if the NPC intersects with the area.
 			if (rectanglesIntersect(area, npc->getCollisionBoundingBox()))
-				results.push_back(npcId);
+				co_yield npcId;
 		}
 	}
-
-	return results;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

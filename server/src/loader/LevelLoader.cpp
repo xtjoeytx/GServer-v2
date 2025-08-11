@@ -237,7 +237,8 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 		fileSystem = server->getFileSystem(FS_LEVEL);
 
 	// Find the level file.
-	auto levelPath = fileSystem->find(levelName.string());
+	auto levelString = levelName.string();
+	auto levelPath = fileSystem->find(levelString);
 
 	// Load it.
 	CString fileData;
@@ -248,29 +249,28 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 	CString fileVersion = fileData.readChars(8);
 
 	// Save level details.
-	level->m_fileVersion = fileVersion;
 	level->m_filePath = std::filesystem::path{ levelPath.toString() };
-	level->modTime = clock::from_time_t(fileSystem->getModTime(levelName.string()));
-	level->m_originalLevelName = level->levelName = levelName.string();
+	level->modTime = clock::from_time_t(fileSystem->getModTime(levelString));
+	level->levelName = levelString;
 
 	// If the level is on a map, record that now.
 	for (const auto& map : server->getMapList())
 	{
-		int mx, my;
-		if (map->isLevelOnMap(levelName.string(), mx, my))
+		if (auto mapPos = map->getLevelPosition(levelString); mapPos.has_value())
 		{
-			level->setMap(map, mx, my);
+			level->m_map = map;
+			level->mapPosition = mapPos.value();
 			break;
 		}
 	}
 
 	// Load the level.
 	if (fileVersion == "GLEVNW01")
-		return loadNW(level, fileSystem, fileData);
+		return loadNW(level, fileVersion.toStringView(), fileSystem, fileData);
 	if (fileVersion.subString(0, 3) == "GR-")
-		return loadGraal(level, fileSystem, fileData);
+		return loadGraal(level, fileVersion.toStringView(), fileSystem, fileData);
 	if (fileVersion.subString(0, 3) == "Z3-")
-		return loadZelda(level, fileSystem, fileData);
+		return loadZelda(level, fileVersion.toStringView(), fileSystem, fileData);
 
 	// Bad level version.
 	return nullptr;
@@ -278,12 +278,12 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LevelPtr LevelLoader::loadZelda(LevelPtr level, FileSystem* fileSystem, CString& fileData)
+LevelPtr LevelLoader::loadZelda(LevelPtr level, std::string_view fileVersion, FileSystem* fileSystem, CString& fileData)
 {
 	int version = -1;
-	if (level->m_fileVersion == "Z3-V1.03")
+	if (fileVersion == "Z3-V1.03")
 		version = 3;
-	else if (level->m_fileVersion == "Z3-V1.04")
+	else if (fileVersion == "Z3-V1.04")
 		version = 4;
 
 	if (version == -1) return nullptr;
@@ -367,19 +367,19 @@ LevelPtr LevelLoader::loadZelda(LevelPtr level, FileSystem* fileSystem, CString&
 	return level;
 }
 
-LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString& fileData)
+LevelPtr LevelLoader::loadGraal(LevelPtr level, std::string_view fileVersion, FileSystem* fileSystem, CString& fileData)
 {
 	// Grab file version.
 	int version = -1;
-	if (level->m_fileVersion == "GR-V1.00")
+	if (fileVersion == "GR-V1.00")
 		version = 0;
-	else if (level->m_fileVersion == "GR-V1.01")
+	else if (fileVersion == "GR-V1.01")
 		version = 1;
-	else if (level->m_fileVersion == "GR-V1.02")
+	else if (fileVersion == "GR-V1.02")
 		version = 2;
-	else if (level->m_fileVersion == "GR-V1.03")
+	else if (fileVersion == "GR-V1.03")
 		version = 3;
-	else if (level->m_fileVersion == "GR-V1.05")
+	else if (fileVersion == "GR-V1.05")
 		version = 5;
 
 	if (version == -1) return nullptr;
@@ -459,7 +459,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 		if (server->hasNPCServer())
 		{
 			indent = std::make_unique<log::Indent>(log::server.indent(log::server.indentLevel != 0 ? 1 : 0));
-			log::printLine(log::server, "Loading NPCs for level '{}'...", level->levelName);
+			log::printLine(log::server, "{}Loading NPCs for level '{}'...", (log::server.indentLevel == 0 ? ":: " : ""), level->levelName);
 		}
 
 		while (fileData.bytesLeft())
@@ -520,7 +520,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, FileSystem* fileSystem, CString&
 	return level;
 }
 
-LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fileData)
+LevelPtr LevelLoader::loadNW(LevelPtr level, std::string_view fileVersion, FileSystem* fileSystem, CString& fileData)
 {
 	// Load File
 	std::vector<CString> fileLines = fileData.removeAllI("\r").tokenize("\n");
@@ -533,7 +533,7 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, FileSystem* fileSystem, CString& fi
 	if (server->hasNPCServer() && fileData.contains("NPCEND"))
 	{
 		indent = std::make_unique<log::Indent>(log::server.indent(log::server.indentLevel != 0 ? 1 : 0));
-		log::printLine(log::server, "Loading NPCs for level '{}'...", level->levelName);
+		log::printLine(log::server, "{}Loading NPCs for level '{}'...", (log::server.indentLevel == 0 ? ":: " : ""), level->levelName);
 	}
 
 	// Parse Level

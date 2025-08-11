@@ -1,73 +1,33 @@
-#include <cassert>
+#include <cmath>
+#include <cstdint>
+#include <filesystem>
+#include <generator>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string_view>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <CString.h>
 
+#include <BabyDI.h>
 #include <FileSystem.h>
 #include <Server.h>
+#include <level/Level.h>
 #include <level/Map.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-Map::Map(MapType pType, bool pGroupMap)
-	: m_type(pType), m_groupMap(pGroupMap)
-{
-}
-
-Map::Map(Map&& other) noexcept
-{
-	m_type = other.m_type;
-	m_modTime = other.m_modTime;
-	m_width = other.m_width;
-	m_height = other.m_height;
-	m_groupMap = other.m_groupMap;
-	m_loadFullMap = other.m_loadFullMap;
-	m_mapName = std::move(other.m_mapName);
-	m_mapImage = std::move(other.m_mapImage);
-	m_miniMapImage = std::move(other.m_miniMapImage);
-	m_levels = std::move(other.m_levels);
-	m_levelList = std::move(other.m_levelList);
-	m_preloadLevelList = std::move(other.m_preloadLevelList);
-}
-
-bool Map::load(const CString& pFileName)
-{
-	if (m_type == MapType::BIGMAP)
-		return loadBigMap(pFileName);
-	else if (m_type == MapType::GMAP)
-		return loadGMap(pFileName);
-	return true;
-}
-
-bool Map::isLevelOnMap(const std::string& level, int& mapx, int& mapy) const
-{
-	auto it = m_levels.find(level);
-	if (it != m_levels.end())
-	{
-		mapx = it->second.mapx;
-		mapy = it->second.mapy;
-		return true;
-	}
-
-	return false;
-}
-
-const std::string& Map::getLevelAt(int mx, int my) const
-{
-	static const std::string emptyStr;
-
-	if (static_cast<size_t>(mx) < m_width && static_cast<size_t>(my) < m_height)
-		return m_levelList[static_cast<size_t>(mx + my * m_width)];
-
-	return emptyStr;
-}
-
-bool Map::loadBigMap(const CString& pFileName)
+Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
+	: mapType(MapType::BIGMAP), fileName(fileName)
 {
 	// Get the appropriate filesystem.
 	auto server = BabyDI::Get<Server>();
@@ -75,72 +35,54 @@ bool Map::loadBigMap(const CString& pFileName)
 	if (!server->getSettings().getBool("nofoldersconfig", false))
 		fileSystem = server->getFileSystem(FS_FILE);
 
-	CString fileName = fileSystem->find(pFileName);
-	m_modTime = fileSystem->getModTime(pFileName);
-	m_mapName = pFileName.text();
+	CString fullFilePath = fileSystem->find(fileName.string());
 
 	// Make sure the file exists.
-	if (fileName.length() == 0) return false;
+	if (fullFilePath.length() == 0)
+		throw std::runtime_error("Map file not found!");
 
-	// Load the gmap.
-	std::vector<CString> fileData = CString::loadToken(fileName);
+	// Stupid.
+	auto& constructSize = const_cast<Dimension<uint8_t>&>(size);
+	auto& constructLevels = const_cast<string_map<Position<uint8_t>>&>(levels);
+	Position<uint8_t> currentPosition;
 
-	// Parse it.
-	m_levels.clear();
-	m_width = 0;
-	m_height = 0;
-
-	std::vector<std::vector<CString>> mapData;
-
-	for (auto& line: fileData)
+	// Load the levels.
+	auto fileData = CString::loadToken(fullFilePath);
+	for (auto& line : fileData)
 	{
 		line = line.removeAll("\r").trim();
 		if (line.isEmpty())
 			continue;
 
-		auto levelList = line.guntokenize().tokenize("\n", true);
+		auto levelList = string::fromCSV(line.toStringView());
 		int empty = 0;
-		for (const auto& lvl: levelList)
+		for (const auto& lvl : levelList)
 		{
-			// dont calculate the width based on any extra padding
-			empty += (lvl.isEmpty() ? 1 : 0);
-		}
-
-		// calculate width/height
-		auto currentWidth = levelList.size() - empty;
-		m_height++;
-		if (m_width < currentWidth)
-			m_width = currentWidth;
-
-		mapData.push_back(levelList);
-	}
-
-	{
-		std::vector<std::string> levelMap(m_width * m_height);
-
-		for (size_t my = 0; my < mapData.size(); my++)
-		{
-			for (size_t mx = 0; mx < mapData[my].size(); mx++)
+			if (!lvl.empty())
 			{
-				if (mx < m_width)
-				{
-					std::string lcLevelName(mapData[my][mx].toLower().text());
-					if (!lcLevelName.empty())
-					{
-						levelMap[mx + my * m_width] = lcLevelName;
-						m_levels[lcLevelName] = MapLevel(static_cast<int>(mx), static_cast<int>(my));
-					}
-				}
+				constructLevels.insert({ string::toLower(lvl), currentPosition });
+				levelsByName.insert({ string::toLower(lvl), std::weak_ptr<Level>() });
 			}
-		}
+			else ++empty;
 
-		m_levelList = std::move(levelMap);
+			++currentPosition.x();
+		}
+		currentPosition.x() = 0;
+		++currentPosition.y();
+
+		// Calculate width/height.
+		auto currentWidth = levelList.size() - empty;
+		++constructSize.height();
+		if (constructSize.width() < currentWidth)
+			constructSize.width() = currentWidth;
 	}
 
-	return true;
+	// Size the positional storage.
+	levelsByPosition.resize(static_cast<size_t>(constructSize.width() * constructSize.height()));
 }
 
-bool Map::loadGMap(const CString& pFileName)
+Map::Map(is_gmap_t, const std::filesystem::path& fileName)
+	: mapType(MapType::GMAP), fileName(fileName)
 {
 	// Get the appropriate filesystem.
 	auto server = BabyDI::Get<Server>();
@@ -148,25 +90,24 @@ bool Map::loadGMap(const CString& pFileName)
 	if (!server->getSettings().getBool("nofoldersconfig", false))
 		fileSystem = server->getFileSystem(FS_LEVEL);
 
-	CString fileName = fileSystem->find(pFileName);
-	m_modTime = fileSystem->getModTime(pFileName);
-	m_mapName = pFileName.text();
+	CString fullFilePath = fileSystem->find(fileName.string());
 
 	// Make sure the file exists.
-	if (fileName.length() == 0) return false;
+	if (fullFilePath.length() == 0)
+		return;
 
-	m_levels.clear();
-	m_width = 0;
-	m_height = 0;
+	// Stupid.
+	auto& constructSize = const_cast<Dimension<uint8_t>&>(size);
+	auto& constructLevels = const_cast<string_map<Position<uint8_t>>&>(levels);
+	auto& constructPreload = const_cast<string_set&>(levelsToKeepInMemory);
+	Position<uint8_t> currentPosition;
 
 	// Load the gmap.
-	std::vector<CString> fileData = CString::loadToken(fileName);
-
-	// Parse it.
+	auto fileData = CString::loadToken(fullFilePath);
 	for (auto it = fileData.begin(); it != fileData.end(); ++it)
 	{
 		// Tokenize
-		std::vector<CString> curLine = it->removeAll("\r").tokenize();
+		auto curLine = string::splitHard(string::trim(it->toStringView()));
 		if (curLine.empty())
 			continue;
 
@@ -176,14 +117,14 @@ bool Map::loadGMap(const CString& pFileName)
 			if (curLine.size() != 2)
 				continue;
 
-			m_width = strtoint(curLine[1]);
+			constructSize.width() = string::toNumber(curLine[1]);
 		}
 		else if (curLine[0] == "HEIGHT")
 		{
 			if (curLine.size() != 2)
 				continue;
 
-			m_height = strtoint(curLine[1]);
+			constructSize.height() = string::toNumber(curLine[1]);
 		}
 		else if (curLine[0] == "GENERATED")
 		{
@@ -195,64 +136,51 @@ bool Map::loadGMap(const CString& pFileName)
 		else if (curLine[0] == "LEVELNAMES")
 		{
 			++it;
-			size_t gmapy = 0;
-
-			std::vector<std::string> levelMap(m_width * m_height);
+			currentPosition.y() = 0;
 
 			while (it != fileData.end())
 			{
-				CString line = it->removeAll("\r").trim();
-				if (line.length() == 0)
+				auto lines = string::fromCSV(string::trim(it->toStringView()));
+				if (lines.empty())
 				{
 					++it;
 					continue;
 				}
-				if (line == "LEVELNAMESEND") break;
+				if (lines[0] == "LEVELNAMESEND") break;
 
-				if (gmapy < m_height)
+				if (currentPosition.y() < constructSize.height())
 				{
-					size_t gmapx = 0;
-
-					// Untokenize the level names and put them into a vector for easy loading.
-					line.guntokenizeI();
-					std::vector<CString> names = line.tokenize("\n");
-					for (auto& levelName: names)
+					for (auto& levelName : lines)
 					{
-						if (gmapx < m_width)
+						if (currentPosition.x() < constructSize.width())
 						{
-							// Check for blank levels.
-							if (levelName != "\r")
-							{
-								std::string lcLevelName(levelName.toLower().text());
-								levelMap[gmapx + gmapy * m_width] = lcLevelName;
-								m_levels[lcLevelName] = MapLevel(gmapx, gmapy);
-							}
+							if (!levelName.empty())
+								constructLevels.insert({ string::toLower(levelName), currentPosition });
 
-							++gmapx;
+							++currentPosition.x();
 						}
 					}
 
-					++gmapy;
+					currentPosition.x() = 0;
+					++currentPosition.y();
 				}
 
 				++it;
 			}
-
-			m_levelList = std::move(levelMap);
 		}
 		else if (curLine[0] == "MAPIMG")
 		{
 			if (curLine.size() != 2)
 				continue;
 
-			m_mapImage = curLine[1].text();
+			const_cast<std::string&>(mapImage) = curLine[1];
 		}
 		else if (curLine[0] == "MINIMAPIMG")
 		{
 			if (curLine.size() != 2)
 				continue;
 
-			m_miniMapImage = curLine[1].text();
+			const_cast<std::string&>(miniMapImage) = curLine[1];
 		}
 		else if (curLine[0] == "NOAUTOMAPPING")
 		{
@@ -260,55 +188,148 @@ bool Map::loadGMap(const CString& pFileName)
 		}
 		else if (curLine[0] == "LOADFULLMAP")
 		{
-			m_loadFullMap = true;
+			const_cast<bool&>(keepAllLevelsLoaded) = true;
 		}
 		else if (curLine[0] == "LOADATSTART")
 		{
-			m_loadFullMap = false;
+			const_cast<bool&>(keepAllLevelsLoaded) = false;
 
 			++it;
 			while (it != fileData.end())
 			{
-				CString line = it->removeAll("\r");
-				if (line == "LOADATSTARTEND") break;
-
-				line.guntokenizeI();
-				std::vector<CString> names = line.tokenize("\n");
-				for (auto& levelName: names)
+				auto lines = string::fromCSV(string::trim(it->toStringView()));
+				if (lines.empty())
 				{
-					m_preloadLevelList.push_back(levelName.toLower().text());
+					++it;
+					continue;
 				}
+				if (lines[0] == "LOADATSTARTEND") break;
+
+				for (auto& levelName : lines)
+					constructPreload.emplace(string::toLower(levelName));
 			}
 		}
 		// TODO: 3D settings maybe?
 	}
 
-	return true;
+	// Size the positional storage.
+	levelsByPosition.resize(static_cast<size_t>(constructSize.width()* constructSize.height()));
 }
+
+//----------------------------
 
 void Map::loadMapLevels() const
 {
-	if (m_loadFullMap)
+	auto server = BabyDI::Get<Server>();
+	if (keepAllLevelsLoaded)
 	{
 		auto server = BabyDI::Get<Server>();
-		for (const auto& levelName: m_levelList)
+		for (const auto& [levelName, position] : levels)
 		{
-			if (!levelName.empty())
+			if (auto level = server->getLevel(levelName); level != nullptr)
 			{
-				auto lvl = server->getLevel(levelName);
-				assert(lvl);
+				auto index = position.x() + position.y() * size.width();
+				levelsByName[levelName] = level;
+				levelsByPosition[index] = level;
 			}
 		}
 	}
-	else if (!m_preloadLevelList.empty())
+	else if (!levelsToKeepInMemory.empty())
 	{
-		auto server = BabyDI::Get<Server>();
-		for (auto& level: m_preloadLevelList)
+		for (const auto& levelName : levelsToKeepInMemory)
 		{
-			auto lvl = server->getLevel(level);
-			assert(lvl);
+			if (auto level = server->getLevel(levelName); level != nullptr)
+			{
+				auto index = level->mapPosition.x() + level->mapPosition.y() * size.width();
+				levelsByName[levelName] = level;
+				levelsByPosition[index] = level;
+			}
 		}
 	}
+}
+
+//----------------------------
+
+bool Map::hasLevel(std::string_view levelName) const
+{
+	auto it = levels.find(levelName);
+	return it != levels.end();
+}
+
+std::optional<Position<uint8_t>> Map::getLevelPosition(std::string_view levelName) const
+{
+	auto it = levels.find(levelName);
+	if (it != levels.end())
+		return it->second;
+	return std::nullopt;
+}
+
+std::shared_ptr<Level> Map::getLevelAt(int x, int y) const
+{
+	for (const auto& [levelName, levelPos] : levels)
+	{
+		if (levelPos.x() == x && levelPos.y() == y)
+			return getLevelPtr(levelName, levelsByName[levelName]);
+	}
+	return nullptr;
+}
+
+std::shared_ptr<Level> Map::getLevelAt(const PixelPosition& globalPosition) const
+{
+	int x = static_cast<int>(std::floor(globalPosition.x() / 1024));
+	int y = static_cast<int>(std::floor(globalPosition.y() / 1024));
+	return getLevelAt(x, y);
+}
+
+std::generator<std::shared_ptr<Level>> Map::getLevelsInRange(const TilePosition& position, int syncx, int syncy) const noexcept
+{
+	Position<int16_t> searchPos{ static_cast<int16_t>(position.x() / 64), static_cast<int16_t>(position.y() / 64) };
+	Dimension<uint8_t> levelSyncDistance{ static_cast<uint8_t>(std::ceilf(syncx / 64)), static_cast<uint8_t>(std::ceilf(syncy / 64)) };
+	Rectangle<int16_t, uint8_t> area{ searchPos.translate(-levelSyncDistance.width(), -levelSyncDistance.height()), levelSyncDistance * 2 };
+
+	for (const auto& [levelName, levelPos] : levels)
+	{
+		if (levelPos.x() >= area.position.x() && levelPos.x() < area.position.x() + area.size.width() &&
+			levelPos.y() >= area.position.y() && levelPos.y() < area.position.y() + area.size.height())
+		{
+			if (auto level = getLevelPtr(levelName, levelsByName[levelName]); level != nullptr)
+				co_yield level;
+		}
+	}
+}
+
+std::generator<std::shared_ptr<Level>> Map::getAllLevels() const noexcept
+{
+	for (const auto& [levelName, levelPtr] : levelsByName)
+	{
+		if (auto level = getLevelPtr(levelName, levelPtr); level != nullptr)
+			co_yield level;
+	}
+}
+
+//----------------------------
+
+std::shared_ptr<Level> Map::getLevelPtr(std::string_view levelName, std::weak_ptr<Level> levelPtr) const
+{
+	if (levelName.empty())
+		return nullptr;
+	if (auto level = levelPtr.lock(); level != nullptr)
+		return level;
+
+	// The level could not be locked so it was probably deleted.  Refresh it from the server.
+	auto server = BabyDI::Get<Server>();
+	if (auto level = server->getLevel(levelName); level != nullptr)
+	{
+		// Update our stored level pointers.
+		if (auto it = levelsByName.find(levelName); it != levelsByName.end())
+			it->second = level;
+		if (auto index = level->mapPosition.x() + level->mapPosition.y() * size.width(); index < levelsByPosition.size())
+			levelsByPosition[index] = level;
+
+		return level;
+	}
+
+	return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

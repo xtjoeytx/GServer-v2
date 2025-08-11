@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <deque>
 #include <filesystem>
+#include <generator>
 #include <map>
 #include <memory>
 #include <optional>
@@ -26,6 +27,7 @@
 #include <level/LevelShoot.h>
 #include <level/LevelSign.h>
 #include <level/LevelTiles.h>
+#include <level/Map.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
@@ -37,7 +39,6 @@ namespace preagonal
 
 class Player;
 class NPC;
-class Map;
 class LevelLoader;
 
 class Level : public std::enable_shared_from_this<Level>
@@ -52,41 +53,34 @@ public:
 	~Level();
 
 public:
-	//! Finds a level with the specified level name and returns it.  If not found, it tries to load it from the disk.
-	//! \param pLevelName The name of the level to search for.
-	//! \param server The server the level belongs to.
-	//! \return A pointer to the level found.
-	static std::shared_ptr<Level> findLevel(std::string_view levelName, bool loadAbsolute = false);
 	static std::shared_ptr<Level> createLevel(uint16_t fillTile = 511, std::string_view levelName = ""sv);
-
-	//! Returns a clone of the level.
 	static std::shared_ptr<Level> clone(LevelPtr level);
 
 public:
-	//! Re-loads the level.
-	//! \return True if it succeeds in re-loading the level.
 	bool reload();
-
 	void saveLevel(const std::string& filename);
 
-	//! Does special events that should happen every second.
+public:
 	void doTimedEvents();
 	void doFrameEvents(precise_clock::time_point time);
+	const auto& getLastFrameTime() const { return m_lastFrameTime; }
 
 private:
 	precise_clock::time_point m_lastFrameTime = precise_clock::now();
 	precise_clock::duration m_frameEventDuration = 0ns;
 
 public:
-	//! Gets the original level name.
-	//! \return The original level name.
-	const auto& getOriginalLevelName() const { return m_originalLevelName; }
+	auto getMap() const { return m_map; }
+	[[inline]] Dimension<uint8_t> getMapSizeInParts() const;
+	[[inline]] Dimension<uint32_t> getMapSizeInTiles() const;
+	[[inline]] Dimension<uint32_t> getMapSizeInPixels() const;
+	[[inline]] PixelPosition getMapPixelOffset() const;
+	bool isOnGmap() const noexcept { return m_map != nullptr && m_map->isGmap(); }
+	bool isOnBigMap() const noexcept { return m_map != nullptr && m_map->isBigMap(); }
 
-	//! Gets a vector full of the players on the level.
-	//! \return The players on the level.
-	std::deque<PlayerID>& getPlayers() { return m_players; }
-
-	auto& getNPCs() { return m_npcs; }
+public:
+	auto& getLevelPlayers() { return m_players; }
+	auto& getLevelNPCs() { return m_npcs; }
 	auto& getArrows() { return m_arrows; }
 	auto& getBaddies() { return m_baddies; }
 	auto& getBombs() { return m_bombs; }
@@ -97,49 +91,9 @@ public:
 	auto& getLinks() { return m_links; }
 	auto& getSigns() { return m_signs; }
 
-	//! Gets the raw level tile data.
-	//! \return A pointer to all 4096 raw level tiles.
-	LevelTiles& getTiles(int layer = 0) { return m_tiles[layer]; }
-
-	//! Gets the tile data for all layers.
-	//! \return A map of all the layers and their tile data.
-	std::map<uint8_t, LevelTiles> getLayers() const { return m_tiles; }
-
-	//! Gets the gmap this level belongs to.
-	//! \return The gmap this level belongs to.
-	std::shared_ptr<Map> getMap() const { return m_map.lock(); }
-
-	//! Gets the map x of this level.
-	//! \return The map x of this level on the map
-	uint8_t getMapX() const { return m_mapX; }
-
-	//! Gets the map y of this level.
-	//! \return The map y of this level on the map
-	uint8_t getMapY() const { return m_mapY; }
-
-	//! Gets the gmap x of this level or 0 if it doesn't belong to a gmap.
-	//! \return The gmap x of this level on the map or 0 if it doesn't belong to a gmap.
-	uint8_t getGmapX() const;
-
-	//! Gets the gmap y of this level or 0 if it doesn't belong to a gmap.
-	//! \return The gmap y of this level on the map or 0 if it doesn't belong to a gmap.
-	uint8_t getGmapY() const;
-
-	//! Gets the status on whether players are on the level.
-	//! \return The level has players.  If true, the level has players on it.
-	bool hasPlayers() const { return !m_players.empty(); }
-
-	Dimension<uint32_t> getSize() const
-	{
-		return { 1024, 1024 };
-	}
-
-	//! Gets if the player is the current level leader.
-	//! \param id The player id to check.
-	//! \return True if the player is the leader.
-	bool isPlayerLeader(PlayerID id) const;
-
-	bool hasLivingBaddies() const;
+public:
+	auto& getTiles(size_t layer = 0) { return m_tiles[layer]; }
+	auto& getLayers() { return m_tiles; }
 
 public:
 	CString getBaddyPacket();
@@ -154,44 +108,22 @@ public:
 	void sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point time) const;
 
 public:
-	//! Adds a player to the level.
-	//! \param player The player to add.
-	//! \return The id number of the player in the level.
-	int addPlayer(PlayerID id);
+	bool hasPlayers() const { return !m_players.empty(); }
+	bool isPlayerLeader(PlayerID id) const;
+	bool hasLivingBaddies() const;
 
-	//! Removes a player from the level.
-	//! \param player The player to remove.
+public:
+	int addPlayer(PlayerID id);
 	void removePlayer(PlayerID id);
 
 public:
-	//! Adds an NPC to the level.
-	//! \param npc NPC to add to the level.
-	//! \return True if the NPC was successfully added or false if it already exists in the level.
 	bool addNPC(std::shared_ptr<NPC> npc);
 	bool addNPC(NPCID npcId);
-
-	//! Removes an NPC from the level.
-	//! \param npc The NPC to remove.
 	void removeNPC(std::shared_ptr<NPC> npc);
 	void removeNPC(NPCID npcId);
 
 public:
-	//! Adds a board change to the level.
-	//! \param pTileData Linear array of Graal-packed tiles.  Starts with the top-left tile, ends with the bottom-right.
-	//! \param pX X location of the top-left tile.
-	//! \param pY Y location of the top-left tile.
-	//! \param pWidth How many tiles wide we are altering.
-	//! \param pHeight How many tiles high we are altering.
-	//! \param player The player who initiated this board change.
-	//! \return True if it succeeds, false if it doesn't.
 	bool alterBoard(CString& tileData, const Rectangle<uint8_t, uint8_t>& area, Player* player);
-
-public:
-	LevelShoot* addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from);
-	LevelShoot* addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from);
-	LevelShoot* addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from);
-	bool removeShoot(uint8_t index);
-	LevelShoot* getShoot(uint8_t index) const;
 
 public:
 	LevelArrow* addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObjectSource from);
@@ -220,7 +152,7 @@ public:
 	bool removeChest(size_t index);
 	LevelChest* getChest(size_t index) const;
 	std::optional<const LevelChest*> getChest(const LocalWholeTilePosition& position) const;
-	CString getChestStr(LevelChest* chest) const;
+	std::string getChestFormattedForSave(LevelChest* chest) const;
 
 public:
 	void addExplosion(inform_client_t, const PixelPosition& position, ScriptObjectSource from, uint8_t radius, uint8_t power);
@@ -248,18 +180,22 @@ public:
 	LevelItem* getItem(size_t index) const;
 
 public:
-	LevelLink* addLink();
-	LevelLink* addLink(const std::vector<CString>& pLink);
+	LevelLink* addLink(const std::vector<CString>& link);
 	bool removeLink(uint32_t index);
 	std::optional<const LevelLink*> getLink(const LocalWholeTilePosition& position, bool excludeOverworld = false) const;
+
+public:
+	LevelShoot* addShoot(LevelShoot* existingShoot);
+	LevelShoot* addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from);
+	LevelShoot* addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from);
+	LevelShoot* addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from);
+	bool removeShoot(uint8_t index);
+	LevelShoot* getShoot(uint8_t index) const;
 
 public:
 	LevelSign* addSign(const LocalWholeTilePosition& position, const CString& sign, bool encoded = false);
 	bool removeSign(uint32_t index);
 	LevelSign* getSign(size_t index) const;
-
-public:
-	void setMap(std::weak_ptr<Map> pMap, int pMapX = 0, int pMapY = 0);
 
 public:
 	bool moveShoot(LevelShoot* shoot, int iterations);
@@ -272,13 +208,41 @@ public:
 	bool isOnPlayer(const LocalWholeTilePosition& tilePosition);
 	bool isOnPlayer(const Rectangle<uint8_t, uint8_t>& tileArea);
 
-	std::vector<NPCID> findIntersectingNPCs(const PixelPosition& position, bool includeInvisible = false);
-	std::vector<NPCID> findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible = false);
-	std::vector<NPCID> findIntersectingNPCsForCollision(const PixelPosition& position);
-	std::vector<NPCID> findIntersectingNPCsForCollision(const PixelRectangleArea& area);
+public:
+	std::generator<const PlayerID&> getMapPlayers() const noexcept;
+	std::generator<const NPCID&> getMapNPCs() const noexcept;
+	std::generator<LevelArrow&> getMapArrows() noexcept;
+	std::generator<LevelBomb&> getMapBombs() noexcept;
+	std::generator<LevelExplosion&> getMapExplosions() noexcept;
+	std::generator<LevelHorse&> getMapHorses() noexcept;
+	std::generator<LevelItem&> getMapItems() noexcept;
+	std::generator<LevelSign&> getMapSigns() noexcept;
+	size_t getMapPlayerCount() const noexcept;
+	size_t getMapNPCCount() const noexcept;
+	size_t getMapArrowCount() const noexcept;
+	size_t getMapBombCount() const noexcept;
+	size_t getMapExplosionCount() const noexcept;
+	size_t getMapHorseCount() const noexcept;
+	size_t getMapItemCount() const noexcept;
+	size_t getMapSignCount() const noexcept;
+	std::optional<LevelArrow*> getMapArrow(size_t index) noexcept;
+	std::optional<LevelBomb*> getMapBomb(size_t index) noexcept;
+	std::optional<LevelExplosion*> getMapExplosion(size_t index) noexcept;
+	std::optional<LevelHorse*> getMapHorse(size_t index) noexcept;
+	std::optional<LevelItem*> getMapItem(size_t index) noexcept;
+	std::optional<LevelSign*> getMapSign(size_t index) noexcept;
+
+public:
+	std::generator<const PlayerID&> findInRangePlayers(const PixelPosition& position) const noexcept;
+	std::generator<const NPCID&> findInRangeNPCs(const PixelPosition& position) const noexcept;
+	std::generator<const NPCID&> findIntersectingNPCs(const PixelPosition& position, bool includeInvisible = false) const noexcept;
+	std::generator<const NPCID&> findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible = false) const noexcept;
+	std::generator<const NPCID&> findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept;
+	std::generator<const NPCID&> findIntersectingNPCsForCollision(const PixelRectangleArea& area) const noexcept;
 
 public:
 	std::string levelName;
+	Position<uint8_t> mapPosition;
 	bool isSparringZone = false;
 	bool isNoPkZone = false;
 	bool isSingleplayer = false;
@@ -286,17 +250,16 @@ public:
 	ScriptContainer scripting;
 
 private:
-	uint8_t m_mapX = 0;
-	uint8_t m_mapY = 0;
-	std::map<uint8_t, LevelTiles> m_tiles;
-	std::weak_ptr<Map> m_map;
-	std::string m_originalLevelName;
-	std::string m_fileVersion;
 	std::filesystem::path m_filePath;
+	std::shared_ptr<Map> m_map;
 
-	std::vector<LevelBaddy> m_baddies;
+	std::map<uint8_t, LevelTiles> m_tiles;
 	std::vector<LevelBoardChange> m_boardChanges;
+
+	std::deque<PlayerID> m_players;
+	std::vector<NPCID> m_npcs;
 	std::vector<LevelArrow> m_arrows;
+	std::vector<LevelBaddy> m_baddies;
 	std::vector<LevelBomb> m_bombs;
 	std::vector<LevelChest> m_chests;
 	std::vector<LevelExplosion> m_explosions;
@@ -305,11 +268,34 @@ private:
 	std::vector<LevelLink> m_links;
 	std::vector<LevelShoot> m_shoots;
 	std::vector<LevelSign> m_signs;
-	std::vector<NPCID> m_npcs;
-	std::deque<PlayerID> m_players;
 };
 
 using LevelPtr = std::shared_ptr<Level>;
+
+//----------------------------
+
+inline Dimension<uint8_t> Level::getMapSizeInParts() const
+{
+	if (m_map == nullptr) return { 1, 1 };
+	return m_map->size;
+}
+
+inline Dimension<uint32_t> Level::getMapSizeInTiles() const
+{
+	auto size = getMapSizeInParts();
+	return { static_cast<uint32_t>(size.width() * 64), static_cast<uint32_t>(size.height() * 64) };
+}
+
+inline Dimension<uint32_t> Level::getMapSizeInPixels() const
+{
+	auto size = getMapSizeInParts();
+	return { static_cast<uint32_t>(size.width() * 1024), static_cast<uint32_t>(size.height() * 1024) };
+}
+
+inline PixelPosition Level::getMapPixelOffset() const
+{
+	return { static_cast<int32_t>(mapPosition.x() * 1024), static_cast<int32_t>(mapPosition.y() * 1024) };
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal

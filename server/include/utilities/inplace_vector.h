@@ -1,3 +1,13 @@
+#ifndef INPLACE_VECTOR_LOADER
+#define INPLACE_VECTOR_LOADER
+
+#include <version>
+
+// If our STL supports the C++26 std::inplace_vector, just use that one.
+#if defined(__cpp_lib_inplace_vector)
+#include <inplace_vector>
+#else
+
 #ifndef INPLACE_VECTOR
 #define INPLACE_VECTOR
 /*
@@ -691,3 +701,6 @@ struct inplace_vector : private __iv_detail::__storage::_t<__T, __N> {
 #undef __IV_ASSERT
 #undef __IV_EXPECT
 #endif // INPLACE_VECTOR
+
+#endif // defined(__cpp_lib_inplace_vector)
+#endif // INPLACE_VECTOR_LOADER

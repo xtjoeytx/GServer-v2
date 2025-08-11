@@ -296,7 +296,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				// Try to process the chat.  If it wasn't processed, apply the word filter to it.
 				if (!player->processChat(account.character.chatMessage))
 				{
-					m_server->queueNPCEvent(level, ScriptEventType::PLAYERCHATS, source::FromPlayer(m_id));
+					m_server->queueNPCEvent(level, getGlobalPosition(), ScriptEventType::PLAYERCHATS, source::FromPlayer(m_id));
 
 					CString chat = account.character.chatMessage;
 					int found = m_server->getWordFilter().apply(this, chat, FILTER_CHECK_CHAT);
@@ -454,14 +454,14 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 				// If we are the leader and there are more players on the level, we want to remove
 				// ourself from the leader position and tell the new leader that they are the leader.
-				if (level->isPlayerLeader(m_id) && level->getPlayers().size() > 1)
+				if (level->isPlayerLeader(m_id) && level->getLevelPlayers().size() > 1)
 				{
 					level->removePlayer(m_id);
 					level->addPlayer(m_id);
 
 					if (auto map = level->getMap(); map == nullptr || !map->isGmap())
 					{
-						auto leader = m_server->getPlayer(level->getPlayers().front());
+						auto leader = m_server->getPlayer(level->getLevelPlayers().front());
 						if (leader) leader->sendPacket(CString() >> (char)PLO_ISLEADER);
 					}
 				}
@@ -470,7 +470,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				lastDeadTime = m_server->getNWTime();
 
 				// Queue up the playerdies event.
-				m_server->queueNPCEvent(level, ScriptEventType::PLAYERDIES, source::FromPlayer(m_id));
+				m_server->queueNPCEvent(level, getGlobalPosition(), ScriptEventType::PLAYERDIES, source::FromPlayer(m_id));
 			}
 			break;
 		}
@@ -542,7 +542,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			// Not supported on gmaps.
 			// If we want carry npcs to work with database npcs, a lot of work would be required.
 			// The throw range is 9 tiles.  We could probably send a move2 command on a throw.
-			if (auto map = player->getMap().lock(); map && map->getType() == MapType::GMAP)
+			if (level && level->isOnGmap())
 			{
 				// I tried to throw the NPC and make it visible again, but there seems to be a race condition with the client.
 				// The client wasn't throwing the NPC automatically when setting the PlayerProp::CARRYNPC to 0.
@@ -569,7 +569,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 								// and tell the player to remove the NPC from memory.
 								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::CARRYNPC >> (int)0);
 								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->levelName.length() << level->levelName >> (int)newNPCID);
-								m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::CARRYNPC >> (int)0, player, { m_id });
+								m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::CARRYNPC >> (int)0, player->getGlobalPosition(), level, { m_id });
 								isOwner = false;
 								newNPCID = 0;
 								break;
@@ -712,9 +712,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			if (auto cmap = level->getMap(); cmap && cmap->isGmap())
 			{
-				auto& newLevelName = cmap->getLevelAt(numProp->value, level->getMapY());
-				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
-					enterLevel(m_server->getLevel(newLevelName), account.character.getLocalPosition(), player->getCachedLevelModTime(newLevel.get()));
+				if (auto newLevel = cmap->getLevelAt(numProp->value, level->mapPosition.y()); newLevel != nullptr)
+				{
+					account.character.mapX = numProp->value;
+					enterLevel(newLevel, account.character.getLocalPosition(), player->getLevelLastEnteredTime(newLevel.get()));
+				}
 			}
 			break;
 		}
@@ -730,9 +732,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			if (auto cmap = level->getMap(); cmap && cmap->isGmap())
 			{
-				auto& newLevelName = cmap->getLevelAt(level->getMapX(), numProp->value);
-				if (auto newLevel = m_server->getLevel(newLevelName); newLevel != nullptr)
-					enterLevel(m_server->getLevel(newLevelName), account.character.getLocalPosition(), player->getCachedLevelModTime(newLevel.get()));
+				if (auto newLevel = cmap->getLevelAt(level->mapPosition.x(), numProp->value); newLevel != nullptr)
+				{
+					account.character.mapY = numProp->value;
+					enterLevel(newLevel, account.character.getLocalPosition(), player->getLevelLastEnteredTime(newLevel.get()));
+				}
 			}
 			break;
 		}
@@ -984,9 +988,8 @@ void Player::sendPropsFromResults(PropertySendResults& results)
 	if (sendAll.length() > 0)
 		m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << sendAll, { m_id });
 
-	auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this());
-	if (player != nullptr && sendLevel.length() > 0)
-		m_server->sendPacketToLevelArea(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << sendLevel, player, { m_id });
+	if (auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr && sendLevel.length() > 0)
+		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << sendLevel, player->getGlobalPosition(), player->getLevel(), { m_id });
 
 	if (sendSource.length() > 0)
 		sendPacket(CString() >> (char)PLO_PLAYERPROPS << sendSource);

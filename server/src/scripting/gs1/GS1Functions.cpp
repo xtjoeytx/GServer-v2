@@ -578,11 +578,12 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messag
 	{
 		auto x = visitor->getGameValueAs<double>(*arguments[0]);
 		auto y = visitor->getGameValueAs<double>(*arguments[1]);
+		auto position = toPixelPosition(level->getMapPixelOffset(), x, y);
 
 		// Find the nearest player.
 		std::tuple<PlayerID, double> nearestPlayer{ 0, std::numeric_limits<double>::max() };
 		auto* server = BabyDI::Get<Server>();
-		for (const auto& id : level->getPlayers())
+		for (const auto& id : level->findInRangePlayers(position))
 		{
 			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
 			{
@@ -707,11 +708,12 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view message
 	{
 		auto x = visitor->getGameValueAs<double>(*arguments[0]);
 		auto y = visitor->getGameValueAs<double>(*arguments[1]);
+		auto position = toPixelPosition(level->getMapPixelOffset(), x, y);
 
 		// Find the nearest player.
 		std::tuple<PlayerID, double> nearestPlayer{ 0, std::numeric_limits<double>::max() };
 		auto* server = BabyDI::Get<Server>();
-		for (const auto& id : level->getPlayers())
+		for (const auto& id : level->findInRangePlayers(position))
 		{
 			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
 			{
@@ -741,6 +743,7 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messag
 	{
 		auto x = visitor->getGameValueAs<double>(*arguments[0]);
 		auto y = visitor->getGameValueAs<double>(*arguments[1]);
+		auto position = toPixelPosition(level->getMapPixelOffset(), x, y);
 
 		std::string flag;
 		if (arguments.size() > 2)
@@ -748,7 +751,7 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messag
 
 		std::map<double, PlayerID> playersByDistance;
 		auto* server = BabyDI::Get<Server>();
-		for (const auto& id : level->getPlayers())
+		for (const auto& id : level->findInRangePlayers(position))
 		{
 			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
 			{
@@ -896,7 +899,7 @@ GS1ScriptValue fn_onmapx(GS1Visitor* visitor, std::string_view messageCode, cons
 	auto level = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto* server = BabyDI::Get<Server>();
 	if (auto levelPtr = server->getLevel(level); levelPtr != nullptr)
-		return static_cast<double>(levelPtr->getMapX());
+		return static_cast<double>(levelPtr->mapPosition.x());
 
 	return 0.0;
 }
@@ -911,7 +914,7 @@ GS1ScriptValue fn_onmapy(GS1Visitor* visitor, std::string_view messageCode, cons
 	auto level = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto* server = BabyDI::Get<Server>();
 	if (auto levelPtr = server->getLevel(level); levelPtr != nullptr)
-		return static_cast<double>(levelPtr->getMapY());
+		return static_cast<double>(levelPtr->mapPosition.y());
 
 	return 0.0;
 }
@@ -1143,20 +1146,32 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, con
 
 	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
 	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto localPosition = LocalPixelPosition{ x, y };
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto& npcs = level->getNPCs();
 		auto* server = BabyDI::Get<Server>();
-		for (size_t i = 0; i < npcs.size(); ++i)
+		auto position = toPixelPosition(level->getMapPixelOffset(), localPosition);
+
+		bool found = false;
+		size_t index = 0;
+		for (const auto& npcId : level->findInRangeNPCs(position))
 		{
-			if (auto npc = server->getNPC(npcs[i]); npc != nullptr)
+			if (auto npc = server->getNPC(npcId); npc != nullptr)
 			{
-				if (positionInRectangle(Position<int16_t>{ x, y }, npc->getBoundingBox()))
-					return static_cast<double>(i);
+				if (positionInRectangle(localPosition, npc->getBoundingBox()))
+				{
+					found = true;
+					break;
+				}
 			}
+			++index;
 		}
+
+		if (found)
+			return static_cast<double>(index);
 	}
+
 	return -1.0;
 }
 
@@ -1170,21 +1185,42 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, 
 
 	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
 	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto localPosition = LocalPixelPosition{ x, y };
+	auto* server = BabyDI::Get<Server>();
+
+	if (auto source = visitor->getOriginalSource(); source.second == ScriptObjectSourceType::NPC)
+	{
+		if (auto npc = server->getNPC(source.first); npc != nullptr)
+		{
+			// If the current NPC is the one being tested, return -1.
+			if (positionInRectangle(localPosition, npc->getBoundingBox()))
+				return -1.0;
+		}
+	}
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto& players = level->getPlayers();
-		auto* server = BabyDI::Get<Server>();
-		for (size_t i = 0; i < players.size(); ++i)
+		auto position = toPixelPosition(level->getMapPixelOffset(), localPosition);
+
+		bool found = false;
+		size_t index = 0;
+		for (const auto& playerId : level->findInRangePlayers(position))
 		{
-			if (auto player = server->getNPCServer()->getPlayer(players[i]); player != nullptr)
+			if (auto player = server->getPlayer(playerId); player != nullptr)
 			{
-				auto bbox = player->getBoundingBox();
-				if (positionInRectangle(Position<int16_t>{ x, y }, bbox))
-					return static_cast<double>(i);
+				if (positionInRectangle(localPosition, player->getBoundingBox()))
+				{
+					found = true;
+					break;
+				}
 			}
+			++index;
 		}
+
+		if (found)
+			return static_cast<double>(index);
 	}
+
 	return -2.0;
 }
 

@@ -54,6 +54,11 @@ struct Character
 	{
 		return { static_cast<int32_t>((mapX * 1024) + localPixelX), static_cast<int32_t>((mapY * 1024) + localPixelY), static_cast<int32_t>(localPixelZ) };
 	}
+
+	TilePosition getTilePosition() const noexcept
+	{
+		return { static_cast<float>((mapX * 64) + (localPixelX / 16.0f)), static_cast<float>((mapY * 64) + (localPixelY / 16.0f)), static_cast<float>(localPixelZ / 16.0f) };
+	}
 };
 
 //----------------------------

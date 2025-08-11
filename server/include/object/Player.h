@@ -188,6 +188,9 @@ public:
 	NPCID getCarryNPC() const { return m_carryNPC; }
 	NPCID getAttachedNPC() const { return m_attachNPC; }
 	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
+	[[inline]] PixelPosition getGlobalPosition() const noexcept;
+	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;
+	[[inline]] TilePosition getTilePosition() const noexcept;
 
 	// Set Properties
 	void setNick(CString pNickName, bool force = false);
@@ -508,6 +511,21 @@ inline PixelRectangleArea Player::getBoundingBox() const noexcept
 	return { account.character.getGlobalPosition(), { 48, 48 } };
 }
 
+inline PixelPosition Player::getGlobalPosition() const noexcept
+{
+	return account.character.getGlobalPosition();
+}
+
+inline LocalPixelPosition Player::getLocalPosition() const noexcept
+{
+	return account.character.getLocalPosition();
+}
+
+inline TilePosition Player::getTilePosition() const noexcept
+{
+	return account.character.getTilePosition();
+}
+
 inline bool Player::inChatChannel(const std::string& channel) const
 {
 	return m_channelList.find(channel) != m_channelList.end();
@@ -579,8 +597,8 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::GATTRIB4,	PropertyString,				account.character.ganiAttributes[3]) \
 	DO(PlayerProp::GATTRIB5,	PropertyString,				account.character.ganiAttributes[4]) \
 	DO(PlayerProp::ATTACHNPC,	PropertyAttachNPC,			m_attachNPC) \
-	DO(PlayerProp::GMAPLEVELX,	PropertyNumeric<GBYTE1>) \
-	DO(PlayerProp::GMAPLEVELY,	PropertyNumeric<GBYTE1>) \
+	DO(PlayerProp::GMAPLEVELX,	PropertyNumeric<GBYTE1>,	account.character.mapX) \
+	DO(PlayerProp::GMAPLEVELY,	PropertyNumeric<GBYTE1>,	account.character.mapY) \
 	DO(PlayerProp::Z,			PropertyTileCoordinateZ,	account.character.localPixelZ) \
 	DO(PlayerProp::GATTRIB6,	PropertyString,				account.character.ganiAttributes[5]) \
 	DO(PlayerProp::GATTRIB7,	PropertyString,				account.character.ganiAttributes[6]) \

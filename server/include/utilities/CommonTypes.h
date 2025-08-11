@@ -15,6 +15,7 @@
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 
 #include <utilities/StringUtils.h>
@@ -33,7 +34,12 @@ template<class T>
 using string_map = std::unordered_map<std::string, T, string::string_hash, string::string_hash_equal>;
 
 template<class T>
+using string_multimap = std::unordered_multimap<std::string, T, string::string_hash, string::string_hash_equal>;
+
+template<class T>
 using hash_map = std::unordered_map<size_t, T, string::string_hash, string::hash_string_equal>;
+
+using string_set = std::unordered_set<std::string, string::string_hash, string::string_hash_equal>;
 
 //----------------------------
 // ID types
@@ -182,10 +188,12 @@ struct visit_functions : Ts...
 //----------------------------
 // Range helpers
 
-auto toRange(AllSame auto&&... range)
+inline static auto toRange(AllSame auto&&... range)
 {
 	return std::array{ std::forward<decltype(range)>(range)... };
 }
+
+inline auto removeNulls = std::views::filter([](auto&& ptr) { return ptr != nullptr; });
 
 //----------------------------
 // Floating point helpers

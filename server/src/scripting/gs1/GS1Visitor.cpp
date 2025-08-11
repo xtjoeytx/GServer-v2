@@ -186,43 +186,43 @@ std::optional<GameVariable> GS1Visitor::getGameVariableFromSource(const ScriptOb
 		case ScriptObjectSourceType::BOMB:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto bomb = level->getBomb(source.first); bomb != nullptr)
-					return getScriptParameter(*bomb, identifier);
+				if (auto bomb = level->getMapBomb(source.first); bomb.has_value())
+					return getScriptParameter(*bomb.value(), identifier);
 			}
 			break;
 		case ScriptObjectSourceType::ARROW:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto arrow = level->getArrow(source.first); arrow != nullptr)
-					return getScriptParameter(*arrow, identifier);
+				if (auto arrow = level->getMapArrow(source.first); arrow.has_value())
+					return getScriptParameter(*arrow.value(), identifier);
 			}
 			break;
 		case ScriptObjectSourceType::ITEM:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto item = level->getItem(source.first); item != nullptr)
-					return getScriptParameter(*item, identifier);
+				if (auto item = level->getMapItem(source.first); item.has_value())
+					return getScriptParameter(*item.value(), identifier);
 			}
 			break;
 		case ScriptObjectSourceType::EXPLOSION:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto explo = level->getExplosion(source.first); explo != nullptr)
-					return getScriptParameter(*explo, identifier);
+				if (auto explo = level->getMapExplosion(source.first); explo.has_value())
+					return getScriptParameter(*explo.value(), identifier);
 			}
 			break;
 		case ScriptObjectSourceType::HORSE:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto horse = level->getHorse(source.first); horse != nullptr)
-					return getScriptParameter(*horse, identifier);
+				if (auto horse = level->getMapHorse(source.first); horse.has_value())
+					return getScriptParameter(*horse.value(), identifier);
 			}
 			break;
 		case ScriptObjectSourceType::SIGN:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto sign = level->getSign(source.first); sign != nullptr)
-					return getScriptParameter(*sign, identifier);
+				if (auto sign = level->getMapSign(source.first); sign.has_value())
+					return getScriptParameter(*sign.value(), identifier);
 			}
 			break;
 	}

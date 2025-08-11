@@ -472,7 +472,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 		// Variables dump from level mapname (level.nw)
 		npcDump << "Variables dump from level " << npcLevel->levelName << "\n";
 
-		for (auto npcId : npcLevel->getNPCs())
+		for (auto npcId : npcLevel->getLevelNPCs())
 		{
 			auto npc = m_server->getNPC(npcId);
 			npcDump << "\n"
@@ -642,7 +642,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 	if (!levelList.empty())
 	{
 		for (const auto& level : levelList)
-			ret << level.second->getOriginalLevelName() << "\n";
+			ret << level.second->levelName << "\n";
 	}
 
 	sendPacket(CString() >> (char)PLO_NC_LEVELLIST << ret.gtokenize());

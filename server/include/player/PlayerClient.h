@@ -82,13 +82,9 @@ public:
 	const CString& getGroup() const;
 	void setGroup(const CString& group);
 
-	std::weak_ptr<Map> getMap() const;
-	void setMap(const std::shared_ptr<Map>& map);
-
 	// Level manipulation
 	std::string getComputedLevelName() const;
 	std::shared_ptr<Level> getLevel() const;
-	std::pair<int, int> getMapPosition() const;
 
 	// Forcibly move a player (the client doesn't know it is transitioning levels).
 	bool warp(std::string_view levelName, LocalPixelPosition pos, time_t modTime = 0);
@@ -96,10 +92,10 @@ public:
 	// Place the player in a new level (the client knows it is transitioning levels).
 	virtual bool enterLevel(std::shared_ptr<Level> level, LocalPixelPosition pos, time_t modTime = 0) override;
 
-	bool sendLevel(std::shared_ptr<Level> pLevel, time_t modTime, bool fromAdjacent = false);
-	bool sendLevel141(std::shared_ptr<Level> pLevel, time_t modTime, bool fromAdjacent = false);
+	bool sendLevel(std::shared_ptr<Level> level, time_t modTime, bool fromAdjacent = false);
+	bool sendLevel141(std::shared_ptr<Level> level, time_t modTime, bool fromAdjacent = false);
 	bool leaveLevel(bool resetCache = false);
-	time_t getCachedLevelModTime(const Level* level) const;
+	time_t getLevelLastEnteredTime(const Level* level) const;
 	void resetLevelCache(const Level* level);
 
 	bool hasSeenFile(const std::string& file) const;
@@ -180,7 +176,6 @@ protected:
 	time_t m_lastNick = 0;
 	std::vector<std::unique_ptr<CachedLevel>> m_cachedLevels;
 	std::map<CString, std::shared_ptr<Level>> m_singleplayerLevels;
-	std::weak_ptr<Map> m_pmap;
 	std::weak_ptr<Level> m_currentLevel;
 
 	std::unordered_set<std::string> m_knownFiles;
@@ -204,16 +199,6 @@ inline const CString& PlayerClient::getGroup() const
 inline void PlayerClient::setGroup(const CString& group)
 {
 	m_levelGroup = group;
-}
-
-inline std::weak_ptr<Map> PlayerClient::getMap() const
-{
-	return m_pmap;
-}
-
-inline void PlayerClient::setMap(const std::shared_ptr<Map>& map)
-{
-	m_pmap = map;
 }
 
 inline bool PlayerClient::hasSeenFile(const std::string& file) const

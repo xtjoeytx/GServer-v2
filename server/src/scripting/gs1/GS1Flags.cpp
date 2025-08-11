@@ -150,9 +150,18 @@ void setOtherFlags(ScriptEvent& event, ScriptObjectSource source, GameVariableSt
 	// actionplayer
 	if (event.type == ScriptEventType::TRIGGERACTION && event.initiator.second == ScriptObjectSourceType::PLAYER && level != nullptr)
 	{
-		auto& players = level->getPlayers();
-		if (auto playerIter = std::ranges::find(players, source.first); playerIter != players.end())
-			variableStore.add("actionplayer", GameValue{ (double)std::distance(players.begin(), playerIter) });
+		bool found = false;
+		size_t index = 0;
+		for (const auto& playerId : level->getMapPlayers())
+		{
+			if (playerId == static_cast<PlayerID>(source.first))
+			{
+				found = true;
+				break;
+			}
+			++index;
+		}
+		variableStore.add("actionplayer", GameValue{ (double)(found ? index : -1) });
 	}
 
 	/* Older flags:

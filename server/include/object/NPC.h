@@ -298,8 +298,10 @@ public:
 	bool isCharacter() const noexcept { return image == "#c#"; }
 	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
 	[[inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
+	[[inline]] PixelPosition getGlobalPosition() const noexcept;
+	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;
+	[[inline]] TilePosition getTilePosition() const noexcept;
 	std::string getLevelName() const;
-	Position<uint8_t> getGmapPosition() const;
 	std::vector<std::string> getVariableDump() const;
 
 	// Records the current state as the initial state of the NPC.
@@ -349,6 +351,7 @@ private:
 
 	std::string m_initialImage;
 	std::weak_ptr<Level> m_initialLevel;
+	Position<uint8_t> m_initialMapPosition;
 	Character m_initialCharacter;
 
 	std::string m_weaponName;
@@ -376,6 +379,21 @@ inline PixelRectangleArea NPC::getCollisionBoundingBox() const noexcept
 		return { character.getGlobalPosition().translate(8, 16), { 32, 32 } };
 
 	return { character.getGlobalPosition(), shape};
+}
+
+inline PixelPosition NPC::getGlobalPosition() const noexcept
+{
+	return character.getGlobalPosition();
+}
+
+inline LocalPixelPosition NPC::getLocalPosition() const noexcept
+{
+	return character.getLocalPosition();
+}
+
+inline TilePosition NPC::getTilePosition() const noexcept
+{
+	return character.getTilePosition();
 }
 
 //----------------------------
@@ -423,8 +441,8 @@ inline PixelRectangleArea NPC::getCollisionBoundingBox() const noexcept
 	DO(NPCProp::GATTRIB3,	PropertyString,				character.ganiAttributes[2]) \
 	DO(NPCProp::GATTRIB4,	PropertyString,				character.ganiAttributes[3]) \
 	DO(NPCProp::GATTRIB5,	PropertyString,				character.ganiAttributes[4]) \
-	DO(NPCProp::GMAPLEVELX,	PropertyNumeric<GBYTE1>,	getGmapPosition().x()) \
-	DO(NPCProp::GMAPLEVELY,	PropertyNumeric<GBYTE1>,	getGmapPosition().y()) \
+	DO(NPCProp::GMAPLEVELX,	PropertyNumeric<GBYTE1>,	character.mapX) \
+	DO(NPCProp::GMAPLEVELY,	PropertyNumeric<GBYTE1>,	character.mapY) \
 	DO(NPCProp::Z,			PropertyTileCoordinateZ,	character.localPixelZ) \
 	DO(NPCProp::GATTRIB6,	PropertyString,				character.ganiAttributes[5]) \
 	DO(NPCProp::GATTRIB7,	PropertyString,				character.ganiAttributes[6]) \

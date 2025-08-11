@@ -139,10 +139,10 @@ public:
 	void loadIPBans();
 	void loadTranslations();
 	void loadWordFilter();
-	int loadServerObjects();
 	void loadServerFlags();
-	void loadWeapons(bool print = false);
 	void loadMaps(bool print = false);
+	int loadServerObjects();
+	void loadWeapons(bool print = false);
 	void loadMapLevels();
 
 	// Folder Configuration
@@ -191,7 +191,7 @@ public:
 	TriggerDispatcher& getTriggerDispatcher() { return m_triggerActionDispatcher; }
 
 public:
-	std::shared_ptr<Level> getLevel(std::string_view pLevel);
+	std::shared_ptr<Level> getLevel(std::string_view levelName);
 
 public:
 	std::shared_ptr<NPC> getNPC(const NPCID id) const;
@@ -224,25 +224,22 @@ public:
 	bool isStaff(const CString& accountName);
 
 public:
-	void hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source = nullptr) const;
+	void hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source = nullptr) const;
 	void hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source) const;
 	void logToFile(const std::string& fileName, const std::string& message) const;
 	void sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
 	void sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
-	void sendTriggerAction(PlayerID toPlayerId, NPCID fromNpcId, Position<int16_t> pixelPosition, std::string_view action, std::string_view params) const;
-	void sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, Position<int16_t> pixelPosition, std::string_view action, std::string_view params) const;
+	void sendTriggerAction(PlayerID toPlayerId, NPCID fromNpcId, const LocalPixelPosition& localPosition, std::string_view action, std::string_view params) const;
+	void sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, const PixelPosition& position, std::string_view action, std::string_view params) const;
 
 public:
 	using PlayerPredicate = std::function<bool(const Player*)>;
 	void sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude = {}) const;
-	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelOrGmap(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelOrGmap(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 	void sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;
 	void sendPacketToLevelAndPastVisitorsAfter(Level* level, time_t modTime, const CString& packet) const;
+	void sendPacketToNearby(const CString& packet, const PixelPosition& position, std::shared_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 
 public:
 	void sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level) const;
@@ -267,11 +264,22 @@ public:
 	bool hasNPCServer() const { return m_playerList.find(NPCServerPlayerID) != m_playerList.end(); }
 	std::shared_ptr<NPCServer> getNPCServer() const { return m_npcServer; }
 
-	void queueNPCEvent(LevelPtr level, ScriptEventType type, ScriptObjectSource source, auto&&... args)
+	void queueNPCEventLocal(LevelPtr level, ScriptEventType type, ScriptObjectSource source, auto&&... args)
 	{
 		if (!hasNPCServer()) return;
 		if (level == nullptr) return;
-		for (auto& npcid : level->getNPCs())
+		for (auto& npcid : level->getLevelNPCs())
+		{
+			if (auto npc = getNPC(npcid); npc)
+				npc->scripting.events.addEvent(type, source, std::forward<decltype(args)>(args)...);
+		}
+	}
+
+	void queueNPCEvent(LevelPtr level, const PixelPosition& position, ScriptEventType type, ScriptObjectSource source, auto&&... args)
+	{
+		if (!hasNPCServer()) return;
+		if (level == nullptr) return;
+		for (auto& npcid : level->findInRangeNPCs(position))
 		{
 			if (auto npc = getNPC(npcid); npc)
 				npc->scripting.events.addEvent(type, source, std::forward<decltype(args)>(args)...);

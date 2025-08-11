@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstdint>
 #include <format>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -51,7 +52,7 @@ static bool canSendProp(NPCProp prop)
 
 	if (server->Generation == ServerGeneration::ORIGINAL && PROPID(prop) > PROPID(NPCProp::BODYIMAGE))
 		return false;
-	if (prop == NPCProp::SCRIPTER || prop == NPCProp::NAME)
+	if (prop == NPCProp::SCRIPTER || prop == NPCProp::NAME || prop == NPCProp::TYPE)
 		return false;
 	if (prop == NPCProp::CLASS && (server->Generation == ServerGeneration::ORIGINAL || server->Generation == ServerGeneration::CLASSIC))
 		return false;
@@ -161,20 +162,11 @@ std::string NPC::getLevelName() const
 {
 	if (auto levelPtr = level.lock(); levelPtr != nullptr)
 	{
-		if (auto map = levelPtr->getMap(); map != nullptr && map->isGmap())
-			return map->getMapName();
+		if (levelPtr->isOnGmap())
+			return levelPtr->getMap()->getMapName();
 		return levelPtr->levelName;
 	}
 	return {};
-}
-
-Position<uint8_t> NPC::getGmapPosition() const
-{
-	if (auto levelPtr = level.lock(); levelPtr != nullptr)
-	{
-		return { levelPtr->getGmapX(), levelPtr->getGmapY() };
-	}
-	return { 0_ui8, 0_ui8 };
 }
 
 //----------------------------
@@ -617,8 +609,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			// Don't do anything.
-			// The X/Y properties will trigger the change in gmap position.
+			character.mapX = numProp->value;
 			break;
 		}
 
@@ -628,8 +619,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			// Don't do anything.
-			// The X/Y properties will trigger the change in gmap position.
+			character.mapY = numProp->value;
 			break;
 		}
 
@@ -690,10 +680,14 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (oldLevel != nullptr)
 				oldLevel->removeNPC(id);
 
-			// Send our props to people in the new level.
+			// Add us to the new level.
 			level = newLevel;
 			newLevel->addNPC(id);
-			server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), newLevel);
+			character.mapX = newLevel->mapPosition.x();
+			character.mapY = newLevel->mapPosition.y();
+
+			// Send our props to people in the new level.
+			server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), newLevel);
 
 			// Tell NCs about our new position.
 			CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
@@ -833,7 +827,7 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 		exclude = source->getId();
 
 	if (sendLevel.length() > 0 && !level.expired())
-		server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, level, { exclude });
+		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, character.getGlobalPosition(), level.lock(), { exclude });
 
 	if (sendSource.length() > 0 && source != nullptr)
 		source->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)id << sendSource);
@@ -1108,7 +1102,7 @@ void NPC::sendScriptUpdatesToLevel(clock::time_point when) const
 		auto server = BabyDI::Get<Server>();
 		CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)npclevel->levelName.length() << npclevel->levelName >> (int)id;
 		server->sendPacketToLevelAndPastVisitorsAfter(npclevel.get(), clock::to_time_t(when), packet);
-		server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), npclevel);
+		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), npclevel);
 	}
 }
 
@@ -1191,10 +1185,36 @@ void NPC::constructScriptParameters()
 		gameVariableSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<size_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
 	scriptParameters.try_emplace("x", set_temporary, "x",
 		gameVariableGetter([this]() { return character.getGlobalPosition().x() / 16.0; }),
-		gameVariableSetter(this, PROPOPT(NPCProp::X2), [this](const GameValue& value, std::optional<size_t>) { character.localPixelX = value.get<double>().value_or(0.0) * 16; }));
+		gameVariableSetter(this, PROPOPT(NPCProp::X2),
+			[this](const GameValue& value, std::optional<size_t>)
+			{
+				auto globalPosition = character.getGlobalPosition();
+				globalPosition.x() = value.get<double>().value_or(0.0) * 16;
+				character.localPixelX = toLocalPixelPosition(globalPosition).x();
+
+				if (auto levelPtr = level.lock(); levelPtr != nullptr && levelPtr->isOnGmap())
+				{
+					if (auto newLevel = levelPtr->getMap()->getLevelAt(globalPosition); newLevel != nullptr && newLevel != levelPtr)
+						warp(newLevel, getLocalPosition());
+				}
+			})
+		);
 	scriptParameters.try_emplace("y", set_temporary, "y",
 		gameVariableGetter([this]() { return character.getGlobalPosition().y() / 16.0; }),
-		gameVariableSetter(this, PROPOPT(NPCProp::Y2), [this](const GameValue& value, std::optional<size_t>) { character.localPixelY = value.get<double>().value_or(0.0) * 16; }));
+		gameVariableSetter(this, PROPOPT(NPCProp::Y2),
+			[this](const GameValue& value, std::optional<size_t>)
+			{
+				auto globalPosition = character.getGlobalPosition();
+				globalPosition.y() = value.get<double>().value_or(0.0) * 16;
+				character.localPixelY = toLocalPixelPosition(globalPosition).y();
+
+				if (auto levelPtr = level.lock(); levelPtr != nullptr && levelPtr->isOnGmap())
+				{
+					if (auto newLevel = levelPtr->getMap()->getLevelAt(globalPosition); newLevel != nullptr && newLevel != levelPtr)
+						warp(newLevel, getLocalPosition());
+				}
+			})
+		);
 	scriptParameters.try_emplace("z", set_temporary, "z",
 		gameVariableGetter([this]() { return character.localPixelZ / 16.0; }),
 		gameVariableSetter(this, PROPOPT(NPCProp::Z2), [this](const GameValue& value, std::optional<size_t>) { character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
@@ -1259,7 +1279,7 @@ void NPC::testForLinks(SetResults& result)
 	auto* server = BabyDI::Get<Server>();
 
 	// The NPC changed their level and position.
-	auto informNPCWarped = [&server, &result, this]()
+	auto informNPCWarped = [&]()
 	{
 		// Tell NCs about our new position.
 		CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
@@ -1267,7 +1287,7 @@ void NPC::testForLinks(SetResults& result)
 
 		// Tell players that we changed level.
 		server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id);
-		server->sendPacketToLevelArea(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), level);
+		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), levelPtr);
 
 		// Add a scripting event for the warp.
 		scripting.events.addEvent(ScriptEventType::NPCWARPED, source::FromNPC(id));
@@ -1282,41 +1302,44 @@ void NPC::testForLinks(SetResults& result)
 		result.resultPropIds.push_back(PROPID(NPCProp::Y2));
 	};
 
-	// TODO: Gmaps are treated as one large map, and so level npcs can freely walk across maps (source: post=1193766)
+	// Gmaps are treated as one large map, and so level npcs can freely walk across maps (source: post=1193766)
+	uint8_t computedMapX = character.localPixelX / 1024;
+	uint8_t computedMapY = character.localPixelY / 1024;
+	uint8_t computedLocalX = character.localPixelX % 1024;
+	uint8_t computedLocalY = character.localPixelY % 1024;
 
 	// Overworld links.
-	// We test the NPC's x/y position to see if they walked out of the bounds of the current map.
-	// If they did, we warp them to the new map, if allowed.
-	auto map = levelPtr->getMap();
-	if (map != nullptr)
+	// We test the NPC's x/y position to see if they walked out of the bounds of the current level.
+	// If they did, we warp them to the new level, if allowed.
+	const auto& map = levelPtr->getMap();
+	if (map != nullptr && (computedMapX != character.mapX || computedMapY != character.mapY))
 	{
-		uint32_t mapPixelX = character.localPixelX + 1024 * levelPtr->getMapX();
-		uint32_t mapPixelY = character.localPixelY + 1024 * levelPtr->getMapY();
-		uint8_t mapx = static_cast<uint8_t>(mapPixelX / 1024);
-		uint8_t mapy = static_cast<uint8_t>(mapPixelY / 1024);
-
-		if (levelPtr->getMapX() != mapx || levelPtr->getMapY() != mapy)
+		auto newLevel = map->getLevelAt(computedMapX, computedMapY);
+		if (warpRestrictions != NPCWarpRestrictions::NOTALLOWED && newLevel != nullptr)
 		{
-			if (warpRestrictions != NPCWarpRestrictions::NOTALLOWED)
+			character.mapX = map->isGmap() ? computedMapX : 0;
+			character.mapY = map->isGmap() ? computedMapY : 0;
+			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
+			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
+
+			character.localPixelX = computedLocalX;
+			character.localPixelY = computedLocalY;
+
+			level = newLevel;
+			if (newLevel->getMap() != map || map->isBigMap())
 			{
-				if (auto newLevel = server->getLevel(map->getLevelAt(mapx, mapy)); newLevel != nullptr)
-				{
-					result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
-					result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
-					level = newLevel;
-					character.localPixelX = mapPixelX % 1024;
-					character.localPixelY = mapPixelY % 1024;
-					informNPCWarped();
-				}
+				result.resultPropIds.push_back(PROPID(NPCProp::CURLEVEL));
+				informNPCWarped();
 			}
-			else
-			{
-				character.localPixelX = std::clamp(character.localPixelX, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
-				character.localPixelY = std::clamp(character.localPixelY, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
-				informNPCOnlyMoved();
-			}
+			else informNPCOnlyMoved();
 			return;
 		}
+
+		// They aren't allowed to leave the level, so clamp them to the borders.
+		character.localPixelX = std::clamp(character.localPixelX, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
+		character.localPixelY = std::clamp(character.localPixelY, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
+		informNPCOnlyMoved();
+		return;
 	}
 
 	if (warpRestrictions == NPCWarpRestrictions::ALLOWED)
@@ -1327,16 +1350,22 @@ void NPC::testForLinks(SetResults& result)
 		{
 			if (auto newLevel = server->getLevel(linkTouched.value()->getDestinationLevel()); newLevel != nullptr)
 			{
+				character.mapX = newLevel->isOnGmap() ? newLevel->mapPosition.x() : 0;
+				character.mapY = newLevel->isOnGmap() ? newLevel->mapPosition.y() : 0;
 				result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
 				result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
-				if (newLevel->getMap() != map)
-					result.resultPropIds.push_back(PROPID(NPCProp::CURLEVEL));
 
-				level = newLevel;
 				auto pos = linkTouched.value()->getDestinationForCharacter(character);
 				character.localPixelX = pos.x();
 				character.localPixelY = pos.y();
-				informNPCWarped();
+
+				level = newLevel;
+				if (newLevel->getMap() != map || map->isBigMap())
+				{
+					result.resultPropIds.push_back(PROPID(NPCProp::CURLEVEL));
+					informNPCWarped();
+				}
+				else informNPCOnlyMoved();
 			}
 		}
 	}

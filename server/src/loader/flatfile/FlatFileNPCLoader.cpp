@@ -5,10 +5,10 @@
 #include <cstdlib>
 #include <filesystem>
 #include <format>
+#include <iterator>
 #include <memory>
 #include <string_view>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include <BabyDI.h>
@@ -169,12 +169,12 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (curCommand == "MAPX")
 		{
-			//gmaplevelx = strtoint(curLine.readString(""));
+			npc->character.mapX = strtoint(curLine.readString(""));
 			npc->modTime[PROPID(NPCProp::GMAPLEVELX)] = updateTime;
 		}
 		else if (curCommand == "MAPY")
 		{
-			//gmaplevely = strtoint(curLine.readString(""));
+			npc->character.mapY = strtoint(curLine.readString(""));
 			npc->modTime[PROPID(NPCProp::GMAPLEVELY)] = updateTime;
 		}
 		else if (curCommand == "NICK")
@@ -368,11 +368,20 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	if (npc->isCharacter())
 		npc->shape = { 48, 48 };
 
-	// Add the NPC to the server.
-	server->addNPC(npc, false);
-
 	// Set the script.
 	npc->setScript(script);
+
+	// Check if the level is a gmap.
+	// If it is, we need to determine the actual level.
+	if (npcLevel.contains(".gmap"))
+	{
+		auto foundLevel = std::ranges::find_if(server->getMapList(), [&npcLevel](const auto& map) { return map->getMapName() == npcLevel; });
+		if (foundLevel != std::ranges::end(server->getMapList()))
+		{
+			if (auto mapLevel = (*foundLevel)->getLevelAt(npc->character.mapX, npc->character.mapY); mapLevel != nullptr)
+				npcLevel = mapLevel->levelName;
+		}
+	}
 
 	// Add it to the level, if needed.
 	auto level = server->getLevel(npcLevel.toString());
@@ -380,8 +389,11 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	npc->level = level ? level : initialLevel;
 	npc->m_initialLevel = initialLevel;
 
+	// Add the NPC to the server.
+	server->addNPC(npc, false);
+
 	if (level)
-		level->addNPC(id);
+		level->addNPC(npc);
 
 	return npc;
 }
@@ -400,7 +412,6 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	auto level = npc->level.lock();
 	auto initialLevel = npc->m_initialLevel.lock();
 
-	CString levelName = level ? level->levelName : "";
 	CString initialLevelName = initialLevel ? initialLevel->levelName : "";
 
 	int layer = 0;
@@ -429,10 +440,16 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	fileData << "STARTZ " << CString((float)npc->m_initialCharacter.localPixelZ / 16.0f) << NL;
 	if (level)
 	{
-		fileData << "LEVEL " << level->levelName << NL;
+		fileData << "LEVEL " << npc->getLevelName() << NL;
 		fileData << "X " << CString((float)npc->character.localPixelX / 16.0f) << NL;
 		fileData << "Y " << CString((float)npc->character.localPixelY / 16.0f) << NL;
 		fileData << "Z " << CString((float)npc->character.localPixelZ / 16.0f) << NL;
+
+		if (level->isOnGmap())
+		{
+			fileData << "MAPX " << CString(npc->character.mapX) << NL;
+			fileData << "MAPY " << CString(npc->character.mapY) << NL;
+		}
 	}
 	fileData << "NICK " << npc->character.nickName << NL;
 	fileData << "ANI " << npc->character.gani << NL;

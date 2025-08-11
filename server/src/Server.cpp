@@ -3,7 +3,6 @@
 #include <cassert>
 #include <chrono>
 #include <climits>
-#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
@@ -39,6 +38,7 @@
 #include <level/Map.h>
 #include <loader/flatfile/FlatFileAccountLoader.h>
 #include <loader/flatfile/FlatFileNPCLoader.h>
+#include <loader/LevelLoader.h>
 #include <misc/UPNP.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
@@ -52,6 +52,7 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
+#include <utilities/PropsContainer.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -137,7 +138,7 @@ Server::Server(const CString& pName)
 				auto range = m_groupLevels.equal_range(groupName);
 				std::for_each(range.first, range.second, [&playersFound](decltype(m_groupLevels)::value_type& pair)
 				{
-					if (auto level = pair.second.lock(); level && !level->getPlayers().empty())
+					if (auto level = pair.second.lock(); level && !level->getLevelPlayers().empty())
 						playersFound = true;
 				});
 
@@ -524,6 +525,14 @@ int Server::loadConfigFiles()
 		// Load word filter.
 		log::printLine(log::server, "Loading word filter...");
 		loadWordFilter();
+
+		// Load server flags.
+		log::printLine(log::server, "Loading serverflags.txt...");
+		loadServerFlags();
+
+		// Load maps.
+		log::printLine(log::server, "Loading maps...");
+		loadMaps(true);
 	}
 
 	return 0;
@@ -640,6 +649,7 @@ void Server::loadFileSystem()
 {
 	for (auto& i: m_filesystem)
 		i.clear();
+
 	m_filesystemAccounts.clear();
 	m_filesystemAccounts.addDir("accounts", "*.txt");
 	if (m_settings.getBool("nofoldersconfig", false))
@@ -683,113 +693,11 @@ void Server::loadWordFilter()
 	m_wordFilter.load(CString() << "config/rules.txt");
 }
 
-int Server::loadServerObjects()
-{
-	log::printLine(log::server, ":: Loading server objects...");
-
-	{
-		auto indent = log::server.indent();
-
-		// Load server flags.
-		log::printLine(log::server, "Loading serverflags.txt...");
-		loadServerFlags();
-
-		// Load weapons.
-		log::printLine(log::server, "Loading weapons...");
-		loadWeapons(true);
-
-		// Load maps.
-		log::printLine(log::server, "Loading maps...");
-		loadMaps(true);
-
-		// Load map levels - doing this after db npcs are loaded incase
-		// some level scripts may require access to the databases.
-		loadMapLevels();
-	}
-
-	return 0;
-}
-
-void Server::loadWeapons(bool print)
-{
-	auto indent = log::server.indent();
-
-	FileSystem weaponFS;
-	weaponFS.addDir("weapons", "weapon*.txt");
-	FileSystem bcweaponFS;
-	bcweaponFS.addDir("weapon_bytecode", "*");
-
-	auto& weaponFileList = weaponFS.getFileList();
-	for (auto& weaponFile: weaponFileList)
-	{
-		auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
-
-		auto weapon = Weapon::loadWeapon(weaponFile.first);
-		if (weapon == nullptr) continue;
-
-		/*
-		if (weapon->getByteCodeFile().empty())
-			weapon->setModTime(weaponFS.getModTime(weaponFile.first));
-		else
-			weapon->setModTime(bcweaponFS.getModTime(weapon->getByteCodeFile()));
-		*/
-
-		// Check if the weapon exists.
-		if (m_weaponList.find(weapon->name) == m_weaponList.end())
-		{
-			m_weaponList[weapon->name] = weapon;
-			if (print) log::print(log::server, weapon->name);
-		}
-		else
-		{
-			// If the weapon exists, and the version on disk is newer, reload it.
-			auto& w = m_weaponList[weapon->name];
-			if (w->modTime < weapon->modTime)
-			{
-				m_weaponList[weapon->name] = weapon;
-				updateWeaponForPlayers(weapon);
-				if (print)
-				{
-					log::print(log::server, "{} [updated]", weapon->name);
-					Server::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->name << " ");
-				}
-			}
-			else
-			{
-				// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
-				//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
-				if (print) log::print(log::server, "{} [skipped]", weapon->name);
-			}
-		}
-	}
-
-	// Add the default weapons.
-	if (!m_weaponList.contains("bow")) m_weaponList["bow"] = std::make_shared<Weapon>(LevelItem::getItemId("bow"));
-	if (!m_weaponList.contains("bomb")) m_weaponList["bomb"] = std::make_shared<Weapon>(LevelItem::getItemId("bomb"));
-	if (!m_weaponList.contains("superbomb")) m_weaponList["superbomb"] = std::make_shared<Weapon>(LevelItem::getItemId("superbomb"));
-	if (!m_weaponList.contains("fireball")) m_weaponList["fireball"] = std::make_shared<Weapon>(LevelItem::getItemId("fireball"));
-	if (!m_weaponList.contains("fireblast")) m_weaponList["fireblast"] = std::make_shared<Weapon>(LevelItem::getItemId("fireblast"));
-	if (!m_weaponList.contains("nukeshot")) m_weaponList["nukeshot"] = std::make_shared<Weapon>(LevelItem::getItemId("nukeshot"));
-	if (!m_weaponList.contains("joltbomb")) m_weaponList["joltbomb"] = std::make_shared<Weapon>(LevelItem::getItemId("joltbomb"));
-}
-
-void Server::loadMapLevels()
-{
-	// Load gmap levels based on options provided by the gmap file
-	for (const auto& map: m_mapList)
-	{
-		if (map->getType() == MapType::GMAP)
-			map->loadMapLevels();
-	}
-}
-
 void Server::loadMaps(bool print)
 {
-	auto indent = log::server.indent();
+	assert(m_levelList.empty() && "Levels should be loaded after maps.");
 
-	// Remove players off all maps
-	for (const auto& [id, player]: players_of_type<PlayerClient>(m_playerList))
-		player->setMap(nullptr);
+	auto indent = log::server.indent();
 
 	// Remove existing maps.
 	m_mapList.clear();
@@ -808,16 +716,17 @@ void Server::loadMaps(bool print)
 		}
 
 		// Load the gmap.
-		auto gmap = std::make_unique<Map>(MapType::GMAP);
-		if (!gmap->load(CString() << gmapName))
+		try
+		{
+			auto gmap = std::make_unique<Map>(is_gmap, gmapName.toString());
+			if (print) log::printLine(log::server, "[gmap] {}", gmapName);
+			m_mapList.push_back(std::move(gmap));
+		}
+		catch (...)
 		{
 			auto inerr = log::server.indent_absolute(0);
 			if (print) log::printLine(log::server, "** [Error] Could not load {}.", gmapName);
-			continue;
 		}
-
-		if (print) log::printLine(log::server, "[gmap] {}", gmapName);
-		m_mapList.push_back(std::move(gmap));
 	}
 
 	// Load bigmaps.
@@ -828,19 +737,21 @@ void Server::loadMaps(bool print)
 		if (i == "\r") continue;
 
 		// Load the bigmap.
-		auto bigmap = std::make_unique<Map>(MapType::BIGMAP);
-		if (!bigmap->load(i.trim()))
+		try
+		{
+			auto bigmap = std::make_unique<Map>(is_bigmap, i.trim().toString());
+			if (print) log::printLine(log::server, "[bigmap] {}", i);
+			m_mapList.push_back(std::move(bigmap));
+		}
+		catch (...)
 		{
 			auto inerr = log::server.indent_absolute(0);
 			if (print) log::printLine(log::server, "** [Error] Could not load {}.", i);
-			continue;
 		}
-
-		if (print) log::printLine(log::server, "[bigmap] {}", i);
-		m_mapList.push_back(std::move(bigmap));
 	}
 
 	// Load group maps.
+	/*
 	std::vector<CString> groupmaps = m_settings.getStr("groupmaps").guntokenize().tokenize("\n");
 	for (auto& groupmap: groupmaps)
 	{
@@ -871,27 +782,7 @@ void Server::loadMaps(bool print)
 		if (print) log::printLine(log::server, "[group map] {}", groupmap);
 		m_mapList.push_back(std::move(gmap));
 	}
-
-	// Update all map <--> level relationships
-	for (const auto& [levelname, level]: m_levelList)
-	{
-		bool found = false;
-		for (const auto& map: m_mapList)
-		{
-			int mx, my;
-			if (map->isLevelOnMap(levelname, mx, my))
-			{
-				level->setMap(map, mx, my);
-				found = true;
-				break;
-			}
-		}
-
-		if (!found)
-		{
-			level->setMap({});
-		}
-	}
+	*/
 }
 
 void Server::loadNPCServer()
@@ -901,17 +792,107 @@ void Server::loadNPCServer()
 		log::printLine(log::server, ":: Loading NPC server...");
 		{
 			auto indent = log::server.indent();
-			m_npcServer = std::make_shared<NPCServer>();
-			m_npcServer->initialize();
+			{
+				auto sectionProfile = log::Profile(log::server, "", "(Completed in {1:0.6} ms)");
+				m_npcServer = std::make_shared<NPCServer>();
+				m_npcServer->initialize();
+			}
+		}
+	}
+}
+
+int Server::loadServerObjects()
+{
+	log::printLine(log::server, ":: Loading server objects...");
+
+	auto indent = log::server.indent();
+	{
+		// Load weapons.
+		log::printLine(log::server, "Loading weapons...");
+		loadWeapons(true);
+
+		// Load map levels - doing this after db npcs are loaded incase
+		// some level scripts may require access to the databases.
+		log::printLine(log::server, "Pre-loading map levels...");
+		loadMapLevels();
+	}
+
+	return 0;
+}
+
+void Server::loadWeapons(bool print)
+{
+	auto indent = log::server.indent();
+	{
+		auto sectionProfile = log::Profile(log::server, "", "(Completed in {1:0.6} ms)");
+
+		FileSystem weaponFS;
+		weaponFS.addDir("weapons", "weapon*.txt");
+		FileSystem bcweaponFS;
+		bcweaponFS.addDir("weapon_bytecode", "*");
+
+		auto& weaponFileList = weaponFS.getFileList();
+		for (auto& weaponFile : weaponFileList)
+		{
+			auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
+
+			auto weapon = Weapon::loadWeapon(weaponFile.first);
+			if (weapon == nullptr) continue;
+
+			/*
+			if (weapon->getByteCodeFile().empty())
+				weapon->setModTime(weaponFS.getModTime(weaponFile.first));
+			else
+				weapon->setModTime(bcweaponFS.getModTime(weapon->getByteCodeFile()));
+			*/
+
+			// Check if the weapon exists.
+			if (m_weaponList.find(weapon->name) == m_weaponList.end())
+			{
+				m_weaponList[weapon->name] = weapon;
+				if (print) log::print(log::server, weapon->name);
+			}
+			else
+			{
+				// If the weapon exists, and the version on disk is newer, reload it.
+				auto& w = m_weaponList[weapon->name];
+				if (w->modTime < weapon->modTime)
+				{
+					m_weaponList[weapon->name] = weapon;
+					updateWeaponForPlayers(weapon);
+					if (print)
+					{
+						log::print(log::server, "{} [updated]", weapon->name);
+						Server::sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: Updated weapon " << weapon->name << " ");
+					}
+				}
+				else
+				{
+					// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
+					//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
+					if (print) log::print(log::server, "{} [skipped]", weapon->name);
+				}
+			}
 		}
 
-		// Pre-load map levels.
-		// TODO: Move into the npc-server?
-		log::printLine(log::server, ":: Pre-loading map levels...");
-		{
-			auto indent = log::server.indent();
-			loadMapLevels();
-		}
+		// Add the default weapons.
+		if (!m_weaponList.contains("bow")) m_weaponList["bow"] = std::make_shared<Weapon>(LevelItem::getItemId("bow"));
+		if (!m_weaponList.contains("bomb")) m_weaponList["bomb"] = std::make_shared<Weapon>(LevelItem::getItemId("bomb"));
+		if (!m_weaponList.contains("superbomb")) m_weaponList["superbomb"] = std::make_shared<Weapon>(LevelItem::getItemId("superbomb"));
+		if (!m_weaponList.contains("fireball")) m_weaponList["fireball"] = std::make_shared<Weapon>(LevelItem::getItemId("fireball"));
+		if (!m_weaponList.contains("fireblast")) m_weaponList["fireblast"] = std::make_shared<Weapon>(LevelItem::getItemId("fireblast"));
+		if (!m_weaponList.contains("nukeshot")) m_weaponList["nukeshot"] = std::make_shared<Weapon>(LevelItem::getItemId("nukeshot"));
+		if (!m_weaponList.contains("joltbomb")) m_weaponList["joltbomb"] = std::make_shared<Weapon>(LevelItem::getItemId("joltbomb"));
+	}
+}
+
+void Server::loadMapLevels()
+{
+	auto indent = log::server.indent();
+	{
+		auto sectionProfile = log::Profile(log::server, "", "(Completed in {1:0.6} ms)");
+		for (const auto& map : m_mapList)
+			map->loadMapLevels();
 	}
 }
 
@@ -951,9 +932,36 @@ void Server::saveWeapons()
 
 /////////////////////////////////////////////////////
 
-std::shared_ptr<Level> Server::getLevel(std::string_view pLevel)
+std::shared_ptr<Level> Server::getLevel(std::string_view levelName)
 {
-	return Level::findLevel(pLevel);
+	// Find Appropriate Level by Name
+	std::string lowerCaseLevel = string::toLower(levelName);
+	if (auto it = m_levelList.find(lowerCaseLevel); it != m_levelList.end())
+		return it->second;
+
+	FileSystem* fileSystem = &m_filesystem[FS_ALL];
+	if (!m_settings.getBool("nofoldersconfig", false))
+		fileSystem = &m_filesystem[FS_LEVEL];
+
+	// If the level was not found, check if it was an absolute path.
+	if (fileSystem->find(levelName).trim().length() == 0)
+	{
+		if (std::filesystem::exists(levelName))
+		{
+			fileSystem->addFile(levelName);
+			fileSystem->addDir(getPath(levelName), "*", true);
+		}
+		else return nullptr;
+	}
+
+	// Load New Level
+	auto level = LevelLoader::loadLevel(std::filesystem::path{ levelName });
+	if (level == nullptr)
+		return nullptr;
+
+	// Return Level
+	m_levelList.insert(std::make_pair(lowerCaseLevel, level));
+	return level;
 }
 
 std::shared_ptr<Weapon> Server::getWeapon(std::string_view name)
@@ -1031,6 +1039,8 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	// If the level is a gmap, set the modTime on the level props.
 	if (auto map = levelPtr->getMap(); map && map->isGmap())
 	{
+		newNPC->character.mapX = levelPtr->mapPosition.x();
+		newNPC->character.mapY = levelPtr->mapPosition.y();
 		newNPC->modTime[PROPID(NPCProp::GMAPLEVELX)] = m_frameStartTime;
 		newNPC->modTime[PROPID(NPCProp::GMAPLEVELY)] = m_frameStartTime;
 	}
@@ -1057,7 +1067,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	if (sendToPlayers)
 	{
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->id << newNPC->getAllPropsPacket();
-		sendPacketToLevelOrGmap(packet, level);
+		sendPacketToNearby(packet, newNPC->getGlobalPosition(), levelPtr);
 	}
 
 	return newNPC;
@@ -1072,7 +1082,7 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 	if (sendToPlayers)
 	{
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket();
-		sendPacketToLevelOrGmap(packet, npc->level);
+		sendPacketToNearby(packet, npc->getGlobalPosition(), npc->level.lock());
 	}
 
 	return npc;
@@ -1099,17 +1109,16 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 			level->removeNPC(npc);
 
 		// Tell the clients to delete the NPC.
-		auto map = level->getMap();
-		bool isOnGmap = map != nullptr && map->isGmap();
-		std::string tmpLvlName = (isOnGmap ? map->getMapName() : level->levelName);
+		std::string levelName = npc->getLevelName();
 
-		auto lastUpdateTime = clock::to_time_t(npc->lastUpdateTime);
+		auto lastLevelChange = clock::to_time_t(npc->modTime[PROPID(NPCProp::CURLEVEL)]);
 		for (auto& [pid, p]: m_playerList)
 		{
-			if (auto playerClient = std::dynamic_pointer_cast<PlayerClient>(p); playerClient != nullptr && playerClient->getCachedLevelModTime(level.get()) >= lastUpdateTime)
+			auto playerClient = std::dynamic_pointer_cast<PlayerClient>(p);
+			if (playerClient != nullptr && (playerClient->getLevelLastEnteredTime(level.get()) >= lastLevelChange || playerClient->getLevel() == level))
 			{
-				if (playerClient->getComputedLevelName() != tmpLvlName)
-					p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)tmpLvlName.length() << tmpLvlName >> (int)npc->id);
+				if (playerClient->getComputedLevelName() != levelName)
+					p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)npc->id);
 				else p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->id);
 			}
 			else if (p->isNC())
@@ -1139,11 +1148,21 @@ void Server::moveNPC(std::shared_ptr<NPC> npc, float dx, float dy, float duratio
 		packet >> (short)timeIn50msIncrements;
 		packet >> (char)options;
 
-		npc->character.localPixelX += dx * 16;
-		npc->character.localPixelY += dy * 16;
+		auto globalPosition = npc->getGlobalPosition().translate(dx * 16, dy * 16);
+		auto localPosition = toLocalPixelPosition(globalPosition);
+		npc->character.localPixelX = localPosition.x();
+		npc->character.localPixelY = localPosition.y();
 
-		//sendPacketToLevelOrGmap(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, level);
-		sendPacketToLevelArea(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, level);
+		if (level->isOnGmap())
+		{
+			if (auto newLevel = level->getMap()->getLevelAt(globalPosition); newLevel != nullptr && newLevel != level)
+			{
+				npc->setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, newLevel->mapPosition.x());
+				npc->setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, newLevel->mapPosition.y());
+			}
+		}
+
+		sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, npc->character.getGlobalPosition(), level);
 	}
 }
 
@@ -1369,9 +1388,9 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	return true;
 }
 
-void Server::hitObjectsAtPoint(Position<float> pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source) const
+void Server::hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source) const
 {
-	sendPacketToOneLevel(CString() >> (char)PLO_HITOBJECTS >> (short)(source ? source->getId() : 0) >> (char)power >> (char)(pos.x() * 2) >> (char)(pos.y() * 2), level);
+	sendPacketToNearby(CString() >> (char)PLO_HITOBJECTS >> (short)(source ? source->getId() : 0) >> (char)power >> (char)(pos.x() * 2) >> (char)(pos.y() * 2), toPixelPosition(pos), level.lock());
 }
 
 void Server::hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source) const
@@ -1383,23 +1402,24 @@ void Server::hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY
 	player->sendPacket(CString() >> (char)PLO_HURTPLAYER >> (short)0 >> (char)(fromX * 2) >> (char)(fromY * 2) >> (char)power >> (int)source->id);
 }
 
-void Server::sendTriggerAction(PlayerID toPlayerId, NPCID fromNpcId, Position<int16_t> pixelPosition, std::string_view action, std::string_view params) const
+void Server::sendTriggerAction(PlayerID toPlayerId, NPCID fromNpcId, const LocalPixelPosition& localPosition, std::string_view action, std::string_view params) const
 {
 	auto player = getPlayer(toPlayerId);
 	if (player == nullptr)
 		return;
 
-	CString packet = CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)fromNpcId >> (char)(pixelPosition.x() / 8.0f) >> (char)(pixelPosition.y() / 8.0f) << action << "," << params;
+	CString packet = CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)fromNpcId >> (char)(localPosition.x() / 8.0f) >> (char)(localPosition.y() / 8.0f) << action << "," << params;
 	player->sendPacket(packet);
 }
 
-void Server::sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, Position<int16_t> pixelPosition, std::string_view action, std::string_view params) const
+void Server::sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, const PixelPosition& position, std::string_view action, std::string_view params) const
 {
 	if (toLevel == nullptr)
 		return;
 
-	CString packet = CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)fromNpcId >> (char)(pixelPosition.x() / 8.0f) >> (char)(pixelPosition.y() / 8.0f) << action << "," << params;
-	sendPacketToLevelArea(packet, toLevel);
+	auto localPosition = toLocalPixelPosition(position);
+	CString packet = CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)fromNpcId >> (char)(localPosition.x() / 8.0f) >> (char)(localPosition.y() / 8.0f) << action << "," << params;
+	sendPacketToNearby(packet, position, toLevel);
 }
 
 /*
@@ -1419,183 +1439,12 @@ void Server::sendPacketToAll(const CString& packet, const std::set<PlayerID>& ex
 	}
 }
 
-void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
-{
-	auto levelp = level.lock();
-	if (!levelp) return;
-
-	// If we have no map, just send to the level players.
-	auto map = levelp->getMap();
-	if (!map)
-	{
-		for (auto id: levelp->getPlayers())
-		{
-			if (exclude.contains(id)) continue;
-			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
-				other->sendPacket(packet);
-		}
-	}
-	else
-	{
-		std::pair<int, int> sgmap{ levelp->getMapX(), levelp->getMapY() };
-
-		for (const auto& [id, other]: players_of_type<PlayerClient>(m_playerList))
-		{
-			if (exclude.contains(id)) continue;
-			if (!other->isClient()) continue;
-			if (sendIf != nullptr && !sendIf(other.get())) continue;
-
-			auto othermap = other->getMap().lock();
-			if (!othermap || othermap != map) continue;
-
-			auto ogmap{ other->getMapPosition() };
-			bool differentLevel = !map->isGmap() && (ogmap.first - sgmap.first != 0 || ogmap.second - sgmap.second != 0);
-
-			// Check if they are nearby before sending the packet.
-			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
-			{
-				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << levelp->levelName);
-				other->sendPacket(packet);
-				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << other->getComputedLevelName());
-			}
-		}
-	}
-}
-
-void Server::sendPacketToLevelArea(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
-{
-	auto playerp = player.lock();
-	if (!playerp) return;
-
-	auto level = playerp->getLevel();
-	if (!level) return;
-
-	// If we have no map, just send to the level players.
-	auto map = level->getMap();
-	if (!map)
-	{
-		for (auto id: level->getPlayers())
-		{
-			if (exclude.contains(id)) continue;
-			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
-				other->sendPacket(packet);
-		}
-	}
-	else
-	{
-		auto isGroupMap = map->isGroupMap();
-		auto sgmap{ playerp->getMapPosition() };
-
-		for (const auto& [id, other]: players_of_type<PlayerClient>(m_playerList))
-		{
-			if (exclude.contains(id)) continue;
-			if (!other->isClient()) continue;
-			if (sendIf != nullptr && !sendIf(other.get())) continue;
-
-			auto othermap = other->getMap().lock();
-			if (!othermap || othermap != map) continue;
-			if (isGroupMap && playerp->getGroup() != other->getGroup()) continue;
-
-			auto ogmap{ other->getMapPosition() };
-			bool differentLevel = !othermap->isGmap() && (ogmap.first - sgmap.first != 0 || ogmap.second - sgmap.second != 0);
-
-			// Check if they are nearby before sending the packet.
-			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
-			{
-				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
-				other->sendPacket(packet);
-				if (differentLevel) other->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << other->getComputedLevelName());
-			}
-		}
-	}
-}
-
-void Server::sendPacketToLevelOrGmap(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
-{
-	auto levelp = level.lock();
-	if (!levelp) return;
-
-	// If we have no map, just send to the level players.
-	// If it we are on a bigmap, also just send to level players.
-	auto map = levelp->getMap();
-	if (!map || map->getType() == MapType::BIGMAP)
-	{
-		for (auto id: levelp->getPlayers())
-		{
-			if (exclude.contains(id)) continue;
-			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
-				other->sendPacket(packet);
-		}
-	}
-	else
-	{
-		std::pair<int, int> sgmap{ levelp->getMapX(), levelp->getMapY() };
-
-		for (const auto& [id, other]: players_of_type<PlayerClient>(m_playerList))
-		{
-			if (exclude.contains(id)) continue;
-			if (!other->isClient()) continue;
-			if (sendIf != nullptr && !sendIf(other.get())) continue;
-
-			auto othermap = other->getMap().lock();
-			if (!othermap || othermap != map) continue;
-
-			// Check if they are nearby before sending the packet.
-			auto ogmap{ other->getMapPosition() };
-			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
-				other->sendPacket(packet);
-		}
-	}
-}
-
-void Server::sendPacketToLevelOrGmap(const CString& packet, std::weak_ptr<PlayerClient> player, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
-{
-	auto playerp = player.lock();
-	if (!playerp) return;
-
-	auto level = playerp->getLevel();
-	if (!level) return;
-
-	// If we have no map, just send to the level players.
-	auto map = level->getMap();
-	if (!map || map->getType() == MapType::BIGMAP)
-	{
-		for (auto id: level->getPlayers())
-		{
-			if (exclude.contains(id)) continue;
-			if (auto other = this->getPlayer(id); other->isClient() && (sendIf == nullptr || sendIf(other.get())))
-				other->sendPacket(packet);
-		}
-	}
-	else
-	{
-		auto isGroupMap = map->isGroupMap();
-		auto sgmap{ playerp->getMapPosition() };
-
-		for (const auto& [id, other]: players_of_type<PlayerClient>(m_playerList))
-		{
-			if (exclude.contains(id)) continue;
-			if (!other->isClient()) continue;
-			if (sendIf != nullptr && !sendIf(other.get())) continue;
-
-			auto othermap = other->getMap().lock();
-			if (!othermap || othermap != map) continue;
-			if (isGroupMap && playerp->getGroup() != other->getGroup()) continue;
-
-			// Check if they are nearby before sending the packet.
-			auto ogmap{ other->getMapPosition() };
-			if (abs(ogmap.first - sgmap.first) < 2 && abs(ogmap.second - sgmap.second) < 2)
-				other->sendPacket(packet);
-		}
-	}
-}
-
 void Server::sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude) const
 {
 	auto levelp = level.lock();
 	if (!levelp) return;
 
-	for (auto id: levelp->getPlayers())
+	for (auto id: levelp->getLevelPlayers())
 	{
 		if (exclude.contains(id)) continue;
 		if (auto player = this->getPlayer(id); player && player->isClient())
@@ -1627,7 +1476,21 @@ void Server::sendPacketToLevelAndPastVisitorsAfter(Level* level, time_t modTime,
 	for (const auto& [id, player] : players_of_type<PlayerClient>(m_playerList))
 	{
 		auto playerLevel = player->getLevel();
-		if (player->getCachedLevelModTime(level) > modTime || (playerLevel != nullptr && playerLevel.get() == level))
+		if (player->getLevelLastEnteredTime(level) > modTime || (playerLevel != nullptr && playerLevel.get() == level))
+			player->sendPacket(packet);
+	}
+}
+
+void Server::sendPacketToNearby(const CString& packet, const PixelPosition& position, std::shared_ptr<Level> level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
+{
+	if (!running || level == nullptr) return;
+
+	auto players = level->findInRangePlayers(position);
+	for (const auto& playerId : players)
+	{
+		if (exclude.contains(playerId))
+			continue;
+		if (auto player = getPlayer(playerId); player != nullptr && player->isClient() && (!sendIf || sendIf(player.get())))
 			player->sendPacket(packet);
 	}
 }
@@ -1844,7 +1707,7 @@ void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level
 
 	ShootPacketWrapper newPacket{};
 	newPacket.source = (shoot->from.second == ScriptObjectSourceType::NPC ? shoot->from.first : 0);
-	newPacket.position = toPixelPosition({ 0, 0 }, shoot->position);
+	newPacket.position = toPixelPosition(shoot->position);
 	newPacket.offsetx = 0;
 	newPacket.offsety = 0;
 	newPacket.sangle = static_cast<uint8_t>(220 * (std::clamp(shoot->angle, 0.0f, 2 * pi) / (2 * pi)));
@@ -1857,8 +1720,8 @@ void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)0 << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)0 << newPacket.constructShootV2();
 
-	sendPacketToLevelArea(oldPacketBuf, level, { 0 }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
-	sendPacketToLevelArea(newPacketBuf, level, { 0 }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
+	sendPacketToNearby(oldPacketBuf, newPacket.position, level, { 0 }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
+	sendPacketToNearby(newPacketBuf, newPacket.position, level, { 0 }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

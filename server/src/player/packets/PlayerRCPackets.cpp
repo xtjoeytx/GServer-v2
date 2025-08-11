@@ -103,8 +103,8 @@ static void updateFile(Player* player, Server* server, const std::filesystem::pa
 	auto ext = file.extension();
 	if (ext == ".nw" || ext == ".graal" || ext == ".zelda")
 	{
-		auto l = Level::findLevel(fileName, server);
-		if (l) l->reload();
+		if (auto l = server->getLevel(fileName); l)
+			l->reload();
 	}
 	else if (ext == ".gupd")
 		server->getPackageManager().findOrAddResource(fileName)->reload(server);

@@ -94,6 +94,7 @@ set(
 	"include/utilities/ResourceManager.h"
 	"include/utilities/StringUtils.h"
 	"include/utilities/TimeoutGenerator.h"
+	"include/utilities/views_concat.h"
 	"src/FileSystem.cpp"
 	"src/main.cpp"
 	"src/Server.cpp"

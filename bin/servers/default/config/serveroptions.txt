@@ -126,6 +126,13 @@ gmaps =
 bigmap = 
 minimap = 
 
+# Radius, in tiles, in which players receive updates.
+# By default it only works on gmaps, but syncbydistanceinside can allow in non-gmap levels.
+# NOTE: Not fully implemented yet.  To avoid weird problems, don't use distances less than 64.
+# syncdistancex = 192
+# syncdistancey = 192
+# syncbydistanceinside = false
+
 # --------------------------------------------------------------------------------------
 # --- Public Graal Reborn non-standard extensions.                                   ---
 # --------------------------------------------------------------------------------------
@@ -135,7 +142,8 @@ clientsidepushpull = true
 
 # List of group instanced maps used by the server.
 # Use full filenames, even for gmaps.
-groupmaps = 
+# NOTE: Temporarily disabled.
+# groupmaps = 
 
 # The head used by RCs on the server.
 staffhead = head25.png
@@ -312,12 +320,6 @@ gs2default = false
 
 # List of SQLite database files allowed to be used with the requestsql2() function.
 # database = 
-
-# Radius, in tiles, where player props are sent to other players.
-# By default it only works on gmaps, but syncbydistanceinside can allow in non-gmap levels.
-# syncdistancex = 192
-# syncdistancey = 192
-# syncbydistanceinside = false
 
 # Controls if server-side gralats are logged.
 # disablegralatlog = false
