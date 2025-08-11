@@ -203,8 +203,9 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, Scr
 	if (levelPtr == nullptr)
 		return 0;
 
+	uint32_t eventDistance = static_cast<uint32_t>(m_server->getSettings().getInt("eventdistance", 100));
 	size_t count = 0;
-	for (const auto& id : levelPtr->findInRangeNPCs(pos))
+	for (const auto& id : levelPtr->findInRangeNPCsByDistance(pos, eventDistance))
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{
@@ -225,8 +226,9 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, Scr
 	if (levelPtr == nullptr)
 		return 0;
 
+	uint32_t eventDistance = static_cast<uint32_t>(m_server->getSettings().getInt("eventdistance", 100));
 	size_t count = 0;
-	for (const auto& id : levelPtr->findInRangeNPCs(pos))
+	for (const auto& id : levelPtr->findInRangeNPCsByDistance(pos, eventDistance))
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{

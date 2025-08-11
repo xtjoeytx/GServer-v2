@@ -235,6 +235,7 @@ public:
 public:
 	std::generator<const PlayerID&> findInRangePlayers(const PixelPosition& position) const noexcept;
 	std::generator<const NPCID&> findInRangeNPCs(const PixelPosition& position) const noexcept;
+	std::generator<const NPCID&> findInRangeNPCsByDistance(const PixelPosition& position, uint32_t tileDistance) const noexcept;
 	std::generator<const NPCID&> findIntersectingNPCs(const PixelPosition& position, bool includeInvisible = false) const noexcept;
 	std::generator<const NPCID&> findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible = false) const noexcept;
 	std::generator<const NPCID&> findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept;

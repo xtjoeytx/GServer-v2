@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
@@ -8,12 +9,12 @@
 #include <format>
 #include <fstream>
 #include <generator>
+#include <iterator>
 #include <list>
 #include <memory>
 #include <numbers>
 #include <optional>
 #include <ostream>
-#include <ranges>
 #include <string_view>
 #include <string>
 #include <utility>
@@ -2035,6 +2036,41 @@ std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& positio
 
 	// Gmaps.
 	for (LevelPtr level : m_map->getLevelsInRange(toTilePosition(position), syncx, syncy))
+	{
+		for (const auto& npcId : level->m_npcs)
+		{
+			if (npcInRange(npcId))
+				co_yield npcId;
+		}
+	}
+}
+
+std::generator<const NPCID&> Level::findInRangeNPCsByDistance(const PixelPosition& position, uint32_t tileDistance) const noexcept
+{
+	// If this is not a map level, return all level NPCs.
+	if (m_map == nullptr)
+	{
+		co_yield std::ranges::elements_of(m_npcs);
+		co_return;
+	}
+
+	auto server = BabyDI::Get<Server>();
+	auto mapSize = getMapSizeInTiles();
+	auto tilePosition = toTilePosition(position);
+
+	auto npcInRange = [&](const NPCID& npcId)
+	{
+		if (auto npc = server->getNPC(npcId); npc != nullptr)
+		{
+			auto otherTilePosition = npc->getTilePosition();
+			auto distance = std::hypotf(tilePosition.x() - otherTilePosition.x(), tilePosition.y() - otherTilePosition.y());
+			return distance <= tileDistance;
+		}
+		return false;
+	};
+
+	auto tileDistanceInLevels = static_cast<int>(std::ceilf(tileDistance / 64.0f));
+	for (LevelPtr level : m_map->getLevelsInRange(toTilePosition(position), tileDistanceInLevels, tileDistanceInLevels))
 	{
 		for (const auto& npcId : level->m_npcs)
 		{

@@ -153,6 +153,10 @@ staffhead = head25.png
 #    It is recommended to not turn this off unless you know the repercussions of doing so.
 cropflags = true
 
+# The distance that an NPC listens for serverside events, in tiles.
+# The client has a hardcoded distance of 100 tiles for trigger events.
+# eventdistance = 100
+
 # --------------------------------------------------------------------------------------
 # --- Private server options.  The changestaffacct right is required to alter these. ---
 # --------------------------------------------------------------------------------------

@@ -1638,7 +1638,8 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 		}
 		if (touchedNPC)
 		{
-			for (const auto& npcId : level->findInRangeNPCs(testPosPixels))
+			uint32_t eventDistance = static_cast<uint32_t>(m_server->getSettings().getInt("eventdistance", 100));
+			for (const auto& npcId : level->findInRangeNPCsByDistance(testPosPixels, eventDistance))
 			{
 				if (!std::ranges::contains(intersectingNPCs, npcId))
 				{
