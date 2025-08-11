@@ -101,8 +101,8 @@ void setPlayerVariables(GameVariableStore& variableStore, std::weak_ptr<PlayerCl
 
 	// playerhurtpower
 
-	// levelorigx / levelorigy
-	variableStore.add(GameVariable{ "levelorigx",
+	// levelorgx / levelorgy
+	variableStore.add(GameVariable{ "levelorgx",
 		[server, player](auto) -> GameValue
 		{
 			if (player.expired()) return 0.0;
@@ -111,7 +111,7 @@ void setPlayerVariables(GameVariableStore& variableStore, std::weak_ptr<PlayerCl
 			return 0.0;
 		}, {}
 	});
-	variableStore.add(GameVariable{ "levelorigy",
+	variableStore.add(GameVariable{ "levelorgy",
 		[server, player](auto) -> GameValue
 		{
 			if (player.expired()) return 0.0;
