@@ -224,7 +224,10 @@ identifier_value
 	: (storage_token | IDENTIFIER storage_token) compound_identifier
 		(TOKEN_BRACKET_LEFT conditionalExpression TOKEN_BRACKET_RIGHT)?
 		{ add_identifier($compound_identifier.ctx->getText()); }							# IdentifierValue
-	| compound_identifier (TOKEN_BRACKET_LEFT conditionalExpression TOKEN_BRACKET_RIGHT)?
+	| compound_identifier TOKEN_BRACKET_LEFT conditionalExpression
+		(TOKEN_COMMA conditionalExpression)? TOKEN_BRACKET_RIGHT
+		{ add_identifier($compound_identifier.ctx->getText()); }							# IdentifierValue
+	| compound_identifier
 		{ add_identifier($compound_identifier.ctx->getText()); }							# IdentifierValue
 	;
 

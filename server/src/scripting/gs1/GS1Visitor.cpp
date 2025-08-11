@@ -1175,11 +1175,24 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 	if (identifier == nullptr)
 		throw std::runtime_error("IdentifierValue has no valid compound_identifier");
 
-	// Get the array index.
+	auto conditionalExpressions = context->conditionalExpression();
 	std::optional<size_t> index = std::nullopt;
-	if (context->conditionalExpression() != nullptr)
+
+	// Test for tiles[x,y].
+	// Since tiles[x,y] is a unique case, it is far easier to just alias it to the board[] variable.
+	if (*identifier == "tiles" && conditionalExpressions.size() == 2)
 	{
-		auto expression_any = visit(context->conditionalExpression());
+		*identifier = "board";
+		auto param1 = visit(conditionalExpressions[0]);
+		auto param2 = visit(conditionalExpressions[1]);
+		auto x = static_cast<size_t>(getReadOnlyGameValueFromAnyAs<double>(param1));
+		auto y = static_cast<size_t>(getReadOnlyGameValueFromAnyAs<double>(param2));
+		index = (y * 64) + x;
+	}
+	else if (conditionalExpressions.size() == 1)
+	{
+		// Get the array index.
+		auto expression_any = visit(conditionalExpressions[0]);
 		index = static_cast<size_t>(getReadOnlyGameValueFromAnyAs<double>(expression_any));
 	}
 

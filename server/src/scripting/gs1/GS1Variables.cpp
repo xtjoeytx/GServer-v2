@@ -267,7 +267,7 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 		}, {}
 	});
 
-	// tiles[x,y]
+	// tiles[x,y] is directly handled in the GS1Visitor and is aliased to the "board" variable.
 }
 
 void setOtherVariables(GameVariableStore& variableStore, ScriptEvent& event)

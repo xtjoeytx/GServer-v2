@@ -290,7 +290,8 @@ int breakpoint()
 enum POPMODE
 {
 	POPMODE_COMMAND,
-	POPMODE_FUNCTION
+	POPMODE_FUNCTION,
+	POPMODE_ARRAYINDEX
 };
 
 struct CommandState
@@ -308,6 +309,11 @@ bool canFuncPop() const
 bool canCmdPop() const
 {
 	return m_commandStates.empty() || m_commandStates.back().popMode == POPMODE_COMMAND;
+}
+
+bool canArrayPop() const
+{
+	return !m_commandStates.empty() && m_commandStates.back().popMode == POPMODE_ARRAYINDEX;
 }
 
 bool canCommaPop() const
@@ -328,6 +334,13 @@ bool isNotDefaultMode() const
 void pushCommand(std::string_view arguments)
 {
 	m_commandStates.emplace_back(CommandState{ arguments, POPMODE_COMMAND, true });
+	pushMode(IN_PARAM_1);	// Just a dummy state that gets immediately cleared.
+	popNextMode();
+}
+
+void pushArrayAccess()
+{
+	m_commandStates.emplace_back(CommandState{ "P", POPMODE_ARRAYINDEX, false });
 	pushMode(IN_PARAM_1);	// Just a dummy state that gets immediately cleared.
 	popNextMode();
 }
@@ -375,7 +388,7 @@ void popNextMode(bool terminateEarly = false)
 	}
 }
 
-size_t m_bracketCount = 0;
+size_t m_braceCount = 0;
 std::deque<CommandState> m_commandStates;
 
 std::deque<std::unique_ptr<antlr4::Token>> m_pendingTokensBefore{};
@@ -764,7 +777,7 @@ OP_LOGICALAND	: '&&';
 OP_LOGICALOR	: '||';
 OP_LOGICALNOT	: '!';
 
-TOKEN_BRACKET_LEFT  : '[';
+TOKEN_BRACKET_LEFT  : '[' { pushArrayAccess(); };
 TOKEN_BRACKET_RIGHT : ']';
 TOKEN_BRACE_LEFT	: '{';
 TOKEN_BRACE_RIGHT	: '}' { emitIdentifierBefore(GS1Lexer::END, getText()); };
@@ -798,7 +811,6 @@ REAL
 	| '0x' HEXDIGITS+
 	;
 
-// TODO: Identifiers can be numbers, so a redesign will be required.
 IDENTIFIER
 	: [a-zA-Z0-9_]+ { isNotDefaultMode() || !isBuiltInCommand(getText()) }?
 	;
@@ -955,8 +967,7 @@ PARAM_V_STORAGE_LOCAL   : STORAGE_LOCAL -> type(STORAGE_LOCAL);
 PARAM_V_STORAGE_TEMP    : STORAGE_TEMP -> type(STORAGE_TEMP);
 PARAM_V_LITERAL         : LITERAL -> type(LITERAL);
 PARAM_V_IDENTIFIER      : IDENTIFIER -> type(IDENTIFIER);
-PARAM_V_TOKEN_BRACKET_LEFT  : TOKEN_BRACKET_LEFT -> type(TOKEN_BRACKET_LEFT);
-PARAM_V_TOKEN_BRACKET_RIGHT : TOKEN_BRACKET_RIGHT -> type(TOKEN_BRACKET_RIGHT);
+PARAM_V_TOKEN_BRACKET_LEFT  : TOKEN_BRACKET_LEFT { pushArrayAccess(); } -> type(TOKEN_BRACKET_LEFT);
 PARAM_V_TOKEN_PIPE          : TOKEN_PIPE -> type(TOKEN_PIPE);
 PARAM_V_TOKEN_QUESTION      : TOKEN_QUESTION -> type(TOKEN_QUESTION);
 PARAM_V_TOKEN_COLON         : TOKEN_COLON -> type(TOKEN_COLON);
@@ -967,7 +978,7 @@ mode IN_PARAM_E;
 
 PARAM_E_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
 PARAM_E_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?                         { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
-PARAM_E_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() && m_bracketCount == 0 }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
+PARAM_E_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() && m_braceCount == 0 }?   { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_E_POP_END         : END               { canCmdPop() }?                         { popNextMode(true); } -> type(END);
 PARAM_E_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }?                       { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_E_COMMA           : TOKEN_COMMA       { !canCommaPop() }?   -> type(TOKEN_COMMA);
@@ -1007,10 +1018,11 @@ PARAM_E_OP_DEC            : OP_DEC -> type(OP_DEC);
 PARAM_E_OP_LOGICALAND     : OP_LOGICALAND -> type(OP_LOGICALAND);
 PARAM_E_OP_LOGICALOR      : OP_LOGICALOR -> type(OP_LOGICALOR);
 PARAM_E_OP_LOGICALNOT     : OP_LOGICALNOT -> type(OP_LOGICALNOT);
-PARAM_E_TOKEN_BRACKET_LEFT  : TOKEN_BRACKET_LEFT -> type(TOKEN_BRACKET_LEFT);
-PARAM_E_TOKEN_BRACKET_RIGHT : TOKEN_BRACKET_RIGHT -> type(TOKEN_BRACKET_RIGHT);
-PARAM_E_TOKEN_PAREN_LEFT    : TOKEN_PAREN_LEFT  { ++m_bracketCount; } -> type(TOKEN_PAREN_LEFT);
-PARAM_E_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT { --m_bracketCount; } -> type(TOKEN_PAREN_RIGHT);
+PARAM_E_TOKEN_BRACKET_LEFT      : TOKEN_BRACKET_LEFT                     { pushArrayAccess(); } -> type(TOKEN_BRACKET_LEFT);
+PARAM_E_POP_TOKEN_BRACKET_RIGHT : TOKEN_BRACKET_RIGHT { canArrayPop() }? { popNextMode(); }     -> type(TOKEN_BRACKET_RIGHT);
+PARAM_E_TOKEN_BRACKET_RIGHT     : TOKEN_BRACKET_RIGHT { !canArrayPop() }?                       -> type(TOKEN_BRACKET_RIGHT);
+PARAM_E_TOKEN_PAREN_LEFT    : TOKEN_PAREN_LEFT  { ++m_braceCount; } -> type(TOKEN_PAREN_LEFT);
+PARAM_E_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT { --m_braceCount; } -> type(TOKEN_PAREN_RIGHT);
 PARAM_E_TOKEN_PIPE          : TOKEN_PIPE -> type(TOKEN_PIPE);
 PARAM_E_TOKEN_QUESTION      : TOKEN_QUESTION -> type(TOKEN_QUESTION);
 PARAM_E_TOKEN_COLON         : TOKEN_COLON -> type(TOKEN_COLON);
@@ -1098,8 +1110,7 @@ PARAM_M_OP_MUL        : OP_MUL -> type(OP_MUL);
 PARAM_M_OP_DIV        : OP_DIV -> type(OP_DIV);
 PARAM_M_OP_MOD        : OP_MOD -> type(OP_MOD);
 PARAM_M_OP_POW        : OP_POW -> type(OP_POW);
-PARAM_M_TOKEN_BRACKET_LEFT  : TOKEN_BRACKET_LEFT -> type(TOKEN_BRACKET_LEFT);
-PARAM_M_TOKEN_BRACKET_RIGHT : TOKEN_BRACKET_RIGHT -> type(TOKEN_BRACKET_RIGHT);
+PARAM_M_TOKEN_BRACKET_LEFT  : TOKEN_BRACKET_LEFT { pushArrayAccess(); } -> type(TOKEN_BRACKET_LEFT);
 PARAM_M_TOKEN_PAREN_LEFT    : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT);
 PARAM_M_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT);
 
@@ -1198,8 +1209,7 @@ PARAM_D_OP_DEC            : OP_DEC -> type(OP_DEC);
 PARAM_D_OP_LOGICALAND     : OP_LOGICALAND -> type(OP_LOGICALAND);
 PARAM_D_OP_LOGICALOR      : OP_LOGICALOR -> type(OP_LOGICALOR);
 PARAM_D_OP_LOGICALNOT     : OP_LOGICALNOT -> type(OP_LOGICALNOT);
-PARAM_D_TOKEN_BRACKET_LEFT  : TOKEN_BRACKET_LEFT -> type(TOKEN_BRACKET_LEFT);
-PARAM_D_TOKEN_BRACKET_RIGHT : TOKEN_BRACKET_RIGHT -> type(TOKEN_BRACKET_RIGHT);
+PARAM_D_TOKEN_BRACKET_LEFT  : TOKEN_BRACKET_LEFT { pushArrayAccess(); } -> type(TOKEN_BRACKET_LEFT);
 PARAM_D_TOKEN_PAREN_LEFT    : TOKEN_PAREN_LEFT -> type(TOKEN_PAREN_LEFT);
 PARAM_D_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT -> type(TOKEN_PAREN_RIGHT);
 PARAM_D_TOKEN_PIPE          : TOKEN_PIPE -> type(TOKEN_PIPE);
@@ -1210,12 +1220,12 @@ PARAM_D_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 // --------------------------------------------------------
 mode IN_PARAM_Z;
 
-PARAM_Z_START           : TOKEN_BRACE_LEFT  { m_bracketCount == 0 }? { ++m_bracketCount; } -> channel(HIDDEN);
-PARAM_Z_POP_END         : END               { m_bracketCount == 0 }? { popNextMode(); }    -> type(END);
-PARAM_Z_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { m_bracketCount == 1 }? { --m_bracketCount; popNextMode(); emitIdentifierBefore(GS1Lexer::END, getText()); } -> channel(HIDDEN);
-PARAM_Z_BRACE_LEFT      : TOKEN_BRACE_LEFT                           { ++m_bracketCount; } -> type(STRING);
-PARAM_Z_BRACE_RIGHT     : TOKEN_BRACE_RIGHT                          { --m_bracketCount; } -> type(STRING);
-PARAM_Z_END             : END               { m_bracketCount != 0 }? -> type(STRING);
+PARAM_Z_START           : TOKEN_BRACE_LEFT  { m_braceCount == 0 }? { ++m_braceCount; } -> channel(HIDDEN);
+PARAM_Z_POP_END         : END               { m_braceCount == 0 }? { popNextMode(); }    -> type(END);
+PARAM_Z_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { m_braceCount == 1 }? { --m_braceCount; popNextMode(); emitIdentifierBefore(GS1Lexer::END, getText()); } -> channel(HIDDEN);
+PARAM_Z_BRACE_LEFT      : TOKEN_BRACE_LEFT                           { ++m_braceCount; } -> type(STRING);
+PARAM_Z_BRACE_RIGHT     : TOKEN_BRACE_RIGHT                          { --m_braceCount; } -> type(STRING);
+PARAM_Z_END             : END               { m_braceCount != 0 }? -> type(STRING);
 PARAM_Z_STRING          : ~[{};]+ -> type(STRING);
 
 // --------------------------------------------------------
