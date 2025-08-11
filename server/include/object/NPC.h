@@ -20,7 +20,7 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Events.h>
 #include <utilities/Extents.h>
-#include <utilities/PropsContainer.h>
+#include <utilities/PropertySerializers.h>
 
 using namespace preagonal::props;
 

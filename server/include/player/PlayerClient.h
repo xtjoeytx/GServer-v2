@@ -23,7 +23,7 @@
 #include <object/Player.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
-#include <utilities/PropsContainer.h>
+#include <utilities/PropertySerializers.h>
 
 using namespace std::literals::string_view_literals;
 

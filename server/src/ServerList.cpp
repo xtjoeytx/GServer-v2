@@ -25,7 +25,7 @@
 #include <player/PlayerProps.h>
 #include <ServerList.h>
 #include <utilities/Log.h>
-#include <utilities/PropsContainer.h>
+#include <utilities/PropertySerializers.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

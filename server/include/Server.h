@@ -43,10 +43,10 @@
 #include <utilities/CommandDispatcher.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
-#include <utilities/IdGenerator.h>
-#include <utilities/ResourceManager.h>
+#include <utilities/generator/IdGenerator.h>
+#include <utilities/generator/TimeoutGenerator.h>
+#include <utilities/manager/ResourceManager.h>
 #include <utilities/StringUtils.h>
-#include <utilities/TimeoutGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

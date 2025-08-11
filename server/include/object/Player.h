@@ -28,8 +28,8 @@
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
-#include <utilities/IdGenerator.h>
-#include <utilities/PropsContainer.h>
+#include <utilities/generator/IdGenerator.h>
+#include <utilities/PropertySerializers.h>
 
 using namespace preagonal::props;
 

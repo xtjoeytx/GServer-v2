@@ -21,9 +21,9 @@
 #include <CString.h>
 
 #include <scripting/ScriptContainers.h>
-#include <utilities/inplace_vector.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
+#include <utilities/std/inplace_vector.h>
 
 namespace preagonal
 {
