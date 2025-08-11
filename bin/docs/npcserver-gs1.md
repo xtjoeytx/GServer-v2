@@ -103,6 +103,7 @@ Just use `timeout`.
     players[]
     npcscount
     board[]
+    tiles[x,y]
     paramscount
     levelorigx
     levelorigy
@@ -217,8 +218,8 @@ Just use `timeout`.
         .bombs
         .bombpower
         .type
-    tiles[x,y]
     gravity
+    waterheight
     playerhurtpower
     players[]
         .saysnumber

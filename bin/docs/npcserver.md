@@ -14,7 +14,7 @@ Set the following option in the `serveroptions.txt` file:
 
 ## Requirements
 
-Original servers may not use an NPC-Server.  Only classic servers and beyond.
+Original servers may not use an NPC-Server.  Only classic servers and beyond are supported.
 Make sure the server generation is set appropriately in the `serveroptions.txt` file:
 
     generation = classic
@@ -36,8 +36,8 @@ When the NPC-Server is enabled, the client will no longer send NPC property upda
 ## Server behavior changes
 
 The server will take over processing of level signs and links.
-It will also start to keep track of level objects, such as arrows, bombs, items, etc.
-It will also reject various client requests.
+It will also start to keep track of level objects, such as arrows, bombs, items, etc, for use in serverside scripts.
+Various client requests will also be rejected.
 
 The following changes will be made to how the server responds to client requests:
 
@@ -49,7 +49,7 @@ The following changes will be made to how the server responds to client requests
 - `toweapons` is ignored.
 - Various player property updates are ignored (`maxpower`, `rupees`, `glovepower`, `swordpower`, `shieldpower`, `mp`, `ap`, `kills`, `deaths`, `rating`).
 
-Any of the above should be handled by the server via serverside scripts.
+Any of the above should be handled by serverside scripts.
 
 ## Options
 
@@ -78,9 +78,12 @@ In order to communicate with the serverside portion of a script, you must make u
     triggeraction 0,0,servernpc,DatabaseNPCName,;
     triggeraction 0,0,serverwhatever,;
 
-In the first case, an action will be triggered at the (x, y) location of the level with the dig action.  Any NPC at those coordinates will get an `actiondig` event.
+In the first case, a "dig" action will be triggered at the (x, y) location of the level.  Any NPC at those coordinates will get an `actiondig` event, including the NPC itself that issued the action.
+
 In the second case, the serverside script of the "Shovel" weapon will get triggered.  The shovel weapon will get an `actionserverside` event.
+
 In the third case, the serverside script of the database NPC with the name "DatabaseNPCName" will get triggered.  The NPC will get an `actionserverside` event.
+
 In the fourth case, the Control-NPC will get an `actionserverwhatever` event.
 
 So, for a level NPC without a name, you would use the first case to trigger its own serverside script.
@@ -89,11 +92,10 @@ To talk to the Control-NPC, you would use the fourth case; any action that start
 ### Communicating with a clientside script
 
 It is not easy to communicate with a NPC's clientside script.
-The client will not process any `triggeraction` events that did not originate from the client itself, so you can't trigger the NPC.
-Hacks can be done using the `shoot` command, but that is not recommended.
-You should rewrite scripts to communicate in the other direction instead.
+The client will not process any `triggeraction` events that did not originate from the client itself, so you can't trigger the NPC's clientside script directly.
+Hacks can be done using the `shoot` command, but that is not recommended; instead, you should rewrite scripts to communicate in the other direction.
 
-One exception to this is the ability to `triggeraction` a client's weapon scripts:
+One exception to this is the ability to `triggeraction` a client's weapon script:
 
     triggeraction 0,0,clientside,weapon name,params;
 
