@@ -669,7 +669,7 @@ void Level::removeNPC(NPCID npcId)
 
 //----------------------------
 
-bool Level::alterBoard(CString& tileData, const Rectangle<uint8_t, uint8_t>& area, Player* player)
+bool Level::alterBoard(CString& tileData, const LocalWholeTileRectangleArea& area, Player* player)
 {
 	if (area.position.x() > 63 || area.position.y() > 63 ||
 		area.size.width() < 1 || area.size.height() < 1 ||
@@ -1426,7 +1426,7 @@ LevelShoot* Level::addShoot(const PixelPosition& position, float angle, float za
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
 		return nullptr;
 
-	LevelShoot newShoot{ .position = toTilePosition(position), .angle = angle, .zangle = zangle, .powerIn44Pixels = power, .gani = gani, .gravity = gravity, .from = from};
+	LevelShoot newShoot{ .position = toTilePosition(position), .angle = angle, .zangle = zangle, .powerIn44Pixels = power, .gani = gani, .gravity = gravity, .from = from };
 	if (newShoot.gani.back() == ',')
 		newShoot.gani.pop_back();
 	newShoot.calculateSpeeds();
@@ -1437,7 +1437,7 @@ LevelShoot* Level::addShoot(const PixelPosition& position, float angle, float za
 LevelShoot* Level::addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
 {
 	auto pi = std::numbers::pi_v<float>;
-	return addShoot(position, (angle / 220.0f) * (2 * pi), ((zangle / 110.0f) - 1.0f) * (pi/2), power, gravity, gani, from);
+	return addShoot(position, (angle / 220.0f) * (2 * pi), ((zangle / 110.0f) - 1.0f) * (pi / 2), power, gravity, gani, from);
 }
 
 bool Level::removeShoot(uint8_t index)
@@ -1639,7 +1639,7 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 
 //----------------------------
 
-bool Level::isOnWall(const LocalWholeTilePosition& tilePosition)
+bool Level::isOnWall(const LocalWholeTilePosition& tilePosition) const noexcept
 {
 	if (tilePosition.x() > 63 || tilePosition.y() > 63)
 		return true;
@@ -1647,44 +1647,109 @@ bool Level::isOnWall(const LocalWholeTilePosition& tilePosition)
 	return tiletypes[getTiles(0)[static_cast<size_t>(tilePosition.y()) * 64 + tilePosition.x()]] >= 20;
 }
 
-bool Level::isOnWall2(const Rectangle<uint8_t, uint8_t>& tileArea, uint8_t flags)
+bool Level::isOnWall(const PixelPosition& position) const noexcept
+{
+	if (!isOnGmap())
+		return isOnWall(toLocalWholeTilePosition(position));
+
+	if (auto level = m_map->getLevelAt(position); level != nullptr)
+		return level->isOnWall(toLocalWholeTilePosition(position));
+
+	return false;
+}
+
+bool Level::isOnWall2(const LocalWholeTileRectangleArea& tileArea) const noexcept
 {
 	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + tileArea.size.height(); ++cy)
 	{
 		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + tileArea.size.width(); ++cx)
 		{
-			if (isOnWall({ cx, cy }))
+			if (isOnWall(LocalWholeTilePosition{ cx, cy }))
 				return true;
 		}
 	}
 	return false;
 }
 
-bool Level::isOnWater(const LocalWholeTilePosition& tilePosition)
+bool Level::isOnWall2(const PixelRectangleArea& area) const noexcept
+{
+	if (!isOnGmap())
+		return isOnWall2(toLocalWholeTileRectangleArea({ 0, 0 }, area));
+
+	for (LevelPtr level : m_map->getLevelsInRectangle(area))
+	{
+		if (level->isOnWall2(toLocalWholeTileRectangleArea(level->getMapPixelOffset(), area)))
+			return true;
+	}
+
+	return false;
+}
+
+bool Level::isOnWater(const LocalWholeTilePosition& tilePosition) const noexcept
 {
 	return (tiletypes[getTiles(0)[static_cast<size_t>(tilePosition.y()) * 64 + tilePosition.x()]] == 11);
 }
 
-bool Level::isOnPlayer(const LocalWholeTilePosition& tilePosition)
+bool Level::isOnWater(const PixelPosition& position) const noexcept
 {
-	for (const auto& playerId : m_players)
+	if (!isOnGmap())
+		return isOnWater(toLocalWholeTilePosition(position));
+
+	if (auto level = m_map->getLevelAt(position); level != nullptr)
+		return level->isOnWater(toLocalWholeTilePosition(position));
+
+	return false;
+}
+
+bool Level::isOnWater2(const LocalWholeTileRectangleArea& tileArea) const noexcept
+{
+	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + tileArea.size.height(); ++cy)
 	{
-		if (auto player = BabyDI::Get<Server>()->getPlayer(playerId); player != nullptr)
+		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + tileArea.size.width(); ++cx)
 		{
-			if (positionInRectangle(tilePosition, player->getBoundingBox()))
+			if (isOnWater(LocalWholeTilePosition{ cx, cy }))
 				return true;
 		}
 	}
 	return false;
 }
 
-bool Level::isOnPlayer(const Rectangle<uint8_t, uint8_t>& tileArea)
+bool Level::isOnWater2(const PixelRectangleArea& area) const noexcept
 {
-	for (const auto& playerId : m_players)
+	if (!isOnGmap())
+		return isOnWater2(toLocalWholeTileRectangleArea({ 0, 0 }, area));
+
+	for (LevelPtr level : m_map->getLevelsInRectangle(area))
 	{
-		if (auto player = BabyDI::Get<Server>()->getPlayer(playerId); player != nullptr)
+		if (level->isOnWater2(toLocalWholeTileRectangleArea(level->getMapPixelOffset(), area)))
+			return true;
+	}
+
+	return false;
+}
+
+bool Level::isOnPlayer(const PixelPosition& position) const noexcept
+{
+	auto server = BabyDI::Get<Server>();
+	for (const auto& playerId : findInRangePlayers(position))
+	{
+		if (auto player = server->getPlayer(playerId); player != nullptr)
 		{
-			if (rectanglesIntersect(tileArea, player->getBoundingBox()))
+			if (positionInRectangle(position, player->getBoundingBox()))
+				return true;
+		}
+	}
+	return false;
+}
+
+bool Level::isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept
+{
+	auto server = BabyDI::Get<Server>();
+	for (const auto& playerId : findInRangePlayers(pixelArea.position))
+	{
+		if (auto player = server->getPlayer(playerId); player != nullptr)
+		{
+			if (rectanglesIntersect(pixelArea, player->getBoundingBox()))
 				return true;
 		}
 	}

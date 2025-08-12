@@ -47,6 +47,7 @@ public:
 	std::shared_ptr<Level> getLevelAt(int x, int y) const;
 	std::shared_ptr<Level> getLevelAt(const PixelPosition& globalPosition) const;
 	std::generator<std::shared_ptr<Level>> getLevelsInRange(const TilePosition& position, int syncx, int syncy) const noexcept;
+	std::generator<std::shared_ptr<Level>> getLevelsInRectangle(const PixelRectangleArea& area) const noexcept;
 	std::generator<std::shared_ptr<Level>> getAllLevels() const noexcept;
 
 public:

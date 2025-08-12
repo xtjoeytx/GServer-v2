@@ -19,8 +19,9 @@ public:
 	}
 
 	uint16_t& operator[](size_t index) { return m_tiles[index]; }
-	explicit operator char* () const { return (char*)m_tiles.data(); };
+	const uint16_t& operator[](size_t index) const { return m_tiles[index]; }
 
+	explicit operator char* () const { return (char*)m_tiles.data(); };
 	const auto& tiles() const { return m_tiles; }
 
 private:

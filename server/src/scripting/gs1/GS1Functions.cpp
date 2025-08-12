@@ -24,6 +24,7 @@
 
 #include <Server.h>
 #include <level/LevelBaddy.h>
+#include <level/tiletypes.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
@@ -926,19 +927,19 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function onwall requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (!level->isOnWall({ x, y }))
+		if (!level->isOnWall(toPixelPosition({ x, y })))
 			return GameValue{ false };
 
 		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 		{
 			auto server = BabyDI::Get<Server>();
 			if (auto npc = server->getNPC(source.value().first); npc != nullptr && !npc->noPlayerOnWall)
-				return GameValue{ level->isOnPlayer({ x, y }) };
+				return GameValue{ level->isOnPlayer(toPixelPosition({ x, y })) };
 		}
 		return GameValue{ true };
 	}
@@ -949,24 +950,24 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 // Checks if the specified rectangle defined by X, Y, width, and height is on a wall tile.
 GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() != 2)
+	if (arguments.size() != 4)
 		throw std::invalid_argument("Built-in function onwall2 requires exactly four arguments");
 
-	auto x = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
-	auto width = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[2]));
-	auto height = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
+	auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto width = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]) * 16);
+	auto height = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[3]) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (!level->isOnWall2({ { x, y }, { width, height } }))
+		if (!level->isOnWall2(PixelRectangleArea{ toPixelPosition({ x, y }), { width, height } }))
 			return GameValue{ false };
 
 		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 		{
 			auto server = BabyDI::Get<Server>();
 			if (auto npc = server->getNPC(source.value().first); npc != nullptr && !npc->noPlayerOnWall)
-				return GameValue{ level->isOnPlayer({ { x, y }, { width, height } }) };
+				return GameValue{ level->isOnPlayer({ toPixelPosition({ x, y }), { width, height } }) };
 		}
 		return GameValue{ true };
 	}
@@ -980,12 +981,12 @@ GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, con
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function onwater requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (level->isOnWater({ x, y }))
+		if (level->isOnWater(toPixelPosition({ x, y })))
 			return GameValue{ true };
 	}
 	return GameValue{ false };

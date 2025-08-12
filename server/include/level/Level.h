@@ -70,11 +70,12 @@ private:
 	precise_clock::duration m_frameEventDuration = 0ns;
 
 public:
-	auto getMap() const { return m_map; }
-	[[inline]] Dimension<uint8_t> getMapSizeInParts() const;
-	[[inline]] Dimension<uint32_t> getMapSizeInTiles() const;
-	[[inline]] Dimension<uint32_t> getMapSizeInPixels() const;
-	[[inline]] PixelPosition getMapPixelOffset() const;
+	auto getMap() const noexcept { return m_map; }
+	[[inline]] Dimension<uint8_t> getMapSizeInParts() const noexcept;
+	[[inline]] Dimension<uint32_t> getMapSizeInTiles() const noexcept;
+	[[inline]] Dimension<uint32_t> getMapSizeInPixels() const noexcept;
+	[[inline]] PixelPosition getMapPixelOffset() const noexcept;
+	[[inline]] PixelRectangleArea getMapBoundingBox() const noexcept;
 	bool isOnGmap() const noexcept { return m_map != nullptr && m_map->isGmap(); }
 	bool isOnBigMap() const noexcept { return m_map != nullptr && m_map->isBigMap(); }
 
@@ -92,7 +93,8 @@ public:
 	auto& getSigns() { return m_signs; }
 
 public:
-	auto& getTiles(size_t layer = 0) { return m_tiles[layer]; }
+	auto& getTiles(size_t layer = 0) { return m_tiles.at(layer); }
+	const auto& getTiles(size_t layer = 0) const { return m_tiles.at(layer); }
 	auto& getLayers() { return m_tiles; }
 
 public:
@@ -123,7 +125,7 @@ public:
 	void removeNPC(NPCID npcId);
 
 public:
-	bool alterBoard(CString& tileData, const Rectangle<uint8_t, uint8_t>& area, Player* player);
+	bool alterBoard(CString& tileData, const LocalWholeTileRectangleArea& area, Player* player);
 
 public:
 	LevelArrow* addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObjectSource from);
@@ -202,11 +204,16 @@ public:
 	bool moveArrow(LevelArrow* arrow, int iterations);
 
 public:
-	bool isOnWall(const LocalWholeTilePosition& tilePosition);
-	bool isOnWall2(const Rectangle<uint8_t, uint8_t>& tileArea, uint8_t flags = 0);
-	bool isOnWater(const LocalWholeTilePosition& tilePosition);
-	bool isOnPlayer(const LocalWholeTilePosition& tilePosition);
-	bool isOnPlayer(const Rectangle<uint8_t, uint8_t>& tileArea);
+	bool isOnWall(const LocalWholeTilePosition& tilePosition) const noexcept;
+	bool isOnWall(const PixelPosition& position) const noexcept;
+	bool isOnWall2(const LocalWholeTileRectangleArea& tileArea) const noexcept;
+	bool isOnWall2(const PixelRectangleArea& area) const noexcept;
+	bool isOnWater(const LocalWholeTilePosition& tilePosition) const noexcept;
+	bool isOnWater(const PixelPosition& position) const noexcept;
+	bool isOnWater2(const LocalWholeTileRectangleArea& tileArea) const noexcept;
+	bool isOnWater2(const PixelRectangleArea& area) const noexcept;
+	bool isOnPlayer(const PixelPosition& position) const noexcept;
+	bool isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept;
 
 public:
 	std::generator<const PlayerID&> getMapPlayers() const noexcept;
@@ -275,27 +282,32 @@ using LevelPtr = std::shared_ptr<Level>;
 
 //----------------------------
 
-inline Dimension<uint8_t> Level::getMapSizeInParts() const
+inline Dimension<uint8_t> Level::getMapSizeInParts() const noexcept
 {
 	if (m_map == nullptr) return { 1, 1 };
 	return m_map->size;
 }
 
-inline Dimension<uint32_t> Level::getMapSizeInTiles() const
+inline Dimension<uint32_t> Level::getMapSizeInTiles() const noexcept
 {
 	auto size = getMapSizeInParts();
 	return { static_cast<uint32_t>(size.width() * 64), static_cast<uint32_t>(size.height() * 64) };
 }
 
-inline Dimension<uint32_t> Level::getMapSizeInPixels() const
+inline Dimension<uint32_t> Level::getMapSizeInPixels() const noexcept
 {
 	auto size = getMapSizeInParts();
 	return { static_cast<uint32_t>(size.width() * 1024), static_cast<uint32_t>(size.height() * 1024) };
 }
 
-inline PixelPosition Level::getMapPixelOffset() const
+inline PixelPosition Level::getMapPixelOffset() const noexcept
 {
 	return { static_cast<int32_t>(mapPosition.x() * 1024), static_cast<int32_t>(mapPosition.y() * 1024) };
+}
+
+inline PixelRectangleArea Level::getMapBoundingBox() const noexcept
+{
+	return { getMapPixelOffset(), { 1024_ui16, 1024_ui16 } };
 }
 
 ///////////////////////////////////////////////////////////////////////////////

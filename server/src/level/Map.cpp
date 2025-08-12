@@ -289,11 +289,26 @@ std::generator<std::shared_ptr<Level>> Map::getLevelsInRange(const TilePosition&
 
 	for (const auto& [levelName, levelPos] : levels)
 	{
-		if (levelPos.x() >= area.position.x() && levelPos.x() < area.position.x() + area.size.width() &&
-			levelPos.y() >= area.position.y() && levelPos.y() < area.position.y() + area.size.height())
+		if (levelPos.x() >= area.left() && levelPos.x() < area.right() &&
+			levelPos.y() >= area.top() && levelPos.y() < area.bottom())
 		{
 			if (auto level = getLevelPtr(levelName, levelsByName[levelName]); level != nullptr)
 				co_yield level;
+		}
+	}
+}
+
+std::generator<std::shared_ptr<Level>> Map::getLevelsInRectangle(const PixelRectangleArea& area) const noexcept
+{
+	for (const auto& [levelName, levelPtr] : levelsByName)
+	{
+		if (auto level = getLevelPtr(levelName, levelPtr); level != nullptr)
+		{
+			auto levelBox = level->getMapBoundingBox();
+			if (area.right() < levelBox.left() || area.bottom() < levelBox.top() || area.left() > levelBox.right() || area.top() > levelBox.bottom())
+				continue;
+
+			co_yield level;
 		}
 	}
 }
