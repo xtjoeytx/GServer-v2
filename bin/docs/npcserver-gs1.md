@@ -20,35 +20,36 @@ Just use `timeout`.
 
 #### Implemented
 
+    compusdied
     created
     exploded
     initialized
-    playerlogin
-    playerlogout
-    playerenters
-    playerleaves
-    playertouchsme
-    playertouchesme
-    playertouchsother
-    playertouchesother
-    playerlaysitem
+    npcwarped
     playerchats
     playerdies
-    compusdied
+    playerenters
+    playerlaysitem
+    playerleaves
+    playerlogin
+    playerlogout
+    playertouchesme
+    playertouchesother
+    playertouchsme
+    playertouchsother
+    pm
+    timeout
+    triggeraction events
     warped
     washit	(hitobjects)
     wasshot
-    npcwarped
-    timeout
-    triggeraction events
 
 #### Not implemented
 
     playerhurt
+    serverlistconnect
     washit	(anything not hitobjects)
     waspelt
     wasthrown
-    serverlistconnect
 
 ---
 ## Flags
@@ -56,36 +57,36 @@ Just use `timeout`.
 #### Implemented
 
     canspin
-    weaponsenabled
-    playerpaused
-    playerismale
-    playerisfemale
-    playeronhorse
-    playerattached
-    isleader
-    visible
-    issparringzone
-    nopkzone
-    isonmap
     compsdead
+    isleader
+    isonmap
+    issparringzone
     isweapon
+    nopkzone
+    playerattached
+    playerisfemale
+    playerismale
+    playeronhorse
+    playerpaused
+    visible
+    weaponsenabled
 
 #### Not implemented
 
-    carrying
     carriesblackstone
     carriesbush
     carriessign
     carriesstone
     carriesvase
-    playerswimming
-    playertrial
+    carrying
     peltwithblackstone
     peltwithbush
     peltwithnpc
     peltwithsign
     peltwithstone
     peltwithvase
+    playerswimming
+    playertrial
     shotbybaddy
     shotbyplayer
 
@@ -94,20 +95,20 @@ Just use `timeout`.
 
 #### Implemented
 
-    timevar
-    timevar2
-    allplayerscount
+    actionplayer
     allplayers[]
-    weaponscount
-    playerscount
-    players[]
-    npcscount
+    allplayerscount
     board[]
-    tiles[x,y]
-    paramscount
     levelorigx
     levelorigy
-    actionplayer
+    npcscount
+    paramscount
+    players[]
+    playerscount
+    tiles[x,y]
+    timevar
+    timevar2
+    weaponscount
 
     npcs[]
         .id
@@ -283,6 +284,7 @@ Just use `timeout`.
     removestring
     removeweapon
     replacestring
+    savelog2
     say
     say2
     sendpm
@@ -310,6 +312,7 @@ Just use `timeout`.
     setminimap
     setplayerdir
     setplayerprop
+    setpm
     setshape
     setshield
     setshoecolor
@@ -347,8 +350,6 @@ Just use `timeout`.
     hitnpc
     saveinfo
     savelog
-    savelog2
-    setpm
     setz
     showani
     showani2
@@ -393,9 +394,10 @@ Just use `timeout`.
     min(value1, value2)
     onmapx(level)
     onmapy(level)
-    onwall(x, y)
-    onwall2(x, y, width, height)
-    onwater(x, y)
+    onwall(x, y)                    (old tileset layout only)
+    onwall2(x, y, width, height)    (old tileset layout only)
+    onwater(x, y)                   (old tileset layout only)
+    onwater2(x, y, width, height)   (old tileset layout only)
     random(min, max)
     sarraylen(list)
     sin(value)
@@ -412,6 +414,7 @@ Just use `timeout`.
     testnpc(x, y)
     testplayer(x, y)
     testsign(x, y)
+    tiletype(x, y)                  (old tileset layout only)
     vecx(dir)
     vecy(dir)
 
@@ -425,7 +428,7 @@ Just use `timeout`.
     getz(x, y)
     playersays(???)
     playersays2(???)
-    tiletype(x, y)
+    tiletype(x, y) (new tileset layout)
 
 ---
 ## Message codes
@@ -455,6 +458,7 @@ Just use `timeout`.
     #C0 - #C4  | #C0(index) - #C4(index)   [Read / Write]
     #P1 - #P30 | #P1(index) - #P30(index)  [Read / Write]
     #Q(guild_name, account_name)  [Read]
+    #G | #G(index)                [Read]
     #b
     #e(start_index, length, string)
     #I(string_list, index)
@@ -463,8 +467,9 @@ Just use `timeout`.
     #T(string)
     #v(identifier)
 
-#### Not implemented
+#### Clientside only
 
-    #G | #G(index)                [Read]
+    #D | #D(filename)
+    #i(image) | #i(image, x, y, width, height)
     #K(key_index)
     #k(key_index)

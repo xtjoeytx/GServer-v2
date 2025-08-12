@@ -2120,7 +2120,6 @@ std::generator<const NPCID&> Level::findInRangeNPCsByDistance(const PixelPositio
 	}
 
 	auto server = BabyDI::Get<Server>();
-	auto mapSize = getMapSizeInTiles();
 	auto tilePosition = toTilePosition(position);
 
 	auto npcInRange = [&](const NPCID& npcId)

@@ -625,6 +625,7 @@ FUNC_GROUP_1
 		'onwall'
 		| 'onwall2'
 		| 'onwater'
+		| 'onwater2'
 		| 'groundsheight'
 		| 'keydown'
 		| 'keydown2'

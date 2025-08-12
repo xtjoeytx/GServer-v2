@@ -87,9 +87,6 @@ inline static const std::unordered_map<ScriptEventType, std::string_view> eventF
 	{ ScriptEventType::PLAYERLAYSITEM, "playerlaysitem" },
 	{ ScriptEventType::PLAYERCHATS, "playerchats" },
 	{ ScriptEventType::PLAYERDIES, "playerdies" },
-	{ ScriptEventType::PLAYERENDREADING, "playerendreading" },
-	{ ScriptEventType::WEAPONFIRED, "weaponfired" },
-	{ ScriptEventType::FIREDONHORSE, "firedonhorse" },
 	{ ScriptEventType::COMPUSDIED, "compusdied" },
 	{ ScriptEventType::NPCWARPED, "npcwarped" },
 	{ ScriptEventType::EXPLODED, "exploded" },
@@ -97,6 +94,7 @@ inline static const std::unordered_map<ScriptEventType, std::string_view> eventF
 	{ ScriptEventType::WASSHOT, "wasshot" },
 	{ ScriptEventType::WASPELT, "waspelt" },
 	{ ScriptEventType::TIMEOUT, "timeout" },
+	{ ScriptEventType::PRIVATEMESSAGE, "pm" },
 	//
 	{ ScriptEventType::SERVERLISTCONNECT, "serverlistconnect" }
 };

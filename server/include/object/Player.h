@@ -329,7 +329,7 @@ public:
 
 	CString translate(const CString& pKey) const;
 
-	void sendPrivateMessage(PlayerID from, std::string_view message);
+	virtual void sendPrivateMessage(PlayerID from, std::string_view message);
 
 	// Misc functions.
 	void disconnect();

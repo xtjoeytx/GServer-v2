@@ -338,7 +338,7 @@ std::shared_ptr<Level> Map::getLevelPtr(std::string_view levelName, std::weak_pt
 		// Update our stored level pointers.
 		if (auto it = levelsByName.find(levelName); it != levelsByName.end())
 			it->second = level;
-		if (auto index = level->mapPosition.x() + level->mapPosition.y() * size.width(); index < levelsByPosition.size())
+		if (size_t index = level->mapPosition.x() + level->mapPosition.y() * size.width(); index < levelsByPosition.size())
 			levelsByPosition[index] = level;
 
 		return level;

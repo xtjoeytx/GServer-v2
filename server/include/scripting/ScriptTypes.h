@@ -36,9 +36,6 @@ enum class ScriptEventType : uint8_t
 	PLAYERLAYSITEM,
 	PLAYERCHATS,
 	PLAYERDIES,
-	PLAYERENDREADING,
-	WEAPONFIRED,
-	FIREDONHORSE,
 	COMPUSDIED,
 	NPCWARPED,
 	EXPLODED,
@@ -46,6 +43,7 @@ enum class ScriptEventType : uint8_t
 	WASSHOT,
 	WASPELT,
 	TIMEOUT,
+	PRIVATEMESSAGE,
 	//
 	SERVERLISTCONNECT,
 	TRIGGERACTION,
@@ -67,9 +65,6 @@ constexpr ScriptEventType scriptEventTypeFromName(std::string_view name)
 	if (name == "playerlaysitem") return ScriptEventType::PLAYERLAYSITEM;
 	if (name == "playerchats") return ScriptEventType::PLAYERCHATS;
 	if (name == "playerdies") return ScriptEventType::PLAYERDIES;
-	if (name == "playerendreading") return ScriptEventType::PLAYERENDREADING;
-	if (name == "weaponfired") return ScriptEventType::WEAPONFIRED;
-	if (name == "firedonhorse") return ScriptEventType::FIREDONHORSE;
 	if (name == "compusdied") return ScriptEventType::COMPUSDIED;
 	if (name == "npcwarped") return ScriptEventType::NPCWARPED;
 	if (name == "exploded") return ScriptEventType::EXPLODED;
@@ -77,6 +72,7 @@ constexpr ScriptEventType scriptEventTypeFromName(std::string_view name)
 	if (name == "wasshot") return ScriptEventType::WASSHOT;
 	if (name == "waspelt") return ScriptEventType::WASPELT;
 	if (name == "timeout") return ScriptEventType::TIMEOUT;
+	if (name == "pm") return ScriptEventType::PRIVATEMESSAGE;
 	return ScriptEventType::CUSTOM;
 }
 

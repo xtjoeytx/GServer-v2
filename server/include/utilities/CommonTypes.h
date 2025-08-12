@@ -211,7 +211,10 @@ inline static bool DoublesAreSame(double left, double right)
 template<std::integral T>
 inline static T DoubleAsIntegralFloor(double value)
 {
-	return static_cast<T>(value + std::numeric_limits<double>::epsilon());
+	if (value < 0.0)
+		return static_cast<T>(value - std::numeric_limits<double>::epsilon());
+	else
+		return static_cast<T>(value + std::numeric_limits<double>::epsilon());
 }
 
 //----------------------------

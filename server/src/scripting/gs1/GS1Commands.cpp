@@ -3,7 +3,9 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <filesystem>
 #include <format>
+#include <fstream>
 #include <iterator>
 #include <memory>
 #include <numbers>
@@ -1460,18 +1462,35 @@ void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const s
 void fn_saveinfo(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw unimplemented_error("saveinfo is not implemented yet.");
+
+	//if (arguments.size() != 2)
+	//	throw std::invalid_argument("invalid arguments: saveinfo text,text");
 }
 
 // savelog text;
 void fn_savelog(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw unimplemented_error("savelog is not implemented yet.");
+
+	//if (arguments.size() != 1)
+	//	throw std::invalid_argument("invalid arguments: savelog text");
 }
 
 // savelog2 filename,text;
 void fn_savelog2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("savelog2 is not implemented yet.");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("invalid arguments: savelog2 filename,text");
+
+	auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
+
+	std::ofstream file{ std::filesystem::path{ "logs" } / filename, std::ios::out | std::ios::app };
+	if (!file.is_open())
+		throw std::runtime_error("Failed to open log file: " + filename);
+
+	file << text << '\n';
+	file.close();
 }
 
 // say signindex;
@@ -1967,7 +1986,18 @@ void fn_setplayerprop(GS1Visitor* visitor, std::string_view commandName, const s
 // setpm message;
 void fn_setpm(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("setpm is not implemented yet.");
+	std::string message;
+
+	if (arguments.size() != 0)
+		message = visitor->getGameValueAs<std::string>(*arguments[0]);
+
+	auto* server = BabyDI::Get<Server>();
+	if (auto npcServerPlayer = server->getNPCServer()->getPlayerNPCServer(); npcServerPlayer != nullptr)
+	{
+		auto lines = string::splitHard(message, "#b"sv);
+		auto finalMessage = string::toCSV(lines, true);
+		npcServerPlayer->privateMessage = finalMessage;
+	}
 }
 
 // setshape type,width,height;

@@ -610,11 +610,23 @@ GS1ScriptValue mc_g(GS1Visitor* visitor, std::string_view messageCode, const std
 }
 
 // #G | #G(index)  [Read]
-// Upgrade status of the player.  (???)
+// Upgrade status of the player (the player's account level).
 // player.upgradestatus #G(index)
 GS1ScriptValue mc_G(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Message Code #G is not implemented yet");
+	std::optional<size_t> index = std::nullopt;
+	if (arguments.size() == 1)
+		index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+
+	if (auto client = getPlayerClientFromSource(visitor->getCurrentSource(), index); client != nullptr)
+	{
+		if (client->isGuest())
+			return std::string{ "guest" };
+
+		return std::string{ "classic" };
+	}
+
+	return std::string{};
 }
 
 // #I(string_list, index)
@@ -643,14 +655,14 @@ GS1ScriptValue mc_i(GS1Visitor* visitor, std::string_view messageCode, const std
 // The name of the specified key.
 GS1ScriptValue mc_K(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("Message Code #K is registered as a clientside message code");
+	throw std::logic_error("Message Code #K is registered as a clientside message code (maybe?)");
 }
 
 // #k(key_index)
 // The description of the specified key (in client language/key assignments).
 GS1ScriptValue mc_k(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("Message Code #k is registered as a clientside message code");
+	throw std::logic_error("Message Code #k is registered as a clientside message code (maybe?)");
 }
 
 // #L  [Read]

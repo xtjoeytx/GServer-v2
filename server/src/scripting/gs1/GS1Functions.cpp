@@ -91,6 +91,7 @@ static GS1ScriptValue fn_onmapy(GS1Visitor* visitor, std::string_view functionNa
 static GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_onwater2(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_playersays2(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_screenx(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
@@ -162,6 +163,7 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{ hash("onwall"), &fn_onwall },
 		{ hash("onwall2"), &fn_onwall2 },
 		{ hash("onwater"), &fn_onwater },
+		{ hash("onwater2"), &fn_onwater2 },
 		{ hash("playersays"), &fn_playersays },
 		{ hash("playersays2"), &fn_playersays2 },
 		{ hash("screenx"), &fn_screenx },
@@ -992,6 +994,26 @@ GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, con
 	return GameValue{ false };
 }
 
+// onwater2(x, y, width, height)
+// Checks if the specified X and Y coordinates are on a water tile.
+GS1ScriptValue fn_onwater2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 4)
+		throw std::invalid_argument("Built-in function onwater2 requires exactly four arguments");
+
+	auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto width = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]) * 16);
+	auto height = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[3]) * 16);
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		if (level->isOnWater2(PixelRectangleArea{ toPixelPosition({ x, y }), { width, height } }))
+			return GameValue{ true };
+	}
+	return GameValue{ false };
+}
+
 // playersays ???
 GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -1266,7 +1288,34 @@ GS1ScriptValue fn_textwidth(GS1Visitor* visitor, std::string_view messageCode, c
 // Returns the "new order" tile type used for setshape2 on level position (x, y).
 GS1ScriptValue fn_tiletype(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function tiletype not implemented");
+	// TODO: New tile type.
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function tiletype requires exactly two arguments");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto x = visitor->getGameValueAs<double>(*arguments[0]);
+		auto y = visitor->getGameValueAs<double>(*arguments[1]);
+
+		if (!level->isOnGmap())
+		{
+			auto pos = std::clamp((int)x, 0, 63) + (std::clamp((int)y, 0, 63) * 64);
+			auto tile = level->getTiles(0)[static_cast<size_t>(pos)];
+			return static_cast<double>(tiletypes[tile]);
+		}
+		else
+		{
+			TilePosition tilePos{ (float)x, (float)y };
+			if (auto mapLevel = level->getMap()->getLevelAt(toPixelPosition(tilePos)); mapLevel != nullptr)
+			{
+				LocalWholeTilePosition localTilePos = toLocalWholeTilePosition(tilePos);
+				auto tile = mapLevel->getTiles(0)[localTilePos.x() + (static_cast<size_t>(localTilePos.y()) * 64)];
+				return static_cast<double>(tiletypes[tile]);
+			}
+		}
+	}
+
+	return -1.0;
 }
 
 // vecx(dir)

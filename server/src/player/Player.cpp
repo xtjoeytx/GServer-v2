@@ -384,7 +384,10 @@ bool Player::onRecv()
 bool Player::onSend()
 {
 	if (m_playerSock == 0 || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	{
+		m_fileQueue.clearBuffers();
 		return false;
+	}
 
 	// Send data.
 	m_fileQueue.sendCompress();
@@ -421,7 +424,10 @@ void Player::doMain()
 bool Player::doTimedEvents()
 {
 	if (m_playerSock == 0 || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	{
+		m_fileQueue.clearBuffers();
 		return false;
+	}
 	
 	m_fileQueue.sendCompress();
 	return true;
@@ -436,6 +442,10 @@ void Player::sendPacket(CString pPacket, bool appendNL)
 {
 	// empty buffer?
 	if (pPacket.isEmpty())
+		return;
+
+	// Not connected?
+	if (m_playerSock == nullptr || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return;
 
 #ifdef PACKETLOGGING
@@ -1064,6 +1074,11 @@ void Player::constructScriptParameters()
 				account.character.direction = std::clamp(static_cast<uint8_t>(value.get<double>().value_or(0.0)), 0_ui8, 3_ui8);
 			})
 	);
+
+	scriptParameters.try_emplace("upgradestatus", set_temporary, "upgradestatus",
+		gameVariableGetter([this]() { return isGuest() ? "guest"s : "classic"s; }),
+		GameVariable::func_set{}
+	);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1193,6 +1208,18 @@ HandlePacketResult Player::msgPLI_TOALL(CString& pPacket)
 
 HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 {
+	// Check if the player is in a jailed level.
+	std::vector<CString> jailList = m_server->getSettings().getStr("jaillevels").tokenize(",");
+	bool jailed = false;
+	for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
+	{
+		if (i->trim() == account.level)
+		{
+			jailed = true;
+			break;
+		}
+	}
+
 	// Get the players this message was addressed to.
 	std::vector<PlayerID> pmPlayers;
 	auto pmPlayerCount = pPacket.readGUShort();
@@ -1230,9 +1257,9 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	pmMessage.gtokenizeI();
 
 	// Send the message out.
-	for (auto pmPlayerId: pmPlayers)
+	for (auto pmPlayerId : pmPlayers)
 	{
-		if (pmPlayerId >= 16000)
+		if (pmPlayerId >= PLAYERID_GEN_EXTERNAL)
 		{
 			auto pmPlayer = getExternalPlayer(pmPlayerId);
 			if (pmPlayer != nullptr)
@@ -1252,8 +1279,15 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			if (pmPlayerCount != 1 && (pmPlayer->getProp<PlayerProp::ADDITFLAGS>().value & PLFLAG_NOMASSMESSAGE))
 				continue;
 
+			// Jailed people cannot send PMs to normal players.
+			if (jailed && !isStaff() && !pmPlayer->isStaff())
+			{
+				sendPrivateMessage(pmPlayer->getId(), "Server Message:\nFrom jail you can only send PMs to admins (RCs).");
+				continue;
+			}
+
 			// Send the message.
-			pmPlayer->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)m_id << pmMessageType << pmMessage);
+			pmPlayer->sendPrivateMessage(m_id, pmMessageType + pmMessage);
 		}
 	}
 

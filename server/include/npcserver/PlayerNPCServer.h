@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 
 #include <CSocket.h>
 #include <CString.h>
@@ -25,6 +26,12 @@ public:
 public:
 	virtual bool onRecv() override;
 	virtual void onUnregister() override;
+
+public:
+	virtual void sendPrivateMessage(PlayerID from, std::string_view message) override;
+
+public:
+	std::string privateMessage;
 
 protected:
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
