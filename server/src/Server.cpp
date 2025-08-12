@@ -106,7 +106,11 @@ Server::Server(const CString& pName)
 	m_npcLoader = std::make_unique<FlatFileNPCLoader>();
 
 	m_timedEvents.callbackIterations = std::bind(&Server::doTimedEvents, this, std::placeholders::_1);
-	m_timedSave.callbackIterations = std::bind(&Server::saveServerFlags, this);
+	m_timedSave.callbackIterations = [this](int)
+	{
+		saveServerFlags();
+		m_guildManager.saveGuilds();
+	};
 	m_timedNWTime.callbackIterations = [this](int)
 	{
 		calculateNWTime();
@@ -530,6 +534,10 @@ int Server::loadConfigFiles()
 		log::printLine(log::server, "Loading serverflags.txt...");
 		loadServerFlags();
 
+		// Load guilds.
+		log::printLine(log::server, "Loading guilds...");
+		loadGuilds();
+
 		// Load maps.
 		log::printLine(log::server, "Loading maps...");
 		loadMaps(true);
@@ -669,6 +677,11 @@ void Server::loadServerFlags()
 	std::vector<CString> lines = CString::loadToken(CString() << "serverflags.txt", "\n", true);
 	for (auto& line: lines)
 		this->setFlag(line, false);
+}
+
+void Server::loadGuilds()
+{
+	m_guildManager.loadGuilds("guilds");
 }
 
 void Server::loadServerMessage()

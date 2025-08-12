@@ -767,101 +767,66 @@ bool Player::isStaff()
 
 void Player::setNick(CString pNickName, bool force)
 {
-	CString newNick, nick, guild;
+	auto desiredNickname = string::trim(pNickName.toStringView());
+	std::string prefix, guildName;
 
-	// Limit the nickname to 223 characters
-	if (pNickName.length() > 223)
-		pNickName = pNickName.subString(0, 223);
-
-	int guild_start = pNickName.find('(');
-	int guild_end = pNickName.find(')', guild_start);
-
-	// If the player ommitted the ), make sure the guild calculations will work.
-	if (guild_end == -1 && guild_start != -1)
-		guild_end = pNickName.length();
-
-	// If there was no guild, just use the given nickname.
-	if (guild_start == -1)
-		nick = pNickName.trim();
-	else
+	// Determine the guild, if one was supplied.
+	auto guildStart = desiredNickname.find('(');
+	if (guildStart != std::string_view::npos)
 	{
-		// We have a guild.  Separate the nickname from the guild.
-		nick = pNickName.subString(0, guild_start);
-		guild = pNickName.subString(guild_start + 1, guild_end - guild_start - 1);
-		nick.trimI();
-		guild.trimI();
-		if (guild[guild.length() - 1] == ')')
-			guild.removeI(guild.length() - 1);
+		auto guildEnd = desiredNickname.find(')', guildStart);
+		if (guildEnd == std::string_view::npos)
+			guildName = desiredNickname.substr(guildStart + 1);
+		else guildName = desiredNickname.substr(guildStart + 1, guildEnd - guildStart - 1);
 	}
 
-	if (force || (guild == "RC" && isRC()))
+	// If we are forcing a nickname change, do it now and return early.
+	if (force || m_isExternal || (guildName == "RC" && isRC()))
 	{
 		account.character.nickName = pNickName.toString();
-		this->m_guild = guild;
+		this->m_guild = guildName;
 		return;
 	}
 
-	// If a player has put a * before his nick, remove it.
-	while (!nick.isEmpty() && nick[0] == '*')
-		nick.removeI(0, 1);
-
-	// If the nickname is now empty, set it to unknown.
-	if (nick.isEmpty()) nick = "unknown";
-
-	// If the nickname is equal to the account name, add the *.
-	if (nick == account.name)
-		newNick = CString("*");
-
-	// Add the nick name.
-	newNick << nick;
-
-	// If a guild was specified, add the guild.
-	if (guild.length() != 0)
+	// Determine the nickname part.
+	auto nickNamePart = desiredNickname;
 	{
-		// Read the guild list.
-		FileSystem guildFS;
-		guildFS.addDir("guilds");
-		CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
-		if (guildList.isEmpty())
-			guildList = guildFS.load(CString() << "guild" << guild.replaceAll(" ", "_") << ".txt");
+		// If a guild was supplied, remove it from the nickname.
+		if (guildStart != std::string_view::npos)
+			nickNamePart = desiredNickname.substr(0, guildStart);
 
-		// Find the account in the guild list.
-		// Will also return -1 if the guild does not exist.
-		if (guildList.findi(std::string_view{ account.name }) != -1)
+		// Remove a * if it was supplied (as it denotes that the nickname is equal to the account name, which we will figure out later).
+		if (nickNamePart.starts_with('*'))
+			nickNamePart.remove_prefix(1);
+	}
+	nickNamePart = string::trim(nickNamePart);
+
+	// If the nickname is empty, set it to "unknown".
+	if (nickNamePart.empty())
+		nickNamePart = "unknown";
+
+	// If the nickname is equal to the account name, set the prefix.
+	if (nickNamePart == account.name)
+		prefix = "*";
+
+	// If we had a guild, check our permissions.
+	if (!guildName.empty())
+	{
+		// Check if the player is in the guild.
+		if (m_server->getGuildManager().verifyPlayerInGuild(guildName, account.name, nickNamePart))
 		{
-			guildList.setRead(guildList.findi(std::string_view{ account.name }));
-			CString line = guildList.readString("\n");
-			line.removeAllI("\r");
-			if (line.find(":") != -1)
-			{
-				std::vector<CString> line2 = line.tokenize(":");
-				if ((line2[1])[0] == '*') line2[1].removeI(0, 1);
-				if ((line2[1]) == nick) // Use nick instead of newNick because nick doesn't include the *
-				{
-					newNick << " (" << guild << ")";
-					account.character.nickName = newNick.toString();
-					this->m_guild = guild;
-					return;
-				}
-			}
-			else
-			{
-				newNick << " (" << guild << ")";
-				account.character.nickName = newNick.toString();
-				this->m_guild = guild;
-				return;
-			}
+			account.character.nickName = std::format("{}{} ({})", prefix, nickNamePart, guildName);
+			m_guild = guildName;
+			return;
 		}
-		else
-			account.character.nickName = newNick.toString();
 
-		// See if we can ask if it is a global guild.
+		// Not in a local guild, so see if we can ask the listserver if they are in a global guild.
 		bool askGlobal = m_server->getSettings().getBool("globalguilds", true);
 		if (!askGlobal)
 		{
 			// Check for whitelisted global guilds.
 			std::vector<CString> allowed = m_server->getSettings().getStr("allowedglobalguilds").tokenize(",");
-			if (std::find(allowed.begin(), allowed.end(), guild) != allowed.end())
+			if (std::find(allowed.begin(), allowed.end(), guildName) != allowed.end())
 				askGlobal = true;
 		}
 
@@ -869,20 +834,15 @@ void Player::setNick(CString pNickName, bool force)
 		if (askGlobal)
 		{
 			m_server->getServerList().sendPacket(
-				CString() >> (char)SVO_VERIGUILD >> (short)m_id >> (char)account.name.length() << account.name >> (char)newNick.length() << newNick >> (char)guild.length() << guild);
+				CString() >> (char)SVO_VERIGUILD >> (short)m_id
+				>> (char)account.name.length() << account.name
+				>> (char)nickNamePart.length() << nickNamePart
+				>> (char)guildName.length() << guildName);
 		}
 	}
-	else
-	{
-		// Save it.
-		account.character.nickName = newNick.toString();
-		this->m_guild.clear();
-	}
 
-	if (m_isExternal)
-	{
-		account.character.nickName = pNickName.toString();
-	}
+	account.character.nickName = std::format("{}{}", prefix, nickNamePart);
+	m_guild.clear();
 }
 
 void Player::setChat(const CString& pChat)

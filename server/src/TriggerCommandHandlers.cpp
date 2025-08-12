@@ -107,21 +107,8 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		if (triggerData.size() > 3) nick = triggerData[3];
 
 		if (!guild.isEmpty() && !account.isEmpty())
-		{
-			// Read the guild list.
-			FileSystem guildFS;
-			guildFS.addDir("guilds");
-			CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
+			m_guildManager.addPlayerToGuild(guild, account, nick);
 
-			if (guildList.find(account) == -1)
-			{
-				if (guildList[guildList.length() - 1] != '\n') guildList << "\n";
-				guildList << account;
-				if (!nick.isEmpty()) guildList << ":" << nick;
-
-				guildList.save(CString() << "guilds/guild" << guild << ".txt");
-			}
-		}
 		return true;
 	});
 
@@ -130,29 +117,18 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		if (!getSettings().getBool("triggerhack_guilds", false))
 			return false;
 
-		CString guild, account;
+		CString guild, account, nickName;
 		if (triggerData.size() > 1) guild = triggerData[1];
 		if (triggerData.size() > 2) account = triggerData[2];
+		if (triggerData.size() > 3) nickName = triggerData[3];
 
 		if (!guild.isEmpty() && !account.isEmpty())
 		{
-			// Read the guild list.
-			FileSystem guildFS;
-			guildFS.addDir("guilds");
-			CString guildList = guildFS.load(CString() << "guild" << guild << ".txt");
-
-			if (guildList.find(account) != -1)
-			{
-				int pos = guildList.find(account);
-				int length = guildList.find("\n", pos) - pos;
-				if (length < 0) length = -1;
-				else
-					++length;
-
-				guildList.removeI(pos, length);
-				guildList.save(CString() << "guilds/guild" << guild << ".txt");
-			}
+			if (nickName.isEmpty())
+				m_guildManager.removePlayerEntirelyFromGuild(guild, account);
+			else m_guildManager.removePlayerFromGuild(guild, account, nickName);
 		}
+
 		return true;
 	});
 
@@ -166,13 +142,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 		if (!guild.isEmpty())
 		{
-			// Read the guild list.
-			FileSystem guildFS;
-			guildFS.addDir("guilds");
-			CString path = guildFS.find(CString() << "guild" << guild << ".txt");
-
-			// Remove the guild.
-			remove(path.text());
+			m_guildManager.deleteGuild(guild);
 
 			// Remove the guild from all players.
 			for (auto& [pid, p] : getPlayerList())

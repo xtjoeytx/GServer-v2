@@ -7,14 +7,12 @@
 #include <map>
 
 #include <CString.h>
-#include <BabyDI.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-class Server;
 class FileSystem
 {
 #if defined(_WIN32) || defined(_WIN64)
@@ -54,8 +52,6 @@ public:
 
 private:
 	void loadAllDirectories(const CString& directory, bool recursive = false);
-
-	BabyDI_INJECT(Server, m_server);
 
 	CString m_basedir;
 	std::map<CString, CString> m_fileList;

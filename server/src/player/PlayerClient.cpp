@@ -645,7 +645,10 @@ bool PlayerClient::processChat(const CString& pChat)
 				return true;
 			}
 
-			sendPropsFromResults(setPropWith<PlayerProp::NICKNAME>(props::SetBy::SERVER, newName.toString()));
+			// SetBy::CLIENT so the server applies nickname restrictions on the player.
+			auto result = setPropWith<PlayerProp::NICKNAME>(props::SetBy::CLIENT, newName.toString());
+			result.resultFlags.set(props::SetResults::sendToSource);
+			sendPropsFromResults(result);
 		}
 		else
 			setChat("Wait 10 seconds before changing your nick again!");

@@ -45,6 +45,7 @@
 #include <utilities/Extents.h>
 #include <utilities/generator/IdGenerator.h>
 #include <utilities/generator/TimeoutGenerator.h>
+#include <utilities/manager/GuildManager.h>
 #include <utilities/manager/ResourceManager.h>
 #include <utilities/StringUtils.h>
 
@@ -140,6 +141,7 @@ public:
 	void loadTranslations();
 	void loadWordFilter();
 	void loadServerFlags();
+	void loadGuilds();
 	void loadMaps(bool print = false);
 	int loadServerObjects();
 	void loadWeapons(bool print = false);
@@ -159,36 +161,37 @@ public:
 	void reportScriptException(const std::string& error_message);
 
 public:
-	const CString& getName() const { return m_name; }
+	const auto& getName() const { return m_name; }
+	const auto& getServerMessage() const { return m_serverMessage; }
+	const auto& getAllowedVersionString() const { return m_allowedVersionString; }
+	const auto& getNWTime() const { return m_serverTime; }
 	FileSystem* getFileSystem(int c = 0) { return &(m_filesystem[c]); }
 	FileSystem* getAccountsFileSystem() { return &m_filesystemAccounts; }
-	CSettings& getSettings() { return m_settings; }
-	CSettings& getAdminSettings() { return m_adminSettings; }
-	CSocketManager& getSocketManager() { return m_sockManager; }
-	const CString& getServerMessage() const { return m_serverMessage; }
-	const CString& getAllowedVersionString() const { return m_allowedVersionString; }
-	CTranslationManager& getTranslationManager() { return m_translationManager; }
-	WordFilter& getWordFilter() { return m_wordFilter; }
-	ServerList& getServerList() { return m_serverlist; }
-	AnimationManager& getAnimationManager() { return m_animationManager; }
-	PackageManager& getPackageManager() { return m_packageManager; }
-	const auto& getNWTime() const { return m_serverTime; }
-	auto& getWeaponList() { return m_weaponList; }
-	auto& getPlayerList() { return m_playerList; }
-	auto& getNPCList() { return m_npcList; }
-	auto& getLevelList() { return m_levelList; }
-	auto& getPlayerIdGenerator() { return m_playerIdGenerator; }
-	const auto& getMapList() const { return m_mapList; }
-	const auto& getStatusList() const { return m_statusList; }
-	const auto& getAllowedVersions() const { return m_allowedVersions; }
-	auto& getGroupLevels() { return m_groupLevels; }
-	IAccountLoader& getAccountLoader() { return *m_accountLoader; }
-	INPCLoader& getNPCLoader() { return *m_npcLoader; }
 	FileSystem* getFileSystemByType(CString& type);
-	const auto& getServerStartTime() const { return m_serverStartTime; }
+	auto& getAccountLoader() { return *m_accountLoader; }
+	auto& getAdminSettings() { return m_adminSettings; }
+	auto& getAnimationManager() { return m_animationManager; }
+	auto& getGroupLevels() { return m_groupLevels; }
+	auto& getGuildManager() { return m_guildManager; }
+	auto& getLevelList() { return m_levelList; }
+	auto& getNPCList() { return m_npcList; }
+	auto& getNPCLoader() { return *m_npcLoader; }
+	auto& getPackageManager() { return m_packageManager; }
+	auto& getPlayerIdGenerator() { return m_playerIdGenerator; }
+	auto& getPlayerList() { return m_playerList; }
+	auto& getServerList() { return m_serverlist; }
+	auto& getSettings() { return m_settings; }
+	auto& getSocketManager() { return m_sockManager; }
+	auto& getTranslationManager() { return m_translationManager; }
+	auto& getTriggerDispatcher() { return m_triggerActionDispatcher; }
+	auto& getWeaponList() { return m_weaponList; }
+	auto& getWordFilter() { return m_wordFilter; }
+	const auto& getAllowedVersions() const { return m_allowedVersions; }
 	const auto& getFrameStartTime() const { return m_frameStartTime; }
 	const auto& getFrameStartTimeHighPrecision() const { return m_frameStartTimeHighPrecision; }
-	TriggerDispatcher& getTriggerDispatcher() { return m_triggerActionDispatcher; }
+	const auto& getMapList() const { return m_mapList; }
+	const auto& getServerStartTime() const { return m_serverStartTime; }
+	const auto& getStatusList() const { return m_statusList; }
 
 public:
 	std::shared_ptr<Level> getLevel(std::string_view levelName);
@@ -322,6 +325,7 @@ private:
 	WordFilter m_wordFilter;
 	AnimationManager m_animationManager;
 	PackageManager m_packageManager;
+	GuildManager m_guildManager;
 	CString m_allowedVersionString, m_name, m_serverMessage;
 	CString m_overrideIp, m_overrideLocalIp, m_overridePort, m_overrideInterface;
 	std::vector<CString> m_allowedVersions, m_foldersConfig, m_ipBans, m_statusList, m_staffList;

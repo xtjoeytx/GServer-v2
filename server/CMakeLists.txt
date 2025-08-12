@@ -92,6 +92,7 @@ set(
 	"include/utilities/StringUtils.h"
 	"include/utilities/generator/IdGenerator.h"
 	"include/utilities/generator/TimeoutGenerator.h"
+	"include/utilities/manager/GuildManager.h"
 	"include/utilities/manager/ResourceManager.h"
 	"include/utilities/std/inplace_vector.h"
 	"include/utilities/std/views_concat.h"
@@ -148,6 +149,7 @@ set(
 	"src/utilities/Log.cpp"
 	"src/utilities/PropertySerializers.cpp"
 	"src/utilities/StringUtils.cpp"
+	"src/utilities/manager/GuildManager.cpp"
 )
 
 # Create the executable target.

@@ -21,6 +21,7 @@
 #include <CString.h>
 #include <IUtil.h>
 
+#include <BabyDI.h>
 #include <FileSystem.h>
 #include <Server.h>
 
@@ -50,7 +51,8 @@ void FileSystem::addDir(const CString& dir, const CString& wildcard, bool forceR
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
 
-	if (m_server == nullptr) return;
+	auto server = BabyDI::Get<Server>();
+	if (server == nullptr) return;
 
 	// Format the directory.
 	CString newDir(dir);
@@ -71,7 +73,7 @@ void FileSystem::addDir(const CString& dir, const CString& wildcard, bool forceR
 		m_directoryList.push_back(ndir);
 
 		// Load up the files in the directory.
-		loadAllDirectories(ndir, forceRecursive || m_server->getSettings().getBool("nofoldersconfig", false));
+		loadAllDirectories(ndir, forceRecursive || server->getSettings().getBool("nofoldersconfig", false));
 	}
 }
 
@@ -111,13 +113,14 @@ void FileSystem::removeFile(const CString& file)
 void FileSystem::resync()
 {
 	std::lock_guard<std::recursive_mutex> lock(*m_preventChange);
+	auto server = BabyDI::Get<Server>();
 
 	// Clear the file list.
 	m_fileList.clear();
 
 	// Iterate through all the directories, reloading their file list.
 	for (const auto& directory : m_directoryList)
-		loadAllDirectories(directory, m_server->getSettings().getBool("nofoldersconfig", false));
+		loadAllDirectories(directory, server->getSettings().getBool("nofoldersconfig", false));
 }
 
 CString FileSystem::find(const CString& file) const
