@@ -229,6 +229,7 @@ Just use `timeout`.
 
 #### Implemented
 
+    addguildmember
     addstring
     addweapon
     attachplayertoobj
@@ -275,6 +276,8 @@ Just use `timeout`.
     putnpc2
     removebomb
     removecompus
+    removeguild
+    removeguildmember
     removehorse
     removeitem
     removestring
@@ -335,7 +338,6 @@ Just use `timeout`.
 
 #### Not implemented
 
-    addguildmember
     carryobject
     copyflags
     copylevel
@@ -343,8 +345,6 @@ Just use `timeout`.
     deletelevel
     hitcompu
     hitnpc
-    removeguild
-    removeguildmember
     saveinfo
     savelog
     savelog2
@@ -454,6 +454,7 @@ Just use `timeout`.
     #L              [Read]
     #C0 - #C4  | #C0(index) - #C4(index)   [Read / Write]
     #P1 - #P30 | #P1(index) - #P30(index)  [Read / Write]
+    #Q(guild_name, account_name)  [Read]
     #b
     #e(start_index, length, string)
     #I(string_list, index)
@@ -464,7 +465,6 @@ Just use `timeout`.
 
 #### Not implemented
 
-    #Q(guild_name, account_name)  [Read]
     #G | #G(index)                [Read]
     #K(key_index)
     #k(key_index)

@@ -458,7 +458,15 @@ static std::optional<PixelPosition> getPositionForArrow(const ScriptObjectSource
 // addguildmember guild,account,nick;
 void fn_addguildmember(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("addguildmember is not implemented yet.");
+	if (arguments.size() != 3)
+		throw std::invalid_argument("invalid arguments: addguildmember guild,account,nick");
+
+	auto guild = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto account = visitor->getGameValueAs<std::string>(*arguments[1]);
+	auto nick = visitor->getGameValueAs<std::string>(*arguments[2]);
+
+	if (auto server = BabyDI::Get<Server>(); server)
+		server->getGuildManager().addPlayerToGuild(guild, account, nick);
 }
 
 // addstring list,text;
@@ -1318,13 +1326,31 @@ void fn_removeexplo(GS1Visitor* visitor, std::string_view commandName, const std
 // removeguild guild;
 void fn_removeguild(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("removeguild is not implemented yet.");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: removeguild guild");
+
+	auto guild = visitor->getGameValueAs<std::string>(*arguments[0]);
+
+	if (auto server = BabyDI::Get<Server>(); server)
+		server->getGuildManager().deleteGuild(guild);
 }
 
 // removeguildmember guild,account,nick;
 void fn_removeguildmember(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("removeguildmember is not implemented yet.");
+	if (arguments.size() < 2)
+		throw std::invalid_argument("invalid arguments: removeguildmember guild,account,nick");
+
+	auto guild = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto account = visitor->getGameValueAs<std::string>(*arguments[1]);
+	std::string nick = (arguments.size() > 2) ? visitor->getGameValueAs<std::string>(*arguments[2]) : std::string{};
+
+	if (auto server = BabyDI::Get<Server>(); server)
+	{
+		if (nick.empty())
+			server->getGuildManager().removePlayerEntirelyFromGuild(guild, account);
+		else server->getGuildManager().removePlayerFromGuild(guild, account, nick);
+	}
 }
 
 // removehorse index;

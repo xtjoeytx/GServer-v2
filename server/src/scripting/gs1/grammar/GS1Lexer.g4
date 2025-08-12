@@ -705,7 +705,7 @@ FUNC_GROUP_6 : 'sarraylen' { pushCommand("(V)"); }  -> type(FUNCTION);
 // getflagkeys(string)
 
 MC_NOINDEX		: '#' ([angcmWw1235678LFfpbND] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { _input->LA(1) != '(' }? -> type(MESSAGECODE);
-MC_SIMPLE		: '#' ([angcmWw1235678ptKkGNQ] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { pushCommand("(P)"); } -> type(MESSAGECODE);
+MC_SIMPLE		: '#' ([angcmWw1235678ptKkGN]  | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { pushCommand("(P)"); } -> type(MESSAGECODE);
 MC_COMPUTED_S	: '#s' { pushCommand("(V)"); }   -> type(MESSAGECODE);
 MC_COMPUTED_V	: '#v' { pushCommand("(E)"); }   -> type(MESSAGECODE);
 MC_I			: '#I' { pushCommand("(VP)"); }  -> type(MESSAGECODE);
@@ -713,6 +713,7 @@ MC_T			: '#T' { pushCommand("(S)"); }   -> type(MESSAGECODE);
 MC_e			: '#e' { pushCommand("(EES)"); } -> type(MESSAGECODE);
 MC_i			: '#i' { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 MC_R			: '#R' { pushCommand("(L)"); }   -> type(MESSAGECODE);
+MC_Q            : '#Q' { pushCommand("(SS)"); }  -> type(MESSAGECODE);
 
 // TODO: Some string lists are CSV.
 
@@ -956,6 +957,7 @@ PARAM_V_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAG
 PARAM_V_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_V_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_V_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
+PARAM_V_MC_Q            : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
 PARAM_V_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
 PARAM_V_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
 PARAM_V_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
@@ -1044,6 +1046,7 @@ PARAM_S_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAG
 PARAM_S_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_S_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_S_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
+PARAM_S_MC_Q            : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
 PARAM_S_STRING_ESCAPE   : '##'                                            -> type(STRING);
 PARAM_S_STRING_LITERAL1 : ~[#),]+     { canFuncPop() && canCommaPop() }?  -> type(STRING);
 PARAM_S_STRING_LITERAL2 : ~[#};,]+    { canCmdPop()  && canCommaPop() }?  -> type(STRING);
@@ -1066,6 +1069,7 @@ PARAM_L_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAG
 PARAM_L_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_L_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_L_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
+PARAM_L_MC_Q            : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
 PARAM_L_STRING_ESCAPE   : '##' -> type(STRING);
 PARAM_L_STRING_LITERAL1  : ~[#),]+  { canFuncPop() }? -> type(STRING);
 PARAM_L_STRING_LITERAL2  : ~[#};,]+ { canCmdPop() }?  -> type(STRING);
@@ -1087,6 +1091,7 @@ PARAM_M_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAG
 PARAM_M_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_M_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_M_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
+PARAM_M_MC_Q            : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
 PARAM_M_FUNC_GROUP_1    : FUNC_GROUP_1 { pushCommand("(P)"); }    -> type(FUNCTION);
 PARAM_M_FUNC_GROUP_2    : FUNC_GROUP_2 { pushCommand("(S)"); }    -> type(FUNCTION);
 PARAM_M_FUNC_GROUP_3    : FUNC_GROUP_3 { pushCommand("(SS)"); }   -> type(FUNCTION);
@@ -1241,6 +1246,7 @@ PARAM_X_MC_T          : MC_T          { pushCommand("(S)"); }   -> type(MESSAGEC
 PARAM_X_MC_e          : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_X_MC_i          : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_X_MC_R          : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
+PARAM_X_MC_Q          : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
 
 // --------------------------------------------------------
 mode IN_PARAM_1;

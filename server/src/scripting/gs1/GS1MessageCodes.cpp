@@ -9,6 +9,7 @@
 #include <memory>
 #include <optional>
 #include <random>
+#include <ranges>
 #include <stdexcept>
 #include <string_view>
 #include <string>
@@ -727,7 +728,23 @@ GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std
 // The nickname for a player in a guild.
 GS1ScriptValue mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Message Code #Q is not implemented yet");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Message Code #Q requires exactly 2 arguments");
+
+	auto guildName = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto accountName = visitor->getGameValueAs<std::string>(*arguments[1]);
+
+	auto server = BabyDI::Get<Server>();
+	auto names = server->getGuildManager().getPlayerNicknamesForGuild(guildName, accountName);
+	if (names.has_value())
+	{
+		auto& firstIter = names.value().first;
+		auto& secondIter = names.value().second;
+		auto nickNameRange = std::ranges::subrange(firstIter, secondIter) | std::views::values;
+		return string::join(nickNameRange);
+	}
+
+	return std::string{};
 }
 
 // #R(string_list)
