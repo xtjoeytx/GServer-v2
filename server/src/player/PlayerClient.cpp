@@ -1145,18 +1145,19 @@ bool PlayerClient::warp(std::string_view levelName, LocalPixelPosition pos, time
 
 	// Tell the client their new level.
 	if (newLevel->isOnGmap() && m_versionId >= CLVER_2_1)
+	{
+		// We have to do this manually since if we set it via setPropWith, it will cause a second level warp.
+		account.character.mapX = newLevel->mapPosition.x();
+		account.character.mapY = newLevel->mapPosition.y();
+		this->modTime[PROPID(PlayerProp::GMAPLEVELX)] = m_server->getFrameStartTime();
+		this->modTime[PROPID(PlayerProp::GMAPLEVELY)] = m_server->getFrameStartTime();
 		sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << getProp<PlayerProp::Z>().serialize() >> (char)newLevel->mapPosition.x() >> (char)newLevel->mapPosition.y() << newLevel->getMap()->getMapName());
+	}
 	else
 		sendPacket(CString() >> (char)PLO_PLAYERWARP << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << levelName);
 
 	// Set the level.
 	enterLevel(newLevel, pos, modTime);
-
-	// Tell the player their current map position.
-	sendPropsFromResults(
-		setPropWith<PlayerProp::GMAPLEVELX>(props::SetBy::SERVER, newLevel->mapPosition.x()),
-		setPropWith<PlayerProp::GMAPLEVELY>(props::SetBy::SERVER, newLevel->mapPosition.y())
-	);
 
 	return true;
 }
