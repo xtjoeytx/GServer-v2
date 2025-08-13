@@ -9,8 +9,9 @@
 #include <string>
 #include <vector>
 
-#include <BabyDI.h>
 #include <CSocket.h>
+
+#include <BabyDI.h>
 #include <CString.h>
 #include <IConfig.h>
 #include <IUtil.h>

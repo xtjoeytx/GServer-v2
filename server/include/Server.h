@@ -19,8 +19,9 @@
 #include <utility>
 #include <vector>
 
-#include <CSettings.h>
 #include <CSocket.h>
+
+#include <CSettings.h>
 #include <CString.h>
 #include <CTranslationManager.h>
 #include <IEnums.h>

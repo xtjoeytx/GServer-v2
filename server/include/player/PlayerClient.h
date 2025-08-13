@@ -10,15 +10,14 @@
 #include <string>
 #include <tuple>
 #include <unordered_set>
-#include <utility>
 #include <vector>
 
 #include <CSocket.h>
+
 #include <CString.h>
 
 #include <level/Level.h>
 #include <level/LevelItem.h>
-#include <level/Map.h>
 #include <network/IPacketHandler.h>
 #include <object/Player.h>
 #include <utilities/CommonTypes.h>

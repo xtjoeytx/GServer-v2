@@ -16,8 +16,9 @@
 #include <utility>
 #include <vector>
 
-#include <CFileQueue.h>
 #include <CSocket.h>
+
+#include <CFileQueue.h>
 #include <CString.h>
 #include <IEnums.h>
 #include <IUtil.h>

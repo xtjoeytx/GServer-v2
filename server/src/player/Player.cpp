@@ -13,9 +13,10 @@
 #include <string>
 #include <vector>
 
+#include <CSocket.h>
+
 #include <BabyDI.h>
 #include <CSettings.h>
-#include <CSocket.h>
 #include <CString.h>
 #include <IEnums.h>
 #include <IUtil.h>

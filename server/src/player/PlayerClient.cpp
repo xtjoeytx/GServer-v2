@@ -12,9 +12,10 @@
 #include <utility>
 #include <vector>
 
+#include <CSocket.h>
+
 #include <CEncryption.h>
 #include <CSettings.h>
-#include <CSocket.h>
 #include <CString.h>
 #include <IConfig.h>
 #include <IEnums.h>

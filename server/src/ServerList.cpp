@@ -9,8 +9,9 @@
 #include <string>
 #include <vector>
 
-#include <CEncryption.h>
 #include <CSocket.h>
+
+#include <CEncryption.h>
 #include <CString.h>
 #include <IEnums.h>
 #include <IUtil.h>
