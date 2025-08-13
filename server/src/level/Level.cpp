@@ -792,8 +792,9 @@ LevelArrow* Level::addArrow(inform_client_t, const PixelPosition& position, cons
 	auto result = addArrow(position, speed, direction, type, from);
 	if (result != nullptr)
 	{
-		char x = static_cast<char>(result->position.x() / 8.0f);
-		char y = static_cast<char>(result->position.y() / 8.0f);
+		auto localPosition = toLocalPixelPosition(result->position);
+		char x = static_cast<char>(localPosition.x() / 8.0f);
+		char y = static_cast<char>(localPosition.y() / 8.0f);
 
 		// Get the sprite for the arrow.
 		uint8_t sprite = (result->type == 0 ? ballSpriteIndex : arrowSpriteIndex);
@@ -968,8 +969,9 @@ LevelBomb* Level::addBomb(inform_client_t, const PixelPosition& position, uint8_
 	auto result = addBomb(position, power);
 	if (result != nullptr)
 	{
-		char x = static_cast<char>(result->position.x() / 8.0f);
-		char y = static_cast<char>(result->position.y() / 8.0f);
+		auto localPosition = toLocalPixelPosition(result->position);
+		char x = static_cast<char>(localPosition.x() / 8.0f);
+		char y = static_cast<char>(localPosition.y() / 8.0f);
 		uint8_t timeToExplode = static_cast<uint8_t>(std::min<std::chrono::milliseconds::rep>(223, std::chrono::duration_cast<std::chrono::milliseconds>(result->timeout.timeout).count() / 50));
 		BabyDI::Get<Server>()->sendPacketToOneLevel(CString() >> (char)PLO_BOMBADD >> (char)x >> (char)y >> (char)result->power >> (char)timeToExplode, shared_from_this());
 	}
@@ -991,7 +993,8 @@ bool Level::removeBomb(inform_client_t, size_t index)
 {
 	if (index < m_bombs.size())
 	{
-		CString packet = CString() >> (char)PLO_BOMBDEL >> (char)(m_bombs[index].position.x() / 8) >> (char)(m_bombs[index].position.y() / 8);
+		auto localPosition = toLocalPixelPosition(m_bombs[index].position);
+		CString packet = CString() >> (char)PLO_BOMBDEL >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8);
 		BabyDI::Get<Server>()->sendPacketToOneLevel(packet, this->shared_from_this());
 	}
 	return removeBomb(index);
@@ -1076,7 +1079,8 @@ void Level::addExplosion(inform_client_t, const PixelPosition& position, ScriptO
 
 	addExplosion(position, from, radius, power);
 
-	CString packet = CString() >> (char)PLO_EXPLOSION >> (short)0 >> (char)radius >> (char)(position.x() / 8) >> (char)(position.y() / 8) >> (char)power;
+	auto localPosition = toLocalPixelPosition(position);
+	CString packet = CString() >> (char)PLO_EXPLOSION >> (short)0 >> (char)radius >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) >> (char)power;
 	BabyDI::Get<Server>()->sendPacketToOneLevel(packet, shared_from_this());
 }
 
@@ -1229,7 +1233,8 @@ bool Level::removeHorse(inform_client_t, size_t index)
 {
 	if (index < m_horses.size())
 	{
-		CString packet = CString() >> (char)PLO_HORSEDEL >> (char)(m_horses[index].position.x() / 8) >> (char)(m_horses[index].position.y() / 8);
+		auto localPosition = toLocalPixelPosition(m_horses[index].position);
+		CString packet = CString() >> (char)PLO_HORSEDEL >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8);
 		BabyDI::Get<Server>()->sendPacketToOneLevel(packet, this->shared_from_this());
 	}
 	return removeHorse(index);
@@ -1269,8 +1274,9 @@ LevelItem* Level::addItem(inform_client_t, const PixelPosition& position, LevelI
 	auto result = addItem(position, item);
 	if (result != nullptr)
 	{
+		auto localPosition = toLocalPixelPosition(result->position);
 		BabyDI::Get<Server>()->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD
-			>> (char)(result->position.x() / 8) >> (char)(result->position.y() / 8) >> (char)LevelItem::getItemTypeId(result->item),
+			>> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) >> (char)LevelItem::getItemTypeId(result->item),
 			shared_from_this());
 	}
 	return result;
@@ -1324,7 +1330,8 @@ bool Level::removeItem(inform_client_t, size_t index)
 {
 	if (index < m_items.size())
 	{
-		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(m_items[index].position.x() / 8) >> (char)(m_items[index].position.y() / 8);
+		auto localPosition = toLocalPixelPosition(m_items[index].position);
+		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8);
 		BabyDI::Get<Server>()->sendPacketToOneLevel(packet, this->shared_from_this());
 	}
 	return removeItem(index);

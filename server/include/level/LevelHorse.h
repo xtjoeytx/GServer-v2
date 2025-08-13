@@ -23,8 +23,9 @@ struct LevelHorse
 
 	CString getPacket() const
 	{
+		auto localPosition = toLocalPixelPosition(position);
 		char dir_bush = (bushes << 2) | (direction & 0x03);
-		return  CString() << (char)(position.x() / 8) >> (char)(position.y() / 8) >> (char)dir_bush << image;
+		return  CString() << (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) >> (char)dir_bush << image;
 	}
 
 	PixelPosition position;
