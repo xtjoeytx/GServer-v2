@@ -500,13 +500,14 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 			if (flagName == "gr.x")
 			{
 				if (m_versionId >= CLVER_2_3) return HandlePacketResult::Handled;
-				float pos = (float)atof(flagValue.text());
-				if (pos != account.character.localPixelX / 16.0f)
+				auto globalPos = getGlobalPosition();
+				globalPos.x() = static_cast<int32_t>(atof(flagValue.text()) * 16.0);
+				if (auto localPos = toLocalPixelPosition(globalPos); localPos.x() != account.character.localPixelX)
 				{
-					if (pos == -22) pos = -21.5f;
-					if (pos == 116) pos = 115.5f;
-					m_grMovementPackets >> (char)PlayerProp::X;
-					m_grMovementPackets.writeGCharUnsafe(pos * 2.0f);
+					auto xprop = getProp<PlayerProp::X2>();
+					xprop.pixelCoordinate = localPos.x();
+					m_grMovementPackets >> (char)PlayerProp::X2;
+					m_grMovementPackets << xprop.serialize();
 					m_grMovementPackets << "\n";
 				}
 				return HandlePacketResult::Handled;
@@ -514,13 +515,14 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 			else if (flagName == "gr.y")
 			{
 				if (m_versionId >= CLVER_2_3) return HandlePacketResult::Handled;
-				float pos = (float)atof(flagValue.text());
-				if (pos != account.character.localPixelY / 16.0f)
+				auto globalPos = getGlobalPosition();
+				globalPos.y() = static_cast<int32_t>(atof(flagValue.text()) * 16.0);
+				if (auto localPos = toLocalPixelPosition(globalPos); localPos.y() != account.character.localPixelY)
 				{
-					if (pos == -22) pos = -21.5f;
-					if (pos == 116) pos = 115.5f;
-					m_grMovementPackets >> (char)PlayerProp::Y;
-					m_grMovementPackets.writeGCharUnsafe(pos * 2.0f);
+					auto yprop = getProp<PlayerProp::Y2>();
+					yprop.pixelCoordinate = localPos.y();
+					m_grMovementPackets >> (char)PlayerProp::Y2;
+					m_grMovementPackets << yprop.serialize();
 					m_grMovementPackets << "\n";
 				}
 				return HandlePacketResult::Handled;
@@ -877,17 +879,6 @@ HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 		sendLevel(adjacentLevel, modTime, true);
 	else
 		sendLevel141(adjacentLevel, modTime, true);
-
-	// Set our old level back to normal.
-	//sendPacket(CString() >> (char)PLO_LEVELNAME << level->levelName);
-	auto level = getLevel();
-	if (level->isOnGmap())
-		sendPacket(CString() >> (char)PLO_LEVELNAME << level->getMap()->getMapName());
-	else
-		sendPacket(CString() >> (char)PLO_LEVELNAME << level->levelName);
-
-	if (level->isPlayerLeader(m_id) && (!level->isOnGmap()))
-		sendPacket(CString() >> (char)PLO_ISLEADER);
 
 	return HandlePacketResult::Handled;
 }

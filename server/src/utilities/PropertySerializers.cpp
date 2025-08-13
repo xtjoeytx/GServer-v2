@@ -389,13 +389,26 @@ std::format_context::iterator PropertyPixelCoordinate::format(std::format_contex
 CString PropertyTileCoordinate::serialize() const
 {
 	CString result;
-	result.writeGCharUnsafe(pixelCoordinate / 8);
+
+	// Writing 223 will break the packet flow (as it will overflow to the newline char), so avoid doing that.
+	// 223 will be -11 and 224 will be -10.5.
+	uint8_t halftile = static_cast<uint8_t>(pixelCoordinate / 8);
+	if (halftile == 223)
+		halftile = 224;
+
+	result.writeGCharUnsafe(halftile);
 	return result;
 }
 
 void PropertyTileCoordinate::deserialize(CString& data)
 {
-	pixelCoordinate = static_cast<int16_t>(std::clamp(data.readGChar() * 8, -20 * 16, 84 * 16));
+	int16_t halftile = 0;
+	uint8_t read = data.readGChar();
+	if (read >= 216)
+		halftile = static_cast<int8_t>(read);
+	else halftile = read;
+
+	pixelCoordinate = static_cast<int16_t>(halftile * 16);
 }
 
 void PropertyTileCoordinate::apply(const GameValue& gameValue)
