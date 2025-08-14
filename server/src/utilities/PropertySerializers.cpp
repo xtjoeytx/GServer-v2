@@ -408,7 +408,7 @@ void PropertyTileCoordinate::deserialize(CString& data)
 		halftile = static_cast<int8_t>(read);
 	else halftile = read;
 
-	pixelCoordinate = static_cast<int16_t>(halftile * 16);
+	pixelCoordinate = static_cast<int16_t>(halftile * 8);
 }
 
 void PropertyTileCoordinate::apply(const GameValue& gameValue)

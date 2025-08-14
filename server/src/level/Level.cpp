@@ -117,15 +117,8 @@ Level::~Level()
 	m_signs.clear();
 
 	// Delete items.
-	for (auto& item : m_items)
-	{
-		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.position.x() / 8) >> (char)(item.position.y() / 8);
-		for (auto& player : m_players)
-		{
-			if (auto p = server->getPlayer(player); p)
-				p->sendPacket(packet);
-		}
-	}
+	for (size_t i = m_items.size(); i > 0; --i)
+		removeItem(inform_client, i - 1);
 	m_items.clear();
 
 	// Delete board changes.
@@ -205,15 +198,8 @@ bool Level::reload()
 	m_signs.clear();
 
 	// Delete items.
-	for (const auto& item : m_items)
-	{
-		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(item.position.x() / 8) >> (char)(item.position.y() / 8);
-		for (auto& playerId : m_players)
-		{
-			if (auto player = server->getPlayer(playerId); player)
-				player->sendPacket(packet);
-		}
-	}
+	for (size_t i = m_items.size(); i > 0; --i)
+		removeItem(inform_client, i - 1);
 	m_items.clear();
 
 	// Delete board changes.
@@ -249,7 +235,7 @@ bool Level::reload()
 	for (auto& id : oldplayers)
 	{
 		if (auto p = server->getPlayer<PlayerClient>(id); p)
-			p->warp((ret ? levelName : uLevel), ret ? p->account.character.getLocalPosition() : toLocalPixelPosition(uX, uY));
+			p->warp((ret ? levelName : uLevel), ret ? p->getLocalPosition() : toLocalPixelPosition(uX, uY));
 	}
 
 	return ret;
