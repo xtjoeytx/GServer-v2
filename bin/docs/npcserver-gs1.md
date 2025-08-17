@@ -105,9 +105,10 @@ Just use `timeout`.
     paramscount
     players[]
     playerscount
-    tiles[x,y]
+    tiles[x,y]      (not gmap supported yet)
     timevar
     timevar2
+    tokenscount
     weaponscount
 
     npcs[]
@@ -245,6 +246,7 @@ Just use `timeout`.
     cannotwarp
     canwarp
     canwarp2
+    carryobject
     deletestring
     destroy
     detachplayer
@@ -332,7 +334,10 @@ Just use `timeout`.
     spyfire
     take
     take2
+    takehorse
+    takeplayercarry
     takeplayerhorse
+    throwcarry
     tokenize
     tokenize2
     unfreezeplayer
@@ -341,7 +346,6 @@ Just use `timeout`.
 
 #### Not implemented
 
-    carryobject
     copyflags
     copylevel
     copystrings
@@ -357,9 +361,6 @@ Just use `timeout`.
     showimg2
     showstats
     sleep
-    takehorse
-    takeplayercarry
-    throwcarry
     timershow
     updateboard
     updateboard2
@@ -426,8 +427,10 @@ Just use `timeout`.
     base64encode(string)
     findnearestplayers(x, y)
     getz(x, y)
-    playersays(???)
-    playersays2(???)
+    playersays(text)
+    playersays(index, text)
+    playersays2(text)
+    playersays2(index, text)
     tiletype(x, y) (new tileset layout)
 
 ---

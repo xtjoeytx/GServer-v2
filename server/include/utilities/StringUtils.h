@@ -800,13 +800,21 @@ auto toLower(StringViewVariant auto str)
 template <std::integral T = int32_t>
 bool toNumber(const std::string& str, T& result)
 {
-	char* p_end = nullptr;
-	const long num = std::strtol(str.c_str(), &p_end, 10);
-	if (p_end == str.c_str())
-		return false;
+	try
+	{
+		char* p_end = nullptr;
+		const long num = std::strtol(str.c_str(), &p_end, 10);
+		if (p_end == str.c_str())
+			return false;
 
-	result = num;
-	return true;
+		result = num;
+		return true;
+	}
+	catch (...)
+	{
+		result = 0;
+		return false;
+	}
 }
 
 /// @brief Converts a string to a number of the specified integral type.
@@ -828,13 +836,21 @@ T toNumber(const std::string& str)
 /// @return true if the conversion was successful and the result is stored in 'result'; false otherwise.
 inline bool toFloat(const std::string& str, float& result)
 {
-	char* p_end = nullptr;
-	const float num = std::strtof(str.c_str(), &p_end);
-	if (p_end == str.c_str())
-		return false;
+	try
+	{
+		char* p_end = nullptr;
+		const float num = std::strtof(str.c_str(), &p_end);
+		if (p_end == str.c_str())
+			return false;
 
-	result = num;
-	return true;
+		result = num;
+		return true;
+	}
+	catch (...)
+	{
+		result = 0.0f;
+		return false;
+	}
 }
 
 /// @brief Converts a string to a float value.
@@ -854,13 +870,21 @@ inline float toFloat(const std::string& str)
 /// @return true if the conversion was successful and the result is stored in 'result'; false otherwise.
 inline bool toDouble(const std::string& str, double& result)
 {
-	char* p_end = nullptr;
-	const double num = std::strtod(str.c_str(), &p_end);
-	if (p_end == str.c_str())
-		return false;
+	try
+	{
+		char* p_end = nullptr;
+		const double num = std::strtod(str.c_str(), &p_end);
+		if (p_end == str.c_str())
+			return false;
 
-	result = num;
-	return true;
+		result = num;
+		return true;
+	}
+	catch (...)
+	{
+		result = 0.0;
+		return false;
+	}
 }
 
 /// @brief Converts a string to a double-precision floating-point number.

@@ -702,15 +702,15 @@ void fn_canwarp2(GS1Visitor* visitor, std::string_view commandName, const std::v
 // carryobject carryobjecttype;
 void fn_carryobject(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
+	// TODO: There is no NPC prop for the carry image type.  We may have to investigate official.
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
 		auto carryObjectTypeId = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto* server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-			player->setPropWith<PlayerProp::CARRYSPRITE>(SetBy::SERVER, carryObjectTypeId);
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr && npc->isCharacter())
+			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, "carrystill"s);
 	}
-	*/
 }
 
 // copyflags fromprefix,toprefix;
@@ -2493,23 +2493,43 @@ void fn_take2(GS1Visitor* visitor, std::string_view commandName, const std::vect
 }
 
 // takehorse index;
+// Mounts the horse at the specified index on the level.
 void fn_takehorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("takehorse is not implemented yet.");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: takehorse index");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			if (auto level = npc->level.lock(); level != nullptr)
+			{
+				auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+				if (auto horse = level->getMapHorse(index); horse.has_value())
+				{
+					npc->setPropWith<NPCProp::HORSEIMAGE>(SetBy::SERVER, horse.value()->image);
+					level->removeHorse(inform_client, index);
+				}
+			}
+		}
+	}
 }
 
 // takeplayercarry;
 // Takes the carried object from the player.
 void fn_takeplayercarry(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-			player->setPropWith<PlayerProp::CARRYSPRITE>(SetBy::SERVER, 0xFF);
+		{
+			player->sendPacket(CString() >> (char)PLO_THROWCARRIED >> (short)player->getId());
+			player->setPropWith<PlayerProp::CARRYSPRITE>(SetBy::SERVER, 0xFF_ui8);
+		}
 	}
-	*/
 }
 
 // takeplayerhorse;
@@ -2526,17 +2546,14 @@ void fn_takeplayerhorse(GS1Visitor* visitor, std::string_view commandName, const
 
 // throwcarry;
 // Throws the carried object.
-// Assuming NPC?
 void fn_throwcarry(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	/*
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-			player->setPropWith<PlayerProp::CARRYNPC>(SetBy::SERVER, static_cast<uint32_t>(0));
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr && npc->isCharacter() && npc->character.gani.starts_with("carry"))
+			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, "idle"sv);
 	}
-	*/
 }
 
 // timershow;
@@ -2554,6 +2571,7 @@ void fn_tokenize(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 	auto text = visitor->getGameValueAs<std::string>(*arguments[0]);
 	visitor->tokenizeTokens = string::splitHard(text, " "sv);
+	visitor->builtInStore->add(GameVariable{ set_temporary, "tokenscount", GameValue{static_cast<double>(visitor->tokenizeTokens.size()) } });
 }
 
 // tokenize2 delims,text;
@@ -2566,6 +2584,7 @@ void fn_tokenize2(GS1Visitor* visitor, std::string_view commandName, const std::
 	auto delims = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
 	visitor->tokenizeTokens = string::splitHard(text, delims);
+	visitor->builtInStore->add(GameVariable{ set_temporary, "tokenscount", GameValue{static_cast<double>(visitor->tokenizeTokens.size()) } });
 }
 
 // triggeraction x,y,action,params;

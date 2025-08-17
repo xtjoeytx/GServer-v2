@@ -538,8 +538,8 @@ void PropertyImagePart::deserialize(CString& data)
 	width = data.readGUChar();
 	height = data.readGUChar();
 
-	imagePart.position = { x ,y };
-	imagePart.size = { width, height };
+	imagePart.position = { std::clamp(x, 0_ui16, 16000_ui16), std::clamp(y, 0_ui16, 16000_ui16) };
+	imagePart.size = { std::clamp(width, 0_ui8, 220_ui8), std::clamp(height, 0_ui8, 220_ui8) };
 }
 
 void PropertyImagePart::apply(const GameValue& gameValue)

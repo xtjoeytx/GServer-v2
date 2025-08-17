@@ -865,10 +865,9 @@ void NPC::setPropsFromPacket(CString& packet, PlayerPtr source)
 
 		results.emplace_back(setProp(propId, setBy, prop), prop);
 	}
+	DO_PACKETLOG(log::print(log::networkdump, "\n"));
 
 	sendPropsFromSendResults(results, source);
-
-	DO_PACKETLOG(log::print(log::networkdump, "\n"));
 }
 
 //----------------------------

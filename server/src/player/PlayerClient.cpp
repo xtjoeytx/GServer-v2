@@ -1281,7 +1281,7 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, LocalPixelPosition p
 	// Update RCs.
 	CString myRCProps = CString() >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name
 		>> (char)PlayerProp::CURLEVEL << getProp<PlayerProp::CURLEVEL>().serialize()
-		>> (char)PlayerProp::PSTATUSMSG << getProp<PlayerProp::PSTATUSMSG>().serialize()
+		>> (char)PlayerProp::PLAYERLISTSTATUS << getProp<PlayerProp::PLAYERLISTSTATUS>().serialize()
 		>> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize()
 		>> (char)PlayerProp::COMMUNITYNAME << getProp<PlayerProp::COMMUNITYNAME>().serialize();
 	m_server->sendPacketToType(PLTYPE_ANYCONTROL, myRCProps, this);

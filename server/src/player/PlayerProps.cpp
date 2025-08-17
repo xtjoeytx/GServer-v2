@@ -477,7 +477,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::CARRYSPRITE:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			PropertyUnsafeByte* numProp = dynamic_cast<PropertyUnsafeByte*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -744,10 +744,10 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::JOINLEAVELVL:
 			break;
 
-		case PlayerProp::PCONNECTED:
+		case PlayerProp::DISCONNECT:
 			break;
 
-		case PlayerProp::PLANGUAGE:
+		case PlayerProp::LANGUAGE:
 		{
 			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
@@ -757,7 +757,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::PSTATUSMSG:
+		case PlayerProp::PLAYERLISTSTATUS:
 		{
 			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)

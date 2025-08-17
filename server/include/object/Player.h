@@ -574,7 +574,7 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::Y,			PropertyTileCoordinate,		account.character.localPixelY) \
 	DO(PlayerProp::SPRITE,		PropertySprite,				account.character.sprite, account.character.direction) \
 	DO(PlayerProp::STATUS,		PropertyNumeric<GBYTE1>,	account.status) \
-	DO(PlayerProp::CARRYSPRITE,	PropertyNumeric<GBYTE1>,	m_carrySprite) \
+	DO(PlayerProp::CARRYSPRITE,	PropertyUnsafeByte,			m_carrySprite) \
 	DO(PlayerProp::CURLEVEL,	PropertyString,				account.level) \
 	DO(PlayerProp::HORSEGIF,	PropertyString,				account.character.horseImage) \
 	DO(PlayerProp::HORSEBUSHES,	PropertyNumeric<GBYTE1>,	m_horseBombCount) \
@@ -606,9 +606,9 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::GATTRIB8,	PropertyString,				account.character.ganiAttributes[7]) \
 	DO(PlayerProp::GATTRIB9,	PropertyString,				account.character.ganiAttributes[8]) \
 	DO(PlayerProp::JOINLEAVELVL,PropertyNumeric<GBYTE1>,	1_ui8) \
-	DO(PlayerProp::PCONNECTED,	PropertyVoid) \
-	DO(PlayerProp::PLANGUAGE,	PropertyString,				account.language) \
-	DO(PlayerProp::PSTATUSMSG,	PropertyNumeric<GBYTE1>,	m_statusMsg) \
+	DO(PlayerProp::DISCONNECT,	PropertyVoid) \
+	DO(PlayerProp::LANGUAGE,	PropertyString,				account.language) \
+	DO(PlayerProp::PLAYERLISTSTATUS, PropertyNumeric<GBYTE1>, m_statusMsg) \
 	DO(PlayerProp::GATTRIB10,	PropertyString,				account.character.ganiAttributes[9]) \
 	DO(PlayerProp::GATTRIB11,	PropertyString,				account.character.ganiAttributes[10]) \
 	DO(PlayerProp::GATTRIB12,	PropertyString,				account.character.ganiAttributes[11]) \

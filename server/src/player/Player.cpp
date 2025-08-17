@@ -316,7 +316,7 @@ void Player::cleanup()
 		// Announce our departure to other clients.
 		if (!isNC())
 		{
-			m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::PCONNECTED, this);
+			m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::DISCONNECT, this);
 			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)m_id, this);
 		}
 
@@ -713,7 +713,7 @@ void Player::exchangeMyPropsWithOthers()
 	CString myRCProps;
 	myRCProps >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name
 		>> (char)PlayerProp::CURLEVEL << getProp<PlayerProp::CURLEVEL>().serialize()
-		>> (char)PlayerProp::PSTATUSMSG << getProp<PlayerProp::PSTATUSMSG>().serialize()
+		>> (char)PlayerProp::PLAYERLISTSTATUS << getProp<PlayerProp::PLAYERLISTSTATUS>().serialize()
 		>> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize()
 		>> (char)PlayerProp::COMMUNITYNAME << getProp<PlayerProp::COMMUNITYNAME>().serialize();
 
@@ -746,7 +746,7 @@ void Player::exchangeMyPropsWithOthers()
 			// Get the other player's RC props.
 			sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)player->getId() >> (char)player->account.name.length() << player->account.name
 				>> (char)PlayerProp::CURLEVEL << player->getProp<PlayerProp::CURLEVEL>().serialize()
-				>> (char)PlayerProp::PSTATUSMSG << player->getProp<PlayerProp::PSTATUSMSG>().serialize()
+				>> (char)PlayerProp::PLAYERLISTSTATUS << player->getProp<PlayerProp::PLAYERLISTSTATUS>().serialize()
 				>> (char)PlayerProp::NICKNAME << player->getProp<PlayerProp::NICKNAME>().serialize()
 				>> (char)PlayerProp::COMMUNITYNAME << player->getProp<PlayerProp::COMMUNITYNAME>().serialize());
 		}

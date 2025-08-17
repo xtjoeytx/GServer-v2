@@ -213,6 +213,35 @@ struct PropertyVoid : public PropertyBase
 	}
 };
 
+struct PropertyUnsafeByte : public PropertyBase
+{
+	explicit PropertyUnsafeByte(uint8_t value = 0) : value(value) {}
+
+	virtual CString serialize() const override
+	{
+		CString result;
+		result.writeGCharUnsafe(value);
+		return result;
+	}
+
+	virtual void deserialize(CString& data) override
+	{
+		data.readGInto(value);
+	}
+
+	virtual void apply(const GameValue& gameValue) override
+	{
+		value = static_cast<uint8_t>(gameValue.get<double>().value_or(0));
+	}
+
+	virtual std::format_context::iterator format(std::format_context& ctx) const override
+	{
+		return std::format_to(ctx.out(), "value: {}", value);
+	}
+
+	uint8_t value;
+};
+
 /// @brief A property that is encoded as a packed numeric value.
 /// @tparam T The type of the numeric value, which must be an integral type that CString can easily serialize (1, 2, 3, or 5 bytes).
 template<std::integral T>
@@ -302,11 +331,11 @@ struct PropertyShieldPower : public PropertyBase
 struct PropertyGaniOrBowGif : public PropertyBase
 {
 	PropertyGaniOrBowGif() = default;
-	PropertyGaniOrBowGif(std::string gani) : gani(std::move(gani)) {}
-	PropertyGaniOrBowGif(uint8_t bowPower, std::string bowGif)
-		: bowGif(std::make_pair(std::move(bowGif), bowPower)) {}
-	PropertyGaniOrBowGif(std::string gani, uint8_t bowPower, std::string bowGif)
-		: gani(std::move(gani)), bowGif(std::make_pair(std::move(bowGif), bowPower)) {}
+	PropertyGaniOrBowGif(std::string_view gani) : gani(gani) {}
+	PropertyGaniOrBowGif(uint8_t bowPower, std::string_view bowGif)
+		: bowGif(std::make_pair(std::string{ bowGif }, bowPower)) {}
+	PropertyGaniOrBowGif(std::string_view gani, uint8_t bowPower, std::string_view bowGif)
+		: gani(gani), bowGif(std::make_pair(std::string{ bowGif }, bowPower)) {}
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;

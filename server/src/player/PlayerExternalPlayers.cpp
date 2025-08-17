@@ -70,7 +70,7 @@ bool Player::remPMServer(CString& option)
 				if (isRC())
 					sendPacket(CString() >> (char)PLO_DELPLAYER >> externalId);
 				else
-					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> externalId >> (char)PlayerProp::PCONNECTED);
+					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> externalId >> (char)PlayerProp::DISCONNECT);
 			}
 		}
 	}
@@ -123,9 +123,9 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 					if (isRC())
 						sendPacket(CString() >> (char)PLO_DELPLAYER >> externalId);
 					else
-						sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> externalId >> (char)PlayerProp::PCONNECTED);
+						sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> externalId >> (char)PlayerProp::DISCONNECT);
 
-					//m_server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PlayerProp::PCONNECTED, this);
+					//m_server->sendPacketTo(PLTYPE_ANYCLIENT, CString() >> (char)PLO_OTHERPLPROPS >> (short)id >> (char)PlayerProp::DISCONNECT, this);
 					//m_server->sendPacketTo(PLTYPE_ANYRC, CString() >> (char)PLO_DELPLAYER >> (short)id, this);
 				}
 			}

@@ -91,11 +91,13 @@ enum class NPCProp : uint8_t
 	GATTRIB8 = 46,
 	GATTRIB9 = 47,
 
+	// --- NOT HANDLED BY CLIENT, DO NOT SEND
 	UNKNOWN48 = 48,
 	SCRIPTER = 49, // My guess is UNKNOWN48 or this is the scripter's name
 	NAME = 50,
 	TYPE = 51,
 	CURLEVEL = 52,
+	// --- END NOT HANDLED BY CLIENT
 
 	GATTRIB10 = 53,
 	GATTRIB11 = 54,
