@@ -156,6 +156,7 @@ Just use `timeout`.
         .dir
         .attachid
         .attachtype
+        .saysnumber
         .lastdead
         .logintime
     players[] shorthand: e.g., playerhearts
@@ -223,8 +224,6 @@ Just use `timeout`.
     gravity
     waterheight
     playerhurtpower
-    players[]
-        .saysnumber
 
 ---
 ## Commands
@@ -399,6 +398,10 @@ Just use `timeout`.
     onwall2(x, y, width, height)    (old tileset layout only)
     onwater(x, y)                   (old tileset layout only)
     onwater2(x, y, width, height)   (old tileset layout only)
+    playersays(index, text)
+    playersays(text)
+    playersays2(index, text)
+    playersays2(text)
     random(min, max)
     sarraylen(list)
     sin(value)
@@ -427,10 +430,6 @@ Just use `timeout`.
     base64encode(string)
     findnearestplayers(x, y)
     getz(x, y)
-    playersays(text)
-    playersays(index, text)
-    playersays2(text)
-    playersays2(index, text)
     tiletype(x, y) (new tileset layout)
 
 ---

@@ -345,6 +345,40 @@ void pushArrayAccess()
 	popNextMode();
 }
 
+void checkIfNextModeOptional()
+{
+	popNextMode();
+
+	// Look ahead for comma and right parenthesis.
+	bool skipNext = false;
+	try
+	{
+		size_t symbol = EOF;
+		size_t index = 1;
+		while ((symbol = _input->LA(index++)) != EOF)
+		{
+			// If we reached the end, we didn't have a comma, so skip the next mode.
+			if (symbol == ')')
+			{
+				skipNext = true;
+				break;
+			}
+
+			// We found a comma, so we can stop looking.
+			if (symbol == ',')
+				break;
+		}
+	}
+	catch (...)
+	{
+		// Who cares.
+	}
+
+	// If we are skipping the next mode, do that now.
+	if (skipNext)
+		popNextMode();
+}
+
 void popNextMode(bool terminateEarly = false)
 {
 	if (m_commandStates.empty()) return;
@@ -362,7 +396,7 @@ void popNextMode(bool terminateEarly = false)
 		currentState.arguments.remove_prefix(1);
 
 		// Last string?  Commas are included!
-		if (mode == 'S' && (currentState.arguments.empty() || currentState.arguments.front() == '('))
+		if (mode == 'S' && (currentState.arguments.empty() || currentState.arguments.front() == ')'))
 			currentState.commaPop = false;
 
 		switch (mode)
@@ -379,10 +413,11 @@ void popNextMode(bool terminateEarly = false)
 			case 'G': setMode(IN_PARAM_G); break;
 			case 'U': setMode(IN_PARAM_U); break;
 			case 'D': setMode(IN_PARAM_D); break;
-			case 'Z': setMode(IN_PARAM_Z); break;
 			case 'X': setMode(IN_PARAM_X); break;
+			case 'Z': setMode(IN_PARAM_Z); break;
 			case '(': setMode(IN_PARAM_1); break;
 			case ')': setMode(IN_PARAM_2); break;
+			case '<': setMode(IN_PARAM_3); break;
 			default: setMode(DEFAULT_MODE); break;
 		}
 	}
@@ -412,10 +447,11 @@ tokens { COMMAND, FUNCTION, MESSAGECODE, STRING, BADDY, ITEM, COLOR, GENDER, CAR
 	- G  gender name
 	- U  carry item name
 	- D  direction name or number
-	- Z  code (putnpc2 special case)
 	- X  storage special case
+	- Z  code (putnpc2 special case)
 	- (  left parenthesis
 	- )  right parenthesis
+	- <  left parenthesis that tests if a comma is found before the ) and, if not, skips the next mode (playersays special case)
 */
 
 CMD_SETSTRING            : 'setstring'            { pushCommand("VS"); } -> type(COMMAND);
@@ -678,8 +714,6 @@ FUNC_GROUP_2
 		| 'keycode'
 		| 'base64encode'
 		| 'base64decode'
-		| 'playersays'
-		| 'playersays2'
 		| 'hasweapon'
 		| '_'
 		| 'N_'
@@ -697,16 +731,15 @@ FUNC_GROUP_3
 	) { pushCommand("(SS)"); } -> type(FUNCTION)
 	;
 
-FUNC_GROUP_4 : ('textwidth' | 'textheight') { pushCommand("(ESSS)"); } -> type(FUNCTION);
-FUNC_GROUP_5 : 'lindexof'  { pushCommand("(SV)"); } -> type(FUNCTION);
-FUNC_GROUP_6 : 'sarraylen' { pushCommand("(V)"); }  -> type(FUNCTION);
+FUNC_GROUP_4 : ('textwidth' | 'textheight')   { pushCommand("(ESSS)"); } -> type(FUNCTION);
+FUNC_GROUP_5 : 'lindexof'                     { pushCommand("(SV)"); }   -> type(FUNCTION);
+FUNC_GROUP_6 : 'sarraylen'                    { pushCommand("(V)"); }    -> type(FUNCTION);
+FUNC_GROUP_7 : ('playersays' | 'playersays2') { pushCommand("<ES)"); }   -> type(FUNCTION);
 
-// playersays(real,string)
-// playersays2(real,string)
 // getflagkeys(string)
 
 MC_NOINDEX		: '#' ([angcmWw1235678LFfpbND] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { _input->LA(1) != '(' }? -> type(MESSAGECODE);
-MC_SIMPLE		: '#' ([angcmWw1235678ptKkGN]  | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { pushCommand("(P)"); } -> type(MESSAGECODE);
+MC_SIMPLE		: '#' ([angcmWw1235678ptKkGN]  | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { pushCommand("(P)"); }   -> type(MESSAGECODE);
 MC_COMPUTED_S	: '#s' { pushCommand("(V)"); }   -> type(MESSAGECODE);
 MC_COMPUTED_V	: '#v' { pushCommand("(E)"); }   -> type(MESSAGECODE);
 MC_I			: '#I' { pushCommand("(VP)"); }  -> type(MESSAGECODE);
@@ -949,6 +982,7 @@ PARAM_V_FUNC_GROUP_3    : FUNC_GROUP_3 { pushCommand("(SS)"); }   -> type(FUNCTI
 PARAM_V_FUNC_GROUP_4    : FUNC_GROUP_4 { pushCommand("(ESSS)"); } -> type(FUNCTION);
 PARAM_V_FUNC_GROUP_5    : FUNC_GROUP_5 { pushCommand("(SV)"); }   -> type(FUNCTION);
 PARAM_V_FUNC_GROUP_6    : FUNC_GROUP_6 { pushCommand("(V)"); }    -> type(FUNCTION);
+PARAM_V_FUNC_GROUP_7    : FUNC_GROUP_7 { pushCommand("<ES)"); }   -> type(FUNCTION);
 PARAM_V_MC_NOINDEX      : MC_NOINDEX                              -> type(MESSAGECODE);
 PARAM_V_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGECODE);
 PARAM_V_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
@@ -991,6 +1025,7 @@ PARAM_E_FUNC_GROUP_3    : FUNC_GROUP_3 { pushCommand("(SS)"); }   -> type(FUNCTI
 PARAM_E_FUNC_GROUP_4    : FUNC_GROUP_4 { pushCommand("(ESSS)"); } -> type(FUNCTION);
 PARAM_E_FUNC_GROUP_5    : FUNC_GROUP_5 { pushCommand("(SV)"); }   -> type(FUNCTION);
 PARAM_E_FUNC_GROUP_6    : FUNC_GROUP_6 { pushCommand("(V)"); }    -> type(FUNCTION);
+PARAM_E_FUNC_GROUP_7    : FUNC_GROUP_7 { pushCommand("<ES)"); }   -> type(FUNCTION);
 PARAM_E_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
 PARAM_E_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
 PARAM_E_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
@@ -1099,6 +1134,7 @@ PARAM_M_FUNC_GROUP_3    : FUNC_GROUP_3 { pushCommand("(SS)"); }   -> type(FUNCTI
 PARAM_M_FUNC_GROUP_4    : FUNC_GROUP_4 { pushCommand("(ESSS)"); } -> type(FUNCTION);
 PARAM_M_FUNC_GROUP_5    : FUNC_GROUP_5 { pushCommand("(SV)"); }   -> type(FUNCTION);
 PARAM_M_FUNC_GROUP_6    : FUNC_GROUP_6 { pushCommand("(V)"); }    -> type(FUNCTION);
+PARAM_M_FUNC_GROUP_7    : FUNC_GROUP_7 { pushCommand("<ES)"); }   -> type(FUNCTION);
 PARAM_M_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
 PARAM_M_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
 PARAM_M_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
@@ -1185,6 +1221,7 @@ PARAM_D_FUNC_GROUP_3    : FUNC_GROUP_3 { pushCommand("(SS)"); }   -> type(FUNCTI
 PARAM_D_FUNC_GROUP_4    : FUNC_GROUP_4 { pushCommand("(ESSS)"); } -> type(FUNCTION);
 PARAM_D_FUNC_GROUP_5    : FUNC_GROUP_5 { pushCommand("(SV)"); }   -> type(FUNCTION);
 PARAM_D_FUNC_GROUP_6    : FUNC_GROUP_6 { pushCommand("(V)"); }    -> type(FUNCTION);
+PARAM_D_FUNC_GROUP_7    : FUNC_GROUP_7 { pushCommand("<ES)"); }   -> type(FUNCTION);
 PARAM_D_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
 PARAM_D_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
 PARAM_D_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
@@ -1224,17 +1261,6 @@ PARAM_D_TOKEN_COLON         : TOKEN_COLON -> type(TOKEN_COLON);
 PARAM_D_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 
 // --------------------------------------------------------
-mode IN_PARAM_Z;
-
-PARAM_Z_START           : TOKEN_BRACE_LEFT  { m_braceCount == 0 }? { ++m_braceCount; } -> channel(HIDDEN);
-PARAM_Z_POP_END         : END               { m_braceCount == 0 }? { popNextMode(); }    -> type(END);
-PARAM_Z_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { m_braceCount == 1 }? { --m_braceCount; popNextMode(); emitIdentifierBefore(GS1Lexer::END, getText()); } -> channel(HIDDEN);
-PARAM_Z_BRACE_LEFT      : TOKEN_BRACE_LEFT                           { ++m_braceCount; } -> type(STRING);
-PARAM_Z_BRACE_RIGHT     : TOKEN_BRACE_RIGHT                          { --m_braceCount; } -> type(STRING);
-PARAM_Z_END             : END               { m_braceCount != 0 }? -> type(STRING);
-PARAM_Z_STRING          : ~[{};]+ -> type(STRING);
-
-// --------------------------------------------------------
 mode IN_PARAM_X;
 
 PARAM_X_IDENTIFIER    : IDENTIFIER    { popNextMode(); }        -> type(IDENTIFIER);
@@ -1250,13 +1276,30 @@ PARAM_X_MC_R          : MC_R          { pushCommand("(L)"); }   -> type(MESSAGEC
 PARAM_X_MC_Q          : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
 
 // --------------------------------------------------------
+mode IN_PARAM_Z;
+
+PARAM_Z_START           : TOKEN_BRACE_LEFT  { m_braceCount == 0 }? { ++m_braceCount; } -> channel(HIDDEN);
+PARAM_Z_POP_END         : END               { m_braceCount == 0 }? { popNextMode(); }  -> type(END);
+PARAM_Z_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { m_braceCount == 1 }? { --m_braceCount; popNextMode(); emitIdentifierBefore(GS1Lexer::END, getText()); } -> channel(HIDDEN);
+PARAM_Z_BRACE_LEFT      : TOKEN_BRACE_LEFT                         { ++m_braceCount; } -> type(STRING);
+PARAM_Z_BRACE_RIGHT     : TOKEN_BRACE_RIGHT                        { --m_braceCount; } -> type(STRING);
+PARAM_Z_END             : END               { m_braceCount != 0 }? -> type(STRING);
+PARAM_Z_STRING          : ~[{};]+ -> type(STRING);
+
+// --------------------------------------------------------
 mode IN_PARAM_1;
 
-PARAM_1_WS               : WHITESPACE+ -> type(WS), channel(HIDDEN);
-PARAM_1_TOKEN_PAREN_LEFT : TOKEN_PAREN_LEFT { m_commandStates.back().popMode = POPMODE_FUNCTION; popNextMode(); } -> type(TOKEN_PAREN_LEFT);
+PARAM_1_WS                : WHITESPACE+ -> type(WS), channel(HIDDEN);
+PARAM_1_TOKEN_PAREN_LEFT  : TOKEN_PAREN_LEFT { m_commandStates.back().popMode = POPMODE_FUNCTION; popNextMode(); } -> type(TOKEN_PAREN_LEFT);
 
 // --------------------------------------------------------
 mode IN_PARAM_2;
 
-PARAM_2_WS               : WHITESPACE+ -> type(WS), channel(HIDDEN);
-PARAM_2_TOKEN_PAREN_LEFT : TOKEN_PAREN_RIGHT { popNextMode(); } -> type(TOKEN_PAREN_RIGHT);
+PARAM_2_WS                : WHITESPACE+ -> type(WS), channel(HIDDEN);
+PARAM_2_TOKEN_PAREN_RIGHT : TOKEN_PAREN_RIGHT { popNextMode(); } -> type(TOKEN_PAREN_RIGHT);
+
+// --------------------------------------------------------
+mode IN_PARAM_3;
+
+PARAM_3_WS                : WHITESPACE+ -> type(WS), channel(HIDDEN);
+PARAM_3_TOKEN_PAREN_LEFT  : TOKEN_PAREN_LEFT { m_commandStates.back().popMode = POPMODE_FUNCTION; checkIfNextModeOptional(); } -> type(TOKEN_PAREN_LEFT);

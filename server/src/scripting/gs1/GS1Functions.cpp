@@ -9,12 +9,14 @@
 #include <limits>
 #include <map>
 #include <numbers>
+#include <optional>
 #include <random>
 #include <stdexcept>
 #include <string_view>
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <tree/ParseTree.h>
@@ -1014,16 +1016,68 @@ GS1ScriptValue fn_onwater2(GS1Visitor* visitor, std::string_view messageCode, co
 	return GameValue{ false };
 }
 
-// playersays ???
+// playersays(text)
+// playersays(index,text)
+// Checks if the player says the specified text.
+// Equivalent to "playerchats && strequals(#c,text)"
 GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function playersays not implemented");
+	std::optional<size_t> index;
+	std::string text;
+	if (arguments.size() == 2)
+	{
+		auto specifiedIndex = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		text = visitor->getGameValueAs<std::string>(*arguments[1]);
+		if (specifiedIndex >= 0)
+			index = static_cast<size_t>(specifiedIndex);
+	}
+	else
+	{
+		text = visitor->getGameValueAs<std::string>(*arguments[0]);
+	}
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	{
+		if (auto player = getPlayerFromSource(*source, index); player != nullptr)
+		{
+			if (player->account.character.chatMessage == text)
+				return GameValue{ true };
+		}
+	}
+
+	return GameValue{ false };
 }
 
-// playersays2 ???
+// playersays2(text)
+// playersays2(index,text)
+// Checks if the player's chat contains the specified text.
+// Equivalent to "playerchats && strcontains(#c,text)"
 GS1ScriptValue fn_playersays2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function playersays2 not implemented");
+	std::optional<size_t> index;
+	std::string text;
+	if (arguments.size() == 2)
+	{
+		auto specifiedIndex = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		text = visitor->getGameValueAs<std::string>(*arguments[1]);
+		if (specifiedIndex >= 0)
+			index = static_cast<size_t>(specifiedIndex);
+	}
+	else
+	{
+		text = visitor->getGameValueAs<std::string>(*arguments[0]);
+	}
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	{
+		if (auto player = getPlayerFromSource(*source, index); player != nullptr)
+		{
+			if (player->account.character.chatMessage.contains(text))
+				return GameValue{ true };
+		}
+	}
+
+	return GameValue{ false };
 }
 
 // screenx(x, y)

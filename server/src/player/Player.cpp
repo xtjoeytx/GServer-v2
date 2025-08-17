@@ -1080,6 +1080,11 @@ void Player::constructScriptParameters()
 		gameVariableGetter([this]() { return isGuest() ? "guest"s : "classic"s; }),
 		GameVariable::func_set{}
 	);
+
+	scriptParameters.try_emplace("saysnumber", set_temporary, "saysnumber",
+		gameVariableGetter([this]() { return string::toDouble(account.character.chatMessage); }),
+		GameVariable::func_set{}
+	);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
