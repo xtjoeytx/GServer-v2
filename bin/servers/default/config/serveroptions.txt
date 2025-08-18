@@ -227,8 +227,8 @@ clientsidesigns = false
 clientsidelinks = false
 
 # If true, emulates joins on clientside code.
-# If serverside is true, it joins a class (the class code will become clientside).
-# If serverside is false, the server looks for a .txt file with the same name as the join.
+# When true, the server looks for a .txt file with the same name as the join.
+# Does not function when serverside is true.
 clientsidejoins = false
 
 # Enables triggeraction hacks.

@@ -1076,8 +1076,9 @@ void Player::constructScriptParameters()
 			})
 	);
 
+	// trial, classic, vip, gold
 	scriptParameters.try_emplace("upgradestatus", set_temporary, "upgradestatus",
-		gameVariableGetter([this]() { return isGuest() ? "guest"s : "classic"s; }),
+		gameVariableGetter([this]() { return isGuest() ? "trial"s : "classic"s; }),
 		GameVariable::func_set{}
 	);
 

@@ -93,12 +93,15 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		npc->warpRestrictions = NPCWarpRestrictions::NOTALLOWED;
 	}
 
+	// Set some default values.
+	bool isMale = true;
+	npc->visFlags = PROPID(NPCVisFlags::VISIBLE) | PROPID(NPCVisFlags::CREATED);
+
 	const auto& updateTime = server->getServerStartTime();
 	CString npcLevel;
 	std::string script;
 
 	CString propPacket;
-
 	std::string npcInitialLevel;
 
 	// Parse File
@@ -324,6 +327,46 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		{
 			npc->warpRestrictions = strtoint(curLine.readString("")) != 0 ? NPCWarpRestrictions::ONLYOVERWORLD : npc->warpRestrictions;
 		}
+
+		// Official variables for these are unknown.
+		else if (curCommand == "CANCARRY")
+		{
+			auto value = strtoint(curLine.readString(""));
+			if (value != 0)
+				npc->blockFlags |= PROPID(NPCBlockFlags::CANBECARRIED);
+		}
+		else if (curCommand == "CANPULL")
+		{
+			auto value = strtoint(curLine.readString(""));
+			if (value != 0)
+				npc->blockFlags |= PROPID(NPCBlockFlags::CANBEPULLED);
+		}
+		else if (curCommand == "CANPUSH")
+		{
+			auto value = strtoint(curLine.readString(""));
+			if (value != 0)
+				npc->blockFlags |= PROPID(NPCBlockFlags::CANBEPUSHED);
+		}
+		else if (curCommand == "VISIBLE")
+		{
+			auto value = strtoint(curLine.readString(""));
+			if (value == 0)
+				npc->visFlags &= ~PROPID(NPCVisFlags::VISIBLE);
+		}
+		else if (curCommand == "TIMERSHOW")
+		{
+			auto value = strtoint(curLine.readString(""));
+			if (value != 0)
+				npc->visFlags |= PROPID(NPCVisFlags::TIMERSHOW);
+		}
+		else if (curCommand == "MALE")
+		{
+			auto value = strtoint(curLine.readString(""));
+			if (value == 0)
+				isMale = false;
+		}
+		//---
+
 		else if (curCommand == "FLAG")
 		{
 			std::string flagName = curLine.readString("=").toString();
@@ -365,8 +408,13 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	}
 
 	// If the NPC is a character, force the shape to be 48x48.
+	// Also, set the gender.
 	if (npc->isCharacter())
+	{
 		npc->shape = { 48, 48 };
+		if (isMale)
+			npc->visFlags |= PROPID(NPCVisFlags::MALE);
+	}
 
 	// Set the script.
 	npc->setScript(script);
@@ -474,14 +522,30 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	fileData << "LAYER " << CString(layer) << NL;
 	fileData << "SHAPETYPE " << (npc->shape.width() != 0 && npc->shape.height() != 0 ? "1" : "0") << NL;
 	fileData << "SHAPE " << CString(npc->shape.width()) << " " << CString(npc->shape.height()) << NL;
-	fileData << "DONTBLOCK " << CString(npc->blockFlags) << NL;
 
+	if (npc->blockFlags & PROPID(NPCBlockFlags::NOBLOCK))
+		fileData << "DONTBLOCK 1" << NL;
 	if (npc->noPlayerOnWall)
 		fileData << "NOPLAYERONWALL 1" << NL;
 	if (npc->warpRestrictions == NPCWarpRestrictions::NOTALLOWED)
 		fileData << "CANWARP" << NL;
 	if (npc->warpRestrictions == NPCWarpRestrictions::ONLYOVERWORLD)
 		fileData << "CANWARP2" << NL;
+
+	// Official variables for these are unknown.
+	if (npc->blockFlags & PROPID(NPCBlockFlags::CANBECARRIED))
+		fileData << "CANCARRY 1" << NL;
+	if (npc->blockFlags & PROPID(NPCBlockFlags::CANBEPULLED))
+		fileData << "CANPULL 1" << NL;
+	if (npc->blockFlags & PROPID(NPCBlockFlags::CANBEPUSHED))
+		fileData << "CANPUSH 1" << NL;
+	if ((npc->visFlags & PROPID(NPCVisFlags::VISIBLE)) == 0)
+		fileData << "VISIBLE 0" << NL;
+	if ((npc->visFlags & PROPID(NPCVisFlags::TIMERSHOW)) != 0)
+		fileData << "TIMERSHOW 1" << NL;
+	if ((npc->visFlags & PROPID(NPCVisFlags::MALE)) == 0)
+		fileData << "MALE 0" << NL;
+	// ---
 
 	fileData << "SAVEARR " << CString((int)npc->saves[0]) << "," << CString((int)npc->saves[1]) << "," << CString((int)npc->saves[2]) << ","
 		<< CString((int)npc->saves[3]) << "," << CString((int)npc->saves[4]) << "," << CString((int)npc->saves[5]) << ","
