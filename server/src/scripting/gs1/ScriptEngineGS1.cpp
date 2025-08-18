@@ -1,4 +1,5 @@
 #include <any>
+#include <cstdint>
 #include <exception>
 #include <format>
 #include <iterator>
@@ -30,7 +31,9 @@
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
+#include <utilities/PropertySerializers.h>
 
 using namespace preagonal::gs1::grammar;
 
@@ -308,6 +311,12 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 #endif
 		// If we had a terminal error, remove the script from the context so it doesn't get executed again.
 		context->script = nullptr;
+	}
+
+	// Special case to handle "created" events for the NPC.
+	if (npc != nullptr && event.type == ScriptEventType::CREATED)
+	{
+		npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags | PROPID(NPCVisFlags::CREATED)));
 	}
 
 	// Clear the variables (to clear reference counted pointers, just in case).

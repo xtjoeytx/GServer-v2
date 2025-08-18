@@ -1525,8 +1525,8 @@ std::vector<std::string> NPC::getVariableDump() const
 					activeVisFlags += ", drawunderplayer";
 				if (visFlags & PROPID(NPCVisFlags::UNKNOWNBIT4))
 					activeVisFlags += ", unknownbit4";
-				if (visFlags & PROPID(NPCVisFlags::UNKNOWNBIT5))
-					activeVisFlags += ", unknownbit5";
+				if (visFlags & PROPID(NPCVisFlags::CREATED))
+					activeVisFlags += ", created";
 				if (visFlags & PROPID(NPCVisFlags::UNKNOWNBIT6))
 					activeVisFlags += ", unknownbit6";
 				activeVisFlags += (visFlags & PROPID(NPCVisFlags::MALE) ? ", male" : ", female");
