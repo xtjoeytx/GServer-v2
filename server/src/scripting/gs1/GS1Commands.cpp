@@ -1092,9 +1092,9 @@ void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
-		auto x = visitor->getGameValueAs<double>(*arguments[1]);
-		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addItem(inform_client, toPixelPosition(level->getMapPixelOffset(), (float)x, (float)y), static_cast<LevelItemType>(itemname));
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
+		level->addItem(inform_client, level->convertToMapPosition(toLocalPixelPosition(x, y)), static_cast<LevelItemType>(itemname));
 	}
 }
 
@@ -1156,9 +1156,9 @@ void fn_putbomb(GS1Visitor* visitor, std::string_view commandName, const std::ve
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto power = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 1_ui8, 3_ui8);
-		auto x = visitor->getGameValueAs<double>(*arguments[1]);
-		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addBomb(inform_client, toPixelPosition(level->getMapPixelOffset(), (float)x, (float)y), power);
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
+		level->addBomb(inform_client, level->convertToMapPosition(toLocalPixelPosition(x, y)), power);
 	}
 }
 
@@ -1172,9 +1172,9 @@ void fn_putcomp(GS1Visitor* visitor, std::string_view commandName, const std::ve
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		uint8_t baddyname = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto x = visitor->getGameValueAs<double>(*arguments[1]);
-		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->putNewBaddy(toLocalPixelPosition((float)x, (float)y), static_cast<BaddyType>(baddyname));
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
+		level->putNewBaddy(toLocalPixelPosition(x, y), static_cast<BaddyType>(baddyname));
 	}
 }
 
@@ -1188,9 +1188,9 @@ void fn_putexplosion(GS1Visitor* visitor, std::string_view commandName, const st
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto radius = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto x = visitor->getGameValueAs<double>(*arguments[1]);
-		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addExplosion(inform_client, toPixelPosition(level->getMapPixelOffset(), (float)x, (float)y), visitor->getCurrentSource(), radius, 1);
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
+		level->addExplosion(inform_client, level->convertToMapPosition(toLocalPixelPosition(x, y)), visitor->getCurrentSource(), radius, 1);
 	}
 }
 
@@ -1205,9 +1205,9 @@ void fn_putexplosion2(GS1Visitor* visitor, std::string_view commandName, const s
 	{
 		auto power = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 1_ui8, 3_ui8);
 		auto radius = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
-		auto x = visitor->getGameValueAs<double>(*arguments[2]);
-		auto y = visitor->getGameValueAs<double>(*arguments[3]);
-		level->addExplosion(inform_client, toPixelPosition(level->getMapPixelOffset(), (float)x, (float)y), visitor->getCurrentSource(), radius, power);
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[3]));
+		level->addExplosion(inform_client, level->convertToMapPosition(toLocalPixelPosition(x, y)), visitor->getCurrentSource(), radius, power);
 	}
 }
 
@@ -1221,9 +1221,9 @@ void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::v
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto imagefile = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto x = visitor->getGameValueAs<double>(*arguments[1]);
-		auto y = visitor->getGameValueAs<double>(*arguments[2]);
-		level->addHorse(inform_client, imagefile, toPixelPosition(level->getMapPixelOffset(), (float)x, (float)y), 2, 0);
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
+		level->addHorse(inform_client, imagefile, level->convertToMapPosition(toLocalPixelPosition(x, y)), 2, 0);
 	}
 }
 
@@ -1237,11 +1237,11 @@ void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std:
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		uint8_t baddyname = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto x = visitor->getGameValueAs<double>(*arguments[1]);
-		auto y = visitor->getGameValueAs<double>(*arguments[2]);
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
 		auto imagefile = visitor->getGameValueAs<std::string>(*arguments[3]);
 		auto power = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[4]));
-		level->putNewBaddy(toLocalPixelPosition((float)x, (float)y), static_cast<BaddyType>(baddyname), power, imagefile);
+		level->putNewBaddy(toLocalPixelPosition(x, y), static_cast<BaddyType>(baddyname), power, imagefile);
 	}
 }
 
@@ -1256,8 +1256,8 @@ void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vec
 	{
 		auto imagefile = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto scriptfile = visitor->getGameValueAs<std::string>(*arguments[1]);
-		auto x = visitor->getGameValueAs<double>(*arguments[2]);
-		auto y = visitor->getGameValueAs<double>(*arguments[3]);
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[3]));
 
 		auto* server = BabyDI::Get<Server>();
 		if (auto* fs = server->getFileSystem(FS_FILE); fs != nullptr)

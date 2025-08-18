@@ -78,6 +78,9 @@ public:
 	[[inline]] PixelRectangleArea getMapBoundingBox() const noexcept;
 	bool isOnGmap() const noexcept { return m_map != nullptr && m_map->isGmap(); }
 	bool isOnBigMap() const noexcept { return m_map != nullptr && m_map->isBigMap(); }
+	[[inline]] const std::string getMapOrLevelName() const noexcept;
+	[[inline]] PixelPosition convertToMapPosition(const LocalPixelPosition& position) const noexcept;
+	[[inline]] PixelPosition convertToMapPosition(const LocalWholeTilePosition& position) const noexcept;
 
 public:
 	auto& getLevelPlayers() { return m_players; }
@@ -241,6 +244,7 @@ public:
 
 public:
 	std::generator<const PlayerID&> findInRangePlayers(const PixelPosition& position) const noexcept;
+	std::generator<const PlayerID&> findInRangePlayersForCommunication(const PixelPosition& position) const noexcept;
 	std::generator<const NPCID&> findInRangeNPCs(const PixelPosition& position) const noexcept;
 	std::generator<const NPCID&> findInRangeNPCsByDistance(const PixelPosition& position, uint32_t tileDistance) const noexcept;
 	std::generator<const NPCID&> findIntersectingNPCs(const PixelPosition& position, bool includeInvisible = false) const noexcept;
@@ -305,9 +309,31 @@ inline PixelPosition Level::getMapPixelOffset() const noexcept
 	return { static_cast<int32_t>(mapPosition.x() * 1024), static_cast<int32_t>(mapPosition.y() * 1024) };
 }
 
+inline PixelPosition Level::convertToMapPosition(const LocalPixelPosition& position) const noexcept
+{
+	if (isOnGmap())
+		return { position.x() + static_cast<int32_t>(mapPosition.x() * 1024), position.y() + static_cast<int32_t>(mapPosition.y() * 1024) };
+	return { position.x(), position.y() };
+}
+
+inline PixelPosition Level::convertToMapPosition(const LocalWholeTilePosition& position) const noexcept
+{
+	if (isOnGmap())
+		return { static_cast<int32_t>((position.x() * 16) + (mapPosition.x() * 1024)), static_cast<int32_t>((position.y() * 16) + (mapPosition.y() * 1024)) };
+	return { static_cast<int32_t>(position.x() * 16), static_cast<int32_t>(position.y() * 16) };
+}
+
 inline PixelRectangleArea Level::getMapBoundingBox() const noexcept
 {
 	return { getMapPixelOffset(), { 1024_ui16, 1024_ui16 } };
+}
+
+inline const std::string Level::getMapOrLevelName() const noexcept
+{
+	if (m_map == nullptr || m_map->isBigMap())
+		return levelName;
+
+	return m_map->getMapName();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

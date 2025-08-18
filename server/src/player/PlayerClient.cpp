@@ -1340,9 +1340,8 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 		sendPacket(CString() << level->getBaddyPacket());
 	}
 
-	// If we are on a gmap, change our level back to the gmap.
-	if (level->isOnGmap())
-		sendPacket(CString() >> (char)PLO_LEVELNAME << level->getMap()->getMapName());
+	// Fix our level name.
+	sendPacket(CString() >> (char)PLO_LEVELNAME << getComputedLevelName());
 
 	// Tell the client if there are any ghost players in the level.
 	// We don't support trial accounts so pass 0 (no ghosts) instead of 1 (ghosts present).
@@ -1354,13 +1353,11 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 	// Send NPCs.
 	if (!fromAdjacent || level->getMap() != nullptr)
 	{
-		// Reset active level.
-		sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << getComputedLevelName());
-
+		sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->getMapOrLevelName());
 		level->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(cachedModTime));
 
 		// If we are the leader, send it now.
-		if ((level->isPlayerLeader(getId()) || level->isSingleplayer == true) && !level->isOnGmap())
+		if (!m_server->hasNPCServer() && (level->isSingleplayer || level->isPlayerLeader(getId())))
 			sendPacket(CString() >> (char)PLO_ISLEADER);
 	}
 
@@ -1381,11 +1378,14 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 		}
 	}
 
+	// Fix our active level.
+	sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << getComputedLevelName());
+
 	// Send connecting player props to players in nearby levels.
 	if (!level->isSingleplayer)
 	{
 		CString myProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << getPropsPacketFromList(loginPropsClientOthers);
-		for (const auto& playerId : level->findInRangePlayers(getGlobalPosition()))
+		for (const auto& playerId : level->findInRangePlayersForCommunication(getGlobalPosition()))
 		{
 			if (playerId == m_id) continue;
 			if (auto other = m_server->getPlayer(playerId); other != nullptr)
@@ -1470,7 +1470,7 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> level, time_t modTime, bo
 	{
 		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << getPropsPacketFromList(loginPropsClientOthers), getGlobalPosition(), getLevel(), { m_id });
 
-		for (auto id : level->findInRangePlayers(getGlobalPosition()))
+		for (auto id : level->findInRangePlayersForCommunication(getGlobalPosition()))
 		{
 			if (id == getId()) continue;
 			if (auto player = m_server->getPlayer(id); player != nullptr)
@@ -1633,8 +1633,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 	{
 		// Test for NPC touch.
 		bool touchedNPC = false;
-		auto intersectingNPCs = level->findIntersectingNPCsForCollision(testPosPixels);
-		for (const auto& npcId : intersectingNPCs)
+		for (const auto& npcId : level->findIntersectingNPCsForCollision(testPosPixels))
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 			{
@@ -1644,9 +1643,10 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 		}
 		if (touchedNPC)
 		{
-			uint32_t eventDistance = static_cast<uint32_t>(m_server->getSettings().getInt("eventdistance", 100));
+			uint32_t eventDistance = static_cast<uint32_t>(m_server->getSettings().getInt("eventdistance", 64));
 			for (const auto& npcId : level->findInRangeNPCsByDistance(testPosPixels, eventDistance))
 			{
+				auto intersectingNPCs = level->findIntersectingNPCsForCollision(testPosPixels);
 				if (!std::ranges::contains(intersectingNPCs, npcId))
 				{
 					if (auto npc = m_server->getNPC(npcId); npc != nullptr)

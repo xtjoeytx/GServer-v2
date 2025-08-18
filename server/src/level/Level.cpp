@@ -569,9 +569,20 @@ void Level::sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point t
 
 bool Level::isPlayerLeader(PlayerID id) const
 {
-	if (m_players.empty())
-		return false;
-	return m_players.front() == id;
+	if (!isOnGmap())
+	{
+		if (m_players.empty())
+			return false;
+		return m_players.front() == id;
+	}
+	else
+	{
+		auto players = getMapPlayers();
+		auto iter = players.begin();
+		if (iter == players.end() || *iter != id)
+			return false;
+		return true;
+	}
 }
 
 bool Level::hasLivingBaddies() const
@@ -1091,14 +1102,12 @@ void Level::addExplosion(const PixelPosition& position, ScriptObjectSource from,
 	{
 		PixelRectangleArea vertTest = { position.translate(0, -(radius * 32)), { static_cast<uint16_t>(32), static_cast<uint16_t>((1 + (radius * 2)) * 32) } };
 		PixelRectangleArea horzTest = { position.translate(-(radius * 32), 0), { static_cast<uint16_t>((1 + (radius * 2)) * 32), static_cast<uint16_t>(32) } };
-		auto vertNPCs = findIntersectingNPCsForCollision(vertTest);
-		auto horzNPCs = findIntersectingNPCsForCollision(horzTest);
-		for (const NPCID& npcId : vertNPCs)
+		for (const NPCID& npcId : findIntersectingNPCsForCollision(vertTest))
 		{
 			if (auto npc = server->getNPC(npcId); npc != nullptr)
 				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, from);
 		}
-		for (const NPCID& npcId : horzNPCs)
+		for (const NPCID& npcId : findIntersectingNPCsForCollision(horzTest))
 		{
 			if (auto npc = server->getNPC(npcId); npc != nullptr)
 				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, from);
@@ -1144,8 +1153,7 @@ void Level::addSpyFire(const PixelPosition& position, ScriptObjectSource from, u
 			static_cast<uint16_t>((direction == 0 || direction == 2) ? 32 : lengthInPixels),
 			static_cast<uint16_t>((direction == 1 || direction == 3) ? 32 : lengthInPixels) };
 
-		auto npcs = findIntersectingNPCsForCollision({ testPosition, testDimension });
-		for (const NPCID& npcId : npcs)
+		for (const NPCID& npcId : findIntersectingNPCsForCollision({ testPosition, testDimension }))
 		{
 			if (auto npc = server->getNPC(npcId); npc != nullptr)
 				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, from);
@@ -1548,8 +1556,7 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 			// Check for NPC collisions.
 			PixelPosition searchPosition = toPixelPosition(shoot->position).translate(8_i16, 16_i16);
 			bool fromPlayer = (shoot->from.second == ScriptObjectSourceType::PLAYER);
-			auto npcs = findIntersectingNPCsForCollision({ searchPosition, { 32_ui16, 32_ui16 } });
-			for (const auto& npc : npcs)
+			for (const auto& npc : findIntersectingNPCsForCollision({ searchPosition, { 32_ui16, 32_ui16 } }))
 			{
 				if (shoot->from.second == ScriptObjectSourceType::NPC && shoot->from.first == npc)
 					continue;
@@ -1600,8 +1607,7 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 
 		// Check for NPC collision.
 		PixelRectangleArea searchBox = { translatePosition(arrow->position, 16_i32, 0_i32), { 32_ui16, 32_ui16  } };
-		auto npcs = findIntersectingNPCsForCollision(searchBox);
-		for (const auto& npc : npcs)
+		for (const auto& npc : findIntersectingNPCsForCollision(searchBox))
 		{
 			if (arrow->from.second == ScriptObjectSourceType::NPC && arrow->from.first == npc)
 				continue;
@@ -1999,6 +2005,14 @@ std::optional<LevelSign*> Level::getMapSign(size_t index) noexcept
 
 std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& position) const noexcept
 {
+	// Bigmap test.
+	// We only want to search for players in our level.
+	if (isOnBigMap())
+	{
+		co_yield std::ranges::elements_of(m_players);
+		co_return;
+	}
+
 	auto server = BabyDI::Get<Server>();
 	bool syncInside = server->getSettings().getBool("syncbydistanceinside", false);
 
@@ -2036,13 +2050,40 @@ std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& p
 		co_return;
 	}
 
-	// Gmap/bigmap levels.
-	for (LevelPtr level : m_map->getLevelsInRange(toTilePosition(position), syncx, syncy))
+	// Map levels.
+	for (LevelPtr level : m_map->getLevelsInRange(tilePosition, syncx, syncy))
 	{
 		for (const auto& playerId : level->m_players)
 		{
 			if (playerInRange(playerId))
 				co_yield playerId;
+		}
+	}
+}
+
+std::generator<const PlayerID&> Level::findInRangePlayersForCommunication(const PixelPosition& position) const noexcept
+{
+	// If this is not a bigmap, use the default search.
+	if (!isOnBigMap())
+	{
+		co_yield std::ranges::elements_of(findInRangePlayers(position));
+		co_return;
+	}
+
+	int startX = mapPosition.x() - 1, endX = mapPosition.x() + 1;
+	int startY = mapPosition.y() - 1, endY = mapPosition.y() + 1;
+
+	if (startX < 0) startX = 0;
+	if (startY < 0) startY = 0;
+	if (endX >= m_map->size.width()) endX = m_map->size.width() - 1;
+	if (endY >= m_map->size.height()) endY = m_map->size.height() - 1;
+
+	for (int y = startY; y <= endY; ++y)
+	{
+		for (int x = startX; x <= endX; ++x)
+		{
+			if (auto level = m_map->getLevelAt(x, y); level != nullptr)
+				co_yield std::ranges::elements_of(level->m_players);
 		}
 	}
 }
@@ -2106,7 +2147,7 @@ std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& positio
 std::generator<const NPCID&> Level::findInRangeNPCsByDistance(const PixelPosition& position, uint32_t tileDistance) const noexcept
 {
 	// If this is not a map level, return all level NPCs.
-	if (m_map == nullptr)
+	if (!isOnGmap())
 	{
 		co_yield std::ranges::elements_of(m_npcs);
 		co_return;

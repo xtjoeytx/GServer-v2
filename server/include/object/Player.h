@@ -126,7 +126,7 @@ enum class GameStatsFlags : uint32_t
 struct ShootPacketWrapper
 {
 	NPCID source;
-	PixelPosition position;
+	LocalPixelPosition position;
 	int8_t offsetx;
 	int8_t offsety;
 	uint8_t sangle;

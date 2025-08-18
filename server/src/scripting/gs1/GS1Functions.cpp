@@ -581,9 +581,9 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messag
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = visitor->getGameValueAs<double>(*arguments[0]);
-		auto y = visitor->getGameValueAs<double>(*arguments[1]);
-		auto position = toPixelPosition(level->getMapPixelOffset(), x, y);
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto position = level->convertToMapPosition(toLocalPixelPosition(x, y));
 
 		// Find the nearest player.
 		std::tuple<PlayerID, double> nearestPlayer{ 0, std::numeric_limits<double>::max() };
@@ -711,9 +711,9 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view message
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = visitor->getGameValueAs<double>(*arguments[0]);
-		auto y = visitor->getGameValueAs<double>(*arguments[1]);
-		auto position = toPixelPosition(level->getMapPixelOffset(), x, y);
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto position = level->convertToMapPosition(toLocalPixelPosition(x, y));
 
 		// Find the nearest player.
 		std::tuple<PlayerID, double> nearestPlayer{ 0, std::numeric_limits<double>::max() };
@@ -746,9 +746,9 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messag
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = visitor->getGameValueAs<double>(*arguments[0]);
-		auto y = visitor->getGameValueAs<double>(*arguments[1]);
-		auto position = toPixelPosition(level->getMapPixelOffset(), x, y);
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto position = level->convertToMapPosition(toLocalPixelPosition(x, y));
 
 		std::string flag;
 		if (arguments.size() > 2)
@@ -1228,7 +1228,7 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, con
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto* server = BabyDI::Get<Server>();
-		auto position = toPixelPosition(level->getMapPixelOffset(), localPosition);
+		auto position = level->convertToMapPosition(localPosition);
 
 		bool found = false;
 		size_t index = 0;
@@ -1277,7 +1277,7 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, 
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto position = toPixelPosition(level->getMapPixelOffset(), localPosition);
+		auto position = level->convertToMapPosition(localPosition);
 
 		bool found = false;
 		size_t index = 0;

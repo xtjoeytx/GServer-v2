@@ -1547,7 +1547,7 @@ std::vector<std::string> NPC::getVariableDump() const
 
 				result.emplace_back(std::format("{}: {}", nameprop, activeBlockFlags));
 				break;
-			};
+			}
 
 			default:
 				result.emplace_back(std::format("{}: {}", nameprop, getProp(prop)));

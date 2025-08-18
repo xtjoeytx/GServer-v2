@@ -1499,13 +1499,24 @@ void Server::sendPacketToNearby(const CString& packet, const PixelPosition& posi
 {
 	if (!running || level == nullptr) return;
 
-	auto players = level->findInRangePlayers(position);
+	auto levelName = level->getMapOrLevelName();
+	auto players = level->findInRangePlayersForCommunication(position);
 	for (const auto& playerId : players)
 	{
 		if (exclude.contains(playerId))
 			continue;
-		if (auto player = getPlayer(playerId); player != nullptr && player->isClient() && (!sendIf || sendIf(player.get())))
+		if (auto player = getPlayer<PlayerClient>(playerId); player != nullptr && (!sendIf || sendIf(player.get())))
+		{
+			bool sameLevel = levelName == player->getComputedLevelName();
+
+			// TODO: Figure out when PLO_SETACTIVELEVEL was introduced.
+			if (!sameLevel && player->getVersion() < CLVER_2_17)
+				continue;
+
+			if (!sameLevel) player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
 			player->sendPacket(packet);
+			if (!sameLevel) player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << player->getComputedLevelName());
+		}
 	}
 }
 
@@ -1721,7 +1732,7 @@ void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level
 
 	ShootPacketWrapper newPacket{};
 	newPacket.source = (shoot->from.second == ScriptObjectSourceType::NPC ? shoot->from.first : 0);
-	newPacket.position = toPixelPosition(shoot->position);
+	newPacket.position = toLocalPixelPosition(shoot->position);
 	newPacket.offsetx = 0;
 	newPacket.offsety = 0;
 	newPacket.sangle = static_cast<uint8_t>(220 * (std::clamp(shoot->angle, 0.0f, 2 * pi) / (2 * pi)));
@@ -1734,8 +1745,8 @@ void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)0 << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)0 << newPacket.constructShootV2();
 
-	sendPacketToNearby(oldPacketBuf, newPacket.position, level, { 0 }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
-	sendPacketToNearby(newPacketBuf, newPacket.position, level, { 0 }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
+	sendPacketToNearby(oldPacketBuf, level->convertToMapPosition(newPacket.position), level, { 0 }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
+	sendPacketToNearby(newPacketBuf, level->convertToMapPosition(newPacket.position), level, { 0 }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -85,7 +85,7 @@ void LevelBaddy::dropItem() const
 	if (itemType != LevelItemType::INVALID)
 	{
 		if (auto lvl = m_level.lock(); lvl)
-			lvl->addItem(inform_client, toPixelPosition(lvl->getMapPixelOffset(), position), itemType);
+			lvl->addItem(inform_client, lvl->convertToMapPosition(position), itemType);
 	}
 }
 
