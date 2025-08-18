@@ -425,12 +425,13 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			// Hack to allow spin to hurt things.
 			if (character.gani == "spin")
 			{
+				auto self = server->getNPC(id);
 				float tX = static_cast<float>(character.localPixelX / 16.0f) + 1.5f;
 				float tY = static_cast<float>(character.localPixelY / 16.0f) + 2.0f;
-				server->hitObjectsAtPoint({ tX, tY + 2.0f }, character.swordPower, level, nullptr);
-				server->hitObjectsAtPoint({ tX, tY - 2.0f }, character.swordPower, level, nullptr);
-				server->hitObjectsAtPoint({ tX + 2.0f, tY }, character.swordPower, level, nullptr);
-				server->hitObjectsAtPoint({ tX - 2.0f, tY }, character.swordPower, level, nullptr);
+				server->hitObjectsAtPoint({ tX, tY + 2.0f }, character.swordPower, level, self);
+				server->hitObjectsAtPoint({ tX, tY - 2.0f }, character.swordPower, level, self);
+				server->hitObjectsAtPoint({ tX + 2.0f, tY }, character.swordPower, level, self);
+				server->hitObjectsAtPoint({ tX - 2.0f, tY }, character.swordPower, level, self);
 			}
 			break;
 		}

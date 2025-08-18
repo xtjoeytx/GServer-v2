@@ -3,6 +3,7 @@
 #include <cassert>
 #include <chrono>
 #include <climits>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
@@ -1404,7 +1405,14 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 
 void Server::hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source) const
 {
-	sendPacketToNearby(CString() >> (char)PLO_HITOBJECTS >> (short)(source ? source->getId() : 0) >> (char)power >> (char)(pos.x() * 2) >> (char)(pos.y() * 2), toPixelPosition(pos), level.lock());
+	// Client ignores if not within 2 tiles in both X/Y.
+	sendPacketToNearby(CString() >> (char)PLO_HITOBJECTS >> (short)source->getId() >> (char)power >> (char)(pos.x() * 2) >> (char)(pos.y() * 2), toPixelPosition(pos), level.lock());
+}
+
+void Server::hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, NPCPtr source) const
+{
+	// Client ignores if not within 2 tiles in both X/Y.
+	sendPacketToNearby(CString() >> (char)PLO_HITOBJECTS >> (short)0 >> (char)power >> (char)(pos.x() * 2) >> (char)(pos.y() * 2) >> (int)source->id, toPixelPosition(pos), level.lock());
 }
 
 void Server::hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source) const
@@ -1413,7 +1421,30 @@ void Server::hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY
 	if (player == nullptr)
 		return;
 
-	player->sendPacket(CString() >> (char)PLO_HURTPLAYER >> (short)0 >> (char)(fromX * 2) >> (char)(fromY * 2) >> (char)power >> (int)source->id);
+	// Client ignores if PLO_DISABLECLASSICMODE was sent.
+	// Client ignores if the source wasn't within 10 tiles.
+
+	auto tilePosition = player->getTilePosition();
+	auto dx = tilePosition.x() - fromX;
+	auto dy = tilePosition.y() - fromY;
+
+	// Normalize the direction vector.
+	float length = std::sqrt(dx * dx + dy * dy);
+	if (!DoubleIsZero(dx))
+		dx /= length;
+	if (!DoubleIsZero(dy))
+		dy /= length;
+
+	// Push out 4 tiles.
+	dx *= 4;
+	dy *= 4;
+
+	// Pixel position.
+	auto encodedDX = static_cast<uint8_t>(static_cast<int16_t>(dx * 16) + 64);
+	auto encodedDY = static_cast<uint8_t>(static_cast<int16_t>(dy * 16) + 64);
+
+	// Send the final packet.
+	player->sendPacket(CString() >> (char)PLO_HURTPLAYER >> (short)0 >> (char)(encodedDX) >> (char)(encodedDY) >> (char)power >> (int)source->id);
 }
 
 void Server::sendTriggerAction(PlayerID toPlayerId, NPCID fromNpcId, const LocalPixelPosition& localPosition, std::string_view action, std::string_view params) const

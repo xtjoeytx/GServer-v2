@@ -228,7 +228,8 @@ public:
 	bool isStaff(const CString& accountName);
 
 public:
-	void hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source = nullptr) const;
+	void hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source) const;
+	void hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, NPCPtr source) const;
 	void hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source) const;
 	void logToFile(const std::string& fileName, const std::string& message) const;
 	void sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;

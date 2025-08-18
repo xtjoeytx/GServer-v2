@@ -921,10 +921,49 @@ void fn_hitcompu(GS1Visitor* visitor, std::string_view commandName, const std::v
 }
 
 // hitnpc index,halfhearts,fromx,fromy;
+// Hits the specified NPC.
 void fn_hitnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	// Could probably emulate with move().
-	throw unimplemented_error("hitnpc is not implemented yet.");
+	if (arguments.size() != 4)
+		throw std::invalid_argument("invalid arguments: hitnpc index,halfhearts,fromx,fromy");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto halfhearts = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto fromx = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
+		auto fromy = static_cast<float>(visitor->getGameValueAs<double>(*arguments[3]));
+
+		if (index < level->getMapNPCCount())
+		{
+			auto mapNPCs = level->getMapNPCs();
+			auto iter = mapNPCs.begin();
+			std::ranges::advance(iter, index, mapNPCs.end());
+			if (iter == mapNPCs.end())
+				return;
+
+			auto* server = BabyDI::Get<Server>();
+			if (auto npc = server->getNPC(*iter); npc != nullptr)
+			{
+				// Get the DX/DY.
+				auto tilePosition = npc->getTilePosition();
+				auto dx = tilePosition.x() - fromx;
+				auto dy = tilePosition.y() - fromy;
+				float length = std::sqrt(dx * dx + dy * dy);
+				dx /= length;
+				dy /= length;
+
+				// Set the NPC's props.
+				npc->setPropWith<NPCProp::HURTDXDY>(SetBy::SERVER, dx, dy);
+				npc->setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<uint8_t>(std::max(0, npc->character.hitpointsInHalves - halfhearts)));
+				if (npc->isCharacter())
+					npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, "hurt"sv);
+
+				// Queue up events.
+				npc->scripting.events.addEvent(ScriptEventType::WASHIT, visitor->getCurrentSource());
+			}
+		}
+	}
 }
 
 // hitobjects power,x,y;
@@ -934,14 +973,19 @@ void fn_hitobjects(GS1Visitor* visitor, std::string_view commandName, const std:
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: hitobjects power,x,y");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
-		auto power = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
-		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
-
-		auto* server = BabyDI::Get<Server>();
-		server->hitObjectsAtPoint({ x, y }, power * 2, level);
+		auto server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
+			if (auto level = npc->level.lock(); level != nullptr)
+			{
+				auto power = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0]) * 2);
+				auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+				auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
+				server->hitObjectsAtPoint({ x, y }, power, level, npc);
+			}
+		}
 	}
 }
 
