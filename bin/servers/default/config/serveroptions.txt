@@ -154,8 +154,9 @@ staffhead = head25.png
 cropflags = true
 
 # The distance that an NPC listens for serverside events, in tiles.
-# The client has a hardcoded distance of 100 tiles for trigger events.
-# eventdistance = 100
+# The client has a hardcoded distance of 10 tiles for trigger events.
+# eventdistance = 64
+# triggerdistance = 10
 
 # --------------------------------------------------------------------------------------
 # --- Private server options.  The changestaffacct right is required to alter these. ---

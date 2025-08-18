@@ -284,7 +284,7 @@ public:
 	{
 		if (!hasNPCServer()) return;
 		if (level == nullptr) return;
-		uint32_t eventDistance = static_cast<uint32_t>(m_settings.getInt("eventdistance", 100));
+		uint32_t eventDistance = static_cast<uint32_t>(m_settings.getInt("eventdistance", 64));
 		for (auto& npcid : level->findInRangeNPCsByDistance(position, eventDistance))
 		{
 			if (auto npc = getNPC(npcid); npc)
