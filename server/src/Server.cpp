@@ -1277,6 +1277,8 @@ bool Server::warpPlayerToSafePlace(PlayerID playerId)
 	// TODO: Maybe try the default account level?
 }
 
+//----------------------------
+
 void Server::calculateNWTime()
 {
 	// Thu Feb 01 2001 17:33:34 GMT+0000

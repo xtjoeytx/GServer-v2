@@ -511,8 +511,8 @@ CMD_SETCOLOREFFECT       : 'setcoloreffect'       { pushCommand("EEEE"); } -> ty
 CMD_SETZOOMEFFECT        : 'setzoomeffect'        { pushCommand("E"); } -> type(COMMAND);
 CMD_SHOWIMG              : 'showimg'              { pushCommand("ESEE"); } -> type(COMMAND);
 CMD_SHOWIMG2             : 'showimg2'             { pushCommand("ESEEE"); } -> type(COMMAND);
-CMD_SHOWANI              : 'showani'              { pushCommand("EEEDSS"); } -> type(COMMAND);
-CMD_SHOWANI2             : 'showani2'             { pushCommand("EEEEDSS"); } -> type(COMMAND);
+CMD_SHOWANI              : 'showani'              { pushCommand("EEEDS"); } -> type(COMMAND);
+CMD_SHOWANI2             : 'showani2'             { pushCommand("EEEEDS"); } -> type(COMMAND);
 CMD_SHOWPOLY             : 'showpoly'             { pushCommand("EE"); } -> type(COMMAND);
 CMD_SHOWPOLY2            : 'showpoly2'            { pushCommand("EE"); } -> type(COMMAND);
 CMD_SHOWTEXT             : 'showtext'             { pushCommand("EEESSS"); } -> type(COMMAND);

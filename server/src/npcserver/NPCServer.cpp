@@ -1,11 +1,17 @@
+#include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <format>
 #include <functional>
+#include <iterator>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <CString.h>
 #include <IEnums.h>
@@ -18,6 +24,7 @@
 #include <npcserver/PlayerNPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
+#include <object/ShowImg.h>
 #include <object/Weapon.h>
 #include <player/PlayerClient.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
@@ -113,6 +120,8 @@ void NPCServer::update(TimeoutGenerator::time_point currentTime)
 void NPCServer::run(TimeoutGenerator::time_delta delta)
 {
 	//auto profile = log::Profile(log::server, "NPCServer::run");
+
+	m_frameStartTime = clock::now();
 
 	// Save all NPC mod times and update timeouts.
 	{
@@ -424,6 +433,158 @@ void NPCServer::updateClass(std::string_view className, std::string_view classCo
 
 	// Update players.
 	m_server->updateClassForPlayers(scriptClass);
+}
+
+//----------------------------
+
+void NPCServer::showImage(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view image) const
+{
+	if (index > 199)
+		return;
+
+	auto level = npc->level.lock();
+	if (level == nullptr)
+		return;
+
+	auto showimg = ShowImg::ConstructImage(m_frameStartTime, position, image);
+	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(), npc->getGlobalPosition(), npc->level.lock());
+	npc->showImgList[index] = std::move(showimg);
+}
+
+void NPCServer::showText(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view text, std::string_view font, std::string_view style) const
+{
+	if (index > 199 || text.empty())
+		return;
+
+	auto level = npc->level.lock();
+	if (level == nullptr)
+		return;
+
+	auto showimg = ShowImg::ConstructText(m_frameStartTime, position, text, font, style);
+	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(), npc->getGlobalPosition(), npc->level.lock());
+	npc->showImgList[index] = std::move(showimg);
+}
+
+void NPCServer::showGani(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view animation, uint8_t direction) const
+{
+	if (index > 199)
+		return;
+
+	auto level = npc->level.lock();
+	if (level == nullptr)
+		return;
+
+	auto showimg = ShowImg::ConstructGani(m_frameStartTime, position, animation, direction);
+	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(), npc->getGlobalPosition(), npc->level.lock());
+	npc->showImgList[index] = std::move(showimg);
+}
+
+void NPCServer::showPoly(std::shared_ptr<NPC> npc, uint8_t index, const std::vector<double>& points) const
+{
+	if (index > 199)
+		return;
+
+	auto level = npc->level.lock();
+	if (level == nullptr)
+		return;
+
+	auto showimg = ShowImg::ConstructPoly(m_frameStartTime, points);
+	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(), npc->getGlobalPosition(), npc->level.lock());
+	npc->showImgList[index] = std::move(showimg);
+}
+
+void NPCServer::changeShowImgColors(std::shared_ptr<NPC> npc, uint8_t index, float red, float green, float blue, float alpha) const
+{
+	if (index > 199)
+		return;
+
+	auto iter = npc->showImgList.find(index);
+	if (iter == std::end(npc->showImgList))
+		return;
+
+	ShowImg& showimg = iter->second;
+	showimg.colors[0] = std::clamp(red, 0.0f, 1.0f);
+	showimg.colors[1] = std::clamp(green, 0.0f, 1.0f);
+	showimg.colors[2] = std::clamp(blue, 0.0f, 1.0f);
+	showimg.colors[3] = std::clamp(alpha, 0.0f, 1.0f);
+	showimg.modTime[PROPID(ShowImgProp::COLORS)] = m_frameStartTime;
+
+	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(m_frameStartTime), npc->getGlobalPosition(), npc->level.lock());
+}
+
+void NPCServer::changeShowImgMode(std::shared_ptr<NPC> npc, uint8_t index, uint8_t drawMode) const
+{
+	if (index > 199)
+		return;
+
+	auto iter = npc->showImgList.find(index);
+	if (iter == std::end(npc->showImgList))
+		return;
+
+	ShowImg& showimg = iter->second;
+	showimg.drawMode = drawMode;
+	showimg.modTime[PROPID(ShowImgProp::DRAWMODE)] = m_frameStartTime;
+
+	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(m_frameStartTime), npc->getGlobalPosition(), npc->level.lock());
+}
+
+void NPCServer::changeShowImgPart(std::shared_ptr<NPC> npc, uint8_t index, const ImagePartRectangle& imagePart) const
+{
+	if (index > 199)
+		return;
+
+	auto iter = npc->showImgList.find(index);
+	if (iter == std::end(npc->showImgList))
+		return;
+
+	ShowImg& showimg = iter->second;
+	showimg.imagePart = imagePart;
+	showimg.modTime[PROPID(ShowImgProp::IMAGEPART)] = m_frameStartTime;
+
+	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(m_frameStartTime), npc->getGlobalPosition(), npc->level.lock());
+}
+
+void NPCServer::changeShowImgLayer(std::shared_ptr<NPC> npc, uint8_t index, uint8_t layer) const
+{
+	if (index > 199)
+		return;
+
+	auto iter = npc->showImgList.find(index);
+	if (iter == std::end(npc->showImgList))
+		return;
+
+	ShowImg& showimg = iter->second;
+	showimg.layer = layer;
+	showimg.modTime[PROPID(ShowImgProp::LAYER)] = m_frameStartTime;
+
+	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(m_frameStartTime), npc->getGlobalPosition(), npc->level.lock());
+}
+
+void NPCServer::changeShowImgZoom(std::shared_ptr<NPC> npc, uint8_t index, float zoom) const
+{
+	if (index > 199)
+		return;
+
+	auto iter = npc->showImgList.find(index);
+	if (iter == std::end(npc->showImgList))
+		return;
+
+	ShowImg& showimg = iter->second;
+	showimg.zoom = std::clamp(zoom, 0.0f, 22.0f);
+	showimg.modTime[PROPID(ShowImgProp::ZOOM)] = m_frameStartTime;
+
+	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(m_frameStartTime), npc->getGlobalPosition(), npc->level.lock());
+}
+
+void NPCServer::hideImages(std::shared_ptr<NPC> npc, uint8_t index, std::optional<uint8_t> endIndex) const
+{
+	if (index > 199)
+		return;
+
+	for (uint8_t i = index; i <= endIndex.value_or(index); ++i)
+		npc->showImgList.erase(i);
+
+	npc->sendAllShowImagesToLevel();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

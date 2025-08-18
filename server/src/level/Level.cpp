@@ -551,17 +551,19 @@ void Level::sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point t
 		if (!npc) continue;
 
 		auto packet = npc->getAllPropsPacket(time);
-		if (packet.isEmpty())
-			continue;
-
-		player->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)npc->id << packet);
-		if (player->getVersion() >= CLVER_4_0211 && !npc->getScript().getClientByteCode().empty())
+		if (!packet.isEmpty())
 		{
-			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->id;
-			byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode().data()), npc->getScript().getClientByteCode().size());
-			player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)byteCodePacket.length());
-			player->sendPacket(byteCodePacket);
+			player->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)npc->id << packet);
+			if (player->getVersion() >= CLVER_4_0211 && !npc->getScript().getClientByteCode().empty())
+			{
+				CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->id;
+				byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode().data()), npc->getScript().getClientByteCode().size());
+				player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)byteCodePacket.length());
+				player->sendPacket(byteCodePacket);
+			}
 		}
+
+		npc->sendAllShowImagesToLevel(time);
 	}
 }
 

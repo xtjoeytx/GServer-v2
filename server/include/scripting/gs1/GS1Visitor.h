@@ -2,6 +2,7 @@
 #define GS1VISITOR_H
 
 #include <any>
+#include <cstdint>
 #include <deque>
 #include <memory>
 #include <optional>
@@ -45,6 +46,7 @@ public:
 
 public:
 	[[inline]] const ScriptObjectSource& getOriginalSource() const;
+	[[inline]] const ScriptObjectSource& getInitiatingSource() const;
 	[[inline]] const ScriptObjectSource& getCurrentSource(bool defaultToInitiator = false) const;
 	[[inline]] const ScriptObjectSource& popSource();
 	[[inline]] const void pushSource(ScriptObjectSource source);
@@ -158,6 +160,11 @@ inline auto makeDefault() -> T
 inline const ScriptObjectSource& GS1Visitor::getOriginalSource() const
 {
 	return m_originalSource;
+}
+
+inline const ScriptObjectSource& GS1Visitor::getInitiatingSource() const
+{
+	return m_event->initiator;
 }
 
 inline const ScriptObjectSource& GS1Visitor::getCurrentSource(bool defaultToInitiator) const

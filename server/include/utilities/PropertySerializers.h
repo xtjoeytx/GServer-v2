@@ -1,6 +1,7 @@
 #ifndef PROPSCONTAINER_H
 #define PROPSCONTAINER_H
 
+#include <algorithm>
 #include <array>
 #include <bitset>
 #include <concepts>
@@ -9,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
@@ -371,8 +373,12 @@ template<typename T, size_t N, bool StopIfFirstZero = false>
 struct PropertyArray : public PropertyBase
 {
 	PropertyArray() = default;
-	PropertyArray(std::array<T, N> values) : values(std::move(values)) {}
-	PropertyArray(std::array<T, N>&& values) : values(std::move(values)) {}
+	PropertyArray(std::array<T, N> input) : values(std::move(input)) {}
+	PropertyArray(std::array<T, N>&& input) : values(std::move(input)) {}
+	PropertyArray(std::ranges::input_range auto&& input)
+	{
+		std::ranges::copy(input | std::views::take(N), values.begin());
+	}
 
 	virtual CString serialize() const override
 	{
@@ -565,15 +571,15 @@ struct PropertyImagePart : public PropertyBase
 	PropertyImagePart() = default;
 	PropertyImagePart(uint16_t x, uint16_t y, uint8_t width, uint8_t height)
 		: imagePart({ x, y }, { width, height }) {}
-	PropertyImagePart(const Rectangle<uint16_t, uint8_t>& imagePart) : imagePart(imagePart) {}
-	PropertyImagePart(Rectangle<uint16_t, uint8_t>&& imagePart) : imagePart(std::move(imagePart)) {}
+	PropertyImagePart(const ImagePartRectangle& imagePart) : imagePart(imagePart) {}
+	PropertyImagePart(ImagePartRectangle&& imagePart) : imagePart(std::move(imagePart)) {}
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
 	virtual std::format_context::iterator format(std::format_context& ctx) const override;
 
-	Rectangle<uint16_t, uint8_t> imagePart;
+	ImagePartRectangle imagePart;
 };
 
 /// @brief A property that stores a sprite and its direction.

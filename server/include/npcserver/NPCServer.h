@@ -10,6 +10,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include <BabyDI.h>
 #include <level/Level.h>
@@ -86,6 +87,18 @@ public:
 	void updateClass(std::string_view className, std::string_view classCode);
 
 public:
+	void showImage(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view image) const;
+	void showText(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view text, std::string_view font = {}, std::string_view style = {}) const;
+	void showGani(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view animation, uint8_t direction) const;
+	void showPoly(std::shared_ptr<NPC> npc, uint8_t index, const std::vector<double>& points) const;
+	void changeShowImgColors(std::shared_ptr<NPC> npc, uint8_t index, float red, float green, float blue, float alpha) const;
+	void changeShowImgMode(std::shared_ptr<NPC> npc, uint8_t index, uint8_t drawMode) const;
+	void changeShowImgPart(std::shared_ptr<NPC> npc, uint8_t index, const ImagePartRectangle& imagePart) const;
+	void changeShowImgLayer(std::shared_ptr<NPC> npc, uint8_t index, uint8_t layer) const;
+	void changeShowImgZoom(std::shared_ptr<NPC> npc, uint8_t index, float zoom) const;
+	void hideImages(std::shared_ptr<NPC> npc, uint8_t index, std::optional<uint8_t> endIndex = std::nullopt) const;
+
+public:
 	ScriptSystem scripting;
 
 private:
@@ -103,6 +116,8 @@ private:
 	std::shared_ptr<PlayerNPCServer> m_npcServerPlayer;
 	std::string m_ncHost;
 	uint16_t m_ncPort = 14900;
+
+	clock::time_point m_frameStartTime;
 
 	TimeoutGenerator m_runTimeout{ 100ms, true };
 	TimeoutGenerator m_timedSave{ 5min, true };

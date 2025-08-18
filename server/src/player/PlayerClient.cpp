@@ -99,7 +99,7 @@ static PacketHandleArray GeneratePacketHandlers()
 	handlers[PLI_PUTNPC] = &PlayerClient::msgPLI_PUTNPC;
 	handlers[PLI_NPCDEL] = &PlayerClient::msgPLI_NPCDEL;
 	handlers[PLI_WANTFILE] = &PlayerClient::msgPLI_WANTFILE;
-	handlers[PLI_SHOWIMG] = &PlayerClient::msgPLI_SHOWIMG;
+	handlers[PLI_SHOWIMGPLAYER] = &PlayerClient::msgPLI_SHOWIMGPLAYER;
 	handlers[PLI_HURTPLAYER] = &PlayerClient::msgPLI_HURTPLAYER;
 	handlers[PLI_EXPLOSION] = &PlayerClient::msgPLI_EXPLOSION;
 	handlers[PLI_PRIVATEMESSAGE] = &PlayerClient::msgPLI_PRIVATEMESSAGE;

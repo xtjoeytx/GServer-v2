@@ -391,7 +391,7 @@ public:
 	//HandlePacketResult msgPLI_PUTNPC(CString& pPacket);
 	//HandlePacketResult msgPLI_NPCDEL(CString& pPacket);
 	//HandlePacketResult msgPLI_WANTFILE(CString& pPacket);
-	//HandlePacketResult msgPLI_SHOWIMG(CString& pPacket);
+	//HandlePacketResult msgPLI_SHOWIMGPLAYER(CString& pPacket);
 	// PLI_UNKNOWN25
 	//HandlePacketResult msgPLI_HURTPLAYER(CString& pPacket);
 	//HandlePacketResult msgPLI_EXPLOSION(CString& pPacket);

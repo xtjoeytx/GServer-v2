@@ -68,6 +68,7 @@ constexpr ScriptObjectSource FromNPC(size_t id)
 {
 	return std::make_pair(id, ScriptObjectSourceType::NPC);
 }
+
 /// @brief Creates a ScriptObjectSource from a Weapon by hashing the weapon's name.
 ScriptObjectSource FromWeapon(WeaponPtr weapon);
 

@@ -9,12 +9,14 @@
 #include <stdexcept>
 #include <string_view>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include <CString.h>
 
 #include <object/Character.h>
+#include <object/ShowImg.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
@@ -319,6 +321,9 @@ public:
 	void resetToInitialState();
 
 public:
+	void sendAllShowImagesToLevel(clock::time_point modTime = clock::time_point::min()) const;
+
+public:
 	void testForLinks(SetResults& result);
 	void testForTouch(SetResults& result);
 
@@ -344,6 +349,7 @@ public:
 	ScriptContainer scripting;
 	std::string scripter;
 	std::string scriptType;
+	std::unordered_map<uint8_t, ShowImg> showImgList;
 
 private:
 	std::array<clock::time_point, NPCPROP_COUNT> m_savedModTime;

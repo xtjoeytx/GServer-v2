@@ -246,6 +246,11 @@ Just use `timeout`.
     canwarp
     canwarp2
     carryobject
+    changeimgcolors
+	changeimgmode
+	changeimgpart
+	changeimgvis
+	changeimgzoom
     deletestring
     destroy
     detachplayer
@@ -258,6 +263,9 @@ Just use `timeout`.
     explodebomb
     freezeplayer2
     hide
+    hideimg
+	hideimgs
+    hitnpc
     hitobjects
     hitplayer
     hurt
@@ -304,6 +312,7 @@ Just use `timeout`.
     setcoatcolor
     setgender
     setgif
+    setgifpart
     sethead
     setimg
     setimgpart
@@ -329,7 +338,15 @@ Just use `timeout`.
     shootfireblast
     shootnuke
     show
+    showani
+    showani2
     showcharacter
+    showimg
+    showimg2
+	showpoly
+	showpoly2
+	showtext
+	showtext2
     spyfire
     take
     take2
@@ -337,6 +354,7 @@ Just use `timeout`.
     takeplayercarry
     takeplayerhorse
     throwcarry
+    timershow
     tokenize
     tokenize2
     unfreezeplayer
@@ -349,18 +367,14 @@ Just use `timeout`.
     copylevel
     copystrings
     deletelevel
+    hideplayer
+    hidesword
     hitcompu
-    hitnpc
     saveinfo
     savelog
     setz
-    showani
-    showani2
-    showimg
-    showimg2
     showstats
     sleep
-    timershow
     updateboard
     updateboard2
     updateterrain

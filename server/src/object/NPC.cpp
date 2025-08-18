@@ -1271,6 +1271,23 @@ void NPC::constructScriptParameters()
 
 //----------------------------
 
+void NPC::sendAllShowImagesToLevel(clock::time_point modTime) const
+{
+	// Construct the packet.
+	// Index 9 will cause all of the showimgs to be erased on the client.
+	CString packet;
+	packet >> (char)PLO_SHOWIMGNPC >> (int)id >> (char)9;
+
+	// Send all the showimgs.
+	for (const auto& [id, showimg] : showImgList)
+		packet >> (char)(id + 10) << showimg.getAllPropsPacket();
+
+	auto server = BabyDI::Get<Server>();
+	server->sendPacketToNearby(packet, getGlobalPosition(), level.lock());
+}
+
+//----------------------------
+
 void NPC::testForLinks(SetResults& result)
 {
 	auto levelPtr = level.lock();

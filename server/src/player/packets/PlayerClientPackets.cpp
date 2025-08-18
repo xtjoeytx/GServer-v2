@@ -26,8 +26,6 @@
 #include <level/LevelBaddy.h>
 #include <level/LevelChest.h>
 #include <level/LevelItem.h>
-#include <level/Map.h>
-#include <misc/WordFilter.h>
 #include <network/IPacketHandler.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
@@ -695,9 +693,9 @@ HandlePacketResult PlayerClient::msgPLI_WANTFILE(CString& pPacket)
 	return HandlePacketResult::Handled;
 }
 
-HandlePacketResult PlayerClient::msgPLI_SHOWIMG(CString& pPacket)
+HandlePacketResult PlayerClient::msgPLI_SHOWIMGPLAYER(CString& pPacket)
 {
-	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMG >> (short)m_id << (pPacket.text() + 1), getGlobalPosition(), getLevel(), { m_id });
+	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGPLAYER >> (short)m_id << (pPacket.text() + 1), getGlobalPosition(), getLevel(), { m_id });
 	return HandlePacketResult::Handled;
 }
 
