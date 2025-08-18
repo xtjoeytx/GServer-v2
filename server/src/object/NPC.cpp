@@ -1523,8 +1523,8 @@ std::vector<std::string> NPC::getVariableDump() const
 					activeVisFlags += ", drawoverplayer";
 				if (visFlags & PROPID(NPCVisFlags::DRAWUNDERPLAYER))
 					activeVisFlags += ", drawunderplayer";
-				if (visFlags & PROPID(NPCVisFlags::UNKNOWNBIT4))
-					activeVisFlags += ", unknownbit4";
+				if (visFlags & PROPID(NPCVisFlags::TIMERSHOW))
+					activeVisFlags += ", timershow";
 				if (visFlags & PROPID(NPCVisFlags::CREATED))
 					activeVisFlags += ", created";
 				if (visFlags & PROPID(NPCVisFlags::UNKNOWNBIT6))

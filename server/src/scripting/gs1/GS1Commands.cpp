@@ -2557,9 +2557,15 @@ void fn_throwcarry(GS1Visitor* visitor, std::string_view commandName, const std:
 }
 
 // timershow;
+// Shows the NPC's clientside timeout counter.
 void fn_timershow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("timershow is not implemented yet.");
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags | PROPID(NPCVisFlags::TIMERSHOW)));
+	}
 }
 
 // tokenize text;
