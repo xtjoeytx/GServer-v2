@@ -2,7 +2,6 @@
 #define GS1VISITOR_H
 
 #include <any>
-#include <cstdint>
 #include <deque>
 #include <memory>
 #include <optional>

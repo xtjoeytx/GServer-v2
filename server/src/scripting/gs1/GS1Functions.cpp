@@ -321,18 +321,19 @@ GS1ScriptValue fn_int(GS1Visitor* visitor, std::string_view messageCode, const s
 	*/
 }
 
-// log(value)
-// Returns the natural logarithm of the value.
+// log(base, value)
+// Returns the logarithm of the value with the given base.
 GS1ScriptValue fn_log(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function log requires exactly one argument");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function log requires exactly two arguments");
 
-	auto value = visitor->getGameValueAs<double>(*arguments[0]);
+	auto base = visitor->getGameValueAs<double>(*arguments[0]);
+	auto value = visitor->getGameValueAs<double>(*arguments[1]);
 	if (value <= 0.0)
 		return 0.0;
 
-	return std::log(value);
+	return std::log(value) / std::log(base);
 }
 
 // max(value1, value2)
