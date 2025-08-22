@@ -173,7 +173,7 @@ std::string_view trimLeft(StringViewVariant auto const& str)
 	auto size = str.size();
 	for (size_t i = 0; i < size; ++i)
 	{
-		if (!std::isspace(static_cast<unsigned char>(view[i])))
+		if (!std::isspace(static_cast<unsigned char>(view[i])) && view[i] != '\xa7')
 			return view.substr(i, size - i);
 	}
 	return {};
@@ -187,7 +187,7 @@ std::string_view trimRight(StringViewVariant auto const& str)
 	std::string_view view{ str };
 	for (size_t i = view.size(); i > 0; --i)
 	{
-		if (!std::isspace(static_cast<unsigned char>(view[i - 1])))
+		if (!std::isspace(static_cast<unsigned char>(view[i - 1])) && view[i - 1] != '\xa7')
 			return view.substr(0, i);
 	}
 	return {};
@@ -211,7 +211,7 @@ inline std::string& trimLeftMutate(std::string& str)
 	// Find first non-space.
 	const auto p = str.c_str();
 	size_t idx = 0;
-	while (idx < str.length() && (std::isspace(int(p[idx])) || p[idx] == '\r' || p[idx] == '\n'))
+	while (idx < str.length() && (std::isspace(int(p[idx])) || p[idx] == '\r' || p[idx] == '\n' || p[idx] == '\xa7'))
 		++idx;
 
 	// No whitespace.
@@ -239,7 +239,7 @@ inline std::string& trimRightMutate(std::string& str)
 	// Find last non-space.
 	const auto p = str.c_str();
 	size_t idx = str.length();
-	while (idx > 0 && (std::isspace(int(p[idx - 1])) || p[idx - 1] == '\r' || p[idx - 1] == '\n'))
+	while (idx > 0 && (std::isspace(int(p[idx - 1])) || p[idx - 1] == '\r' || p[idx - 1] == '\n' || p[idx - 1] == '\xa7'))
 		--idx;
 
 	// No whitespace.
@@ -267,9 +267,9 @@ inline std::string& trimMutate(std::string& str)
 	// Find first and last non-space.
 	const auto p = str.c_str();
 	size_t front = 0, back = str.length();
-	while (front < str.length() && (std::isspace(static_cast<int>(static_cast<uint8_t>(p[front]))) || p[front] == '\r' || p[front] == '\n'))
+	while (front < str.length() && (std::isspace(static_cast<int>(static_cast<uint8_t>(p[front]))) || p[front] == '\r' || p[front] == '\n' || p[front] == '\xa7'))
 		++front;
-	while (front < back && (std::isspace(static_cast<int>(static_cast<uint8_t>(p[back - 1]))) || p[back - 1] == '\r' || p[back - 1] == '\n'))
+	while (front < back && (std::isspace(static_cast<int>(static_cast<uint8_t>(p[back - 1]))) || p[back - 1] == '\r' || p[back - 1] == '\n' || p[back - 1] == '\xa7'))
 		--back;
 
 	// No whitespace.

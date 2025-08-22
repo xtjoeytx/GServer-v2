@@ -297,6 +297,9 @@ void Server::cleanup()
 	if (hasNPCServer())
 		m_npcServer->saveNPCs();
 
+	m_npcList.clear();
+	m_shootParams.clear();
+
 	auto players = m_playerList | std::views::transform([](const auto& pair) { return pair.second; });
 	std::vector<PlayerPtr> deletePlayers{ std::ranges::begin(players), std::ranges::end(players) };
 	for (auto& player: deletePlayers)
@@ -308,9 +311,6 @@ void Server::cleanup()
 	m_levelList.clear();
 	m_mapList.clear();
 	m_groupLevels.clear();
-
-	m_npcList.clear();
-	m_shootParams.clear();
 
 	saveWeapons();
 	m_weaponList.clear();
