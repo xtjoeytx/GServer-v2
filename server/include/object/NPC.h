@@ -354,6 +354,7 @@ public:
 private:
 	std::array<clock::time_point, NPCPROP_COUNT> m_savedModTime;
 	bool m_blockPositionUpdates = false;
+	mutable bool m_hadShowImgs = false;
 
 	Script m_script;
 	mutable std::vector<std::pair<EventHandle, std::weak_ptr<ScriptClass>>> m_joinedClasses;
@@ -532,7 +533,7 @@ void NPC::sendPropsFromResults(std::ranges::forward_range auto&& results)
 {
 	PropertySendResults send_results;
 	auto results_range = results | std::views::transform([](const SetResults& results) { return std::make_pair(results, nullptr); });
-	for (auto& r : results_range)
+	for (const auto& r : results_range)
 		send_results.emplace_back(r);
 
 	sendPropsFromSendResults(send_results);

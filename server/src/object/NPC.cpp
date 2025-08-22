@@ -1274,6 +1274,12 @@ void NPC::constructScriptParameters()
 
 void NPC::sendAllShowImagesToLevel(clock::time_point modTime) const
 {
+	// Only start sending showimg packets when the NPC gains showimgs.
+	if (!m_hadShowImgs && showImgList.size() == 0)
+		return;
+
+	m_hadShowImgs = true;
+
 	// Construct the packet.
 	// Index 9 will cause all of the showimgs to be erased on the client.
 	CString packet;
