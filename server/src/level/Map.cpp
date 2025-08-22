@@ -248,6 +248,14 @@ void Map::loadMapLevels() const
 	}
 }
 
+void Map::setLevelLoaded(std::shared_ptr<Level> level)
+{
+	if (auto it = levelsByName.find(level->levelName); it != levelsByName.end())
+		it->second = level;
+	if (size_t index = level->mapPosition.x() + level->mapPosition.y() * size.width(); index < levelsByPosition.size())
+		levelsByPosition[index] = level;
+}
+
 //----------------------------
 
 bool Map::hasLevel(std::string_view levelName) const
@@ -332,17 +340,14 @@ std::shared_ptr<Level> Map::getLevelPtr(std::string_view levelName, std::weak_pt
 		return level;
 
 	// The level could not be locked so it was probably deleted.  Refresh it from the server.
+	/*
 	auto server = BabyDI::Get<Server>();
 	if (auto level = server->getLevel(levelName); level != nullptr)
 	{
-		// Update our stored level pointers.
-		if (auto it = levelsByName.find(levelName); it != levelsByName.end())
-			it->second = level;
-		if (size_t index = level->mapPosition.x() + level->mapPosition.y() * size.width(); index < levelsByPosition.size())
-			levelsByPosition[index] = level;
-
+		setLevelLoaded(level);
 		return level;
 	}
+	*/
 
 	return nullptr;
 }

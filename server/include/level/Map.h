@@ -40,6 +40,7 @@ public:
 
 public:
 	void loadMapLevels() const;
+	void setLevelLoaded(std::shared_ptr<Level> level);
 
 public:
 	bool hasLevel(std::string_view levelName) const;

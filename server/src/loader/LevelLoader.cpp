@@ -260,6 +260,7 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 		{
 			level->m_map = map;
 			level->mapPosition = mapPos.value();
+			map->setLevelLoaded(level);
 			break;
 		}
 	}
