@@ -674,7 +674,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 			// Tell everybody we are moving.
 			// This should technically only be sent to players in the level or those who had been in the level.
-			server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCMOVED >> (int)id);
+			auto localPosition = getLocalPosition();
+			server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCMOVED >> (int)id >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) << strProp->value);
 
 			// Remove ourself from the old level.
 			auto oldLevel = level.lock();
@@ -1303,7 +1304,8 @@ void NPC::testForLinks(SetResults& result)
 		server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
 
 		// Tell players that we changed level.
-		server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id);
+		auto localPosition = getLocalPosition();
+		server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) << getLevelName());
 		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), levelPtr);
 
 		// Add a scripting event for the warp.
