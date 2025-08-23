@@ -6,8 +6,9 @@
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
-
-#include <utilities/CommonTypes.h>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 
 using namespace std::literals;
 
@@ -67,16 +68,33 @@ struct Position
 		return *this;
 	}
 
+	template<typename O>
+	constexpr Position<T>& translate(const Position<O>& delta)
+	{
+		data[0] += static_cast<T>(delta.data[0]);
+		data[1] += static_cast<T>(delta.data[1]);
+		data[2] += static_cast<T>(delta.data[2]);
+		return *this;
+	}
+
 	Position<T> translate(T dx, T dy) const
 	{
-		Position<T> result = *this;
+		Position<T> result{ *this };
 		result.translate(dx, dy);
 		return result;
 	}
 	Position<T> translate(T dx, T dy, T dz) const
 	{
-		Position<T> result = *this;
+		Position<T> result{ *this };
 		result.translate(dx, dy, dz);
+		return result;
+	}
+
+	template<typename O>
+	Position<T> translate(const Position<O>& delta) const
+	{
+		Position<T> result{ *this };
+		result.translate(delta);
 		return result;
 	}
 
@@ -182,6 +200,12 @@ template<typename T>
 inline Position<T> translatePosition(const Position<T>& position, T x, T y, T z)
 {
 	return position.translate(x, y, z);
+}
+
+template<typename T, typename O>
+inline Position<T> translatePosition(const Position<T>& position, const Position<O>& delta)
+{
+	return position.translate(delta);
 }
 
 //----------------------------
@@ -303,6 +327,13 @@ inline constexpr LocalWholeTilePosition toLocalWholeTilePosition(const Position<
 		return LocalWholeTilePosition{ static_cast<uint8_t>(position.x()), static_cast<uint8_t>(position.y()), static_cast<uint8_t>(position.z()) };
 	}
 }
+
+inline constexpr std::pair<uint8_t, uint8_t> toMapPosition(const PixelPosition& position)
+{
+	return { static_cast<uint8_t>(position.x() / 1024), static_cast<uint8_t>(position.y() / 1024) };
+}
+
+//----------------------------
 
 template<typename P, typename S>
 inline constexpr PixelRectangleArea toPixelRectangleArea(const TileRectangleArea& rect)
@@ -510,5 +541,71 @@ inline constexpr Dimension<Type> operator/(const Dimension<Type>& left, const Di
 
 ////////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal
+
+// Structured bindings support.
+namespace std
+{
+////////////////////////////////////////////////////////////////////////////////
+
+// Position
+template<typename T>
+class tuple_size<preagonal::Position<T>> : public std::integral_constant<size_t, 3> {};
+
+template<size_t I, typename T>
+class tuple_element<I, preagonal::Position<T>> { public: using type = T; };
+
+template<size_t I, typename T>
+constexpr T& get(preagonal::Position<T>& vec) { return vec.data[I]; }
+
+template<size_t I, typename T>
+constexpr T&& get(const preagonal::Position<T>& vec) { return vec.data[I]; }
+
+// Dimension
+template<typename T>
+class tuple_size<preagonal::Dimension<T>> : public std::integral_constant<size_t, 2> {};
+
+template<size_t I, typename T>
+class tuple_element<I, preagonal::Dimension<T>> { public: using type = T; };
+
+template<size_t I, typename T>
+constexpr T& get(preagonal::Dimension<T>& vec) { return vec.data[I]; }
+
+template<size_t I, typename T>
+constexpr T&& get(const preagonal::Dimension<T>& vec) { return vec.data[I]; }
+
+// Rectangle
+template<typename P, typename D>
+class tuple_size<preagonal::Rectangle<P, D>> : public std::integral_constant<size_t, 2> {};
+
+template<size_t I, typename P, typename D>
+class tuple_element<I, preagonal::Rectangle<P, D>> : conditional<I == 0, P, D>
+{
+	static_assert(I < 2, "Index out of bounds for tuple_element<Rectangle>");
+};
+
+template <size_t I, typename P, typename D>
+tuple_element_t<I, preagonal::Rectangle<P, D>>& get(preagonal::Rectangle<P, D>& rect)
+{
+	static_assert(I < 2, "Index out of bounds for get<Rectangle>");
+
+	if constexpr (I == 0)
+		return rect.position;
+	else if constexpr (I == 1)
+		return rect.size;
+}
+
+template <size_t I, typename P, typename D>
+tuple_element_t<I, preagonal::Rectangle<P, D>>&& get(const preagonal::Rectangle<P, D>& rect)
+{
+	static_assert(I < 2, "Index out of bounds for get<Rectangle>");
+
+	if constexpr (I == 0)
+		return rect.position;
+	else if constexpr (I == 1)
+		return rect.size;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+} // end namespace std
 
 #endif // EXTENTS_H

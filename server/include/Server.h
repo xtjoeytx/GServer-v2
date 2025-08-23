@@ -203,7 +203,6 @@ public:
 	std::shared_ptr<NPC> addNPC(NPCPtr npc, bool sendToPlayers = false);
 	bool deleteNPC(int id, bool eraseFromLevel = true);
 	bool deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel = true);
-	void moveNPC(std::shared_ptr<NPC> npc, float dx, float dy, float duration, uint8_t options) const;
 
 public:
 	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;

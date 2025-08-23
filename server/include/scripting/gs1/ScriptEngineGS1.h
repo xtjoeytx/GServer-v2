@@ -95,6 +95,7 @@ inline static const std::unordered_map<ScriptEventType, std::string_view> eventF
 	{ ScriptEventType::WASPELT, "waspelt" },
 	{ ScriptEventType::TIMEOUT, "timeout" },
 	{ ScriptEventType::PRIVATEMESSAGE, "pm" },
+	{ ScriptEventType::MOVEMENTFINISHED, "movementfinished" },
 	//
 	{ ScriptEventType::SERVERLISTCONNECT, "serverlistconnect" }
 };

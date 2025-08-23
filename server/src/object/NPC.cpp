@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <format>
 #include <functional>
@@ -18,6 +19,7 @@
 #include <BabyDI.h>
 #include <CString.h>
 #include <IEnums.h>
+#include <IUtil.h>
 
 #include <Server.h>
 #include <level/Level.h>
@@ -144,14 +146,10 @@ bool NPC::warp(LevelPtr newLevel, const LocalPixelPosition& position)
 	return true;
 }
 
-void NPC::sendAllShowImagesToLevel(clock::time_point modTime) const
+//----------------------------
+
+CString NPC::getShowImagesPacket(clock::time_point modTime) const noexcept
 {
-	// Only start sending showimg packets when the NPC gains showimgs.
-	if (!m_hadShowImgs && showImgList.size() == 0)
-		return;
-
-	m_hadShowImgs = true;
-
 	// Construct the packet.
 	// Index 9 will cause all of the showimgs to be erased on the client.
 	CString packet;
@@ -159,10 +157,260 @@ void NPC::sendAllShowImagesToLevel(clock::time_point modTime) const
 
 	// Send all the showimgs.
 	for (const auto& [id, showimg] : showImgList)
-		packet >> (char)(id + 10) << showimg.getAllPropsPacket();
+		packet >> (char)(id + 10) << showimg.getAllPropsPacket(modTime);
+
+	return packet;
+}
+
+void NPC::sendShowImagesToPlayer(PlayerPtr player, clock::time_point modTime) const noexcept
+{
+	// Only start sending showimg packets when the NPC gains showimgs.
+	if (!m_hadShowImgs && showImgList.size() == 0)
+		return;
+
+	m_hadShowImgs = true;
+
+	player->sendPacket(getShowImagesPacket(modTime));
+}
+
+void NPC::sendAllShowImagesToLevel(clock::time_point modTime) const noexcept
+{
+	// Only start sending showimg packets when the NPC gains showimgs.
+	if (!m_hadShowImgs && showImgList.size() == 0)
+		return;
 
 	auto server = BabyDI::Get<Server>();
-	server->sendPacketToNearby(packet, getGlobalPosition(), level.lock());
+	server->sendPacketToNearby(getShowImagesPacket(modTime), getGlobalPosition(), level.lock());
+}
+
+//----------------------------
+
+void NPC::addMoveToQueue(const LocalPixelPosition& moveDelta, float durationInSeconds, uint8_t options)
+{
+	auto server = BabyDI::Get<Server>();
+	NPCMove move{ .duration = std::chrono::duration_cast<std::chrono::milliseconds>(duration_seconds_double{ durationInSeconds }), .modTime = server->getFrameStartTime() };
+
+	if (options & (1 << NPCMove::cacheNearbyMovement))
+		move.options.set(NPCMove::cacheNearbyMovement);
+	if (options & (1 << NPCMove::appendMovement))
+		move.options.set(NPCMove::appendMovement);
+	if (options & (1 << NPCMove::blockCheck))
+		move.options.set(NPCMove::blockCheck);
+	if (options & (1 << NPCMove::informWhenDone))
+		move.options.set(NPCMove::informWhenDone);
+	if (options & (1 << NPCMove::applyDirection))
+		move.options.set(NPCMove::applyDirection);
+
+	// Determine our start and stop positions.
+	move.origin = moveQueue.empty() ? getGlobalPosition() : moveQueue.back().destination;
+	move.destination = translatePosition(move.origin, moveDelta);
+
+	bool finishAllMovements = false;
+
+	// If we are not caching or appending movement, and we have some in the queue, finish the queue.
+	if (!move.options.test(NPCMove::cacheNearbyMovement) && !move.options.test(NPCMove::appendMovement) && !moveQueue.empty())
+		finishAllMovements = true;
+	else if (move.options.test(NPCMove::cacheNearbyMovement) && !moveQueue.empty())
+	{
+		// If the distance to go from the current position to the end of our new movement is over 5,
+		// finish all the movements.
+		auto currentTilePosition = getTilePosition();
+		auto destinationTilePosition = toTilePosition(move.destination);
+		auto distance = std::hypot(destinationTilePosition.x() - currentTilePosition.x(), destinationTilePosition.y() - currentTilePosition.y());
+		finishAllMovements = distance > 5.0f;
+	}
+
+	// If we are clearing the movement queue, pop all but the last movement in the queue
+	// and execute the last movement to the end (so any events get called).
+	if (finishAllMovements)
+	{
+		moveQueue.erase(moveQueue.begin(), std::prev(moveQueue.end()));
+		processMoveQueue(moveQueue.front().duration);
+	}
+
+	moveQueue.push_back(std::move(move));
+}
+
+void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
+{
+	if (moveQueue.empty())
+		return;
+
+	auto server = BabyDI::Get<Server>();
+	while (deltaTime != 0ms && !moveQueue.empty())
+	{
+		NPCMove& move = moveQueue.front();
+
+		// If the move hasn't started yet, do the starting events.
+		if (move.elapsed == 0ms)
+		{
+			// Set the direction when moving.
+			if (move.options.test(NPCMove::applyDirection) && isCharacter())
+			{
+				uint8_t dir = 0;
+				if (move.destination.x() > move.origin.x())
+					dir = 3;
+				if (move.destination.y() > move.origin.y())
+					dir = 2;
+				if (move.destination.x() < move.origin.x())
+					dir = 1;
+
+				setPropWith<NPCProp::SPRITE>(SetBy::SERVER, character.sprite, dir);
+			}
+		}
+
+		// Calculate our times.
+		auto timeRemaining = 0ms;
+		move.elapsed += deltaTime;
+		if (move.elapsed < move.duration)
+		{
+			// The duration was fully used up.
+			deltaTime = 0ms;
+			timeRemaining = move.duration - move.elapsed;
+		}
+		else
+		{
+			// We reached the end, so some duration is still remaining.
+			deltaTime = move.elapsed - move.duration;
+			move.elapsed = move.duration;
+		}
+
+		// Determine where we will end up this frame.
+		PixelPosition currentPosition{ move.getCurrentPosition() };
+
+		// If we are testing for walls, do that now.
+		if (move.options.test(NPCMove::blockCheck))
+		{
+			if (auto levelPtr = level.lock(); levelPtr != nullptr)
+			{
+				// Do an onwall check at the destination.
+				// If we collide, then stop the movement.
+				auto boundingBox = getCollisionBoundingBox();
+				boundingBox.position = currentPosition;
+				if (levelPtr->isOnWall2(boundingBox))
+				{
+					// Queue the movement finished event.
+					if (move.options.test(NPCMove::informWhenDone))
+						scripting.events.addEvent(ScriptEventType::MOVEMENTFINISHED, source::FromNPC(id));
+
+					// Stop the movement here.
+					moveQueue.pop_front();
+					continue;
+				}
+			}
+		}
+
+		// If the map position changed, set that now.
+		auto [mapX, mapY] = toMapPosition(currentPosition);
+		if (mapX != character.mapX)
+			setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, mapX);
+		if (mapY != character.mapY)
+			setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, mapY);
+
+		// Set the new position.
+		auto localPosition = toLocalPixelPosition(currentPosition);
+		setPropWith<NPCProp::X2>(SetBy::SERVER, localPosition.x());
+		setPropWith<NPCProp::Y2>(SetBy::SERVER, localPosition.y());
+
+		// Adjust our saved mod times, just in case.
+		// We don't want the position to be accidentally sent.
+		m_savedModTime[PROPID(NPCProp::X)] = modTime[PROPID(NPCProp::X)];
+		m_savedModTime[PROPID(NPCProp::Y)] = modTime[PROPID(NPCProp::Y)];
+		m_savedModTime[PROPID(NPCProp::X2)] = modTime[PROPID(NPCProp::X2)];
+		m_savedModTime[PROPID(NPCProp::Y2)] = modTime[PROPID(NPCProp::Y2)];
+
+		// Check if our movement is done.
+		if (timeRemaining == 0ms)
+		{
+			// Queue the movement finished event.
+			if (move.options.test(NPCMove::informWhenDone))
+				scripting.events.addEvent(ScriptEventType::MOVEMENTFINISHED, source::FromNPC(id));
+
+			// Pop the front movement.
+			moveQueue.pop_front();
+		}
+	}
+}
+
+
+std::pair<CString, CString> NPC::getMoveQueuePacketData(clock::time_point modTime) const noexcept
+{
+	if (moveQueue.empty())
+		return {};
+
+	std::pair<CString, CString> result;
+
+	// Append the whole move queue to the move packet.
+	for (const auto& move : moveQueue)
+	{
+		// Only send newer movements.
+		if (move.modTime < modTime && modTime != clock::time_point::min())
+			continue;
+
+		auto durationLeftInSeconds = std::chrono::duration_cast<duration_seconds_double>(move.duration - move.elapsed);
+		auto timeIn50msIncrements = static_cast<uint16_t>(durationLeftInSeconds.count() / 0.05f);
+
+		auto currentPosition = move.getCurrentPosition();
+		auto dx = static_cast<int16_t>(move.destination.x() - currentPosition.x());
+		auto dy = static_cast<int16_t>(move.destination.y() - currentPosition.y());
+		auto localPosition = toLocalPixelPosition(currentPosition);
+
+		// Client versions 2.3+ support the new move packet.
+		{
+			PropertyPixelCoordinate posX{ localPosition.x() };
+			PropertyPixelCoordinate posY{ localPosition.y() };
+			PropertyPixelCoordinate moveDX{ dx };
+			PropertyPixelCoordinate moveDY{ dy };
+
+			result.second << posX.serialize() << posY.serialize();
+			result.second << moveDX.serialize() << moveDY.serialize();
+			result.second >> (short)timeIn50msIncrements;
+			result.second >> (char)move.options.to_ulong();
+		}
+		{
+			uint8_t posX = static_cast<uint8_t>(localPosition.x() / 8.0f);
+			uint8_t posY = static_cast<uint8_t>(localPosition.y() / 8.0f);
+			auto moveDX = static_cast<int8_t>((dx / 8) + 100);
+			auto moveDY = static_cast<int8_t>((dy / 8) + 100);
+
+			result.first >> (char)posX >> (char)posY;
+			result.first >> (char)moveDX >> (char)moveDY;
+			result.first >> (short)timeIn50msIncrements;
+			result.first >> (char)move.options.to_ulong();
+		}
+	}
+
+	return result;
+}
+
+void NPC::sendMoveQueueToPlayer(PlayerPtr player, clock::time_point modTime) const noexcept
+{
+	if (moveQueue.empty())
+		return;
+
+	auto [move1, move2] = getMoveQueuePacketData(modTime);
+	if (move1.isEmpty())
+		return;
+
+	if (player->getVersion() < CLVER_2_3)
+		player->sendPacket(CString() >> (char)PLO_MOVE >> (int)id << move1);
+	else
+		player->sendPacket(CString() >> (char)PLO_MOVE2 >> (int)id << move2);
+}
+
+void NPC::sendMoveQueueToLevel(LevelPtr level, clock::time_point modTime) const noexcept
+{
+	if (moveQueue.empty())
+		return;
+
+	auto [move1, move2] = getMoveQueuePacketData(modTime);
+	if (move1.isEmpty())
+		return;
+
+	// Send them out.
+	auto server = BabyDI::Get<Server>();
+	server->sendPacketToNearby(CString() >> (char)PLO_MOVE2 >> (int)id << move2, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() >= CLVER_2_3; });
+	server->sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)id << move1, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() < CLVER_2_3; });
 }
 
 //----------------------------

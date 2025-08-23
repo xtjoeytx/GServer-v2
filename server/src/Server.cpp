@@ -54,7 +54,6 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
-#include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1144,41 +1143,6 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 	}
 
 	return true;
-}
-
-void Server::moveNPC(std::shared_ptr<NPC> npc, float dx, float dy, float duration, uint8_t options) const
-{
-	if (npc == nullptr)
-		return;
-
-	if (auto level = npc->level.lock(); level != nullptr)
-	{
-		auto moveDX = static_cast<int8_t>((dx * 2) + 100);
-		auto moveDY = static_cast<int8_t>((dy * 2) + 100);
-		auto timeIn50msIncrements = static_cast<uint16_t>(duration / 0.05);
-
-		CString packet;
-		packet >> (char)(npc->character.localPixelX / 8.0f) >> (char)(npc->character.localPixelY / 8.0f);
-		packet >> (char)moveDX >> (char)moveDY;
-		packet >> (short)timeIn50msIncrements;
-		packet >> (char)options;
-
-		auto globalPosition = npc->getGlobalPosition().translate(dx * 16, dy * 16);
-		auto localPosition = toLocalPixelPosition(globalPosition);
-		npc->character.localPixelX = localPosition.x();
-		npc->character.localPixelY = localPosition.y();
-
-		if (level->isOnGmap())
-		{
-			if (auto newLevel = level->getMap()->getLevelAt(globalPosition); newLevel != nullptr && newLevel != level)
-			{
-				npc->setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, newLevel->mapPosition.x());
-				npc->setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, newLevel->mapPosition.y());
-			}
-		}
-
-		sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)npc->id << packet, npc->character.getGlobalPosition(), level);
-	}
 }
 
 bool Server::addPlayer(PlayerPtr player, PlayerID id)

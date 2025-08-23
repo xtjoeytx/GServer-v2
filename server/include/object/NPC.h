@@ -2,8 +2,11 @@
 #define NPC_H
 
 #include <array>
+#include <bitset>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
+#include <deque>
 #include <memory>
 #include <ranges>
 #include <stdexcept>
@@ -191,6 +194,49 @@ inline constexpr std::string_view NPCTYPE_CONTROL = "CONTROL"sv;
 
 //----------------------------
 
+/// @brief Holds the results of a move operation.
+struct NPCMove
+{
+	/// @brief The start position of the movement.
+	PixelPosition origin;
+
+	/// @brief The end position of the movement.
+	PixelPosition destination;
+
+	/// @brief How many milliseconds have elapsed since the start of the movement.
+	std::chrono::milliseconds elapsed = 0ms;
+
+	/// @brief How many milliseconds the movement should take.
+	std::chrono::milliseconds duration = 0ms;
+
+	/// @brief The time the movement was created.
+	clock::time_point modTime;
+
+	/// @brief The set options for the movement.
+	std::bitset<5> options;
+
+	static const int cacheNearbyMovement = 0;	// Value: 1
+	static const int appendMovement = 1;		// Value: 2
+	static const int blockCheck = 2;			// Value: 4
+	static const int informWhenDone = 3;		// Value: 8
+	static const int applyDirection = 4;		// Value: 16
+
+	/// @brief Returns the current interpolated pixel position based on elapsed time.
+	/// @return A PixelPosition representing the current position interpolated between the origin and destination, based on the elapsed time.
+	PixelPosition getCurrentPosition() const noexcept
+	{
+		if (elapsed >= duration)
+			return destination;
+
+		double percent = static_cast<double>(elapsed.count()) / duration.count();
+		auto lerpX = std::lerp(origin.x(), destination.x(), percent);
+		auto lerpY = std::lerp(origin.y(), destination.y(), percent);
+		return { static_cast<int32_t>(lerpX), static_cast<int32_t>(lerpY) };
+	}
+};
+
+//----------------------------
+
 class NPC
 {
 	friend class FlatFileNPCLoader;
@@ -208,7 +254,14 @@ public:
 
 public:
 	bool warp(LevelPtr level, const LocalPixelPosition& position);
-	void sendAllShowImagesToLevel(clock::time_point modTime = clock::time_point::min()) const;
+	CString getShowImagesPacket(clock::time_point modTime = clock::time_point::min()) const noexcept;
+	void sendShowImagesToPlayer(PlayerPtr player, clock::time_point modTime = clock::time_point::min()) const noexcept;
+	void sendAllShowImagesToLevel(clock::time_point modTime = clock::time_point::min()) const noexcept;
+	void addMoveToQueue(const LocalPixelPosition& moveDelta, float durationInSeconds, uint8_t options);
+	void processMoveQueue(std::chrono::milliseconds deltaTime);
+	std::pair<CString, CString> getMoveQueuePacketData(clock::time_point modTime = clock::time_point::min()) const noexcept;
+	void sendMoveQueueToPlayer(PlayerPtr player, clock::time_point modTime = clock::time_point::min()) const noexcept;
+	void sendMoveQueueToLevel(LevelPtr level, clock::time_point modTime = clock::time_point::min()) const noexcept;
 
 public:
 	const std::string& getWeaponName() const noexcept { return m_weaponName; }
@@ -340,6 +393,7 @@ public:
 	clock::time_point lastUpdateTime;
 	ScriptContainer scripting;
 	std::unordered_map<uint8_t, ShowImg> showImgList;
+	std::deque<NPCMove> moveQueue;
 
 private:
 	std::array<clock::time_point, NPCPROP_COUNT> m_savedModTime;

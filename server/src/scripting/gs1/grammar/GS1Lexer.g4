@@ -85,7 +85,7 @@ constexpr std::array<std::string_view, 202> builtInCommands = {
     "lay2",
     "loadmap",
     "message",
-    "move",
+    "move ",
     "noplayerkilling",
     "noplayeronwall",
     "openurl",
@@ -483,7 +483,7 @@ CMD_CANBEPUSHED          : 'canbepushed'          -> type(COMMAND);
 CMD_CANNOTBEPUSHED       : 'cannotbepushed'       -> type(COMMAND);
 CMD_CANBEPULLED          : 'canbepulled'          -> type(COMMAND);
 CMD_CANNOTBEPULLED       : 'cannotbepulled'       -> type(COMMAND);
-CMD_MOVE                 : 'move'                 { pushCommand("EEEE"); } -> type(COMMAND);
+CMD_MOVE                 : 'move '                 { pushCommand("EEEE"); } -> type(COMMAND);
 CMD_SAY                  : 'say '                 { pushCommand("E"); } -> type(COMMAND);
 CMD_SAY2                 : 'say2'                 { pushCommand("S"); } -> type(COMMAND);
 CMD_LAY                  : 'lay '                 { pushCommand("I"); } -> type(COMMAND);

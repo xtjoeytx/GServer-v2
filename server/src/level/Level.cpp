@@ -563,7 +563,8 @@ void Level::sendNPCsToPlayer(std::shared_ptr<Player> player, clock::time_point t
 			}
 		}
 
-		npc->sendAllShowImagesToLevel(time);
+		npc->sendShowImagesToPlayer(player, time);
+		npc->sendMoveQueueToPlayer(player, time);
 	}
 }
 

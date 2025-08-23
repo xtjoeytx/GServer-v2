@@ -311,8 +311,12 @@ void Script::split(std::string& source) noexcept
 	// Split the code into clientside and serverside.
 	if (auto clientSep = source.find(clientSideTerminator); clientSep != std::string::npos)
 	{
+		auto endOfLine = source.find('\xa7', clientSep);
+		if (endOfLine == std::string::npos)
+			endOfLine = clientSep + clientSideTerminator.size();
+
 		m_serverside = string::trim(std::string_view{ source }.substr(0, clientSep));
-		m_clientside = string::trim(std::string_view{ source }.substr(clientSep + clientSideTerminator.size()));
+		m_clientside = string::trim(std::string_view{ source }.substr(endOfLine + 1));
 	}
 	else
 	{

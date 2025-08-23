@@ -44,6 +44,7 @@ enum class ScriptEventType : uint8_t
 	WASPELT,
 	TIMEOUT,
 	PRIVATEMESSAGE,
+	MOVEMENTFINISHED,
 	//
 	SERVERLISTCONNECT,
 	TRIGGERACTION,
@@ -73,6 +74,7 @@ constexpr ScriptEventType scriptEventTypeFromName(std::string_view name)
 	if (name == "waspelt") return ScriptEventType::WASPELT;
 	if (name == "timeout") return ScriptEventType::TIMEOUT;
 	if (name == "pm") return ScriptEventType::PRIVATEMESSAGE;
+	if (name == "movementfinished") return ScriptEventType::MOVEMENTFINISHED;
 	return ScriptEventType::CUSTOM;
 }
 

@@ -159,25 +159,33 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 		copy->executeEvents(weapon->scripting.events, source::FromWeapon(weapon));
 	}
 
+	// Process all NPC movements.
 	// Run all NPC scripts.
 	for (auto& [id, npc] : m_server->getNPCList())
 	{
-		// Copy the shared_ptr so if we "destroy" gets called, the NPC isn't immediately deleted while we are running the script.
-		NPCPtr copy = npc;
-		copy->executeEvents(npc->scripting.events, source::FromNPC(id));
+		// Process movement.
+		npc->processMoveQueue(delta);
+
+		// Process scripts.
+		npc->executeEvents(npc->scripting.events, source::FromNPC(id));
 	}
 
 	// Send all changed NPC props.
+	// Send all queued movements.
 	{
 		CString propsPacket;
 		for (auto& [id, npc] : m_server->getNPCList())
 		{
 			if (auto level = npc->level.lock(); level != nullptr)
 			{
+				// Send props packet.
 				propsPacket.clear();
 				propsPacket.writeGChar((char)PLO_NPCPROPS) >> (int)npc->id << npc->getModifiedPropsPacket();
 				if (propsPacket.length() > 4)
 					m_server->sendPacketToNearby(propsPacket, npc->getGlobalPosition(), level);
+
+				// Send movements.
+				npc->sendMoveQueueToLevel(level, m_server->getFrameStartTime());
 			}
 		}
 	}

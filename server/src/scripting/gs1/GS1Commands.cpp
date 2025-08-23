@@ -1339,7 +1339,7 @@ void fn_move(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
-			server->moveNPC(npc, dx, dy, time, options);
+			npc->addMoveToQueue(toLocalPixelPosition(dx, dy), time, options);
 	}
 }
 

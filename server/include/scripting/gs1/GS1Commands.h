@@ -204,7 +204,7 @@ constexpr std::array<std::string_view, 202> serverSideCommands =
 	//"toinventory",
 	"tokenize",
 	"tokenize2",
-	//"toweapons",
+	"toweapons",
 	"triggeraction",
 	"unfreezeplayer",
 	"unset ",
