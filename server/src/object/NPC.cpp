@@ -91,6 +91,118 @@ NPC::~NPC()
 
 //----------------------------
 
+void NPC::resetToInitialState()
+{
+	image = m_initialImage;
+	shape = {};
+	imagePart = {};
+	visFlags = 1;
+	blockFlags = 0;
+	hurtX = 0.0f;
+	hurtY = 0.0f;
+	noPlayerOnWall = false;
+	timeout = 0ms;
+	m_initialCharacter.nickName.clear();
+	character = m_initialCharacter;
+	saves.fill(0);
+	modTime.fill(clock::time_point::min());
+
+	auto server = BabyDI::Get<Server>();
+	warpRestrictions = server->hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
+
+	// We need to alter the modTime of the following props as they should be always sent.
+	// If we don't, they won't be sent until the prop gets modified.
+	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::Z, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::X2, NPCProp::Y2, NPCProp::Z2 });
+	std::ranges::for_each(props, [this, now = server->getServerStartTime()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
+
+	m_savedModTime = modTime;
+	lastUpdateTime = server->getServerStartTime();
+
+	// Clear the variables.
+	scripting.variables.store.clear();
+
+	// Warp.
+	if (auto initialLevel = m_initialLevel.lock(); initialLevel != nullptr)
+	{
+		warp(initialLevel, character.getLocalPosition());
+	}
+}
+
+//----------------------------
+
+bool NPC::warp(LevelPtr newLevel, const LocalPixelPosition& position)
+{
+	if (newLevel == nullptr)
+		return false;
+
+	sendPropsFromResults(
+		setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, newLevel->levelName),
+		setPropWith<NPCProp::X2>(SetBy::SERVER, position.x()),
+		setPropWith<NPCProp::Y2>(SetBy::SERVER, position.y())
+	);
+
+	return true;
+}
+
+void NPC::sendAllShowImagesToLevel(clock::time_point modTime) const
+{
+	// Only start sending showimg packets when the NPC gains showimgs.
+	if (!m_hadShowImgs && showImgList.size() == 0)
+		return;
+
+	m_hadShowImgs = true;
+
+	// Construct the packet.
+	// Index 9 will cause all of the showimgs to be erased on the client.
+	CString packet;
+	packet >> (char)PLO_SHOWIMGNPC >> (int)id >> (char)9;
+
+	// Send all the showimgs.
+	for (const auto& [id, showimg] : showImgList)
+		packet >> (char)(id + 10) << showimg.getAllPropsPacket();
+
+	auto server = BabyDI::Get<Server>();
+	server->sendPacketToNearby(packet, getGlobalPosition(), level.lock());
+}
+
+//----------------------------
+
+std::string NPC::getLevelName() const
+{
+	if (auto levelPtr = level.lock(); levelPtr != nullptr)
+	{
+		if (levelPtr->isOnGmap())
+			return levelPtr->getMap()->getMapName();
+		return levelPtr->levelName;
+	}
+	return {};
+}
+
+//----------------------------
+
+void NPC::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
+{
+	if (events.queue().empty())
+		return;
+
+	ScriptEventQueue eventQueue{ events };
+	m_script.executeEvents(eventQueue, source);
+
+	// Execute classes.
+	for (auto& [handle, scriptClassPtr] : m_joinedClasses)
+	{
+		if (auto scriptClass = scriptClassPtr.lock(); scriptClass != nullptr)
+		{
+			ScriptEventQueue classQueue{ events };
+			scriptClass->getScript().executeEvents(classQueue, source);
+		}
+	}
+
+	// Erase the event queue.
+	while (!events.queue().empty())
+		events.queue().pop_back();
+}
+
 void NPC::setScript(std::string_view script)
 {
 	//auto profile = log::Profile(log::server, "NPC::setScript");
@@ -117,56 +229,156 @@ void NPC::setScript(std::string_view script)
 		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (image.length() != 0 ? image : std::to_string(id)));
 }
 
-void NPC::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
+std::string NPC::getClientSideScript() const
 {
-	if (events.queue().empty())
-		return;
-
-	ScriptEventQueue eventQueue{ events };
-	m_script.executeEvents(eventQueue, source);
-
-	// Execute classes.
-	for (auto& [handle, scriptClassPtr] : m_joinedClasses)
+	std::string result{ m_script.getClientSide() };
+	for (const auto& [handle, classPtr] : m_joinedClasses)
 	{
-		if (auto scriptClass = scriptClassPtr.lock(); scriptClass != nullptr)
+		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
-			ScriptEventQueue classQueue{ events };
-			scriptClass->getScript().executeEvents(classQueue, source);
+			const auto& clientSide = scriptClass->getScript().getClientSide();
+			if (!clientSide.empty())
+			{
+				result += "\xa7";
+				result += clientSide;
+			}
 		}
 	}
-
-	// Erase the event queue.
-	while (!events.queue().empty())
-		events.queue().pop_back();
+	return result;
 }
 
-//----------------------------
-
-bool NPC::warp(LevelPtr newLevel, const LocalPixelPosition& position)
+std::string NPC::getJoinedClasses() const
 {
-	if (newLevel == nullptr)
-		return false;
-
-	sendPropsFromResults(
-		setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, newLevel->levelName),
-		setPropWith<NPCProp::X2>(SetBy::SERVER, position.x()),
-		setPropWith<NPCProp::Y2>(SetBy::SERVER, position.y())
-		);
-
-	return true;
-}
-
-//----------------------------
-
-std::string NPC::getLevelName() const
-{
-	if (auto levelPtr = level.lock(); levelPtr != nullptr)
+	bool hasExpired = false;
+	std::string result;
+	for (const auto& [handle, classPtr] : m_joinedClasses)
 	{
-		if (levelPtr->isOnGmap())
-			return levelPtr->getMap()->getMapName();
-		return levelPtr->levelName;
+		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
+		{
+			result += scriptClass->name;
+			result += ",";
+		}
+		else hasExpired = true;
 	}
-	return {};
+	result.pop_back();
+
+	// If we have expired, clear them out.
+	if (hasExpired)
+	{
+		std::erase_if(m_joinedClasses, [this](const decltype(m_joinedClasses)::value_type& pair) { return pair.second.expired(); });
+	}
+
+	return result;
+}
+
+bool NPC::hasJoinedClass(std::string_view className) const
+{
+	for (const auto& [handle, classPtr] : m_joinedClasses)
+	{
+		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr && scriptClass->name == className)
+			return true;
+	}
+	return false;
+}
+
+void NPC::setJoinedClasses(std::string_view classes)
+{
+	auto server = BabyDI::Get<Server>();
+	if (server == nullptr || !server->hasNPCServer()) return;
+
+	for (const auto& [handle, classPtr] : m_joinedClasses)
+	{
+		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
+			scriptClass->onScriptModified.unsubscribe(handle);
+	}
+
+	m_joinedClasses.clear();
+
+	while (!classes.empty())
+	{
+		auto className = string::extractLine(classes, ',');
+		if (className.empty())
+			continue;
+
+		className = string::trim(className);
+		if (auto scriptClass = server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+		{
+			auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
+			m_joinedClasses.emplace_back(handle, scriptClass);
+			sendScriptUpdatesToLevel(lastUpdateTime);
+			modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
+			lastUpdateTime = server->getFrameStartTime();
+		}
+	}
+}
+
+void NPC::joinClass(std::string_view className)
+{
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
+	if (it != m_joinedClasses.end())
+		return;
+
+	auto server = BabyDI::Get<Server>();
+	if (server == nullptr || !server->hasNPCServer())
+		return;
+
+	if (auto scriptClass = server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+	{
+		auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
+		m_joinedClasses.emplace_back(handle, scriptClass);
+		sendScriptUpdatesToLevel(lastUpdateTime);
+		modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
+		lastUpdateTime = server->getFrameStartTime();
+	}
+	else
+	{
+		log::printLine(log::npc, "Error: NPC '{}' tried to join class '{}', but it does not exist.", name, className);
+	}
+}
+
+void NPC::leaveClass(std::string_view className)
+{
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
+	if (it == m_joinedClasses.end())
+		return;
+
+	auto server = BabyDI::Get<Server>();
+	if (server == nullptr || !server->hasNPCServer())
+		return;
+
+	if (auto scriptClass = it->second.lock(); scriptClass != nullptr)
+	{
+		scriptClass->onScriptModified.unsubscribe(it->first);
+		sendScriptUpdatesToLevel(lastUpdateTime);
+		modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
+		lastUpdateTime = server->getFrameStartTime();
+	}
+
+	m_joinedClasses.erase(it);
+}
+
+void NPC::sendScriptUpdatesToLevel(clock::time_point when) const
+{
+	if (auto npclevel = level.lock(); npclevel != nullptr)
+	{
+		auto server = BabyDI::Get<Server>();
+		CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)npclevel->levelName.length() << npclevel->levelName >> (int)id;
+		server->sendPacketToLevelAndPastVisitorsAfter(npclevel.get(), clock::to_time_t(when), packet);
+		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), npclevel);
+	}
+}
+
+void NPC::updateScriptClass(ScriptClass* scriptClass)
+{
+	auto server = BabyDI::Get<Server>();
+	if (server == nullptr || scriptClass == nullptr || !server->hasNPCServer())
+		return;
+	if (scriptClass->getScript().getClientSide().empty())
+		return;
+
+	sendScriptUpdatesToLevel(lastUpdateTime);
+	modTime[PROPID(NPCProp::SCRIPT)] = server->getFrameStartTime();
+	lastUpdateTime = server->getFrameStartTime();
 }
 
 //----------------------------
@@ -968,199 +1180,6 @@ CString NPC::getAllPropsPacket(clock::time_point newTime) const
 
 //----------------------------
 
-std::string NPC::getClientSideScript() const
-{
-	std::string result{ m_script.getClientSide() };
-	for (const auto& [handle, classPtr] : m_joinedClasses)
-	{
-		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
-		{
-			const auto& clientSide = scriptClass->getScript().getClientSide();
-			if (!clientSide.empty())
-			{
-				result += "\xa7";
-				result += clientSide;
-			}
-		}
-	}
-	return result;
-}
-
-std::string NPC::getJoinedClasses() const
-{
-	bool hasExpired = false;
-	std::string result;
-	for (const auto& [handle, classPtr] : m_joinedClasses)
-	{
-		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
-		{
-			result += scriptClass->name;
-			result += ",";
-		}
-		else hasExpired = true;
-	}
-	result.pop_back();
-
-	// If we have expired, clear them out.
-	if (hasExpired)
-	{
-		std::erase_if(m_joinedClasses, [this](const decltype(m_joinedClasses)::value_type& pair) { return pair.second.expired(); });
-	}
-
-	return result;
-}
-
-bool NPC::hasJoinedClass(std::string_view className) const
-{
-	for (const auto& [handle, classPtr] : m_joinedClasses)
-	{
-		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr && scriptClass->name == className)
-			return true;
-	}
-	return false;
-}
-
-void NPC::setJoinedClasses(std::string_view classes)
-{
-	auto server = BabyDI::Get<Server>();
-	if (server == nullptr || !server->hasNPCServer()) return;
-
-	for (const auto& [handle, classPtr] : m_joinedClasses)
-	{
-		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
-			scriptClass->onScriptModified.unsubscribe(handle);
-	}
-
-	m_joinedClasses.clear();
-
-	while (!classes.empty())
-	{
-		auto className = string::extractLine(classes, ',');
-		if (className.empty())
-			continue;
-
-		className = string::trim(className);
-		if (auto scriptClass = server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
-		{
-			auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
-			m_joinedClasses.emplace_back(handle, scriptClass);
-			sendScriptUpdatesToLevel(lastUpdateTime);
-			modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
-			lastUpdateTime = server->getFrameStartTime();
-		}
-	}
-}
-
-void NPC::joinClass(std::string_view className)
-{
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
-	if (it != m_joinedClasses.end())
-		return;
-
-	auto server = BabyDI::Get<Server>();
-	if (server == nullptr || !server->hasNPCServer())
-		return;
-
-	if (auto scriptClass = server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
-	{
-		auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
-		m_joinedClasses.emplace_back(handle, scriptClass);
-		sendScriptUpdatesToLevel(lastUpdateTime);
-		modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
-		lastUpdateTime = server->getFrameStartTime();
-	}
-	else
-	{
-		log::printLine(log::npc, "Error: NPC '{}' tried to join class '{}', but it does not exist.", name, className);
-	}
-}
-
-void NPC::leaveClass(std::string_view className)
-{
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
-	if (it == m_joinedClasses.end())
-		return;
-
-	auto server = BabyDI::Get<Server>();
-	if (server == nullptr || !server->hasNPCServer())
-		return;
-
-	if (auto scriptClass = it->second.lock(); scriptClass != nullptr)
-	{
-		scriptClass->onScriptModified.unsubscribe(it->first);
-		sendScriptUpdatesToLevel(lastUpdateTime);
-		modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
-		lastUpdateTime = server->getFrameStartTime();
-	}
-
-	m_joinedClasses.erase(it);
-}
-
-void NPC::sendScriptUpdatesToLevel(clock::time_point when) const
-{
-	if (auto npclevel = level.lock(); npclevel != nullptr)
-	{
-		auto server = BabyDI::Get<Server>();
-		CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)npclevel->levelName.length() << npclevel->levelName >> (int)id;
-		server->sendPacketToLevelAndPastVisitorsAfter(npclevel.get(), clock::to_time_t(when), packet);
-		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), npclevel);
-	}
-}
-
-void NPC::updateScriptClass(ScriptClass* scriptClass)
-{
-	auto server = BabyDI::Get<Server>();
-	if (server == nullptr || scriptClass == nullptr || !server->hasNPCServer())
-		return;
-	if (scriptClass->getScript().getClientSide().empty())
-		return;
-
-	sendScriptUpdatesToLevel(lastUpdateTime);
-	modTime[PROPID(NPCProp::SCRIPT)] = server->getFrameStartTime();
-	lastUpdateTime = server->getFrameStartTime();
-}
-
-//----------------------------
-
-void NPC::resetToInitialState()
-{
-	image = m_initialImage;
-	shape = {};
-	imagePart = {};
-	visFlags = 1;
-	blockFlags = 0;
-	hurtX = 0.0f;
-	hurtY = 0.0f;
-	noPlayerOnWall = false;
-	timeout = 0ms;
-	m_initialCharacter.nickName.clear();
-	character = m_initialCharacter;
-	saves.fill(0);
-	modTime.fill(clock::time_point::min());
-
-	auto server = BabyDI::Get<Server>();
-	warpRestrictions = server->hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
-
-	// We need to alter the modTime of the following props as they should be always sent.
-	// If we don't, they won't be sent until the prop gets modified.
-	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::Z, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::X2, NPCProp::Y2, NPCProp::Z2 });
-	std::ranges::for_each(props, [this, now = server->getServerStartTime()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
-
-	m_savedModTime = modTime;
-	lastUpdateTime = server->getServerStartTime();
-
-	// Clear the variables.
-	scripting.variables.store.clear();
-
-	// Warp.
-	if (auto initialLevel = m_initialLevel.lock(); initialLevel != nullptr)
-	{
-		warp(initialLevel, character.getLocalPosition());
-	}
-}
-
-//----------------------------
-
 void NPC::constructScriptParameters()
 {
 	scriptParameters.try_emplace("id", set_temporary, "id", gameVariableGetter([this]() { return static_cast<double>(id); }), GameVariable::func_set{});
@@ -1268,29 +1287,6 @@ void NPC::constructScriptParameters()
 				character.direction = std::clamp(static_cast<uint8_t>(value.get<double>().value_or(0.0)), 0_ui8, 3_ui8);
 			})
 		);
-}
-
-//----------------------------
-
-void NPC::sendAllShowImagesToLevel(clock::time_point modTime) const
-{
-	// Only start sending showimg packets when the NPC gains showimgs.
-	if (!m_hadShowImgs && showImgList.size() == 0)
-		return;
-
-	m_hadShowImgs = true;
-
-	// Construct the packet.
-	// Index 9 will cause all of the showimgs to be erased on the client.
-	CString packet;
-	packet >> (char)PLO_SHOWIMGNPC >> (int)id >> (char)9;
-
-	// Send all the showimgs.
-	for (const auto& [id, showimg] : showImgList)
-		packet >> (char)(id + 10) << showimg.getAllPropsPacket();
-
-	auto server = BabyDI::Get<Server>();
-	server->sendPacketToNearby(packet, getGlobalPosition(), level.lock());
 }
 
 //----------------------------

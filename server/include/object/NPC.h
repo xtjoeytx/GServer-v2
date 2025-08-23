@@ -200,12 +200,43 @@ public:
 	~NPC();
 
 public:
-	void setScript(std::string_view script);
-	const Script& getScript() const noexcept { return m_script; }
-	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
+	/// @brief Records the current state as the initial state of the NPC.
+	[[inline]] void recordInitialState();
+
+	/// @brief Resets the NPC to its initial state.
+	void resetToInitialState();
 
 public:
 	bool warp(LevelPtr level, const LocalPixelPosition& position);
+	void sendAllShowImagesToLevel(clock::time_point modTime = clock::time_point::min()) const;
+
+public:
+	const std::string& getWeaponName() const noexcept { return m_weaponName; }
+	bool isCharacter() const noexcept { return image == "#c#"; }
+	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
+	[[inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
+	[[inline]] PixelPosition getGlobalPosition() const noexcept;
+	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;
+	[[inline]] TilePosition getTilePosition() const noexcept;
+	std::string getLevelName() const;
+	std::vector<std::string> getVariableDump() const;
+
+public:
+	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
+	void setScript(std::string_view script);
+	const Script& getScript() const noexcept { return m_script; }
+	std::string getClientSideScript() const;
+	std::string getJoinedClasses() const;
+	bool hasJoinedClass(std::string_view className) const;
+	void setJoinedClasses(std::string_view classes);
+	void joinClass(std::string_view className);
+	void leaveClass(std::string_view className);
+	void sendScriptUpdatesToLevel(clock::time_point when) const;
+	void constructScriptParameters();
+	string_map<GameVariable> scriptParameters;
+
+protected:
+	void updateScriptClass(ScriptClass* scriptClass);
 
 public:
 	/// @brief Records the current modification time of all properties.
@@ -283,56 +314,18 @@ public:
 	[[inline]] CString getPropsPacketFor() const;
 
 public:
-	std::string getClientSideScript() const;
-	std::string getJoinedClasses() const;
-	bool hasJoinedClass(std::string_view className) const;
-	void setJoinedClasses(std::string_view classes);
-	void joinClass(std::string_view className);
-	void leaveClass(std::string_view className);
-	void sendScriptUpdatesToLevel(clock::time_point when) const;
-
-protected:
-	void updateScriptClass(ScriptClass* scriptClass);
-
-public:
-	void constructScriptParameters();
-	string_map<GameVariable> scriptParameters;
-
-public:
-	const std::string& getWeaponName() const noexcept { return m_weaponName; }
-	bool isCharacter() const noexcept { return image == "#c#"; }
-	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
-	[[inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
-	[[inline]] PixelPosition getGlobalPosition() const noexcept;
-	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;
-	[[inline]] TilePosition getTilePosition() const noexcept;
-	std::string getLevelName() const;
-	std::vector<std::string> getVariableDump() const;
-
-	// Records the current state as the initial state of the NPC.
-	void recordInitialState()
-	{
-		m_initialImage = image;
-		m_initialLevel = level;
-		m_initialCharacter = character;
-	}
-
-	/// @brief Resets the NPC to its initial state.
-	void resetToInitialState();
-
-public:
-	void sendAllShowImagesToLevel(clock::time_point modTime = clock::time_point::min()) const;
-
-public:
 	void testForLinks(SetResults& result);
 	void testForTouch(SetResults& result);
 
 public:
 	const NPCID id;
 	const NPCStorageType storageType;
-	std::string name;
-	std::string image;
 	std::weak_ptr<Level> level;
+	std::string name;
+	std::string scripter;
+	std::string scriptType;
+	std::string image;
+	Character character;
 	Dimension<uint16_t> shape;
 	Rectangle<uint16_t, uint8_t> imagePart;
 	uint8_t visFlags = 1;
@@ -340,15 +333,12 @@ public:
 	float hurtX = 0.0f;
 	float hurtY = 0.0f;
 	bool noPlayerOnWall = false;
-	std::chrono::milliseconds timeout = 0ms;
-	Character character;
 	std::array<uint8_t, 10> saves;
+	std::chrono::milliseconds timeout = 0ms;
+	NPCWarpRestrictions warpRestrictions = NPCWarpRestrictions::ALLOWED;
 	std::array<clock::time_point, NPCPROP_COUNT> modTime;
 	clock::time_point lastUpdateTime;
-	NPCWarpRestrictions warpRestrictions = NPCWarpRestrictions::ALLOWED;
 	ScriptContainer scripting;
-	std::string scripter;
-	std::string scriptType;
 	std::unordered_map<uint8_t, ShowImg> showImgList;
 
 private:
@@ -375,6 +365,13 @@ using NPCWeakPtr = std::weak_ptr<NPC>;
 inline void NPC::recordCurrentPropModTime()
 {
 	m_savedModTime = modTime;
+}
+
+inline void NPC::recordInitialState()
+{
+	m_initialImage = image;
+	m_initialLevel = level;
+	m_initialCharacter = character;
 }
 
 inline PixelRectangleArea NPC::getBoundingBox() const noexcept
