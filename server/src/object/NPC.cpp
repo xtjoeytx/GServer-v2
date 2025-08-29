@@ -120,8 +120,9 @@ void NPC::resetToInitialState()
 	m_savedModTime = modTime;
 	lastUpdateTime = server->getServerStartTime();
 
-	// Clear the variables.
+	// Clear the variables and queues.
 	scripting.variables.store.clear();
+	moveQueue.clear();
 
 	// Warp.
 	if (auto initialLevel = server->getLevel(m_initialLevel); initialLevel != nullptr)
@@ -135,6 +136,7 @@ bool NPC::warp(LevelPtr level, const LocalPixelPosition& position)
 	if (level == nullptr)
 		return false;
 
+	moveQueue.clear();
 	sendPropsFromResults(
 		setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, level->levelName),
 		setPropWith<NPCProp::X2>(SetBy::SERVER, position.x()),
@@ -231,8 +233,10 @@ void NPC::addMoveToQueue(const LocalPixelPosition& moveDelta, float durationInSe
 	// and execute the last movement to the end (so any events get called).
 	if (finishAllMovements)
 	{
-		moveQueue.erase(moveQueue.begin(), std::prev(moveQueue.end()));
-		processMoveQueue(moveQueue.front().duration);
+		if (moveQueue.size() > 1)
+			moveQueue.erase(moveQueue.begin(), std::prev(moveQueue.end()));
+		if (!moveQueue.empty())
+			processMoveQueue(moveQueue.front().duration);
 	}
 
 	moveQueue.push_back(std::move(move));
@@ -479,9 +483,7 @@ void NPC::setScript(std::string_view script)
 
 	// If we have no npc-server, we support toweapons, so extract the weapon name.
 	if (!server->hasNPCServer())
-	{
 		m_weaponName = toWeaponName(clientside);
-	}
 
 	// Just a little warning for people who don't know.
 	if (m_script.getClientByteCode().empty() && m_script.getClientSide().length() > 0x705F)
@@ -1470,6 +1472,7 @@ void NPC::constructScriptParameters()
 				auto globalPosition = character.getGlobalPosition();
 				globalPosition.x() = value.get<double>().value_or(0.0) * 16;
 				character.localPixelX = toLocalPixelPosition(globalPosition).x();
+				moveQueue.clear();
 
 				if (auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isOnGmap())
 				{
@@ -1486,6 +1489,7 @@ void NPC::constructScriptParameters()
 				auto globalPosition = character.getGlobalPosition();
 				globalPosition.y() = value.get<double>().value_or(0.0) * 16;
 				character.localPixelY = toLocalPixelPosition(globalPosition).y();
+				moveQueue.clear();
 
 				if (auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isOnGmap())
 				{
