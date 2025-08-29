@@ -2170,8 +2170,7 @@ std::generator<const NPCID&> Level::findInRangeNPCsByDistance(const PixelPositio
 		return false;
 	};
 
-	auto tileDistanceInLevels = static_cast<int>(std::ceilf(tileDistance / 64.0f));
-	for (LevelPtr level : m_map->getLevelsInRange(toTilePosition(position), tileDistanceInLevels, tileDistanceInLevels))
+	for (LevelPtr level : m_map->getLevelsInRange(tilePosition, tileDistance, tileDistance))
 	{
 		for (const auto& npcId : level->m_npcs)
 		{
