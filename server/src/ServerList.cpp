@@ -20,6 +20,7 @@
 
 #include <FileSystem.h>
 #include <Server.h>
+#include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
@@ -314,7 +315,7 @@ void ServerList::sendPacket(CString& pPacket, bool sendNow)
 /*
 	Altering Player Information
 */
-void ServerList::addPlayer(PlayerPtr player)
+void ServerList::addPlayer(std::shared_ptr<Player> player)
 {
 	assert(player != nullptr);
 
@@ -330,7 +331,7 @@ void ServerList::addPlayer(PlayerPtr player)
 	sendPacket(dataPacket);
 }
 
-void ServerList::deletePlayer(PlayerPtr player)
+void ServerList::deletePlayer(std::shared_ptr<Player> player)
 {
 	assert(player != nullptr);
 
@@ -387,6 +388,10 @@ void ServerList::handleText(const CString& data)
 			if (params.size() == 3 && params[1] == "SetRemoteIp")
 			{
 				m_serverRemoteIp = params[2].text();
+				log::printLine(log::server, ":: listserver - Remote IP identified as '{}'.", m_serverRemoteIp);
+
+				if (m_server->hasNPCServer())
+					m_server->getNPCServer()->setRemoteIp(m_serverRemoteIp);
 			}
 			else if (params.size() >= 4)
 			{
@@ -437,7 +442,7 @@ void ServerList::sendText(const std::vector<CString>& stringList)
 	sendPacket(dataPacket);
 }
 
-void ServerList::sendTextForPlayer(PlayerPtr player, const CString& data)
+void ServerList::sendTextForPlayer(std::shared_ptr<Player> player, const CString& data)
 {
 	assert(player != nullptr);
 
@@ -447,7 +452,7 @@ void ServerList::sendTextForPlayer(PlayerPtr player, const CString& data)
 	sendPacket(dataPacket);
 }
 
-void ServerList::sendLoginPacketForPlayer(PlayerPtr player, const CString& password, const CString& identity)
+void ServerList::sendLoginPacketForPlayer(std::shared_ptr<Player> player, const CString& password, const CString& identity)
 {
 	sendPacket(CString() >> (char)SVO_VERIACC2 >> (char)player->account.name.length() << player->account.name >> (char)password.length() << password >> (short)player->getId() >> (char)player->getType() >> (short)identity.length() << identity);
 }

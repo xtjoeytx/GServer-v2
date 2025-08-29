@@ -96,6 +96,12 @@ void NPCServer::initialize()
 	m_timedSave.start();
 }
 
+void NPCServer::setRemoteIp(std::string_view host)
+{
+	if (m_server->getAdminSettings().getStr("ns_ip", "auto").toLower() == "auto")
+		m_ncHost = host;
+}
+
 void NPCServer::sendNCLoginToPlayer(std::shared_ptr<Player> player)
 {
 	// RC's only!

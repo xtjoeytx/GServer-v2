@@ -45,6 +45,7 @@ public:
 
 public:
 	void initialize();
+	void setRemoteIp(std::string_view host);
 	void sendNCLoginToPlayer(std::shared_ptr<Player> player);
 
 public:
