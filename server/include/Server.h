@@ -195,7 +195,9 @@ public:
 	const auto& getStatusList() const { return m_statusList; }
 
 public:
+	std::shared_ptr<Level> stubOrGetLevel(std::string_view levelName);
 	std::shared_ptr<Level> getLevel(std::string_view levelName);
+	std::shared_ptr<Map> findMap(std::string_view mapName) const noexcept;
 
 public:
 	std::shared_ptr<NPC> getNPC(const NPCID id) const;

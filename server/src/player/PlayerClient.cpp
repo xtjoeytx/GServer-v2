@@ -1372,7 +1372,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 		level->addNPC(m_carryNPC);
 		if (auto npc = m_server->getNPC(m_carryNPC); npc)
 		{
-			npc->level = level;
+			npc->setLevel(level);
 
 			// Send the carry NPC props to other players.
 			if (!level->isSingleplayer)

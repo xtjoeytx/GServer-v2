@@ -57,6 +57,7 @@ public:
 	static std::shared_ptr<Level> clone(LevelPtr level);
 
 public:
+	bool loaded = false;
 	bool reload();
 	void saveLevel(const std::string& filename);
 
@@ -70,6 +71,7 @@ private:
 	precise_clock::duration m_frameEventDuration = 0ns;
 
 public:
+	[[inline]] void setMap(std::shared_ptr<Map> map);
 	auto getMap() const noexcept { return m_map; }
 	[[inline]] Dimension<uint8_t> getMapSizeInParts() const noexcept;
 	[[inline]] Dimension<uint32_t> getMapSizeInTiles() const noexcept;
@@ -285,6 +287,11 @@ private:
 using LevelPtr = std::shared_ptr<Level>;
 
 //----------------------------
+
+inline void Level::setMap(std::shared_ptr<Map> map)
+{
+	m_map = map;
+}
 
 inline Dimension<uint8_t> Level::getMapSizeInParts() const noexcept
 {

@@ -387,7 +387,7 @@ std::shared_ptr<Level> GS1Visitor::findCurrentLevel() const
 		if (source.second == ScriptObjectSourceType::NPC)
 		{
 			if (auto npc = server->getNPC(source.first); npc != nullptr)
-				return npc->level.lock();
+				return npc->getLevel();
 		}
 		else if (source.second == ScriptObjectSourceType::PLAYER)
 		{
@@ -454,7 +454,7 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 			const auto picker = visit_functions
 			{
 				[&server](PlayerPtr& player) -> LevelPtr { return server->getLevel(player->account.level); },
-				[&server](NPCPtr& npc) -> LevelPtr { return npc->level.lock(); }
+				[&server](NPCPtr& npc) -> LevelPtr { return npc->getLevel(); }
 			};
 
 			auto level = std::visit(picker, pair.value());

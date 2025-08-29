@@ -567,13 +567,21 @@ GS1ScriptValue mc_F(GS1Visitor* visitor, std::string_view messageCode, const std
 		[](PlayerPtr& player) -> std::string
 		{
 			if (player != nullptr)
+			{
+				if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr)
+					return client->getComputedLevelName();
 				return player->account.level;
+			}
 			return std::string{};
 		},
 		[](NPCPtr& npc) -> std::string
 		{
-			if (auto level = npc->level.lock(); level != nullptr)
-				return std::string{ level->levelName };
+			if (npc != nullptr)
+			{
+				if (auto level = npc->getLevel(); level != nullptr)
+					return std::string{ level->getMapOrLevelName() };
+				return npc->level;
+			}
 			return std::string{};
 		},
 	};
@@ -672,8 +680,9 @@ GS1ScriptValue mc_L(GS1Visitor* visitor, std::string_view messageCode, const std
 	auto npc = getNPCFromSource(visitor->getOriginalSource());
 	if (npc != nullptr)
 	{
-		if (auto level = npc->level.lock(); level != nullptr)
-			return std::string{ level->levelName };
+		if (auto level = npc->getLevel(); level != nullptr)
+			return std::string{ level->getMapOrLevelName() };
+		return std::string{ npc->level };
 	}
 
 	return std::string{};

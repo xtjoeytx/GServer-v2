@@ -289,16 +289,16 @@ std::shared_ptr<Level> Map::getLevelAt(const PixelPosition& globalPosition) cons
 	return getLevelAt(x, y);
 }
 
-std::generator<std::shared_ptr<Level>> Map::getLevelsInRange(const TilePosition& position, int syncx, int syncy) const noexcept
+std::generator<std::shared_ptr<Level>> Map::getLevelsInRange(const TilePosition& position, int syncTilesX, int syncTilesY) const noexcept
 {
 	Position<int16_t> searchPos{ static_cast<int16_t>(position.x() / 64), static_cast<int16_t>(position.y() / 64) };
-	Dimension<uint8_t> levelSyncDistance{ static_cast<uint8_t>(std::ceilf(syncx / 64)), static_cast<uint8_t>(std::ceilf(syncy / 64)) };
+	Dimension<uint8_t> levelSyncDistance{ static_cast<uint8_t>(std::ceilf(syncTilesX / 64)), static_cast<uint8_t>(std::ceilf(syncTilesY / 64)) };
 	Rectangle<int16_t, uint8_t> area{ searchPos.translate(-levelSyncDistance.width(), -levelSyncDistance.height()), levelSyncDistance * 2 };
 
 	for (const auto& [levelName, levelPos] : levels)
 	{
-		if (levelPos.x() >= area.left() && levelPos.x() < area.right() &&
-			levelPos.y() >= area.top() && levelPos.y() < area.bottom())
+		if (levelPos.x() >= area.left() && levelPos.x() <= area.right() &&
+			levelPos.y() >= area.top() && levelPos.y() <= area.bottom())
 		{
 			if (auto level = getLevelPtr(levelName, levelsByName[levelName]); level != nullptr)
 				co_yield level;
@@ -332,22 +332,29 @@ std::generator<std::shared_ptr<Level>> Map::getAllLevels() const noexcept
 
 //----------------------------
 
-std::shared_ptr<Level> Map::getLevelPtr(std::string_view levelName, std::weak_ptr<Level> levelPtr) const
+void Map::forceSetLevelLoaded(std::shared_ptr<Level> level) const noexcept
+{
+	if (auto it = levelsByName.find(level->levelName); it != levelsByName.end())
+		it->second = level;
+	if (size_t index = level->mapPosition.x() + level->mapPosition.y() * size.width(); index < levelsByPosition.size())
+		levelsByPosition[index] = level;
+}
+
+std::shared_ptr<Level> Map::getLevelPtr(std::string_view levelName, std::weak_ptr<Level> levelPtr) const noexcept
 {
 	if (levelName.empty())
 		return nullptr;
 	if (auto level = levelPtr.lock(); level != nullptr)
 		return level;
 
-	// The level could not be locked so it was probably deleted.  Refresh it from the server.
-	/*
+	// The level could not be locked, so ask the server for a stub.
 	auto server = BabyDI::Get<Server>();
-	if (auto level = server->getLevel(levelName); level != nullptr)
+	if (auto level = server->stubOrGetLevel(levelName); level != nullptr)
 	{
-		setLevelLoaded(level);
+		level->setMap(server->findMap(getMapName()));
+		forceSetLevelLoaded(level);
 		return level;
 	}
-	*/
 
 	return nullptr;
 }

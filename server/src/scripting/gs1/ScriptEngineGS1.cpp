@@ -107,7 +107,7 @@ NPCPtr getNPCFromSource(const ScriptObjectSource& source, std::optional<size_t> 
 	{
 		if (index.has_value())
 		{
-			if (auto level = npc->level.lock(); level != nullptr && index.value() < level->getMapNPCCount())
+			if (auto level = npc->getLevel(); level != nullptr && index.value() < level->getMapNPCCount())
 			{
 				auto mapNPCs = level->getMapNPCs();
 				auto iter = mapNPCs.begin();
@@ -173,7 +173,7 @@ GS1ScriptWrapper::GS1ScriptWrapper(std::string_view who, std::string_view script
 	program = parser->program();
 
 #ifdef DEBUG
-	//if (who == "")
+	//if (who == "MoveTester")
 	if (false)
 	{
 		log::printLine(log::script, program->toStringTree(parser.get(), true));
@@ -244,7 +244,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	if (player != nullptr)
 		level = player->getLevel();
 	if (npc != nullptr)
-		level = npc->level.lock();
+		level = npc->getLevel();
 
 	// Try to get variables from the initiator now.
 	if (player == nullptr && event.initiator.second == ScriptObjectSourceType::PLAYER)
@@ -252,7 +252,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	if (npc == nullptr && event.initiator.second == ScriptObjectSourceType::NPC)
 		npc = server->getNPC(event.initiator.first);
 	if (level == nullptr)
-		level = (player != nullptr ? player->getLevel() : (npc != nullptr ? npc->level.lock() : nullptr));
+		level = (player != nullptr ? player->getLevel() : (npc != nullptr ? npc->getLevel() : nullptr));
 
 	// Determine the "who" for error messages.
 	if (npc != nullptr)

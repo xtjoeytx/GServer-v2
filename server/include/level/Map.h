@@ -47,7 +47,7 @@ public:
 	std::optional<Position<uint8_t>> getLevelPosition(std::string_view levelName) const;
 	std::shared_ptr<Level> getLevelAt(int x, int y) const;
 	std::shared_ptr<Level> getLevelAt(const PixelPosition& globalPosition) const;
-	std::generator<std::shared_ptr<Level>> getLevelsInRange(const TilePosition& position, int syncx, int syncy) const noexcept;
+	std::generator<std::shared_ptr<Level>> getLevelsInRange(const TilePosition& position, int syncTilesX, int syncTilesY) const noexcept;
 	std::generator<std::shared_ptr<Level>> getLevelsInRectangle(const PixelRectangleArea& area) const noexcept;
 	std::generator<std::shared_ptr<Level>> getAllLevels() const noexcept;
 
@@ -67,7 +67,8 @@ public:
 	const string_set levelsToKeepInMemory;
 
 private:
-	std::shared_ptr<Level> getLevelPtr(std::string_view levelName, std::weak_ptr<Level> levelPtr) const;
+	void forceSetLevelLoaded(std::shared_ptr<Level> level) const noexcept;
+	std::shared_ptr<Level> getLevelPtr(std::string_view levelName, std::weak_ptr<Level> levelPtr) const noexcept;
 	mutable std::vector<std::weak_ptr<Level>> levelsByPosition;
 	mutable string_map<std::weak_ptr<Level>> levelsByName;
 };

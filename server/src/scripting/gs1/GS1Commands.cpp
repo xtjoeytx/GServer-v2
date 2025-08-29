@@ -1143,7 +1143,7 @@ void fn_hitobjects(GS1Visitor* visitor, std::string_view commandName, const std:
 		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			if (auto level = npc->level.lock(); level != nullptr)
+			if (auto level = npc->getLevel(); level != nullptr)
 			{
 				auto power = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0]) * 2);
 				auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
@@ -1171,7 +1171,7 @@ void fn_hitplayer(GS1Visitor* visitor, std::string_view commandName, const std::
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			if (auto level = npc->level.lock(); level != nullptr)
+			if (auto level = npc->getLevel(); level != nullptr)
 			{
 				auto mapPlayers = level->getMapPlayers();
 				auto playerIdIter = mapPlayers.begin();
@@ -1285,7 +1285,7 @@ void fn_lay(GS1Visitor* visitor, std::string_view commandName, const std::vector
 			if (npc->isCharacter())
 				layPosition.translate(static_cast<int16_t>(8), static_cast<int16_t>(16 * 3));
 
-			if (auto level = npc->level.lock(); level != nullptr)
+			if (auto level = npc->getLevel(); level != nullptr)
 				level->addItem(inform_client, layPosition, static_cast<LevelItemType>(itemname));
 		}
 	}
@@ -2782,7 +2782,7 @@ void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			if (auto level = npc->level.lock(); level != nullptr)
+			if (auto level = npc->getLevel(); level != nullptr)
 			{
 				auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
 
@@ -2839,7 +2839,7 @@ void fn_take2(GS1Visitor* visitor, std::string_view commandName, const std::vect
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			if (auto level = npc->level.lock(); level != nullptr)
+			if (auto level = npc->getLevel(); level != nullptr)
 			{
 				auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 				if (auto item = level->getItem(index); item != nullptr)
@@ -2876,7 +2876,7 @@ void fn_takehorse(GS1Visitor* visitor, std::string_view commandName, const std::
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			if (auto level = npc->level.lock(); level != nullptr)
+			if (auto level = npc->getLevel(); level != nullptr)
 			{
 				auto index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 				if (auto horse = level->getMapHorse(index); horse.has_value())

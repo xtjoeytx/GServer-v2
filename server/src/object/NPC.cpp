@@ -87,7 +87,7 @@ NPC::NPC(NPCID id, NPCStorageType storageType)
 NPC::~NPC()
 {
 #ifdef DEBUG
-	log::printLine(log::server, "Destroying NPC [{}] '{}' in level '{}'.", id, name, (level.expired() ? "unknown" : level.lock()->levelName));
+	log::printLine(log::server, "Destroying NPC [{}] '{}' in level '{}'.", id, name, level);
 #endif
 }
 
@@ -124,26 +124,33 @@ void NPC::resetToInitialState()
 	scripting.variables.store.clear();
 
 	// Warp.
-	if (auto initialLevel = m_initialLevel.lock(); initialLevel != nullptr)
-	{
+	if (auto initialLevel = server->getLevel(m_initialLevel); initialLevel != nullptr)
 		warp(initialLevel, character.getLocalPosition());
-	}
 }
 
 //----------------------------
 
-bool NPC::warp(LevelPtr newLevel, const LocalPixelPosition& position)
+bool NPC::warp(LevelPtr level, const LocalPixelPosition& position)
 {
-	if (newLevel == nullptr)
+	if (level == nullptr)
 		return false;
 
 	sendPropsFromResults(
-		setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, newLevel->levelName),
+		setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, level->levelName),
 		setPropWith<NPCProp::X2>(SetBy::SERVER, position.x()),
 		setPropWith<NPCProp::Y2>(SetBy::SERVER, position.y())
 	);
 
 	return true;
+}
+
+void NPC::setLevel(LevelPtr level)
+{
+	if (level == nullptr)
+		return;
+
+	this->level = level->getMapOrLevelName();
+	m_currentLevel = level;
 }
 
 //----------------------------
@@ -180,7 +187,7 @@ void NPC::sendAllShowImagesToLevel(clock::time_point modTime) const noexcept
 		return;
 
 	auto server = BabyDI::Get<Server>();
-	server->sendPacketToNearby(getShowImagesPacket(modTime), getGlobalPosition(), level.lock());
+	server->sendPacketToNearby(getShowImagesPacket(modTime), getGlobalPosition(), getLevel());
 }
 
 //----------------------------
@@ -281,7 +288,7 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 		// If we are testing for walls, do that now.
 		if (move.options.test(NPCMove::blockCheck))
 		{
-			if (auto levelPtr = level.lock(); levelPtr != nullptr)
+			if (auto levelPtr = getLevel(); levelPtr != nullptr)
 			{
 				// Do an onwall check at the destination.
 				// If we collide, then stop the movement.
@@ -331,7 +338,6 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 		}
 	}
 }
-
 
 std::pair<CString, CString> NPC::getMoveQueuePacketData(clock::time_point modTime) const noexcept
 {
@@ -417,13 +423,18 @@ void NPC::sendMoveQueueToLevel(LevelPtr level, clock::time_point modTime) const 
 
 std::string NPC::getLevelName() const
 {
-	if (auto levelPtr = level.lock(); levelPtr != nullptr)
+	if (auto levelPtr = getLevel(); levelPtr != nullptr)
 	{
 		if (levelPtr->isOnGmap())
 			return levelPtr->getMap()->getMapName();
 		return levelPtr->levelName;
 	}
 	return {};
+}
+
+std::shared_ptr<Level> NPC::getLevel() const
+{
+	return m_currentLevel.lock();
 }
 
 //----------------------------
@@ -607,10 +618,12 @@ void NPC::leaveClass(std::string_view className)
 
 void NPC::sendScriptUpdatesToLevel(clock::time_point when) const
 {
-	if (auto npclevel = level.lock(); npclevel != nullptr)
+	if (auto npclevel = getLevel(); npclevel != nullptr)
 	{
 		auto server = BabyDI::Get<Server>();
-		CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)npclevel->levelName.length() << npclevel->levelName >> (int)id;
+		auto levelName = npclevel->getMapOrLevelName();
+
+		CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)id;
 		server->sendPacketToLevelAndPastVisitorsAfter(npclevel.get(), clock::to_time_t(when), packet);
 		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), npclevel);
 	}
@@ -666,7 +679,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, std::shared_ptr<PropertyBase>
 
 SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 {
-	auto levelPtr = level.lock();
+	auto levelPtr = getLevel();
 	bool canUpdatePosition = !m_blockPositionUpdates || setBy == props::SetBy::SERVER;
 
 	props::SetResults result{ .propId = { PROPID(prop) } };
@@ -878,9 +891,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (!character.gani.starts_with("def[") && character.sprite != 0)
 			{
 				character.sprite = 0;
-				//visFlags &= ~static_cast<uint8_t>(NPCVisFlags::UNKNOWNBIT5);
 				result.resultPropIds.push_back(PROPID(NPCProp::SPRITE));
-				//result.resultPropIds.push_back(PROPID(NPCProp::VISFLAGS));
 			}
 
 			// Hack to allow spin to hurt things.
@@ -889,10 +900,10 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				auto self = server->getNPC(id);
 				float tX = static_cast<float>(character.localPixelX / 16.0f) + 1.5f;
 				float tY = static_cast<float>(character.localPixelY / 16.0f) + 2.0f;
-				server->hitObjectsAtPoint({ tX, tY + 2.0f }, character.swordPower, level, self);
-				server->hitObjectsAtPoint({ tX, tY - 2.0f }, character.swordPower, level, self);
-				server->hitObjectsAtPoint({ tX + 2.0f, tY }, character.swordPower, level, self);
-				server->hitObjectsAtPoint({ tX - 2.0f, tY }, character.swordPower, level, self);
+				server->hitObjectsAtPoint({ tX, tY + 2.0f }, character.swordPower, m_currentLevel, self);
+				server->hitObjectsAtPoint({ tX, tY - 2.0f }, character.swordPower, m_currentLevel, self);
+				server->hitObjectsAtPoint({ tX + 2.0f, tY }, character.swordPower, m_currentLevel, self);
+				server->hitObjectsAtPoint({ tX - 2.0f, tY }, character.swordPower, m_currentLevel, self);
 			}
 			break;
 		}
@@ -1125,7 +1136,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// No change?  Don't do anything.
-			if (auto curLevel = level.lock(); curLevel != nullptr && curLevel->levelName == strProp->value)
+			if (level == strProp->value)
 				SETPROP_RETURN_ERROR;
 
 			// See if the level exists.
@@ -1139,12 +1150,11 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCMOVED >> (int)id >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) << strProp->value);
 
 			// Remove ourself from the old level.
-			auto oldLevel = level.lock();
-			if (oldLevel != nullptr)
+			if (auto oldLevel = getLevel(); oldLevel != nullptr)
 				oldLevel->removeNPC(id);
 
 			// Add us to the new level.
-			level = newLevel;
+			setLevel(newLevel);
 			newLevel->addNPC(id);
 			character.mapX = newLevel->mapPosition.x();
 			character.mapY = newLevel->mapPosition.y();
@@ -1289,8 +1299,8 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 	if (source != nullptr)
 		exclude = source->getId();
 
-	if (sendLevel.length() > 0 && !level.expired())
-		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, character.getGlobalPosition(), level.lock(), { exclude });
+	if (sendLevel.length() > 0 && !m_currentLevel.expired())
+		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, character.getGlobalPosition(), getLevel(), {exclude});
 
 	if (sendSource.length() > 0 && source != nullptr)
 		source->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)id << sendSource);
@@ -1461,7 +1471,7 @@ void NPC::constructScriptParameters()
 				globalPosition.x() = value.get<double>().value_or(0.0) * 16;
 				character.localPixelX = toLocalPixelPosition(globalPosition).x();
 
-				if (auto levelPtr = level.lock(); levelPtr != nullptr && levelPtr->isOnGmap())
+				if (auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isOnGmap())
 				{
 					if (auto newLevel = levelPtr->getMap()->getLevelAt(globalPosition); newLevel != nullptr && newLevel != levelPtr)
 						warp(newLevel, getLocalPosition());
@@ -1477,7 +1487,7 @@ void NPC::constructScriptParameters()
 				globalPosition.y() = value.get<double>().value_or(0.0) * 16;
 				character.localPixelY = toLocalPixelPosition(globalPosition).y();
 
-				if (auto levelPtr = level.lock(); levelPtr != nullptr && levelPtr->isOnGmap())
+				if (auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isOnGmap())
 				{
 					if (auto newLevel = levelPtr->getMap()->getLevelAt(globalPosition); newLevel != nullptr && newLevel != levelPtr)
 						warp(newLevel, getLocalPosition());
@@ -1542,7 +1552,7 @@ void NPC::constructScriptParameters()
 
 void NPC::testForLinks(SetResults& result)
 {
-	auto levelPtr = level.lock();
+	auto levelPtr = getLevel();
 	if (levelPtr == nullptr) return;
 
 	auto* server = BabyDI::Get<Server>();
@@ -1595,7 +1605,7 @@ void NPC::testForLinks(SetResults& result)
 			character.localPixelX = computedLocalX;
 			character.localPixelY = computedLocalY;
 
-			level = newLevel;
+			setLevel(newLevel);
 			if (newLevel->getMap() != map || map->isBigMap())
 			{
 				result.resultPropIds.push_back(PROPID(NPCProp::CURLEVEL));
@@ -1629,7 +1639,7 @@ void NPC::testForLinks(SetResults& result)
 				character.localPixelX = pos.x();
 				character.localPixelY = pos.y();
 
-				level = newLevel;
+				setLevel(newLevel);
 				if (newLevel->getMap() != map || map->isBigMap())
 				{
 					result.resultPropIds.push_back(PROPID(NPCProp::CURLEVEL));
@@ -1643,7 +1653,7 @@ void NPC::testForLinks(SetResults& result)
 
 void NPC::testForTouch(SetResults& result)
 {
-	if (level.expired())
+	if (m_currentLevel.expired())
 		return;
 
 	testForLinks(result);
@@ -1738,8 +1748,7 @@ std::vector<std::string> NPC::getVariableDump() const
 		result.emplace_back(std::format("{}.type: {}", npcname, scriptType));
 	if (!scripter.empty())
 		result.emplace_back(std::format("{}.scripter: {}", npcname, scripter));
-	if (auto curLevel = level.lock(); curLevel != nullptr)
-		result.emplace_back(std::format("{}.level: {}", npcname, curLevel->levelName));
+	result.emplace_back(std::format("{}.level: {}", npcname, level));
 	result.emplace_back();
 	result.emplace_back("Attributes:");
 

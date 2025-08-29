@@ -98,9 +98,10 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCRESET(CString& pPacket)
 	auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr && npc->storageType == NPCStorageType::DATABASE)
 	{
-		if (auto level = npc->level.lock(); level != nullptr)
+		if (auto level = npc->getLevel(); level != nullptr)
 		{
-			CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)level->levelName.length() << level->levelName >> (int)npc->id;
+			auto levelName = level->getMapOrLevelName();
+			CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)npc->id;
 			m_server->sendPacketToLevelAndPastVisitorsAfter(level.get(), clock::to_time_t(npc->lastUpdateTime), packet);
 		}
 		npc->resetToInitialState();

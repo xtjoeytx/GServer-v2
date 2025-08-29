@@ -365,6 +365,7 @@ LevelPtr LevelLoader::loadZelda(LevelPtr level, std::string_view fileVersion, Fi
 		}
 	}
 
+	level->loaded = true;
 	return level;
 }
 
@@ -518,6 +519,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, std::string_view fileVersion, Fi
 		}
 	}
 
+	level->loaded = true;
 	return level;
 }
 
@@ -705,6 +707,7 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, std::string_view fileVersion, FileS
 		if (i == fileLines.end()) break;
 	}
 
+	level->loaded = true;
 	return level;
 }
 

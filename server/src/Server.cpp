@@ -946,12 +946,29 @@ void Server::saveWeapons()
 
 /////////////////////////////////////////////////////
 
-std::shared_ptr<Level> Server::getLevel(std::string_view levelName)
+std::shared_ptr<Level> Server::stubOrGetLevel(std::string_view levelName)
 {
-	// Find Appropriate Level by Name
 	std::string lowerCaseLevel = string::toLower(levelName);
 	if (auto it = m_levelList.find(lowerCaseLevel); it != m_levelList.end())
 		return it->second;
+
+	auto level = Level::createLevel(511, levelName);
+	m_levelList.insert(std::make_pair(lowerCaseLevel, level));
+	return level;
+}
+
+std::shared_ptr<Level> Server::getLevel(std::string_view levelName)
+{
+	LevelPtr level = nullptr;
+
+	// Find the level.
+	std::string lowerCaseLevel = string::toLower(levelName);
+	if (auto it = m_levelList.find(lowerCaseLevel); it != m_levelList.end())
+		level = it->second;
+
+	// Level was already loaded.
+	if (level != nullptr && level->loaded)
+		return level;
 
 	FileSystem* fileSystem = &m_filesystem[FS_ALL];
 	if (!m_settings.getBool("nofoldersconfig", false))
@@ -968,15 +985,28 @@ std::shared_ptr<Level> Server::getLevel(std::string_view levelName)
 		else return nullptr;
 	}
 
-	// Load New Level
-	auto level = LevelLoader::loadLevel(std::filesystem::path{ levelName });
-	if (level == nullptr)
-		return nullptr;
+	// Load the level.
+	if (level != nullptr)
+		level = LevelLoader::loadLevelInto(level, std::filesystem::path{ levelName });
+	else
+	{
+		level = LevelLoader::loadLevel(std::filesystem::path{ levelName });
+		if (level != nullptr)
+			m_levelList.insert(std::make_pair(lowerCaseLevel, level));
+	}
 
-	// Return Level
-	m_levelList.insert(std::make_pair(lowerCaseLevel, level));
 	return level;
 }
+
+std::shared_ptr<Map> Server::findMap(std::string_view mapName) const noexcept
+{
+	auto foundMap = std::ranges::find_if(m_mapList, [&mapName](const auto& map) { return map->getMapName() == mapName; });
+	if (foundMap != std::ranges::end(m_mapList))
+		return *foundMap;
+	return nullptr;
+}
+
+/////////////////////////////////////////////////////
 
 std::shared_ptr<Weapon> Server::getWeapon(std::string_view name)
 {
@@ -1045,7 +1075,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	else newNPC->scriptType = NPCTYPE_OBJECT;
 
 	// Set NPC props.
-	newNPC->level = level;
+	newNPC->setLevel(level.lock());
 	newNPC->character.localPixelX = x * 16;
 	newNPC->character.localPixelY = y * 16;
 	newNPC->image = image;
@@ -1096,7 +1126,7 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 	if (sendToPlayers)
 	{
 		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket();
-		sendPacketToNearby(packet, npc->getGlobalPosition(), npc->level.lock());
+		sendPacketToNearby(packet, npc->getGlobalPosition(), npc->getLevel());
 	}
 
 	return npc;
@@ -1116,7 +1146,7 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 	m_npcList.erase(npc->id);
 	m_npcIdGenerator.freeId(npc->id);
 
-	if (auto level = npc->level.lock(); level)
+	if (auto level = npc->getLevel(); level)
 	{
 		// Remove the NPC from the level
 		if (eraseFromLevel)

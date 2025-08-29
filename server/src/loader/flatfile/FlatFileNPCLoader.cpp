@@ -68,10 +68,10 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		idStr.trimI();
 		id = std::strtol(idStr.text(), nullptr, 10);
 
-		if (id < NPCID_GEN_MANUAL)
+		if (id < NPCID_GEN_DATABASE)
 		{
 			id = 0;
-			log::printLine(log::server, "** NPC [{}] ID is less than {}, getting next available.", filePath.filename().string(), NPCID_GEN_MANUAL);
+			log::printLine(log::server, "** NPC [{}] ID is less than {}, getting next available.", filePath.filename().string(), NPCID_GEN_DATABASE);
 		}
 		else if (server->m_npcIdGenerator.isIdUsed(id))
 		{
@@ -98,11 +98,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	npc->visFlags = PROPID(NPCVisFlags::VISIBLE) | PROPID(NPCVisFlags::CREATED);
 
 	const auto& updateTime = server->getServerStartTime();
-	CString npcLevel;
 	std::string script;
-
-	CString propPacket;
-	std::string npcInitialLevel;
 
 	// Parse File
 	while (fileData.bytesLeft())
@@ -119,7 +115,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			npc->modTime[PROPID(NPCProp::NAME)] = updateTime;
 		}
 		else if (curCommand == "ID")
-			; // npc->m_id = strtoint(curLine.readString(""));
+			; // npc->id = strtoint(curLine.readString(""));
 		else if (curCommand == "TYPE")
 			npc->scriptType = curLine.readString("");
 		else if (curCommand == "SCRIPTER")
@@ -143,7 +139,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			}
 		}
 		else if (curCommand == "STARTLEVEL")
-			npcInitialLevel = curLine.readString("");
+			npc->m_initialLevel = curLine.readString("");
 		else if (curCommand == "STARTX")
 			npc->m_initialCharacter.localPixelX = int(strtofloat(curLine.readString("")) * 16);
 		else if (curCommand == "STARTY")
@@ -151,7 +147,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (curCommand == "STARTZ")
 			npc->m_initialCharacter.localPixelZ = int(strtofloat(curLine.readString("")) * 16);
 		else if (curCommand == "LEVEL")
-			npcLevel = curLine.readString("");
+			npc->level = curLine.readString("");
 		else if (curCommand == "X")
 		{
 			npc->character.localPixelX = int(strtofloat(curLine.readString("")) * 16);
@@ -421,27 +417,25 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 
 	// Check if the level is a gmap.
 	// If it is, we need to determine the actual level.
-	if (npcLevel.contains(".gmap"))
+	string::trimMutate(npc->level);
+	if (npc->level.ends_with(".gmap"))
 	{
-		auto foundLevel = std::ranges::find_if(server->getMapList(), [&npcLevel](const auto& map) { return map->getMapName() == npcLevel; });
-		if (foundLevel != std::ranges::end(server->getMapList()))
+		if (auto foundMap = server->findMap(npc->level); foundMap != nullptr)
 		{
-			if (auto mapLevel = (*foundLevel)->getLevelAt(npc->character.mapX, npc->character.mapY); mapLevel != nullptr)
-				npcLevel = mapLevel->levelName;
+			if (auto mapLevel = foundMap->getLevelAt(npc->character.mapX, npc->character.mapY); mapLevel != nullptr)
+				npc->level = mapLevel->levelName;
 		}
 	}
-
-	// Add it to the level, if needed.
-	auto level = server->getLevel(npcLevel.toString());
-	auto initialLevel = server->getLevel(npcInitialLevel);
-	npc->level = level ? level : initialLevel;
-	npc->m_initialLevel = initialLevel;
 
 	// Add the NPC to the server.
 	server->addNPC(npc, false);
 
-	if (level)
+	// Add it to the level.
+	if (auto level = server->stubOrGetLevel(npc->level); level != nullptr)
+	{
 		level->addNPC(npc);
+		npc->m_currentLevel = level;
+	}
 
 	return npc;
 }
@@ -457,10 +451,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	// Clean up old samples
 	//m_scriptExecutionContext.getExecutionData();
 
-	auto level = npc->level.lock();
-	auto initialLevel = npc->m_initialLevel.lock();
-
-	CString initialLevelName = initialLevel ? initialLevel->levelName : "";
+	auto level = npc->getLevel();
 
 	int layer = 0;
 	if (npc->visFlags & PROPID(NPCVisFlags::DRAWUNDERPLAYER))
@@ -482,7 +473,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 			<< CString(npc->imagePart.position.x()) << " " << CString(npc->imagePart.position.y()) << " "
 			<< CString(npc->imagePart.size.width()) << " " << CString(npc->imagePart.size.height()) << NL;
 	}
-	fileData << "STARTLEVEL " << initialLevelName << NL;
+	fileData << "STARTLEVEL " << npc->m_initialLevel << NL;
 	fileData << "STARTX " << CString((float)npc->m_initialCharacter.localPixelX / 16.0f) << NL;
 	fileData << "STARTY " << CString((float)npc->m_initialCharacter.localPixelY / 16.0f) << NL;
 	fileData << "STARTZ " << CString((float)npc->m_initialCharacter.localPixelZ / 16.0f) << NL;

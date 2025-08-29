@@ -254,6 +254,7 @@ public:
 
 public:
 	bool warp(LevelPtr level, const LocalPixelPosition& position);
+	void setLevel(LevelPtr level);
 	CString getShowImagesPacket(clock::time_point modTime = clock::time_point::min()) const noexcept;
 	void sendShowImagesToPlayer(PlayerPtr player, clock::time_point modTime = clock::time_point::min()) const noexcept;
 	void sendAllShowImagesToLevel(clock::time_point modTime = clock::time_point::min()) const noexcept;
@@ -272,6 +273,7 @@ public:
 	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;
 	[[inline]] TilePosition getTilePosition() const noexcept;
 	std::string getLevelName() const;
+	std::shared_ptr<Level> getLevel() const;
 	std::vector<std::string> getVariableDump() const;
 
 public:
@@ -373,7 +375,7 @@ public:
 public:
 	const NPCID id;
 	const NPCStorageType storageType;
-	std::weak_ptr<Level> level;
+	std::string level;
 	std::string name;
 	std::string scripter;
 	std::string scriptType;
@@ -404,7 +406,8 @@ private:
 	mutable std::vector<std::pair<EventHandle, std::weak_ptr<ScriptClass>>> m_joinedClasses;
 
 	std::string m_initialImage;
-	std::weak_ptr<Level> m_initialLevel;
+	std::string m_initialLevel;
+	std::weak_ptr<Level> m_currentLevel;
 	Position<uint8_t> m_initialMapPosition;
 	Character m_initialCharacter;
 

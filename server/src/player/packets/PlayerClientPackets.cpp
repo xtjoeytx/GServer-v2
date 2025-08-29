@@ -163,7 +163,7 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 	if (!npc)
 		return HandlePacketResult::Handled;
 
-	if (npc->level.lock() != level)
+	if (npc->getLevel() != level)
 		return HandlePacketResult::Handled;
 
 	npc->setPropsFromPacket(npcProps, shared_from_this());
@@ -779,7 +779,7 @@ HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 			return HandlePacketResult::Handled;
 
 		// Get the level.
-		auto level = npc->level.lock();
+		auto level = npc->getLevel();
 		if (level == nullptr)
 			return HandlePacketResult::Handled;
 
