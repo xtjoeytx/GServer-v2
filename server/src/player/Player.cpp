@@ -935,10 +935,10 @@ bool Player::addWeapon(std::shared_ptr<Weapon> weapon)
 	{
 		account.weapons.push_back(weapon->name);
 		if (m_id == 0) return true;
-
-		// Send weapon.
-		sendPacket(weapon->getAddWeaponPacket());
 	}
+
+	// Send weapon.
+	sendPacket(weapon->getAddWeaponPacket());
 
 	return true;
 }

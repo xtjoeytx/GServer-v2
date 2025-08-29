@@ -794,7 +794,7 @@ HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 		// If weapon is nullptr, that means the weapon was not found.  Add the weapon to the list.
 		if (weapon == nullptr)
 		{
-			weapon = std::make_shared<Weapon>(name, npc->image, std::string{ npc->getScript().getClientSide() });
+			weapon = std::make_shared<Weapon>(name, npc->image, std::string{ npc->getScript().getOriginalSource() });
 			weapon->saveWeapon();
 			m_server->NC_AddWeapon(weapon);
 		}
@@ -804,15 +804,14 @@ HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 		if (weapon->modTime < level->modTime)
 		{
 			// Update Weapon
-			weapon->updateWeapon(npc->image, std::string{ npc->getScript().getClientSide() }).saveWeapon();
+			weapon->updateWeapon(npc->image, std::string{ npc->getScript().getOriginalSource() }).saveWeapon();
 
 			// Send to Players
 			m_server->updateWeaponForPlayers(weapon);
 		}
 
 		// Send the weapon to the player now.
-		if (std::ranges::find(std::ranges::begin(account.weapons), std::ranges::end(account.weapons), weapon->name) == std::ranges::end(account.weapons))
-			this->addWeapon(weapon);
+		addWeapon(weapon);
 	}
 
 	return HandlePacketResult::Handled;
