@@ -11,4 +11,4 @@ hq_password =
 hq_level = 1
 
 # NPC-Server address (to send to RC's, should be same as gserver)
-ns_ip = 127.0.0.1
+ns_ip = AUTO

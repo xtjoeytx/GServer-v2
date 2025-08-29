@@ -22,9 +22,15 @@ The directory should be writable by the user running the build (unless you want 
 
 ### Build with CMake
 
+If using GS2 support, make sure you initialize the submodules:
+```
+git submodule update --init --recursive
+```
+
 If using command-line cmake, you would start a build like so:
 ```
 cmake --preset "Release x64" -G Ninja -B build -DVCPKG_TARGET_TRIPLET=x64-windows-static
+cmake --build build
 ```
 
 On a Linux build, you would use `x64-linux` as the `VCPKG_TARGET_TRIPLET`.

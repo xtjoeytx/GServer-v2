@@ -104,7 +104,8 @@ void NPCServer::sendNCLoginToPlayer(std::shared_ptr<Player> player)
 
 	// Grab NPCServer & Send
 	// If the player is connecting from the same IP as the NPC server, use that IP.
-	std::string connectString = std::format("{},{}", (player->account.ipAddress == player->getSocket()->getLocalIp() ? player->account.ipAddress : m_ncHost), m_ncPort);
+	std::string connectString = std::format("{},{}", (player->account.ipAddress == m_npcServerPlayer->getSocket()->getLocalIp() ? player->account.ipAddress : m_ncHost), m_ncPort);
+	log::printLine(log::server, "-- Sending NPC-Server connection info to '{}': {}", player->account.name, connectString);
 
 	player->sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)m_npcServerPlayer->getId() << connectString);
 }

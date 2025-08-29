@@ -247,7 +247,6 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 	if (moveQueue.empty())
 		return;
 
-	auto server = BabyDI::Get<Server>();
 	while (deltaTime != 0ms && !moveQueue.empty())
 	{
 		NPCMove& move = moveQueue.front();
