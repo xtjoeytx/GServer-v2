@@ -346,7 +346,7 @@ void ServerList::sendPlayers()
 	auto& playerList = m_server->getPlayerList();
 	for (auto& [id, player] : playerList)
 	{
-		if (!player->isNC())
+		if (!player->isNC() && !player->isNPCServer())
 		{
 			addPlayer(player);
 			player->sendPacket(CString() >> (char)PLO_SERVERLISTCONNECTED);
