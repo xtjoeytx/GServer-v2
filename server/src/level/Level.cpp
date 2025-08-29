@@ -455,16 +455,6 @@ void Level::doFrameEvents(precise_clock::time_point time)
 
 //----------------------------
 
-CString Level::getBaddyPacket()
-{
-	CString retVal;
-	for (const auto& baddy : m_baddies)
-	{
-		retVal >> (char)PLO_BADDYPROPS >> (char)baddy.id << baddy.getProps();
-	}
-	return retVal;
-}
-
 CString Level::getBoardPacket()
 {
 	CString retVal;
@@ -510,6 +500,17 @@ CString Level::getBoardChangesPacket2(time_t time)
 	return retVal;
 }
 
+void Level::sendBaddiesToPlayer(std::shared_ptr<Player> player) const
+{
+	CString packet;
+	for (const auto& baddy : m_baddies)
+	{
+		packet.clear();
+		packet >> (char)PLO_BADDYPROPS >> (char)baddy.id << baddy.getProps();
+		player->sendPacket(packet);
+	}
+}
+
 void Level::sendChestsToPlayer(std::shared_ptr<Player> player) const
 {
 	CString packet;
@@ -517,7 +518,8 @@ void Level::sendChestsToPlayer(std::shared_ptr<Player> player) const
 	{
 		bool hasChest = player->account.hasChest(levelName, chest.getTileX(), chest.getTileY());
 
-		packet = CString() >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest.getTileX() >> (char)chest.getTileY();
+		packet.clear();
+		packet >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest.getTileX() >> (char)chest.getTileY();
 		if (!hasChest) packet >> (char)chest.item >> (char)chest.sign;
 		player->sendPacket(packet);
 	}
@@ -525,20 +527,35 @@ void Level::sendChestsToPlayer(std::shared_ptr<Player> player) const
 
 void Level::sendHorsesToPlayer(std::shared_ptr<Player> player) const
 {
+	CString packet;
 	for (auto& horse : m_horses)
-		player->sendPacket(CString() >> (char)PLO_HORSEADD << horse.getPacket());
+	{
+		packet.clear();
+		packet >> (char)PLO_HORSEADD << horse.getPacket();
+		player->sendPacket(packet);
+	}
 }
 
 void Level::sendLinksToPlayer(std::shared_ptr<Player> player) const
 {
+	CString packet;
 	for (const auto& link : m_links)
-		player->sendPacket(CString() >> (char)PLO_LEVELLINK << link.getLinkStr());
+	{
+		packet.clear();
+		packet >> (char)PLO_LEVELLINK << link.getLinkStr();
+		player->sendPacket(packet);
+	}
 }
 
 void Level::sendSignsToPlayer(std::shared_ptr<Player> player) const
 {
+	CString packet;
 	for (const auto& sign : m_signs)
-		player->sendPacket(CString() >> (char)PLO_LEVELSIGN << sign.getSignPacket(player.get()));
+	{
+		packet.clear();
+		packet >> (char)PLO_LEVELSIGN << sign.getSignPacket(player.get());
+		player->sendPacket(packet);
+	}
 }
 
 // TODO: Replace with a function in server that sends npc props from a list of ids.

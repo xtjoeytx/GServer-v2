@@ -103,11 +103,11 @@ public:
 	auto& getLayers() { return m_tiles; }
 
 public:
-	CString getBaddyPacket();
 	CString getBoardPacket();
 	CString getLayerPacket(int i);
 	CString getBoardChangesPacket(time_t time);
 	CString getBoardChangesPacket2(time_t time);
+	void sendBaddiesToPlayer(std::shared_ptr<Player> player) const;
 	void sendChestsToPlayer(std::shared_ptr<Player> player) const;
 	void sendHorsesToPlayer(std::shared_ptr<Player> player) const;
 	void sendLinksToPlayer(std::shared_ptr<Player> player) const;

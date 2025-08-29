@@ -1293,6 +1293,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 {
 	if (level == nullptr) return false;
 
+	PlayerPtr self = shared_from_this();
 	CSettings& settings = m_server->getSettings();
 	time_t levelModTime = clock::to_time_t(level->modTime);
 	time_t cachedModTime = getLevelLastEnteredTime(level.get());
@@ -1319,25 +1320,25 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 		// Send links (if applicable).
 		// We need to send links for bigmaps due to the overflow issues.
 		if (!m_server->hasNPCServer() || settings.getBool("clientsidelinks", false) || level->isOnBigMap())
-			level->sendLinksToPlayer(shared_from_this());
+			level->sendLinksToPlayer(self);
 
 		// Send signs (if applicable).
 		if (!m_server->hasNPCServer() || settings.getBool("clientsidesigns", false))
-			level->sendSignsToPlayer(shared_from_this());
+			level->sendSignsToPlayer(self);
 
 		// Send the level mod time.
 		sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)levelModTime);
 
 		// Send chests.
-		level->sendChestsToPlayer(shared_from_this());
+		level->sendChestsToPlayer(self);
 	}
 
 	// Send board changes, chests, horses, and baddies.
 	if (!fromAdjacent)
 	{
 		sendPacket(CString() << level->getBoardChangesPacket(cachedModTime));
-		level->sendHorsesToPlayer(shared_from_this());
-		sendPacket(CString() << level->getBaddyPacket());
+		level->sendHorsesToPlayer(self);
+		level->sendBaddiesToPlayer(self);
 	}
 
 	// Fix our level name.
@@ -1363,7 +1364,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 	if (!fromAdjacent || level->getMap() != nullptr)
 	{
 		sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->getMapOrLevelName());
-		level->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(cachedModTime));
+		level->sendNPCsToPlayer(self, convertFromTimeT(cachedModTime));
 	}
 
 	// Move the carry NPC to the new level.
@@ -1413,8 +1414,9 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 bool PlayerClient::sendLevel141(std::shared_ptr<Level> level, time_t modTime, bool fromAdjacent)
 {
 	if (level == nullptr) return false;
-	CSettings& settings = m_server->getSettings();
 
+	PlayerPtr self = shared_from_this();
+	CSettings& settings = m_server->getSettings();
 	time_t levelModTime = clock::to_time_t(level->modTime);
 	time_t cachedModTime = getLevelLastEnteredTime(level.get());
 	if (modTime == -1) modTime = levelModTime;
@@ -1436,8 +1438,8 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> level, time_t modTime, bo
 			// Send links, signs, and mod time.
 			if (!settings.getBool("serverside", false)) // TODO: NPC server check instead.
 			{
-				level->sendLinksToPlayer(shared_from_this());
-				level->sendSignsToPlayer(shared_from_this());
+				level->sendLinksToPlayer(self);
+				level->sendSignsToPlayer(self);
 			}
 			sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)levelModTime);
 		}
@@ -1447,15 +1449,15 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> level, time_t modTime, bo
 		if (!fromAdjacent)
 		{
 			sendPacket(CString() << level->getBoardChangesPacket2(cachedModTime));
-			level->sendChestsToPlayer(shared_from_this());
+			level->sendChestsToPlayer(self);
 		}
 	}
 
 	// Send board changes, chests, horses, and baddies.
 	if (!fromAdjacent)
 	{
-		level->sendHorsesToPlayer(shared_from_this());
-		sendPacket(CString() << level->getBaddyPacket());
+		level->sendHorsesToPlayer(self);
+		level->sendBaddiesToPlayer(self);
 	}
 
 	if (fromAdjacent == false)
@@ -1470,7 +1472,7 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> level, time_t modTime, bo
 
 	// Send NPCs.
 	if (!fromAdjacent)
-		level->sendNPCsToPlayer(shared_from_this(), convertFromTimeT(cachedModTime));
+		level->sendNPCsToPlayer(self, convertFromTimeT(cachedModTime));
 
 	// Send connecting player props to players in nearby levels.
 	if (!level->isSingleplayer && !fromAdjacent)
