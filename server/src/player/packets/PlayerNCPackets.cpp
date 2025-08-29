@@ -22,7 +22,9 @@
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 #include <utilities/Log.h>
+#include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -144,15 +146,40 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCWARP(CString& pPacket)
 	}
 
 	NPCID npcId = pPacket.readGUInt();
-	int16_t npcX = static_cast<int16_t>(pPacket.readGUChar() * 8);
-	int16_t npcY = static_cast<int16_t>(pPacket.readGUChar() * 8);
-	CString npcLevel = pPacket.readString("");
+	PropertyTileCoordinate tileX{ pPacket.readGUChar() / 2.0f };
+	PropertyTileCoordinate tileY{ pPacket.readGUChar() / 2.0f };
+	std::string npcLevel = pPacket.readString("").trimI().toString();
 
 	auto npc = m_server->getNPC(npcId);
-	if (npc != nullptr)
+	if (npc == nullptr)
+		return HandlePacketResult::Handled;
+
+	// Warping to a different level entirely.
+	if (npcLevel != npc->getLevelName())
 	{
-		if (auto newLevel = m_server->getLevel(npcLevel.toString()); newLevel != nullptr)
-			npc->warp(newLevel, { npcX, npcY });
+		// If this is a gmap, at least try to find a level.
+		if (npcLevel.ends_with(".gmap"))
+		{
+			if (auto map = m_server->findMap(npcLevel); map != nullptr)
+			{
+				PixelPosition globalPosition{ tileX.pixelCoordinate, tileY.pixelCoordinate };
+				if (auto level = map->getLevelAt(globalPosition); level != nullptr)
+					npc->warp(level, toLocalPixelPosition(globalPosition));
+			}
+		}
+		else
+		{
+			if (auto newLevel = m_server->getLevel(npcLevel); newLevel != nullptr)
+				npc->warp(newLevel, { tileX.pixelCoordinate, tileY.pixelCoordinate });
+		}
+	}
+	// Changing position in the current level.
+	else
+	{
+		npc->sendPropsFromResults(
+			npc->setPropWith<NPCProp::X2>(SetBy::SERVER, tileX.pixelCoordinate),
+			npc->setPropWith<NPCProp::Y2>(SetBy::SERVER, tileY.pixelCoordinate)
+		);
 	}
 
 	return HandlePacketResult::Handled;
