@@ -24,6 +24,7 @@ Just use `timeout`.
     created
     exploded
     initialized
+    movementfinished
     npcwarped
     playerchats
     playerdies
@@ -50,6 +51,15 @@ Just use `timeout`.
     washit	(anything not hitobjects)
     waspelt
     wasthrown
+
+#### Clientside only
+
+    firedonhorse
+    keypressed
+    mousedown
+    mouseup
+    mousewheel
+    weaponfired
 
 ---
 ## Flags
@@ -90,6 +100,18 @@ Just use `timeout`.
     shotbybaddy
     shotbyplayer
 
+#### Clientside only
+
+    followsplayer
+    isfocused
+    leftmousebutton
+    lighteffectsenabled
+    middlemousebutton
+    playeronline
+    playermap
+    playerreading
+    rightmousebutton
+
 ---
 ## Variables
 
@@ -99,8 +121,8 @@ Just use `timeout`.
     allplayers[]
     allplayerscount
     board[]
-    levelorigx
-    levelorigy
+    levelorgx
+    levelorgy
     npcscount
     paramscount
     players[]
@@ -224,6 +246,23 @@ Just use `timeout`.
     gravity
     waterheight
     playerhurtpower
+
+#### Clientside only
+
+    downloadpos
+    downloadsize
+    mousebuttons
+    mousescreenx
+    mousescreeny
+    mousewheeldelta
+    mousex
+    mousey
+    musicpos
+    musiclen
+    playerfreezetime
+    screenheight
+    screenwidth
+    selectedweapon
 
 ---
 ## Commands
@@ -357,7 +396,7 @@ Just use `timeout`.
     timershow
     tokenize
     tokenize2
-    unfreezeplayer
+    triggeraction
     unset
     warpto
 
@@ -367,17 +406,75 @@ Just use `timeout`.
     copylevel
     copystrings
     deletelevel
-    hideplayer
-    hidesword
     hitcompu
     saveinfo
     savelog
     setz
     showstats
     sleep
+    toweapons
     updateboard
     updateboard2
     updateterrain
+
+#### Clientside only
+
+	addtiledef
+	addtiledef2
+	blockagainlocal
+	callweapon
+	disabledefmovement
+	disablemap
+	disablepause
+	disableselectweapons
+	dontblocklocal
+	drawaslight
+	enabledefmovement
+	enablefeatures
+	enablemap
+	enablepause
+	enableselectweapons
+	explodebomb
+	followplayer
+	freezeplayer
+	hidelocal
+    hideplayer
+    hidesword
+	loadmap
+	noplayerkilling
+	openurl
+	openurl2
+	play 
+	play2
+	playlooped
+	putleaps
+	putobject
+	reflectarrow
+	removetiledefs
+	replaceani
+	resetfocus
+	setbackpal
+	setcoloreffect
+	setcursor 
+	setcursor2
+	seteffect 
+	seteffectmode
+	setfocus
+	setletters
+	setmusicvolume
+	setshape2
+	setspritesimage
+	setstatusimage
+	seturllevel
+	setzoomeffect
+	showfile
+	showlocal
+	stopmidi
+	stopsound
+	timereverywhere
+	toinventory
+    wraptext
+	wraptext2
 
 ---
 ## Functions
@@ -445,6 +542,19 @@ Just use `timeout`.
     findnearestplayers(x, y)
     getz(x, y)
     tiletype(x, y) (new tileset layout)
+
+#### Clientside only
+
+    imgheight(file)
+    imgwidth(file)
+    keydown(key)
+    keydown2(keycode, ignorecase)
+    screenx(x, y)
+    screeny(x, y)
+    textheight(zoom, font, style)
+    textwidth(zoom, font, style, text)
+    worldx(x, y)
+    worldy(x, y)
 
 ---
 ## Message codes
