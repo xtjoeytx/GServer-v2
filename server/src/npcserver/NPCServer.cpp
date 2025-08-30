@@ -94,6 +94,12 @@ void NPCServer::initialize()
 	// TODO(Nalin): Need an event system and this should be called after the Server sends an "all done loading" event.
 	m_runTimeout.start();
 	m_timedSave.start();
+
+	// If we don't sleep, unset the first NPC save flag.
+	// We won't run into the problem where we immediately save on server start.
+	bool sleepwhennoplayers = m_server->getSettings().getBool("sleepwhennoplayers", true);
+	if (!sleepwhennoplayers)
+		m_firstNPCSave = false;
 }
 
 void NPCServer::setRemoteIp(std::string_view host)
@@ -120,6 +126,15 @@ void NPCServer::sendNCLoginToPlayer(std::shared_ptr<Player> player)
 
 void NPCServer::update(TimeoutGenerator::time_point currentTime)
 {
+	// If we are sleeping, don't process updates.
+	if (m_sleeping)
+	{
+		// Update the timeouts so they don't have huge deltas when we wake up.
+		m_runTimeout.setLastTimeout(currentTime);
+		m_timedSave.setLastTimeout(currentTime);
+		return;
+	}
+
 	m_runTimeout.update(currentTime);
 	m_timedSave.update(currentTime);
 }
@@ -128,11 +143,6 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 {
 	//auto profile = log::Profile(log::server, "NPCServer::run");
 	m_frameStartTime = clock::now();
-
-	// If we have no players, skip processing.
-	bool sleepwhennoplayers = m_server->getSettings().getBool("sleepwhennoplayers", true);
-	if (sleepwhennoplayers && m_playerList.empty())
-		return;
 
 	// Save all NPC mod times and update timeouts.
 	{
@@ -221,6 +231,15 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 	// Process deleted NPCs and players.
 	processDeletedNPCs();
 	processDeletedPlayers();
+
+	// If we have no players, enter sleep mode.
+	// We do it this way to give the server time to process logouts, and to force an NPC save (since saves will be disabled while sleeping).
+	bool sleepwhennoplayers = m_server->getSettings().getBool("sleepwhennoplayers", true);
+	if (sleepwhennoplayers && m_playerList.empty())
+	{
+		m_sleeping = true;
+		saveNPCs();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -274,7 +293,14 @@ void NPCServer::loadDatabaseNPCs()
 
 void NPCServer::saveNPCs()
 {
-	log::printLine(log::server, "Saving NPCs...");
+	// Avoid saving NPCs immediately after the server starts.
+	if (m_firstNPCSave)
+	{
+		m_firstNPCSave = false;
+		return;
+	}
+
+	log::printLine(log::server, ":: Saving NPCs...");
 	for (const auto& [npcId, npcPtr] : m_globalNPCList)
 	{
 		if (auto npc = npcPtr.lock(); npc != nullptr)
@@ -287,6 +313,7 @@ void NPCServer::saveNPCs()
 void NPCServer::playerLogin(std::shared_ptr<Player> player)
 {
 	m_playerList[player->getId()] = player;
+	m_sleeping = false;
 }
 
 void NPCServer::playerLogout(std::shared_ptr<Player> player)

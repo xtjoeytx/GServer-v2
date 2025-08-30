@@ -197,7 +197,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 				mode = static_cast<BaddyMode>(pProps.readGChar());
 
 				// Swamp soldiers can get stuck in a hurt animation and become invulnerable.
-				auto fixStuckSwampSolder = [this](int)
+				auto fixStuckSwampSoldier = [this](int)
 				{
 					if (power == 1)
 					{
@@ -242,7 +242,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 				auto server = BabyDI::Get<Server>();
 				if (type == BaddyType::SWAMPSOLDIER && mode == BaddyMode::HURT)
 				{
-					timeout.callbackIterations = fixStuckSwampSolder;
+					timeout.callbackIterations = fixStuckSwampSoldier;
 					timeout.startFor(2s);
 				}
 				else if (mode == BaddyMode::DIE)

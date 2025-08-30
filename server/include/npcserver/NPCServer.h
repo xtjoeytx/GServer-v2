@@ -123,6 +123,9 @@ private:
 	TimeoutGenerator m_runTimeout{ 100ms, true };
 	TimeoutGenerator m_timedSave{ 5min, true };
 
+	bool m_sleeping = false;
+	bool m_firstNPCSave = true;
+
 	std::unordered_map<NPCID, std::weak_ptr<NPC>> m_globalNPCList;
 	std::unordered_set<NPCID> m_deletedNPCs;
 	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_playerList;
