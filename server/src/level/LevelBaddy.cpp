@@ -147,7 +147,6 @@ CString LevelBaddy::getProps() const
 
 void LevelBaddy::setPropsFromPacket(CString& pProps)
 {
-	auto server = BabyDI::Get<Server>();
 	int len = 0;
 	while (pProps.bytesLeft())
 	{
@@ -198,26 +197,30 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 				mode = static_cast<BaddyMode>(pProps.readGChar());
 
 				// Swamp soldiers can get stuck in a hurt animation and become invulnerable.
-				auto fixStuckSwampSolder = [this, server](int)
+				auto fixStuckSwampSolder = [this](int)
 				{
 					if (power == 1)
 					{
 						mode = BaddyMode::SWAMPSHOT;
+						auto server = BabyDI::Get<Server>();
 						server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, m_level);
 					}
 				};
 
 				// Reset and respawn baddies.
-				auto respawnBaddy = [this, server](int)
+				auto respawnBaddy = [this](int)
 				{
 					if (!canRespawn()) return;
 					reset();
+					auto server = BabyDI::Get<Server>();
 					server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id << getProps(), m_level);
 				};
 
 				// Set baddies to dead.
-				auto setDead = [this, server, respawnBaddy](int)
+				auto setDead = [this, respawnBaddy](int)
 				{
+					auto server = BabyDI::Get<Server>();
+
 					mode = BaddyMode::DEAD;
 					if (canRespawn())
 					{
@@ -236,6 +239,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 					}
 				};
 
+				auto server = BabyDI::Get<Server>();
 				if (type == BaddyType::SWAMPSOLDIER && mode == BaddyMode::HURT)
 				{
 					timeout.callbackIterations = fixStuckSwampSolder;

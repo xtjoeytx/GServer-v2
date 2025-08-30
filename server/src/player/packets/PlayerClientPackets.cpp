@@ -396,7 +396,8 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_BADDYPROPS(CString& pPacket)
 {
 	auto level = getLevel();
-	if (level == nullptr) return HandlePacketResult::Handled;
+	if (level == nullptr || !level->hasPlayers())
+		return HandlePacketResult::Handled;
 
 	bool livingBaddies = level->hasLivingBaddies();
 
@@ -405,11 +406,10 @@ HandlePacketResult PlayerClient::msgPLI_BADDYPROPS(CString& pPacket)
 
 	// Get the baddy.
 	LevelBaddy* baddy = level->getBaddy(id);
-	if (baddy == 0) return HandlePacketResult::Handled;
+	if (baddy == nullptr) return HandlePacketResult::Handled;
 
 	// Get the leader.
 	auto leaderId = level->getLevelPlayers().front();
-	auto leader = m_server->getPlayer(leaderId);
 
 	// Set the props and send to everybody in the level, except the leader.
 	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id << props, level, { leaderId });
@@ -424,9 +424,14 @@ HandlePacketResult PlayerClient::msgPLI_BADDYPROPS(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_BADDYHURT(CString& pPacket)
 {
 	auto level = getLevel();
+	if (level == nullptr || !level->hasPlayers())
+		return HandlePacketResult::Handled;
+
 	auto leaderId = level->getLevelPlayers().front();
 	auto leader = m_server->getPlayer(leaderId);
-	if (leader == nullptr) return HandlePacketResult::Handled;
+	if (leader == nullptr)
+		return HandlePacketResult::Handled;
+
 	leader->sendPacket(CString() >> (char)PLO_BADDYHURT << (pPacket.text() + 1));
 	return HandlePacketResult::Handled;
 }
