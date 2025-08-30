@@ -39,6 +39,13 @@
         "strategy": "external"
       }
     },
+	{
+	  "name": "Release x64 Debug Info",
+	  "inherits": "Release x64",
+	  "cacheVariables": {
+		"CMAKE_BUILD_TYPE": "RelWithDebInfo"
+	  }
+	},
     {
       "name": "Release x64 MINGW",
       "inherits": "Release",

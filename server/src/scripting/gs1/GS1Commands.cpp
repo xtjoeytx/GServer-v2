@@ -728,7 +728,7 @@ void fn_carryobject(GS1Visitor* visitor, std::string_view commandName, const std
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
 	{
-		auto carryObjectTypeId = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
+		[[maybe_unused]] auto carryObjectTypeId = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr && npc->isCharacter())
 			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, "carrystill"s);

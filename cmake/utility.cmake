@@ -23,11 +23,17 @@ function(set_default_compiler_options target ISTESTTARGET)
 	endif()
 
 	# Compiler options.
-	set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+	if (NOT CONFIG MATCHES "RelWithDebInfo")
+		set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+	endif()
 	if(MSVC)
 		target_compile_options(${target} PUBLIC
-			"$<$<CONFIG:Release>:/guard:cf>"		# Control Flow Guard
-			"$<$<CONFIG:Release>:/Qspectre>"		# Spectre Mitigation
+			"$<$<CONFIG:Release>:/guard:cf>"			# Control Flow Guard
+			"$<$<CONFIG:Release>:/Qspectre>"			# Spectre Mitigation
+			"$<$<CONFIG:RelWithDebInfo>:/dynamicdeopt>"	# Dynamic Deoptimization
+		)
+		target_link_options(${target} PUBLIC
+			"$<$<CONFIG:RelWithDebInfo>:/dynamicdeopt>"	# Dynamic Deoptimization
 		)
 	endif()
 

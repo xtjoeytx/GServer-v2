@@ -1314,7 +1314,7 @@ LevelItem* Level::addItem(const PixelPosition& position, LevelItemType item)
 			// Find existing rupees, and add to the npc.
 			PixelRectangleArea searchArea{ toPixelPosition(loc).translate(-2 * 16, -2 * 16), { 6 * 16, 6 * 16 } };
 			auto npcList = findIntersectingNPCs(searchArea);
-			for (auto& npcId : npcList)
+			for (const auto& npcId : npcList)
 			{
 				if (auto npc = server->getNPC(npcId); npc != nullptr && npc->hasJoinedClass("gralats"))
 					gralatNPC = npc.get();
@@ -2199,7 +2199,8 @@ std::generator<const NPCID&> Level::findInRangeNPCsByDistance(const PixelPositio
 
 std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelPosition& position, bool includeInvisible) const noexcept
 {
-	return findIntersectingNPCs({ { position.x(), position.y() }, { 0, 0 } }, includeInvisible);
+	for (const auto& id : findIntersectingNPCs({ { position.x(), position.y() }, { 0, 0 } }, includeInvisible))
+		co_yield id;
 }
 
 std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible) const noexcept
@@ -2222,7 +2223,8 @@ std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelRectangleAre
 
 std::generator<const NPCID&> Level::findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept
 {
-	return findIntersectingNPCsForCollision({ { position.x(), position.y() }, { 0, 0 } });
+	for (const auto& id : findIntersectingNPCsForCollision({ position, { 0, 0 } }))
+		co_yield id;
 }
 
 std::generator<const NPCID&> Level::findIntersectingNPCsForCollision(const PixelRectangleArea& area) const noexcept
