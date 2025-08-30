@@ -319,6 +319,9 @@ void ServerList::addPlayer(std::shared_ptr<Player> player)
 {
 	assert(player != nullptr);
 
+	if (player->isNC() || player->isNPCServer())
+		return;
+
 	CString dataPacket;
 	dataPacket >> (char)SVO_PLYRADD >> (short)player->getId() >> (char)player->getType();
 	dataPacket >> (char)PlayerProp::ACCOUNTNAME << player->getProp<PlayerProp::ACCOUNTNAME>().serialize();
