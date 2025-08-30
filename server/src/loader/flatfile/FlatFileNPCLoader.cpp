@@ -99,6 +99,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 
 	const auto& updateTime = server->getServerStartTime();
 	std::string script;
+	std::vector<std::string> joinedClasses;
 
 	// Parse File
 	while (fileData.bytesLeft())
@@ -382,12 +383,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (curCommand == "JOINEDCLASSES")
 		{
-			auto classes = string::fromCSV(curLine.readString("").toString());
-			for (const auto& className : classes)
-			{
-				if (!className.empty())
-					npc->joinClass(className);
-			}
+			joinedClasses = string::fromCSV(curLine.readString("").toString());
 		}
 		else if (curCommand == "NPCSCRIPT")
 		{
@@ -414,6 +410,13 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 
 	// Set the script.
 	npc->setScript(script);
+
+	// Join the classes.
+	for (const auto& className : joinedClasses)
+	{
+		if (!className.empty())
+			npc->joinClass(className);
+	}
 
 	// Check if the level is a gmap.
 	// If it is, we need to determine the actual level.

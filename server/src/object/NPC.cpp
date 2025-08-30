@@ -520,7 +520,8 @@ std::string NPC::getJoinedClasses() const
 		}
 		else hasExpired = true;
 	}
-	result.pop_back();
+	if (!result.empty())
+		result.pop_back();
 
 	// If we have expired, clear them out.
 	if (hasExpired)
