@@ -61,6 +61,8 @@ The following options are available in the `serveroptions.txt` file:
         Disables serverside handling of level links if true.
     runallscriptevents = false
         By default, NPCs will only respond to script events referenced in their scripts.  If true, the NPC will respond to all events.
+    sleepwhennoplayers = true
+        If true, the NPC-Server will not process scripts when there are no players connected.
 
 ---
 # Serverside NPC programming

@@ -133,6 +133,9 @@ minimap =
 # syncdistancey = 192
 # syncbydistanceinside = false
 
+# Controls if the NPC-Server processes scripts when there are no players.
+# sleepwhennoplayers = true
+
 # --------------------------------------------------------------------------------------
 # --- Public Graal Reborn non-standard extensions.                                   ---
 # --------------------------------------------------------------------------------------
@@ -278,9 +281,6 @@ gs2default = false
 
 # The default language of the server.
 # defaultlanguage = en
-
-# Controls if the NPC-Server processes scripts when there are no players.
-# sleepwhennoplayers = true
 
 # Controls if levels use the new tileset layout server-side, or a match list of levels that will.
 # newtilesets = false

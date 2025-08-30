@@ -127,8 +127,12 @@ void NPCServer::update(TimeoutGenerator::time_point currentTime)
 void NPCServer::run(TimeoutGenerator::time_delta delta)
 {
 	//auto profile = log::Profile(log::server, "NPCServer::run");
-
 	m_frameStartTime = clock::now();
+
+	// If we have no players, skip processing.
+	bool sleepwhennoplayers = m_server->getSettings().getBool("sleepwhennoplayers", true);
+	if (sleepwhennoplayers && m_playerList.empty())
+		return;
 
 	// Save all NPC mod times and update timeouts.
 	{

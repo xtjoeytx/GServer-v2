@@ -1189,7 +1189,7 @@ bool Server::addPlayer(PlayerPtr player, PlayerID id)
 
 	// If we have an NPC-Server, let it process the player first.
 	// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
-	if (hasNPCServer())
+	if (hasNPCServer() && player->isClient())
 		m_npcServer->playerLogin(player);
 
 	return true;
@@ -1245,7 +1245,7 @@ bool Server::swapPlayer(PlayerPtr old_player, PlayerPtr new_player)
 
 	// If we have an NPC-Server, let it process the player first.
 	// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
-	if (hasNPCServer())
+	if (hasNPCServer() && new_player->isClient())
 		m_npcServer->playerLogin(new_player);
 
 	return true;
