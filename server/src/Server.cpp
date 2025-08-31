@@ -1202,7 +1202,7 @@ bool Server::deletePlayer(PlayerPtr player)
 
 	// If we have an NPC-Server, let it process the player first.
 	// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
-	if (hasNPCServer())
+	if (hasNPCServer() && player->isClient())
 		m_npcServer->playerLogout(player);
 
 	// Leave the level.
