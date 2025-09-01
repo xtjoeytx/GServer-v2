@@ -1349,12 +1349,30 @@ std::any GS1Visitor::visitArrayLiteral(GS1Parser::ArrayLiteralContext* context)
 {
 	std::vector<double> values;
 
-	auto results = visitChildrenAndCollect(context);
-	for (auto& child : results)
+	size_t valueIndex = 0;
+	for (size_t i = 0; i < context->children.size(); ++i)
 	{
-		auto result = getReadOnlyGameValueFromAnyAs<double>(child);
-		values.push_back(result);
+		auto child = context->children[i];
+		if (auto symbol = getSymbolType(child); symbol.has_value())
+		{
+			if (*symbol == GS1Parser::TOKEN_COMMA)
+			{
+				++valueIndex;
+				if (valueIndex > values.size())
+					values.push_back(0.0);
+			}
+		}
+		else
+		{
+			auto result = child->accept(this);
+			values.push_back(getReadOnlyGameValueFromAnyAs<double>(result));
+		}
 	}
+
+	// This covers the case of {} and {1,}, which should result in {0} and {1,0}, respectively.
+	if (valueIndex == values.size())
+		values.push_back(0.0);
+
 	return std::make_any<GS1ScriptValue>(std::move(values));
 }
 

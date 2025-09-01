@@ -260,7 +260,7 @@ assignment_operator
 	;
 
 array_literal
-	: TOKEN_BRACE_LEFT expression (TOKEN_COMMA expression)* END? TOKEN_BRACE_RIGHT			# ArrayLiteral
+	: TOKEN_BRACE_LEFT (TOKEN_COMMA | expression)* END? TOKEN_BRACE_RIGHT					# ArrayLiteral
 	;
 
 literal_literal

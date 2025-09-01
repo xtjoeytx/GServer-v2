@@ -30,7 +30,7 @@ CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(std::string_view w
 	// Check for empty source.
 	auto trimmed = string::trim(source);
 	if (trimmed.empty())
-		return {};
+		return nullptr;
 
 	// We are using GS2.
 	if (auto it = m_script_engines.find("GS2"); it != m_script_engines.end())
@@ -38,7 +38,7 @@ CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(std::string_view w
 
 	// Throw at this point.  We should always have a GS2 engine.
 	assert(false);
-	return {};
+	return nullptr;
 }
 
 CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(std::string_view who, std::string_view source)
@@ -46,7 +46,7 @@ CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(std::string_view w
 	// Check for empty source.
 	auto trimmed = string::trim(source);
 	if (trimmed.empty())
-		return {};
+		return nullptr;
 
 	// Determine the scripting engine to use.
 	// TODO: What do we do about GS1 mixed with GS2?
@@ -63,7 +63,7 @@ CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(std::string_view w
 	if (auto it = m_script_engines.find(script_engine); it != m_script_engines.end())
 		return getCompiledScript(it->second.get(), who, trimmed);
 
-	return {};
+	return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
