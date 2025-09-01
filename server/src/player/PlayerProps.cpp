@@ -430,17 +430,6 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 				result.resultPropIds.push_back(PROPID(PlayerProp::CURPOWER));
 				result.resultFlags.set(props::SetResults::sendToSource);
-
-				// TODO(Nalin): There could be a race condition on when this packet is sent.  Do we delay until after props are sent to the client?
-				if ((level != nullptr && level->isPlayerLeader(m_id)) && (level->getMap() == nullptr || !level->getMap()->isGmap()))
-					sendPacket(CString() >> (char)PLO_ISLEADER);
-
-				/*
-				// If we are the leader of the level, call warp().  This will fix NPCs not
-				// working again after we respawn.
-				if (level != 0 && level->getPlayer(0) == this)
-					warp(m_levelName, x, y, time(0));
-				*/
 			}
 
 			// When they die, increase deaths and make somebody else level leader.
@@ -454,16 +443,13 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 				// If we are the leader and there are more players on the level, we want to remove
 				// ourself from the leader position and tell the new leader that they are the leader.
-				if (level->isPlayerLeader(m_id) && level->getLevelPlayers().size() > 1)
+				if (level->isPlayerLeader(m_id) && level->getLevelPlayers().size() > 1 && !level->isOnGmap())
 				{
 					level->removePlayer(m_id);
 					level->addPlayer(m_id);
 
-					if (auto map = level->getMap(); map == nullptr || !map->isGmap())
-					{
-						auto leader = m_server->getPlayer(level->getLevelPlayers().front());
-						if (leader) leader->sendPacket(CString() >> (char)PLO_ISLEADER);
-					}
+					if (auto leader = m_server->getPlayer(level->getLevelPlayers().front()); leader != nullptr)
+						leader->sendPacket(CString() >> (char)PLO_ISLEADER);
 				}
 
 				// Update our last dead time.

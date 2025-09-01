@@ -358,6 +358,11 @@ gs2default = false
 # Lets an RC without a staff guild tag send mass PMs to players who ignore mass PMs.
 # rcofftagoverridesignore = false
 
+# Arrow types can be `all` or a comma separated list of arrow powers (1,2,3,4).
+# If the filter is enabled, attempts to spawn a restricted arrow will be logged to logs/arrowfilter.txt.
+# arrowallowedtypes = all
+# arrowfilterlog = true
+
 # Enables or disables putbomb.
 # Bomb types can be `all` or a comma separated list of bomb powers (1,2,3).
 # If the filter is enabled, attempts to spawn a restricted bomb will be logged to logs/bombfilter.txt.
@@ -370,6 +375,104 @@ gs2default = false
 # The gani/images are a comma separated list (e.g., `idle,walk,sit` or `block.png,block2.png`)
 # If the filter is enabled, attempts to show a restricted showimg will be logged to logs/showimgsfilter.txt.
 # showimgstypes = all
-# showimgsallowedganis = 
-# showimgsallowedimages = 
+# showimgsallowedganis = all
+# showimgsallowedimages = all
 # showimgsfilterlog = true
+
+# Controls which player attr[] values are allowed.
+# The type can be `all` or a comma separated list of strings.
+# If the filter is enabled, attempts to set a restricted value will be logged to logs/attrfilter.txt.
+# attrallowedganis = all
+# attrallowedimages = all
+# attrallowedmisc = all
+# attrfilterlog = true
+
+# Controls if ganis can only be used in player attr[] values (and not set on the player themselves).
+# If the filter is set, attempts to use a restricted gani will be logged to logs/ganifilter.txt.
+# ganionlyattr = 
+# ganifilterlog = true
+
+# Distance of players to which projectiles are sent.
+# syncdistanceprojectiles = 256
+
+# Dynamically adjusts sync distance by player count.
+# start-range,end-range,syncdistance, ... repeated
+# e.g., syncfactors=0,0,100,75,125,80,175,225,60
+# syncfactors = 0,0,192
+
+# Controls if inactive players (hasn`t moved in 10 seconds) are counted for the `syncfactors` command.
+# syncfactorinactive = true
+
+# Enables horse fire and the spyfire command.
+# horsefireenabled = true
+
+# Disables the saving of player attributes.
+# dontsaveattributes = false
+
+# Disables the updating of the sparring deviation value.
+# dontupdateratingd = false
+
+# Verifies the arrow/bomb count on server-side.
+# arrowcountserverside = true/false
+# bombcountserverside = true/false
+
+# Commands typed in IRC tabs are forwarded to script event onIRCCommand
+# forwardirccommands=true/false
+
+# projectilemaxdistance = number - disallows projectiles if the player is not close to the projectile being sent
+# projectilemaxspeed = maximum speed of projectiles
+# projectileallowedanis = all or list of ganis which can be used for projectiles
+# projectilemaxpersecond = number - maximum number of projectiles per second per player
+# projectileaccountparam = number - which parameter is containing the account name, can be verified using this
+# projectilefilterlog = true/false - logs to logs/projectilefilter.txt if the player has sent a disallowed projectile
+# projectilelogdistance = true/false - says if projectiles which exceed the maxdistance should be logged
+# explosionallowedtypes = all or list of allowed explosionpowers, e.g. 1,2
+# explosionmaxpersecond = number - maximum number of explosions per second per player
+# explosionmaxdistance = number - disallows explosions if the player is not close to the epxlosion
+# explosionmaxradius = number - maximum radius of explosions
+# explosiondisallowedlevels = list of levels where explosions are not allowed
+# explosiondisallowedinsparringzone = true/false - says if explosions are disallowed in sparring levels
+# explosionlogdistance = true/false - says if explosions which exceed the maxdistance should be logged
+# explosionfilterlog = true/false - logs to logs/explosionfilter.txt if the player has sent a disallowed explosion
+
+# Allows player nicknames to be set clientside.
+# enableclientsidenick = true
+
+# Controls if the player`s level is saved to their account.
+# saveplayerlevel = true
+
+# Disables global playerlist, reduces lag on servers with thousands of players.
+# noserverlistercpp = true/false
+
+# Disables the showadmins chat command.
+# disableshowadmins = true/false
+
+# Disables player item dropping.
+# disableitemdropping = true/false
+
+# Enables extended v6 body colors (disable v5 clients if using this).
+# enableexbodycolors = true/false
+
+# List of levels where you don't see other players.
+# singleplayerlevels = 
+
+# When the player drops an item, `player.onItemDrop(x,y,itemname)` will be called and the item will not drop.
+# itemdropevents2 = true/false
+
+# Says if onItemDrop should only be used for gralats, but otherwise spawn classic items.
+# itemdropeventsonlyforgralats = true/false
+
+# Enables serverside onwall detection for shoot projectiles.
+# projectilesstoponwall = true/false
+
+# Determines if the Z value is ignored or not for serverside touch events (by default touches require Z < 3).
+# playertouchsmenoz = true/false
+
+# Logs attempts of modifying read-only variables to logs/scripterrors.txt
+# scriptlogwritetoreadonly = true/false
+
+# Forces saving all npcs on level exit, can be disabled for optimization.
+# savenpcsonlevelcache = true/false
+
+# Limits how many gralats can be stacked on the ground.
+# maxgralatvalue = 0 or number

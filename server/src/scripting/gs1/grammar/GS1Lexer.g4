@@ -738,6 +738,9 @@ FUNC_GROUP_7 : ('playersays' | 'playersays2') { pushCommand("<ES)"); }   -> type
 
 // getflagkeys(string)
 
+// #S was 'selectedsword', which was some New World thing that never got used.
+// Seems like both sword and weapon were selectable NPCs in New World.
+
 MC_NOINDEX		: '#' ([angcmWw1235678LFfpbND] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 MC_SIMPLE		: '#' ([angcmWw1235678ptKkGN]  | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { pushCommand("(P)"); }   -> type(MESSAGECODE);
 MC_COMPUTED_S	: '#s' { pushCommand("(V)"); }   -> type(MESSAGECODE);
