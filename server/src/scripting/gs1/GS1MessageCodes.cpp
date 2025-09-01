@@ -898,7 +898,7 @@ GS1ScriptValue mc_C(GS1Visitor* visitor, uint8_t index, std::string_view message
 {
 	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return std::make_pair(getCharacterColorName(static_cast<CharacterColors>(character.colors[index])), 20 + index);
+		return std::make_pair(getClassicColorName(static_cast<ClassicColors>(character.colors[index])), 20 + index);
 	});
 }
 
