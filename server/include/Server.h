@@ -30,6 +30,7 @@
 #include <FileSystem.h>
 #include <ServerList.h>
 #include <UpdatePackage.h>
+#include "level/LevelItem.h"
 #include <animation/GameAni.h>
 #include <level/Level.h>
 #include <level/LevelShoot.h>
@@ -200,6 +201,10 @@ public:
 	std::shared_ptr<Map> findMap(std::string_view mapName) const noexcept;
 
 public:
+	LevelItemType rollBushItemDrop() const;
+	[[inline]] const auto& getAllowedDeathDrops() const noexcept;
+
+public:
 	std::shared_ptr<NPC> getNPC(const NPCID id) const;
 	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCStorageType storageType, bool sendToPlayers = false);
 	std::shared_ptr<NPC> addNPC(NPCPtr npc, bool sendToPlayers = false);
@@ -294,21 +299,14 @@ public:
 	}
 
 public:
-	void setShootParams(std::vector<std::string>&& params)
-	{
-		m_shootParams = std::move(params);
-	}
+	[[inline]] const std::vector<std::string>& getShootParams() const;
+	[[inline]] void setShootParams(std::vector<std::string>&& params);
 
 	void setShootParams(std::ranges::forward_range auto&& params)
 		requires std::same_as<std::ranges::range_value_t<decltype(params)>, std::string>
 	{
 		m_shootParams.clear();
 		m_shootParams.assign(std::ranges::begin(params), std::ranges::end(params));
-	}
-
-	const std::vector<std::string>& getShootParams() const
-	{
-		return m_shootParams;
 	}
 
 public:
@@ -332,6 +330,8 @@ private:
 	CString m_allowedVersionString, m_name, m_serverMessage;
 	CString m_overrideIp, m_overrideLocalIp, m_overridePort, m_overrideInterface;
 	std::vector<CString> m_allowedVersions, m_foldersConfig, m_ipBans, m_statusList, m_staffList;
+	std::vector<std::pair<LevelItemType, int>> m_bushDrops;
+	std::vector<LevelItemType> m_deathDrops;
 
 	std::unique_ptr<IAccountLoader> m_accountLoader;
 	std::unique_ptr<INPCLoader> m_npcLoader;
@@ -368,6 +368,11 @@ private:
 	std::unique_ptr<UPNP> m_upnp;
 	std::thread m_upnpThread;
 };
+
+inline const auto& Server::getAllowedDeathDrops() const noexcept
+{
+	return m_deathDrops;
+}
 
 inline std::shared_ptr<NPC> Server::getNPC(const NPCID id) const
 {
@@ -439,6 +444,16 @@ inline std::shared_ptr<T> Server::getPlayer(const CString& account, int type) co
 	}
 
 	return nullptr;
+}
+
+inline const std::vector<std::string>& Server::getShootParams() const
+{
+	return m_shootParams;
+}
+
+inline void Server::setShootParams(std::vector<std::string>&& params)
+{
+	m_shootParams = std::move(params);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

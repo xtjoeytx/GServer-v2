@@ -100,23 +100,18 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 	uint16_t oldTile = static_cast<uint16_t>((getLevel()->getTiles())[loc[0] + static_cast<size_t>(loc[1] * 64)]);
 	bool bushitems = settings.getBool("bushitems", true);
 	bool vasesdrop = settings.getBool("vasesdrop", true);
-	int tiledroprate = settings.getInt("tiledroprate", 50);
 	LevelItemType dropItem = LevelItemType::INVALID;
 
 	// If we support item drops and the tile is in the allowed list, drop the item.
 	if (std::ranges::contains(dropTiles, oldTile) && bushitems)
 	{
-		if (tiledroprate > 0)
-		{
-			if ((rand() % 100) < tiledroprate)
-			{
-				dropItem = LevelItem::getItemId(rand() % 6);
-			}
-		}
+		dropItem = m_server->rollBushItemDrop();
 	}
 	// Vases drop hearts.
 	else if (oldTile == 0x2ac && vasesdrop)
+	{
 		dropItem = LevelItemType::HEART;
+	}
 
 	// Send the item now.
 	// TODO: Make this a more generic function.

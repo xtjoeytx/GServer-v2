@@ -27,7 +27,7 @@ setshieldallowed = true
 setswordallowed = true
 setcolorsallowed = true
 
-# Defines the amount of Gralats a player drops with they die.
+# Defines the amount of Gralats a player drops when they die.
 mindeathgralats = 1
 maxdeathgralats = 50
 
@@ -43,13 +43,23 @@ staff = (Manager),YOURACCOUNT
 
 # Enables/disables item dropping from various sources.
 # bushitems also affects certain tiles other than bushes.
-# tiledroprate affects bushitems only.
 # If making a 1.41 server, set bushitems, vasesdrop, and baddyitems to false as the 1.41 client generates items.
 bushitems = true
 vasesdrop = true
 baddyitems = false
-dropitemsdead = true
-tiledroprate = 50
+
+# The type of items that are dropped by bushes or death.
+# Allowed bush items: greenrupee, bluerupee, bombs, heart.  GR extension: redrupee, goldrupee, darts.
+# Allowed death items: greenrupee, bluerupee, redrupee, goldrupee, bombs, darts.
+# bushitemtypes = greenrupee,bluerupee,heart,bombs
+# deathitemtypes = greenrupee,bluerupee,redrupee,goldrupee,bombs,darts
+
+# Value from 0-100 that determines the percent chance the item will drop from bushes.
+# Will check in order of the bushitemtypes list, so if the sum adds up to over 100, it will eventually stop early.
+# spawnrategreenrupee = 10
+# spawnratebluerupee = 5
+# spawnrateheart = 5
+# spawnratebombs = 5
 
 # If enabled, it will allow negative power swords which will heal players when used.
 healswords = false
@@ -344,16 +354,6 @@ gs2default = false
 
 # If true, hideplayer() only works while a player is under a bush.
 # nohidewithoutbush = false
-
-# The type of items that are dropped by bushes or death.
-# Defaults to all items.
-# bushitemtypes = greenrupee,bluerupee
-# deathitemtypes = greenrupee,bluerupee
-
-# Value from 0-100 that determines the percent change the item will drop from bushes or death.
-# spawnrategreenrupee = 
-# spawnratebluerupee = 
-# spawnrate...
 
 # Lets an RC without a staff guild tag send mass PMs to players who ignore mass PMs.
 # rcofftagoverridesignore = false

@@ -7,6 +7,7 @@
 #include <ctime>
 #include <memory>
 #include <optional>
+#include <random>
 #include <string_view>
 #include <string>
 #include <utility>
@@ -1729,23 +1730,35 @@ void PlayerClient::dropItemsOnDeath()
 	if (!m_server->getSettings().getBool("dropitemsdead", true))
 		return;
 
+	auto level = getLevel();
+	if (level == nullptr)
+		return;
+
 	uint32_t mindeathgralats = static_cast<uint32_t>(m_server->getSettings().getInt("mindeathgralats", 1));
 	uint32_t maxdeathgralats = static_cast<uint32_t>(m_server->getSettings().getInt("maxdeathgralats", 50));
+	const auto& allowedDeathDrops = m_server->getAllowedDeathDrops();
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<uint32_t> gralatDistribution(mindeathgralats, maxdeathgralats);
+	std::uniform_int_distribution<uint32_t> itemDistribution(0, 3);
 
 	// Determine how many gralats to remove from the account.
 	uint32_t drop_gralats = 0;
 	if (maxdeathgralats > 0)
-	{
-		drop_gralats = rand() % maxdeathgralats;
-		drop_gralats = std::clamp(drop_gralats, mindeathgralats, maxdeathgralats);
-		if (drop_gralats > account.character.gralats) drop_gralats = account.character.gralats;
-	}
+		drop_gralats = std::min(gralatDistribution(gen), account.character.gralats);
 
 	// Determine how many arrows and bombs to remove from the account.
-	int drop_arrows = rand() % 4;
-	int drop_bombs = rand() % 4;
+	int drop_arrows = itemDistribution(gen);
+	int drop_bombs = itemDistribution(gen);
 	if ((drop_arrows * 5) > account.character.arrows) drop_arrows = account.character.arrows / 5;
 	if ((drop_bombs * 5) > account.character.bombs) drop_bombs = account.character.bombs / 5;
+
+	// Check if we can drop arrows and bombs.
+	if (!std::ranges::contains(allowedDeathDrops, LevelItemType::DARTS))
+		drop_arrows = 0;
+	if (!std::ranges::contains(allowedDeathDrops, LevelItemType::BOMBS))
+		drop_bombs = 0;
 
 	// Remove gralats/bombs/arrows.
 	account.character.gralats -= drop_gralats;
@@ -1753,29 +1766,39 @@ void PlayerClient::dropItemsOnDeath()
 	account.character.bombs -= (drop_bombs * 5);
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::RUPEESCOUNT >> (int)account.character.gralats >> (char)PlayerProp::ARROWSCOUNT >> (char)account.character.arrows >> (char)PlayerProp::BOMBSCOUNT >> (char)account.character.bombs);
 
-	TilePosition localTilePos = toTilePosition(getLocalPosition());
+	// Check which gralats we can drop.
+	bool canDropGold = std::ranges::contains(allowedDeathDrops, LevelItemType::GOLDRUPEE);
+	bool canDropRed = std::ranges::contains(allowedDeathDrops, LevelItemType::REDRUPEE);
+	bool canDropBlue = std::ranges::contains(allowedDeathDrops, LevelItemType::BLUERUPEE);
+	bool canDropGreen = std::ranges::contains(allowedDeathDrops, LevelItemType::GREENRUPEE);
+	if (!canDropGold && !canDropRed && !canDropBlue && !canDropGreen)
+		drop_gralats = 0;
 
 	// Add gralats to the level.
+	TilePosition localTilePos = toTilePosition(getLocalPosition());
 	while (drop_gralats != 0)
 	{
 		char item = 0;
-		if (drop_gralats % 100 != drop_gralats)
+		if (canDropGold && (drop_gralats % 100 != drop_gralats))
 		{
 			drop_gralats -= 100;
 			item = 19;
 		}
-		else if (drop_gralats % 30 != drop_gralats)
+		else if (canDropRed && (drop_gralats % 30 != drop_gralats))
 		{
 			drop_gralats -= 30;
 			item = 2;
 		}
-		else if (drop_gralats % 5 != drop_gralats)
+		else if (canDropBlue && (drop_gralats % 5 != drop_gralats))
 		{
 			drop_gralats -= 5;
 			item = 1;
 		}
 		else if (drop_gralats != 0)
 		{
+			if (!canDropGreen)
+				break;
+
 			--drop_gralats;
 			item = 0;
 		}
@@ -1783,11 +1806,7 @@ void PlayerClient::dropItemsOnDeath()
 		float pX = localTilePos.x() + 1.5f + (rand() % 8) - 2.0f;
 		float pY = localTilePos.y() + 2.0f + (rand() % 8) - 2.0f;
 
-		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)item;
-		packet.readGChar(); // So msgPLI_ITEMADD works.
-
-		msgPLI_ITEMADD(packet);
-		sendPacket(CString() >> (char)PLO_ITEMADD << packet.subString(1));
+		level->addItem(inform_client, level->convertToMapPosition(toLocalPixelPosition(pX, pY)), static_cast<LevelItemType>(item));
 	}
 
 	// Add arrows and bombs to the level.
@@ -1796,22 +1815,14 @@ void PlayerClient::dropItemsOnDeath()
 		float pX = localTilePos.x() + 1.5f + (rand() % 8) - 2.0f;
 		float pY = localTilePos.y() + 2.0f + (rand() % 8) - 2.0f;
 
-		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)4; // 4 = arrows
-		packet.readGChar();                                                                             // So msgPLI_ITEMADD works.
-
-		msgPLI_ITEMADD(packet);
-		sendPacket(CString() >> (char)PLO_ITEMADD << packet.subString(1));
+		level->addItem(inform_client, level->convertToMapPosition(toLocalPixelPosition(pX, pY)), LevelItemType::DARTS);
 	}
 	for (int i = 0; i < drop_bombs; ++i)
 	{
 		float pX = localTilePos.x() + 1.5f + (rand() % 8) - 2.0f;
 		float pY = localTilePos.y() + 2.0f + (rand() % 8) - 2.0f;
 
-		CString packet = CString() >> (char)PLI_ITEMADD >> (char)(pX * 2) >> (char)(pY * 2) >> (char)3; // 3 = bombs
-		packet.readGChar();                                                                             // So msgPLI_ITEMADD works.
-
-		msgPLI_ITEMADD(packet);
-		sendPacket(CString() >> (char)PLO_ITEMADD << packet.subString(1));
+		level->addItem(inform_client, level->convertToMapPosition(toLocalPixelPosition(pX, pY)), LevelItemType::BOMBS);
 	}
 }
 

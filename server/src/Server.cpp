@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -15,6 +16,7 @@
 #include <memory>
 #include <numbers>
 #include <optional>
+#include <random>
 #include <ranges>
 #include <set>
 #include <string_view>
@@ -570,6 +572,38 @@ void Server::loadSettings()
 
 	// Send our ServerHQ info in case we got changed the staffonly setting.
 	getServerList().sendServerHQ();
+
+	// Bush item drops.
+	auto bushitemtypes = m_settings.getStr("bushitemtypes", "greenrupee,bluerupee,heart,bombs").tokenize(",");
+	{
+		// greenrupee 10, bluerupee 5, bombs 5, heart 5
+		static const std::array<int, 25> defaults = { 10, 5, 0, 5, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+		m_bushDrops.clear();
+		for (auto& itemtype : bushitemtypes)
+		{
+			itemtype.trimI().toLowerI();
+			LevelItemType item = LevelItem::getItemId(itemtype.toString());
+			if (item == LevelItemType::INVALID)
+				continue;
+
+			auto spawnRate = m_settings.getInt(std::format("spawnrate{}", itemtype.toStringView()), defaults[static_cast<size_t>(item)]);
+			m_bushDrops.emplace_back(item, spawnRate);
+		}
+	}
+
+	// Death item drops.
+	auto deathitemtypes = m_settings.getStr("deathitemtypes", "greenrupee,bluerupee,redrupee,goldrupee,bombs,darts").tokenize(",");
+	{
+		m_deathDrops.clear();
+		for (auto& itemtype : deathitemtypes)
+		{
+			itemtype.trimI().toLowerI();
+			LevelItemType item = LevelItem::getItemId(itemtype.toString());
+			if (item != LevelItemType::INVALID)
+				m_deathDrops.push_back(item);
+		}
+	}
 }
 
 void Server::loadAdminSettings()
@@ -1004,6 +1038,25 @@ std::shared_ptr<Map> Server::findMap(std::string_view mapName) const noexcept
 	if (foundMap != std::ranges::end(m_mapList))
 		return *foundMap;
 	return nullptr;
+}
+
+/////////////////////////////////////////////////////
+
+LevelItemType Server::rollBushItemDrop() const
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(1, 100);
+    int roll = dist(gen);
+
+	for (const auto& [itemType, rate] : m_bushDrops)
+	{
+		if (roll <= rate)
+			return itemType;
+		roll -= rate;
+	}
+
+	return LevelItemType::INVALID;
 }
 
 /////////////////////////////////////////////////////
