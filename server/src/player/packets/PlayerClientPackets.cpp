@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
-#include <iterator>
+#include <format>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -275,10 +275,22 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 	uint8_t item = pPacket.readGUChar();
 	LevelItemType itemType = LevelItem::getItemId(item);
 
+	// If item drop events are enabled, send the item drop event to the Control-NPC # If true, each time an item is dropped the Control-NPC will receive an onItemDrop(level,x,y,itemname) action.
+	if (m_server->hasNPCServer() && m_server->getSettings().getBool("itemdropevents", false))
+	{
+		m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::CUSTOM, source::FromPlayer(m_id),
+			"itemdrop", getComputedLevelName(), std::format("{}", loc[0]), std::format("{}", loc[1]), LevelItem::getItemName(itemType));
+	}
+
 	if (auto level = getLevel(); level != nullptr)
 	{
 		if (m_server->hasNPCServer())
-			dropItem(level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])), itemType);
+		{
+			// Try to drop the item on the level.
+			// If the item was ultimately not dropped on the level (e.g., a gralats NPC was created), tell the client to delete it.
+			if (!dropItem(level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])), itemType))
+				sendPacket(CString() >> (char)PLO_ITEMDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
+		}
 		else
 		{
 			level->addItem(level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])), itemType);
@@ -1182,7 +1194,8 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 		if (auto level = getLevel(); level)
 		{
 			// Send to the level.
-			m_server->sendPacketToOneLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)m_id << (pPacket.text() + 1), level, { m_id });
+			if (m_server->getSettings().getBool("sendplayertriggers", true))
+				m_server->sendPacketToOneLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)m_id << (pPacket.text() + 1), level, { m_id });
 
 			// Trigger on level NPCs.
 			if (m_server->hasNPCServer())

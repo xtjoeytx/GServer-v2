@@ -894,13 +894,22 @@ void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const st
 }
 
 // destroy;
-// Destroys and NPC.
+// Destroys an NPC.
 void fn_destroy(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->getOriginalSource().second; source == ScriptObjectSourceType::NPC)
+	if (auto source = visitor->getOriginalSource(); source.second == ScriptObjectSourceType::NPC)
 	{
-		auto* server = BabyDI::Get<Server>();
-		server->getNPCServer()->deleteNPC(visitor->getOriginalSource().first);
+		auto server = BabyDI::Get<Server>();
+		if (server->getSettings().getBool("protectdbnpcs", true))
+		{
+			if (auto npc = server->getNPC(source.first); npc != nullptr && npc->storageType == NPCStorageType::DATABASE && npc->scriptType != NPCTYPE_LOCAL)
+			{
+				log::printLine(log::npc, "NPC '{}' attempted to destroy itself, but DB NPCs are protected.", npc->name);
+				return;
+			}
+		}
+
+		server->getNPCServer()->deleteNPC(source.first);
 	}
 }
 
@@ -1426,6 +1435,13 @@ void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::v
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: puthorse imagefile,x,y");
+
+	auto server = BabyDI::Get<Server>();
+	if (server->getSettings().getBool("puthorseenabled", true) == false)
+	{
+		log::printLine(log::npc, "puthorse command is disabled on this server.");
+		return;
+	}
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{

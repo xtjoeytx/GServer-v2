@@ -14,7 +14,7 @@ unstickmetime = 30
 # List of weapon names (comma separated) that will be given to the player each time they connect.
 protectedweapons = 
 
-# Players in these levels can't warp out nor can they PM other players.
+# Players in these levels can`t warp out nor can they PM other players.
 jaillevels = police2.graal,police4.graal
 
 # Enable/disable explosions.
@@ -67,8 +67,8 @@ warptoforall = false
 # Alters the possible status options in the player list.
 playerlisticons = Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing
 
-# Selects what is displayed in the player's profile.
-# Name:=variable, where variable can also be a flag on the player's account.
+# Selects what is displayed in the player`s profile.
+# Name:=variable, where variable can also be a flag on the player`s account.
 profilevars = Kills:=playerkills,Deaths:=playerdeaths,Maxpower:=playerfullhearts,Rating:=playerrating,Alignment:=playerap,Gralat:=playerrupees,Swordpower:=playerswordpower,Spin Attack:=canspin
 
 # Global guild settings.
@@ -92,9 +92,6 @@ heartlimit = 3
 swordlimit = 3
 shieldlimit = 3
 
-# Enables or disables the putnpc script command.
-putnpcenabled = true
-
 # If true, disable the ability.
 dontchangekills = false
 
@@ -108,6 +105,19 @@ maxnomovement = 1200
 
 # If false, it will prevent the player from obtaining items like bomb, bow, superbomb, etc.
 defaultweapons = true
+
+# Enables or disables the putnpc script command.
+putnpcenabled = true
+
+# Enables or disables puthorse.
+puthorseenabled = true
+
+# Allows player triggeractions to be sent to other players.
+sendplayertriggers = true
+
+# If true, each time an item is dropped the Control-NPC will receive an onItemDrop(level,x,y,itemname) action.
+# For GS1, it will be `if (itemdrop)` with #p(0)-#p(3) as the arguments.
+itemdropevents = false
 
 # List of bigmap.txt type maps used by the server.  It lets the server know the level layout
 # so you can see players move and talk in adjacent levels.
@@ -128,7 +138,7 @@ minimap =
 
 # Radius, in tiles, in which players receive updates.
 # By default it only works on gmaps, but syncbydistanceinside can allow in non-gmap levels.
-# NOTE: Not fully implemented yet.  To avoid weird problems, don't use distances less than 64.
+# NOTE: Not fully implemented yet.  To avoid weird problems, don`t use distances less than 64.
 # syncdistancex = 192
 # syncdistancey = 192
 # syncbydistanceinside = false
@@ -140,7 +150,7 @@ minimap =
 # --- Public Graal Reborn non-standard extensions.                                   ---
 # --------------------------------------------------------------------------------------
 
-# If true, moved push/pull blocks aren't sent to other players.
+# If true, moved push/pull blocks aren`t sent to other players.
 clientsidepushpull = true
 
 # List of group instanced maps used by the server.
@@ -189,14 +199,14 @@ serverip = AUTO
 serverport = 14802
 serverinterface = AUTO
 
-# The local IP address of the computer.  Helps you connect to your server if your router can't route on
+# The local IP address of the computer.  Helps you connect to your server if your router can`t route on
 # its WAN-side IP address.  Leave it as AUTO unless you know what you are doing.
 # If you have a Linux server, you will want to change this, though.
 localip = AUTO
 upnp = true
 
 # Specifies the location of the list server.
-# DON'T CHANGE IF YOU DON'T KNOW WHAT YOU ARE DOING.
+# DON`T CHANGE IF YOU DON`T KNOW WHAT YOU ARE DOING.
 listip = listserver.graal.in
 listport = 14900
 
@@ -218,6 +228,9 @@ sharefolder =
 
 # Sets the language.  Currently not implemented.
 language = English
+
+# If true, DB NPCs can`t be deleted via `destroy`.  Does not affect putnpc2 NPCs.
+# protectdbnpcs = true
 
 # --------------------------------------------------------------------------------------
 # --- Private Graal Reborn non-standard extensions.                                  ---
@@ -248,7 +261,7 @@ triggerhack_levels = false		# gr.updatelevel
 flaghack_movement = true		# -gr_movement weapon.
 flaghack_ip = false				# gr.ip
 
-# If true, the server will process all script events, even if the NPC doesn't check for the event flag.
+# If true, the server will process all script events, even if the NPC doesn`t check for the event flag.
 runallscriptevents = false
 
 # Scripting
@@ -317,9 +330,6 @@ gs2default = false
 # Use optimized storage for putnpc2 npcs, activated by setting this.savelocally = true in the NPC script.
 # newnpcstorage = true
 
-# If true, DB NPCs can't be deleted via 'destroy'.  Does not affect putnpc2 NPCs.
-# protectdbnpcs = true
-
 # If true, sends the results of the echo() command to all RC users and not just ones with NC rights.
 # sendechotorc = false
 
@@ -335,38 +345,29 @@ gs2default = false
 # If true, hideplayer() only works while a player is under a bush.
 # nohidewithoutbush = false
 
-# Allows player triggeractions to other players.
-# sendplayertriggers = true
-
 # The type of items that are dropped by bushes or death.
 # Defaults to all items.
 # bushitemtypes = greenrupee,bluerupee
 # deathitemtypes = greenrupee,bluerupee
-
-# If true, each time an item is dropped the Control-NPC will receive an onItemDrop(level,x,y,itemname) action.
-# itemdropevents = false
 
 # Value from 0-100 that determines the percent change the item will drop from bushes or death.
 # spawnrategreenrupee = 
 # spawnratebluerupee = 
 # spawnrate...
 
-# Enables or disables puthorse.
-# puthorseenabled = true
-
 # Lets an RC without a staff guild tag send mass PMs to players who ignore mass PMs.
 # rcofftagoverridesignore = false
 
 # Enables or disables putbomb.
-# Bomb types can be 'all' or a comma separated list of bomb powers (1,2,3).
+# Bomb types can be `all` or a comma separated list of bomb powers (1,2,3).
 # If the filter is enabled, attempts to spawn a restricted bomb will be logged to logs/bombfilter.txt.
 # putbombenabled = true
 # bomballowedtypes = all
 # bombfilterlog = true
 
 # Controls which showimg types are allowed.
-# The type can be 'all' or ani,img,text.
-# The gani/images are a comma separated list (e.g., 'idle,walk,sit' or 'block.png,block2.png')
+# The type can be `all` or ani,img,text.
+# The gani/images are a comma separated list (e.g., `idle,walk,sit` or `block.png,block2.png`)
 # If the filter is enabled, attempts to show a restricted showimg will be logged to logs/showimgsfilter.txt.
 # showimgstypes = all
 # showimgsallowedganis = 

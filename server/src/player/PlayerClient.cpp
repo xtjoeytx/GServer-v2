@@ -1820,10 +1820,7 @@ bool PlayerClient::dropItem(const PixelPosition& position, LevelItemType item)
 	if (removeItem(item))
 	{
 		if (auto level = getLevel(); level && level->addItem(position, item))
-		{
-			level->addItem(position, item);
 			return true;
-		}
 	}
 	return false;
 }
