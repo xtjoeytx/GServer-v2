@@ -629,6 +629,9 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONADD(CString& pPacket)
 		m_server->sendToNC(logMsg);
 	}
 
+	// Send the updated weapon list to the player.
+	msgPLI_NC_WEAPONLISTGET(pPacket);
+
 	return HandlePacketResult::Handled;
 }
 
@@ -643,15 +646,26 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 	// {118}{weapon}
 	CString weaponName = pPacket.readString("");
 
+	bool deleted = false;
 	CString logMsg;
 	if (m_server->NC_DelWeapon(weaponName.toString()))
+	{
 		logMsg << "Weapon " << weaponName << " deleted by " << account.name << "\n";
+		deleted = true;
+	}
 	else
+	{
 		logMsg << account.name << " prob: weapon " << weaponName << " doesn't exist\n";
+	}
 
 	// Logging
 	log::print(log::npc, logMsg.toString());
 	m_server->sendToNC(logMsg);
+
+	// Send the updated weapon list to the player.
+	if (deleted)
+		msgPLI_NC_WEAPONLISTGET(pPacket);
+
 	return HandlePacketResult::Handled;
 }
 
