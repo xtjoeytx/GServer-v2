@@ -106,72 +106,77 @@ int main(int argc, char* argv[])
 
 		// Load Server Settings
 		std::string discovery_mode;
+		std::cout << ":: Determining the server to start... ";
+		std::filesystem::path cwd = std::filesystem::current_path();
+
+		auto found_server = [&discovery_mode](const std::string& why, std::string_view server, std::filesystem::path& working_directory, const std::filesystem::path& test_directory)
+		{
+			if (!working_directory.empty() && !test_directory.empty())
+			{
+				// Sanity check.
+				if (!std::filesystem::exists(working_directory / test_directory))
+				{
+					std::cout << "FAILED! " << why << " (" << server << ")" << std::endl;
+					std::cerr << "Failed to start server: working directory does not exist." << std::endl;
+					return false;
+				}
+				std::filesystem::current_path(working_directory / test_directory);
+				working_directory = std::filesystem::current_path();
+			}
+
+			std::cout << "success! " << why << std::endl;
+			discovery_mode = why;
+			overrideServer = server;
+			return true;
+		};
+
+		// Environment variable / command line (do similar to startupserver.txt)
+		if (!overrideServer.isEmpty())
+		{
+			bool use_env = getenv("USE_ENV");
+			if (!found_server(use_env ? "(environment variable)" : "(command line)", overrideServer.toStringView(), cwd, cwd / "servers" / overrideServer.text()))
+				return ERR_SETTINGS;
+		}
+
+		// Current working directory.
 		if (overrideServer.isEmpty())
 		{
-			std::cout << ":: Determining the server to start... ";
-			std::filesystem::path cwd = std::filesystem::current_path();
-
-			auto found_server = [&discovery_mode](const std::string& why, std::string_view server, std::filesystem::path& working_directory, const std::filesystem::path& test_directory)
-			{
-				if (!working_directory.empty() && !test_directory.empty())
-				{
-					// Sanity check.
-					if (!std::filesystem::exists(working_directory / test_directory))
-					{
-						std::cout << "FAILED! " << why << " (" << server << ")" << std::endl;
-						std::cerr << "Failed to start server: working directory does not exist." << std::endl;
-						return false;
-					}
-					std::filesystem::current_path(working_directory / test_directory);
-					working_directory = std::filesystem::current_path();
-				}
-
-				std::cout << "success! " << why << std::endl;
-				discovery_mode = why;
-				overrideServer = server;
-				return true;
-			};
-
-			// Current working directory.
-			if (overrideServer.isEmpty())
-			{
-				if (std::filesystem::exists(cwd / "config" / "serveroptions.txt") && !found_server("(current working directory)", cwd.filename().string(), cwd, {}))
-					return ERR_SETTINGS;
-			}
-
-			// startupserver.txt
-			if (overrideServer.isEmpty())
-			{
-				CString startup;
-				startup.load("startupserver.txt");
-				startup = startup.readString("\n").replaceAllI("\r", "");
-
-				if (!startup.isEmpty() && !found_server("(startupserver.txt)", startup.text(), cwd, cwd / "servers" / startup.text()))
-					return ERR_SETTINGS;
-			}
-
-			// Number of directories.
-			if (overrideServer.isEmpty())
-			{
-				std::vector<std::filesystem::path> servers;
-
-				for (const auto& p: std::filesystem::directory_iterator{ "servers" })
-				{
-					if (p.is_directory())
-						servers.push_back(p.path().filename());
-				}
-
-				if (servers.size() == 1 && !found_server("(directory search)", servers.front().string(), cwd, cwd / "servers" / servers.front()))
-					return ERR_SETTINGS;
-			}
-
-			// Failure.
-			if (overrideServer.isEmpty() || !std::filesystem::exists(cwd / "config" / "serveroptions.txt"))
-			{
-				std::cout << "FAILED!" << std::endl;
-				std::cerr << "Failed to start server: no server specified and no default server found." << std::endl;
+			if (std::filesystem::exists(cwd / "config" / "serveroptions.txt") && !found_server("(current working directory)", cwd.filename().string(), cwd, {}))
 				return ERR_SETTINGS;
+		}
+
+		// startupserver.txt
+		if (overrideServer.isEmpty())
+		{
+			CString startup;
+			startup.load("startupserver.txt");
+			startup = startup.readString("\n").replaceAllI("\r", "");
+
+			if (!startup.isEmpty() && !found_server("(startupserver.txt)", startup.text(), cwd, cwd / "servers" / startup.text()))
+				return ERR_SETTINGS;
+		}
+
+		// Number of directories.
+		if (overrideServer.isEmpty())
+		{
+			std::vector<std::filesystem::path> servers;
+
+			for (const auto& p: std::filesystem::directory_iterator{ "servers" })
+			{
+				if (p.is_directory())
+					servers.push_back(p.path().filename());
 			}
+
+			if (servers.size() == 1 && !found_server("(directory search)", servers.front().string(), cwd, cwd / "servers" / servers.front()))
+				return ERR_SETTINGS;
+		}
+
+		// Failure.
+		if (overrideServer.isEmpty() || !std::filesystem::exists(cwd / "config" / "serveroptions.txt"))
+		{
+			std::cout << "FAILED!" << std::endl;
+			std::cerr << "Failed to start server: no server specified and no default server found." << std::endl;
+			return ERR_SETTINGS;
 		}
 
 		// Create the server.
