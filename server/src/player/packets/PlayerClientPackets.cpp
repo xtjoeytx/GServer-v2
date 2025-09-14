@@ -255,13 +255,19 @@ HandlePacketResult PlayerClient::msgPLI_ARROWADD(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_FIRESPY(CString& pPacket)
 {
-	/*
 	uint8_t length_power = pPacket.readGUChar();
 	uint8_t power = length_power & 0b111; // Power is the last three bits.
 	uint8_t length = length_power >> 3;   // Length is the first five bits.
-	*/
 
 	m_server->sendPacketToOneLevel(CString() >> (char)PLO_FIRESPY >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
+
+	// Add it to the level.
+	if (m_server->hasNPCServer())
+	{
+		if (auto level = getLevel(); level != nullptr)
+			level->addSpyFire(getGlobalPosition(), source::FromPlayer(m_id), account.character.direction, length, power);
+	}
+
 	return HandlePacketResult::Handled;
 }
 
@@ -753,6 +759,13 @@ HandlePacketResult PlayerClient::msgPLI_EXPLOSION(CString& pPacket)
 	// Send the packet out.
 	CString packet = CString() >> (char)PLO_EXPLOSION >> (short)m_id >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
 	m_server->sendPacketToOneLevel(packet, m_currentLevel, { m_id });
+
+	// Add it to the level.
+	if (m_server->hasNPCServer())
+	{
+		if (auto level = getLevel(); level != nullptr)
+			level->addExplosion(level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])), source::FromPlayer(m_id), eradius, epower);
+	}
 
 	return HandlePacketResult::Handled;
 }
