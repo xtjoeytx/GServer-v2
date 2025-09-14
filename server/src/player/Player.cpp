@@ -436,6 +436,7 @@ bool Player::doTimedEvents()
 
 void Player::disconnect()
 {
+	m_fileQueue.sendCompress();
 	m_server->deletePlayer(shared_from_this());
 }
 

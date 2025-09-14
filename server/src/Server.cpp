@@ -1240,11 +1240,6 @@ bool Server::addPlayer(PlayerPtr player, PlayerID id)
 	player->setId(id);
 	m_playerList[id] = player;
 
-	// If we have an NPC-Server, let it process the player first.
-	// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
-	if (hasNPCServer() && player->isClient())
-		m_npcServer->playerLogin(player);
-
 	return true;
 }
 
@@ -1253,19 +1248,27 @@ bool Server::deletePlayer(PlayerPtr player)
 	if (player == nullptr)
 		return true;
 
-	// If we have an NPC-Server, let it process the player first.
-	// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
-	if (hasNPCServer() && player->isClient())
-		m_npcServer->playerLogout(player);
+	if (player->isLoaded())
+	{
+		// If we have an NPC-Server, let it process the player first.
+		// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
+		if (hasNPCServer() && player->isClient())
+			m_npcServer->playerLogout(player);
 
-	// Leave the level.
-	if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr)
-		client->leaveLevel();
+		// Leave the level.
+		if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr)
+			client->leaveLevel();
 
-	// Add the player to the set of players to delete.
-	getServerList().deletePlayer(player);
+		// Add the player to the set of players to delete.
+		getServerList().deletePlayer(player);
+	}
+
 	m_playerList.erase(player->getId());
-	m_playerIdGenerator.freeId(player->getId());
+
+	// The ID will be freed in Player::cleanup.
+	// If we clear it now, then a player who presses F8 and reconnects will enter a race condition where they
+	// may get the same ID as their previous connection and then be immediately disconnected.
+	// m_playerIdGenerator.freeId(player->getId());
 
 	return true;
 }
@@ -1295,11 +1298,6 @@ bool Server::swapPlayer(PlayerPtr old_player, PlayerPtr new_player)
 		new_player->setId(NPCServerPlayerID);
 		m_playerList[NPCServerPlayerID] = new_player;
 	}
-
-	// If we have an NPC-Server, let it process the player first.
-	// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
-	if (hasNPCServer() && new_player->isClient())
-		m_npcServer->playerLogin(new_player);
 
 	return true;
 }

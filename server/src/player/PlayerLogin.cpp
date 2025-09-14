@@ -45,8 +45,9 @@ bool PlayerLogin::onRecv()
 HandlePacketResult PlayerLogin::handlePacket(std::optional<uint8_t> id, CString& packet)
 {
 	// TODO: Websocket stuff somewhere.
-	// TODO: We should find a way to make sure our outgoing packets get sent before the disconnect.
-	msgLoginPacket(packet);
+	if (msgLoginPacket(packet) == HandlePacketResult::Failed)
+		disconnect();
+
 	return HandlePacketResult::Handled;
 }
 
@@ -87,11 +88,7 @@ HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 	// Pass the login to the new player.
 	pPacket.setRead(0);
 	if (player != nullptr && !player->handleLogin(pPacket))
-	{
-		m_fileQueue.sendCompress(true);
 		player->disconnect();
-		return HandlePacketResult::Failed;
-	}
 
 	return HandlePacketResult::Handled;
 }
