@@ -286,7 +286,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 
 	// Set flags.
 	setPlayerFlags(wrapper->variables, npc, player);
-	setNPCFlags(wrapper->variables, npc);
+	setNPCFlags(event, wrapper->variables, npc);
 	setLevelFlags(wrapper->variables, npc, level);
 	setWeaponFlags(event, source, wrapper->variables);
 	setOtherFlags(event, source, wrapper->variables, npc, player, level);

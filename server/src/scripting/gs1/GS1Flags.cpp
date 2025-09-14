@@ -112,12 +112,17 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 	variableStore.add("isleader", level != nullptr && level->isPlayerLeader(player->getId()));
 }
 
-void setNPCFlags(GameVariableStore& variableStore, NPCPtr npc)
+void setNPCFlags(ScriptEvent& event, GameVariableStore& variableStore, NPCPtr npc)
 {
 	if (npc == nullptr)
 		return;
 
 	variableStore.add("visible", npc->visFlags != PROPID(NPCVisFlags::HIDDEN));
+	variableStore.add("shotbyplayer", event.type == ScriptEventType::WASSHOT && event.initiator.second == ScriptObjectType::PLAYER);
+	variableStore.add("shotbybaddy", event.type == ScriptEventType::WASSHOT && event.initiator.second == ScriptObjectType::SERVER);
+
+	// Extension.
+	variableStore.add("shotbynpc", event.type == ScriptEventType::WASSHOT && event.initiator.second == ScriptObjectType::NPC);
 
 	/* TODO(Nalin): NPC flags.
 		peltwithblackstone  the npc was pelt with a blackstone
@@ -126,9 +131,6 @@ void setNPCFlags(GameVariableStore& variableStore, NPCPtr npc)
 		peltwithsign        the npc was pelt with a sign
 		peltwithstone       the npc was pelt with a stone
 		peltwithvase        the npc was pelt with a vase
-		shotbybaddy         the npc was shot by a computer opponent
-		shotbyplayer        the npc was shot by the player
-		followsplayer - Client side only, unless we go sicko mode in the future.
 	*/
 }
 

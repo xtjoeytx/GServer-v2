@@ -75,6 +75,9 @@ Please review the lists below of implemented events, flags, functions, commands,
     playerismale
     playeronhorse
     playerpaused
+    shotbybaddy
+    shotbynpc (gr extension)
+    shotbyplayer
     visible
     weaponsenabled
 
@@ -94,8 +97,6 @@ Please review the lists below of implemented events, flags, functions, commands,
     peltwithvase
     playerswimming
     playertrial
-    shotbybaddy
-    shotbyplayer
 
 #### Clientside only
 

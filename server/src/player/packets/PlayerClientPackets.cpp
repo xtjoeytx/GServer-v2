@@ -229,18 +229,27 @@ HandlePacketResult PlayerClient::msgPLI_HORSEDEL(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_ARROWADD(CString& pPacket)
 {
-	/*
 	[[maybe_unused]] float loc[] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 	[[maybe_unused]] uint8_t flags = pPacket.readGUChar();
 	[[maybe_unused]] uint8_t sprite = pPacket.readGUChar();
 	[[maybe_unused]] uint8_t power = pPacket.readGUChar();
 
-	[[maybe_unused]] uint8_t direction = flags & 0b11;
+	[[maybe_unused]] uint8_t dir = flags & 0b11;
 	[[maybe_unused]] bool reflect = (flags & 0b100) != 0;
 	[[maybe_unused]] bool fromPlayer = (flags & 0b1000) != 0;
-	*/
 
 	m_server->sendPacketToOneLevel(CString() >> (char)PLO_ARROWADD >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
+
+	// Add it to the level.
+	if (m_server->hasNPCServer())
+	{
+		if (auto level = getLevel(); level != nullptr)
+		{
+			PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
+			level->addArrow(level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])), speed, dir, power, fromPlayer ? source::FromPlayer(m_id) : source::FromServer());
+		}
+	}
+
 	return HandlePacketResult::Handled;
 }
 
