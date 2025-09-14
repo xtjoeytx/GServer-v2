@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <any>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
@@ -2756,9 +2757,22 @@ void fn_showtext2(GS1Visitor* visitor, std::string_view commandName, const std::
 }
 
 // sleep duration;
+// Pauses script execution for the specified duration in seconds.
 void fn_sleep(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("sleep is not implemented yet.");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: sleep duration");
+
+	if (auto source = visitor->getOriginalSource(); source.second == ScriptObjectType::NPC)
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.first); npc != nullptr)
+		{
+			auto duration = visitor->getGameValueAs<double>(*arguments[0]);
+			npc->timeout = std::chrono::duration_cast<std::chrono::milliseconds>(duration_seconds_double(duration));
+			throw sleep_exception{};
+		}
+	}
 }
 
 // spyfire length,power;

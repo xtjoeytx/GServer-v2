@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <any>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <exception>
@@ -10,12 +11,14 @@
 #include <stdexcept>
 #include <string_view>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <variant>
 #include <vector>
 
 #include <BabyDI.h>
 #include <GS1Parser.h>
+#include <tree/ErrorNode.h>
 #include <tree/ParseTree.h>
 #include <tree/ParseTreeType.h>
 #include <tree/TerminalNode.h>
@@ -579,8 +582,45 @@ void GS1Visitor::execute(const ScriptEvent& event, ScriptObject source, GS1Parse
 
 	m_serverStore = getGameVariableStoreFromSource(source::FromServer());
 
+	// Check for a sleep resume.
+	// Sleeping scripts use the timeout event to resume themselves.
+	if (event.type == ScriptEventType::TIMEOUT && !m_sleepCallStack.empty())
+	{
+		m_callStack = std::move(m_sleepCallStack);
+		m_sleepCallStack.clear();
+		startNode = m_callStack.back().first;
+
+		m_currentSource = std::move(m_sleepCurrentSource);
+		m_sleepCurrentSource.clear();
+	}
+
 	// Execute!
-	visit(&startNode);
+	try
+	{
+		size_t loops = 0;
+		do
+		{
+			visit(startNode);
+
+			if (!m_callStack.empty())
+				startNode = m_callStack.back().first;
+
+			assert(loops < 100);
+		}
+		while (!m_callStack.empty());
+	}
+	catch (const sleep_exception&)
+	{
+		// Save the call stack.
+		// We do it here because the sleep exception may get caught in multiple blocks in the visitor.
+		m_sleepCallStack = std::move(m_callStack);
+		m_callStack.clear();
+
+		m_sleepCurrentSource = std::move(m_currentSource);
+		m_currentSource.clear();
+	}
+
+	m_callStack.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -607,6 +647,57 @@ void GS1Visitor::reportError(std::string_view message, antlr4::tree::ParseTree* 
 
 ////////////////////////////////////////////////////////////////////////////////
 
+std::any GS1Visitor::visitBlock(GS1Parser::BlockContext* ctx)
+{
+	if (ctx->children.empty())
+		return {};
+
+	antlr4::tree::ParseTree* currentNode = ctx->children[0];
+	size_t currentIndex = 0;
+
+	auto moveNext = [&]()
+	{
+		// Move to the next node.
+		if (++currentIndex < ctx->children.size())
+		{
+			currentNode = ctx->children[currentIndex];
+			std::get<1>(m_callStack.back()) = currentIndex;
+		}
+		else
+			currentNode = nullptr;
+	};
+
+	// If we already have a call stack, resume from where we left off.
+	if (!m_callStack.empty() && ctx == m_callStack.back().first)
+	{
+		std::tie(currentNode, currentIndex) = m_callStack.back();
+		currentNode = ctx->children[currentIndex];
+		moveNext();
+	}
+	else m_callStack.emplace_back(ctx, currentIndex);
+
+	// Move through the children.
+	while (currentNode != nullptr)
+	{
+		// Visit the current node.
+		if (antlr4::tree::ErrorNode::is(*currentNode))
+			visitErrorNode(dynamic_cast<antlr4::tree::ErrorNode*>(currentNode));
+		else if (antlr4::tree::TerminalNode::is(*currentNode))
+			visitTerminal(dynamic_cast<antlr4::tree::TerminalNode*>(currentNode));
+		else
+			currentNode->accept(this);
+
+		// Move to the next node.
+		moveNext();
+	}
+
+	m_callStack.pop_back();
+
+	return {};
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 std::any GS1Visitor::visitStatementIf(GS1Parser::StatementIfContext* context)
 {
 	if (getFlagOrBooleanFromAny(visit(context->expression())))
@@ -617,20 +708,39 @@ std::any GS1Visitor::visitStatementIf(GS1Parser::StatementIfContext* context)
 
 std::any GS1Visitor::visitStatementFor(GS1Parser::StatementForContext* context)
 {
-	// Assignment.
-	safeVisit(context->assignmentStatement(0));
+	bool enterLoopAfterSleep = false;
+
+	// Sleep resume.
+	// The block statement should be next in the stack, which means it will resume where it left off.
+	if (!m_callStack.empty() && m_callStack.back().first == context)
+	{
+		m_callStack.pop_back();
+		enterLoopAfterSleep = true;
+	}
+	else
+	{
+		// Assignment.
+		safeVisit(context->assignmentStatement(0));
+	}
 
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && getFlagOrBooleanFromAny(safeVisit(context->expression(0))))
+	while (loopCount++ < MAX_LOOPS && getFlagOrBooleanFromAny(safeVisit(context->expression(0))) || enterLoopAfterSleep)
 	{
+		enterLoopAfterSleep = false;
+
 		// Block.
 		try
 		{
 			visit(context->block());
 		}
-		catch (break_exception&) { break; }
-		catch (continue_exception&) { continue; }
+		catch (const break_exception&) { break; }
+		catch (const continue_exception&) { continue; }
+		catch (const sleep_exception&)
+		{
+			m_callStack.emplace_back(context, 0);
+			throw;
+		}
 
 		// Increment.
 		safeVisit(context->expression(1));
@@ -642,17 +752,34 @@ std::any GS1Visitor::visitStatementFor(GS1Parser::StatementForContext* context)
 
 std::any GS1Visitor::visitStatementWhile(GS1Parser::StatementWhileContext* context)
 {
+	bool enterLoopAfterSleep = false;
+
+	// Sleep resume.
+	// The block statement should be next in the stack, which means it will resume where it left off.
+	if (!m_callStack.empty() && m_callStack.back().first == context)
+	{
+		m_callStack.pop_back();
+		enterLoopAfterSleep = true;
+	}
+
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && getFlagOrBooleanFromAny(visit(context->expression())))
+	while (loopCount++ < MAX_LOOPS && getFlagOrBooleanFromAny(visit(context->expression())) || enterLoopAfterSleep)
 	{
+		enterLoopAfterSleep = false;
+
 		// Block.
 		try
 		{
 			visit(context->block());
 		}
-		catch (break_exception&) { break; }
-		catch (continue_exception&) { continue; }
+		catch (const break_exception&) { break; }
+		catch (const continue_exception&) { continue; }
+		catch (const sleep_exception&)
+		{
+			m_callStack.emplace_back(context, 0);
+			throw;
+		}
 	}
 
 	return {};
@@ -720,6 +847,10 @@ std::any GS1Visitor::visitStatementBuiltInCommand(GS1Parser::StatementBuiltInCom
 		// Process the built-in command.
 		processBuiltInCommand(this, context, command);
 	}
+	catch (const sleep_exception&)
+	{
+		throw;
+	}
 	catch (const unimplemented_error& e)
 	{
 		reportError(e.what(), context, false);
@@ -760,6 +891,14 @@ std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentCont
 				left_var->assign<std::vector<double>>(right);
 			else left_var->assign<double>(right);
 		}
+
+		// Special case for "timeout" to erase any existing sleep call stack.
+		if (left_var->identifier == "timeout")
+		{
+			m_sleepCallStack.clear();
+			m_sleepCurrentSource.clear();
+		}
+
 		return {};
 	}
 

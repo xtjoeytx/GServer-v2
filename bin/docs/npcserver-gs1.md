@@ -11,9 +11,6 @@ Buyer beware.
 ## Considerations
 
 Please review the lists below of implemented events, flags, functions, commands, and message codes.
-Of particular note is that `sleep` IS NOT SUPPORTED.
-Script suspend/resume will require a custom syntax tree walker to be developed and that time is better spent implementing things and fixing bugs.
-Just use `timeout`.
 
 ---
 ## Events
@@ -386,6 +383,7 @@ Just use `timeout`.
 	showpoly2
 	showtext
 	showtext2
+    sleep
     spyfire
     take
     take2
@@ -397,6 +395,7 @@ Just use `timeout`.
     tokenize
     tokenize2
     triggeraction
+    unfreezeplayer
     unset
     warpto
 
@@ -411,7 +410,6 @@ Just use `timeout`.
     savelog
     setz
     showstats
-    sleep
     toweapons
     updateboard
     updateboard2

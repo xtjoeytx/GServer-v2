@@ -300,7 +300,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 	try
 	{
 		// Execute the script.
-		wrapper->visitor->execute(event, source, *wrapper->parser.get(), *wrapper->program);
+		wrapper->visitor->execute(event, source, *wrapper->parser.get(), wrapper->program);
 	}
 	catch (std::exception& e)
 	{

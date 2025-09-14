@@ -45,9 +45,9 @@ The following changes will be made to how the server responds to client requests
 - New NPCs (via `putnpc`) are ignored.
 - Deleting NPCs is ignored.
 - Only `client.` flags will be accepted (`server.` flag changes will be ignored).
-- New items will be taken from the player's inventory (under the assumption the player dropped the item).
-- `toweapons` is ignored.
-- Various player property updates are ignored (`maxpower`, `rupees`, `glovepower`, `swordpower`, `shieldpower`, `mp`, `ap`, `kills`, `deaths`, `rating`).
+- Items a player spawns will be taken from the player's inventory (under the assumption the player dropped the item).
+- Clientside `toweapons` is ignored.
+- Various player property updates from the client are ignored (`maxpower`, `rupees`, `glovepower`, `swordpower`, `shieldpower`, `mp`, `ap`, `kills`, `deaths`, `rating`).
 
 Any of the above should be handled by serverside scripts.
 
@@ -130,7 +130,7 @@ Serverside timeouts are limited to 0.1 seconds, unlike clientside timeouts which
 
 A `flag` is a string value that is set by `set` or `setstring`.
 A `var` is a numeric value that is assigned by normal variable assignment.
-Clients and serverside scripts only share `flags` that are prefixed with `client.`, `clientr.`, and `serverr.`.
+Clients and serverside scripts only share `flags` that are prefixed with `client.`, `clientr.`, and `serverr.`
 
 Additionally, there are two special prefixes: `thiso.` and `cliento.`
 When using the `with()` statement to access a different NPC or player in serverside script, the `this.` and `client.` variables point to the accessed NPC or player.

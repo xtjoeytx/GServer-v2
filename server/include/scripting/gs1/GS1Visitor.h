@@ -33,7 +33,7 @@ namespace preagonal::gs1::grammar
 class GS1Visitor : public GS1ParserBaseVisitor
 {
 public:
-	void execute(const ScriptEvent& event, ScriptObject source, GS1Parser& parser, antlr4::tree::ParseTree& startNode);
+	void execute(const ScriptEvent& event, ScriptObject source, GS1Parser& parser, antlr4::tree::ParseTree* startNode);
 	void reportError(std::string_view message, antlr4::tree::ParseTree* node = nullptr, bool abort = true);
 
 public:
@@ -76,8 +76,11 @@ protected:
 	GS1Parser* m_parser = nullptr;
 	const ScriptEvent* m_event = nullptr;
 	ScriptObject m_originalSource;
-	std::deque<ScriptObject> m_currentSource;
 	GameVariableStore* m_serverStore = nullptr;
+	std::deque<ScriptObject> m_currentSource;
+	std::deque<ScriptObject> m_sleepCurrentSource;
+	std::vector<std::pair<antlr4::tree::ParseTree*, size_t>> m_callStack;
+	std::vector<std::pair<antlr4::tree::ParseTree*, size_t>> m_sleepCallStack;
 
 protected:
 	std::any safeVisit(antlr4::tree::ParseTree* node);
