@@ -393,26 +393,28 @@ void Weapon::updateScriptClass(ScriptClass* scriptClass)
 
 //----------------------------
 
-void Weapon::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
+void Weapon::executeEvents(ScriptEventQueue& events, ScriptObject source) const
 {
 	if (events.queue().empty())
 		return;
 
-	ScriptEventQueue eventQueue{ events };
-	m_script.executeEvents(eventQueue, source);
+	m_script.executeEvents(events, source);
 
 	for (auto& [handle, scriptClassPtr] : m_joinedClasses)
 	{
 		if (auto scriptClass = scriptClassPtr.lock(); scriptClass != nullptr)
-		{
-			ScriptEventQueue classQueue{ events };
-			scriptClass->getScript().executeEvents(classQueue, source);
-		}
+			scriptClass->getScript().executeEvents(events, source);
 	}
 
-	// Erase the event queue.
-	while (!events.queue().empty())
-		events.queue().pop_back();
+	events.queue().clear();
+}
+
+//----------------------------
+
+ScriptObject source::FromWeapon(WeaponPtr weapon)
+{
+	size_t hash = string::string_hash{}(weapon->name);
+	return std::make_pair(hash, ScriptObjectType::WEAPON);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

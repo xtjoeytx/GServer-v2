@@ -16,6 +16,8 @@
 #include <scripting/IScriptEngine.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -169,22 +171,31 @@ const ScriptByteCode& Script::getClientByteCode() const noexcept
 	return empty;
 }
 
-void Script::executeEvents(ScriptContainer& container, ScriptObjectSource source) const
+void Script::executeEvents(ScriptContainer& container, ScriptObject source) const
 {
 	return executeEvents(container.events, source);
 }
 
-void Script::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
+void Script::executeEvents(ScriptEventQueue& events, ScriptObject source) const
 {
 	if (m_server_script == nullptr || m_server_script->engine == nullptr)
 		return;
 
-	for (; !events.queue().empty(); events.queue().pop_back())
-	{
-		auto& event = events.queue().back();
-		auto* engine = m_server_script->engine;
+	auto* engine = m_server_script->engine;
+	for (auto& event : events.queue())
 		engine->execute(event, source, m_server_script);
-	}
+}
+
+void Script::executeEvents(clear_container_t, ScriptContainer& container, ScriptObject source) const
+{
+	executeEvents(container, source);
+	container.events.queue().clear();
+}
+
+void Script::executeEvents(clear_container_t, ScriptEventQueue& events, ScriptObject source) const
+{
+	executeEvents(events, source);
+	events.queue().clear();
 }
 
 std::string Script::minify(const std::string& src) noexcept

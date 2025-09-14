@@ -10,6 +10,8 @@
 
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
+#include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/StringUtils.h>
 
 using namespace std::literals;
@@ -55,8 +57,10 @@ public:
 	[[inline]] Script& setServerCompiledScript(CompiledScriptResultPtr script) noexcept;
 
 public:
-	void executeEvents(ScriptContainer& container, ScriptObjectSource source) const;
-	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
+	void executeEvents(ScriptContainer& container, ScriptObject source) const;
+	void executeEvents(ScriptEventQueue& events, ScriptObject source) const;
+	void executeEvents(clear_container_t, ScriptContainer& container, ScriptObject source) const;
+	void executeEvents(clear_container_t, ScriptEventQueue& events, ScriptObject source) const;
 
 public:
 	static std::string minify(const std::string& src) noexcept;

@@ -49,7 +49,7 @@ struct LevelArrow
 	PixelPosition speed;
 	uint8_t direction;
 	int8_t type;
-	ScriptObjectSource from;
+	ScriptObject from;
 
 	[[inline]] uint8_t getPacketFrom() const;
 
@@ -61,7 +61,7 @@ struct LevelArrow
 
 inline uint8_t LevelArrow::getPacketFrom() const
 {
-	if (from.second == ScriptObjectSourceType::PLAYER)
+	if (from.second == ScriptObjectType::PLAYER)
 		return (uint8_t)1;
 	return (uint8_t)0;
 }
@@ -77,7 +77,7 @@ inline void LevelArrow::constructScriptParameters()
 	scriptParameters.try_emplace("from", set_temporary, "from",
 		gameVariableGetter([this]()
 		{
-			if (from.second == ScriptObjectSourceType::PLAYER)
+			if (from.second == ScriptObjectType::PLAYER)
 				return 1.0;
 			return 0.0;
 		}), GameVariable::func_set{});

@@ -15,8 +15,10 @@
 #include <scripting/Script.h>
 #include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Events.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -57,7 +59,7 @@ protected:
 	void updateScriptClass(ScriptClass* scriptClass);
 
 public:
-	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
+	void executeEvents(ScriptEventQueue& events, ScriptObject source) const;
 
 public:
 	bool isDefault() const { return (m_weaponDefault != LevelItemType::INVALID); }
@@ -80,6 +82,14 @@ protected:
 	mutable std::vector<std::pair<EventHandle, std::weak_ptr<ScriptClass>>> m_joinedClasses;
 };
 using TWeaponPtr = std::shared_ptr<Weapon>;
+
+//----------------------------
+
+namespace source
+{
+/// @brief Creates a ScriptObject from a Weapon by hashing the weapon's name.
+ScriptObject FromWeapon(WeaponPtr weapon);
+} // end namespace source
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal

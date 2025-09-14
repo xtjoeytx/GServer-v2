@@ -5,7 +5,6 @@
 #include <deque>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <string_view>
 #include <string>
 #include <type_traits>
@@ -16,8 +15,9 @@
 #include <GS1ParserBaseVisitor.h>
 #include <tree/ParseTree.h>
 
-#include <scripting/ScriptContainers.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 
 namespace preagonal
 {
@@ -33,7 +33,7 @@ namespace preagonal::gs1::grammar
 class GS1Visitor : public GS1ParserBaseVisitor
 {
 public:
-	void execute(const ScriptEvent& event, ScriptObjectSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode);
+	void execute(const ScriptEvent& event, ScriptObject source, GS1Parser& parser, antlr4::tree::ParseTree& startNode);
 	void reportError(std::string_view message, antlr4::tree::ParseTree* node = nullptr, bool abort = true);
 
 public:
@@ -44,14 +44,14 @@ public:
 	std::string who;
 
 public:
-	[[inline]] const ScriptObjectSource& getOriginalSource() const;
-	[[inline]] const ScriptObjectSource& getInitiatingSource() const;
-	[[inline]] const ScriptObjectSource& getCurrentSource(bool defaultToInitiator = false) const;
-	[[inline]] const ScriptObjectSource& popSource();
-	[[inline]] const void pushSource(ScriptObjectSource source);
+	[[inline]] const ScriptObject& getOriginalSource() const;
+	[[inline]] const ScriptObject& getInitiatingSource() const;
+	[[inline]] const ScriptObject& getCurrentSource(bool defaultToInitiator = false) const;
+	[[inline]] const ScriptObject& popSource();
+	[[inline]] const void pushSource(ScriptObject source);
 	[[inline]] const ScriptEvent& getEvent() const;
 	[[inline]] auto sourceStack() const;
-	std::optional<ScriptObjectSource> findNearestScriptObjectSourceFromStack(ScriptObjectSourceType type) const;
+	std::optional<ScriptObject> findNearestScriptObjectSourceFromStack(ScriptObjectType type) const;
 	std::shared_ptr<Level> findCurrentLevel() const;
 
 public:
@@ -63,7 +63,7 @@ public:
 
 	GameVariable* getGameVariableFromGS1ScriptValue(GS1ScriptValue& value);
 	GameVariable* getGameVariableFromVariant(GameVariableVariant& variant);
-	std::optional<GameVariable> getGameVariableFromSource(const ScriptObjectSource& source, std::string_view identifier);
+	std::optional<GameVariable> getGameVariableFromSource(const ScriptObject& source, std::string_view identifier);
 	GameVariableVariant getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
 
 public:
@@ -75,26 +75,28 @@ public:
 protected:
 	GS1Parser* m_parser = nullptr;
 	const ScriptEvent* m_event = nullptr;
-	ScriptObjectSource m_originalSource;
-	std::deque<ScriptObjectSource> m_currentSource;
+	ScriptObject m_originalSource;
+	std::deque<ScriptObject> m_currentSource;
 	GameVariableStore* m_serverStore = nullptr;
 
 protected:
 	std::any safeVisit(antlr4::tree::ParseTree* node);
 
 protected:
-	GameVariableStore* findGameVariableStoreFromSourceStack(ScriptObjectSourceType type) const;
+	GameVariableStore* findGameVariableStoreFromSourceStack(ScriptObjectType type) const;
 	GameVariableStore* getGameVariableStoreForStorageType(size_t type);
 	GS1GameVariable getGameVariableFromAny(std::any& value);
 	GameValue getReadOnlyGameValueFromGS1ScriptValue(const GS1ScriptValue& value);
 	GameValue getReadOnlyGameValueFromAny(const std::any& value);
 	bool getFlagOrBooleanFromAny(const std::any& value);
-	std::optional<ScriptObjectSource> getSourceFromGS1ScriptValue(GS1ScriptValue& value);
+	std::optional<ScriptObject> getSourceFromGS1ScriptValue(GS1ScriptValue& value);
 
 protected:
-	void setCurrentPlayerVariables(std::optional<ScriptObjectSource> source);
+	void setCurrentPlayerVariables(std::optional<ScriptObject> source);
 
 public:
+	virtual std::any visitBlock(GS1Parser::BlockContext* ctx) override;
+	//
 	virtual std::any visitStatementIf(GS1Parser::StatementIfContext* context) override;
 	virtual std::any visitStatementFor(GS1Parser::StatementForContext* context) override;
 	virtual std::any visitStatementWhile(GS1Parser::StatementWhileContext* context) override;
@@ -156,30 +158,30 @@ inline auto makeDefault() -> T
 
 //----------------------------
 
-inline const ScriptObjectSource& GS1Visitor::getOriginalSource() const
+inline const ScriptObject& GS1Visitor::getOriginalSource() const
 {
 	return m_originalSource;
 }
 
-inline const ScriptObjectSource& GS1Visitor::getInitiatingSource() const
+inline const ScriptObject& GS1Visitor::getInitiatingSource() const
 {
 	return m_event->initiator;
 }
 
-inline const ScriptObjectSource& GS1Visitor::getCurrentSource(bool defaultToInitiator) const
+inline const ScriptObject& GS1Visitor::getCurrentSource(bool defaultToInitiator) const
 {
-	if (m_event->initiator.second == ScriptObjectSourceType::NPC)
+	if (m_event->initiator.second == ScriptObjectType::NPC)
 		defaultToInitiator = false;
 	return m_currentSource.empty() ? (defaultToInitiator ? m_event->initiator : m_originalSource) : m_currentSource.back();
 }
 
-inline const ScriptObjectSource& GS1Visitor::popSource()
+inline const ScriptObject& GS1Visitor::popSource()
 {
 	m_currentSource.pop_back();
 	return getCurrentSource();
 }
 
-inline const void GS1Visitor::pushSource(ScriptObjectSource source)
+inline const void GS1Visitor::pushSource(ScriptObject source)
 {
 	m_currentSource.emplace_back(std::move(source));
 }
@@ -187,8 +189,8 @@ inline const void GS1Visitor::pushSource(ScriptObjectSource source)
 inline auto GS1Visitor::sourceStack() const
 {
 	// Save me C++26...
-	std::vector<ScriptObjectSource> sources{ m_currentSource.rbegin(), m_currentSource.rend() };
-	if (m_event->initiator.second != ScriptObjectSourceType::NPC)
+	std::vector<ScriptObject> sources{ m_currentSource.rbegin(), m_currentSource.rend() };
+	if (m_event->initiator.second != ScriptObjectType::NPC)
 		sources.push_back(m_event->initiator);
 	sources.push_back(m_originalSource);
 	return sources;
@@ -230,13 +232,6 @@ inline T GS1Visitor::getReadOnlyGameValueFromAnyAs(const std::any& value)
 	auto gameval = getReadOnlyGameValueFromAny(value);
 	return gameval.get<T>().value_or(makeDefault<T>());
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct unimplemented_error : public std::runtime_error
-{
-	using std::runtime_error::runtime_error;
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::gs1::grammar

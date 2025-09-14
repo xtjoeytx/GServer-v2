@@ -140,15 +140,15 @@ void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level)
 	variableStore.add("compsdead", level != nullptr && !level->hasLivingBaddies());
 }
 
-void setWeaponFlags(ScriptEvent& event, ScriptObjectSource source, GameVariableStore& variableStore)
+void setWeaponFlags(ScriptEvent& event, ScriptObject source, GameVariableStore& variableStore)
 {
-	variableStore.add("isweapon", source.second == ScriptObjectSourceType::WEAPON);
+	variableStore.add("isweapon", source.second == ScriptObjectType::WEAPON);
 }
 
-void setOtherFlags(ScriptEvent& event, ScriptObjectSource source, GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level)
+void setOtherFlags(ScriptEvent& event, ScriptObject source, GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level)
 {
 	// actionplayer
-	if (event.type == ScriptEventType::TRIGGERACTION && event.initiator.second == ScriptObjectSourceType::PLAYER && level != nullptr)
+	if (event.type == ScriptEventType::TRIGGERACTION && event.initiator.second == ScriptObjectType::PLAYER && level != nullptr)
 	{
 		bool found = false;
 		size_t index = 0;

@@ -442,27 +442,21 @@ std::shared_ptr<Level> NPC::getLevel() const
 
 //----------------------------
 
-void NPC::executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const
+void NPC::executeEvents(ScriptEventQueue& events, ScriptObject source) const
 {
 	if (events.queue().empty())
 		return;
 
-	ScriptEventQueue eventQueue{ events };
-	m_script.executeEvents(eventQueue, source);
+	m_script.executeEvents(events, source);
 
 	// Execute classes.
 	for (auto& [handle, scriptClassPtr] : m_joinedClasses)
 	{
 		if (auto scriptClass = scriptClassPtr.lock(); scriptClass != nullptr)
-		{
-			ScriptEventQueue classQueue{ events };
-			scriptClass->getScript().executeEvents(classQueue, source);
-		}
+			scriptClass->getScript().executeEvents(events, source);
 	}
 
-	// Erase the event queue.
-	while (!events.queue().empty())
-		events.queue().pop_back();
+	events.queue().clear();
 }
 
 void NPC::setScript(std::string_view script)
@@ -1507,7 +1501,7 @@ void NPC::constructScriptParameters()
 		gameVariableSetter(this, PROPOPT<NPCProp>(std::nullopt),
 			[this](const GameValue& value, std::optional<size_t>)
 			{
-				if (auto* doubleValue = value.get_unsafe<double>(); doubleValue != nullptr)
+				if (auto doubleValue = value.get<double>(); doubleValue.has_value())
 					timeout = std::chrono::milliseconds(static_cast<int>(*doubleValue * 1000));
 			})
 		);

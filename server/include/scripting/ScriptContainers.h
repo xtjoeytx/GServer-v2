@@ -33,60 +33,6 @@ class Weapon;
 using LevelPtr = std::shared_ptr<Level>;
 using WeaponPtr = std::shared_ptr<Weapon>;
 
-////////////////////////////////////////////////////////////
-// ScriptObjectSource
-////////////////////////////////////////////////////////////
-
-/// @brief Identifies an object type that may be used by a scripting language.
-enum class ScriptObjectSourceType
-{
-	SERVER,
-	NPC,
-	PLAYER,
-	WEAPON,
-	LEVEL,
-	BADDY,
-	BOMB,
-	ARROW,
-	ITEM,
-	EXPLOSION,
-	HORSE,
-	SIGN,
-
-	COUNT
-};
-
-/// @brief Binds a source object type with an identifier.
-/// 
-/// The first element is the identifier, which may be an id or a hash.
-using ScriptObjectSource = std::pair<size_t, ScriptObjectSourceType>;
-
-namespace source
-{
-/// @brief Creates a ScriptObjectSource for an NPC with the given id.
-constexpr ScriptObjectSource FromNPC(size_t id)
-{
-	return std::make_pair(id, ScriptObjectSourceType::NPC);
-}
-
-/// @brief Creates a ScriptObjectSource from a Weapon by hashing the weapon's name.
-ScriptObjectSource FromWeapon(WeaponPtr weapon);
-
-/// @brief Creates a ScriptObjectSource from a Level by hashing the level's name.
-ScriptObjectSource FromLevel(LevelPtr level);
-
-/// @brief Creates a ScriptObjectSource for a player with the given id.
-constexpr ScriptObjectSource FromPlayer(size_t id)
-{
-	return std::make_pair(id, ScriptObjectSourceType::PLAYER);
-}
-
-/// @brief Creates a ScriptObjectSource for the server.
-constexpr ScriptObjectSource FromServer()
-{
-	return std::make_pair(static_cast<size_t>(0), ScriptObjectSourceType::SERVER);
-}
-} // end namespace source
 
 ////////////////////////////////////////////////////////////
 // GameValue
@@ -98,10 +44,10 @@ concept ValidGameValue = std::same_as<std::remove_cvref_t<T>, bool>
 	|| std::same_as<std::remove_cvref_t<T>, double>
 	|| std::same_as<std::remove_cvref_t<T>, std::string>
 	|| std::same_as<std::remove_cvref_t<T>, std::vector<double>>
-	|| std::same_as<std::remove_cvref_t<T>, ScriptObjectSource>
-	|| std::same_as<std::remove_cvref_t<T>, std::vector<ScriptObjectSource>>;
+	|| std::same_as<std::remove_cvref_t<T>, ScriptObject>
+	|| std::same_as<std::remove_cvref_t<T>, std::vector<ScriptObject>>;
 
-/// @brief A container that can hold one of three types: double, std::string, or std::vector<double>.
+/// @brief A container that can hold one or more valid game value types.
 ///
 /// This is used to represent a single value that can be one or many of these types.
 /// It provides methods to set and retrieve the value in a type-safe manner.
@@ -180,7 +126,7 @@ public:
 			m_text = std::nullopt;
 		if constexpr (std::same_as<Type, std::vector<double>>)
 			m_array = std::nullopt;
-		if constexpr (std::same_as<Type, std::vector<ScriptObjectSource>>)
+		if constexpr (std::same_as<Type, std::vector<ScriptObject>>)
 			m_source = std::nullopt;
 		return *this;
 	}
@@ -194,7 +140,7 @@ private:
 	std::optional<double> m_number;
 	std::optional<std::string> m_text;
 	std::optional<std::vector<double>> m_array;
-	std::optional<std::vector<ScriptObjectSource>> m_source;
+	std::optional<std::vector<ScriptObject>> m_source;
 
 	[[inline]] GameValue& insert(const ValidGameValue auto& value, std::optional<size_t> index = std::nullopt);
 	[[inline]] GameValue& insert(ValidGameValue auto&& value, std::optional<size_t> index = std::nullopt);
@@ -231,7 +177,7 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 			return !DoubleIsZero(m_number.value());
 		return std::nullopt;
 	}
-	if constexpr (std::same_as<T, ScriptObjectSource>)
+	if constexpr (std::same_as<T, ScriptObject>)
 	{
 		if (!m_source.has_value())
 			return std::nullopt;
@@ -243,7 +189,7 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 		}
 		return m_source.value().at(0);
 	}
-	if constexpr (std::same_as<T, std::vector<ScriptObjectSource>>)
+	if constexpr (std::same_as<T, std::vector<ScriptObject>>)
 		return m_source;
 	else [[unlikely]]
 		throw std::bad_variant_access();
@@ -291,7 +237,7 @@ inline const T* GameValue::get_unsafe(std::optional<size_t> index) const
 		if (!ptr) ptr = &empty_boolean;
 		return ptr;
 	}
-	if constexpr (std::same_as<T, ScriptObjectSource>)
+	if constexpr (std::same_as<T, ScriptObject>)
 	{
 		if (!m_source.has_value()) return nullptr;
 		if (index.has_value())
@@ -302,7 +248,7 @@ inline const T* GameValue::get_unsafe(std::optional<size_t> index) const
 		}
 		return &m_source.value().at(0);
 	}
-	if constexpr (std::same_as<T, std::vector<ScriptObjectSource>>)
+	if constexpr (std::same_as<T, std::vector<ScriptObject>>)
 	{
 		if (!m_source.has_value()) return nullptr;
 		return &m_source.value();
@@ -349,7 +295,7 @@ inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optio
 		m_array = value;
 	else if constexpr (std::same_as<V, bool>)
 		m_boolean = value;
-	else if constexpr (std::same_as<V, ScriptObjectSource>)
+	else if constexpr (std::same_as<V, ScriptObject>)
 	{
 		if (m_source.has_value() && index.has_value())
 		{
@@ -360,7 +306,7 @@ inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optio
 		m_source.value().clear();
 		m_source.value().push_back(value);
 	}
-	else if constexpr (std::same_as<V, std::vector<ScriptObjectSource>>)
+	else if constexpr (std::same_as<V, std::vector<ScriptObject>>)
 		m_source = value;
 	else [[unlikely]]
 		throw std::bad_variant_access();
@@ -390,7 +336,7 @@ inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<s
 		m_array = std::move(value);
 	else if constexpr (std::same_as<V, bool>)
 		m_boolean = value;
-	else if constexpr (std::same_as<V, ScriptObjectSource>)
+	else if constexpr (std::same_as<V, ScriptObject>)
 	{
 		if (m_source.has_value() && index.has_value())
 		{
@@ -401,19 +347,20 @@ inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<s
 		m_source.value().clear();
 		m_source.value().push_back(value);
 	}
-	else if constexpr (std::same_as<V, std::vector<ScriptObjectSource>>)
+	else if constexpr (std::same_as<V, std::vector<ScriptObject>>)
 		m_source = std::move(value);
 	else [[unlikely]]
 		throw std::bad_variant_access();
 	return *this;
 }
 
+
 ////////////////////////////////////////////////////////////
 // GameVariable
 ////////////////////////////////////////////////////////////
 
-struct set_temporary_t {};
-inline constexpr set_temporary_t set_temporary;
+struct set_temporary_t { explicit set_temporary_t() = default; };
+inline constexpr set_temporary_t set_temporary{};
 
 /// @brief Represents a variable with an identifier and an associated value.
 struct GameVariable
@@ -427,20 +374,11 @@ struct GameVariable
 	GameVariable(set_temporary_t, const std::string& name, GameValue&& value)
 		: identifier(name), temporary(true), m_value(std::move(value)) {}
 	GameVariable(const std::string& name, GameValue&& value, func_get getter, func_set setter)
-		: identifier(name), m_value(std::move(value)), m_getter(getter), m_setter(setter)
-	{
-		//update();
-	}
+		: identifier(name), m_value(std::move(value)), m_getter(getter), m_setter(setter) {}
 	GameVariable(const std::string& name, func_get getter, func_set setter)
-		: identifier(name), m_getter(getter), m_setter(setter)
-	{
-		//update();
-	}
+		: identifier(name), m_getter(getter), m_setter(setter) {}
 	GameVariable(set_temporary_t, const std::string& name, func_get getter, func_set setter)
-		: identifier(name), temporary(true), m_getter(getter), m_setter(setter)
-	{
-		//update();
-	}
+		: identifier(name), temporary(true), m_getter(getter), m_setter(setter) {}
 	GameVariable(const GameVariable& other)
 		: identifier(other.identifier), temporary(other.temporary), m_value(other.m_value),
 		  m_getter(other.m_getter), m_setter(other.m_setter) {}
@@ -695,7 +633,7 @@ inline bool GameVariable::has_many() const
 		++count;
 	if (auto* val = value.get_unsafe<std::vector<double>>(); val != nullptr)
 		++count;
-	if (auto* val = value.get_unsafe<std::vector<ScriptObjectSource>>(); val != nullptr)
+	if (auto* val = value.get_unsafe<std::vector<ScriptObject>>(); val != nullptr)
 		++count;
 	return count < 2;
 }
@@ -726,6 +664,7 @@ inline std::string GameVariable::serialize() const
 	}
 	return {};
 }
+
 
 ////////////////////////////////////////////////////////////
 // GameVariableStore
@@ -779,12 +718,12 @@ public:
 	/// @brief Retrieves a game variable by name, or adds it if it does not exist.
 	/// @param name The name of the game variable to retrieve or add.
 	/// @return A weak pointer to the retrieved or newly added GameVariable.
-	virtual std::weak_ptr<GameVariable> get_or_add(std::string_view name) noexcept;
+	virtual std::weak_ptr<GameVariable> getOrAdd(std::string_view name) noexcept;
 
 	/// @brief Retrieves the value of a game variable by name, or, if it does not exist, returns a stub with a setter that adds the variable to the store when assigned a value.
 	/// @param name The name of the game variable to retrieve.
 	/// @return A GameVariableVariant containing the value of the variable if found, with a stub setter that adds the variable to the store if not found.
-	virtual GameVariableVariant get_or_stub(std::string_view name) noexcept;
+	virtual GameVariableVariant getOrStub(std::string_view name) noexcept;
 
 	/// @brief Clears all temporary variables from the store.
 	virtual void clearTemporary() noexcept;
@@ -808,7 +747,7 @@ public:
 	bool static_container = false;
 
 	/// @brief The variable store map.
-	std::map<std::string, std::shared_ptr<GameVariable>, std::less<>> store;
+	string_map<std::shared_ptr<GameVariable>> store;
 
 private:
 	void stub_new(GameVariable& variable, const GameValue& value);
@@ -826,17 +765,6 @@ inline const std::optional<T> GameVariableStore::getValue(const std::string_view
 	return it->second->get<T>();
 }
 
-////////////////////////////////////////////////////////////
-// ScriptEvent
-////////////////////////////////////////////////////////////
-
-/// @brief Represents an event in a scripting system, including its type, the source that initiated it, and any associated arguments.
-struct ScriptEvent
-{
-	ScriptEventType type;
-	ScriptObjectSource initiator;
-	std::vector<std::any> args;
-};
 
 ////////////////////////////////////////////////////////////
 // ScriptEventQueue
@@ -855,24 +783,24 @@ public:
 	/// @param type The type of script event to check for.
 	/// @param initiator Who initiated the event.
 	/// @return True if the event exists for the given initiator; otherwise, false.
-	bool hasEvent(ScriptEventType type, ScriptObjectSource initiator);
+	bool hasEvent(ScriptEventType type, ScriptObject initiator);
 
 	/// @brief Adds an event to the queue with the specified type and initiator.
 	/// @param type The type of the script event to add.
 	/// @param initiator Who initiated the event.
-	void addEvent(ScriptEventType type, ScriptObjectSource initiator);
+	void addEvent(ScriptEventType type, ScriptObject initiator);
 
 	/// @brief Adds an event to the queue with the specified type, initiator, and additional arguments.
 	/// @param type The type of the script event to add.
 	/// @param initiator Who initiated the event.
 	/// @param ...args A list of additional arguments to be passed with the event.
-	[[inline]] void addEvent(ScriptEventType type, ScriptObjectSource initiator, string::NotForwardRangeNotString auto&&... args);
+	[[inline]] void addEvent(ScriptEventType type, ScriptObject initiator, string::NotForwardRangeNotString auto&&... args);
 
 	/// @brief Adds an event to the queue with the specified type, initiator, and additional arguments.
 	/// @param type The type of the script event to add.
 	/// @param initiator Who initiated the event.
 	/// @param range A list of additional arguments to be passed with the event.
-	[[inline]] void addEvent(ScriptEventType type, ScriptObjectSource initiator, string::ForwardRangeNotString auto&& range);
+	[[inline]] void addEvent(ScriptEventType type, ScriptObject initiator, string::ForwardRangeNotString auto&& range);
 
 private:
 	void addEvent(const ScriptEvent& event);
@@ -889,13 +817,13 @@ inline std::deque<ScriptEvent>& ScriptEventQueue::queue()
 	return m_eventQueue;
 }
 
-inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource initiator, string::NotForwardRangeNotString auto&&... args)
+inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObject initiator, string::NotForwardRangeNotString auto&&... args)
 {
 	ScriptEvent event{ .type = type, .initiator = initiator, .args = { std::forward<decltype(args)>(args)... } };
 	addEvent(std::move(event));
 }
 
-inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource initiator, string::ForwardRangeNotString auto&& range)
+inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObject initiator, string::ForwardRangeNotString auto&& range)
 {
 	static_assert(!string::PointerToConstCharString<decltype(range)>,
 		"Don't use a const char* in the ranged variant of ScriptEventQueue::addEvent, pass in a std::string_view instead.");
@@ -905,6 +833,7 @@ inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource 
 	event.args.insert(event.args.end(), std::ranges::begin(transformed), std::ranges::end(transformed));
 	addEvent(std::move(event));
 }
+
 
 ////////////////////////////////////////////////////////////
 // ScriptParameters
@@ -938,6 +867,7 @@ inline std::optional<GameVariable> getScriptParameter(T& source, std::string_vie
 	return it->second;
 }
 
+
 ////////////////////////////////////////////////////////////
 // ScriptContainer
 ////////////////////////////////////////////////////////////
@@ -948,6 +878,7 @@ struct ScriptContainer
 	ScriptEventQueue events;
 	GameVariableStore variables;
 };
+
 
 ////////////////////////////////////////////////////////////
 // Ranges
@@ -968,6 +899,7 @@ inline constexpr auto only_flags = std::views::filter([](const decltype(GameVari
 
 } // end namespace preagonal::variables
 
+
 ////////////////////////////////////////////////////////////
 // Concepts
 ////////////////////////////////////////////////////////////
@@ -977,6 +909,7 @@ concept ValidGameValueCallable = requires(T t)
 {
 	{ t() } -> std::convertible_to<GameValue>;
 };
+
 
 ////////////////////////////////////////////////////////////
 // Functions
@@ -998,6 +931,7 @@ inline void stupid_ide()
 	auto not_transitive = std::format("");
 }
 
+
 ////////////////////////////////////////////////////////////
 // Prop helpers
 ////////////////////////////////////////////////////////////
@@ -1015,7 +949,7 @@ GameVariable::func_get gameVariableGetter(ValidGameValueCallable auto getter)
 GameVariable::func_get gameVariableGetter(auto& value)
 {
 	using V = std::remove_cvref_t<decltype(value)>;
-	static_assert(std::integral<V> || std::floating_point<V> || string::StringVariant<V> || std::ranges::forward_range<V> || std::same_as<V, ScriptObjectSource> || std::same_as<V, std::vector<ScriptObjectSource>>,
+	static_assert(std::integral<V> || std::floating_point<V> || string::StringVariant<V> || std::ranges::forward_range<V> || std::same_as<V, ScriptObject> || std::same_as<V, std::vector<ScriptObject>>,
 		"gameVariableGetter called with an unsupported type. Supported types are integral, floats, string, ranges, or ScriptObjectSources.");
 
 	// Number.
@@ -1034,8 +968,8 @@ GameVariable::func_get gameVariableGetter(auto& value)
 			return GameValue{ std::string{ value } };
 		};
 	}
-	// ScriptObjectSource (and array variant).
-	else if constexpr (std::same_as<V, ScriptObjectSource> || std::same_as<V, std::vector<ScriptObjectSource>>)
+	// ScriptObject (and array variant).
+	else if constexpr (std::same_as<V, ScriptObject> || std::same_as<V, std::vector<ScriptObject>>)
 	{
 		return [&value](std::string_view identifier) -> GameValue
 		{

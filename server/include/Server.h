@@ -275,7 +275,7 @@ public:
 	bool hasNPCServer() const { return m_playerList.find(NPCServerPlayerID) != m_playerList.end(); }
 	std::shared_ptr<NPCServer> getNPCServer() const { return m_npcServer; }
 
-	void queueNPCEventLocal(LevelPtr level, ScriptEventType type, ScriptObjectSource source, auto&&... args)
+	void queueNPCEventLocal(LevelPtr level, ScriptEventType type, ScriptObject source, auto&&... args)
 	{
 		if (!hasNPCServer()) return;
 		if (level == nullptr) return;
@@ -286,7 +286,7 @@ public:
 		}
 	}
 
-	void queueNPCEvent(LevelPtr level, const PixelPosition& position, ScriptEventType type, ScriptObjectSource source, auto&&... args)
+	void queueNPCEvent(LevelPtr level, const PixelPosition& position, ScriptEventType type, ScriptObject source, auto&&... args)
 	{
 		if (!hasNPCServer()) return;
 		if (level == nullptr) return;

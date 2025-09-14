@@ -66,9 +66,9 @@ static std::string determineEventName(ScriptEvent& event)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-PlayerPtr getPlayerFromSource(const ScriptObjectSource& source, std::optional<size_t> index)
+PlayerPtr getPlayerFromSource(const ScriptObject& source, std::optional<size_t> index)
 {
-	if (source.second != ScriptObjectSourceType::PLAYER)
+	if (source.second != ScriptObjectType::PLAYER)
 		return nullptr;
 
 	auto* server = BabyDI::Get<Server>();
@@ -90,7 +90,7 @@ PlayerPtr getPlayerFromSource(const ScriptObjectSource& source, std::optional<si
 	return nullptr;
 }
 
-PlayerClientPtr getPlayerClientFromSource(const ScriptObjectSource& source, std::optional<size_t> index)
+PlayerClientPtr getPlayerClientFromSource(const ScriptObject& source, std::optional<size_t> index)
 {
 	auto player = getPlayerFromSource(source, index);
 	if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr)
@@ -98,9 +98,9 @@ PlayerClientPtr getPlayerClientFromSource(const ScriptObjectSource& source, std:
 	return nullptr;
 }
 
-NPCPtr getNPCFromSource(const ScriptObjectSource& source, std::optional<size_t> index)
+NPCPtr getNPCFromSource(const ScriptObject& source, std::optional<size_t> index)
 {
-	if (source.second != ScriptObjectSourceType::NPC)
+	if (source.second != ScriptObjectType::NPC)
 		return nullptr;
 	auto* server = BabyDI::Get<Server>();
 	if (auto npc = server->getNPC(source.first); npc != nullptr)
@@ -120,30 +120,30 @@ NPCPtr getNPCFromSource(const ScriptObjectSource& source, std::optional<size_t> 
 	return nullptr;
 }
 
-PlayerOrNPC getPlayerOrNPCFromSource(const ScriptObjectSource& source, std::optional<size_t> index)
+PlayerOrNPC getPlayerOrNPCFromSource(const ScriptObject& source, std::optional<size_t> index)
 {
-	if (source.second == ScriptObjectSourceType::SERVER)
+	if (source.second == ScriptObjectType::SERVER)
 		return std::nullopt;
 
-	if (source.second == ScriptObjectSourceType::PLAYER)
+	if (source.second == ScriptObjectType::PLAYER)
 		return getPlayerFromSource(source, index);
-	else if (source.second == ScriptObjectSourceType::NPC)
+	else if (source.second == ScriptObjectType::NPC)
 		return getNPCFromSource(source, index);
 
 	return std::nullopt;
 }
 
-Character* getCharacterFromSource(const ScriptObjectSource& source, std::optional<size_t> index)
+Character* getCharacterFromSource(const ScriptObject& source, std::optional<size_t> index)
 {
-	if (source.second == ScriptObjectSourceType::SERVER)
+	if (source.second == ScriptObjectType::SERVER)
 		return nullptr;
 
-	if (source.second == ScriptObjectSourceType::PLAYER)
+	if (source.second == ScriptObjectType::PLAYER)
 	{
 		if (auto player = getPlayerFromSource(source, index); player != nullptr)
 			return &player->account.character;
 	}
-	else if (source.second == ScriptObjectSourceType::NPC)
+	else if (source.second == ScriptObjectType::NPC)
 	{
 		if (auto npc = getNPCFromSource(source, index); npc != nullptr)
 			return &npc->character;
@@ -204,7 +204,7 @@ CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::s
 	return result;
 }
 
-bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, CompiledScriptResultPtr context)
+bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context)
 {
 	auto* wrapper = std::any_cast<GS1ScriptWrapper>(context->script.get());
 	if (wrapper == nullptr)
@@ -223,7 +223,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 #endif
 
 	auto& [source_id, source_type] = source;
-	if (source_type != ScriptObjectSourceType::NPC && source_type != ScriptObjectSourceType::WEAPON)
+	if (source_type != ScriptObjectType::NPC && source_type != ScriptObjectType::WEAPON)
 		throw std::invalid_argument("GS1 scripts can only be executed from NPCs and weapons.");
 
 	PlayerClientPtr player = nullptr;
@@ -232,11 +232,11 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 	LevelPtr level = nullptr;
 
 	// Get whatever links we can.
-	if (source_type == ScriptObjectSourceType::PLAYER)
+	if (source_type == ScriptObjectType::PLAYER)
 		player = server->getPlayer<PlayerClient>(source_id);
-	if (source_type == ScriptObjectSourceType::NPC)
+	if (source_type == ScriptObjectType::NPC)
 		npc = server->getNPC(source_id);
-	if (source_type == ScriptObjectSourceType::WEAPON)
+	if (source_type == ScriptObjectType::WEAPON)
 	{
 		if (auto it = server->getWeaponList().find(source_id); it != server->getWeaponList().end())
 			weapon = it->second;
@@ -247,9 +247,9 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObjectSource source, Com
 		level = npc->getLevel();
 
 	// Try to get variables from the initiator now.
-	if (player == nullptr && event.initiator.second == ScriptObjectSourceType::PLAYER)
+	if (player == nullptr && event.initiator.second == ScriptObjectType::PLAYER)
 		player = server->getPlayer<PlayerClient>(event.initiator.first);
-	if (npc == nullptr && event.initiator.second == ScriptObjectSourceType::NPC)
+	if (npc == nullptr && event.initiator.second == ScriptObjectType::NPC)
 		npc = server->getNPC(event.initiator.first);
 	if (level == nullptr)
 		level = (player != nullptr ? player->getLevel() : (npc != nullptr ? npc->getLevel() : nullptr));

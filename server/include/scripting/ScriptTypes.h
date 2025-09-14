@@ -1,15 +1,21 @@
 #ifndef SCRIPTTYPES_H
 #define SCRIPTTYPES_H
 
+#include <any>
 #include <cstdint>
-#include <string_view>
+#include <utility>
+#include <vector>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-/// The type of script.
+////////////////////////////////////////////////////////////
+// ScriptType
+////////////////////////////////////////////////////////////
+
+/// @brief The type of script.
 enum class ScriptType
 {
 	NPC,
@@ -21,7 +27,64 @@ enum class ScriptType
 };
 constexpr size_t SCRIPTTYPE_COUNT = static_cast<size_t>(ScriptType::COUNT);
 
-/// The script events known by the server.
+
+////////////////////////////////////////////////////////////
+// ScriptObject
+////////////////////////////////////////////////////////////
+
+/// @brief Identifies an object type that may be used by a scripting language.
+enum class ScriptObjectType
+{
+	SERVER,
+	NPC,
+	PLAYER,
+	WEAPON,
+	LEVEL,
+	BADDY,
+	BOMB,
+	ARROW,
+	ITEM,
+	EXPLOSION,
+	HORSE,
+	SIGN,
+
+	COUNT
+};
+
+/// @brief Binds a source object type with an identifier.
+/// 
+/// The first element is the identifier, which may be an id or a hash.
+using ScriptObject = std::pair<size_t, ScriptObjectType>;
+
+namespace source
+{
+/// @brief Creates a ScriptObject for an NPC with the given id.
+constexpr ScriptObject FromNPC(size_t id)
+{
+	return std::make_pair(id, ScriptObjectType::NPC);
+}
+
+/// @brief Creates a ScriptObject for a player with the given id.
+constexpr ScriptObject FromPlayer(size_t id)
+{
+	return std::make_pair(id, ScriptObjectType::PLAYER);
+}
+
+/// @brief Creates a ScriptObject for the server.
+constexpr ScriptObject FromServer()
+{
+	return std::make_pair(static_cast<size_t>(0), ScriptObjectType::SERVER);
+}
+
+// Weapon and Level in their respective headers.
+} // end namespace source
+
+
+////////////////////////////////////////////////////////////
+// ScriptEvent
+////////////////////////////////////////////////////////////
+
+/// @brief The script events known by the server.
 enum class ScriptEventType : uint8_t
 {
 	CUSTOM = 0,
@@ -53,30 +116,13 @@ enum class ScriptEventType : uint8_t
 };
 constexpr size_t SCRIPTEVENTTYPE_COUNT = static_cast<size_t>(ScriptEventType::COUNT);
 
-constexpr ScriptEventType scriptEventTypeFromName(std::string_view name)
+/// @brief Represents an event in a scripting system, including its type, the source that initiated it, and any associated arguments.
+struct ScriptEvent
 {
-	if (name == "created") return ScriptEventType::CREATED;
-	if (name == "initialized") return ScriptEventType::INITIALIZED;
-	if (name == "playerlogin") return ScriptEventType::PLAYERLOGIN;
-	if (name == "playerlogout") return ScriptEventType::PLAYERLOGOUT;
-	if (name == "playerenters") return ScriptEventType::PLAYERENTERS;
-	if (name == "playerleaves") return ScriptEventType::PLAYERLEAVES;
-	if (name == "playertouchsme") return ScriptEventType::PLAYERTOUCHSME;
-	if (name == "playertouchsother") return ScriptEventType::PLAYERTOUCHSOTHER;
-	if (name == "playerlaysitem") return ScriptEventType::PLAYERLAYSITEM;
-	if (name == "playerchats") return ScriptEventType::PLAYERCHATS;
-	if (name == "playerdies") return ScriptEventType::PLAYERDIES;
-	if (name == "compusdied") return ScriptEventType::COMPUSDIED;
-	if (name == "npcwarped") return ScriptEventType::NPCWARPED;
-	if (name == "exploded") return ScriptEventType::EXPLODED;
-	if (name == "washit") return ScriptEventType::WASHIT;
-	if (name == "wasshot") return ScriptEventType::WASSHOT;
-	if (name == "waspelt") return ScriptEventType::WASPELT;
-	if (name == "timeout") return ScriptEventType::TIMEOUT;
-	if (name == "pm") return ScriptEventType::PRIVATEMESSAGE;
-	if (name == "movementfinished") return ScriptEventType::MOVEMENTFINISHED;
-	return ScriptEventType::CUSTOM;
-}
+	ScriptEventType type;
+	ScriptObject initiator;
+	std::vector<std::any> args;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal

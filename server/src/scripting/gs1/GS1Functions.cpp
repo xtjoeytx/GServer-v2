@@ -602,7 +602,7 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messag
 
 		// Return the closest player.
 		if (std::get<0>(nearestPlayer) != 0)
-			return ScriptObjectSource{ std::get<0>(nearestPlayer), ScriptObjectSourceType::PLAYER };
+			return ScriptObject{ std::get<0>(nearestPlayer), ScriptObjectType::PLAYER };
 	}
 
 	return 0.0;
@@ -796,7 +796,7 @@ GS1ScriptValue fn_getnpc(GS1Visitor* visitor, std::string_view messageCode, cons
 	for (auto& [id, npc] : npcList)
 	{
 		if (npc->name == npcName)
-			return ScriptObjectSource{ id, ScriptObjectSourceType::NPC };
+			return ScriptObject{ id, ScriptObjectType::NPC };
 	}
 
 	return 0.0;
@@ -814,7 +814,7 @@ GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view messageCode, c
 	auto* server = BabyDI::Get<Server>();
 	if (auto player = server->getNPCServer()->getPlayer(playerName, PLTYPE_ANYCLIENT); player != nullptr)
 	{
-		return ScriptObjectSource{ player->getId(), ScriptObjectSourceType::PLAYER };
+		return ScriptObject{ player->getId(), ScriptObjectType::PLAYER };
 	}
 
 	return 0.0;
@@ -840,7 +840,7 @@ GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view messageCode, c
 		throw std::invalid_argument("Built-in function hasweapon requires exactly one argument");
 
 	auto weaponName = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER);
+	auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
 	if (player.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
@@ -940,7 +940,7 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 		if (!level->isOnWall(toPixelPosition({ x, y })))
 			return GameValue{ false };
 
-		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 		{
 			auto server = BabyDI::Get<Server>();
 			if (auto npc = server->getNPC(source.value().first); npc != nullptr && !npc->noPlayerOnWall)
@@ -968,7 +968,7 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, con
 		if (!level->isOnWall2(PixelRectangleArea{ toPixelPosition({ x, y }), { width, height } }))
 			return GameValue{ false };
 
-		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC); source.has_value())
+		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 		{
 			auto server = BabyDI::Get<Server>();
 			if (auto npc = server->getNPC(source.value().first); npc != nullptr && !npc->noPlayerOnWall)
@@ -1037,7 +1037,7 @@ GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view messageCode, 
 		text = visitor->getGameValueAs<std::string>(*arguments[0]);
 	}
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		if (auto player = getPlayerFromSource(*source, index); player != nullptr)
 		{
@@ -1069,7 +1069,7 @@ GS1ScriptValue fn_playersays2(GS1Visitor* visitor, std::string_view messageCode,
 		text = visitor->getGameValueAs<std::string>(*arguments[0]);
 	}
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		if (auto player = getPlayerFromSource(*source, index); player != nullptr)
 		{
@@ -1266,7 +1266,7 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, 
 	auto localPosition = LocalPixelPosition{ x, y };
 	auto* server = BabyDI::Get<Server>();
 
-	if (auto source = visitor->getOriginalSource(); source.second == ScriptObjectSourceType::NPC)
+	if (auto source = visitor->getOriginalSource(); source.second == ScriptObjectType::NPC)
 	{
 		if (auto npc = server->getNPC(source.first); npc != nullptr)
 		{

@@ -23,20 +23,6 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace source
-{
-ScriptObjectSource FromWeapon(WeaponPtr weapon)
-{
-	size_t hash = string::string_hash{}(weapon->name);
-	return std::make_pair(hash, ScriptObjectSourceType::WEAPON);
-}
-ScriptObjectSource FromLevel(LevelPtr level)
-{
-	size_t hash = string::string_hash{}(level->levelName);
-	return std::make_pair(hash, ScriptObjectSourceType::LEVEL);
-}
-} // end namespace source
-
 ////////////////////////////////////////////////////////////
 // GameValue
 ////////////////////////////////////////////////////////////
@@ -89,6 +75,7 @@ bool GameValue::testAsFlag() const
 		return !m_text.value().empty();
 	return false;
 }
+
 
 ////////////////////////////////////////////////////////////
 // GameVariable
@@ -231,6 +218,7 @@ std::optional<std::string> GameVariable::serializeModern(std::string_view name) 
 	return std::nullopt;
 }
 
+
 ////////////////////////////////////////////////////////////
 // GameVariableStore
 ////////////////////////////////////////////////////////////
@@ -282,7 +270,7 @@ const std::weak_ptr<GameVariable> GameVariableStore::get(std::string_view name) 
 	return it->second;
 }
 
-std::weak_ptr<GameVariable> GameVariableStore::get_or_add(std::string_view name) noexcept
+std::weak_ptr<GameVariable> GameVariableStore::getOrAdd(std::string_view name) noexcept
 {
 	if (!store.empty())
 	{
@@ -296,7 +284,7 @@ std::weak_ptr<GameVariable> GameVariableStore::get_or_add(std::string_view name)
 	return add(std::move(name), GameValue{ 0.0 });
 }
 
-GameVariableVariant GameVariableStore::get_or_stub(std::string_view name) noexcept
+GameVariableVariant GameVariableStore::getOrStub(std::string_view name) noexcept
 {
 	if (!store.empty())
 	{
@@ -357,11 +345,12 @@ std::vector<std::string> GameVariableStore::serialize(std::string_view name) con
 	return results;
 }
 
+
 ////////////////////////////////////////////////////////////
 // ScriptEventQueue
 ////////////////////////////////////////////////////////////
 
-bool ScriptEventQueue::hasEvent(ScriptEventType type, ScriptObjectSource initiator)
+bool ScriptEventQueue::hasEvent(ScriptEventType type, ScriptObject initiator)
 {
 	return std::ranges::find_if(m_eventQueue,
 		[type, initiator](ScriptEvent& event)
@@ -370,7 +359,7 @@ bool ScriptEventQueue::hasEvent(ScriptEventType type, ScriptObjectSource initiat
 		}) != m_eventQueue.end();
 }
 
-void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObjectSource initiator)
+void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObject initiator)
 {
 	if (hasEvent(type, initiator))
 		return;

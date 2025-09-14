@@ -63,10 +63,10 @@ public:
 	[[inline]] auto& getPlayerList() noexcept;
 
 public:
-	[[inline]] void addEventToControlNPC(ScriptEventType type, ScriptObjectSource source, string::NotForwardRangeNotString auto&&... args);
-	[[inline]] void addEventToControlNPC(ScriptEventType type, ScriptObjectSource source, string::ForwardRangeNotString auto&& range);
-	[[inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, PixelPosition pos, auto&& arg1, auto&&... args);
-	[[inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, PixelPosition pos, std::ranges::forward_range auto&& range);
+	[[inline]] void addEventToControlNPC(ScriptEventType type, ScriptObject source, string::NotForwardRangeNotString auto&&... args);
+	[[inline]] void addEventToControlNPC(ScriptEventType type, ScriptObject source, string::ForwardRangeNotString auto&& range);
+	[[inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObject source, std::weak_ptr<Level> level, PixelPosition pos, auto&& arg1, auto&&... args);
+	[[inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObject source, std::weak_ptr<Level> level, PixelPosition pos, std::ranges::forward_range auto&& range);
 
 public:
 	void playerLogin(std::shared_ptr<Player> player);
@@ -198,7 +198,7 @@ inline auto& NPCServer::getPlayerList() noexcept
 	return m_playerList;
 }
 
-inline void NPCServer::addEventToControlNPC(ScriptEventType type, ScriptObjectSource source, string::NotForwardRangeNotString auto&&... args)
+inline void NPCServer::addEventToControlNPC(ScriptEventType type, ScriptObject source, string::NotForwardRangeNotString auto&&... args)
 {
 	for (auto& [id, npcPtr] : m_globalNPCList)
 	{
@@ -207,7 +207,7 @@ inline void NPCServer::addEventToControlNPC(ScriptEventType type, ScriptObjectSo
 	}
 }
 
-inline void NPCServer::addEventToControlNPC(ScriptEventType type, ScriptObjectSource source, string::ForwardRangeNotString auto&& range)
+inline void NPCServer::addEventToControlNPC(ScriptEventType type, ScriptObject source, string::ForwardRangeNotString auto&& range)
 {
 	for (auto& [id, npcPtr] : m_globalNPCList)
 	{
@@ -216,7 +216,7 @@ inline void NPCServer::addEventToControlNPC(ScriptEventType type, ScriptObjectSo
 	}
 }
 
-inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, PixelPosition pos, auto&& arg1, auto&&... args)
+inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObject source, std::weak_ptr<Level> level, PixelPosition pos, auto&& arg1, auto&&... args)
 {
 	auto levelPtr = level.lock();
 	if (levelPtr == nullptr)
@@ -242,7 +242,7 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, Scr
 	return count;
 }
 
-inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObjectSource source, std::weak_ptr<Level> level, PixelPosition pos, std::ranges::forward_range auto&& range)
+inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObject source, std::weak_ptr<Level> level, PixelPosition pos, std::ranges::forward_range auto&& range)
 {
 	auto levelPtr = level.lock();
 	if (levelPtr == nullptr)

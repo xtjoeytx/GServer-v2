@@ -5,3 +5,4 @@
 #define FOR_LIST_OF_NPC_PROPS(DO)
 #define FOR_LIST_OF_PLAYER_PROPS(DO)
 #define DO_PACKETLOG(LOG)
+#define assert(expression)

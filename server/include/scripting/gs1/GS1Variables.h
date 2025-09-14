@@ -7,6 +7,7 @@
 #include <object/NPC.h>
 #include <player/PlayerClient.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1

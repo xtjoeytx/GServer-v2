@@ -1811,7 +1811,7 @@ void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level
 	float halfpi = pi / 2;
 
 	ShootPacketWrapper newPacket{};
-	newPacket.source = (shoot->from.second == ScriptObjectSourceType::NPC ? shoot->from.first : 0);
+	newPacket.source = (shoot->from.second == ScriptObjectType::NPC ? shoot->from.first : 0);
 	newPacket.position = toLocalPixelPosition(shoot->position);
 	newPacket.offsetx = 0;
 	newPacket.offsety = 0;

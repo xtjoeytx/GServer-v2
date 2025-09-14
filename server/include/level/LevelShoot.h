@@ -53,7 +53,7 @@ struct LevelShoot
 	float gravity = 2.0;
 	TilePosition movementPerFrame;
 	std::vector<std::string> shootParams;
-	ScriptObjectSource from;
+	ScriptObject from;
 
 	[[inline]] void calculateSpeeds();
 	[[inline]] void move();

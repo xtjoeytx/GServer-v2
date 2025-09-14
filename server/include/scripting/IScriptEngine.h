@@ -37,7 +37,7 @@ public:
 	virtual bool reset() = 0;
 
 public:
-	virtual bool execute(ScriptEvent& event, ScriptObjectSource source, CompiledScriptResultPtr context) = 0;
+	virtual bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

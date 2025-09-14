@@ -31,6 +31,7 @@
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
@@ -47,12 +48,6 @@ namespace preagonal::gs1::grammar
 ///////////////////////////////////////////////////////////////////////////////
 
 constexpr size_t MAX_LOOPS = 10000;
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct break_exception : public std::exception {};
-struct continue_exception : public std::exception {};
-struct return_exception : public std::exception {};
 
 ///////////////////////////////////////////////////////////////////////////////
 // File static functions.
@@ -72,22 +67,22 @@ static std::optional<size_t> getSymbolType(antlr4::tree::ParseTree* tree)
 	return std::nullopt;
 }
 
-static GameVariableStore* getGameVariableStoreFromSource(ScriptObjectSource source)
+static GameVariableStore* getGameVariableStoreFromSource(ScriptObject source)
 {
 	static GameVariableStore invalidStore;
 
 	auto* server = BabyDI::Get<Server>();
 	switch (source.second)
 	{
-		case ScriptObjectSourceType::PLAYER:
+		case ScriptObjectType::PLAYER:
 			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
 				return &player->account.variables;
 			break;
-		case ScriptObjectSourceType::NPC:
+		case ScriptObjectType::NPC:
 			if (auto npc = server->getNPC(source.first); npc != nullptr)
 				return &npc->scripting.variables;
 			break;
-		case ScriptObjectSourceType::LEVEL:
+		case ScriptObjectType::LEVEL:
 		{
 			auto& levelList = server->getLevelList();
 			if (auto it = levelList.find(source.first); it != levelList.end())
@@ -95,7 +90,7 @@ static GameVariableStore* getGameVariableStoreFromSource(ScriptObjectSource sour
 			log::printLine(log::script, "Could not find level for source.");
 			return &invalidStore;
 		}
-		case ScriptObjectSourceType::SERVER:
+		case ScriptObjectType::SERVER:
 			return &server->Scripting.variables;
 	}
 	return nullptr;
@@ -162,63 +157,63 @@ GameVariable* GS1Visitor::getGameVariableFromVariant(GameVariableVariant& varian
 	return nullptr;
 }
 
-std::optional<GameVariable> GS1Visitor::getGameVariableFromSource(const ScriptObjectSource& source, std::string_view identifier)
+std::optional<GameVariable> GS1Visitor::getGameVariableFromSource(const ScriptObject& source, std::string_view identifier)
 {
 	auto* server = BabyDI::Get<Server>();
 
 	switch (source.second)
 	{
-		case ScriptObjectSourceType::NPC:
+		case ScriptObjectType::NPC:
 			if (auto npc = server->getNPC(source.first); npc != nullptr)
 				return getScriptParameter(*npc, identifier);
 			break;
-		case ScriptObjectSourceType::PLAYER:
+		case ScriptObjectType::PLAYER:
 			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
 				return getScriptParameter(*player, identifier);
 			break;
-		case ScriptObjectSourceType::BADDY:
+		case ScriptObjectType::BADDY:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
 				if (auto baddy = level->getBaddy(source.first); baddy != nullptr)
 					return getScriptParameter(*baddy, identifier);
 			}
 			break;
-		case ScriptObjectSourceType::BOMB:
+		case ScriptObjectType::BOMB:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
 				if (auto bomb = level->getMapBomb(source.first); bomb.has_value())
 					return getScriptParameter(*bomb.value(), identifier);
 			}
 			break;
-		case ScriptObjectSourceType::ARROW:
+		case ScriptObjectType::ARROW:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
 				if (auto arrow = level->getMapArrow(source.first); arrow.has_value())
 					return getScriptParameter(*arrow.value(), identifier);
 			}
 			break;
-		case ScriptObjectSourceType::ITEM:
+		case ScriptObjectType::ITEM:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
 				if (auto item = level->getMapItem(source.first); item.has_value())
 					return getScriptParameter(*item.value(), identifier);
 			}
 			break;
-		case ScriptObjectSourceType::EXPLOSION:
+		case ScriptObjectType::EXPLOSION:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
 				if (auto explo = level->getMapExplosion(source.first); explo.has_value())
 					return getScriptParameter(*explo.value(), identifier);
 			}
 			break;
-		case ScriptObjectSourceType::HORSE:
+		case ScriptObjectType::HORSE:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
 				if (auto horse = level->getMapHorse(source.first); horse.has_value())
 					return getScriptParameter(*horse.value(), identifier);
 			}
 			break;
-		case ScriptObjectSourceType::SIGN:
+		case ScriptObjectType::SIGN:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
 				if (auto sign = level->getMapSign(source.first); sign.has_value())
@@ -236,7 +231,7 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 	if (type.has_value())
 	{
 		if (auto* store = getGameVariableStoreForStorageType(type.value()); store != nullptr)
-			return store->get_or_stub(identifier);
+			return store->getOrStub(identifier);
 	}
 
 	std::weak_ptr<GameVariable> builtIn;
@@ -271,7 +266,7 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 			auto currentStoreResult = currentStore->get(identifier).lock();
 			switch (mergeWithBuiltInBoolean(currentStoreResult, builtInResult))
 			{
-				case 0: return currentStore->get_or_stub(identifier);
+				case 0: return currentStore->getOrStub(identifier);
 				case 1: return builtInResult;
 				case 2: return currentStoreResult;
 			}
@@ -323,7 +318,7 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 
 	// Stub our variable.
 	if (targetStoreForStub != nullptr)
-		return targetStoreForStub->get_or_stub(identifier);
+		return targetStoreForStub->getOrStub(identifier);
 
 	// We have a built-in variable, but our sources don't have a store, just return it.
 	if (!builtIn.expired())
@@ -331,7 +326,7 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 
 	// If we still don't have a store, use the built-in store.
 	if (builtInStore != nullptr)
-		return builtInStore->get_or_stub(identifier);
+		return builtInStore->getOrStub(identifier);
 
 	// Still nothing?  Just return empty.
 	return {};
@@ -369,7 +364,7 @@ std::any GS1Visitor::safeVisit(antlr4::tree::ParseTree* node)
 	return visit(node);
 }
 
-std::optional<ScriptObjectSource> GS1Visitor::findNearestScriptObjectSourceFromStack(ScriptObjectSourceType type) const
+std::optional<ScriptObject> GS1Visitor::findNearestScriptObjectSourceFromStack(ScriptObjectType type) const
 {
 	for (const auto& source : sourceStack())
 	{
@@ -382,19 +377,19 @@ std::optional<ScriptObjectSource> GS1Visitor::findNearestScriptObjectSourceFromS
 std::shared_ptr<Level> GS1Visitor::findCurrentLevel() const
 {
 	auto* server = BabyDI::Get<Server>();
-	auto testSource = [server](const ScriptObjectSource& source) -> std::shared_ptr<Level>
+	auto testSource = [server](const ScriptObject& source) -> std::shared_ptr<Level>
 	{
-		if (source.second == ScriptObjectSourceType::NPC)
+		if (source.second == ScriptObjectType::NPC)
 		{
 			if (auto npc = server->getNPC(source.first); npc != nullptr)
 				return npc->getLevel();
 		}
-		else if (source.second == ScriptObjectSourceType::PLAYER)
+		else if (source.second == ScriptObjectType::PLAYER)
 		{
 			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
 				return server->getLevel(player->account.level);
 		}
-		else if (source.second == ScriptObjectSourceType::LEVEL)
+		else if (source.second == ScriptObjectType::LEVEL)
 		{
 			auto& levelList = server->getLevelList();
 			if (auto level = levelList.find(source.first); level != levelList.end())
@@ -411,7 +406,7 @@ std::shared_ptr<Level> GS1Visitor::findCurrentLevel() const
 	return nullptr;
 }
 
-GameVariableStore* GS1Visitor::findGameVariableStoreFromSourceStack(ScriptObjectSourceType type) const
+GameVariableStore* GS1Visitor::findGameVariableStoreFromSourceStack(ScriptObjectType type) const
 {
 	for (const auto& source : sourceStack())
 	{
@@ -429,7 +424,7 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 		case GS1Parser::STORAGE_THIS:
 		case GS1Parser::STORAGE_LOCAL:
 		case GS1Parser::STORAGE_TEMP:
-			store = findGameVariableStoreFromSourceStack(ScriptObjectSourceType::NPC);
+			store = findGameVariableStoreFromSourceStack(ScriptObjectType::NPC);
 			break;
 		case GS1Parser::STORAGE_THISO:
 			store = getGameVariableStoreFromSource(m_originalSource);
@@ -438,7 +433,7 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 		case GS1Parser::STORAGE_CLIENTR:
 		case GS1Parser::STORAGE_CLIENTO:	// Not supported yet.  GR extension.
 		case GS1Parser::STORAGE_CLIENTRO:	// Not supported yet.  GR extension.
-			store = findGameVariableStoreFromSourceStack(ScriptObjectSourceType::PLAYER);
+			store = findGameVariableStoreFromSourceStack(ScriptObjectType::PLAYER);
 			break;
 		case GS1Parser::STORAGE_SERVER:
 		case GS1Parser::STORAGE_SERVERR:
@@ -542,23 +537,23 @@ bool GS1Visitor::getFlagOrBooleanFromAny(const std::any& value)
 	return (bool)getReadOnlyGameValueFromAny(value);
 }
 
-std::optional<ScriptObjectSource> GS1Visitor::getSourceFromGS1ScriptValue(GS1ScriptValue& value)
+std::optional<ScriptObject> GS1Visitor::getSourceFromGS1ScriptValue(GS1ScriptValue& value)
 {
-	if (auto* scriptObject = std::get_if<ScriptObjectSource>(&value); scriptObject != nullptr)
+	if (auto* scriptObject = std::get_if<ScriptObject>(&value); scriptObject != nullptr)
 		return *scriptObject;
 	else if (auto* gs1GameVariable = std::get_if<GS1GameVariable>(&value); gs1GameVariable != nullptr)
 	{
 		auto* gameVariable = getGameVariableFromVariant(gs1GameVariable->first);
-		auto* scriptObject = gameVariable->get_unsafe<ScriptObjectSource>(gs1GameVariable->second);
+		auto* scriptObject = gameVariable->get_unsafe<ScriptObject>(gs1GameVariable->second);
 		if (scriptObject != nullptr)
 			return *scriptObject;
 	}
 	return std::nullopt;
 }
 
-void GS1Visitor::setCurrentPlayerVariables(std::optional<ScriptObjectSource> source)
+void GS1Visitor::setCurrentPlayerVariables(std::optional<ScriptObject> source)
 {
-	if (!source.has_value() || source.value().second != ScriptObjectSourceType::PLAYER)
+	if (!source.has_value() || source.value().second != ScriptObjectType::PLAYER)
 	{
 		builtInStore->clearTemporary("player");
 		return;
@@ -576,7 +571,7 @@ void GS1Visitor::setCurrentPlayerVariables(std::optional<ScriptObjectSource> sou
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GS1Visitor::execute(const ScriptEvent& event, ScriptObjectSource source, GS1Parser& parser, antlr4::tree::ParseTree& startNode)
+void GS1Visitor::execute(const ScriptEvent& event, ScriptObject source, GS1Parser& parser, antlr4::tree::ParseTree* startNode)
 {
 	m_parser = &parser;
 	m_event = &event;
@@ -682,7 +677,7 @@ std::any GS1Visitor::visitStatementWith(GS1Parser::StatementWithContext* context
 
 	// Pop the source off the source stack.
 	m_currentSource.pop_back();
-	setCurrentPlayerVariables(findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER));
+	setCurrentPlayerVariables(findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER));
 
 	return result;
 }
@@ -1123,7 +1118,7 @@ std::any GS1Visitor::visitIdentifierAccess(GS1Parser::IdentifierAccessContext* c
 		return first;
 	}
 
-	// The first identifier value should be a ScriptObjectSource.
+	// The first identifier value should be a ScriptObject.
 	auto value = getGS1ScriptValueFromAny(first);
 	auto objectSource = getSourceFromGS1ScriptValue(value);
 	if (!objectSource.has_value())
@@ -1143,7 +1138,7 @@ std::any GS1Visitor::visitIdentifierAccess(GS1Parser::IdentifierAccessContext* c
 		}
 		m_currentSource.pop_back();
 
-		// Check if the result is a ScriptObjectSource.
+		// Check if the result is a ScriptObject.
 		value = getGS1ScriptValueFromAny(first);
 		objectSource = getSourceFromGS1ScriptValue(value);
 

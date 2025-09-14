@@ -801,7 +801,7 @@ bool Level::alterBoard(CString& tileData, const LocalWholeTileRectangleArea& are
 
 //----------------------------
 
-LevelArrow* Level::addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObjectSource from)
+LevelArrow* Level::addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObject from)
 {
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
 		return nullptr;
@@ -824,7 +824,7 @@ LevelArrow* Level::addArrow(inform_client_t, const PixelPosition& position, cons
 	return result;
 }
 
-LevelArrow* Level::addArrow(const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObjectSource from)
+LevelArrow* Level::addArrow(const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObject from)
 {
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
 		return nullptr;
@@ -1089,7 +1089,7 @@ std::string Level::getChestFormattedForSave(LevelChest* chest) const
 
 //----------------------------
 
-void Level::addExplosion(inform_client_t, const PixelPosition& position, ScriptObjectSource from, uint8_t radius, uint8_t power)
+void Level::addExplosion(inform_client_t, const PixelPosition& position, ScriptObject from, uint8_t radius, uint8_t power)
 {
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
 		return;
@@ -1101,7 +1101,7 @@ void Level::addExplosion(inform_client_t, const PixelPosition& position, ScriptO
 	BabyDI::Get<Server>()->sendPacketToOneLevel(packet, shared_from_this());
 }
 
-void Level::addExplosion(const PixelPosition& position, ScriptObjectSource from, uint8_t radius, uint8_t power)
+void Level::addExplosion(const PixelPosition& position, ScriptObject from, uint8_t radius, uint8_t power)
 {
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
 		return;
@@ -1135,7 +1135,7 @@ void Level::addExplosion(const PixelPosition& position, ScriptObjectSource from,
 	}
 }
 
-void Level::addSpyFire(const PixelPosition& position, ScriptObjectSource from, uint8_t direction, uint8_t length, uint8_t power)
+void Level::addSpyFire(const PixelPosition& position, ScriptObject from, uint8_t direction, uint8_t length, uint8_t power)
 {
 	/*
 	spyfire 3,1;
@@ -1430,7 +1430,7 @@ LevelShoot* Level::addShoot(LevelShoot* existingShoot)
 	return &m_shoots.back();
 }
 
-LevelShoot* Level::addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
+LevelShoot* Level::addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObject from)
 {
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
 		return nullptr;
@@ -1442,7 +1442,7 @@ LevelShoot* Level::addShoot(inform_client_t, const PixelPosition& position, floa
 	return result;
 }
 
-LevelShoot* Level::addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
+LevelShoot* Level::addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObject from)
 {
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
 		return nullptr;
@@ -1455,7 +1455,7 @@ LevelShoot* Level::addShoot(const PixelPosition& position, float angle, float za
 	return &m_shoots.back();
 }
 
-LevelShoot* Level::addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from)
+LevelShoot* Level::addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, ScriptObject from)
 {
 	auto pi = std::numbers::pi_v<float>;
 	return addShoot(position, (angle / 220.0f) * (2 * pi), ((zangle / 110.0f) - 1.0f) * (pi / 2), power, gravity, gani, from);
@@ -1575,10 +1575,10 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 
 			// Check for NPC collisions.
 			PixelPosition searchPosition = toPixelPosition(shoot->position).translate(8_i16, 16_i16);
-			bool fromPlayer = (shoot->from.second == ScriptObjectSourceType::PLAYER);
+			bool fromPlayer = (shoot->from.second == ScriptObjectType::PLAYER);
 			for (const auto& npc : findIntersectingNPCsForCollision({ searchPosition, { 32_ui16, 32_ui16 } }))
 			{
-				if (shoot->from.second == ScriptObjectSourceType::NPC && shoot->from.first == npc)
+				if (shoot->from.second == ScriptObjectType::NPC && shoot->from.first == npc)
 					continue;
 				if (auto npcPtr = server->getNPC(npc); npcPtr != nullptr)
 				{
@@ -1629,7 +1629,7 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 		PixelRectangleArea searchBox = { translatePosition(arrow->position, 16_i32, 0_i32), { 32_ui16, 32_ui16  } };
 		for (const auto& npc : findIntersectingNPCsForCollision(searchBox))
 		{
-			if (arrow->from.second == ScriptObjectSourceType::NPC && arrow->from.first == npc)
+			if (arrow->from.second == ScriptObjectType::NPC && arrow->from.first == npc)
 				continue;
 			if (auto npcPtr = BabyDI::Get<Server>()->getNPC(npc); npcPtr != nullptr)
 			{
@@ -2243,6 +2243,14 @@ std::generator<const NPCID&> Level::findIntersectingNPCsForCollision(const Pixel
 				co_yield npcId;
 		}
 	}
+}
+
+//----------------------------
+
+ScriptObject source::FromLevel(LevelPtr level)
+{
+	size_t hash = string::string_hash{}(level->levelName);
+	return std::make_pair(hash, ScriptObjectType::LEVEL);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

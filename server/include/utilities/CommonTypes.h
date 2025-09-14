@@ -232,6 +232,9 @@ inline auto toWeakPtr(std::shared_ptr<T>& ptr)
 struct inform_client_t { explicit inform_client_t() = default; };
 inline constexpr inform_client_t inform_client{};
 
+struct clear_container_t { explicit clear_container_t() = default; };
+inline constexpr clear_container_t clear_container{};
+
 ////////////////////////////////////////////////////////////////////////////////
 }; // end namespace preagonal
 

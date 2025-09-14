@@ -290,12 +290,12 @@ static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const
 		index = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 	Character* character = nullptr;
-	ScriptObjectSource currentSource;
+	ScriptObject currentSource;
 
 	// An index of -1 means we are looking at the source NPC.
 	if (index.value_or(0) == -1)
 	{
-		auto activeNPC = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::NPC);
+		auto activeNPC = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC);
 		if (activeNPC.has_value())
 		{
 			currentSource = activeNPC.value();
@@ -305,7 +305,7 @@ static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const
 	// An index of 0 or greater means we are looking at the player.
 	else if (index.has_value() && index.value() >= 0)
 	{
-		auto activePlayer = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER);
+		auto activePlayer = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
 		if (activePlayer.has_value())
 		{
 			currentSource = activePlayer.value();
@@ -330,9 +330,9 @@ static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const
 		return std::string{};
 
 	auto [value, codeIndex] = picker(*character, arguments);
-	if (currentSource.second == ScriptObjectSourceType::PLAYER)
+	if (currentSource.second == ScriptObjectType::PLAYER)
 		return bindPlayerSetter(visitor, static_cast<PlayerID>(currentSource.first), codeIndex, value);
-	else if (currentSource.second == ScriptObjectSourceType::NPC)
+	else if (currentSource.second == ScriptObjectType::NPC)
 		return bindNPCSetter(visitor, static_cast<NPCID>(currentSource.first), codeIndex, value);
 
 	return value;
@@ -502,7 +502,7 @@ GS1ScriptValue mc_a(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (arguments.size() == 1)
 		index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source->first); player != nullptr)
@@ -833,7 +833,7 @@ GS1ScriptValue mc_v(GS1Visitor* visitor, std::string_view messageCode, const std
 // Image filename of a player's weapon.
 GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source->first); player != nullptr)
@@ -863,7 +863,7 @@ GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std
 // The name of the player's weapon.
 GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectSourceType::PLAYER); source.has_value())
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source->first); player != nullptr)
@@ -898,7 +898,7 @@ GS1ScriptValue mc_C(GS1Visitor* visitor, uint8_t index, std::string_view message
 {
 	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return std::make_pair(getClassicColorName(static_cast<ClassicColors>(character.colors[index])), 20 + index);
+		return std::make_pair(GameValue{ std::string{ getClassicColorName(static_cast<ClassicColors>(character.colors[index])) } }, static_cast<uint8_t>(20 + index));
 	});
 }
 
@@ -908,7 +908,7 @@ GS1ScriptValue mc_P(GS1Visitor* visitor, uint8_t index, std::string_view message
 {
 	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return std::make_pair(character.ganiAttributes[index], 30 + index);
+		return std::make_pair(GameValue{ character.ganiAttributes[index] }, static_cast<uint8_t>(30 + index));
 	});
 }
 

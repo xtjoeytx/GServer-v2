@@ -277,7 +277,7 @@ public:
 	std::vector<std::string> getVariableDump() const;
 
 public:
-	void executeEvents(ScriptEventQueue& events, ScriptObjectSource source) const;
+	void executeEvents(ScriptEventQueue& events, ScriptObject source) const;
 	void setScript(std::string_view script);
 	const Script& getScript() const noexcept { return m_script; }
 	std::string getClientSideScript() const;

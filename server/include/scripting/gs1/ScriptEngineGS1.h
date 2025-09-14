@@ -2,8 +2,10 @@
 #define SCRIPTENGINEGS1_H
 
 #include <array>
+#include <exception>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
@@ -102,13 +104,25 @@ inline static const std::unordered_map<ScriptEventType, std::string_view> eventF
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct unimplemented_error : public std::runtime_error
+{
+	using std::runtime_error::runtime_error;
+};
+
+struct sleep_exception : public std::exception {};
+struct break_exception : public std::exception {};
+struct continue_exception : public std::exception {};
+struct return_exception : public std::exception {};
+
+///////////////////////////////////////////////////////////////////////////////
+
 using PlayerOrNPC = std::optional<std::variant<PlayerPtr, NPCPtr>>;
 
-PlayerPtr getPlayerFromSource(const ScriptObjectSource& source, std::optional<size_t> index = std::nullopt);
-PlayerClientPtr getPlayerClientFromSource(const ScriptObjectSource& source, std::optional<size_t> index = std::nullopt);
-NPCPtr getNPCFromSource(const ScriptObjectSource& source, std::optional<size_t> index = std::nullopt);
-PlayerOrNPC getPlayerOrNPCFromSource(const ScriptObjectSource& source, std::optional<size_t> index = std::nullopt);
-Character* getCharacterFromSource(const ScriptObjectSource& source, std::optional<size_t> index = std::nullopt);
+PlayerPtr getPlayerFromSource(const ScriptObject& source, std::optional<size_t> index = std::nullopt);
+PlayerClientPtr getPlayerClientFromSource(const ScriptObject& source, std::optional<size_t> index = std::nullopt);
+NPCPtr getNPCFromSource(const ScriptObject& source, std::optional<size_t> index = std::nullopt);
+PlayerOrNPC getPlayerOrNPCFromSource(const ScriptObject& source, std::optional<size_t> index = std::nullopt);
+Character* getCharacterFromSource(const ScriptObject& source, std::optional<size_t> index = std::nullopt);
 
 //----------------------------
 
@@ -116,10 +130,10 @@ Character* getCharacterFromSource(const ScriptObjectSource& source, std::optiona
 using GS1GameVariable = std::pair<GameVariableVariant, std::optional<size_t>>;
 
 /// @brief A GS1 script value used in the GS1 visitor pattern.
-using GS1ScriptValue = std::variant<GS1GameVariable, GameValue, ScriptObjectSource>;
+using GS1ScriptValue = std::variant<GS1GameVariable, GameValue, ScriptObject>;
 
 /// @brief A GS1 object source with an optional GameVariableStore.
-using GS1ObjectSourceWithStore = std::pair<ScriptObjectSource, GameVariableStore*>;
+using GS1ObjectSourceWithStore = std::pair<ScriptObject, GameVariableStore*>;
 
 //----------------------------
 
@@ -156,7 +170,7 @@ public:
 	virtual bool reset() override { return false; }
 
 public:
-	virtual bool execute(ScriptEvent& event, ScriptObjectSource source, CompiledScriptResultPtr context) override;
+	virtual bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -133,8 +133,8 @@ public:
 	bool alterBoard(CString& tileData, const LocalWholeTileRectangleArea& area, Player* player);
 
 public:
-	LevelArrow* addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObjectSource from);
-	LevelArrow* addArrow(const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObjectSource from);
+	LevelArrow* addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObject from);
+	LevelArrow* addArrow(const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObject from);
 	bool removeArrow(uint8_t index);
 	LevelArrow* getArrow(uint8_t index) const;
 
@@ -162,9 +162,9 @@ public:
 	std::string getChestFormattedForSave(LevelChest* chest) const;
 
 public:
-	void addExplosion(inform_client_t, const PixelPosition& position, ScriptObjectSource from, uint8_t radius, uint8_t power);
-	void addExplosion(const PixelPosition& position, ScriptObjectSource from, uint8_t radius, uint8_t power);
-	void addSpyFire(const PixelPosition& position, ScriptObjectSource from, uint8_t direction, uint8_t length, uint8_t power);
+	void addExplosion(inform_client_t, const PixelPosition& position, ScriptObject from, uint8_t radius, uint8_t power);
+	void addExplosion(const PixelPosition& position, ScriptObject from, uint8_t radius, uint8_t power);
+	void addSpyFire(const PixelPosition& position, ScriptObject from, uint8_t direction, uint8_t length, uint8_t power);
 	LevelExplosion* addExplosionPart(const PixelPosition& position, uint8_t direction, uint8_t power);
 	bool removeExplosion(size_t index);
 	bool removeExplosion(const PixelPosition& position);
@@ -193,9 +193,9 @@ public:
 
 public:
 	LevelShoot* addShoot(LevelShoot* existingShoot);
-	LevelShoot* addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from);
-	LevelShoot* addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from);
-	LevelShoot* addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, ScriptObjectSource from);
+	LevelShoot* addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObject from);
+	LevelShoot* addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObject from);
+	LevelShoot* addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, ScriptObject from);
 	bool removeShoot(uint8_t index);
 	LevelShoot* getShoot(uint8_t index) const;
 
@@ -342,6 +342,14 @@ inline const std::string Level::getMapOrLevelName() const noexcept
 
 	return m_map->getMapName();
 }
+
+//----------------------------
+
+namespace source
+{
+/// @brief Creates a ScriptObject from a Level by hashing the level's name.
+ScriptObject FromLevel(LevelPtr level);
+} // end namespace source
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal
