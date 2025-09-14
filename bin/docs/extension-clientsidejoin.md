@@ -4,6 +4,8 @@
 
 The clientside join extension allows original and clientside classic mode servers to use the `join` command in clientside scripts.
 
+This extension is disabled if an NPC-Server is being used (you can add clientside script to a class, which makes this hack unnecessary).
+
 ## How to enable
 
 Enable the following option in your `serveroptions.txt` file:

@@ -15,31 +15,34 @@ Please review the lists below of implemented events, flags, functions, commands,
 ---
 ## Events
 
+    * - GR extension (not in official)
+        Enable extensions in server options to use.
+
 #### Implemented
 
-    compusdied
-    created
-    exploded
-    initialized
-    movementfinished
-    npcwarped
-    playerchats
-    playerdies
-    playerenters
-    playerlaysitem
-    playerleaves
-    playerlogin
-    playerlogout
-    playertouchesme
-    playertouchesother
-    playertouchsme
-    playertouchsother
-    pm
-    timeout
-    triggeraction events
-    warped
-    washit	(hitobjects)
-    wasshot
+      compusdied
+      created
+      exploded
+      initialized
+      movementfinished
+      npcwarped
+      playerchats
+      playerdies
+      playerenters
+      playerlaysitem
+      playerleaves
+      playerlogin
+      playerlogout
+    * playertouchesme
+    * playertouchesother
+      playertouchsme
+      playertouchsother
+      pm
+      timeout
+      triggeraction events
+      warped
+      washit	(hitobjects)
+      wasshot
 
 #### Not implemented
 
@@ -61,25 +64,28 @@ Please review the lists below of implemented events, flags, functions, commands,
 ---
 ## Flags
 
+    * - GR extension (not in official)
+        Enable extensions in server options to use.
+
 #### Implemented
 
-    canspin
-    compsdead
-    isleader
-    isonmap
-    issparringzone
-    isweapon
-    nopkzone
-    playerattached
-    playerisfemale
-    playerismale
-    playeronhorse
-    playerpaused
-    shotbybaddy
-    shotbynpc (gr extension)
-    shotbyplayer
-    visible
-    weaponsenabled
+      canspin
+      compsdead
+      isleader
+      isonmap
+      issparringzone
+      isweapon
+      nopkzone
+      playerattached
+      playerisfemale
+      playerismale
+      playeronhorse
+      playerpaused
+      shotbybaddy
+    * shotbynpc
+      shotbyplayer
+      visible
+      weaponsenabled
 
 #### Not implemented
 
@@ -113,25 +119,28 @@ Please review the lists below of implemented events, flags, functions, commands,
 ---
 ## Variables
 
+    * - GR extension (not in official)
+        Enable extensions in server options to use.
+
 #### Implemented
 
-    actionplayer
-    allplayers[]
-    allplayerscount
-    board[]
-    levelorgx
-    levelorgy
-    npcscount
-    paramscount
-    players[]
-    playerscount
-    tiles[x,y]      (not gmap supported yet)
-    timevar
-    timevar2
-    tokenscount
-    weaponscount
+      actionplayer
+      allplayers[]
+      allplayerscount
+      board[]
+      levelorgx
+      levelorgy
+      npcscount
+      paramscount
+      players[]
+      playerscount
+      tiles[x,y]      (not gmap supported yet)
+      timevar
+      timevar2
+      tokenscount
+      weaponscount
 
-    npcs[]
+      npcs[]
         .id
         .x
         .y
@@ -153,9 +162,9 @@ Please review the lists below of implemented events, flags, functions, commands,
         .sprite
         .dir
         .timeout
-    npcs[] shorthand: e.g., hearts
+      npcs[] shorthand: e.g., hearts
 
-    players[]
+      players[]
         .id
         .x
         .y
@@ -179,10 +188,10 @@ Please review the lists below of implemented events, flags, functions, commands,
         .saysnumber
         .lastdead
         .logintime
-    players[] shorthand: e.g., playerhearts
+      players[] shorthand: e.g., playerhearts
 
-    arrowscount
-    arrows[]
+    * arrowscount
+    * arrows[]
         .x
         .y
         .dx
@@ -191,8 +200,8 @@ Please review the lists below of implemented events, flags, functions, commands,
         .type
         .from
 
-    compuscount
-    compus[]
+    * compuscount
+    * compus[]
         .x
         .y
         .type
@@ -201,30 +210,30 @@ Please review the lists below of implemented events, flags, functions, commands,
         .power
         .mode
 
-    bombscount
-    bombs[]
+    * bombscount
+    * bombs[]
         .x
         .y
         .power
         .time
 
-    itemscount
-    items[]
+    * itemscount
+    * items[]
         .x
         .y
         .type
         .time
 
-    exploscount
-    explos[]
+    * exploscount
+    * explos[]
         .x
         .y
         .power
         .time
         .dir
 
-    horsescount
-    horses[]
+    * horsescount
+    * horses[]
         .x
         .y
         .dir
@@ -237,13 +246,22 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    horses[]
+    * graalversion
+      gravity
+    * horses[]
         .bombs
         .bombpower
         .type
-    gravity
-    waterheight
-    playerhurtpower
+      nwday
+      nwhour
+      nwmin
+      nwmonth
+      nwtime
+      nwweek
+      nwweekday
+      nwyear
+    * playerhurtpower
+      waterheight
 
 #### Clientside only
 
@@ -265,272 +283,278 @@ Please review the lists below of implemented events, flags, functions, commands,
 ---
 ## Commands
 
+    * - GR extension (not in official)
+        Enable extensions in server options to use.
+
 #### Implemented
 
-    addguildmember
-    addstring
-    addweapon
-    attachplayertoobj
-    blockagain
-    callnpc
-    canbecarried
-    canbepulled
-    canbepushed
-    cannotbecarried
-    cannotbepulled
-    cannotbepushed
-    cannotwarp
-    canwarp
-    canwarp2
-    carryobject
-    changeimgcolors
-	changeimgmode
-	changeimgpart
-	changeimgvis
-	changeimgzoom
-    deletestring
-    destroy
-    detachplayer
-    disableweapons
-    dontblock
-    drawoverplayer
-    drawovertrees
-    drawunderplayer
-    enableweapons
-    explodebomb
-    freezeplayer2
-    hide
-    hideimg
-	hideimgs
-    hitnpc
-    hitobjects
-    hitplayer
-    hurt
-    insertstring
-    join
-    lay
-    lay2
-    message
-    move
-    noplayeronwall
-    putbomb
-    putcomp
-    putexplosion
-    putexplosion2
-    puthorse
-    putnewcomp
-    putnpc
-    putnpc2
-    removebomb
-    removecompus
-    removeguild
-    removeguildmember
-    removehorse
-    removeitem
-    removestring
-    removeweapon
-    replacestring
-    savelog2
-    say
-    say2
-    sendpm
-    sendrpgmessage
-    sendtonc
-    sendtorc
-    serverwarp
-    set
-    setani
-    setarray
-    setbeltcolor
-    setbody
-    setcharani
-    setchargender
-    setcharprop
-    setcoatcolor
-    setgender
-    setgif
-    setgifpart
-    sethead
-    setimg
-    setimgpart
-    setlevel
-    setlevel2
-    setmap
-    setminimap
-    setplayerdir
-    setplayerprop
-    setpm
-    setshape
-    setshield
-    setshoecolor
-    setshootparams
-    setskincolor
-    setsleevecolor
-    setstring
-    setsword
-    shoot
-    shootarrow
-    shootball (gr extension - dir parameter)
-    shootfireball
-    shootfireblast
-    shootnuke
-    show
-    showani
-    showani2
-    showcharacter
-    showimg
-    showimg2
-	showpoly
-	showpoly2
-	showtext
-	showtext2
-    sleep
-    spyfire
-    take
-    take2
-    takehorse
-    takeplayercarry
-    takeplayerhorse
-    throwcarry
-    timershow
-    tokenize
-    tokenize2
-    triggeraction
-    unfreezeplayer
-    unset
-    warpto
+      addguildmember
+      addstring
+      addweapon
+      attachplayertoobj
+      blockagain
+      callnpc
+      canbecarried
+      canbepulled
+      canbepushed
+      cannotbecarried
+      cannotbepulled
+      cannotbepushed
+      cannotwarp
+      canwarp
+      canwarp2
+    * carryobject
+      changeimgcolors
+    * changeimgmode
+      changeimgpart
+      changeimgvis
+      changeimgzoom
+      deletestring
+      destroy
+      detachplayer
+      disableweapons
+      dontblock
+      drawoverplayer
+    * drawovertrees
+      drawunderplayer
+      enableweapons
+    * explodebomb
+      freezeplayer2
+      hide
+      hideimg
+    * hideimgs
+    * hitnpc
+      hitobjects
+    * hitplayer
+    * hurt
+      insertstring
+      join
+    * lay
+    * lay2
+      message
+      move
+      noplayeronwall
+      putbomb
+    * putcomp
+      putexplosion
+      putexplosion2
+    * puthorse
+    * putnewcomp
+    * putnpc
+      putnpc2
+    * removebomb
+    * removecompus
+      removeguild
+      removeguildmember
+    * removehorse
+    * removeitem
+      removestring
+      removeweapon
+      replacestring
+      savelog2
+      say
+      say2
+      sendpm
+      sendrpgmessage
+      sendtonc
+      sendtorc
+      serverwarp
+      set
+      setani
+      setarray
+      setbeltcolor
+    * setbody
+      setcharani
+      setchargender
+      setcharprop
+      setcoatcolor
+      setgender
+      setgif
+      setgifpart
+    * sethead
+      setimg
+      setimgpart
+    * setlevel
+      setlevel2
+    * setmap
+    * setminimap
+    * setplayerdir
+      setplayerprop
+      setpm
+      setshape
+    * setshield
+      setshoecolor
+      setshootparams
+      setskincolor
+      setsleevecolor
+      setstring
+    * setsword
+      shoot
+    * shootarrow
+    * shootball (gr extension - dir parameter)
+    * shootfireball
+    * shootfireblast
+    * shootnuke
+      show
+      showani
+      showani2
+      showcharacter
+      showimg
+      showimg2
+      showpoly
+      showpoly2
+      showtext
+      showtext2
+      sleep
+    * spyfire
+    * take
+    * take2
+    * takehorse
+    * takeplayercarry
+    * takeplayerhorse
+    * throwcarry
+    * timershow
+      tokenize
+      tokenize2
+      triggeraction
+      unfreezeplayer
+      unset
+      warpto
 
 #### Not implemented
 
-    copyflags
-    copylevel
-    copystrings
-    deletelevel
-    hitcompu
-    saveinfo
-    savelog
-    setz
-    showstats
-    toweapons
-    updateboard
-    updateboard2
-    updateterrain
+      copyflags
+      copylevel
+      copystrings
+      deletelevel
+    * hitcompu
+      saveinfo
+      savelog
+      setz
+    * showstats
+      toweapons
+      updateboard
+      updateboard2
+      updateterrain
 
 #### Clientside only
 
-	addtiledef
-	addtiledef2
-	blockagainlocal
-	callweapon
-	disabledefmovement
-	disablemap
-	disablepause
-	disableselectweapons
-	dontblocklocal
-	drawaslight
-	enabledefmovement
-	enablefeatures
-	enablemap
-	enablepause
-	enableselectweapons
-	explodebomb
-	followplayer
-	freezeplayer
-	hidelocal
+    addtiledef
+    addtiledef2
+    blockagainlocal
+    callweapon
+    disabledefmovement
+    disablemap
+    disablepause
+    disableselectweapons
+    dontblocklocal
+    drawaslight
+    enabledefmovement
+    enablefeatures
+    enablemap
+    enablepause
+    enableselectweapons
+    explodebomb
+    followplayer
+    freezeplayer
+    hidelocal
     hideplayer
     hidesword
-	loadmap
-	noplayerkilling
-	openurl
-	openurl2
-	play 
-	play2
-	playlooped
-	putleaps
-	putobject
-	reflectarrow
-	removetiledefs
-	replaceani
-	resetfocus
-	setbackpal
-	setcoloreffect
-	setcursor 
-	setcursor2
-	seteffect 
-	seteffectmode
-	setfocus
-	setletters
-	setmusicvolume
-	setshape2
-	setspritesimage
-	setstatusimage
-	seturllevel
-	setzoomeffect
-	showfile
-	showlocal
-	stopmidi
-	stopsound
-	timereverywhere
-	toinventory
+    loadmap
+    noplayerkilling
+    openurl
+    openurl2
+    play 
+    play2
+    playlooped
+    putleaps
+    putobject
+    reflectarrow
+    removetiledefs
+    replaceani
+    resetfocus
+    setbackpal
+    setcoloreffect
+    setcursor 
+    setcursor2
+    seteffect 
+    seteffectmode
+    setfocus
+    setletters
+    setmusicvolume
+    setshape2
+    setspritesimage
+    setstatusimage
+    seturllevel
+    setzoomeffect
+    showfile
+    showlocal
+    stopmidi
+    stopsound
+    timereverywhere
+    toinventory
     wraptext
-	wraptext2
+    wraptext2
 
 ---
 ## Functions
 
+    * - GR extension (not in official)
+        Enable extensions in server options to use.
+
 #### Implemented
 
-    abs(value)
-    aindexof(value, array)
-    arctan(value)
-    arraylen(array)
-    ascii(string)
-    cos(value)
-    findnearestplayer(x, y)
-    getangle(dx, dy)
-    getareanpcs(x, y, width, height)
-    getdir(dx, dy)
-    getnearestplayer(x, y)
-    getnearestplayers(x, y, flag)
-    getnpc(name)
-    getplayer(account)
-    hasweapon(name)
-    indexof(substring, string)
-    int(value)
-    keycode(key)
-    lindexof(string, list)
-    log(value)
-    max(value1, value2)
-    min(value1, value2)
-    onmapx(level)
-    onmapy(level)
-    onwall(x, y)                    (old tileset layout only)
-    onwall2(x, y, width, height)    (old tileset layout only)
-    onwater(x, y)                   (old tileset layout only)
-    onwater2(x, y, width, height)   (old tileset layout only)
-    playersays(index, text)
-    playersays(text)
-    playersays2(index, text)
-    playersays2(text)
-    random(min, max)
-    sarraylen(list)
-    sin(value)
-    startswith(prefix, string)
-    strcontains(string, substring)
-    strequals(string1, string2)
-    strlen(string)
-    strtofloat(string)
-    testbomb(x, y)
-    testcompu(x, y)
-    testexplo(x, y)
-    testhorse(x, y)
-    testitem(x, y)
-    testnpc(x, y)
-    testplayer(x, y)
-    testsign(x, y)
-    tiletype(x, y)                  (old tileset layout only)
-    vecx(dir)
-    vecy(dir)
+      abs(value)
+    * aindexof(value, array)
+      arctan(value)
+      arraylen(array)
+    * ascii(string)
+      cos(value)
+      findnearestplayer(x, y)
+      getangle(dx, dy)
+    * getareanpcs(x, y, width, height)
+    * getdir(dx, dy)
+    * getnearestplayer(x, y)
+    * getnearestplayers(x, y, flag)
+      getnpc(name)
+      getplayer(account)
+      hasweapon(name)
+      indexof(substring, string)
+      int(value)
+    * keycode(key)
+      lindexof(string, list)
+    * log(base, value)
+    * max(value1, value2)
+    * min(value1, value2)
+      onmapx(level)
+      onmapy(level)
+      onwall(x, y)                    (old tileset layout only)
+      onwall2(x, y, width, height)    (old tileset layout only)
+      onwater(x, y)                   (old tileset layout only)
+      onwater2(x, y, width, height)   (old tileset layout only)
+    * playersays(index, text)
+    * playersays(text)
+    * playersays2(index, text)
+    * playersays2(text)
+      random(min, max)
+      sarraylen(list)
+      sin(value)
+      startswith(prefix, string)
+      strcontains(string, substring)
+      strequals(string1, string2)
+      strlen(string)
+      strtofloat(string)
+    * testbomb(x, y)
+    * testcompu(x, y)
+    * testexplo(x, y)
+    * testhorse(x, y)
+    * testitem(x, y)
+      testnpc(x, y)
+      testplayer(x, y)
+      testsign(x, y)
+    * tiletype(x, y)                  (old tileset layout only)
+      vecx(dir)
+      vecy(dir)
 
 #### Not implemented
 

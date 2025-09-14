@@ -1,5 +1,7 @@
 # GS2Emu Level Group Maps
 
+NOTE: Currently disabled.
+
 ## What are they?
 
 Group maps provides a way for a group of players to play on their own private copy of a level.

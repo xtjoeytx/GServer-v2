@@ -2,8 +2,9 @@
 
 ## Smooth movement
 
-If the `flaghack_movement` option is enabled in the `serveroptions.txt` file,
-the server will pass pixel-perfect movement updates to older clients via client flags.
+If the `flaghack_movement` option is enabled in the `serveroptions.txt` file, clients will be given a hidden weapon (named `-gr_movement`) that passes half-tile position updates to the server via client flags.
+Clients older than version 2.3 would only send updated position props on whole tile increments,
+which resulted in choppy movements for other players.
 
 Used flags:
 
