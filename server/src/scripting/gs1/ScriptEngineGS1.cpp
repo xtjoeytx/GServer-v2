@@ -257,10 +257,10 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 	// Determine the "who" for error messages.
 	if (npc != nullptr)
 		wrapper->visitor->who = npc->name;
-	else if (player != nullptr)
-		wrapper->visitor->who = player->account.name;
 	else if (weapon != nullptr)
 		wrapper->visitor->who = weapon->name;
+	else if (player != nullptr)
+		wrapper->visitor->who = player->account.name;
 	else
 		wrapper->visitor->who = "unknown";
 

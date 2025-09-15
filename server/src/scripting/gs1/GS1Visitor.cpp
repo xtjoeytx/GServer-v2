@@ -28,6 +28,7 @@
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
+#include <object/Weapon.h>
 #include <scripting/gs1/GS1Commands.h>
 #include <scripting/gs1/GS1Functions.h>
 #include <scripting/gs1/GS1MessageCodes.h>
@@ -85,12 +86,20 @@ static GameVariableStore* getGameVariableStoreFromSource(ScriptObject source)
 			if (auto npc = server->getNPC(source.first); npc != nullptr)
 				return &npc->scripting.variables;
 			break;
+		case ScriptObjectType::WEAPON:
+		{
+			auto& weaponList = server->getWeaponList();
+			if (auto it = weaponList.find(source.first); it != weaponList.end())
+				return &it->second->scripting.variables;
+			log::printLine(log::script, "Could not find weapon source.");
+			return &invalidStore;
+		}
 		case ScriptObjectType::LEVEL:
 		{
 			auto& levelList = server->getLevelList();
 			if (auto it = levelList.find(source.first); it != levelList.end())
 				return &it->second->scripting.variables;
-			log::printLine(log::script, "Could not find level for source.");
+			log::printLine(log::script, "Could not find level source.");
 			return &invalidStore;
 		}
 		case ScriptObjectType::SERVER:
@@ -356,6 +365,8 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 		case GS1Parser::STORAGE_LOCAL:
 		case GS1Parser::STORAGE_TEMP:
 			store = findGameVariableStoreFromSourceStack(ScriptObjectType::NPC);
+			if (store == nullptr)
+				store = findGameVariableStoreFromSourceStack(ScriptObjectType::WEAPON);
 			break;
 		case GS1Parser::STORAGE_THISO:
 			store = getGameVariableStoreFromSource(m_originalSource);
@@ -387,6 +398,7 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 			return &level->scripting.variables;
 		}
 	}
+
 	return store;
 }
 
