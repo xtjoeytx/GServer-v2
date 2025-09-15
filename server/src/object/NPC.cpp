@@ -437,6 +437,13 @@ std::string NPC::getLevelName() const
 
 std::shared_ptr<Level> NPC::getLevel() const
 {
+	// If we are a control-NPC, our level constantly changes, so don't rely on our pointer.
+	if (scriptType == NPCTYPE_CONTROL)
+	{
+		auto server = BabyDI::Get<Server>();
+		return server->getLevel(level);
+	}
+
 	return m_currentLevel.lock();
 }
 

@@ -993,6 +993,9 @@ std::shared_ptr<Level> Server::stubOrGetLevel(std::string_view levelName)
 
 std::shared_ptr<Level> Server::getLevel(std::string_view levelName)
 {
+	if (levelName.empty())
+		return nullptr;
+
 	LevelPtr level = nullptr;
 
 	// Find the level.

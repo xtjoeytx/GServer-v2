@@ -297,6 +297,19 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 	setLevelVariables(wrapper->variables, level);
 	setOtherVariables(wrapper->variables, event);
 
+	// If this is a control-NPC, temporarily adjust the level it lives in.
+	bool isControlNPC = npc && npc->scriptType == NPCTYPE_CONTROL;
+	if (isControlNPC)
+	{
+		if (level == nullptr && event.initiator.second == ScriptObjectType::NPC)
+		{
+			if (auto initiatingNPC = server->getNPC(event.initiator.first); initiatingNPC != nullptr)
+				level = initiatingNPC->getLevel();
+		}
+		if (level != nullptr)
+			npc->level = level->levelName;
+	}
+
 	try
 	{
 		// Execute the script.
@@ -312,6 +325,10 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 		// If we had a terminal error, remove the script from the context so it doesn't get executed again.
 		context->script = nullptr;
 	}
+
+	// Fix the control-NPC level.
+	if (isControlNPC)
+		npc->level.clear();
 
 	// Special case to handle "created" events for the NPC.
 	if (npc != nullptr && event.type == ScriptEventType::CREATED)
