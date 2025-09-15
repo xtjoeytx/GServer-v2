@@ -7,7 +7,6 @@
 #include <format>
 #include <functional>
 #include <iterator>
-#include <map>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -15,6 +14,7 @@
 #include <string_view>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -38,6 +38,9 @@ using WeaponPtr = std::shared_ptr<Weapon>;
 // GameValue
 ////////////////////////////////////////////////////////////
 
+struct set_temporary_t { explicit set_temporary_t() = default; };
+inline constexpr set_temporary_t set_temporary{};
+
 /// @brief Concept to ensure the value passed to `GameValue` is a valid type.
 template<class T>
 concept ValidGameValue = std::same_as<std::remove_cvref_t<T>, bool>
@@ -47,32 +50,97 @@ concept ValidGameValue = std::same_as<std::remove_cvref_t<T>, bool>
 	|| std::same_as<std::remove_cvref_t<T>, ScriptObject>
 	|| std::same_as<std::remove_cvref_t<T>, std::vector<ScriptObject>>;
 
+/// @brief A variant of the types that can be stored in a GameValue, used by the getter/setter functions.
+using GameValueVariant = std::variant<std::optional<bool>*, std::optional<double>*, std::optional<std::string>*, std::optional<std::vector<double>>*, std::optional<std::vector<ScriptObject>>*>;
+
 /// @brief A container that can hold one or more valid game value types.
 ///
 /// This is used to represent a single value that can be one or many of these types.
 /// It provides methods to set and retrieve the value in a type-safe manner.
 struct GameValue
 {
+	using func_get = std::function<void(GameValueVariant, std::optional<size_t>)>;
+	using func_set = std::function<void(GameValueVariant, std::optional<size_t>)>;
+
+public:
+	/// @brief Deserializes a variable.
+	/// @tparam T The data type of the variable.
+	/// @param identifier The identifier name of the variable.
+	/// @param data The data to deserialize.
+	/// @return A reference to this.
+	template<ValidGameValue T = std::string>
+	static GameValue deserialize(std::string identifier, const std::string_view data);
+
+	/// @brief Deserializes a variable.
+	/// @param line The data to deserialize (should include the full data line, e.g.: VAR identifier=1,2,3).
+	/// @return A reference to this.
+	static std::optional<GameValue> deserialize(const std::string_view line);
+
+public:
 	GameValue() = default;
-	//GameValue(const ValidGameValue auto& value)
-	//{
-	//	insert(std::forward<decltype(value)>(value));
-	//}
 	GameValue(ValidGameValue auto&& value)
 	{
 		insert(std::forward<decltype(value)>(value));
 	}
+	GameValue(std::string_view identifier, ValidGameValue auto&& value)
+		: identifier(identifier)
+	{
+		insert(std::forward<decltype(value)>(value));
+	}
+	GameValue(func_get getter, func_set setter)
+		: m_getter(getter), m_setter(setter) {}
+	GameValue(std::string_view identifier, func_get getter, func_set setter)
+		: identifier(identifier), m_getter(getter), m_setter(setter) {}
+	GameValue(std::string_view identifier, ValidGameValue auto&& value, func_get getter, func_set setter)
+		: identifier(identifier), m_getter(getter), m_setter(setter)
+	{
+		insert(std::forward<decltype(value)>(value));
+	}
+
+public:
+	GameValue(set_temporary_t, ValidGameValue auto&& value)
+		: temporary(true)
+	{
+		insert(std::forward<decltype(value)>(value));
+	}
+	GameValue(set_temporary_t, std::string_view identifier, ValidGameValue auto&& value)
+		: identifier(identifier), temporary(true)
+	{
+		insert(std::forward<decltype(value)>(value));
+	}
+	GameValue(set_temporary_t, func_get getter, func_set setter)
+		: temporary(true), m_getter(getter), m_setter(setter) {}
+	GameValue(set_temporary_t, std::string_view identifier, func_get getter, func_set setter)
+		: identifier(identifier), temporary(true), m_getter(getter), m_setter(setter) {}
+	GameValue(set_temporary_t, std::string_view identifier, ValidGameValue auto&& value, func_get getter, func_set setter)
+		: identifier(identifier), temporary(true), m_getter(getter), m_setter(setter)
+	{
+		insert(std::forward<decltype(value)>(value));
+	}
+
+public:
 	GameValue(const GameValue& other)
-		: m_boolean(other.m_boolean), m_number(other.m_number), m_text(other.m_text), m_array(other.m_array), m_source(other.m_source)
+		: identifier(other.identifier), temporary(other.temporary)
+		, m_boolean(other.m_boolean), m_number(other.m_number), m_text(other.m_text), m_array(other.m_array), m_source(other.m_source)
+		, m_getter(other.m_getter), m_setter(other.m_setter)
 	{}
 	GameValue(GameValue&& other) noexcept
-		: m_boolean(std::move(other.m_boolean)), m_number(std::move(other.m_number)), m_text(std::move(other.m_text)), m_array(std::move(other.m_array)), m_source(std::move(other.m_source))
+		: identifier(std::move(other.identifier)), temporary(other.temporary)
+		, m_boolean(std::move(other.m_boolean)), m_number(std::move(other.m_number)), m_text(std::move(other.m_text)), m_array(std::move(other.m_array)), m_source(std::move(other.m_source))
+		, m_getter(other.m_getter), m_setter(other.m_setter)
 	{}
 
 	GameValue& operator=(const GameValue& other) noexcept;
 	GameValue& operator=(GameValue&& other) noexcept;
 	bool operator==(const GameValue& other) noexcept;
 	explicit operator bool() const;
+
+public:
+	/// @brief The identifier of the variable.
+	std::string identifier;
+
+	/// @brief Marks if the variable is temporary and should be cleared when appropriate.
+	bool temporary = false;
 
 public:
 	/// @brief Retrieves the stored value of the specified type, if present.
@@ -104,11 +172,12 @@ public:
 	/// @brief Assigns values from another GameValue object to this one, overwriting the values of the specified types.
 	/// @tparam ...Types A list of types to assign from the other GameValue.
 	/// @param other The other GameValue object from which to assign values.
+	/// @param index The index of the array to assign a value, if applicable.
 	/// @return A reference to the modified GameValue object.
 	template<ValidGameValue... Types>
-	GameValue& assign(GameValue& other)
+	GameValue& assign(const GameValue& other, std::optional<size_t> index = std::nullopt)
 	{
-		(insert(other.get<Types>().value_or(Types{})), ...);
+		(assign(other.get<Types>().value_or(Types{}), index), ...);
 		return *this;
 	}
 
@@ -126,7 +195,7 @@ public:
 			m_text = std::nullopt;
 		if constexpr (std::same_as<Type, std::vector<double>>)
 			m_array = std::nullopt;
-		if constexpr (std::same_as<Type, std::vector<ScriptObject>>)
+		if constexpr (std::same_as<Type, ScriptObject> || std::same_as<Type, std::vector<ScriptObject>>)
 			m_source = std::nullopt;
 		return *this;
 	}
@@ -135,12 +204,50 @@ public:
 	/// @return True if the GameValue has a boolean value or a non-empty string value, false otherwise.
 	bool testAsFlag() const;
 
-private:
+	/// @brief Checks if the GameValue has a value of the specified type.
+	/// @tparam T The type to check for. Must satisfy the `ValidGameValue` constraint.
+	/// @return True if the GameValue has a value of the specified type; otherwise, false.
+	template<ValidGameValue T>
+	[[inline]] bool has() const;
+
+	/// @brief Checks if the GameValue has multiple values.
+	/// @return True if the GameValue has multiple values; otherwise, false.
+	[[inline]] bool has_many() const;
+
+	/// @brief Returns the stored getter function.
+	/// @return The getter function stored in the object.
+	func_get getGetter() const { return m_getter; }
+
+	/// @brief Returns the stored setter function.
+	/// @return The setter function stored in the object.
+	func_set getSetter() const { return m_setter; }
+
+	/// @brief Sets the getter function.
+	/// @param getter The function to be used as the getter.
+	void setGetter(func_get getter) { m_getter = getter; }
+
+	/// @brief Sets the setter function for the object.
+	/// @param setter The function to be used as the setter.
+	void setSetter(func_set setter) { m_setter = setter; }
+
+	/// @brief Serializes a variable for distribution.
+	/// @param name The name of the game variable to serialize.
+	/// @return An optional string that contains the serialized variable.
+	std::optional<std::string> serializeModern(std::string_view name) const noexcept;
+
+	/// @brief Serializes the variable for saving.
+	/// @return A serialized string for writing to disk.
+	template<ValidGameValue T = std::string>
+	[[inline]] std::string serialize() const;
+
+protected:
 	std::optional<bool> m_boolean;
 	std::optional<double> m_number;
 	std::optional<std::string> m_text;
 	std::optional<std::vector<double>> m_array;
 	std::optional<std::vector<ScriptObject>> m_source;
+	func_get m_getter;
+	func_set m_setter;
 
 	[[inline]] GameValue& insert(const ValidGameValue auto& value, std::optional<size_t> index = std::nullopt);
 	[[inline]] GameValue& insert(ValidGameValue auto&& value, std::optional<size_t> index = std::nullopt);
@@ -153,7 +260,13 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 {
 	if constexpr (std::same_as<T, double>)
 	{
-		if (m_array.has_value() && index.has_value())
+		if (m_getter)
+		{
+			std::optional<double> val;
+			if (m_getter(&val, index); val.has_value())
+				return val;
+		}
+		else if (m_array.has_value() && index.has_value())
 		{
 			if (index.value() < m_array.value().size())
 				return m_array.value().at(index.value());
@@ -166,11 +279,33 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 		return std::nullopt;
 	}
 	if constexpr (std::same_as<T, std::string>)
+	{
+		if (m_getter)
+		{
+			std::optional<std::string> val;
+			if (m_getter(&val, index); val.has_value())
+				return val;
+		}
 		return m_text;
+	}
 	if constexpr (std::same_as<T, std::vector<double>>)
+	{
+		if (m_getter)
+		{
+			std::optional<std::vector<double>> val;
+			if (m_getter(&val, index); val.has_value())
+				return val;
+		}
 		return m_array;
+	}
 	if constexpr (std::same_as<T, bool>)
 	{
+		if (m_getter)
+		{
+			std::optional<bool> val;
+			if (m_getter(&val, index); val.has_value())
+				return val;
+		}
 		if (m_boolean.has_value())
 			return m_boolean.value();
 		if (m_number.has_value())
@@ -179,6 +314,12 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 	}
 	if constexpr (std::same_as<T, ScriptObject>)
 	{
+		if (m_getter)
+		{
+			std::optional<std::vector<ScriptObject>> val;
+			if (m_getter(&val, index); val.has_value())
+				return val;
+		}
 		if (!m_source.has_value())
 			return std::nullopt;
 		if (index.has_value())
@@ -190,7 +331,15 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 		return m_source.value().at(0);
 	}
 	if constexpr (std::same_as<T, std::vector<ScriptObject>>)
+	{
+		if (m_getter)
+		{
+			std::optional<std::vector<ScriptObject>> val;
+			if (m_getter(&val, index); val.has_value())
+				return val;
+		}
 		return m_source;
+	}
 	else [[unlikely]]
 		throw std::bad_variant_access();
 }
@@ -198,47 +347,39 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 template<ValidGameValue T>
 inline const T* GameValue::get_unsafe(std::optional<size_t> index) const
 {
-	static const double empty_number = 0.0;
-	static const std::string empty_string{};
-	static const std::vector<double> empty_array{};
-	static const bool empty_boolean = false;
-
 	if constexpr (std::same_as<T, double>)
 	{
+		if (m_getter) m_getter(const_cast<std::optional<double>*>(&m_number), index);
 		if (m_array.has_value() && index.has_value())
 		{
 			if (index.value() < m_array.value().size())
 				return &m_array.value().at(index.value());
-			return &empty_number;
+			return nullptr;
 		}
 		if (!m_number.has_value()) return nullptr;
-		const auto* ptr = &m_number.value();
-		if (!ptr) ptr = &empty_number;
-		return ptr;
+		return &m_number.value();
 	}
 	if constexpr (std::same_as<T, std::string>)
 	{
+		if (m_getter) m_getter(const_cast<std::optional<std::string>*>(&m_text), index);
 		if (!m_text.has_value()) return nullptr;
-		const auto* ptr = &m_text.value();
-		if (!ptr) ptr = &empty_string;
-		return ptr;
+		return &m_text.value();
 	}
 	if constexpr (std::same_as<T, std::vector<double>>)
 	{
+		if (m_getter) m_getter(const_cast<std::optional<std::vector<double>>*>(&m_array), index);
 		if (!m_array.has_value()) return nullptr;
-		const auto* ptr = &m_array.value();
-		if (!ptr) ptr = &empty_array;
-		return ptr;
+		return &m_array.value();
 	}
 	if constexpr (std::same_as<T, bool>)
 	{
+		if (m_getter) m_getter(const_cast<std::optional<bool>*>(&m_boolean), index);
 		if (!m_boolean.has_value()) return nullptr;
-		const auto* ptr = &m_boolean.value();
-		if (!ptr) ptr = &empty_boolean;
-		return ptr;
+		return &m_boolean.value();
 	}
 	if constexpr (std::same_as<T, ScriptObject>)
 	{
+		if (m_getter) m_getter(const_cast<std::optional<std::vector<ScriptObject>>*>(&m_source), index);
 		if (!m_source.has_value()) return nullptr;
 		if (index.has_value())
 		{
@@ -250,6 +391,7 @@ inline const T* GameValue::get_unsafe(std::optional<size_t> index) const
 	}
 	if constexpr (std::same_as<T, std::vector<ScriptObject>>)
 	{
+		if (m_getter) m_getter(const_cast<std::optional<std::vector<ScriptObject>>*>(&m_source), index);
 		if (!m_source.has_value()) return nullptr;
 		return &m_source.value();
 	}
@@ -281,35 +423,53 @@ inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optio
 		{
 			if (index.value() < m_array.value().size())
 				m_array.value().at(index.value()) = value;
-			return *this;
+			if (m_setter) m_setter(&m_array, index);
 		}
-		m_number = value;
+		else
+		{
+			m_number = value;
+			if (m_setter) m_setter(&m_number, index);
+		}
 	}
 	else if constexpr (std::same_as<V, std::string>)
 	{
 		if (value.empty())
 			m_text = std::nullopt;
 		else m_text = value;
+		if (m_setter) m_setter(&m_text, index);
 	}
 	else if constexpr (std::same_as<V, std::vector<double>>)
+	{
 		m_array = value;
+		if (m_setter) m_setter(&m_array, index);
+	}
 	else if constexpr (std::same_as<V, bool>)
+	{
 		m_boolean = value;
+		if (m_setter) m_setter(&m_boolean, index);
+	}
 	else if constexpr (std::same_as<V, ScriptObject>)
 	{
 		if (m_source.has_value() && index.has_value())
 		{
 			if (index.value() < m_source.value().size())
 				m_source.value().at(index.value()) = value;
-			return *this;
 		}
-		m_source.value().clear();
-		m_source.value().push_back(value);
+		else
+		{
+			m_source.value().clear();
+			m_source.value().push_back(value);
+		}
+		if (m_setter) m_setter(&m_source, index);
 	}
 	else if constexpr (std::same_as<V, std::vector<ScriptObject>>)
+	{
 		m_source = value;
+		if (m_setter) m_setter(&m_source, index);
+	}
 	else [[unlikely]]
 		throw std::bad_variant_access();
+
 	return *this;
 }
 
@@ -322,341 +482,122 @@ inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<s
 		{
 			if (index.value() < m_array.value().size())
 				m_array.value().at(index.value()) = value;
-			return *this;
+			if (m_setter) m_setter(&m_array, index);
 		}
-		m_number = value;
+		else
+		{
+			m_number = value;
+			if (m_setter) m_setter(&m_number, index);
+		}
 	}
 	else if constexpr (std::same_as<V, std::string>)
 	{
 		if (value.empty())
 			m_text = std::nullopt;
 		m_text = std::move(value);
+		if (m_setter) m_setter(&m_text, index);
 	}
 	else if constexpr (std::same_as<V, std::vector<double>>)
+	{
 		m_array = std::move(value);
+		if (m_setter) m_setter(&m_array, index);
+	}
 	else if constexpr (std::same_as<V, bool>)
+	{
 		m_boolean = value;
+		if (m_setter) m_setter(&m_boolean, index);
+	}
 	else if constexpr (std::same_as<V, ScriptObject>)
 	{
 		if (m_source.has_value() && index.has_value())
 		{
 			if (index.value() < m_source.value().size())
 				m_source.value().at(index.value()) = value;
-			return *this;
 		}
-		m_source.value().clear();
-		m_source.value().push_back(value);
+		else
+		{
+			m_source.value().clear();
+			m_source.value().push_back(value);
+		}
+		if (m_setter) m_setter(&m_source, index);
 	}
 	else if constexpr (std::same_as<V, std::vector<ScriptObject>>)
+	{
 		m_source = std::move(value);
+		if (m_setter) m_setter(&m_source, index);
+	}
 	else [[unlikely]]
 		throw std::bad_variant_access();
+
 	return *this;
 }
 
-
-////////////////////////////////////////////////////////////
-// GameVariable
-////////////////////////////////////////////////////////////
-
-struct set_temporary_t { explicit set_temporary_t() = default; };
-inline constexpr set_temporary_t set_temporary{};
-
-/// @brief Represents a variable with an identifier and an associated value.
-struct GameVariable
+template<ValidGameValue T>
+inline bool GameValue::has() const
 {
-	using func_get = std::function<GameValue(std::string_view)>;
-	using func_set = std::function<void(GameVariable&, const GameValue&, std::optional<size_t>)>;
+	if constexpr (std::same_as<T, double>)
+		return m_number.has_value();
+	else if constexpr (std::same_as<T, std::string>)
+		return m_text.has_value();
+	else if constexpr (std::same_as<T, std::vector<double>>)
+		return m_array.has_value();
+	else if constexpr (std::same_as<T, bool>)
+		return m_boolean.has_value();
+	else if constexpr (std::same_as<T, ScriptObject> || std::same_as<T, std::vector<ScriptObject>>)
+		return m_source.has_value();
+	return false;
+}
 
-	GameVariable() = default;
-	GameVariable(const std::string& name, GameValue&& value)
-		: identifier(name), m_value(std::move(value)) {}
-	GameVariable(set_temporary_t, const std::string& name, GameValue&& value)
-		: identifier(name), temporary(true), m_value(std::move(value)) {}
-	GameVariable(const std::string& name, GameValue&& value, func_get getter, func_set setter)
-		: identifier(name), m_value(std::move(value)), m_getter(getter), m_setter(setter) {}
-	GameVariable(const std::string& name, func_get getter, func_set setter)
-		: identifier(name), m_getter(getter), m_setter(setter) {}
-	GameVariable(set_temporary_t, const std::string& name, func_get getter, func_set setter)
-		: identifier(name), temporary(true), m_getter(getter), m_setter(setter) {}
-	GameVariable(const GameVariable& other)
-		: identifier(other.identifier), temporary(other.temporary), m_value(other.m_value),
-		  m_getter(other.m_getter), m_setter(other.m_setter) {}
-	GameVariable(GameVariable&& other) noexcept
-		: identifier(std::move(other.identifier)), temporary(other.temporary), m_value(std::move(other.m_value)),
-		  m_getter(std::move(other.m_getter)), m_setter(std::move(other.m_setter)) {}
-
-	GameVariable& operator=(const GameVariable& other);
-	GameVariable& operator=(GameVariable&& other) noexcept;
-	[[inline]] auto operator=(ValidGameValue auto&& value) -> GameVariable&;
-	[[inline]] auto operator=(const ValidGameValue auto& value) -> GameVariable&;
-	operator double() const;
-	operator std::string() const;
-	operator bool() const;
-
-	// Keeping this in the header since the IDE really hates it when in a separate file.
-	operator std::vector<double>() const
-	{
-		auto* value = game_value().get_unsafe<std::vector<double>>();
-		return (value != nullptr) ? *value : std::vector<double>{};
-	}
-
-	/// @brief Tests the GameVariable as a flag check.
-	/// @return True if the GameVariable has a boolean value or a non-empty string value, false otherwise.
-	bool testAsFlag() const;
-
-	/// @brief Updates the GameVariable's value by calling the getter function.
-	/// @return A reference to this GameVariable.
-	GameVariable& update();
-
-public:
-	/// @brief The identifier of the variable.
-	std::string identifier;
-
-	/// @brief A temporary variable that doesn't get saved.
-	bool temporary = false;
-
-public:
-	/// @brief Deserializes a variable.
-	/// @tparam T The data type of the variable.
-	/// @param identifier The identifier name of the variable.
-	/// @param data The data to deserialize.
-	/// @return A reference to this.
-	template<ValidGameValue T = std::string>
-	static GameVariable deserialize(std::string identifier, const std::string_view data);
-
-	/// @brief Deserializes a variable.
-	/// @param line The data to deserialize (should include the full data line, e.g.: VAR identifier=1,2,3).
-	/// @return A reference to this.
-	static std::optional<GameVariable> deserialize(const std::string_view line);
-
-public:
-	/// @brief Sets the callbacks for getting and setting the variable's value.
-	/// @param getter The function to get the value of the variable.
-	/// @param setter The function to set the value of the variable.
-	void setCallbacks(func_get getter, func_set setter);
-
-	/// @brief Gets the getter callback function.
-	/// @return The getter callback function.
-	func_get getCallbackGetter() const { return m_getter; }
-
-	/// @brief Gets the setter callback function.
-	/// @return The setter callback function.
-	func_set getCallbackSetter() const { return m_setter; }
-
-	/// @brief Retrieves the stored value of the specified type, if present.
-	/// @tparam T The type of value to retrieve. Must satisfy the `ValidGameValue` constraint.
-	/// @param index An optional index to specify which element of the array to assign the value to, if applicable.
-	/// @return A reference to a 'std::optional{ T }' containing the stored value if it exists; otherwise, throws `std::bad_variant_access` if the type is not supported.
-	template<ValidGameValue T>
-	[[inline]] const std::optional<T> get(std::optional<size_t> index = std::nullopt) const;
-
-	/// @brief Retrieves a pointer to the stored value of the specified type, if present.
-	/// @tparam T The type of value to retrieve. Must satisfy the `ValidGameValue` constraint.
-	/// @param index An optional index to specify which element of the array to assign the value to, if applicable.
-	/// @return A pointer to type T containing the stored value if it exists; otherwise, throws `std::bad_variant_access` if the type is not supported.
-	template<ValidGameValue T>
-	[[inline]] const T* get_unsafe(std::optional<size_t> index = std::nullopt) const;
-
-	/// @brief Gets the underlying GameValue object.
-	/// @return A reference to the underlying GameValue object.
-	GameValue& get_underlying();
-
-	/// @brief Gets the underlying GameValue object (const version).
-	/// @return A const reference to the underlying GameValue object.
-	const GameValue& get_underlying() const;
-
-	/// @brief Sets the value of the GameValue object to the provided value, resetting any existing number, text, or array state.
-	/// @param value The new value to assign to the GameValue object. Must satisfy the ValidGameValue concept.
-	/// @param index An optional index to specify which element of the array to assign the value to, if applicable.
-	/// @return A reference to the modified GameValue object.
-	[[inline]] GameVariable& set(ValidGameValue auto&& value, std::optional<size_t> index = std::nullopt);
-
-	/// @brief Assigns a value to the GameValue, overwriting the value of the passed type. Other types are not affected.
-	/// @param value The value to assign to the GameValue. Must satisfy the ValidGameValue concept.
-	/// @param index An optional index to specify which element of the array to assign the value to, if applicable.
-	/// @return A reference to the modified GameValue object.
-	[[inline]] GameVariable& assign(ValidGameValue auto&& value, std::optional<size_t> index = std::nullopt);
-
-	/// @brief Assigns values from another GameVariable object to this one, overwriting the values of the specified types.
-	/// @tparam ...Types A list of types to assign from the other GameVariable.
-	/// @param other The other GameVariable object from which to assign values.
-	/// @return A reference to the modified GameVariable object.
-	template<ValidGameValue... Types>
-	GameVariable& assign(const GameVariable& other, std::optional<size_t> index = std::nullopt)
-	{
-		(assign(other.get<Types>().value_or(Types{}), index), ...);
-		return *this;
-	}
-
-	/// @brief Assigns values from another GameValue object to this one, overwriting the values of the specified types.
-	/// @tparam ...Types A list of types to assign from the other GameValue.
-	/// @param other The other GameValue object from which to assign values.
-	/// @return A reference to the modified GameVariable object.
-	template<ValidGameValue... Types>
-	GameVariable& assign(const GameValue& other, std::optional<size_t> index = std::nullopt)
-	{
-		(assign(other.get<Types>().value_or(Types{}), index), ...);
-		return *this;
-	}
-
-	/// @brief Unassigns types from the GameValue.
-	/// @tparam ...Types A list of types to unassign.
-	/// @return A reference to the modified GameVariable object.
-	template<ValidGameValue... Types>
-	GameVariable& unassign()
-	{
-		auto& value = game_value();
-		(value.unassign<Types>(), ...);
-		return *this;
-	}
-
-	/// @brief Checks if the GameVariable has a value of the specified type.
-	/// @tparam T The type to check for. Must satisfy the `ValidGameValue` constraint.
-	/// @return True if the GameVariable has a value of the specified type; otherwise, false.
-	template<ValidGameValue T>
-	[[inline]] bool has() const;
-
-	/// @brief Checks if the GameVariable has multiple values.
-	/// @return True if the GameVariable has multiple values; otherwise, false.
-	[[inline]] bool has_many() const;
-
-	/// @brief Serializes a variable for distribution.
-	/// @param name The name of the game variable to serialize.
-	/// @return An optional string that contains the serialized variable.
-	virtual std::optional<std::string> serializeModern(std::string_view name) const noexcept;
-
-	/// @brief Serializes the variable for saving.
-	/// @return A serialized string for writing to disk.
-	template<ValidGameValue T = std::string>
-	[[inline]] std::string serialize() const;
-
-private:
-	GameValue& game_value();
-	const GameValue& game_value() const;
-
-	mutable GameValue m_value;
-	func_get m_getter;
-	func_set m_setter;
-};
-
-/// @brief Defines a variant type that can hold either a weak pointer to a GameVariable or a GameVariable object.
-///
-/// Normally, you would receive a weak pointer to a GameVariable from the store,
-/// but when a variable is not assigned to a store yet, a normal GameVariable object is used.
-using GameVariableVariant = std::variant<std::weak_ptr<GameVariable>, GameVariable>;
+inline bool GameValue::has_many() const
+{
+	int count = 0;
+	if (m_number.has_value()) ++count;
+	if (m_text.has_value()) ++count;
+	if (m_array.has_value()) ++count;
+	if (m_boolean.has_value()) ++count;
+	if (m_source.has_value()) ++count;
+	return count > 1;
+}
 
 //----------------------------
 
 template<ValidGameValue T>
-GameVariable GameVariable::deserialize(std::string identifier, const std::string_view data)
+GameValue GameValue::deserialize(std::string identifier, const std::string_view data)
 {
 	if constexpr (std::same_as<T, bool>)
-		return GameVariable{ std::move(identifier), GameValue{ true } };
+		return GameValue{ std::move(identifier), true };
 	if constexpr (std::same_as<T, double>)
-		return GameVariable{ std::move(identifier), GameValue{ string::toNumber(std::string{ data }) } };
+		return GameValue{ std::move(identifier), string::toNumber(std::string{ data }) };
 	if constexpr (std::same_as<T, std::string>)
-		return GameVariable{ std::move(identifier), GameValue{ std::string{ data } } };
+		return GameValue{ std::move(identifier), std::string{ data } };
 	if constexpr (std::same_as<T, std::vector<double>>)
 	{
 		std::vector<double> array;
 		for (auto& number : string::splitHard(data, ","sv))
 			array.emplace_back(string::toDouble(number));
-		return GameVariable{ std::move(identifier), GameValue{ std::move(array) } };
+		return GameValue{ std::move(identifier), std::move(array) };
 	}
-	return GameVariable{};
-}
-
-//----------------------------
-
-inline auto GameVariable::operator=(ValidGameValue auto&& value) -> GameVariable&
-{
-	set(std::forward<decltype(value)>(value));
-	return *this;
-}
-
-inline auto GameVariable::operator=(const ValidGameValue auto& value) -> GameVariable&
-{
-	set(value);
-	return *this;
+	return GameValue{};
 }
 
 template<ValidGameValue T>
-inline const std::optional<T> GameVariable::get(std::optional<size_t> index) const
+inline std::string GameValue::serialize() const
 {
-	auto& value = game_value();
-	return value.get<T>(index);
-}
-
-template<ValidGameValue T>
-inline const T* GameVariable::get_unsafe(std::optional<size_t> index) const
-{
-	auto& value = game_value();
-	return value.get_unsafe<T>(index);
-}
-
-inline GameVariable& GameVariable::set(ValidGameValue auto&& value, std::optional<size_t> index)
-{
-	auto& gvalue = game_value();
-	gvalue.set(std::forward<decltype(value)>(value), index);
-	if (m_setter) [[unlikely]]
-		m_setter(*this, gvalue, index);
-	return *this;
-}
-
-inline GameVariable& GameVariable::assign(ValidGameValue auto&& value, std::optional<size_t> index)
-{
-	auto& gvalue = game_value();
-	gvalue.assign(std::forward<decltype(value)>(value), index);
-	if (m_setter) [[unlikely]]
-		m_setter(*this, gvalue, index);
-	return *this;
-}
-
-template<ValidGameValue T>
-inline bool GameVariable::has() const
-{
-	auto& value = game_value();
-	auto* val = value.get_unsafe<T>();
-	return val != nullptr;
-}
-
-inline bool GameVariable::has_many() const
-{
-	auto& value = game_value();
-	int count = 0;
-	if (auto* val = value.get_unsafe<bool>(); val != nullptr)
-		++count;
-	if (auto* val = value.get_unsafe<double>(); val != nullptr)
-		++count;
-	if (auto* val = value.get_unsafe<std::string>(); val != nullptr)
-		++count;
-	if (auto* val = value.get_unsafe<std::vector<double>>(); val != nullptr)
-		++count;
-	if (auto* val = value.get_unsafe<std::vector<ScriptObject>>(); val != nullptr)
-		++count;
-	return count < 2;
-}
-
-template<ValidGameValue T>
-inline std::string GameVariable::serialize() const
-{
-	auto& value = game_value();
 	if constexpr (std::same_as<T, bool>)
 		return {};
 	if constexpr (std::same_as<T, double>)
-		return std::format("{}", value.get<double>().value_or(0.0));
+		return std::format("{}", m_number.value_or(0.0));
 	if constexpr (std::same_as<T, std::string>)
-		return value.get<std::string>().value_or(std::string{});
+		return m_text.value_or(std::string{});
 	if constexpr (std::same_as<T, std::vector<double>>)
 	{
 		std::string array;
-		if (auto* valueArray = value.get_unsafe<std::vector<double>>())
+		if (m_array.has_value())
 		{
-			for (size_t i = 0; i < valueArray->size(); ++i)
+			for (size_t i = 0; i < m_array.value().size(); ++i)
 			{
-				array += std::format("{}", (*valueArray)[i]);
-				if (i != valueArray->size() - 1)
+				array += std::format("{}", (m_array.value())[i]);
+				if (i != m_array.value().size() - 1)
 					array += ",";
 			}
 		}
@@ -680,13 +621,13 @@ public:
 	/// @brief Adds a new game variable with the specified name and value.
 	/// @param name The name of the game variable to add.
 	/// @param value The value to assign to the new game variable (moved).
-	/// @return A weak pointer to the newly added GameVariable.
-	virtual std::weak_ptr<GameVariable> add(std::string_view name, GameValue&& value) noexcept;
+	/// @return A weak pointer to the newly added GameValue.
+	virtual std::weak_ptr<GameValue> add(std::string_view name, GameValue&& value) noexcept;
 
 	/// @brief Adds a new game variable.
 	/// @param variable The variable to add to the store (moved).
-	/// @return A weak pointer to the newly added GameVariable.
-	virtual std::weak_ptr<GameVariable> add(GameVariable&& variable) noexcept;
+	/// @return A weak pointer to the newly added GameValue.
+	virtual std::weak_ptr<GameValue> add(GameValue&& variable) noexcept;
 
 	/// @brief Removes an item identified by the given name.
 	/// @param name The name of the item to remove.
@@ -700,13 +641,13 @@ public:
 
 	/// @brief Retrieves a weak pointer to a game variable by its name.
 	/// @param name The name of the game variable to retrieve.
-	/// @return A std::weak_ptr to the GameVariable associated with the given name. If the variable does not exist, the returned weak pointer will be empty.
-	virtual std::weak_ptr<GameVariable> get(std::string_view name) noexcept;
+	/// @return A std::weak_ptr to the GameValue associated with the given name. If the variable does not exist, the returned weak pointer will be empty.
+	virtual std::weak_ptr<GameValue> get(std::string_view name) noexcept;
 
 	/// @brief Retrieves a weak pointer to a game variable by its name.
 	/// @param name The name of the game variable to retrieve.
-	/// @return A weak pointer to the requested GameVariable, or an empty weak pointer if not found.
-	virtual const std::weak_ptr<GameVariable> get(std::string_view name) const noexcept;
+	/// @return A weak pointer to the requested GameValue, or an empty weak pointer if not found.
+	virtual const std::weak_ptr<GameValue> get(std::string_view name) const noexcept;
 
 	/// @brief Retrieves the value associated with the specified name, if it exists.
 	/// @tparam T The type to which the value should be converted.
@@ -717,13 +658,13 @@ public:
 
 	/// @brief Retrieves a game variable by name, or adds it if it does not exist.
 	/// @param name The name of the game variable to retrieve or add.
-	/// @return A weak pointer to the retrieved or newly added GameVariable.
-	virtual std::weak_ptr<GameVariable> getOrAdd(std::string_view name) noexcept;
+	/// @return A weak pointer to the retrieved or newly added GameValue.
+	virtual std::weak_ptr<GameValue> getOrAdd(std::string_view name) noexcept;
 
-	/// @brief Retrieves the value of a game variable by name, or, if it does not exist, returns a stub with a setter that adds the variable to the store when assigned a value.
-	/// @param name The name of the game variable to retrieve.
-	/// @return A GameVariableVariant containing the value of the variable if found, with a stub setter that adds the variable to the store if not found.
-	virtual GameVariableVariant getOrStub(std::string_view name) noexcept;
+	/// @brief Retrieves a variable stub by name, or adds it if it does not exist.
+	/// @param name The name of the variable to retrieve or add.
+	/// @return A GameValue representing the variable with getters/setters to update the variable in storage.
+	virtual GameValue getOrStub(std::string_view name);
 
 	/// @brief Clears all temporary variables from the store.
 	virtual void clearTemporary() noexcept;
@@ -747,10 +688,7 @@ public:
 	bool static_container = false;
 
 	/// @brief The variable store map.
-	string_map<std::shared_ptr<GameVariable>> store;
-
-private:
-	void stub_new(GameVariable& variable, const GameValue& value);
+	string_map<std::shared_ptr<GameValue>> store;
 };
 
 //----------------------------
@@ -761,7 +699,7 @@ inline const std::optional<T> GameVariableStore::getValue(const std::string_view
 	if (store.empty()) return std::nullopt;
 	auto it = store.find(name);
 	if (it == store.end()) return std::nullopt;
-	it->second->update();
+	// it->second->update();
 	return it->second->get<T>();
 }
 
@@ -842,18 +780,18 @@ inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObject initia
 template<class T>
 concept HasScriptParameters = requires(T t)
 {
-	{ T::scriptParameters } -> std::convertible_to<string_map<GameVariable>>;
+	{ T::scriptParameters } -> std::convertible_to<string_map<GameValue>>;
 };
 
 template<class T>
 concept HasConstructibleScriptParameters = requires(T t)
 {
-	{ T::scriptParameters } -> std::convertible_to<string_map<GameVariable>>;
+	{ T::scriptParameters } -> std::convertible_to<string_map<GameValue>>;
 	{ t.constructScriptParameters() } -> std::same_as<void>;
 };
 
 template<HasScriptParameters T>
-inline std::optional<GameVariable> getScriptParameter(T& source, std::string_view name)
+inline std::optional<GameValue> getScriptParameter(T& source, std::string_view name)
 {
 	if constexpr (HasConstructibleScriptParameters<T>)
 	{
@@ -937,64 +875,97 @@ inline void stupid_ide()
 ////////////////////////////////////////////////////////////
 
 /// @brief A getter function for a property that gets its results from another getter function.
-GameVariable::func_get gameVariableGetter(ValidGameValueCallable auto getter)
+GameValue::func_get gameValueGetter(ValidGameValueCallable auto getter)
 {
-	return [getter](std::string_view identifier) -> GameValue
+	return [getter](GameValueVariant incoming, std::optional<size_t> index)
 	{
-		return GameValue{ getter() };
+		GameValue value{ getter() };
+		const auto picker = visit_functions
+		{
+			[&](std::optional<bool>* in) { *in = value.get<bool>().value_or(false); },
+			[&](std::optional<double>* in) { *in = value.get<double>().value_or(0.0); },
+			[&](std::optional<std::string>* in) { *in = value.get<std::string>().value_or(std::string{}); },
+			[&](std::optional<std::vector<double>>* in) { *in = value.get<std::vector<double>>().value_or(std::vector<double>{}); },
+			[&](std::optional<std::vector<ScriptObject>>* in) { *in = value.get<std::vector<ScriptObject>>().value_or(std::vector<ScriptObject>{}); }
+		};
+		std::visit(picker, incoming);
 	};
 }
 
 /// @brief A getter function for a property that gets its results from a property directly.
-GameVariable::func_get gameVariableGetter(auto& value)
+GameValue::func_get gameValueGetter(auto& value)
 {
 	using V = std::remove_cvref_t<decltype(value)>;
 	static_assert(std::integral<V> || std::floating_point<V> || string::StringVariant<V> || std::ranges::forward_range<V> || std::same_as<V, ScriptObject> || std::same_as<V, std::vector<ScriptObject>>,
-		"gameVariableGetter called with an unsupported type. Supported types are integral, floats, string, ranges, or ScriptObjectSources.");
+		"gameValueGetter called with an unsupported type. Supported types are integral, floats, string, ranges, or ScriptObjectSources.");
 
 	// Number.
 	if constexpr (std::integral<V> || std::floating_point<V>)
 	{
-		return [&value](std::string_view identifier) -> GameValue
+		return [&value](GameValueVariant incoming, std::optional<size_t> index)
 		{
-			return GameValue{ static_cast<double>(value) };
+			if (auto var = std::get_if<std::optional<double>*>(&incoming); var != nullptr)
+				**var = value;
 		};
 	}
 	// String.
 	else if constexpr (string::StringVariant<V>)
 	{
-		return [&value](std::string_view identifier) -> GameValue
+		return [&value](GameValueVariant incoming, std::optional<size_t> index)
 		{
-			return GameValue{ std::string{ value } };
+			if (auto var = std::get_if<std::optional<std::string>*>(&incoming); var != nullptr)
+				**var = value;
 		};
 	}
 	// ScriptObject (and array variant).
 	else if constexpr (std::same_as<V, ScriptObject> || std::same_as<V, std::vector<ScriptObject>>)
 	{
-		return [&value](std::string_view identifier) -> GameValue
+		return [&value](GameValueVariant incoming, std::optional<size_t> index)
 		{
-			return GameValue{ value };
+			if (auto var = std::get_if<std::optional<std::vector<ScriptObject>>*>(&incoming); var != nullptr)
+			{
+				if constexpr (std::same_as<V, ScriptObject>)
+				{
+					(*var)->emplace();
+					(*var)->value().push_back(value);
+				}
+				else **var = value;
+			}
 		};
 	}
 	// Array.
 	else if constexpr (std::ranges::forward_range<V>)
 	{
-		return [&value](std::string_view identifier) -> GameValue
+		return [&value](GameValueVariant incoming, std::optional<size_t> index)
 		{
-			// Transform the range to a vector of doubles.
-			return GameValue{ value | std::views::transform([](const auto& v) { return static_cast<double>(v); }) | std::ranges::to<std::vector<double>>() };
+			if (auto var = std::get_if<std::optional<std::vector<double>>*>(&incoming); var != nullptr)
+			{
+				// Transform the range to a vector of doubles.
+				**var = value | std::views::transform([](const auto& v) { return static_cast<double>(v); }) | std::ranges::to<std::vector<double>>();
+			}
 		};
 	}
 
-	throw std::invalid_argument("gameVariableGetter called with an unsupported type.");
+	throw std::invalid_argument("gameValueGetter called with an unsupported type.");
 }
 
 /// @brief A setter function for a property that needs an additional setter function to write the values.
 template<class Who, typename Prop>
-GameVariable::func_set gameVariableSetter(Who* who, std::optional<Prop> prop, std::function<void(const GameValue&, std::optional<size_t>)> setter)
+GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, std::function<void(const GameValue&, std::optional<size_t>)> setter)
 {
-	return [who, prop, setter](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
+	return [who, prop, setter](GameValueVariant incoming, std::optional<size_t> index)
 	{
+		GameValue value;
+		const auto picker = visit_functions
+		{
+			[&](std::optional<bool>* in) { if (in->has_value()) value.set(in->value()); },
+			[&](std::optional<double>* in) { if (in->has_value()) value.set(in->value()); },
+			[&](std::optional<std::string>* in) { if (in->has_value()) value.set(in->value()); },
+			[&](std::optional<std::vector<double>>* in) { if (in->has_value()) value.set(in->value()); },
+			[&](std::optional<std::vector<ScriptObject>>* in) { if (in->has_value()) value.set(in->value()); }
+		};
+		std::visit(picker, incoming);
+
 		// Call the setter function.
 		setter(value, index);
 
@@ -1006,18 +977,19 @@ GameVariable::func_set gameVariableSetter(Who* who, std::optional<Prop> prop, st
 
 /// @brief A setter function for a property that can directly set to a value.
 template<class Who, typename Prop, typename Value>
-GameVariable::func_set gameVariableSetter(Who* who, std::optional<Prop> prop, Value& propvalue)
+GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, Value& propvalue)
 {
 	using V = std::remove_cvref_t<Value>;
 	static_assert(std::integral<V> || std::floating_point<V> || string::StringVariant<V> || std::ranges::random_access_range<V>,
-		"gameVariableSetter called with an unsupported type. Supported types are integral, floats, string, or ranges.");
+		"gameValueSetter called with an unsupported type. Supported types are integral, floats, string, or ranges.");
 
 	// Number.
 	if constexpr (std::integral<V> || std::floating_point<V>)
 	{
-		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
+		return [who, prop, &propvalue](GameValueVariant incoming, std::optional<size_t> index)
 		{
-			propvalue = static_cast<V>(value.get<double>().value_or(0.0));
+			if (auto value = std::get_if<std::optional<double>*>(&incoming); value != nullptr)
+				propvalue = static_cast<V>((*value)->value_or(V{}));
 			if (prop.has_value())
 				who->modTime[PROPID(prop.value())] = currentTime();
 		};
@@ -1025,9 +997,10 @@ GameVariable::func_set gameVariableSetter(Who* who, std::optional<Prop> prop, Va
 	// String.
 	else if constexpr (string::StringVariant<V>)
 	{
-		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
+		return [who, prop, &propvalue](GameValueVariant incoming, std::optional<size_t> index)
 		{
-			propvalue = value.get<std::string>().value_or(std::string{});
+			if (auto value = std::get_if<std::optional<std::string>*>(&incoming); value != nullptr)
+				propvalue = static_cast<V>(**value);
 			if (prop.has_value())
 				who->modTime[PROPID(prop.value())] = currentTime();
 		};
@@ -1035,7 +1008,7 @@ GameVariable::func_set gameVariableSetter(Who* who, std::optional<Prop> prop, Va
 	// Array.
 	else if constexpr (std::ranges::random_access_range<V>)
 	{
-		return [who, prop, &propvalue](GameVariable& variable, const GameValue& value, std::optional<size_t> index)
+		return [who, prop, &propvalue](GameValueVariant incoming, std::optional<size_t> index)
 		{
 			size_t propvalue_size = std::ranges::size(propvalue);
 			if (propvalue_size > 0)
@@ -1045,15 +1018,24 @@ GameVariable::func_set gameVariableSetter(Who* who, std::optional<Prop> prop, Va
 				// Setting an individual index in an array.
 				if (index.has_value() && index.value() < propvalue_size)
 				{
-					propvalue[index.value()] = static_cast<value_type>(value.get<double>(index).value_or(0.0));
+					if (auto value = std::get_if<std::optional<std::vector<double>>*>(&incoming); value != nullptr && (*value)->has_value())
+					{
+						std::vector<double>& darray = (**value).value();
+						if (index.value() < darray.size())
+							propvalue[index.value()] = static_cast<value_type>(darray.at(index.value()));
+						else propvalue[index.value()] = value_type{};
+					}
 					if (prop.has_value())
 						who->modTime[PROPID(prop.value()) + index.value()] = currentTime();
 				}
 				// Setting the whole array.
 				else if (!index.has_value())
 				{
-					const std::vector<double> vec = value.get<std::vector<double>>().value();
-					copyToArrayAs<value_type>(vec, propvalue);
+					if (auto value = std::get_if<std::optional<std::vector<double>>*>(&incoming); value != nullptr)
+					{
+						const std::vector<double> vec = (*value)->value_or({});
+						copyToArrayAs<value_type>(vec, propvalue);
+					}
 					if (prop.has_value())
 						who->modTime[PROPID(prop.value())] = currentTime();
 				}
@@ -1061,7 +1043,7 @@ GameVariable::func_set gameVariableSetter(Who* who, std::optional<Prop> prop, Va
 		};
 	}
 
-	throw std::invalid_argument("gameVariableSetter called with an unsupported type.");
+	throw std::invalid_argument("gameValueSetter called with an unsupported type.");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

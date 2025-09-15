@@ -73,7 +73,7 @@ struct LevelItem
 	TimeoutGenerator timeout;
 
 	[[inline]] void constructScriptParameters();
-	string_map<GameVariable> scriptParameters;
+	string_map<GameValue> scriptParameters;
 };
 
 //----------------------------
@@ -114,12 +114,12 @@ inline bool LevelItem::isRupeeType(LevelItemType itemType)
 
 inline void LevelItem::constructScriptParameters()
 {
-	scriptParameters.try_emplace("x", set_temporary, "x", gameVariableGetter([this]() { return position.x() / 16.0; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("y", set_temporary, "y", gameVariableGetter([this]() { return position.y() / 16.0; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("type", set_temporary, "type", gameVariableGetter([this]() { return (double)item; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("x", set_temporary, "x", gameValueGetter([this]() { return position.x() / 16.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("y", set_temporary, "y", gameValueGetter([this]() { return position.y() / 16.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("type", set_temporary, "type", gameValueGetter([this]() { return (double)item; }), GameValue::func_set{});
 	scriptParameters.try_emplace("time", set_temporary, "time",
-		gameVariableGetter([this]() { return std::chrono::duration_cast<duration_seconds_double>(timeout.getRemainingTime()).count(); }),
-		GameVariable::func_set{});
+		gameValueGetter([this]() { return std::chrono::duration_cast<duration_seconds_double>(timeout.getRemainingTime()).count(); }),
+		GameValue::func_set{});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

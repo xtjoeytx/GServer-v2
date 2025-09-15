@@ -368,7 +368,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		{
 			std::string flagName = curLine.readString("=").toString();
 			std::string flagValue = curLine.readString("").toString();
-			npc->scripting.variables.add(GameVariable::deserialize(flagName, flagValue));
+			npc->scripting.variables.add(GameValue::deserialize(flagName, flagValue));
 		}
 		else if (curCommand.subString(0, 4) == "ATTR")
 		{

@@ -61,10 +61,9 @@ public:
 	template<ValidGameValue T>
 	[[inline]] T getReadOnlyGameValueFromAnyAs(const std::any& value);
 
-	GameVariable* getGameVariableFromGS1ScriptValue(GS1ScriptValue& value);
-	GameVariable* getGameVariableFromVariant(GameVariableVariant& variant);
-	std::optional<GameVariable> getGameVariableFromSource(const ScriptObject& source, std::string_view identifier);
-	GameVariableVariant getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
+	GameValue* getGameValueFromGS1ScriptValue(GS1ScriptValue& value);
+	std::optional<GameValue> getGameValueFromSource(const ScriptObject& source, std::string_view identifier);
+	GameValue getGameValueFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
 
 public:
 	double getColorValueFromString(std::string_view colorString);
@@ -91,7 +90,6 @@ protected:
 	GS1GameVariable getGameVariableFromAny(std::any& value);
 	GameValue getReadOnlyGameValueFromGS1ScriptValue(const GS1ScriptValue& value);
 	GameValue getReadOnlyGameValueFromAny(const std::any& value);
-	bool getFlagOrBooleanFromAny(const std::any& value);
 	std::optional<ScriptObject> getSourceFromGS1ScriptValue(GS1ScriptValue& value);
 
 protected:
@@ -208,20 +206,7 @@ template<ValidGameValue T>
 inline T GS1Visitor::getGameValueAs(const GS1ScriptValue& value)
 {
 	if (const auto* gs1Pair = std::get_if<GS1GameVariable>(&value); gs1Pair != nullptr)
-	{
-		const auto* gameVariant = &gs1Pair->first;
-		const GameVariable* gameVar = nullptr;
-		if (const auto* byVal = std::get_if<GameVariable>(gameVariant); byVal != nullptr)
-			gameVar = byVal;
-		else if (const auto* byPtr = std::get_if<std::weak_ptr<GameVariable>>(gameVariant); byPtr != nullptr)
-		{
-			if (auto lock = byPtr->lock(); lock != nullptr)
-				gameVar = lock.get();
-		}
-
-		if (gameVar != nullptr)
-			return gameVar->get<T>(gs1Pair->second).value_or(makeDefault<T>());
-	}
+		return gs1Pair->first.get<T>(gs1Pair->second).value_or(makeDefault<T>());
 	else if (auto* gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
 		return gameValue->get<T>().value_or(makeDefault<T>());
 	return makeDefault<T>();

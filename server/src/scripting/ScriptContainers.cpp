@@ -1,18 +1,18 @@
 #include <algorithm>
 #include <format>
 #include <functional>
-#include <map>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string_view>
 #include <string>
+#include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <BabyDI.h>
 #include <Server.h>
-#include <level/Level.h>
-#include <object/Weapon.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
@@ -31,11 +31,15 @@ GameValue& GameValue::operator=(const GameValue& other) noexcept
 {
 	if (this != &other)
 	{
+		identifier = other.identifier;
+		temporary = other.temporary;
 		m_number = other.m_number;
 		m_text = other.m_text;
 		m_array = other.m_array;
 		m_boolean = other.m_boolean;
 		m_source = other.m_source;
+		m_getter = other.m_getter;
+		m_setter = other.m_setter;
 	}
 	return *this;
 }
@@ -44,11 +48,15 @@ GameValue& GameValue::operator=(GameValue&& other) noexcept
 {
 	if (this != &other)
 	{
+		identifier = std::move(other.identifier);
+		temporary = other.temporary;
 		m_number = std::move(other.m_number);
 		m_text = std::move(other.m_text);
 		m_array = std::move(other.m_array);
 		m_boolean = std::move(other.m_boolean);
 		m_source = std::move(other.m_source);
+		m_getter = other.m_getter;
+		m_setter = other.m_setter;
 	}
 	return *this;
 }
@@ -60,6 +68,16 @@ bool GameValue::operator==(const GameValue& other) noexcept
 
 GameValue::operator bool() const
 {
+	if (m_getter)
+	{
+		std::optional<bool> boolval;
+		if (m_getter(&boolval, std::nullopt); boolval.has_value())
+			return *boolval;
+
+		std::optional<double> doubleval;
+		if (m_getter(&doubleval, std::nullopt); doubleval.has_value())
+			return !DoubleIsZero(*doubleval);
+	}
 	if (m_boolean.has_value())
 		return m_boolean.value();
 	if (m_number.has_value())
@@ -69,6 +87,17 @@ GameValue::operator bool() const
 
 bool GameValue::testAsFlag() const
 {
+	if (m_getter)
+	{
+		std::optional<bool> boolval;
+		m_getter(&boolval, std::nullopt);
+		if (boolval.has_value())
+			return *boolval;
+
+		std::optional<std::string> stringval;
+		m_getter(&stringval, std::nullopt);
+		return (stringval.has_value() && !stringval->empty());
+	}
 	if (m_boolean.has_value())
 		return m_boolean.value();
 	if (m_text.has_value())
@@ -76,112 +105,17 @@ bool GameValue::testAsFlag() const
 	return false;
 }
 
-
-////////////////////////////////////////////////////////////
-// GameVariable
-////////////////////////////////////////////////////////////
-
-GameVariable::operator double() const
-{
-	auto* value = m_value.get_unsafe<double>();
-	return (value != nullptr) ? *value : 0.0;
-}
-
-GameVariable::operator std::string() const
-{
-	auto* value = m_value.get_unsafe<std::string>();
-	return (value != nullptr) ? *value : std::string{};
-}
-
-GameVariable::operator bool() const
-{
-	return (bool)m_value;
-}
-
-GameVariable& GameVariable::operator=(const GameVariable& other)
-{
-	if (this != &other)
-	{
-		identifier = other.identifier;
-		temporary = other.temporary;
-		m_value = other.m_value;
-		m_getter = other.m_getter;
-		m_setter = other.m_setter;
-	}
-	return *this;
-}
-
-GameVariable& GameVariable::operator=(GameVariable&& other) noexcept
-{
-	if (this != &other)
-	{
-		identifier = std::move(other.identifier);
-		temporary = other.temporary;
-		m_value = std::move(other.m_value);
-		m_getter = std::move(other.m_getter);
-		m_setter = std::move(other.m_setter);
-	}
-	return *this;
-}
-
-bool GameVariable::testAsFlag() const
-{
-	return m_value.testAsFlag();
-}
-
-GameVariable& GameVariable::update()
-{
-	m_value = game_value();
-	return *this;
-}
-
 //----------------------------
 
-void GameVariable::setCallbacks(func_get getter, func_set setter)
-{
-	m_getter = std::move(getter);
-	m_setter = std::move(setter);
-}
-
-GameValue& GameVariable::get_underlying()
-{
-	return m_value;
-}
-
-const GameValue& GameVariable::get_underlying() const
-{
-	return m_value;
-}
-
-//----------------------------
-
-GameValue& GameVariable::game_value()
-{
-	if (!m_getter) [[likely]]
-		return m_value;
-	m_value = std::move(m_getter(identifier));
-	return m_value;
-}
-
-const GameValue& GameVariable::game_value() const
-{
-	if (!m_getter) [[likely]]
-		return m_value;
-	m_value = std::move(m_getter(identifier));
-	return m_value;
-}
-
-//----------------------------
-
-std::optional<GameVariable> GameVariable::deserialize(const std::string_view line)
+std::optional<GameValue> GameValue::deserialize(const std::string_view line)
 {
 	if (line.starts_with("FLAG"))
 	{
 		auto data = string::trim(line.substr(5));
 		auto separator = data.find('=');
 		if (separator == std::string_view::npos)
-			return GameVariable{ std::string{ string::trim(data) }, true };
-		return GameVariable{ std::string{ string::trim(data.substr(0, separator)) }, std::string{ string::trim(data.substr(separator + 1)) } };
+			return GameValue{ std::string{ string::trim(data) }, true };
+		return GameValue{ std::string{ string::trim(data.substr(0, separator)) }, std::string{ string::trim(data.substr(separator + 1)) } };
 	}
 	else if (line.starts_with("VAR"))
 	{
@@ -195,26 +129,23 @@ std::optional<GameVariable> GameVariable::deserialize(const std::string_view lin
 		if (value.empty())
 			return std::nullopt;
 		if (value[0] != '{')
-			return GameVariable{ std::string{ identifier }, string::toDouble(std::string{ value }) };
+			return GameValue{ std::string{ identifier }, string::toDouble(std::string{ value }) };
 
 		std::vector<double> array;
 		for (auto& number : string::splitHard(value.substr(1, value.length() - 2), ","sv))
 			array.emplace_back(string::toDouble(number));
-		return GameVariable{ std::string{ identifier }, std::move(array) };
+		return GameValue{ std::string{ identifier }, std::move(array) };
 	}
 
 	return std::nullopt;
 }
 
-std::optional<std::string> GameVariable::serializeModern(std::string_view name) const noexcept
+std::optional<std::string> GameValue::serializeModern(std::string_view name) const noexcept
 {
-	auto& value = game_value();
-	auto* boolVal = value.get_unsafe<bool>();
-	auto* stringVal = value.get_unsafe<std::string>();
-	if (boolVal != nullptr && stringVal == nullptr && *boolVal == true)
+	if (m_boolean.has_value() && !m_text.has_value() && m_boolean.value_or(false) == true)
 		return std::string{ name };
-	if (stringVal != nullptr)
-		return std::format("{}={}", name, *stringVal);
+	if (m_text.has_value())
+		return std::format("{}={}", name, m_text.value_or(""s));
 	return std::nullopt;
 }
 
@@ -223,16 +154,19 @@ std::optional<std::string> GameVariable::serializeModern(std::string_view name) 
 // GameVariableStore
 ////////////////////////////////////////////////////////////
 
-std::weak_ptr<GameVariable> GameVariableStore::add(std::string_view name, GameValue&& value) noexcept
+std::weak_ptr<GameValue> GameVariableStore::add(std::string_view name, GameValue&& value) noexcept
 {
-	auto var = std::make_shared<GameVariable>(std::string{ name }, GameValue{ std::move(value) });
+	auto var = std::make_shared<GameValue>(std::move(value));
+	var->identifier = name;
 	auto [iter, was_inserted] = store.insert_or_assign(var->identifier, var);
 	return iter->second;
 }
 
-std::weak_ptr<GameVariable> GameVariableStore::add(GameVariable&& variable) noexcept
+std::weak_ptr<GameValue> GameVariableStore::add(GameValue&& variable) noexcept
 {
-	auto var = std::make_shared<GameVariable>(std::move(variable));
+	if (variable.identifier.empty())
+		return {};
+	auto var = std::make_shared<GameValue>(std::move(variable));
 	auto [iter, was_inserted] = store.insert_or_assign(var->identifier, var);
 	return iter->second;
 }
@@ -252,56 +186,66 @@ bool GameVariableStore::contains(std::string_view name) const noexcept
 	return store.contains(name);
 }
 
-std::weak_ptr<GameVariable> GameVariableStore::get(std::string_view name) noexcept
+std::weak_ptr<GameValue> GameVariableStore::get(std::string_view name) noexcept
 {
 	if (store.empty()) return {};
 	auto it = store.find(name);
 	if (it == store.end()) return {};
-	it->second->update();
 	return it->second;
 }
 
-const std::weak_ptr<GameVariable> GameVariableStore::get(std::string_view name) const noexcept
+const std::weak_ptr<GameValue> GameVariableStore::get(std::string_view name) const noexcept
 {
 	if (store.empty()) return {};
 	auto it = store.find(name);
 	if (it == store.end()) return {};
-	it->second->update();
 	return it->second;
 }
 
-std::weak_ptr<GameVariable> GameVariableStore::getOrAdd(std::string_view name) noexcept
+std::weak_ptr<GameValue> GameVariableStore::getOrAdd(std::string_view name) noexcept
 {
 	if (!store.empty())
 	{
 		auto it = store.find(name);
 		if (it != store.end())
-		{
-			it->second->update();
 			return it->second;
-		}
 	}
 	return add(std::move(name), GameValue{ 0.0 });
 }
 
-GameVariableVariant GameVariableStore::getOrStub(std::string_view name) noexcept
+GameValue GameVariableStore::getOrStub(std::string_view name)
 {
-	if (!store.empty())
+	if (auto var = getOrAdd(name).lock(); var != nullptr)
 	{
-		auto it = store.find(name);
-		if (it != store.end())
+		auto getter = [this, variable = var](GameValueVariant incoming, std::optional<size_t> index)
 		{
-			it->second->update();
-			return std::weak_ptr<GameVariable>(it->second);
-		}
-	}
-	return GameVariable(std::string{ name }, GameValue{ 0.0 }, nullptr, std::bind(&GameVariableStore::stub_new, this, std::placeholders::_1, std::placeholders::_2));
-}
+			const auto picker = visit_functions
+			{
+				[&](std::optional<bool>* ptr) { *ptr = variable->get<bool>(index).value_or(false); },
+				[&](std::optional<double>* ptr) { *ptr = variable->get<double>(index).value_or(0.0); },
+				[&](std::optional<std::string>* ptr) { *ptr = variable->get<std::string>(index).value_or(""s); },
+				[&](std::optional<std::vector<double>>* ptr) { *ptr = variable->get<std::vector<double>>(index).value_or({}); },
+				[&](std::optional<std::vector<ScriptObject>>* ptr) { *ptr = variable->get<std::vector<ScriptObject>>(index).value_or({}); }
+			};
+			std::visit(picker, incoming);
+		};
 
-void GameVariableStore::stub_new(GameVariable& variable, const GameValue& value)
-{
-	auto new_variable = add(variable.identifier, GameValue{ value });
-	variable.setCallbacks(variable.getCallbackGetter(), {});
+		auto setter = [this, variable = var](GameValueVariant incoming, std::optional<size_t> index)
+		{
+			const auto picker = visit_functions
+			{
+				[&](std::optional<bool>* ptr) { variable->assign<bool>(ptr->value_or(false)); },
+				[&](std::optional<double>* ptr) { variable->assign<double>(ptr->value_or(0.0)); },
+				[&](std::optional<std::string>* ptr) { variable->assign<std::string>(ptr->value_or(""s)); },
+				[&](std::optional<std::vector<double>>* ptr) { variable->assign<std::vector<double>>(ptr->value_or({})); },
+				[&](std::optional<std::vector<ScriptObject>>* ptr) { variable->assign<std::vector<ScriptObject>>(ptr->value_or({})); }
+			};
+			std::visit(picker, incoming);
+		};
+
+		return GameValue{ name, getter, setter };
+	}
+	throw std::runtime_error("Failed to create variable stub.");
 }
 
 void GameVariableStore::clearTemporary() noexcept

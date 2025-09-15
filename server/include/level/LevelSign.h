@@ -31,15 +31,15 @@ struct LevelSign
 	std::string unformattedText;
 
 	[[inline]] void constructScriptParameters();
-	string_map<GameVariable> scriptParameters;
+	string_map<GameValue> scriptParameters;
 };
 
 //----------------------------
 
 inline void LevelSign::constructScriptParameters()
 {
-	scriptParameters.try_emplace("x", set_temporary, "x", gameVariableGetter([this]() { return position.x() / 16.0; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("y", set_temporary, "y", gameVariableGetter([this]() { return position.y() / 16.0; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("x", set_temporary, "x", gameValueGetter([this]() { return position.x() / 16.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("y", set_temporary, "y", gameValueGetter([this]() { return position.y() / 16.0; }), GameValue::func_set{});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -57,7 +57,7 @@ struct LevelArrow
 	[[inline]] uint8_t getPacketFrom() const;
 
 	[[inline]] void constructScriptParameters();
-	string_map<GameVariable> scriptParameters;
+	string_map<GameValue> scriptParameters;
 };
 
 //----------------------------
@@ -71,19 +71,19 @@ inline uint8_t LevelArrow::getPacketFrom() const
 
 inline void LevelArrow::constructScriptParameters()
 {
-	scriptParameters.try_emplace("x", set_temporary, "x", gameVariableGetter([this]() { return position.x() / 16.0; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("y", set_temporary, "y", gameVariableGetter([this]() { return position.y() / 16.0; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("dx", set_temporary, "dx", gameVariableGetter([this]() { return speed.x() / 16.0; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("dy", set_temporary, "dy", gameVariableGetter([this]() { return speed.y() / 16.0; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("dir", set_temporary, "dir", gameVariableGetter([this]() { return (double)direction; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("type", set_temporary, "type", gameVariableGetter([this]() { return (double)type; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("x", set_temporary, "x", gameValueGetter([this]() { return position.x() / 16.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("y", set_temporary, "y", gameValueGetter([this]() { return position.y() / 16.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("dx", set_temporary, "dx", gameValueGetter([this]() { return speed.x() / 16.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("dy", set_temporary, "dy", gameValueGetter([this]() { return speed.y() / 16.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("dir", set_temporary, "dir", gameValueGetter(direction), GameValue::func_set{});
+	scriptParameters.try_emplace("type", set_temporary, "type", gameValueGetter(type), GameValue::func_set{});
 	scriptParameters.try_emplace("from", set_temporary, "from",
-		gameVariableGetter([this]()
+		gameValueGetter([this]()
 		{
 			if (from.second == ScriptObjectType::PLAYER)
 				return 1.0;
 			return 0.0;
-		}), GameVariable::func_set{});
+		}), GameValue::func_set{});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

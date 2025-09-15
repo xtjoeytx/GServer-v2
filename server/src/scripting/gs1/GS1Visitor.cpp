@@ -137,30 +137,14 @@ static void applyStorageToIdentifier(std::optional<size_t> storage, std::string&
 ///////////////////////////////////////////////////////////////////////////////
 // Public member functions.
 
-GameVariable* GS1Visitor::getGameVariableFromGS1ScriptValue(GS1ScriptValue& value)
+GameValue* GS1Visitor::getGameValueFromGS1ScriptValue(GS1ScriptValue& value)
 {
 	if (auto* gs1GameVariable = std::get_if<GS1GameVariable>(&value); gs1GameVariable != nullptr)
-	{
-		auto* gameVariable = getGameVariableFromVariant(gs1GameVariable->first);
-		if (gameVariable != nullptr)
-			return gameVariable;
-	}
+		return &gs1GameVariable->first;
 	return nullptr;
 }
 
-GameVariable* GS1Visitor::getGameVariableFromVariant(GameVariableVariant& variant)
-{
-	if (auto* byVal = std::get_if<GameVariable>(&variant); byVal != nullptr)
-		return byVal;
-	else if (auto* byPtr = std::get_if<std::weak_ptr<GameVariable>>(&variant); byPtr != nullptr)
-	{
-		if (auto lock = byPtr->lock(); lock != nullptr)
-			return lock.get();
-	}
-	return nullptr;
-}
-
-std::optional<GameVariable> GS1Visitor::getGameVariableFromSource(const ScriptObject& source, std::string_view identifier)
+std::optional<GameValue> GS1Visitor::getGameValueFromSource(const ScriptObject& source, std::string_view identifier)
 {
 	auto* server = BabyDI::Get<Server>();
 
@@ -228,7 +212,7 @@ std::optional<GameVariable> GS1Visitor::getGameVariableFromSource(const ScriptOb
 	return std::nullopt;
 }
 
-GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type)
+GameValue GS1Visitor::getGameValueFromStorage(std::string_view identifier, std::optional<size_t> type)
 {
 	// If we have a specific storage type, try to get the store for it.
 	if (type.has_value())
@@ -237,66 +221,30 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 			return store->getOrStub(identifier);
 	}
 
-	std::weak_ptr<GameVariable> builtIn;
-	auto mergeWithBuiltInBoolean = [](std::shared_ptr<GameVariable>& existing, std::shared_ptr<GameVariable>& builtIn) -> int
-	{
-		// No built-in variable, return 0: stub built-in.
-		if (builtIn == nullptr)
-			return 0;
-		// Built-in variable is not a boolean, or we have no existing, return 1: use built-in.
-		if (!builtIn->has<bool>() || existing == nullptr)
-			return 1;
-		// Merge the boolean value from the built-in variable into the existing variable, return 2: use existing.
-		existing->assign(builtIn->get<bool>().value_or(false), std::nullopt);
-		return 2;
-	};
-
 	// First, try to get a built-in variable.
-	if (builtInStore != nullptr)
-		builtIn = builtInStore->get(identifier);
+	if (builtInStore != nullptr && builtInStore->contains(identifier))
+		return builtInStore->getOrStub(identifier);
 
-	// Lock the built-in variable.
-	auto builtInResult = builtIn.lock();
-
-	// Look in the current source's store.
+	// Second, look in the current source's store.
 	auto* currentStore = getGameVariableStoreFromSource(getCurrentSource());
 	{
 		// For the current store, we only want to return a variable if it exists.
 		// If the variable does not exist, it will be added to the source store.
 		if (currentStore != nullptr && currentStore->contains(identifier))
-		{
-			// If we have a built-in variable, and the current store had a boolean version of it, add the boolean version to the result.
-			auto currentStoreResult = currentStore->get(identifier).lock();
-			switch (mergeWithBuiltInBoolean(currentStoreResult, builtInResult))
-			{
-				case 0: return currentStore->getOrStub(identifier);
-				case 1: return builtInResult;
-				case 2: return currentStoreResult;
-			}
-		}
-		else if (auto property = getGameVariableFromSource(getCurrentSource(), identifier); property.has_value())
-			return property.value().update();
+			return currentStore->getOrStub(identifier);
+		else if (auto property = getGameValueFromSource(getCurrentSource(), identifier); property.has_value())
+			return property.value();
 	}
-
-	GameVariableStore* targetStoreForStub = nullptr;
 
 	// Now look in the original source's store.
 	{
 		if (auto* sourceStore = getGameVariableStoreFromSource(getOriginalSource()); sourceStore != nullptr)
 		{
-			auto sourceStoreResult = sourceStore->get(identifier).lock();
-			switch (mergeWithBuiltInBoolean(sourceStoreResult, builtInResult))
-			{
-				case 0: break;
-				case 1: return builtInResult;
-				case 2: return sourceStoreResult;
-			}
+			if (sourceStore->contains(identifier))
+				return sourceStore->getOrStub(identifier);
 		}
-		if (targetStoreForStub == nullptr)
-		{
-			if (auto property = getGameVariableFromSource(getOriginalSource(), identifier); property.has_value())
-				return property.value().update();
-		}
+		if (auto property = getGameValueFromSource(getOriginalSource(), identifier); property.has_value())
+			return property.value();
 	}
 
 	// Now look at the initiator's store.
@@ -304,35 +252,15 @@ GameVariableVariant GS1Visitor::getGameVariableFromStorage(std::string_view iden
 	{
 		if (auto* initiatorStore = getGameVariableStoreFromSource(m_event->initiator); initiatorStore != nullptr)
 		{
-			auto initiatorStoreResult = initiatorStore->get(identifier).lock();
-			switch (mergeWithBuiltInBoolean(initiatorStoreResult, builtInResult))
-			{
-				case 0: break;
-				case 1: return builtInResult;
-				case 2: return initiatorStoreResult;
-			}
+			if (initiatorStore->contains(identifier))
+				return initiatorStore->getOrStub(identifier);
 		}
-		if (targetStoreForStub == nullptr)
-		{
-			if (auto property = getGameVariableFromSource(m_event->initiator, identifier); property.has_value())
-				return property.value().update();
-		}
+		if (auto property = getGameValueFromSource(m_event->initiator, identifier); property.has_value())
+			return property.value();
 	}
 
-	// Stub our variable.
-	if (targetStoreForStub != nullptr)
-		return targetStoreForStub->getOrStub(identifier);
-
-	// We have a built-in variable, but our sources don't have a store, just return it.
-	if (!builtIn.expired())
-		return builtIn;
-
 	// If we still don't have a store, use the built-in store.
-	if (builtInStore != nullptr)
-		return builtInStore->getOrStub(identifier);
-
-	// Still nothing?  Just return empty.
-	return {};
+	return builtInStore->getOrStub(identifier);
 }
 
 double GS1Visitor::getColorValueFromString(std::string_view colorString)
@@ -481,22 +409,7 @@ GameValue GS1Visitor::getReadOnlyGameValueFromGS1ScriptValue(const GS1ScriptValu
 {
 	if (auto* gs1GameVariable = std::get_if<GS1GameVariable>(&value); gs1GameVariable != nullptr)
 	{
-		const GameValue* gameValue = nullptr;
-
-		if (auto* byVal = std::get_if<GameVariable>(&gs1GameVariable->first); byVal != nullptr)
-			gameValue = &byVal->get_underlying();
-		else if (auto* byPtr = std::get_if<std::weak_ptr<GameVariable>>(&gs1GameVariable->first); byPtr != nullptr)
-		{
-			if (auto var = byPtr->lock(); var != nullptr)
-				gameValue = &var->get_underlying();
-		}
-
-		if (gameValue != nullptr)
-		{
-			if (!gs1GameVariable->second.has_value())
-				return *gameValue;
-			return GameValue{ gameValue->get<double>(gs1GameVariable->second.value()).value_or(0.0) };
-		}
+		return gs1GameVariable->first;
 	}
 	else if (auto* gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
 	{
@@ -512,42 +425,13 @@ GameValue GS1Visitor::getReadOnlyGameValueFromAny(const std::any& value)
 	return {};
 }
 
-bool GS1Visitor::getFlagOrBooleanFromAny(const std::any& value)
-{
-	if (auto* gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
-	{
-		if (auto* gs1GameVariable = std::get_if<GS1GameVariable>(gs1ScriptValue); gs1GameVariable != nullptr && !gs1GameVariable->second.has_value())
-		{
-			// Get the identifier.
-			std::optional<std::string> identifier;
-			if (auto* byVal = std::get_if<GameVariable>(&gs1GameVariable->first); byVal != nullptr)
-				identifier = byVal->identifier;
-			else if (auto* byPtr = std::get_if<std::weak_ptr<GameVariable>>(&gs1GameVariable->first); byPtr != nullptr)
-			{
-				if (auto var = byPtr->lock(); var != nullptr)
-					identifier = var->identifier;
-			}
-
-			// If we have an identifier, and the flag store has a value, return that.
-			if (identifier.has_value() && flagStore.contains(identifier.value()))
-			{
-				if (auto flag = flagStore.get(identifier.value()).lock(); flag != nullptr)
-					return flag->get<bool>().value_or(false);
-			}
-		}
-		return (bool)getReadOnlyGameValueFromGS1ScriptValue(*gs1ScriptValue);
-	}
-	return (bool)getReadOnlyGameValueFromAny(value);
-}
-
 std::optional<ScriptObject> GS1Visitor::getSourceFromGS1ScriptValue(GS1ScriptValue& value)
 {
 	if (auto* scriptObject = std::get_if<ScriptObject>(&value); scriptObject != nullptr)
 		return *scriptObject;
 	else if (auto* gs1GameVariable = std::get_if<GS1GameVariable>(&value); gs1GameVariable != nullptr)
 	{
-		auto* gameVariable = getGameVariableFromVariant(gs1GameVariable->first);
-		auto* scriptObject = gameVariable->get_unsafe<ScriptObject>(gs1GameVariable->second);
+		auto* scriptObject = gs1GameVariable->first.get_unsafe<ScriptObject>(gs1GameVariable->second);
 		if (scriptObject != nullptr)
 			return *scriptObject;
 	}
@@ -569,7 +453,7 @@ void GS1Visitor::setCurrentPlayerVariables(std::optional<ScriptObject> source)
 
 	// all the player property shortcuts
 	for (const auto& [name, variable] : player->scriptParameters)
-		builtInStore->add(GameVariable{ set_temporary, std::format("player{}", name), variable.getCallbackGetter(), variable.getCallbackSetter() });
+		builtInStore->add(GameValue{ set_temporary, std::format("player{}", name), variable.getGetter(), variable.getSetter() });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -700,7 +584,7 @@ std::any GS1Visitor::visitBlock(GS1Parser::BlockContext* ctx)
 
 std::any GS1Visitor::visitStatementIf(GS1Parser::StatementIfContext* context)
 {
-	if (getFlagOrBooleanFromAny(visit(context->expression())))
+	if ((bool)getReadOnlyGameValueFromAny(visit(context->expression())))
 		return visit(context->block(0));
 	else
 		return safeVisit(context->block(1));
@@ -725,7 +609,7 @@ std::any GS1Visitor::visitStatementFor(GS1Parser::StatementForContext* context)
 
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && getFlagOrBooleanFromAny(safeVisit(context->expression(0))) || enterLoopAfterSleep)
+	while (loopCount++ < MAX_LOOPS && (bool)getReadOnlyGameValueFromAny(safeVisit(context->expression(0))) || enterLoopAfterSleep)
 	{
 		enterLoopAfterSleep = false;
 
@@ -764,7 +648,7 @@ std::any GS1Visitor::visitStatementWhile(GS1Parser::StatementWhileContext* conte
 
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && getFlagOrBooleanFromAny(visit(context->expression())) || enterLoopAfterSleep)
+	while (loopCount++ < MAX_LOOPS && (bool)getReadOnlyGameValueFromAny(visit(context->expression())) || enterLoopAfterSleep)
 	{
 		enterLoopAfterSleep = false;
 
@@ -876,24 +760,20 @@ std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentCont
 	auto left = getGameVariableFromAny(results[0]);
 	auto right = getReadOnlyGameValueFromAny(results[1]);
 
-	auto left_var = getGameVariableFromVariant(left.first);
-	if (left_var == nullptr)
-		throw std::runtime_error("AssignmentOperation left side is not a valid assignable value");
-
 	// Do the assignment operation separately as everything else runs on doubles.
 	if (op.value() == GS1Parser::OP_ASSIGN)
 	{
 		if (left.second.has_value())
-			left_var->assign<double>(right, left.second);
+			left.first.assign<double>(right, left.second);
 		else
 		{
 			if (auto vec = right.get_unsafe<std::vector<double>>(); vec != nullptr)
-				left_var->assign<std::vector<double>>(right);
-			else left_var->assign<double>(right);
+				left.first.assign<std::vector<double>>(right);
+			else left.first.assign<double>(right);
 		}
 
 		// Special case for "timeout" to erase any existing sleep call stack.
-		if (left_var->identifier == "timeout")
+		if (left.first.identifier == "timeout")
 		{
 			m_sleepCallStack.clear();
 			m_sleepCurrentSource.clear();
@@ -902,29 +782,29 @@ std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentCont
 		return {};
 	}
 
-	double leftD = left_var->get<double>(left.second).value_or(0.0);
+	double leftD = left.first.get<double>(left.second).value_or(0.0);
 	double rightD = right.get<double>().value_or(0.0);
 
 	// Perform the operation.
 	switch (op.value())
 	{
 		case GS1Parser::OP_ASSIGN_ADD:
-			left_var->assign(leftD + rightD, left.second);
+			left.first.assign(leftD + rightD, left.second);
 			break;
 		case GS1Parser::OP_ASSIGN_SUB:
-			left_var->assign(leftD - rightD, left.second);
+			left.first.assign(leftD - rightD, left.second);
 			break;
 		case GS1Parser::OP_ASSIGN_MUL:
-			left_var->assign(leftD * rightD, left.second);
+			left.first.assign(leftD * rightD, left.second);
 			break;
 		case GS1Parser::OP_ASSIGN_DIV:
-			left_var->assign(leftD / rightD, left.second);
+			left.first.assign(leftD / rightD, left.second);
 			break;
 		case GS1Parser::OP_ASSIGN_MOD:
-			left_var->assign(static_cast<double>(static_cast<int64_t>(leftD) % static_cast<int64_t>(rightD)), left.second);
+			left.first.assign(static_cast<double>(static_cast<int64_t>(leftD) % static_cast<int64_t>(rightD)), left.second);
 			break;
 		case GS1Parser::OP_ASSIGN_POW:
-			left_var->assign(std::pow(leftD, rightD), left.second);
+			left.first.assign(std::pow(leftD, rightD), left.second);
 			break;
 	}
 
@@ -1005,7 +885,7 @@ std::any GS1Visitor::visitExpressionTernary(GS1Parser::ExpressionTernaryContext*
 	std::any result = visit(context->logicalOrExpression());
 	for (size_t i = 1; i < context->children.size(); i += 4)
 	{
-		if (getFlagOrBooleanFromAny(result))
+		if ((bool)getReadOnlyGameValueFromAny(result))
 			result = std::move(visit(context->children[i + 1]));
 		else result = std::move(visit(context->children[i + 3]));
 	}
@@ -1017,12 +897,12 @@ std::any GS1Visitor::visitExpressionLogicOr(GS1Parser::ExpressionLogicOrContext*
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	auto left = getFlagOrBooleanFromAny(visit(context->logicalAndExpression(0)));
+	auto left = (bool)getReadOnlyGameValueFromAny(visit(context->logicalAndExpression(0)));
 	if (left) return std::make_any<GS1ScriptValue>(true);
 
 	for (size_t i = 2; i < context->children.size(); i += 2)
 	{
-		auto right = getFlagOrBooleanFromAny(visit(context->children[i]));
+		auto right = (bool)getReadOnlyGameValueFromAny(visit(context->children[i]));
 		if (right) return std::make_any<GS1ScriptValue>(true);
 	}
 
@@ -1034,12 +914,12 @@ std::any GS1Visitor::visitExpressionLogicAnd(GS1Parser::ExpressionLogicAndContex
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	auto left = getFlagOrBooleanFromAny(visit(context->equalityExpression(0)));
+	auto left = (bool)getReadOnlyGameValueFromAny(visit(context->equalityExpression(0)));
 	if (!left) return std::make_any<GS1ScriptValue>(false);
 
 	for (size_t i = 2; i < context->children.size(); i += 2)
 	{
-		auto right = getFlagOrBooleanFromAny(visit(context->children[i]));
+		auto right = (bool)getReadOnlyGameValueFromAny(visit(context->children[i]));
 		if (!right) return std::make_any<GS1ScriptValue>(false);
 	}
 
@@ -1207,20 +1087,17 @@ std::any GS1Visitor::visitExpressionPostfix(GS1Parser::ExpressionPostfixContext*
 
 	auto anyval = visit(context->children[0]);
 	auto left = getGameVariableFromAny(anyval);
-	if (auto* leftVar = getGameVariableFromVariant(left.first); leftVar != nullptr)
-	{
-		auto value = leftVar->get<double>(left.second).value_or(0.0);
+	auto value = left.first.get<double>(left.second).value_or(0.0);
 
-		// Perform the operation.
-		switch (op.value())
-		{
-			case GS1Parser::OP_INC:
-				leftVar->assign(value + 1.0, left.second);
-				break;
-			case GS1Parser::OP_DEC:
-				leftVar->assign(value - 1.0, left.second);
-				break;
-		}
+	// Perform the operation.
+	switch (op.value())
+	{
+		case GS1Parser::OP_INC:
+			left.first.assign(value + 1.0, left.second);
+			break;
+		case GS1Parser::OP_DEC:
+			left.first.assign(value - 1.0, left.second);
+			break;
 	}
 
 	// GS1 assignment operations are statements and can't be used inside expressions.
@@ -1330,6 +1207,13 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 		index = static_cast<size_t>(getReadOnlyGameValueFromAnyAs<double>(expression_any));
 	}
 
+	// If we have an identifier, and the flag store has a matching value, return that.
+	if (!identifier->empty() && flagStore.contains(*identifier))
+	{
+		if (auto flag = flagStore.get(*identifier).lock(); flag != nullptr)
+			return std::make_any<GS1ScriptValue>(GameValue{ flag->get<bool>().value_or(false) });
+	}
+
 	// Append the storage modifier to certain variable names.
 	// This is because they have special considerations.
 	if (storage.has_value())
@@ -1341,19 +1225,17 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 
 	// Get the game variable store for the identifier.
 	// If there is no storage type, it pulls from the built-in variable store (saved on the script context).
-	auto variable = getGameVariableFromStorage(*identifier, storage);
-	auto* gameVariable = getGameVariableFromVariant(variable);
-	if (gameVariable != nullptr)
+	auto variable = getGameValueFromStorage(*identifier, storage);
 	{
 		// If it is temp storage, make sure the variable is marked as temporary so it isn't saved.
 		if (storage.value_or(GS1Parser::STORAGE_THIS) == GS1Parser::STORAGE_TEMP)
-			gameVariable->temporary = true;
+			variable.temporary = true;
 
 		return std::make_any<GS1ScriptValue>(std::make_pair(variable, index));
 	}
 
 	// Return a default value if the identifier is not found.
-	return std::make_any<GS1ScriptValue>(0.0);
+	return std::make_any<GS1ScriptValue>(GameValue{ 0.0 });
 }
 
 std::any GS1Visitor::visitCompoundIdentifier(GS1Parser::CompoundIdentifierContext* context)

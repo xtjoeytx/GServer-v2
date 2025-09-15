@@ -33,8 +33,8 @@
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
-#include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
 
@@ -193,6 +193,8 @@ static MessageCodeHandleMap GenerateMap()
 	return map;
 }
 
+/// @brief Message codes that switch to flag processing mode, which results in identifiers defaulting to client storage.
+/// TODO: This might not be required anymore.
 constexpr std::array<std::string_view, 8> flagProcessingMessageCodes =
 {
 	"I"sv,
@@ -208,18 +210,30 @@ static GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, 
 {
 	PlayerProp propId = GetPlayerPropFromIndex(index);
 	if (propId == PlayerProp::ID)
-		return { GameVariable{ "", std::move(value) }, std::nullopt };
+		return { std::move(value), std::nullopt };
 
-	GameVariable result{ "", std::move(value), {},
-		[visitor, playerId, propIndex = index, propId](GameVariable& var, const GameValue& val, std::optional<size_t> index) -> void
+	GameValue result{ std::move(value) };
+	result.setSetter(
+		[visitor, playerId, propIndex = index, propId](GameValueVariant incoming, std::optional<size_t> index)
 		{
+			GameValue value;
+			const auto picker = visit_functions
+			{
+				[&](std::optional<bool>* in) { if (in->has_value()) value.set(in->value()); },
+				[&](std::optional<double>* in) { if (in->has_value()) value.set(in->value()); },
+				[&](std::optional<std::string>* in) { if (in->has_value()) value.set(in->value()); },
+				[&](std::optional<std::vector<double>>* in) { if (in->has_value()) value.set(in->value()); },
+				[&](std::optional<std::vector<ScriptObject>>* in) { if (in->has_value()) value.set(in->value()); }
+			};
+			std::visit(picker, incoming);
+
 			auto* server = BabyDI::Get<Server>();
 			if (auto player = server->getNPCServer()->getPlayer(playerId); player != nullptr)
 			{
 				if (propId != PlayerProp::COLORS)
 				{
 					auto prop = player->getProp(propId);
-					prop->apply(val);
+					prop->apply(value);
 					auto results = player->setProp(propId, SetBy::SERVER, prop);
 					if (results.resultFlags.test(results.sendToAll))
 						player->sendPropsFromResults(results);
@@ -229,17 +243,17 @@ static GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, 
 					auto colors = player->getProp<PlayerProp::COLORS>();
 					uint8_t colorVal = 0;
 
-					auto strVal = val.get<std::string>();
+					auto strVal = value.get<std::string>();
 					if (strVal.has_value())
 						colorVal = visitor->getColorValueFromString(strVal.value());
-					else colorVal = DoubleAsIntegralFloor<uint8_t>(val.get<double>().value_or(0));
+					else colorVal = DoubleAsIntegralFloor<uint8_t>(value.get<double>().value_or(0));
 
 					colors.values[std::max(0, propIndex - 20)] = colorVal;
 					player->setProp<PlayerProp::COLORS>(SetBy::SERVER, colors);
 				}
 			}
 		}
-	};
+	);
 
 	return { std::move(result), std::nullopt };
 }
@@ -248,11 +262,23 @@ static GS1GameVariable bindNPCSetter(GS1Visitor* visitor, NPCID npcId, uint8_t i
 {
 	NPCProp propId = GetNPCPropFromIndex(index);
 	if (propId == NPCProp::ID)
-		return { GameVariable{ "", std::move(value) }, std::nullopt };
+		return { std::move(value), std::nullopt };
 
-	GameVariable result{ "", std::move(value), {},
-		[visitor, npcId, propIndex = index, propId](GameVariable& var, const GameValue& val, std::optional<size_t> index) -> void
+	GameValue result{ std::move(value) };
+	result.setSetter(
+		[visitor, npcId, propIndex = index, propId](GameValueVariant incoming, std::optional<size_t> index)
 		{
+			GameValue value;
+			const auto picker = visit_functions
+			{
+				[&](std::optional<bool>* in) { if (in->has_value()) value.set(in->value()); },
+				[&](std::optional<double>* in) { if (in->has_value()) value.set(in->value()); },
+				[&](std::optional<std::string>* in) { if (in->has_value()) value.set(in->value()); },
+				[&](std::optional<std::vector<double>>* in) { if (in->has_value()) value.set(in->value()); },
+				[&](std::optional<std::vector<ScriptObject>>* in) { if (in->has_value()) value.set(in->value()); }
+			};
+			std::visit(picker, incoming);
+
 			auto* server = BabyDI::Get<Server>();
 			if (auto npc = server->getNPC(npcId); npc != nullptr)
 			{
@@ -261,10 +287,10 @@ static GS1GameVariable bindNPCSetter(GS1Visitor* visitor, NPCID npcId, uint8_t i
 					auto colors = npc->getProp<NPCProp::COLORS>();
 					uint8_t colorVal = 0;
 
-					auto strVal = val.get<std::string>();
+					auto strVal = value.get<std::string>();
 					if (strVal.has_value())
 						colorVal = visitor->getColorValueFromString(strVal.value());
-					else colorVal = DoubleAsIntegralFloor<uint8_t>(val.get<double>().value_or(0));
+					else colorVal = DoubleAsIntegralFloor<uint8_t>(value.get<double>().value_or(0));
 
 					colors.values[std::max(0, propIndex - 20)] = colorVal;
 					npc->setProp<NPCProp::COLORS>(SetBy::SERVER, colors);
@@ -273,12 +299,12 @@ static GS1GameVariable bindNPCSetter(GS1Visitor* visitor, NPCID npcId, uint8_t i
 				else
 				{
 					auto prop = npc->getProp(propId);
-					prop->apply(val);
+					prop->apply(value);
 					npc->setProp(propId, SetBy::SERVER, prop);
 				}
 			}
 		}
-	};
+	);
 
 	return { std::move(result), std::nullopt };
 }

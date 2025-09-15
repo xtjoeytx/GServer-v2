@@ -58,8 +58,8 @@ void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& 
 
 		// Set the action flag.
 		// Set both the original action and a lowercased version.
-		variableStore.add(GameVariable{ set_temporary, action, true });
-		variableStore.add(GameVariable{ set_temporary, string::toLower(action), true });
+		variableStore.add(GameValue{ set_temporary, action, true });
+		variableStore.add(GameValue{ set_temporary, string::toLower(action), true });
 
 		// If there are just two arguments, try to unpack the second argument.
 		if (event.args.size() == 2)

@@ -1005,41 +1005,41 @@ bool Player::enterLevel(std::shared_ptr<Level> level, Position<int16_t> pos, tim
 
 void Player::constructScriptParameters()
 {
-	scriptParameters.try_emplace("id", set_temporary, "id", gameVariableGetter([this]() { return static_cast<double>(getId()); }), GameVariable::func_set{});
-	scriptParameters.try_emplace("logintime", set_temporary, "logintime", gameVariableGetter(loginTime), GameVariable::func_set{});
-	scriptParameters.try_emplace("lastdead", set_temporary, "lastdead", gameVariableGetter(lastDeadTime), GameVariable::func_set{});
-	scriptParameters.try_emplace("rupees", set_temporary, "rupees", gameVariableGetter(account.character.gralats), gameVariableSetter(this, PROPOPT(PlayerProp::RUPEESCOUNT), account.character.gralats));
-	scriptParameters.try_emplace("gralats", set_temporary, "gralats", gameVariableGetter(account.character.gralats), gameVariableSetter(this, PROPOPT(PlayerProp::RUPEESCOUNT), account.character.gralats));
-	scriptParameters.try_emplace("bombs", set_temporary, "bombs", gameVariableGetter(account.character.bombs), gameVariableSetter(this, PROPOPT(PlayerProp::BOMBSCOUNT), account.character.bombs));
-	scriptParameters.try_emplace("darts", set_temporary, "darts", gameVariableGetter(account.character.arrows), gameVariableSetter(this, PROPOPT(PlayerProp::ARROWSCOUNT), account.character.arrows));
-	scriptParameters.try_emplace("glovepower", set_temporary, "glovepower", gameVariableGetter(account.character.glovePower), gameVariableSetter(this, PROPOPT(PlayerProp::GLOVEPOWER), account.character.glovePower));
-	scriptParameters.try_emplace("swordpower", set_temporary, "swordpower", gameVariableGetter(account.character.swordPower), gameVariableSetter(this, PROPOPT(PlayerProp::SWORDPOWER), account.character.swordPower));
-	scriptParameters.try_emplace("shieldpower", set_temporary, "shieldpower", gameVariableGetter(account.character.shieldPower), gameVariableSetter(this, PROPOPT(PlayerProp::SHIELDPOWER), account.character.shieldPower));
-	scriptParameters.try_emplace("mp", set_temporary, "mp", gameVariableGetter(account.character.mp), gameVariableSetter(this, PROPOPT(PlayerProp::MAGICPOINTS), account.character.mp));
-	scriptParameters.try_emplace("ap", set_temporary, "ap", gameVariableGetter(account.character.ap), gameVariableSetter(this, PROPOPT(PlayerProp::ALIGNMENT), account.character.ap));
-	scriptParameters.try_emplace("attachid", set_temporary, "attachid", gameVariableGetter(m_attachNPC), GameVariable::func_set{});
-	scriptParameters.try_emplace("attachtype", set_temporary, "attachtype", GameValue{ 1.0 });
-	scriptParameters.try_emplace("fullhearts", set_temporary, "fullhearts", gameVariableGetter(account.maxHitpoints), gameVariableSetter(this, PROPOPT(PlayerProp::MAXPOWER), account.maxHitpoints));
-	scriptParameters.try_emplace("maxhp", set_temporary, "maxhp", gameVariableGetter(account.maxHitpoints), gameVariableSetter(this, PROPOPT(PlayerProp::MAXPOWER), account.maxHitpoints));
+	scriptParameters.try_emplace("id", set_temporary, "id", gameValueGetter([this]() { return static_cast<double>(getId()); }), GameValue::func_set{});
+	scriptParameters.try_emplace("logintime", set_temporary, "logintime", gameValueGetter(loginTime), GameValue::func_set{});
+	scriptParameters.try_emplace("lastdead", set_temporary, "lastdead", gameValueGetter(lastDeadTime), GameValue::func_set{});
+	scriptParameters.try_emplace("rupees", set_temporary, "rupees", gameValueGetter(account.character.gralats), gameValueSetter(this, PROPOPT(PlayerProp::RUPEESCOUNT), account.character.gralats));
+	scriptParameters.try_emplace("gralats", set_temporary, "gralats", gameValueGetter(account.character.gralats), gameValueSetter(this, PROPOPT(PlayerProp::RUPEESCOUNT), account.character.gralats));
+	scriptParameters.try_emplace("bombs", set_temporary, "bombs", gameValueGetter(account.character.bombs), gameValueSetter(this, PROPOPT(PlayerProp::BOMBSCOUNT), account.character.bombs));
+	scriptParameters.try_emplace("darts", set_temporary, "darts", gameValueGetter(account.character.arrows), gameValueSetter(this, PROPOPT(PlayerProp::ARROWSCOUNT), account.character.arrows));
+	scriptParameters.try_emplace("glovepower", set_temporary, "glovepower", gameValueGetter(account.character.glovePower), gameValueSetter(this, PROPOPT(PlayerProp::GLOVEPOWER), account.character.glovePower));
+	scriptParameters.try_emplace("swordpower", set_temporary, "swordpower", gameValueGetter(account.character.swordPower), gameValueSetter(this, PROPOPT(PlayerProp::SWORDPOWER), account.character.swordPower));
+	scriptParameters.try_emplace("shieldpower", set_temporary, "shieldpower", gameValueGetter(account.character.shieldPower), gameValueSetter(this, PROPOPT(PlayerProp::SHIELDPOWER), account.character.shieldPower));
+	scriptParameters.try_emplace("mp", set_temporary, "mp", gameValueGetter(account.character.mp), gameValueSetter(this, PROPOPT(PlayerProp::MAGICPOINTS), account.character.mp));
+	scriptParameters.try_emplace("ap", set_temporary, "ap", gameValueGetter(account.character.ap), gameValueSetter(this, PROPOPT(PlayerProp::ALIGNMENT), account.character.ap));
+	scriptParameters.try_emplace("attachid", set_temporary, "attachid", gameValueGetter(m_attachNPC), GameValue::func_set{});
+	scriptParameters.try_emplace("attachtype", set_temporary, "attachtype", 1.0);
+	scriptParameters.try_emplace("fullhearts", set_temporary, "fullhearts", gameValueGetter(account.maxHitpoints), gameValueSetter(this, PROPOPT(PlayerProp::MAXPOWER), account.maxHitpoints));
+	scriptParameters.try_emplace("maxhp", set_temporary, "maxhp", gameValueGetter(account.maxHitpoints), gameValueSetter(this, PROPOPT(PlayerProp::MAXPOWER), account.maxHitpoints));
 
 	scriptParameters.try_emplace("hearts", set_temporary, "hearts",
-		gameVariableGetter([this]() { return account.character.hitpointsInHalves / 2.0; }),
-		gameVariableSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<size_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
+		gameValueGetter([this]() { return account.character.hitpointsInHalves / 2.0; }),
+		gameValueSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<size_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
 	scriptParameters.try_emplace("hp", set_temporary, "hp",
-		gameVariableGetter([this]() { return account.character.hitpointsInHalves / 2.0; }),
-		gameVariableSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<size_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
+		gameValueGetter([this]() { return account.character.hitpointsInHalves / 2.0; }),
+		gameValueSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<size_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
 	scriptParameters.try_emplace("x", set_temporary, "x",
-		gameVariableGetter([this]() { return account.character.getGlobalPosition().x() / 16.0; }),
-		gameVariableSetter(this, PROPOPT(PlayerProp::X2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelX = value.get<double>().value_or(0.0) * 16; }));
+		gameValueGetter([this]() { return account.character.getGlobalPosition().x() / 16.0; }),
+		gameValueSetter(this, PROPOPT(PlayerProp::X2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelX = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("y", set_temporary, "y",
-		gameVariableGetter([this]() { return account.character.getGlobalPosition().y() / 16.0; }),
-		gameVariableSetter(this, PROPOPT(PlayerProp::Y2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelY = value.get<double>().value_or(0.0) * 16; }));
+		gameValueGetter([this]() { return account.character.getGlobalPosition().y() / 16.0; }),
+		gameValueSetter(this, PROPOPT(PlayerProp::Y2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelY = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("z", set_temporary, "z",
-		gameVariableGetter([this]() { return account.character.localPixelZ / 16.0; }),
-		gameVariableSetter(this, PROPOPT(PlayerProp::Z2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
+		gameValueGetter([this]() { return account.character.localPixelZ / 16.0; }),
+		gameValueSetter(this, PROPOPT(PlayerProp::Z2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
 
 	scriptParameters.try_emplace("headset", set_temporary, "headset",
-		gameVariableGetter(
+		gameValueGetter(
 			[this]()
 			{
 				int headSet = -1;
@@ -1047,7 +1047,7 @@ void Player::constructScriptParameters()
 					string::toNumber(account.character.headImage.substr(4), headSet);
 				return static_cast<double>(headSet);
 			}),
-		gameVariableSetter(this, PROPOPT(PlayerProp::HEADGIF),
+		gameValueSetter(this, PROPOPT(PlayerProp::HEADGIF),
 			[this](const GameValue& value, std::optional<size_t>)
 			{
 				auto headSet = std::clamp(static_cast<int>(value.get<double>().value_or(-1.0)), -1, 99);
@@ -1056,8 +1056,8 @@ void Player::constructScriptParameters()
 			})
 	);
 	scriptParameters.try_emplace("sprite", set_temporary, "sprite",
-		gameVariableGetter(account.character.sprite),
-		gameVariableSetter(this, PROPOPT(PlayerProp::SPRITE),
+		gameValueGetter(account.character.sprite),
+		gameValueSetter(this, PROPOPT(PlayerProp::SPRITE),
 			[this](const GameValue& value, std::optional<size_t>)
 			{
 				account.character.sprite = static_cast<uint8_t>(value.get<double>().value_or(0.0));
@@ -1069,8 +1069,8 @@ void Player::constructScriptParameters()
 			})
 	);
 	scriptParameters.try_emplace("dir", set_temporary, "dir",
-		gameVariableGetter([this]() { return static_cast<double>(account.character.direction); }),
-		gameVariableSetter(this, PROPOPT(PlayerProp::SPRITE),
+		gameValueGetter([this]() { return static_cast<double>(account.character.direction); }),
+		gameValueSetter(this, PROPOPT(PlayerProp::SPRITE),
 			[this](const GameValue& value, std::optional<size_t>)
 			{
 				account.character.direction = std::clamp(static_cast<uint8_t>(value.get<double>().value_or(0.0)), 0_ui8, 3_ui8);
@@ -1079,13 +1079,13 @@ void Player::constructScriptParameters()
 
 	// trial, classic, vip, gold
 	scriptParameters.try_emplace("upgradestatus", set_temporary, "upgradestatus",
-		gameVariableGetter([this]() { return isGuest() ? "trial"s : "classic"s; }),
-		GameVariable::func_set{}
+		gameValueGetter([this]() { return isGuest() ? "trial"s : "classic"s; }),
+		GameValue::func_set{}
 	);
 
 	scriptParameters.try_emplace("saysnumber", set_temporary, "saysnumber",
-		gameVariableGetter([this]() { return string::toDouble(account.character.chatMessage); }),
-		GameVariable::func_set{}
+		gameValueGetter([this]() { return string::toDouble(account.character.chatMessage); }),
+		GameValue::func_set{}
 	);
 }
 

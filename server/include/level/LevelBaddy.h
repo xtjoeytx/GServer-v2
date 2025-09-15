@@ -118,7 +118,7 @@ public:
 
 public:
 	[[inline]] void constructScriptParameters();
-	string_map<GameVariable> scriptParameters;
+	string_map<GameValue> scriptParameters;
 
 private:
 	std::weak_ptr<Level> m_level;
@@ -132,13 +132,13 @@ private:
 inline void LevelBaddy::constructScriptParameters()
 {
 	// TODO: headdir
-	scriptParameters.try_emplace("x", set_temporary, "x", gameVariableGetter([this]() { return position.x() / 16.0; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("y", set_temporary, "y", gameVariableGetter([this]() { return position.y() / 16.0; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("type", set_temporary, "type", gameVariableGetter([this]() { return (double)type; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("dir", set_temporary, "dir", gameVariableGetter([this]() { return (double)direction; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("headdir", set_temporary, "headdir", gameVariableGetter([this]() { return (double)headDirection; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("power", set_temporary, "power", gameVariableGetter([this]() { return (double)power; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("mode", set_temporary, "mode", gameVariableGetter([this]() { return (double)mode; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("x", set_temporary, "x", gameValueGetter([this]() { return position.x() / 16.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("y", set_temporary, "y", gameValueGetter([this]() { return position.y() / 16.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("type", set_temporary, "type", gameValueGetter([this]() { return (double)type; }), GameValue::func_set{});
+	scriptParameters.try_emplace("dir", set_temporary, "dir", gameValueGetter(direction), GameValue::func_set{});
+	scriptParameters.try_emplace("headdir", set_temporary, "headdir", gameValueGetter(headDirection), GameValue::func_set{});
+	scriptParameters.try_emplace("power", set_temporary, "power", gameValueGetter(power), GameValue::func_set{});
+	scriptParameters.try_emplace("mode", set_temporary, "mode", gameValueGetter([this]() { return (double)mode; }), GameValue::func_set{});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

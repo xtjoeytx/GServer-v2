@@ -501,7 +501,7 @@ void fn_addstring(GS1Visitor* visitor, std::string_view commandName, const std::
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: addstring list,text");
 
-	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
+	if (auto* listVar = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
 		auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
 		auto& list = listVar->get<std::string>();
@@ -873,7 +873,7 @@ void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const st
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: deletestring list,index");
 
-	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
+	if (auto* listVar = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
 		auto list = string::splitHard(listVar->get<std::string>().value_or(std::string{}), ","sv);
 		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
@@ -1223,7 +1223,7 @@ void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const st
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: insertstring list,index,text");
 
-	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
+	if (auto* listVar = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
 		auto list = string::splitHard(listVar->get<std::string>().value_or(std::string{}), ","sv);
 		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
@@ -1616,7 +1616,7 @@ void fn_removestring(GS1Visitor* visitor, std::string_view commandName, const st
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: removestring list,text");
 
-	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
+	if (auto* listVar = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
 		auto list = listVar->get<std::string>().value_or(std::string{});
 		auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
@@ -1663,7 +1663,7 @@ void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const s
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: replacestring list,index,text");
 
-	if (auto* listVar = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
+	if (auto* listVar = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
 		auto list = listVar->get<std::string>().value_or(std::string{});
 		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
@@ -1840,7 +1840,7 @@ void fn_set(GS1Visitor* visitor, std::string_view commandName, const std::vector
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: set flag");
 
-	if (auto* flag = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); flag != nullptr)
+	if (auto* flag = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); flag != nullptr)
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (flag->identifier.starts_with("client.") || flag->identifier.starts_with("clientr."))
@@ -1886,7 +1886,7 @@ void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::v
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: setarray var,size");
 
-	if (auto* var = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); var != nullptr)
+	if (auto* var = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); var != nullptr)
 	{
 		auto size = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 		std::vector<double> arrayValues;
@@ -1979,7 +1979,7 @@ void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std
 	if (arguments.size() == 0)
 		throw std::invalid_argument("invalid arguments: setcharprop messagecode,text");
 
-	if (auto* messagecode = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); messagecode != nullptr)
+	if (auto* messagecode = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); messagecode != nullptr)
 	{
 		std::string text;
 		if (arguments.size() == 2)
@@ -2201,7 +2201,7 @@ void fn_setplayerprop(GS1Visitor* visitor, std::string_view commandName, const s
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		if (auto* messagecode = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); messagecode != nullptr)
+		if (auto* messagecode = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); messagecode != nullptr)
 		{
 			auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
 			messagecode->assign<std::string>(text);
@@ -2344,7 +2344,7 @@ void fn_setstring(GS1Visitor* visitor, std::string_view commandName, const std::
 		throw std::invalid_argument("invalid arguments: setstring var,text");
 
 	// Assign the string.
-	if (auto* var = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); var != nullptr)
+	if (auto* var = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); var != nullptr)
 	{
 		std::string text;
 		if (arguments.size() == 2)
@@ -2979,7 +2979,7 @@ void fn_tokenize(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 	auto text = visitor->getGameValueAs<std::string>(*arguments[0]);
 	visitor->tokenizeTokens = string::splitHard(text, " "sv);
-	visitor->builtInStore->add(GameVariable{ set_temporary, "tokenscount", GameValue{static_cast<double>(visitor->tokenizeTokens.size()) } });
+	visitor->builtInStore->add(GameValue{ set_temporary, "tokenscount", static_cast<double>(visitor->tokenizeTokens.size()) });
 }
 
 // tokenize2 delims,text;
@@ -2992,7 +2992,7 @@ void fn_tokenize2(GS1Visitor* visitor, std::string_view commandName, const std::
 	auto delims = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
 	visitor->tokenizeTokens = string::splitHard(text, delims);
-	visitor->builtInStore->add(GameVariable{ set_temporary, "tokenscount", GameValue{static_cast<double>(visitor->tokenizeTokens.size()) } });
+	visitor->builtInStore->add(GameValue{ set_temporary, "tokenscount", static_cast<double>(visitor->tokenizeTokens.size()) });
 }
 
 // triggeraction x,y,action,params;
@@ -3044,7 +3044,7 @@ void fn_unset(GS1Visitor* visitor, std::string_view commandName, const std::vect
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: unset flag");
 
-	if (auto* flag = visitor->getGameVariableFromGS1ScriptValue(*arguments[0]); flag != nullptr)
+	if (auto* flag = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); flag != nullptr)
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (flag->identifier.starts_with("client.") || flag->identifier.starts_with("clientr."))

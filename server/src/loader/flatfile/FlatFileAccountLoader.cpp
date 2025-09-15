@@ -204,7 +204,7 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 			account.lastSparTime = clock::from_time_t(string::toNumber<time_t>(val));
 		else if (section == "FLAG")
 		{
-			auto variable = GameVariable::deserialize(i.toString());
+			auto variable = GameValue::deserialize(i.toString());
 			if (variable.has_value())
 				account.variables.add(std::move(variable.value()));
 		}

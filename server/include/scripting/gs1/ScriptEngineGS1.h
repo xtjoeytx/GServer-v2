@@ -126,8 +126,8 @@ Character* getCharacterFromSource(const ScriptObject& source, std::optional<size
 
 //----------------------------
 
-/// @brief A GS1 variable pair of a GameVariable and an index (for an array access).
-using GS1GameVariable = std::pair<GameVariableVariant, std::optional<size_t>>;
+/// @brief A GS1 variable pair of a GameValue and an index (for an array access).
+using GS1GameVariable = std::pair<GameValue, std::optional<size_t>>;
 
 /// @brief A GS1 script value used in the GS1 visitor pattern.
 using GS1ScriptValue = std::variant<GS1GameVariable, GameValue, ScriptObject>;

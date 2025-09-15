@@ -291,7 +291,7 @@ public:
 
 public:
 	void constructScriptParameters();
-	string_map<GameVariable> scriptParameters;
+	string_map<GameValue> scriptParameters;
 
 public:
 	bool deleteFlag(std::string_view flagName, bool sendToPlayer = false);

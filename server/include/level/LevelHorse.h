@@ -35,20 +35,20 @@ struct LevelHorse
 	TimeoutGenerator timeout;
 
 	[[inline]] void constructScriptParameters();
-	string_map<GameVariable> scriptParameters;
+	string_map<GameValue> scriptParameters;
 };
 
 //----------------------------
 
 inline void LevelHorse::constructScriptParameters()
 {
-	scriptParameters.try_emplace("x", set_temporary, "x", gameVariableGetter([this]() { return position.x() / 16.0; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("y", set_temporary, "y", gameVariableGetter([this]() { return position.y() / 16.0; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("dir", set_temporary, "dir", gameVariableGetter([this]() { return (double)direction; }), GameVariable::func_set{});
-	scriptParameters.try_emplace("bushes", set_temporary, "bushes", gameVariableGetter([this]() { return (double)bushes; }), GameVariable::func_set{});
-	//scriptParameters.try_emplace("bombs", set_temporary, "bombs", gameVariableGetter([this]() { return (double)direction; }), GameVariable::func_set{});
-	//scriptParameters.try_emplace("bombpower", set_temporary, "bombpower", gameVariableGetter([this]() { return (double)direction; }), GameVariable::func_set{});
-	//scriptParameters.try_emplace("type", set_temporary, "type", gameVariableGetter([this]() { return (double)direction; }), GameVariable::func_set{});
+	scriptParameters.try_emplace("x", set_temporary, "x", gameValueGetter([this]() { return position.x() / 16.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("y", set_temporary, "y", gameValueGetter([this]() { return position.y() / 16.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("dir", set_temporary, "dir", gameValueGetter(direction), GameValue::func_set{});
+	scriptParameters.try_emplace("bushes", set_temporary, "bushes", gameValueGetter(bushes), GameValue::func_set{});
+	//scriptParameters.try_emplace("bombs", set_temporary, "bombs", gameValueGetter([this]() { return (double)direction; }), GameValue::func_set{});
+	//scriptParameters.try_emplace("bombpower", set_temporary, "bombpower", gameValueGetter([this]() { return (double)direction; }), GameValue::func_set{});
+	//scriptParameters.try_emplace("type", set_temporary, "type", gameValueGetter([this]() { return (double)direction; }), GameValue::func_set{});
 }
 
 ///////////////////////////////////////////////////////////////////////////////
