@@ -336,7 +336,38 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 		}), GameValue::func_set{}
 	});
 
-	// tiles[x,y] is directly handled in the GS1Visitor and is aliased to the "board" variable.
+	// tiles[x,y] -> tiles[]
+	variableStore.add(GameValue{ "tiles",
+		gameValueGetter([level](std::optional<size_t> index)
+		{
+			auto levelPtr = level.lock();
+			if (levelPtr == nullptr || !index.has_value()) return 0.0;
+
+			// Get the tile X/Y out of the index.
+			uint32_t tileX = static_cast<uint32_t>(index.value() >> 32);
+			uint32_t tileY = static_cast<uint32_t>(index.value() & 0xFFFFFFFF);
+			TilePosition tilePos{ static_cast<float>(tileX), static_cast<float>(tileY) };
+
+			// Get the tile.
+			if (auto tile = levelPtr->getMapTileForEditing(tilePos); tile != nullptr)
+				return static_cast<double>(*tile);
+			return 0.0;
+		}),
+		gameValueSetter([level](const GameValue& value, std::optional<size_t> index)
+		{
+			auto levelPtr = level.lock();
+			if (levelPtr == nullptr || !index.has_value()) return;
+
+			// Get the tile X/Y out of the index.
+			uint32_t tileX = static_cast<uint32_t>(index.value() >> 32);
+			uint32_t tileY = static_cast<uint32_t>(index.value() & 0xFFFFFFFF);
+			TilePosition tilePos{ static_cast<float>(tileX), static_cast<float>(tileY) };
+
+			// Get and update the tile.
+			if (auto tile = levelPtr->getMapTileForEditing(tilePos); tile != nullptr)
+				*tile = static_cast<uint16_t>(value.get<double>().value_or(0.0));
+		})
+	});
 }
 
 void setOtherVariables(GameVariableStore& variableStore, ScriptEvent& event)

@@ -1204,15 +1204,14 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 	std::optional<size_t> index = std::nullopt;
 
 	// Test for tiles[x,y].
-	// Since tiles[x,y] is a unique case, it is far easier to just alias it to the board[] variable.
+	// Since tiles[x,y] is a unique case, we encode the index with the X/Y.
 	if (*identifier == "tiles" && conditionalExpressions.size() == 2)
 	{
-		*identifier = "board";
 		auto param1 = visit(conditionalExpressions[0]);
 		auto param2 = visit(conditionalExpressions[1]);
-		auto x = static_cast<size_t>(getReadOnlyGameValueFromAnyAs<double>(param1));
-		auto y = static_cast<size_t>(getReadOnlyGameValueFromAnyAs<double>(param2));
-		index = (y * 64) + x;
+		auto x = static_cast<uint32_t>(std::max(0.0, getReadOnlyGameValueFromAnyAs<double>(param1)));
+		auto y = static_cast<uint32_t>(std::max(0.0, getReadOnlyGameValueFromAnyAs<double>(param2)));
+		index = (static_cast<size_t>(x) << 32) | y;
 	}
 	else if (conditionalExpressions.size() == 1)
 	{

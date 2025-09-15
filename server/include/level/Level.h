@@ -81,6 +81,7 @@ public:
 	bool isOnGmap() const noexcept { return m_map != nullptr && m_map->isGmap(); }
 	bool isOnBigMap() const noexcept { return m_map != nullptr && m_map->isBigMap(); }
 	[[inline]] const std::string getMapOrLevelName() const noexcept;
+	uint16_t* getMapTileForEditing(const TilePosition& position) noexcept;
 	[[inline]] PixelPosition convertToMapPosition(const LocalPixelPosition& position) const noexcept;
 	[[inline]] PixelPosition convertToMapPosition(const LocalWholeTilePosition& position) const noexcept;
 
@@ -130,7 +131,11 @@ public:
 	void removeNPC(NPCID npcId);
 
 public:
-	bool alterBoard(CString& tileData, const LocalWholeTileRectangleArea& area, Player* player);
+	bool alterBoard(CString& tileData, const LocalWholeTileRectangleArea& area, Player* player, bool forceRespawn = false, bool allowRespawn = true);
+	void applyBoardChangeFromScriptTiles(const LocalWholeTileRectangleArea& area, bool forceRespawn = false, bool allowRespawn = true);
+	void saveBoardChangeFromScriptTiles(const LocalWholeTileRectangleArea& area);
+	void updateBoard(const TileRectangleArea& area) noexcept;
+	void updateBoard2(const TileRectangleArea& area) noexcept;
 
 public:
 	LevelArrow* addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObject from);
@@ -268,6 +273,7 @@ private:
 	std::shared_ptr<Map> m_map;
 
 	std::map<uint8_t, LevelTiles> m_tiles;
+	LevelTiles m_scriptUpdatedTiles{ constants::EmptyTile };
 	std::vector<LevelBoardChange> m_boardChanges;
 
 	std::deque<PlayerID> m_players;

@@ -10,6 +10,11 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace constants
+{
+inline constexpr uint16_t EmptyTile = 0xFFFF;
+} // end namespace constants
+
 class LevelTiles
 {
 public:

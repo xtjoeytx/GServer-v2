@@ -251,6 +251,7 @@ public:
 	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;
 	void sendPacketToLevelAndPastVisitorsAfter(Level* level, time_t modTime, const CString& packet) const;
 	void sendPacketToNearby(const CString& packet, const PixelPosition& position, std::shared_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendBoardUpdatePacketToNearby(const CString& packet, const PixelPosition& position, std::shared_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 
 public:
 	void sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level) const;

@@ -335,7 +335,6 @@ inline constexpr std::pair<uint8_t, uint8_t> toMapPosition(const PixelPosition& 
 
 //----------------------------
 
-template<typename P, typename S>
 inline constexpr PixelRectangleArea toPixelRectangleArea(const TileRectangleArea& rect)
 {
 	Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width() * 16), static_cast<uint16_t>(rect.size.height() * 16) };
@@ -389,8 +388,16 @@ inline constexpr LocalWholeTileRectangleArea toLocalWholeTileRectangleArea(const
 		auto height = static_cast<int32_t>(rect.size.height() + std::numeric_limits<float>::epsilon());
 
 		// If the relative position to the origin is negative, we need to adjust it to be within the local level.
-		if (x * 16 < origin.x()) x = 0;
-		if (y * 16 < origin.y()) y = 0;
+		if (x * 16 < origin.x())
+		{
+			width -= (origin.x() - (x * 16)) / 16;
+			x = 0;
+		}
+		if (y * 16 < origin.y())
+		{
+			height -= (origin.y() - (y * 16)) / 16;
+			y = 0;
+		}
 
 		// Adjust the position to fit within the local level.
 		x %= 64;

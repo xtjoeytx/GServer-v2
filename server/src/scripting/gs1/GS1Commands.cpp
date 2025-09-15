@@ -3067,15 +3067,37 @@ void fn_unset(GS1Visitor* visitor, std::string_view commandName, const std::vect
 }
 
 // updateboard x,y,width,height;
+// Updates a portion of the map board, making changes visible to other players.
 void fn_updateboard(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("updateboard is not implemented yet.");
+	if (arguments.size() != 4)
+		throw std::invalid_argument("invalid arguments: updateboard x,y,width,height");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto x = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[0])));
+		auto y = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
+		auto width = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[2])));
+		auto height = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[3])));
+		level->updateBoard({ { x, y }, { width, height } });
+	}
 }
 
 // updateboard2 x,y,width,height;
+// Updates a portion of the map board, saves the changes to the map file, and makes the changes visible to other players.
 void fn_updateboard2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("updateboard2 is not implemented yet.");
+	if (arguments.size() != 4)
+		throw std::invalid_argument("invalid arguments: updateboard2 x,y,width,height");
+
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto x = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[0])));
+		auto y = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
+		auto width = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[2])));
+		auto height = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[3])));
+		level->updateBoard2({ { x, y }, { width, height } });
+	}
 }
 
 // updateterrain;

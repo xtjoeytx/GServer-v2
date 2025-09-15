@@ -103,6 +103,16 @@ inline constexpr int32_t operator""_i32(unsigned long long val)
 	return static_cast<int32_t>(val);
 }
 
+inline constexpr uint64_t operator""_ui64(unsigned long long val)
+{
+	return static_cast<uint64_t>(val);
+}
+
+inline constexpr int64_t operator""_i64(unsigned long long val)
+{
+	return static_cast<int64_t>(val);
+}
+
 //----------------------------
 // Property helpers
 

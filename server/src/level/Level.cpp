@@ -384,7 +384,8 @@ void Level::doTimedEvents()
 			// change, the client won't get the new data.
 			change.swapTiles();
 			change.setModTime(time(0));
-			server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << change.getBoardStr(), this->shared_from_this());
+			auto changePosition = convertToMapPosition(LocalWholeTilePosition{ (uint8_t)change.getX(), (uint8_t)change.getY() });
+			server->sendBoardUpdatePacketToNearby(CString() >> (char)PLO_LEVELBOARD << change.getBoardStr(), changePosition, this->shared_from_this());
 		}
 	}
 
@@ -686,7 +687,7 @@ void Level::removeNPC(NPCID npcId)
 
 //----------------------------
 
-bool Level::alterBoard(CString& tileData, const LocalWholeTileRectangleArea& area, Player* player)
+bool Level::alterBoard(CString& tileData, const LocalWholeTileRectangleArea& area, Player* player, bool forceRespawn, bool allowRespawn)
 {
 	if (area.position.x() > 63 || area.position.y() > 63 ||
 		area.size.width() < 1 || area.size.height() < 1 ||
@@ -743,7 +744,7 @@ bool Level::alterBoard(CString& tileData, const LocalWholeTileRectangleArea& are
 			tileData.setRead(0);
 
 			// Check if we found a full tile.  If so, don't accept the change.
-			if (foundCount == 4)
+			if (foundCount == 4 && player != nullptr)
 			{
 				player->sendPacket(CString() >> (char)PLO_BOARDMODIFY >> (char)area.position.x() >> (char)area.position.y() >> (char)area.size.width() >> (char)area.size.height() << tileData);
 				return false;
@@ -768,7 +769,7 @@ bool Level::alterBoard(CString& tileData, const LocalWholeTileRectangleArea& are
 	// The list of tiles is mostly for security checks and should be a list of allowed replacements.
 	// TODO: Develop a way to specify valid tile replacements.
 	int respawnTime = settings.getInt("respawntime", 15);
-	bool doRespawn = (area.size.width() == 2 && area.size.height() == 2);
+	bool doRespawn = allowRespawn && (forceRespawn || (area.size.width() == 2 && area.size.height() == 2));
 
 	/*
 	// Check if the tiles should be respawned.
@@ -797,6 +798,103 @@ bool Level::alterBoard(CString& tileData, const LocalWholeTileRectangleArea& are
 	// Should we do it that way still?
 	m_boardChanges.push_back(LevelBoardChange(area.position.x(), area.position.y(), area.size.width(), area.size.height(), tileData, oldTiles, (doRespawn ? respawnTime : -1)));
 	return true;
+}
+
+void Level::applyBoardChangeFromScriptTiles(const LocalWholeTileRectangleArea& area, bool forceRespawn, bool allowRespawn)
+{
+	// Assemble the tile data.
+	CString tileData;
+	for (int j = area.position.y(); j < area.position.y() + area.size.height(); ++j)
+	{
+		for (int i = area.position.x(); i < area.position.x() + area.size.width(); ++i)
+		{
+			auto tile = m_scriptUpdatedTiles[i + (static_cast<size_t>(j) * 64)];
+			if (tile == constants::EmptyTile)
+				tile = m_tiles[0][i + (static_cast<size_t>(j) * 64)];
+			tileData.writeGShort(tile);
+		}
+	}
+
+	// Apply the board update.
+	if (alterBoard(tileData, area, nullptr, forceRespawn, allowRespawn))
+	{
+		// Send the board update to nearby players.
+		auto& boardChange = m_boardChanges.back();
+		BabyDI::Get<Server>()->sendBoardUpdatePacketToNearby(CString() >> (char)PLO_LEVELBOARD << boardChange.getBoardStr(), convertToMapPosition(area.position), this->shared_from_this());
+	}
+}
+
+void Level::saveBoardChangeFromScriptTiles(const LocalWholeTileRectangleArea& area)
+{
+	for (int j = area.position.y(); j < area.position.y() + area.size.height(); ++j)
+	{
+		for (int i = area.position.x(); i < area.position.x() + area.size.width(); ++i)
+		{
+			auto tile = m_scriptUpdatedTiles[i + (static_cast<size_t>(j) * 64)];
+			if (tile != constants::EmptyTile)
+				m_tiles[0][i + (static_cast<size_t>(j) * 64)] = tile;
+		}
+	}
+}
+
+void Level::updateBoard(const TileRectangleArea& area) noexcept
+{
+	// Non-gmaps.
+	if (!isOnGmap())
+	{
+		auto localArea = toLocalWholeTileRectangleArea({ 0, 0 }, area);
+		applyBoardChangeFromScriptTiles(localArea, true);
+		return;
+	}
+
+	// Gmaps.
+	for (const auto& levelPtr : m_map->getLevelsInRectangle(toPixelRectangleArea(area)))
+	{
+		auto localArea = toLocalWholeTileRectangleArea(levelPtr->getMapPixelOffset(), area);
+		if (localArea.size.width() != 0 && localArea.size.height() != 0)
+			levelPtr->applyBoardChangeFromScriptTiles(localArea, true);
+	}
+}
+
+void Level::updateBoard2(const TileRectangleArea& area) noexcept
+{
+	// If we don't allow permanent tile modifications, just call updateBoard().
+	auto server = BabyDI::Get<Server>();
+	if (server->getSettings().getBool("savelevels", false) == false)
+	{
+		updateBoard(area);
+		return;
+	}
+
+	bool levelsAutoSave = server->getSettings().getBool("levelsautosave", true);
+
+	// Non-gmaps.
+	if (!isOnGmap())
+	{
+		auto localArea = toLocalWholeTileRectangleArea({ 0, 0 }, area);
+		applyBoardChangeFromScriptTiles(localArea, false, false);
+		if (levelsAutoSave)
+		{
+			saveBoardChangeFromScriptTiles(localArea);
+			saveLevel(levelName);
+		}
+		return;
+	}
+
+	// Gmaps.
+	for (const auto& levelPtr : m_map->getLevelsInRectangle(toPixelRectangleArea(area)))
+	{
+		auto localArea = toLocalWholeTileRectangleArea(levelPtr->getMapPixelOffset(), area);
+		if (localArea.size.width() != 0 && localArea.size.height() != 0)
+		{
+			levelPtr->applyBoardChangeFromScriptTiles(localArea, false, false);
+			if (levelsAutoSave)
+			{
+				levelPtr->saveBoardChangeFromScriptTiles(localArea);
+				levelPtr->saveLevel(levelPtr->levelName);
+			}
+		}
+	}
 }
 
 //----------------------------
@@ -1773,6 +1871,27 @@ bool Level::isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept
 		}
 	}
 	return false;
+}
+
+//----------------------------
+
+uint16_t* Level::getMapTileForEditing(const TilePosition& position) noexcept
+{
+	auto mapTileOrigin = mapPosition * 64;
+	if (position.x() >= mapTileOrigin.x() && position.x() < mapTileOrigin.x() + 64
+		&& position.y() >= mapTileOrigin.y() && position.y() < mapTileOrigin.y() + 64)
+	{
+		auto localTilePos = toLocalWholeTilePosition(position);
+		return &m_scriptUpdatedTiles[static_cast<size_t>(localTilePos.y()) * 64 + localTilePos.x()];
+	}
+
+	if (isOnGmap() && m_map != nullptr)
+	{
+		auto level = m_map->getLevelAt(toPixelPosition(position));
+		return level->getMapTileForEditing(position);
+	}
+
+	return nullptr;
 }
 
 //----------------------------

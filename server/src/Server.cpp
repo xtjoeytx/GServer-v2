@@ -1601,6 +1601,28 @@ void Server::sendPacketToNearby(const CString& packet, const PixelPosition& posi
 	}
 }
 
+/// @brief Sends a board update packet to all nearby players in a level (sending PLO_LEVELNAME before and after the packet).
+///
+/// Board updates are processed in a different way by the client.  In order to cross gmap levels correctly, we need to force the level name first.
+void Server::sendBoardUpdatePacketToNearby(const CString& packet, const PixelPosition& position, std::shared_ptr<Level> level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
+{
+	if (!running || level == nullptr) return;
+
+	auto levelName = level->getMapOrLevelName();
+	auto players = level->findInRangePlayersForCommunication(position);
+	for (const auto& playerId : players)
+	{
+		if (exclude.contains(playerId))
+			continue;
+		if (auto player = getPlayer<PlayerClient>(playerId); player != nullptr && (!sendIf || sendIf(player.get())))
+		{
+			player->sendPacket(CString() >> (char)PLO_LEVELNAME << level->levelName);
+			player->sendPacket(packet);
+			player->sendPacket(CString() >> (char)PLO_LEVELNAME << player->getComputedLevelName());
+		}
+	}
+}
+
 /*
 	NPC-Server Functionality
 */

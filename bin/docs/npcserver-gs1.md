@@ -134,7 +134,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       paramscount
       players[]
       playerscount
-      tiles[x,y]      (not gmap supported yet)
+      tiles[x,y]
       timevar
       timevar2
       tokenscount
@@ -419,6 +419,8 @@ Please review the lists below of implemented events, flags, functions, commands,
       triggeraction
       unfreezeplayer
       unset
+      updateboard
+      updateboard2
       warpto
 
 #### Not implemented
@@ -429,12 +431,11 @@ Please review the lists below of implemented events, flags, functions, commands,
       deletelevel
     * hitcompu
       saveinfo
+    * savelevel
       savelog
       setz
     * showstats
       toweapons
-      updateboard
-      updateboard2
       updateterrain
 
 #### Clientside only
@@ -564,7 +565,7 @@ Please review the lists below of implemented events, flags, functions, commands,
     base64encode(string)
     findnearestplayers(x, y)
     getz(x, y)
-    tiletype(x, y) (new tileset layout)
+    tiletype(x, y)                    (new tileset layout)
 
 #### Clientside only
 
