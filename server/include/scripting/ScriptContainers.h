@@ -1033,7 +1033,7 @@ GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, Value& p
 				{
 					if (auto value = std::get_if<std::optional<std::vector<double>>*>(&incoming); value != nullptr)
 					{
-						const std::vector<double> vec = (*value)->value_or({});
+						const std::vector<double> vec = (*value)->value_or(std::vector<double>{});
 						copyToArrayAs<value_type>(vec, propvalue);
 					}
 					if (prop.has_value())

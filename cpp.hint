@@ -6,3 +6,4 @@
 #define FOR_LIST_OF_PLAYER_PROPS(DO)
 #define DO_PACKETLOG(LOG)
 #define assert(expression)
+#define RECOVERABLE_PARSE_ERROR(MESSAGE, RETVAL)
