@@ -200,6 +200,10 @@ public:
 		return *this;
 	}
 
+	/// @brief If the variable is an array, flattens it into a single value.
+	/// @return A reference to the modified GameValue object.
+	GameValue flatten(size_t index) const noexcept;
+
 	/// @brief Tests the GameValue as a flag check.
 	/// @return True if the GameValue has a boolean value or a non-empty string value, false otherwise.
 	bool testAsFlag() const;
@@ -848,6 +852,12 @@ concept ValidGameValueCallable = requires(T t)
 	{ t() } -> std::convertible_to<GameValue>;
 };
 
+template<typename T>
+concept ValidGameValueCallableWithIndex = requires(T t)
+{
+	{ t(std::declval<std::optional<size_t>>()) } -> std::convertible_to<GameValue>;
+};
+
 
 ////////////////////////////////////////////////////////////
 // Functions
@@ -880,6 +890,24 @@ GameValue::func_get gameValueGetter(ValidGameValueCallable auto getter)
 	return [getter](GameValueVariant incoming, std::optional<size_t> index)
 	{
 		GameValue value{ getter() };
+		const auto picker = visit_functions
+		{
+			[&](std::optional<bool>* in) { *in = value.get<bool>().value_or(false); },
+			[&](std::optional<double>* in) { *in = value.get<double>().value_or(0.0); },
+			[&](std::optional<std::string>* in) { *in = value.get<std::string>().value_or(std::string{}); },
+			[&](std::optional<std::vector<double>>* in) { *in = value.get<std::vector<double>>().value_or(std::vector<double>{}); },
+			[&](std::optional<std::vector<ScriptObject>>* in) { *in = value.get<std::vector<ScriptObject>>().value_or(std::vector<ScriptObject>{}); }
+		};
+		std::visit(picker, incoming);
+	};
+}
+
+/// @brief A getter function for a property that gets its results from another getter function.
+inline GameValue::func_get gameValueGetter(ValidGameValueCallableWithIndex auto getter)
+{
+	return [getter](GameValueVariant incoming, std::optional<size_t> index)
+	{
+		GameValue value{ getter(index) };
 		const auto picker = visit_functions
 		{
 			[&](std::optional<bool>* in) { *in = value.get<bool>().value_or(false); },
@@ -958,11 +986,11 @@ GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, std::fun
 		GameValue value;
 		const auto picker = visit_functions
 		{
-			[&](std::optional<bool>* in) { if (in->has_value()) value.set(in->value()); },
-			[&](std::optional<double>* in) { if (in->has_value()) value.set(in->value()); },
-			[&](std::optional<std::string>* in) { if (in->has_value()) value.set(in->value()); },
-			[&](std::optional<std::vector<double>>* in) { if (in->has_value()) value.set(in->value()); },
-			[&](std::optional<std::vector<ScriptObject>>* in) { if (in->has_value()) value.set(in->value()); }
+			[&](std::optional<bool>* in) { if (in->has_value()) value.set(in->value(), index); },
+			[&](std::optional<double>* in) { if (in->has_value()) value.set(in->value(), index); },
+			[&](std::optional<std::string>* in) { if (in->has_value()) value.set(in->value(), index); },
+			[&](std::optional<std::vector<double>>* in) { if (in->has_value()) value.set(in->value(), index); },
+			[&](std::optional<std::vector<ScriptObject>>* in) { if (in->has_value()) value.set(in->value(), index); }
 		};
 		std::visit(picker, incoming);
 
@@ -972,6 +1000,27 @@ GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, std::fun
 		// Record the modification time for the property.
 		if (prop.has_value() && who != nullptr)
 			who->modTime[PROPID(prop.value())] = currentTime();
+	};
+}
+
+/// @brief A helper setter function that converts to a GameValue and passes to the next callback function.
+inline GameValue::func_set gameValueSetter(std::function<void(const GameValue&, std::optional<size_t>)> setter)
+{
+	return [setter](GameValueVariant incoming, std::optional<size_t> index)
+	{
+		GameValue value;
+		const auto picker = visit_functions
+		{
+			[&](std::optional<bool>* in) { if (in->has_value()) value.set(in->value(), index); },
+			[&](std::optional<double>* in) { if (in->has_value()) value.set(in->value(), index); },
+			[&](std::optional<std::string>* in) { if (in->has_value()) value.set(in->value(), index); },
+			[&](std::optional<std::vector<double>>* in) { if (in->has_value()) value.set(in->value(), index); },
+			[&](std::optional<std::vector<ScriptObject>>* in) { if (in->has_value()) value.set(in->value(), index); }
+		};
+		std::visit(picker, incoming);
+
+		// Call the setter function.
+		setter(value, index);
 	};
 }
 
@@ -990,6 +1039,14 @@ GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, Value& p
 		{
 			if (auto value = std::get_if<std::optional<double>*>(&incoming); value != nullptr)
 				propvalue = static_cast<V>((*value)->value_or(V{}));
+			else if (auto value = std::get_if<std::optional<std::vector<double>>*>(&incoming); value != nullptr && (*value)->has_value() && !(*value)->value().empty())
+			{
+				auto& vec = (*value)->value();
+				if (index.value_or(0) < vec.size())
+					propvalue = static_cast<V>(vec.at(index.value_or(0)));
+			}
+			else if (auto value = std::get_if<std::optional<bool>*>(&incoming); value != nullptr)
+				propvalue = static_cast<V>((*value)->value_or(false) ? 1 : 0);
 			if (prop.has_value())
 				who->modTime[PROPID(prop.value())] = currentTime();
 		};

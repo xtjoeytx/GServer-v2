@@ -85,6 +85,28 @@ GameValue::operator bool() const
 	return false;
 }
 
+GameValue GameValue::flatten(size_t index) const noexcept
+{
+	if (m_getter)
+	{
+		std::optional<double> number;
+		m_getter(&number, index);
+		if (number.has_value())
+			return *number;
+
+		std::optional<std::vector<ScriptObject>> object;
+		m_getter(&object, index);
+		if (object.has_value())
+			return *object;
+	}
+	if (m_array.has_value() && index < m_array->size())
+		return (*m_array)[index];
+	if (m_source.has_value() && index < m_source->size())
+		return (*m_source)[index];
+
+	return 0.0;
+}
+
 bool GameValue::testAsFlag() const
 {
 	if (m_getter)
@@ -234,11 +256,11 @@ GameValue GameVariableStore::getOrStub(std::string_view name)
 		{
 			const auto picker = visit_functions
 			{
-				[&](std::optional<bool>* ptr) { variable->assign<bool>(ptr->value_or(false)); },
-				[&](std::optional<double>* ptr) { variable->assign<double>(ptr->value_or(0.0)); },
-				[&](std::optional<std::string>* ptr) { variable->assign<std::string>(ptr->value_or(""s)); },
-				[&](std::optional<std::vector<double>>* ptr) { variable->assign<std::vector<double>>(ptr->value_or(std::vector<double>{})); },
-				[&](std::optional<std::vector<ScriptObject>>* ptr) { variable->assign<std::vector<ScriptObject>>(ptr->value_or(std::vector<ScriptObject>{})); }
+				[&](std::optional<bool>* ptr) { variable->assign<bool>(ptr->value_or(false), index); },
+				[&](std::optional<double>* ptr) { variable->assign<double>(ptr->value_or(0.0), index); },
+				[&](std::optional<std::string>* ptr) { variable->assign<std::string>(ptr->value_or(""s), index); },
+				[&](std::optional<std::vector<double>>* ptr) { variable->assign<std::vector<double>>(ptr->value_or(std::vector<double>{}), index); },
+				[&](std::optional<std::vector<ScriptObject>>* ptr) { variable->assign<std::vector<ScriptObject>>(ptr->value_or(std::vector<ScriptObject>{}), index); }
 			};
 			std::visit(picker, incoming);
 		};

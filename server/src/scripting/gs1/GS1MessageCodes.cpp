@@ -219,11 +219,11 @@ static GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, 
 			GameValue value;
 			const auto picker = visit_functions
 			{
-				[&](std::optional<bool>* in) { if (in->has_value()) value.set(in->value()); },
-				[&](std::optional<double>* in) { if (in->has_value()) value.set(in->value()); },
-				[&](std::optional<std::string>* in) { if (in->has_value()) value.set(in->value()); },
-				[&](std::optional<std::vector<double>>* in) { if (in->has_value()) value.set(in->value()); },
-				[&](std::optional<std::vector<ScriptObject>>* in) { if (in->has_value()) value.set(in->value()); }
+				[&](std::optional<bool>* in) { if (in->has_value()) value.set(in->value(), index); },
+				[&](std::optional<double>* in) { if (in->has_value()) value.set(in->value(), index); },
+				[&](std::optional<std::string>* in) { if (in->has_value()) value.set(in->value(), index); },
+				[&](std::optional<std::vector<double>>* in) { if (in->has_value()) value.set(in->value(), index); },
+				[&](std::optional<std::vector<ScriptObject>>* in) { if (in->has_value()) value.set(in->value(), index); }
 			};
 			std::visit(picker, incoming);
 
@@ -271,11 +271,11 @@ static GS1GameVariable bindNPCSetter(GS1Visitor* visitor, NPCID npcId, uint8_t i
 			GameValue value;
 			const auto picker = visit_functions
 			{
-				[&](std::optional<bool>* in) { if (in->has_value()) value.set(in->value()); },
-				[&](std::optional<double>* in) { if (in->has_value()) value.set(in->value()); },
-				[&](std::optional<std::string>* in) { if (in->has_value()) value.set(in->value()); },
-				[&](std::optional<std::vector<double>>* in) { if (in->has_value()) value.set(in->value()); },
-				[&](std::optional<std::vector<ScriptObject>>* in) { if (in->has_value()) value.set(in->value()); }
+				[&](std::optional<bool>* in) { if (in->has_value()) value.set(in->value(), index); },
+				[&](std::optional<double>* in) { if (in->has_value()) value.set(in->value(), index); },
+				[&](std::optional<std::string>* in) { if (in->has_value()) value.set(in->value(), index); },
+				[&](std::optional<std::vector<double>>* in) { if (in->has_value()) value.set(in->value(), index); },
+				[&](std::optional<std::vector<ScriptObject>>* in) { if (in->has_value()) value.set(in->value(), index); }
 			};
 			std::visit(picker, incoming);
 

@@ -1005,6 +1005,9 @@ bool Player::enterLevel(std::shared_ptr<Level> level, Position<int16_t> pos, tim
 
 void Player::constructScriptParameters()
 {
+	if (!scriptParameters.empty())
+		return;
+
 	scriptParameters.try_emplace("id", set_temporary, "id", gameValueGetter([this]() { return static_cast<double>(getId()); }), GameValue::func_set{});
 	scriptParameters.try_emplace("logintime", set_temporary, "logintime", gameValueGetter(loginTime), GameValue::func_set{});
 	scriptParameters.try_emplace("lastdead", set_temporary, "lastdead", gameValueGetter(lastDeadTime), GameValue::func_set{});

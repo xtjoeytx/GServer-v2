@@ -409,6 +409,8 @@ GameValue GS1Visitor::getReadOnlyGameValueFromGS1ScriptValue(const GS1ScriptValu
 {
 	if (auto* gs1GameVariable = std::get_if<GS1GameVariable>(&value); gs1GameVariable != nullptr)
 	{
+		if (gs1GameVariable->second.has_value())
+			return gs1GameVariable->first.flatten(gs1GameVariable->second.value());
 		return gs1GameVariable->first;
 	}
 	else if (auto* gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
