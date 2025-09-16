@@ -180,7 +180,7 @@ GS1ScriptWrapper::GS1ScriptWrapper(std::string_view who, std::string_view script
 	}
 #endif
 
-	setReadOnlyGlobalVariables(variables);
+	setGlobalVariables(variables);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -128,6 +128,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       allplayers[]
       allplayerscount
       board[]
+      gravity
       levelorgx
       levelorgy
       npcscount
@@ -247,7 +248,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 #### Not implemented
 
     * graalversion
-      gravity
     * horses[]
         .bombs
         .bombpower

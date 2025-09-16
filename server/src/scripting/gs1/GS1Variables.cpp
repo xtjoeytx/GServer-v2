@@ -31,7 +31,7 @@ namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void setReadOnlyGlobalVariables(GameVariableStore& variableStore)
+void setGlobalVariables(GameVariableStore& variableStore)
 {
 	auto* server = BabyDI::Get<Server>();
 
@@ -58,8 +58,20 @@ void setReadOnlyGlobalVariables(GameVariableStore& variableStore)
 		}), GameValue::func_set{}
 	});
 
+	// gravity
+	variableStore.add(GameValue{ "gravity",
+		gameValueGetter([server]()
+		{
+			return server->Scripting.variables.getValue<double>("gravity").value_or(2.0);
+		}),
+		gameValueSetter([server](const GameValue& value, std::optional<size_t> index)
+		{
+			if (auto gravity = server->Scripting.variables.get("gravity").lock(); gravity != nullptr)
+				gravity->set(value.get<double>().value_or(2.0));
+		})
+	});
+
 	/*
-		gravity       the rate at which shot projectiles fall (default Z loss of 2 tiles per second)
 		waterheight
 		nwday
 		nwhour
