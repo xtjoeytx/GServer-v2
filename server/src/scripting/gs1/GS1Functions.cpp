@@ -252,7 +252,24 @@ GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, antlr4::tree::ParseTr
 // Translates the string according to the client's language settings.
 GS1ScriptValue fn__(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function _ not implemented");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function _ requires exactly one argument");
+
+	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	{
+		auto server = BabyDI::Get<Server>();
+		if (auto player = server->getPlayer(source.value().first); player != nullptr)
+		{
+			auto& translation = server->getTranslationManager();
+			auto translated = translation.translate(player->account.language, str);
+			if (translated != str.data())
+				str = translated;
+		}
+	}
+
+	return str;
 }
 
 // N_(string)
@@ -262,11 +279,9 @@ GS1ScriptValue fn_N_(GS1Visitor* visitor, std::string_view messageCode, const st
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function N_ requires exactly one argument");
 
-	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
-
 	// TODO: Implement this.
 
-	return str;
+	return *arguments[0];
 }
 
 //----------------------------

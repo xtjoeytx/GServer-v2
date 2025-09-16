@@ -505,6 +505,7 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Implemented
 
+      _(string)
       abs(value)
     * aindexof(value, array)
       arctan(value)
@@ -559,7 +560,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    _(string)
     N_(string)
     base64decode(string)
     base64encode(string)
