@@ -25,6 +25,8 @@
 
 #include <Server.h>
 #include <level/Level.h>
+#include <level/LevelBaddy.h>
+#include <level/LevelItem.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
@@ -1408,11 +1410,11 @@ std::any GS1Visitor::visitArrayLiteral(GS1Parser::ArrayLiteralContext* context)
 std::any GS1Visitor::visitItemLiteral(GS1Parser::ItemLiteralContext* context)
 {
 	auto text = context->ITEM()->getText();
-	auto it = std::ranges::find(itemNames, text);
-	if (it == itemNames.end())
-		it = itemNames.begin();
+	auto it = std::ranges::find(ItemNames, text);
+	if (it == ItemNames.end())
+		it = ItemNames.begin();
 
-	return std::make_any<GS1ScriptValue>(static_cast<double>(std::distance(itemNames.begin(), it)));
+	return std::make_any<GS1ScriptValue>(static_cast<double>(std::distance(ItemNames.begin(), it)));
 }
 
 std::any GS1Visitor::visitCarryLiteral(GS1Parser::CarryLiteralContext* context)
@@ -1458,11 +1460,11 @@ std::any GS1Visitor::visitColorLiteral(GS1Parser::ColorLiteralContext* context)
 std::any GS1Visitor::visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context)
 {
 	auto text = context->BADDY()->getText();
-	auto it = std::ranges::find(baddyNames, text);
-	if (it == baddyNames.end())
-		it = baddyNames.begin();
+	auto it = std::ranges::find(BaddyNames, text);
+	if (it == BaddyNames.end())
+		it = BaddyNames.begin();
 
-	return std::make_any<GS1ScriptValue>(static_cast<double>(std::distance(baddyNames.begin(), it)));
+	return std::make_any<GS1ScriptValue>(static_cast<double>(std::distance(BaddyNames.begin(), it)));
 }
 
 std::any GS1Visitor::visitStorageToken(GS1Parser::StorageTokenContext* context)

@@ -1,8 +1,10 @@
 #ifndef LEVELITEM_H
 #define LEVELITEM_H
 
+#include <array>
 #include <chrono>
 #include <cstdint>
+#include <string_view>
 #include <string>
 #include <type_traits>
 
@@ -47,6 +49,15 @@ enum class LevelItemType
 	NUKESHOT = 22,
 	JOLTBOMB = 23,
 	SPINATTACK = 24
+};
+
+inline constexpr std::array<std::string_view, 25> ItemNames =
+{
+	"greenrupee"sv, "bluerupee"sv, "redrupee"sv, "bombs"sv, "darts"sv,
+	"heart"sv, "glove1"sv, "bow"sv, "bomb"sv, "shield"sv,
+	"sword"sv, "fullheart"sv, "superbomb"sv, "battleaxe"sv, "goldensword"sv,
+	"mirrorshield"sv, "glove2"sv, "lizardshield"sv, "lizardsword"sv, "goldrupee"sv,
+	"fireball"sv, "fireblast"sv, "nukeshot"sv, "joltbomb"sv, "spinattack"sv
 };
 
 /// @brief Level items disappear after 8.2 seconds;

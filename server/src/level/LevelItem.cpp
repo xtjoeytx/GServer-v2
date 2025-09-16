@@ -7,44 +7,16 @@
 #include <level/LevelItem.h>
 #include <object/Player.h>
 #include <player/PlayerProps.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-const char* __itemList[] = {
-	"greenrupee",   // 0
-	"bluerupee",    // 1
-	"redrupee",     // 2
-	"bombs",        // 3
-	"darts",        // 4
-	"heart",        // 5
-	"glove1",       // 6
-	"bow",          // 7
-	"bomb",         // 8
-	"shield",       // 9
-	"sword",        // 10
-	"fullheart",    // 11
-	"superbomb",    // 12
-	"battleaxe",    // 13
-	"goldensword",  // 14
-	"mirrorshield", // 15
-	"glove2",       // 16
-	"lizardshield", // 17
-	"lizardsword",  // 18
-	"goldrupee",    // 19
-	"fireball",     // 20
-	"fireblast",    // 21
-	"nukeshot",     // 22
-	"joltbomb",     // 23
-	"spinattack"    // 24
-};
-const int __itemCount = (sizeof(__itemList) / sizeof(const char*));
-
 LevelItemType LevelItem::getItemId(signed char itemId)
 {
-	if (itemId < 0 || itemId >= __itemCount)
+	if (itemId < 0 || itemId >= ItemNames.size())
 		return LevelItemType::INVALID;
 
 	return LevelItemType(itemId);
@@ -52,20 +24,27 @@ LevelItemType LevelItem::getItemId(signed char itemId)
 
 LevelItemType LevelItem::getItemId(const std::string& pItemName)
 {
-	for (unsigned int i = 0; i < __itemCount; ++i)
+	// Try by name.
+	for (unsigned int i = 0; i < ItemNames.size(); ++i)
 	{
-		if (__itemList[i] == pItemName)
+		if (ItemNames[i] == pItemName)
 			return LevelItemType(i);
 	}
 
+	// Try by ID.
+	uint32_t itemId = 0;
+	if (string::toNumber(pItemName, itemId) && itemId < ItemNames.size())
+		return LevelItemType(itemId);
+
+	// Bad item.
 	return LevelItemType::INVALID;
 }
 
 std::string LevelItem::getItemName(LevelItemType itemId)
 {
 	auto id = LevelItem::getItemTypeId(itemId);
-	if (id < 0 || id >= __itemCount) return {};
-	return std::string(__itemList[id]);
+	if (id < 0 || id >= ItemNames.size()) return {};
+	return std::string(ItemNames[id]);
 }
 
 CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)

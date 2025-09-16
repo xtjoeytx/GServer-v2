@@ -1,8 +1,11 @@
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <span>
+#include <string_view>
 #include <vector>
 
 #include <CString.h>
@@ -22,6 +25,7 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -683,10 +687,10 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, std::string_view fileVersion, FileS
 
 			int x = strtoint(curLine[1]);
 			int y = strtoint(curLine[2]);
-			int type = strtoint(curLine[3]);
+			BaddyType type = LevelBaddy::getBaddyTypeFromString(curLine[3].toString());
 
 			// Add the baddy.
-			LevelBaddy* baddy = level->addBaddy(toLocalPixelPosition((float)x, (float)y), static_cast<BaddyType>(type));
+			LevelBaddy* baddy = level->addBaddy(toLocalPixelPosition((float)x, (float)y), type);
 			if (baddy == nullptr)
 				continue;
 

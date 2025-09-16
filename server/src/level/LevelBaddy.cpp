@@ -38,6 +38,28 @@ constexpr const int baddyPower[baddytypes] = {
 	1, 1, 6, 12, 8
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+BaddyType LevelBaddy::getBaddyTypeFromString(const std::string& type)
+{
+	// Try by name.
+	for (unsigned int i = 0; i < BaddyNames.size(); ++i)
+	{
+		if (string::comparei(BaddyNames[i], type))
+			return BaddyType(i);
+	}
+
+	// Try by ID.
+	uint32_t itemId = 0;
+	if (string::toNumber(type, itemId) && itemId < BaddyNames.size())
+		return BaddyType(itemId);
+
+	// Bad.
+	return BaddyType::GRAYSOLDIER;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 LevelBaddy::LevelBaddy(const LocalPixelPosition& position, BaddyType type, std::weak_ptr<Level> level)
 	: type(type), position(position), m_level(level), m_originalPosition(position)
 {

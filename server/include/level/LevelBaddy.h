@@ -1,6 +1,7 @@
 #ifndef LEVELBADDY_H
 #define LEVELBADDY_H
 
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <string_view>
@@ -35,6 +36,13 @@ enum class BaddyType : uint8_t
 	COUNT
 };
 constexpr size_t BADDYTYPE_COUNT = static_cast<size_t>(BaddyType::COUNT);
+
+/// @brief The names of the baddies.
+inline constexpr std::array<std::string_view, 10> BaddyNames =
+{
+	"graysoldier"sv, "bluesoldier"sv, "redsoldier"sv, "shootingsoldier"sv, "swampsoldier"sv,
+	"frog"sv, "octopus"sv, "goldenwarrior"sv, "lizardon"sv, "dragon"sv
+};
 
 //----------------------------
 
@@ -81,6 +89,9 @@ class Level;
 
 class LevelBaddy
 {
+public:
+	static BaddyType getBaddyTypeFromString(const std::string& type);
+
 public:
 	LevelBaddy(const LocalPixelPosition& position, BaddyType type, std::weak_ptr<Level> level);
 

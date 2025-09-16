@@ -36,12 +36,6 @@ namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-inline constexpr std::array<std::string_view, 10> baddyNames =
-{
-	"graysoldier"sv, "bluesoldier"sv, "redsoldier"sv, "shootingsoldier"sv, "swampsoldier"sv,
-	"frog"sv, "octopus"sv, "goldenwarrior"sv, "lizardon"sv, "dragon"sv
-};
-
 inline constexpr std::array<std::string_view, 20> colorNames =
 {
 	"white"sv, "yellow"sv, "orange"sv, "pink"sv, "red"sv,
@@ -65,15 +59,6 @@ inline constexpr std::array<std::string_view, 11> carryNames =
 	"bush"sv, "sign"sv, "vase"sv, "stone"sv, "blackstone"sv,
 	"bomb"sv, "hotbomb"sv, "superbomb"sv, "joltbomb"sv, "hotjoltbomb"sv,
 	"none"sv
-};
-
-inline constexpr std::array<std::string_view, 25> itemNames =
-{
-	"greenrupee"sv, "bluerupee"sv, "redrupee"sv, "bombs"sv, "darts"sv,
-	"heart"sv, "glove1"sv, "bow"sv, "bomb"sv, "shield"sv,
-	"sword"sv, "fullheart"sv, "superbomb"sv, "battleaxe"sv, "goldensword"sv,
-	"mirrorshield"sv, "glove2"sv, "lizardshield"sv, "lizardsword"sv, "goldrupee"sv,
-	"fireball"sv, "fireblast"sv, "nukeshot"sv, "joltbomb"sv, "spinattack"sv
 };
 
 inline static const std::unordered_map<ScriptEventType, std::string_view> eventFlagMap =
