@@ -41,6 +41,7 @@ public:
 	GameVariableStore flagStore;
 	GameVariableStore* builtInStore = nullptr;
 	bool expectingFlag = false;
+	bool expectingTimeoutAsVariable = false;
 	std::string who;
 
 public:

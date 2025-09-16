@@ -765,6 +765,9 @@ std::any GS1Visitor::visitStatementBuiltInCommand(GS1Parser::StatementBuiltInCom
 
 std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentContext* context)
 {
+	// We need this to fix problems with timeout being both a flag and an NPC property.
+	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+
 	auto results = visitChildrenAndCollect(context);
 	if (results.size() != 2 || context->children.size() != 3)
 		throw std::runtime_error("AssignmentOperation is not a binary expression");
@@ -834,6 +837,8 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 {
 	if (context->children.size() == 1)
 		return visitChildren(context);
+
+	SetAndRestore sar{ expectingTimeoutAsVariable, true };
 
 	std::vector<double> values;
 	for (auto& be : context->exponentiationExpression())
@@ -951,6 +956,8 @@ std::any GS1Visitor::visitExpressionEquality(GS1Parser::ExpressionEqualityContex
 	if (!op.has_value())
 		throw std::runtime_error("ExpressionEquality does not have an operator");
 
+	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+
 	auto left = getReadOnlyGameValueFromAny(visit(context->children[0]));
 	auto right = getReadOnlyGameValueFromAny(visit(context->children[2]));
 
@@ -992,6 +999,8 @@ std::any GS1Visitor::visitExpressionRelational(GS1Parser::ExpressionRelationalCo
 	if (context->children.size() < 3)
 		return visitChildren(context);
 
+	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+
 	auto op = getSymbolType(context->children[1]);
 	if (!op.has_value())
 		throw std::runtime_error("ExpressionRelational does not have an operator");
@@ -1020,6 +1029,8 @@ std::any GS1Visitor::visitExpressionAdditive(GS1Parser::ExpressionAdditiveContex
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
+	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+
 	double result = getReadOnlyGameValueFromAnyAs<double>(visit(context->children[0]));
 	for (size_t i = 1; i < context->children.size(); i += 2)
 	{
@@ -1041,6 +1052,8 @@ std::any GS1Visitor::visitExpressionMultiplicative(GS1Parser::ExpressionMultipli
 {
 	if (context->children.size() == 1)
 		return visitChildren(context);
+
+	SetAndRestore sar{ expectingTimeoutAsVariable, true };
 
 	double result = getReadOnlyGameValueFromAnyAs<double>(visit(context->children[0]));
 	for (size_t i = 1; i < context->children.size(); i += 2)
@@ -1066,6 +1079,8 @@ std::any GS1Visitor::visitExpressionExponentiation(GS1Parser::ExpressionExponent
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
+	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+
 	double result = getReadOnlyGameValueFromAnyAs<double>(visit(context->children[0]));
 	for (size_t i = 1; i < context->children.size(); i += 2)
 	{
@@ -1090,7 +1105,10 @@ std::any GS1Visitor::visitExpressionUnary(GS1Parser::ExpressionUnaryContext* con
 		return std::make_any<GS1ScriptValue>(DoubleIsZero(getReadOnlyGameValueFromAnyAs<double>(visit(context->unaryExpression()))));
 
 	if (op.value() == GS1Parser::OP_SUB)
+	{
+		SetAndRestore sar{ expectingTimeoutAsVariable, true };
 		return std::make_any<GS1ScriptValue>(-getReadOnlyGameValueFromAnyAs<double>(visit(context->unaryExpression())));
+	}
 
 	return visit(context->unaryExpression());
 }
@@ -1100,6 +1118,8 @@ std::any GS1Visitor::visitExpressionPostfix(GS1Parser::ExpressionPostfixContext*
 	auto op = getSymbolType(context->children[1]);
 	if (!op.has_value())
 		throw std::runtime_error("ExpressionPostfix has no operation");
+
+	SetAndRestore sar{ expectingTimeoutAsVariable, true };
 
 	auto anyval = visit(context->children[0]);
 	auto left = getGameVariableFromAny(anyval);
@@ -1225,8 +1245,12 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 	// If we have an identifier, and the flag store has a matching value, return that.
 	if (!identifier->empty() && flagStore.contains(*identifier))
 	{
-		if (auto flag = flagStore.get(*identifier).lock(); flag != nullptr)
-			return std::make_any<GS1ScriptValue>(GameValue{ flag->get<bool>().value_or(false) });
+		// Timeout is annoying, so make sure we are not doing something that needs the NPC timeout.
+		if (*identifier != "timeout" || !expectingTimeoutAsVariable)
+		{
+			if (auto flag = flagStore.get(*identifier).lock(); flag != nullptr)
+				return std::make_any<GS1ScriptValue>(GameValue{ flag->get<bool>().value_or(false) });
+		}
 	}
 
 	// Append the storage modifier to certain variable names.

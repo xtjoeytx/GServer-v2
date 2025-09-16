@@ -245,6 +245,27 @@ inline constexpr inform_client_t inform_client{};
 struct clear_container_t { explicit clear_container_t() = default; };
 inline constexpr clear_container_t clear_container{};
 
+//----------------------------
+// RAII structs
+
+template <typename T>
+struct SetAndRestore
+{
+	SetAndRestore(T& var, T newValue)
+		: m_var(var), m_oldValue(var)
+	{
+		var = newValue;
+	}
+	~SetAndRestore()
+	{
+		m_var = m_oldValue;
+	}
+
+private:
+	T& m_var;
+	T m_oldValue;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 }; // end namespace preagonal
 
