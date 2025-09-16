@@ -130,7 +130,6 @@ struct GS1ScriptWrapper
 	std::shared_ptr<grammar::GS1ErrorListener> errorListenerLexer;
 	std::shared_ptr<grammar::GS1ErrorListener> errorListenerParser;
 	std::shared_ptr<antlr4::ANTLRInputStream> input;
-	std::shared_ptr<grammar::GS1Lexer> lexer;
 	std::shared_ptr<antlr4::CommonTokenStream> tokens;
 	std::shared_ptr<grammar::GS1Parser> parser;
 	std::shared_ptr<grammar::GS1Visitor> visitor;

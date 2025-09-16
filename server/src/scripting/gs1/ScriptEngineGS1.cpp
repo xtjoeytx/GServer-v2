@@ -159,16 +159,26 @@ GS1ScriptWrapper::GS1ScriptWrapper(std::string_view who, std::string_view script
 	errorListenerLexer = std::make_shared<GS1ErrorListener>("lexing", who);
 	errorListenerParser = std::make_shared<GS1ErrorListener>("parsing", who);
 
-	input = std::make_shared<antlr4::ANTLRInputStream>(script);
-	lexer = std::make_shared<GS1Lexer>(input.get());
-	lexer->removeErrorListeners();
-	lexer->addErrorListener(errorListenerLexer.get());
+	// Load the script (lenient UTF-8 parsing).
+	input = std::make_shared<antlr4::ANTLRInputStream>();
+	input->load(script.data(), script.length(), true);
 
-	tokens = std::make_shared<antlr4::CommonTokenStream>(lexer.get());
+	// Create the lexer.
+	// We don't need to keep this around.
+	GS1Lexer lexer{ input.get() };
+	lexer.removeErrorListeners();
+	lexer.addErrorListener(errorListenerLexer.get());
+
+	// Fill the tokens from the lexer.
+	tokens = std::make_shared<antlr4::CommonTokenStream>(&lexer);
+	tokens->fill();
+
+	// Create the parser.
 	parser = std::make_shared<GS1Parser>(tokens.get());
 	parser->removeErrorListeners();
 	parser->addErrorListener(errorListenerParser.get());
 
+	// Run the parser and create our AST.
 	visitor = std::make_shared<GS1Visitor>();
 	program = parser->program();
 
