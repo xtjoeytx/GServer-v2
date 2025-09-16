@@ -1158,7 +1158,16 @@ bool PlayerClient::warp(std::string_view levelName, LocalPixelPosition pos, time
 		sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << getProp<PlayerProp::Z>().serialize() >> (char)newLevel->mapPosition.x() >> (char)newLevel->mapPosition.y() << newLevel->getMap()->getMapName());
 	}
 	else
+	{
+		// Reset the map position to 0 if we are warping to a non-gmap level.
+		if (account.character.mapX != 0)
+			this->modTime[PROPID(PlayerProp::GMAPLEVELX)] = m_server->getFrameStartTime();
+		if (account.character.mapY != 0)
+			this->modTime[PROPID(PlayerProp::GMAPLEVELY)] = m_server->getFrameStartTime();
+		account.character.mapX = account.character.mapY = 0;
+
 		sendPacket(CString() >> (char)PLO_PLAYERWARP << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << levelName);
+	}
 
 	// Set the level.
 	enterLevel(newLevel, pos, modTime);
@@ -1341,7 +1350,8 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 	{
 		sendPacket(CString() << level->getBoardChangesPacket(cachedModTime));
 		level->sendHorsesToPlayer(self);
-		level->sendBaddiesToPlayer(self);
+		if (!level->isOnGmap())
+			level->sendBaddiesToPlayer(self);
 	}
 
 	// Fix our level name.
