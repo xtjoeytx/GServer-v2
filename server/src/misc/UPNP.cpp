@@ -36,7 +36,7 @@ void UPNP::discover()
 	std::memset(&m_data, 0, sizeof(IGDdatas));
 
 	std::vector<std::pair<uint8_t, std::string>> logbatch;
-	logbatch.emplace_back(0_ui8, ":: Discovering UPNP devices:");
+	logbatch.emplace_back(0_ui8, "Discovering UPNP devices:");
 
 	device_list = upnpDiscover(2000, 0, 0, UPNP_LOCAL_PORT_ANY, 0, 2, 0);
 	if (device_list)
@@ -111,7 +111,7 @@ void UPNP::addPortForward(std::string_view address, std::string_view port)
 	}
 	else
 	{
-		log::printLine(log::server, ":: [UPnP] Forwarded port {} to {}.", port, address);
+		log::printLine(log::server, "[UPnP] Forwarded port {} to {}.", port, address);
 		m_portsForwarded.emplace(port);
 	}
 #endif
@@ -124,7 +124,7 @@ void UPNP::removePortForward(std::string_view port)
 		return;
 
 	UPNP_DeletePortMapping(m_urls.controlURL, m_data.first.servicetype, port.data(), "TCP", 0);
-	log::printLine(log::server, ":: [UPnP] Removing forward on port {}.", port);
+	log::printLine(log::server, "[UPnP] Removing forward on port {}.", port);
 	m_portsForwarded.erase(std::string{ port });
 #endif
 }

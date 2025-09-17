@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
 
 		// Load Server Settings
 		std::string discovery_mode;
-		std::cout << ":: Determining the server to start... ";
+		std::cout << "Determining the server to start... ";
 		std::filesystem::path cwd = std::filesystem::current_path();
 
 		auto found_server = [&discovery_mode](const std::string& why, std::string_view server, std::filesystem::path& working_directory, const std::filesystem::path& test_directory)
@@ -189,8 +189,11 @@ int main(int argc, char* argv[])
 		log::printLine(log::server, "");
 
 		// Initialize the server.
-		log::printLine(log::server, ":: Starting server: {}.", overrideServer);
-		log::printLine(log::server, "     {}: {}", discovery_mode, std::filesystem::current_path().string());
+		log::printLine(log::server, "Starting server: {}.", overrideServer);
+		{
+			auto indent = log::server.indent();
+			log::printLine(log::server, "{}: {}", discovery_mode, std::filesystem::current_path().string());
+		}
 		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface) != 0)
 		{
 			log::printLine(log::server, "** [Error] Failed to start server: {}", overrideServer);
@@ -227,13 +230,13 @@ int main(int argc, char* argv[])
 		}
 
 		// Announce that the program is now running.
-		log::print(log::server, ":: Started server {}", server->getName());
+		log::print(log::server, "Started server {}", server->getName());
 		if (server->getSettings().exists("name"))
 			log::printLine(log::server, " ({})", server->getSettings().getStr("name"));
 		else log::printLine(log::server, "");
 
 	#if defined(WIN32) || defined(WIN64)
-		log::printLine(log::server, ":: Press CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!");
+		log::printLine(log::server, "Press CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!");
 	#endif
 
 		// Run the server.
@@ -254,7 +257,7 @@ int main(int argc, char* argv[])
 
 void shutdownServer(int signal)
 {
-	log::printLine(log::server, ":: The server is now shutting down...");
+	log::printLine(log::server, "The server is now shutting down...");
 	shutdownProgram = true;
 }
 

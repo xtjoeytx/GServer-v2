@@ -217,15 +217,15 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	m_playerSock.setDescription("playerSock");
 
 	// Start listening on the player socket.
-	log::printLine(log::server, ":: Initializing player listen socket.");
+	log::printLine(log::server, "Initializing player listen socket.");
 	if (m_playerSock.init((oInter.isEmpty() ? 0 : oInter.text()), m_settings.getStr("serverport").text()))
 	{
-		log::printLine(log::server, "** [Error] Could not initialize listening socket...");
+		log::printLine(log::server, "** [Error] Could not initialize listening socket.");
 		return ERR_LISTEN;
 	}
 	if (m_playerSock.connect())
 	{
-		log::printLine(log::server, "** [Error] Could not connect listening socket...");
+		log::printLine(log::server, "** [Error] Could not connect listening socket.");
 		return ERR_LISTEN;
 	}
 
@@ -239,7 +239,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 #ifdef ENABLE_UPNP
 	if (m_settings.getBool("upnp", true) && m_upnp == nullptr)
 	{
-		log::printLine(log::server, ":: Starting UPnP discovery thread.");
+		log::printLine(log::server, "Starting UPnP discovery thread.");
 		m_upnp = std::make_unique<UPNP>();
 		m_upnp->initialize((oInter.isEmpty() ? m_playerSock.getLocalIp() : oInter.text()), m_settings.getStr("serverport").text());
 		m_upnpThread = std::thread(std::ref(*m_upnp.get()));
@@ -486,7 +486,7 @@ void Server::loadFolderConfig()
 
 int Server::loadConfigFiles()
 {
-	log::printLine(log::server, ":: Loading server configuration...");
+	log::printLine(log::server, "Loading server configuration.");
 
 	{
 		auto indent = log::server.indent();
@@ -500,11 +500,11 @@ int Server::loadConfigFiles()
 		}
 
 		// Load Admin Settings
-		log::printLine(log::server, "Loading admin settings...");
+		log::printLine(log::server, "Loading admin settings.");
 		loadAdminSettings();
 
 		// Load allowed versions.
-		log::printLine(log::server, "Loading allowed client versions...");
+		log::printLine(log::server, "Loading allowed client versions.");
 		loadAllowedVersions();
 
 		// Load folders config and file system.
@@ -518,23 +518,23 @@ int Server::loadConfigFiles()
 		loadFileSystem();
 
 		// Load server message.
-		log::printLine(log::server, "Loading config/servermessage.html...");
+		log::printLine(log::server, "Loading config/servermessage.html.");
 		loadServerMessage();
 
 		// Load IP bans.
-		log::printLine(log::server, "Loading config/ipbans.txt...");
+		log::printLine(log::server, "Loading config/ipbans.txt.");
 		loadIPBans();
 
 		// Load translations.
-		log::printLine(log::server, "Loading translations...");
+		log::printLine(log::server, "Loading translations.");
 		loadTranslations();
 
 		// Load word filter.
-		log::printLine(log::server, "Loading word filter...");
+		log::printLine(log::server, "Loading word filter.");
 		loadWordFilter();
 
 		// Load server flags.
-		log::printLine(log::server, "Loading serverflags.txt...");
+		log::printLine(log::server, "Loading serverflags.txt.");
 		loadServerFlags();
 
 		// Load guilds.
@@ -837,7 +837,7 @@ void Server::loadNPCServer()
 {
 	if (m_settings.getBool("serverside", true))
 	{
-		log::printLine(log::server, ":: Loading NPC server...");
+		log::printLine(log::server, "Loading NPC server.");
 		{
 			auto indent = log::server.indent();
 			{
@@ -851,7 +851,7 @@ void Server::loadNPCServer()
 
 int Server::loadServerObjects()
 {
-	log::printLine(log::server, ":: Loading server objects...");
+	log::printLine(log::server, "Loading server objects.");
 
 	auto indent = log::server.indent();
 	{
@@ -861,7 +861,7 @@ int Server::loadServerObjects()
 
 		// Load map levels - doing this after db npcs are loaded incase
 		// some level scripts may require access to the databases.
-		log::printLine(log::server, "Pre-loading map levels...");
+		log::printLine(log::server, "Pre-loading map levels.");
 		loadMapLevels();
 	}
 

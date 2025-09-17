@@ -300,7 +300,7 @@ void NPCServer::saveNPCs()
 		return;
 	}
 
-	log::printLine(log::server, ":: Saving NPCs...");
+	log::printLine(log::server, "Saving NPCs.");
 	for (const auto& [npcId, npcPtr] : m_globalNPCList)
 	{
 		if (auto npc = npcPtr.lock(); npc != nullptr)

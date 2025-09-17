@@ -70,9 +70,9 @@ private:
 struct Log
 {
 	std::filesystem::path filename;
+	std::string sectionPrefix;
 	uint8_t indentSpaces = 2;
 	uint8_t indentLevel = 0;
-	uint8_t indentAdditionalSpaces = 3;
 	TimestampMode timestampFile = TimestampMode::Long;
 	TimestampMode timestampCli = TimestampMode::Short;
 	bool mirrorToCli = true;
@@ -112,7 +112,7 @@ struct Log
 };
 
 // The serverlog.txt file.
-inline Log server{ .filename = std::filesystem::path{ "logs" } / "serverlog.txt" };
+inline Log server{ .filename = std::filesystem::path{ "logs" } / "serverlog.txt", .sectionPrefix = ":: "s };
 
 // The rclog.txt file.
 inline Log rc{ .filename = std::filesystem::path{ "logs" } / "rclog.txt" };
@@ -135,11 +135,17 @@ void print(Log& log, std::string_view fmt, const Args&... args)
 	std::lock_guard lock(log.mutex);
 	std::ostringstream text;
 
+	// Add the section prefix.
+	if (log.atLineStart && log.indentLevel == 0 && !log.sectionPrefix.empty() && fmt.length() > 0 && fmt != "\n")
+		text << log.sectionPrefix;
+
 	// Add the indentation whitespace.
 	uint8_t spaces = 0;
 	if (log.atLineStart && log.indentLevel != 0)
 	{
-		spaces = log.indentAdditionalSpaces + (log.indentSpaces * log.indentLevel);
+		spaces = (log.indentSpaces * log.indentLevel);
+		if (!log.sectionPrefix.empty())
+			spaces += log.sectionPrefix.length();
 		text << std::string(spaces, ' ');
 	}
 

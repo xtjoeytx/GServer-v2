@@ -330,11 +330,11 @@ void Player::cleanup()
 
 		// Log.
 		if (isClient())
-			log::printLine(log::server, ":: Client disconnected: {}", account.name);
+			log::printLine(log::server, "Client disconnected: {}", account.name);
 		else if (isRC())
-			log::printLine(log::server, ":: RC disconnected: {}", account.name);
+			log::printLine(log::server, "RC disconnected: {}", account.name);
 		else if (isNC())
-			log::printLine(log::server, ":: NC disconnected: {}", account.name);
+			log::printLine(log::server, "NC disconnected: {}", account.name);
 
 		// Get rid of the player now.
 		m_server->getPlayerIdGenerator().freeId(m_id);
@@ -1310,7 +1310,7 @@ HandlePacketResult Player::msgPLI_PACKETCOUNT(CString& pPacket)
 	unsigned short count = pPacket.readGUShort();
 	if (count != PacketCount || PacketCount > 10000)
 	{
-		log::printLine(log::server, ":: Warning - Player {} had an invalid packet count.", account.name);
+		log::printLine(log::server, "Warning - Player {} had an invalid packet count.", account.name);
 	}
 	PacketCount = 0;
 

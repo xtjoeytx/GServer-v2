@@ -134,7 +134,7 @@ HandlePacketResult PlayerClient::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
 	short h = pPacket.readGShort();
 
 	// TODO: What to return?
-	log::printLine(log::server, ":: Received PLI_REQUESTUPDATEBOARD - level: {} - x: {} - y: {} - w: {} - h: {} - modtime: {}", level, x, y, w, h, modTime);
+	log::printLine(log::server, "Received PLI_REQUESTUPDATEBOARD - level: {} - x: {} - y: {} - w: {} - h: {} - modtime: {}", level, x, y, w, h, modTime);
 
 	return HandlePacketResult::Handled;
 }

@@ -86,7 +86,7 @@ bool PlayerNC::handleLogin(CString& pPacket)
 	m_type = (1 << pPacket.readGChar());
 
 	// Set the encryptions.
-	log::print(log::server, ":: New login:   ");
+	log::print(log::server, "New login:   ");
 	switch (m_type)
 	{
 		case PLTYPE_NC:
@@ -121,14 +121,18 @@ bool PlayerNC::handleLogin(CString& pPacket)
 	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
 	CString identity = pPacket.readString("");
 
-	//log::printLine(log::server, "   Key: {}", key);
-	log::printLine(log::server, "   Version:     {} ({})", m_version, getVersionString(m_version, m_type));
-	log::printLine(log::server, "   Account:     {}", account.name);
-	if (!identity.isEmpty())
 	{
-		log::printLine(log::server, "   Identity:    {}", identity);
-		auto identityTokens = identity.tokenize(",", true);
-		m_os = identityTokens[0];
+		auto indent = log::server.indent();
+
+		//log::printLine(log::server, "Key: {}", key);
+		log::printLine(log::server, "Version:     {} ({})", m_version, getVersionString(m_version, m_type));
+		log::printLine(log::server, "Account:     {}", account.name);
+		if (!identity.isEmpty())
+		{
+			log::printLine(log::server, "Identity:    {}", identity);
+			auto identityTokens = identity.tokenize(",", true);
+			m_os = identityTokens[0];
+		}
 	}
 
 	// Check for available slots on the server.

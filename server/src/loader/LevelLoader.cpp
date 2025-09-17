@@ -465,7 +465,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, std::string_view fileVersion, Fi
 		if (server->hasNPCServer())
 		{
 			indent = std::make_unique<log::Indent>(log::server.indent(log::server.indentLevel != 0 ? 1 : 0));
-			log::printLine(log::server, "{}Loading NPCs for level '{}'...", (log::server.indentLevel == 0 ? ":: " : ""), level->levelName);
+			log::printLine(log::server, "Loading NPCs for level '{}'.", level->levelName);
 		}
 
 		while (fileData.bytesLeft())
@@ -540,7 +540,7 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, std::string_view fileVersion, FileS
 	if (server->hasNPCServer() && fileData.contains("NPCEND"))
 	{
 		indent = std::make_unique<log::Indent>(log::server.indent(log::server.indentLevel != 0 ? 1 : 0));
-		log::printLine(log::server, "{}Loading NPCs for level '{}'...", (log::server.indentLevel == 0 ? ":: " : ""), level->levelName);
+		log::printLine(log::server, "Loading NPCs for level '{}'.", level->levelName);
 	}
 
 	// Parse Level

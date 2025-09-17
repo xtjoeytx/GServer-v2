@@ -68,7 +68,7 @@ HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 		player = std::make_shared<PlayerNPCServer>(m_playerSock, m_id);
 	else
 	{
-		log::printLine(log::server, ":: New login, but unknown player type: {}", m_type);
+		log::printLine(log::server, "New login, but unknown player type: {}", m_type);
 		return HandlePacketResult::Failed;
 	}
 

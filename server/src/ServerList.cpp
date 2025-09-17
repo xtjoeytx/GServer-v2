@@ -133,7 +133,7 @@ bool ServerList::canRecv()
 
 void ServerList::onUnregister()
 {
-	log::printLine(log::server, ":: {} - Disconnected.", m_socket.getDescription());
+	log::printLine(log::server, "{} - Disconnected.", m_socket.getDescription());
 }
 
 bool ServerList::main()
@@ -206,24 +206,24 @@ bool ServerList::connectServer()
 	if (getConnected())
 		return true;
 
-	log::printLine(log::server, ":: Initializing {} socket.", m_socket.getDescription());
+	log::printLine(log::server, "Initializing {} socket.", m_socket.getDescription());
 
 	// Initialize the socket
 	if (m_socket.init(settings.getStr("listip").text(), settings.getStr("listport").text()) != 0)
 	{
-		log::printLine(log::server, ":: [Error] Could not initialize {} socket.", m_socket.getDescription());
+		log::printLine(log::server, "[Error] Could not initialize {} socket.", m_socket.getDescription());
 		return false;
 	}
 
 	// Connect to Server
 	if (m_socket.connect() != 0)
 	{
-		log::printLine(log::server, ":: [Error] Could not connect {} socket.", m_socket.getDescription());
+		log::printLine(log::server, "[Error] Could not connect {} socket.", m_socket.getDescription());
 		return false;
 	}
 
 	m_server->getSocketManager().registerSocket((CSocketStub*)this);
-	log::printLine(log::server, ":: {} - Connected to {}:{}.", m_socket.getDescription(), m_socket.getRemoteIp(), m_socket.getRemotePort());
+	log::printLine(log::server, "{} - Connected to {}:{}.", m_socket.getDescription(), m_socket.getRemoteIp(), m_socket.getRemotePort());
 
 	// Get Some Stuff
 	CString name(settings.getStr("name"));
@@ -391,7 +391,7 @@ void ServerList::handleText(const CString& data)
 			if (params.size() == 3 && params[1] == "SetRemoteIp")
 			{
 				m_serverRemoteIp = params[2].text();
-				log::printLine(log::server, ":: listserver - Remote IP identified as '{}'.", m_serverRemoteIp);
+				log::printLine(log::server, "listserver - Remote IP identified as '{}'.", m_serverRemoteIp);
 
 				if (m_server->hasNPCServer())
 					m_server->getNPCServer()->setRemoteIp(m_serverRemoteIp);
@@ -544,8 +544,8 @@ void ServerList::msgSVI_FILEDATA(CString& pPacket)
 
 void ServerList::msgSVI_VERSIONOLD(CString& pPacket)
 {
-	log::printLine(log::server, ":: You are running an old version of {} {}.", APP_VENDOR, APP_NAME);
-	log::printLine(log::server, ":: An updated version is available online.");
+	log::printLine(log::server, "You are running an old version of {} {}.", APP_VENDOR, APP_NAME);
+	log::printLine(log::server, "An updated version is available online.");
 }
 
 void ServerList::msgSVI_VERSIONCURRENT(CString& pPacket)
@@ -691,7 +691,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 
 void ServerList::msgSVI_ERRMSG(CString& pPacket)
 {
-	log::printLine(log::server, ":: {} - [Error] {}", m_socket.getDescription(), pPacket.readString("").text());
+	log::printLine(log::server, "{} - [Error] {}", m_socket.getDescription(), pPacket.readString("").text());
 }
 
 void ServerList::msgSVI_VERIACC2(CString& pPacket)
