@@ -56,11 +56,11 @@ Format: `filetype folder`
 Valid file types:
 - `file`: generic files
 - `level`: level files
-- `sound`: sound files
 - `head`: head images
 - `body`: body images
 - `sword`: sword images
 - `shield`: shield images
+- ~~`sound`: sound files~~ (not supported)
 
 The folder supports wildcards.
 

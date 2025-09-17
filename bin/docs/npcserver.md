@@ -122,6 +122,15 @@ Events are called on the NPC or weapon script, then the event is passed to all j
 Since the joined classes are separate script execution contexts, unprefixed variables (like `i`) are local only to the class.
 If you want to make a variable accessible to both the NPC's main script and the class, use the `this.` prefix to assign the variable to the NPC itself.
 
+### Level item NPCs
+
+If a class exists that matches the name of any default item (with the exception of "gralats" which matches green, blue, red, and gold gralats),
+then the server will prevent the item from dropping and instead create a new level NPC that joins against the class.
+
+Gralats, arrows, bombs, darts, and hearts will stack with nearby NPCs of the same type.
+
+> Item class names: `gralats`, `bombs`, `darts`, `heart`, `glove1`, `bow`, `bomb`, `shield`, `sword`, `fullheart`, `superbomb`, `battleaxe`, `goldensword`, `mirrorshield`, `glove2`, `lizardshield`, `lizardsword`, `fireball`, `fireblast`, `nukeshot`, `joltbomb`, and `spinattack`.
+
 ### Timeouts
 
 Serverside timeouts are limited to 0.1 seconds, unlike clientside timeouts which have 0.05 second resolution.
