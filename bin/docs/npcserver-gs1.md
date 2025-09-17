@@ -612,14 +612,16 @@ Please review the lists below of implemented events, flags, functions, commands,
     #b
     #e(start_index, length, string)
     #I(string_list, index)
+    #K(ascii_number)
     #R(string_list)
     #s(identifier)
     #T(string)
+    #U(string)
     #v(identifier)
 
 #### Clientside only
 
     #D | #D(filename)
+    #E
     #i(image) | #i(image, x, y, width, height)
-    #K(key_index)
     #k(key_index)

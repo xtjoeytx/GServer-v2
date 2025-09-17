@@ -126,6 +126,7 @@ static GS1ScriptValue mc_a(GS1Visitor* visitor, std::string_view messageCode, co
 static GS1ScriptValue mc_b(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_c(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_D(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_E(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_e(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_F(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_f(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
@@ -145,6 +146,7 @@ static GS1ScriptValue mc_R(GS1Visitor* visitor, std::string_view messageCode, co
 static GS1ScriptValue mc_s(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_T(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_U(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_v(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
@@ -168,6 +170,7 @@ static MessageCodeHandleMap GenerateMap()
 		{ hash("b"), &mc_b },
 		{ hash("c"), &mc_c },
 		{ hash("D"), &mc_D },
+		{ hash("E"), &mc_E },
 		{ hash("e"), &mc_e },
 		{ hash("F"), &mc_F },
 		{ hash("f"), &mc_f },
@@ -187,6 +190,7 @@ static MessageCodeHandleMap GenerateMap()
 		{ hash("s"), &mc_s },
 		{ hash("t"), &mc_t },
 		{ hash("T"), &mc_T },
+		{ hash("U"), &mc_U },
 		{ hash("v"), &mc_v },
 		{ hash("W"), &mc_W },
 		{ hash("w"), &mc_w },
@@ -568,6 +572,13 @@ GS1ScriptValue mc_D(GS1Visitor* visitor, std::string_view messageCode, const std
 	throw std::logic_error("Message Code #D is registered as a clientside message code");
 }
 
+// #E
+// The current emoticon character being displayed by the player.
+GS1ScriptValue mc_E(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	throw std::logic_error("Message Code #E is registered as a clientside message code");
+}
+
 // #e(start_index, length, string)
 // Extracts a substring from the given string.
 GS1ScriptValue mc_e(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
@@ -686,11 +697,15 @@ GS1ScriptValue mc_i(GS1Visitor* visitor, std::string_view messageCode, const std
 	throw std::logic_error("Message Code #i is registered as a clientside message code");
 }
 
-// #K(key_index)
-// The name of the specified key.
+// #K(ascii)
+// The character represented by the given ASCII code.
 GS1ScriptValue mc_K(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("Message Code #K is registered as a clientside message code (maybe?)");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Message Code #K requires exactly 1 argument");
+
+	uint8_t ascii = std::min(static_cast<size_t>(255), DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0])));
+	return std::string{ static_cast<char>(ascii) };
 }
 
 // #k(key_index)
@@ -842,6 +857,30 @@ GS1ScriptValue mc_T(GS1Visitor* visitor, std::string_view messageCode, const std
 
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	string::trim(str);
+	return str;
+}
+
+// #U(string)
+// Replaces the string with a translated version of it.
+GS1ScriptValue mc_U(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Message Code #U requires exactly 1 argument");
+
+	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
+
+	auto server = BabyDI::Get<Server>();
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value() && server)
+	{
+		if (auto player = server->getPlayer(source.value().first); player != nullptr)
+		{
+			auto& translation = server->getTranslationManager();
+			auto result = translation.translate(player->account.language, str);
+			if (result != str.data())
+				return std::string{ result };
+		}
+	}
+
 	return str;
 }
 

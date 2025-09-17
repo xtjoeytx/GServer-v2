@@ -741,16 +741,16 @@ FUNC_GROUP_7 : ('playersays' | 'playersays2') { pushCommand("<ES)"); }   -> type
 // #S was 'selectedsword', which was some New World thing that never got used.
 // Seems like both sword and weapon were selectable NPCs in New World.
 
-MC_NOINDEX		: '#' ([angcmWw1235678LFfpbND] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { _input->LA(1) != '(' }? -> type(MESSAGECODE);
-MC_SIMPLE		: '#' ([angcmWw1235678ptKkGN]  | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { pushCommand("(P)"); }   -> type(MESSAGECODE);
-MC_COMPUTED_S	: '#s' { pushCommand("(V)"); }   -> type(MESSAGECODE);
-MC_COMPUTED_V	: '#v' { pushCommand("(E)"); }   -> type(MESSAGECODE);
-MC_I			: '#I' { pushCommand("(VP)"); }  -> type(MESSAGECODE);
-MC_T			: '#T' { pushCommand("(S)"); }   -> type(MESSAGECODE);
-MC_e			: '#e' { pushCommand("(EES)"); } -> type(MESSAGECODE);
-MC_i			: '#i' { pushCommand("(SP)"); }  -> type(MESSAGECODE);
-MC_R			: '#R' { pushCommand("(L)"); }   -> type(MESSAGECODE);
-MC_Q            : '#Q' { pushCommand("(SS)"); }  -> type(MESSAGECODE);
+MC_NOINDEX		: '#' ([angcmWw1235678LFfpbNDE] | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { _input->LA(1) != '(' }? -> type(MESSAGECODE);
+MC_SIMPLE		: '#' ([angcmWw1235678ptKkGND]  | 'C' [01234] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { pushCommand("(P)"); }   -> type(MESSAGECODE);
+MC_COMPUTED_S	: '#s'          { pushCommand("(V)"); }   -> type(MESSAGECODE);
+MC_COMPUTED_V	: '#v'          { pushCommand("(E)"); }   -> type(MESSAGECODE);
+MC_I			: '#I'          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
+MC_STRING		: '#' [TU]      { pushCommand("(S)"); }   -> type(MESSAGECODE);
+MC_e			: '#e'          { pushCommand("(EES)"); } -> type(MESSAGECODE);
+MC_i			: '#i'          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
+MC_R			: '#R'          { pushCommand("(L)"); }   -> type(MESSAGECODE);
+MC_Q            : '#Q'          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
 
 // TODO: Some string lists are CSV.
 
@@ -991,7 +991,7 @@ PARAM_V_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAG
 PARAM_V_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
 PARAM_V_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(E)"); }   -> type(MESSAGECODE);
 PARAM_V_MC_I            : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
-PARAM_V_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
+PARAM_V_MC_STRING       : MC_STRING     { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_V_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_V_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_V_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
@@ -1081,7 +1081,7 @@ PARAM_S_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAG
 PARAM_S_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
 PARAM_S_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(E)"); }   -> type(MESSAGECODE);
 PARAM_S_MC_I            : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
-PARAM_S_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
+PARAM_S_MC_STRING       : MC_STRING     { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_S_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_S_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_S_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
@@ -1104,7 +1104,7 @@ PARAM_L_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAG
 PARAM_L_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
 PARAM_L_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(E)"); }   -> type(MESSAGECODE);
 PARAM_L_MC_I            : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
-PARAM_L_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
+PARAM_L_MC_STRING       : MC_STRING     { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_L_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_L_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_L_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
@@ -1126,7 +1126,7 @@ PARAM_M_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAG
 PARAM_M_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
 PARAM_M_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(E)"); }   -> type(MESSAGECODE);
 PARAM_M_MC_I            : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
-PARAM_M_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
+PARAM_M_MC_STRING       : MC_STRING     { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_M_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_M_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_M_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
@@ -1272,7 +1272,7 @@ PARAM_X_MC_SIMPLE     : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGEC
 PARAM_X_MC_COMPUTED_S : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
 PARAM_X_MC_COMPUTED_V : MC_COMPUTED_V { pushCommand("(E)"); }   -> type(MESSAGECODE);
 PARAM_X_MC_I          : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
-PARAM_X_MC_T          : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
+PARAM_X_MC_STRING     : MC_STRING     { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_X_MC_e          : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_X_MC_i          : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_X_MC_R          : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
