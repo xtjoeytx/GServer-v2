@@ -491,7 +491,7 @@ GS1ScriptValue mc_6(GS1Visitor* visitor, std::string_view messageCode, const std
 			{
 				auto* server = BabyDI::Get<Server>();
 				if (auto npc = server->getNPC(client->getCarryNPC()); npc != nullptr)
-					return npc->image;
+					return string::toLower(npc->image);
 			}
 			return std::string{};
 		},
@@ -624,7 +624,7 @@ GS1ScriptValue mc_f(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (npc != nullptr)
 	{
 		// Explicitly place it in another string as the return will trigger move semantics.
-		return std::string{ npc->image };
+		return string::toLower(npc->image);
 	}
 
 	return std::string{};

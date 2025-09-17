@@ -470,7 +470,7 @@ GS1ScriptValue fn_startswith(GS1Visitor* visitor, std::string_view messageCode, 
 	auto prefix = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto str = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	return GameValue{ str.starts_with(prefix) };
+	return GameValue{ string::findi(str, prefix) == 0 };
 }
 
 // strcontains(string, substring)
@@ -483,7 +483,7 @@ GS1ScriptValue fn_strcontains(GS1Visitor* visitor, std::string_view messageCode,
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto substring = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	return GameValue{ str.find(substring) != std::string::npos };
+	return GameValue{ string::findi(str, substring) != std::string::npos };
 }
 
 // strequals(string1, string2)
@@ -496,7 +496,7 @@ GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view messageCode, c
 	auto str1 = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto str2 = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	return GameValue{ str1 == str2 };
+	return GameValue{ string::comparei(str1, str2) == 0 };
 }
 
 // strlen(string)
@@ -1056,7 +1056,7 @@ GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view messageCode, 
 	{
 		if (auto player = getPlayerFromSource(*source, index); player != nullptr)
 		{
-			if (player->account.character.chatMessage == text)
+			if (string::comparei(player->account.character.chatMessage, text) == 0)
 				return GameValue{ true };
 		}
 	}
@@ -1088,7 +1088,7 @@ GS1ScriptValue fn_playersays2(GS1Visitor* visitor, std::string_view messageCode,
 	{
 		if (auto player = getPlayerFromSource(*source, index); player != nullptr)
 		{
-			if (player->account.character.chatMessage.contains(text))
+			if (string::findi(player->account.character.chatMessage, text) != std::string::npos)
 				return GameValue{ true };
 		}
 	}

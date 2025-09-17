@@ -15,6 +15,7 @@
 #include <object/Character.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/FilePermissions.h>
+#include "utilities/StringUtils.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -112,7 +113,7 @@ inline bool Account::hasChest(std::string_view level, int8_t x, int8_t y) const
 
 inline bool Account::hasWeapon(std::string_view weapon) const
 {
-	return std::ranges::find(std::ranges::begin(weapons), std::ranges::end(weapons), weapon) != std::ranges::end(weapons);
+	return std::ranges::find_if(weapons, [&weapon](const auto& w) { return string::comparei(w, weapon) == 0; }) != std::ranges::end(weapons);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
