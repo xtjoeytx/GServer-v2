@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <exception>
 #include <format>
+#include <generator>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -36,6 +37,8 @@
 #include <scripting/gs1/GS1MessageCodes.h>
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
+#include <scripting/Script.h>
+#include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
@@ -71,6 +74,31 @@ static std::optional<size_t> getSymbolType(antlr4::tree::ParseTree* tree)
 		return node->getSymbol()->getType();
 
 	return std::nullopt;
+}
+
+static std::generator<Script*> getJoinedClassesFromSource(ScriptObject source)
+{
+	auto* server = BabyDI::Get<Server>();
+	switch (source.second)
+	{
+		case ScriptObjectType::NPC:
+			if (auto npc = server->getNPC(source.first); npc != nullptr)
+			{
+				for (ScriptClassPtr scriptClass : npc->getJoinedClasses())
+					co_yield &scriptClass->getScript();
+			}
+			break;
+
+		case ScriptObjectType::WEAPON:
+		{
+			auto& weaponList = server->getWeaponList();
+			if (auto it = weaponList.find(source.first); it != weaponList.end())
+			{
+				for (ScriptClassPtr scriptClass : it->second->getJoinedClasses())
+					co_yield &scriptClass->getScript();
+			}
+		}
+	}
 }
 
 static GameVariableStore* getGameVariableStoreFromSource(ScriptObject source)
@@ -722,17 +750,28 @@ std::any GS1Visitor::visitStatementUserFunctionCall(GS1Parser::StatementUserFunc
 
 	auto identifier = context->compound_identifier()->getText();
 	auto function = m_parser->userFunctions.find(identifier);
-	if (function == m_parser->userFunctions.end())
-		RECOVERABLE_PARSE_ERROR(std::format("Could not find user function '{}'.", identifier), {});
-
-	try
+	if (function != m_parser->userFunctions.end())
 	{
-		visit(function->second);
-	}
-	catch (return_exception&)
-	{
+		try
+		{
+			visit(function->second);
+		}
+		catch (return_exception&)
+		{
+		}
+		return {};
 	}
 
+	// Try to call the function in our joined classes.
+	auto server = BabyDI::Get<Server>();
+	ScriptEvent eventCopy = *m_event;
+	for (auto script : getJoinedClassesFromSource(m_originalSource))
+	{
+		if (script->runUserDefinedFunction(identifier, eventCopy, m_originalSource))
+			return {};
+	}
+
+	RECOVERABLE_PARSE_ERROR(std::format("Could not find user function '{}'.", identifier), {});
 	return {};
 }
 

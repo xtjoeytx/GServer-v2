@@ -508,7 +508,7 @@ std::string NPC::getClientSideScript() const
 	return result;
 }
 
-std::string NPC::getJoinedClasses() const
+std::string NPC::getJoinedClassesList() const
 {
 	bool hasExpired = false;
 	std::string result;
@@ -1781,7 +1781,7 @@ std::vector<std::string> NPC::getVariableDump() const
 				break;
 
 			case NPCProp::CLASS:
-				result.emplace_back(std::format("{}: {}", nameprop, getJoinedClasses()));
+				result.emplace_back(std::format("{}: {}", nameprop, getJoinedClassesList()));
 				break;
 
 			case NPCProp::SWORDIMAGE:

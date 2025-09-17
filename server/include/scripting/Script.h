@@ -61,6 +61,7 @@ public:
 	void executeEvents(ScriptEventQueue& events, ScriptObject source) const;
 	void executeEvents(clear_container_t, ScriptContainer& container, ScriptObject source) const;
 	void executeEvents(clear_container_t, ScriptEventQueue& events, ScriptObject source) const;
+	bool runUserDefinedFunction(std::string_view functionName, ScriptEvent& event, ScriptObject source) const;
 
 public:
 	static std::string minify(const std::string& src) noexcept;

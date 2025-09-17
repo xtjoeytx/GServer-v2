@@ -43,6 +43,9 @@ Weapon::Weapon(std::string_view name, std::string_view image, std::string_view s
 
 std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 {
+	// Calculated file name.
+	// Non-alphanumeric characters are encoded as %000.
+
 	// File Path
 	CString fileName = CString() << "weapons" << FileSystem::getPathSeparator() << pWeapon;
 
@@ -250,7 +253,7 @@ CString Weapon::getAddWeaponPacket() const
 	// If we have bytecode, send the weapon headers.
 	else
 	{
-		auto classes = getJoinedClasses();
+		auto classes = getJoinedClassesList();
 		weaponPacket >> (char)NPCProp::CLASS >> (char)classes.length() << classes << "\n";
 
 		// Send the bytecode.
@@ -275,7 +278,7 @@ CString Weapon::getWeaponByteCodePacket() const
 
 //----------------------------
 
-std::string Weapon::getJoinedClasses() const
+std::string Weapon::getJoinedClassesList() const
 {
 	bool hasExpired = false;
 	std::string result;

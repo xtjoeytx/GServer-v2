@@ -595,7 +595,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 
 	if (!npc->m_joinedClasses.empty())
 	{
-		fileData << "JOINEDCLASSES " << npc->getJoinedClasses() << NL;
+		fileData << "JOINEDCLASSES " << npc->getJoinedClassesList() << NL;
 	}
 
 	fileData << "NPCSCRIPT" << NL << CString(npc->getScript().getOriginalSource()).replaceAll("\n", NL);

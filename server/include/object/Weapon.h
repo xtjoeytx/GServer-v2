@@ -3,7 +3,9 @@
 
 #include <chrono>
 #include <cstdint>
+#include <generator>
 #include <memory>
+#include <ranges>
 #include <string_view>
 #include <string>
 #include <utility>
@@ -18,7 +20,6 @@
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Events.h>
-#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -49,7 +50,8 @@ public:
 	CString getWeaponByteCodePacket() const;
 
 public:
-	std::string getJoinedClasses() const;
+	std::string getJoinedClassesList() const;
+	[[inline]] std::generator<std::shared_ptr<ScriptClass>> getJoinedClasses();
 	void setJoinedClasses(std::string_view classes);
 	void joinClass(std::string_view className);
 	void leaveClass(std::string_view className);
@@ -64,6 +66,7 @@ public:
 public:
 	bool isDefault() const { return (m_weaponDefault != LevelItemType::INVALID); }
 	LevelItemType getWeaponId() const { return m_weaponDefault; }
+	Script& getScript() { return m_script; }
 	const Script& getScript() const { return m_script; }
 
 public:
@@ -82,6 +85,17 @@ protected:
 	mutable std::vector<std::pair<EventHandle, std::weak_ptr<ScriptClass>>> m_joinedClasses;
 };
 using TWeaponPtr = std::shared_ptr<Weapon>;
+
+//----------------------------
+
+inline std::generator<std::shared_ptr<ScriptClass>> Weapon::getJoinedClasses()
+{
+	auto filter = m_joinedClasses
+		| std::views::transform([](const auto& pair) { return pair.second.lock(); })
+		| std::views::filter([](const auto& scriptClass) { return scriptClass != nullptr; });
+	for (auto scriptClass : filter)
+		co_yield scriptClass;
+}
 
 //----------------------------
 

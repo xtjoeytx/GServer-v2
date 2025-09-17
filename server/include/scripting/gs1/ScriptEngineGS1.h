@@ -13,7 +13,6 @@
 
 #include <ANTLRInputStream.h>
 #include <CommonTokenStream.h>
-#include <GS1Lexer.h>
 #include <GS1Parser.h>
 
 #include <object/Character.h>
@@ -155,6 +154,7 @@ public:
 
 public:
 	virtual bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
+	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

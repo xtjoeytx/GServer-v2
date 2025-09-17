@@ -26,6 +26,7 @@ public:
 
 	CString getClassPacket() const;
 
+	[[inline]] Script& getScript();
 	[[inline]] const Script& getScript() const;
 	ScriptClass& setScript(std::string_view classScript);
 
@@ -44,8 +45,14 @@ private:
 	std::string m_desKey;
 	std::string m_header;
 };
+using ScriptClassPtr = std::shared_ptr<ScriptClass>;
 
 //----------------------------
+
+inline Script& ScriptClass::getScript()
+{
+	return m_script;
+}
 
 inline const Script& ScriptClass::getScript() const
 {

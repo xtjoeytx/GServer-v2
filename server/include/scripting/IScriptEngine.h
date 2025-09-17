@@ -3,8 +3,8 @@
 
 #include <string_view>
 
-#include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
+#include <scripting/ScriptTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -38,6 +38,7 @@ public:
 
 public:
 	virtual bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) = 0;
+	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

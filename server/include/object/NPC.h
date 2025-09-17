@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdint>
 #include <deque>
+#include <generator>
 #include <memory>
 #include <ranges>
 #include <stdexcept>
@@ -22,6 +23,7 @@
 #include <object/ShowImg.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Events.h>
 #include <utilities/Extents.h>
@@ -282,9 +284,11 @@ public:
 public:
 	void executeEvents(ScriptEventQueue& events, ScriptObject source) const;
 	void setScript(std::string_view script);
+	Script& getScript() noexcept { return m_script; }
 	const Script& getScript() const noexcept { return m_script; }
 	std::string getClientSideScript() const;
-	std::string getJoinedClasses() const;
+	std::string getJoinedClassesList() const;
+	[[inline]] std::generator<std::shared_ptr<ScriptClass>> getJoinedClasses();
 	bool hasJoinedClass(std::string_view className) const;
 	void setJoinedClasses(std::string_view classes);
 	void joinClass(std::string_view className);
@@ -422,6 +426,15 @@ using NPCWeakPtr = std::weak_ptr<NPC>;
 
 //----------------------------
 
+inline std::generator<std::shared_ptr<ScriptClass>> NPC::getJoinedClasses()
+{
+	auto filter = m_joinedClasses
+		| std::views::transform([](const auto& pair) { return pair.second.lock(); })
+		| std::views::filter([](const auto& scriptClass) { return scriptClass != nullptr; });
+	for (auto scriptClass : filter)
+		co_yield scriptClass;
+}
+
 inline void NPC::recordCurrentPropModTime()
 {
 	m_savedModTime = modTime;
@@ -541,7 +554,7 @@ inline TilePosition NPC::getTilePosition() const noexcept
 	DO(NPCProp::GATTRIB28,	PropertyString,				character.ganiAttributes[27]) \
 	DO(NPCProp::GATTRIB29,	PropertyString,				character.ganiAttributes[28]) \
 	DO(NPCProp::GATTRIB30,	PropertyString,				character.ganiAttributes[29]) \
-	DO(NPCProp::CLASS,		PropertyString,				getJoinedClasses()) \
+	DO(NPCProp::CLASS,		PropertyString,				getJoinedClassesList()) \
 	DO(NPCProp::X2,			PropertyPixelCoordinate,	character.localPixelX) \
 	DO(NPCProp::Y2,			PropertyPixelCoordinate,	character.localPixelY) \
 	DO(NPCProp::Z2,			PropertyPixelCoordinate,	character.localPixelZ)

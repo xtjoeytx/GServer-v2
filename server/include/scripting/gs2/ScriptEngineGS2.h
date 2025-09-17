@@ -9,8 +9,8 @@
 #include <BabyDI.h>
 #include <scripting/GS2ScriptManager.h>
 #include <scripting/IScriptEngine.h>
-#include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
+#include <scripting/ScriptTypes.h>
 
 namespace preagonal
 {
@@ -37,6 +37,7 @@ public:
 
 public:
 	virtual bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override { return false; }
+	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) { return false; }
 
 protected:
 	BabyDI_INJECT(Server, m_server);

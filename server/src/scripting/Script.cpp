@@ -198,6 +198,17 @@ void Script::executeEvents(clear_container_t, ScriptEventQueue& events, ScriptOb
 	events.queue().clear();
 }
 
+bool Script::runUserDefinedFunction(std::string_view functionName, ScriptEvent& event, ScriptObject source) const
+{
+	if (m_server_script == nullptr || m_server_script->engine == nullptr)
+		return false;
+
+	auto* engine = m_server_script->engine;
+	return engine->executeFunction(functionName, event, source, m_server_script);
+}
+
+//----------------------------
+
 std::string Script::minify(const std::string& src) noexcept
 {
 	if (src.empty())
