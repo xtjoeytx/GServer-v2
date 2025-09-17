@@ -588,9 +588,12 @@ void NPC::joinClass(std::string_view className)
 	{
 		auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
 		m_joinedClasses.emplace_back(handle, scriptClass);
-		sendScriptUpdatesToLevel(lastUpdateTime);
 		modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
 		lastUpdateTime = server->getFrameStartTime();
+
+		// If the joined script has clientside code, delete the NPC and resend the new code.
+		if (!scriptClass->getScript().getClientSide().empty())
+			sendScriptUpdatesToLevel(lastUpdateTime);
 	}
 	else
 	{

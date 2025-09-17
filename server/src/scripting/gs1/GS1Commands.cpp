@@ -904,7 +904,7 @@ void fn_destroy(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		auto server = BabyDI::Get<Server>();
 		if (server->getSettings().getBool("protectdbnpcs", true))
 		{
-			if (auto npc = server->getNPC(source.first); npc != nullptr && npc->storageType == NPCStorageType::DATABASE && npc->scriptType != NPCTYPE_LOCAL)
+			if (auto npc = server->getNPC(source.first); npc != nullptr && npc->storageType == NPCStorageType::DATABASE && npc->scriptType != NPCTYPE_LOCAL && npc->scriptType != NPCTYPE_ITEM)
 			{
 				log::printLine(log::npc, "NPC '{}' attempted to destroy itself, but DB NPCs are protected.", npc->name);
 				return;

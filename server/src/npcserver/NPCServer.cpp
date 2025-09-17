@@ -343,10 +343,9 @@ std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
 	return {};
 }
 
-std::shared_ptr<NPC> NPCServer::addNPC(std::string_view image, std::string_view script, std::shared_ptr<Level> level, Position<float> location)
+std::shared_ptr<NPC> NPCServer::addNPC(std::string_view image, std::string_view script, std::shared_ptr<Level> level, Position<float> location, std::string_view type)
 {
-	auto npc = m_server->addNPC(image, script, location.x(), location.y(), level, NPCStorageType::DATABASE, true);
-	npc->setPropWith<NPCProp::TYPE>(SetBy::SERVER, NPCTYPE_LOCAL);
+	auto npc = m_server->addNPC(image, script, location.x(), location.y(), level, NPCStorageType::DATABASE, true, type);
 	m_globalNPCList[npc->id] = npc;
 	return npc;
 }

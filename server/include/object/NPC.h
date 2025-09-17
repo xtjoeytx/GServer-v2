@@ -192,6 +192,7 @@ enum class NPCStorageType
 
 inline constexpr std::string_view NPCTYPE_LOCAL = "LOCALN"sv;
 inline constexpr std::string_view NPCTYPE_OBJECT = "OBJECT"sv;
+inline constexpr std::string_view NPCTYPE_ITEM = "ITEM"sv;
 inline constexpr std::string_view NPCTYPE_CONTROL = "CONTROL"sv;
 
 //----------------------------

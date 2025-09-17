@@ -17,6 +17,7 @@
 #include <ostream>
 #include <string_view>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -1399,35 +1400,87 @@ LevelItem* Level::addItem(const PixelPosition& position, LevelItemType item)
 	auto server = BabyDI::Get<Server>();
 	if (server->hasNPCServer())
 	{
+		auto itemName = LevelItem::getItemName(item);
 		if (LevelItem::isRupeeType(item))
-		{
-			if (server->getNPCServer()->getClass("gralats").expired())
-				return nullptr;
+			itemName = "gralats";
 
-			NPC* gralatNPC = nullptr;
+		if (auto itemclass = server->getNPCServer()->getClass(itemName).lock(); itemclass != nullptr)
+		{
+			static std::unordered_map<LevelItemType, NPCProp> stackableItems =
+			{
+				{ LevelItemType::GREENRUPEE, NPCProp::RUPEES },
+				{ LevelItemType::BLUERUPEE, NPCProp::RUPEES },
+				{ LevelItemType::REDRUPEE, NPCProp::RUPEES },
+				{ LevelItemType::GOLDRUPEE, NPCProp::RUPEES },
+				{ LevelItemType::BOMBS, NPCProp::BOMBS },
+				{ LevelItemType::DARTS, NPCProp::ARROWS },
+				{ LevelItemType::HEART, NPCProp::POWER },
+			};
+			static std::unordered_map<LevelItemType, uint32_t> stackableCount =
+			{
+				{ LevelItemType::GREENRUPEE, 1 },
+				{ LevelItemType::BLUERUPEE, 5 },
+				{ LevelItemType::REDRUPEE, 30 },
+				{ LevelItemType::GOLDRUPEE, 100 },
+				{ LevelItemType::BOMBS, 5 },
+				{ LevelItemType::DARTS, 5 },
+				{ LevelItemType::HEART, 2 },
+			};
+
+			NPC* itemNPC = nullptr;
 
 			// Determine the NPC location.
 			TilePosition loc = toTilePosition(position).translate(-0.5f, -1.0f);
 
-			// Find existing rupees, and add to the npc.
-			PixelRectangleArea searchArea{ toPixelPosition(loc).translate(-2 * 16, -2 * 16), { 6 * 16, 6 * 16 } };
-			auto npcList = findIntersectingNPCs(searchArea);
-			for (const auto& npcId : npcList)
+			auto stackable = stackableItems.find(item);
+			if (stackable != stackableItems.end())
 			{
-				if (auto npc = server->getNPC(npcId); npc != nullptr && npc->hasJoinedClass("gralats"))
-					gralatNPC = npc.get();
+				// Find existing items, and stack with the existing.
+				PixelRectangleArea searchArea{ toPixelPosition(loc).translate(-2 * 16, -2 * 16), { 6 * 16, 6 * 16 } };
+				auto npcList = findIntersectingNPCs(searchArea);
+				for (const auto& npcId : npcList)
+				{
+					if (auto npc = server->getNPC(npcId); npc != nullptr && npc->hasJoinedClass(itemName))
+					{
+						itemNPC = npc.get();
+					}
+				}
 			}
 
-			// Create a new gralat npc for these rupees.
-			if (!gralatNPC)
+			// Create a new npc for this item.
+			bool isNew = !itemNPC;
+			if (!itemNPC)
 			{
-				auto npc = server->getNPCServer()->addNPC("", "if (created) join gralats;", shared_from_this(), { loc[0], loc[1] });
-				gralatNPC = npc.get();
+				auto npc = server->getNPCServer()->addNPC("", std::format("if (created) join {};", itemName), shared_from_this(), { loc[0], loc[1] }, NPCTYPE_ITEM);
+				npc->character.gralats = npc->character.arrows = npc->character.bombs = npc->character.hitpointsInHalves = 0;
+				itemNPC = npc.get();
 			}
 
-			// Update rupees
-			gralatNPC->setPropWith<NPCProp::RUPEES>(props::SetBy::SERVER, gralatNPC->getProp<NPCProp::RUPEES>().value + LevelItem::GetRupeeCount(item));
-			gralatNPC->scripting.events.addEvent(ScriptEventType::CUSTOM, source::FromNPC(gralatNPC->id), "updategani");
+			// If this NPC has stackable items, set the count.
+			if (stackable != stackableItems.end())
+			{
+				uint8_t stackCount = stackableCount[item];
+				props::SetResults results;
+				switch (stackable->second)
+				{
+					case NPCProp::RUPEES:
+						results = itemNPC->setPropWith<NPCProp::RUPEES>(props::SetBy::SERVER, static_cast<props::GBYTE3>(itemNPC->getProp<NPCProp::RUPEES>().value + stackCount));
+						break;
+					case NPCProp::BOMBS:
+						results = itemNPC->setPropWith<NPCProp::BOMBS>(props::SetBy::SERVER, static_cast<props::GBYTE1>(itemNPC->getProp<NPCProp::BOMBS>().value + stackCount));
+						break;
+					case NPCProp::ARROWS:
+						results = itemNPC->setPropWith<NPCProp::ARROWS>(props::SetBy::SERVER, static_cast<props::GBYTE1>(itemNPC->getProp<NPCProp::ARROWS>().value + stackCount));
+						break;
+					case NPCProp::POWER:
+						results = itemNPC->setPropWith<NPCProp::POWER>(props::SetBy::SERVER, static_cast<props::GBYTE1>(itemNPC->getProp<NPCProp::POWER>().value + stackCount));
+						break;
+				}
+				itemNPC->sendPropsFromResults(results);
+			}
+
+			// Update the item.
+			itemNPC->scripting.events.addEvent(ScriptEventType::CUSTOM, source::FromNPC(itemNPC->id), "updategani");
 			return nullptr;
 		}
 	}
@@ -1653,6 +1706,7 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 		shoot->move();
 
 		// If the Z is <= 3, and we aren't going up, check for walls and NPCs.
+		// TODO: Player / NPC checks should be 0 <= (shoot Z - other Z) <= 3.
 		if (shoot->position.z() <= 3.0f && (DoubleIsZero(shoot->movementPerFrame.z()) || shoot->movementPerFrame.z() <= 0.0))
 		{
 			auto server = BabyDI::Get<Server>();
