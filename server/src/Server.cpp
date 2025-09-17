@@ -57,6 +57,7 @@
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
+#include <utilities/manager/GuildManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -112,7 +113,8 @@ Server::Server(const CString& pName)
 	m_timedSave.callbackIterations = [this](int)
 	{
 		saveServerFlags();
-		m_guildManager.saveGuilds();
+		auto guild = BabyDI::Get<GuildManager>();
+		guild->saveGuilds();
 	};
 	m_timedNWTime.callbackIterations = [this](int)
 	{
@@ -716,7 +718,8 @@ void Server::loadServerFlags()
 
 void Server::loadGuilds()
 {
-	m_guildManager.loadGuilds("guilds");
+	auto guild = BabyDI::Get<GuildManager>();
+	guild->loadGuilds("guilds");
 }
 
 void Server::loadServerMessage()

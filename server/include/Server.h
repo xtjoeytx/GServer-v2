@@ -47,7 +47,6 @@
 #include <utilities/Extents.h>
 #include <utilities/generator/IdGenerator.h>
 #include <utilities/generator/TimeoutGenerator.h>
-#include <utilities/manager/GuildManager.h>
 #include <utilities/manager/ResourceManager.h>
 #include <utilities/StringUtils.h>
 
@@ -174,7 +173,6 @@ public:
 	auto& getAdminSettings() { return m_adminSettings; }
 	auto& getAnimationManager() { return m_animationManager; }
 	auto& getGroupLevels() { return m_groupLevels; }
-	auto& getGuildManager() { return m_guildManager; }
 	auto& getLevelList() { return m_levelList; }
 	auto& getNPCList() { return m_npcList; }
 	auto& getNPCLoader() { return *m_npcLoader; }
@@ -327,7 +325,6 @@ private:
 	WordFilter m_wordFilter;
 	AnimationManager m_animationManager;
 	PackageManager m_packageManager;
-	GuildManager m_guildManager;
 	CString m_allowedVersionString, m_name, m_serverMessage;
 	CString m_overrideIp, m_overrideLocalIp, m_overridePort, m_overrideInterface;
 	std::vector<CString> m_allowedVersions, m_foldersConfig, m_ipBans, m_statusList, m_staffList;

@@ -38,6 +38,7 @@
 #include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
+#include <utilities/manager/GuildManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -825,7 +826,8 @@ void Player::setNick(CString pNickName, bool force)
 	if (!guildName.empty())
 	{
 		// Check if the player is in the guild.
-		if (m_server->getGuildManager().verifyPlayerInGuild(guildName, account.name, nickNamePart))
+		auto guildManager = BabyDI::Get<GuildManager>();
+		if (guildManager->verifyPlayerInGuild(guildName, account.name, nickNamePart))
 		{
 			account.character.nickName = std::format("{}{} ({})", prefix, nickNamePart, guildName);
 			m_guild = guildName;

@@ -19,6 +19,7 @@
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommandDispatcher.h>
 #include <utilities/StringUtils.h>
+#include <utilities/manager/GuildManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -107,7 +108,10 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		if (triggerData.size() > 3) nick = triggerData[3];
 
 		if (!guild.isEmpty() && !account.isEmpty())
-			m_guildManager.addPlayerToGuild(guild, account, nick);
+		{
+			auto guildManager = BabyDI::Get<GuildManager>();
+			guildManager->addPlayerToGuild(guild, account, nick);
+		}
 
 		return true;
 	});
@@ -124,9 +128,10 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 		if (!guild.isEmpty() && !account.isEmpty())
 		{
+			auto guildManager = BabyDI::Get<GuildManager>();
 			if (nickName.isEmpty())
-				m_guildManager.removePlayerEntirelyFromGuild(guild, account);
-			else m_guildManager.removePlayerFromGuild(guild, account, nickName);
+				guildManager->removePlayerEntirelyFromGuild(guild, account);
+			else guildManager->removePlayerFromGuild(guild, account, nickName);
 		}
 
 		return true;
@@ -142,7 +147,8 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 		if (!guild.isEmpty())
 		{
-			m_guildManager.deleteGuild(guild);
+			auto guildManager = BabyDI::Get<GuildManager>();
+			guildManager->deleteGuild(guild);
 
 			// Remove the guild from all players.
 			for (auto& [pid, p] : getPlayerList())

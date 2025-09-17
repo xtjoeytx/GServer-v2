@@ -45,6 +45,7 @@
 #include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
+#include <utilities/manager/GuildManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1::grammar
@@ -490,8 +491,8 @@ void fn_addguildmember(GS1Visitor* visitor, std::string_view commandName, const 
 	auto account = visitor->getGameValueAs<std::string>(*arguments[1]);
 	auto nick = visitor->getGameValueAs<std::string>(*arguments[2]);
 
-	if (auto server = BabyDI::Get<Server>(); server)
-		server->getGuildManager().addPlayerToGuild(guild, account, nick);
+	if (auto guildManager = BabyDI::Get<GuildManager>(); guildManager)
+		guildManager->addPlayerToGuild(guild, account, nick);
 }
 
 // addstring list,text;
@@ -1559,8 +1560,8 @@ void fn_removeguild(GS1Visitor* visitor, std::string_view commandName, const std
 
 	auto guild = visitor->getGameValueAs<std::string>(*arguments[0]);
 
-	if (auto server = BabyDI::Get<Server>(); server)
-		server->getGuildManager().deleteGuild(guild);
+	if (auto guildManager = BabyDI::Get<GuildManager>(); guildManager)
+		guildManager->deleteGuild(guild);
 }
 
 // removeguildmember guild,account,nick;
@@ -1573,11 +1574,11 @@ void fn_removeguildmember(GS1Visitor* visitor, std::string_view commandName, con
 	auto account = visitor->getGameValueAs<std::string>(*arguments[1]);
 	std::string nick = (arguments.size() > 2) ? visitor->getGameValueAs<std::string>(*arguments[2]) : std::string{};
 
-	if (auto server = BabyDI::Get<Server>(); server)
+	if (auto guildManager = BabyDI::Get<GuildManager>(); guildManager)
 	{
 		if (nick.empty())
-			server->getGuildManager().removePlayerEntirelyFromGuild(guild, account);
-		else server->getGuildManager().removePlayerFromGuild(guild, account, nick);
+			guildManager->removePlayerEntirelyFromGuild(guild, account);
+		else guildManager->removePlayerFromGuild(guild, account, nick);
 	}
 }
 

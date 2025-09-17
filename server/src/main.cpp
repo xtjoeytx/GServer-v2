@@ -20,6 +20,7 @@
 #include <Account.h>
 #include <Server.h>
 #include <utilities/Log.h>
+#include <utilities/manager/GuildManager.h>
 
 using namespace preagonal;
 
@@ -181,6 +182,7 @@ int main(int argc, char* argv[])
 
 		// Create the server.
 		auto* server = BabyDI_PROVIDE(Server, new Server(overrideServer));
+		auto* guilds = BabyDI_PROVIDE(GuildManager, new GuildManager());
 
 		// Program announcements.
 		log::printLine(log::server, "------------------------------ START ------------------------------");
@@ -246,6 +248,7 @@ int main(int argc, char* argv[])
 		CSocket::socketSystemDestroy();
 
 		BabyDI_RELEASE(Server);
+		BabyDI_RELEASE(GuildManager);
 	}
 
 	return ERR_SUCCESS;

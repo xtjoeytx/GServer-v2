@@ -37,6 +37,7 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
+#include <utilities/manager/GuildManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1::grammar
@@ -781,8 +782,8 @@ GS1ScriptValue mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std
 	auto guildName = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto accountName = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	auto server = BabyDI::Get<Server>();
-	auto names = server->getGuildManager().getPlayerNicknamesForGuild(guildName, accountName);
+	auto guildManager = BabyDI::Get<GuildManager>();
+	auto names = guildManager->getPlayerNicknamesForGuild(guildName, accountName);
 	if (names.has_value())
 	{
 		auto& firstIter = names.value().first;
