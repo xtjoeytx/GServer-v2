@@ -7,6 +7,7 @@
 #include <format>
 #include <iterator>
 #include <memory>
+#include <ranges>
 #include <string_view>
 #include <string>
 #include <vector>
@@ -283,9 +284,9 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (curCommand == "LAYER")
 		{
 			auto layer = strtoint(curLine.readString(""));
-			if (layer == -1)
+			if (layer == 0)
 				npc->visFlags |= PROPID(NPCVisFlags::DRAWUNDERPLAYER);
-			if (layer == 1)
+			if (layer == 2)
 				npc->visFlags |= PROPID(NPCVisFlags::DRAWOVERPLAYER);
 			npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
 		}
@@ -454,7 +455,18 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	// Clean up old samples
 	//m_scriptExecutionContext.getExecutionData();
 
+	static const char* NL = "\r\n";
+	CString fileName = CString() << "npcs/npc" << npc->name << ".txt";
+	CString fileData = CString("GRNPC001") << NL;
+
+	auto writeProp = [&](NPCProp prop, std::string_view key, std::string_view value)
+	{
+		if (npc->modTime[PROPID(prop)] != clock::time_point::min())
+			fileData << key << " " << value << NL;
+	};
+
 	auto level = npc->getLevel();
+	auto server = BabyDI::Get<Server>();
 
 	int layer = 0;
 	if (npc->visFlags & PROPID(NPCVisFlags::DRAWUNDERPLAYER))
@@ -462,9 +474,6 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	else if (npc->visFlags & PROPID(NPCVisFlags::DRAWOVERPLAYER))
 		layer = 1;
 
-	static const char* NL = "\r\n";
-	CString fileName = CString() << "npcs/npc" << npc->name << ".txt";
-	CString fileData = CString("GRNPC001") << NL;
 	fileData << "NAME " << npc->name << NL;
 	fileData << "ID " << CString(npc->id) << NL;
 	fileData << "TYPE " << npc->scriptType << NL;
@@ -493,29 +502,43 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 			fileData << "MAPY " << CString(npc->character.mapY) << NL;
 		}
 	}
-	fileData << "NICK " << npc->character.nickName << NL;
-	fileData << "ANI " << npc->character.gani << NL;
-	fileData << "HP " << CString(npc->character.hitpointsInHalves / 2.0f) << NL;
-	fileData << "GRALATS " << CString(npc->character.gralats) << NL;
-	fileData << "ARROWS " << CString(npc->character.arrows) << NL;
-	fileData << "BOMBS " << CString(npc->character.bombs) << NL;
-	fileData << "GLOVEP " << CString(npc->character.glovePower) << NL;
-	fileData << "SWORDP " << CString(npc->character.swordPower) << NL;
-	fileData << "SHIELDP " << CString(npc->character.shieldPower) << NL;
-	fileData << "BOWP " << CString(npc->character.bowPower) << NL;
-	fileData << "BOW " << npc->character.bowImage << NL;
-	fileData << "HEAD " << npc->character.headImage << NL;
-	fileData << "BODY " << npc->character.bodyImage << NL;
-	fileData << "SWORD " << npc->character.swordImage << NL;
-	fileData << "SHIELD " << npc->character.shieldImage << NL;
-	fileData << "HORSE " << npc->character.horseImage << NL;
-	fileData << "COLORS " << CString((int)npc->character.colors[0]) << "," << CString((int)npc->character.colors[1]) << "," << CString((int)npc->character.colors[2]) << "," << CString((int)npc->character.colors[3]) << "," << CString((int)npc->character.colors[4]) << NL;
-	fileData << "SPRITE " << CString(npc->character.sprite << 2 | npc->character.direction) << NL;
-	fileData << "AP " << CString(npc->character.ap) << NL;
-	fileData << "TIMEOUT " << CString(static_cast<int>(npc->timeout.count() * 0.05)) << NL;
-	fileData << "LAYER " << CString(layer) << NL;
+
+	writeProp(NPCProp::NICKNAME, "NICK", npc->character.nickName);
+
+	if (server->Generation != ServerGeneration::ORIGINAL)
+		writeProp(NPCProp::GANI, "ANI", npc->character.gani);
+
+	writeProp(NPCProp::POWER, "HP", std::format("{:2f}", npc->character.hitpointsInHalves / 2.0f));
+	writeProp(NPCProp::RUPEES, "GRALATS", std::to_string(npc->character.gralats));
+	writeProp(NPCProp::ARROWS, "ARROWS", std::to_string(npc->character.arrows));
+	writeProp(NPCProp::BOMBS, "BOMBS", std::to_string(npc->character.bombs));
+	writeProp(NPCProp::GLOVEPOWER, "GLOVEP", std::to_string(npc->character.glovePower));
+	writeProp(NPCProp::SWORDIMAGE, "SWORDP", std::to_string(npc->character.swordPower));
+	writeProp(NPCProp::SHIELDIMAGE, "SHIELDP", std::to_string(npc->character.shieldPower));
+
+	if (server->Generation == ServerGeneration::ORIGINAL)
+	{
+		writeProp(NPCProp::GANI, "BOWP", std::to_string(npc->character.bowPower));
+		writeProp(NPCProp::GANI, "BOW", npc->character.bowImage);
+	}
+
+	writeProp(NPCProp::HEADIMAGE, "HEAD", npc->character.headImage);
+	writeProp(NPCProp::BODYIMAGE, "BODY", npc->character.bodyImage);
+	writeProp(NPCProp::SWORDIMAGE, "SWORD", npc->character.swordImage);
+	writeProp(NPCProp::SHIELDIMAGE, "SHIELD", npc->character.shieldImage);
+	writeProp(NPCProp::HORSEIMAGE, "HORSE", npc->character.horseImage);
+	writeProp(NPCProp::COLORS, "COLORS", std::format("{},{},{},{},{}", npc->character.colors[0], npc->character.colors[1], npc->character.colors[2], npc->character.colors[3], npc->character.colors[4]));
+	writeProp(NPCProp::SPRITE, "SPRITE", std::to_string(npc->character.sprite << 2 | npc->character.direction));
+	writeProp(NPCProp::ALIGNMENT, "AP", std::to_string(npc->character.ap));
+
+	if (npc->timeout != 0ms)
+		fileData << "TIMEOUT " << std::to_string(static_cast<int>(npc->timeout.count() * 0.05)) << NL;
+
+	if (layer != 0)
+		fileData << "LAYER " << std::to_string(layer + 1) << NL;
+
 	fileData << "SHAPETYPE " << (npc->shape.width() != 0 && npc->shape.height() != 0 ? "1" : "0") << NL;
-	fileData << "SHAPE " << CString(npc->shape.width()) << " " << CString(npc->shape.height()) << NL;
+	fileData << "SHAPE " << std::format("{} {}", npc->shape.width(), npc->shape.height()) << NL;
 
 	if (npc->blockFlags & PROPID(NPCBlockFlags::NOBLOCK))
 		fileData << "DONTBLOCK 1" << NL;
@@ -537,22 +560,20 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		fileData << "VISIBLE 0" << NL;
 	if ((npc->visFlags & PROPID(NPCVisFlags::TIMERSHOW)) != 0)
 		fileData << "TIMERSHOW 1" << NL;
-	if ((npc->visFlags & PROPID(NPCVisFlags::MALE)) == 0)
+	if (npc->isCharacter() && (npc->visFlags & PROPID(NPCVisFlags::MALE)) == 0)
 		fileData << "MALE 0" << NL;
 	// ---
 
-	fileData << "SAVEARR " << CString((int)npc->saves[0]) << "," << CString((int)npc->saves[1]) << "," << CString((int)npc->saves[2]) << ","
-		<< CString((int)npc->saves[3]) << "," << CString((int)npc->saves[4]) << "," << CString((int)npc->saves[5]) << ","
-		<< CString((int)npc->saves[6]) << "," << CString((int)npc->saves[7]) << "," << CString((int)npc->saves[8]) << ","
-		<< CString((int)npc->saves[9]) << NL;
+	if (!std::ranges::empty(NPCSaveProps | std::views::filter([&npc](NPCProp prop) { return npc->modTime[PROPID(prop)] != clock::time_point::min(); })))
+		fileData << "SAVEARR " << string::toCSV(npc->saves | std::views::transform([](uint8_t x) { return std::to_string(x); })) << NL;
 
 	for (int i = 0; i < 30; i++)
 	{
+		NPCProp prop = static_cast<NPCProp>(NPCGaniAttrPackets[i]);
 		if (!npc->character.ganiAttributes[i].empty())
-			fileData << "ATTR" << std::to_string(i + 1) << " " << npc->character.ganiAttributes[i] << NL;
+			writeProp(prop, std::format("ATTR{}", i + 1), npc->character.ganiAttributes[i]);
 	}
 
-	auto* server = BabyDI::Get<Server>();
 	for (auto& [flag, value] : npc->scripting.variables.store | variables::no_temporary)
 	{
 		// Ignore flags.

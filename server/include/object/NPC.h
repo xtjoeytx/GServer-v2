@@ -135,6 +135,8 @@ enum class NPCProp : uint8_t
 };
 constexpr int NPCPROP_COUNT = static_cast<int>(NPCProp::NPCPROP_COUNT);
 
+inline constexpr std::array<NPCProp, 10> NPCSaveProps = { NPCProp::SAVE0, NPCProp::SAVE1, NPCProp::SAVE2, NPCProp::SAVE3, NPCProp::SAVE4, NPCProp::SAVE5, NPCProp::SAVE6, NPCProp::SAVE7, NPCProp::SAVE8, NPCProp::SAVE9 };
+
 //! NPCPROP_VISFLAGS values.
 enum class NPCVisFlags : uint8_t
 {
@@ -383,7 +385,7 @@ public:
 	Character character;
 	Dimension<uint16_t> shape;
 	Rectangle<uint16_t, uint8_t> imagePart;
-	uint8_t visFlags = 1;
+	uint8_t visFlags = PROPID(NPCVisFlags::VISIBLE);
 	uint8_t blockFlags = 0;
 	float hurtX = 0.0f;
 	float hurtY = 0.0f;

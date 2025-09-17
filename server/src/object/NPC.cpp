@@ -98,7 +98,7 @@ void NPC::resetToInitialState()
 	image = m_initialImage;
 	shape = {};
 	imagePart = {};
-	visFlags = 1;
+	visFlags = PROPID(NPCVisFlags::VISIBLE);
 	blockFlags = 0;
 	hurtX = 0.0f;
 	hurtY = 0.0f;
