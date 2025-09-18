@@ -876,7 +876,7 @@ GS1ScriptValue mc_U(GS1Visitor* visitor, std::string_view messageCode, const std
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
 		{
 			auto translationManager = BabyDI::Get<ITranslationManager>();
-			auto result = translationManager->getText(player->account.language, str);
+			auto result = translationManager->getText(player->getLanguage(), str);
 			if (result.data() != str.data())
 				return std::string{ result };
 		}

@@ -26,6 +26,16 @@ The file consists of an MD5 hash of the text, followed by the translated text wi
 
 `12345678901234567890123456: "Translated \"Text\""`
 
+## RC commands
+
+- `/synctranslation [language]`:
+Synchronizes an existing translatio files with the `Original` domain.
+If the language is not specified, all loaded languages are synchronized.
+- `/generatetranslationstubs`:
+Generates translation files for all supported languages.
+
+Any unused translations (they no longer exist in the `Original` domain) are written to `slanguageDomain.unused` and removed from the language file during all operations.
+
 ## Coverage
 
 Currently, signs (including both `say` and `say2`), RPG messages, the `#U(...)` message code,

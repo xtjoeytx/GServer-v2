@@ -2,7 +2,9 @@
 #define TRANSLATIONMANAGERMODERN_H
 
 #include <filesystem>
+#include <generator>
 #include <string_view>
+#include <tuple>
 
 #include <utilities/manager/ITranslationManager.h>
 
@@ -19,6 +21,9 @@ public:
 public:
 	virtual void loadTranslations(const std::filesystem::path& directory) override;
 	virtual void saveTranslations() override;
+	virtual std::tuple<std::string_view, size_t, size_t> syncLanguageWithOriginal(std::string_view language) override;
+	virtual std::generator<std::tuple<std::string_view, size_t, size_t>> syncAllLanguagesWithOriginal() override;
+	virtual size_t generateAllLanguageStubs() override;
 
 public:
 	virtual std::string_view getText(std::string_view language, std::string_view key) override;

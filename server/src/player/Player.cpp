@@ -980,7 +980,7 @@ bool Player::deleteWeapon(std::shared_ptr<Weapon> weapon)
 std::string Player::translate(std::string_view key) const
 {
 	auto translationManager = BabyDI::Get<ITranslationManager>();
-	return std::string{ translationManager->getText(account.language, key) };
+	return std::string{ translationManager->getText(getLanguage(), key)};
 }
 
 ///////////////////////////////////////////////////////////////////////////////

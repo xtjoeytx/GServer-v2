@@ -21,6 +21,7 @@
 #include <IEnums.h>
 #include <IUtil.h>
 
+#include <BabyDI.h>
 #include <Account.h>
 #include <FileSystem.h>
 #include <Server.h>
@@ -36,6 +37,7 @@
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
+#include <utilities/manager/ITranslationManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -945,8 +947,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 #endif
 		if (words[0] == "/help" && words.size() == 1)
 		{
-			std::vector<CString> commands = CString::loadToken("config/rchelp.txt", "\n", true);
-			for (auto& command : commands)
+			CString rchelp;
+			rchelp.load("config/rchelp.txt");
+			rchelp.removeAllI("\r").trimI();
+			for (auto& command : rchelp.tokenize("\n", true))
 				sendPacket(CString() >> (char)PLO_RC_CHAT << command);
 		}
 		else if (words[0] == "/version" && words.size() == 1)
@@ -1184,6 +1188,31 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 			// No files found.
 			if (found.size() == 0)
 				sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: No files found matching: " << search);
+		}
+		else if (words[0] == "/synctranslation")
+		{
+			auto translationManager = BabyDI::Get<ITranslationManager>();
+			if (words.size() == 1)
+			{
+				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " is synchronizing translations.");
+				for (const auto& [language, added, removed] : translationManager->syncAllLanguagesWithOriginal())
+					m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << std::format("Server: '{}' translation synchronized: {} added, {} removed.", language, added, removed));
+			}
+			else
+			{
+				auto [actualLanguage, added, removed] = translationManager->syncLanguageWithOriginal(words[1]);
+				if (actualLanguage.empty())
+					sendPacket(CString() >> (char)PLO_RC_CHAT << std::format("Server: Could not find translation language '{}'.", words[1]));
+				else m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << std::format("Server: {} synchronized the '{}' translation: {} added, {} removed.", account.name, actualLanguage, added, removed));
+			}
+		}
+		else if (words[0] == "/generatetranslationstubs" && words.size() == 1)
+		{
+			auto translationManager = BabyDI::Get<ITranslationManager>();
+			auto count = translationManager->generateAllLanguageStubs();
+			if (count != 0)
+				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << std::format(" generated stubs for {} languages.", count));
+			else m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " tried to generate language stubs, but there was a failure.");
 		}
 		// Try to send to the control-NPC.
 		else if (m_server->hasNPCServer())

@@ -28,12 +28,21 @@ namespace preagonal::string
 
 // A concept that checks if a type is a string.
 template<typename T>
-concept StringVariant = std::same_as<std::remove_cvref_t<T>, std::string>; // || std::same_as<T, std::u8string>;
+concept StringVariant = std::same_as<std::remove_cvref_t<T>, std::string>;
 
 // A concept that checks if a type is a string or string_view.
 template<typename T>
-concept StringViewVariant = StringVariant<T> || std::same_as<std::remove_cvref_t<T>, std::string_view>; // || std::same_as<T, std::u8string_view>;
+concept StringViewVariant = StringVariant<T> || std::same_as<std::remove_cvref_t<T>, std::string_view>;
 
+// A concept that checks if a type is a string or string_view.
+template<typename T>
+concept StringViewVariantUnicode = StringViewVariant<T> || std::same_as<std::remove_cvref_t<T>, std::u8string> || std::same_as<std::remove_cvref_t<T>, std::u8string_view>;
+
+// A concept that checks if a type is a string or string_view.
+template<typename T>
+concept StringViewVariantNotUnicode = StringViewVariant<T> && !StringViewVariantUnicode<T>;
+
+// A concept that checks if a type is a pointer to a const char string (e.g. const char[], const char[N], const char*).
 template<typename T>
 concept PointerToConstCharString = std::is_bounded_array_v<std::remove_cvref_t<T>> && std::is_same_v<std::remove_all_extents_t<std::remove_cvref_t<T>>, char>;
 
@@ -63,6 +72,16 @@ struct string_hash
 	[[nodiscard]] size_t operator()(const std::string& str) const noexcept
 	{
 		return hash_type{}(str);
+	}
+	[[nodiscard]] size_t operator()(const std::u8string_view& str) const noexcept
+	{
+		std::hash<std::u8string_view> hasher{};
+		return hasher(str);
+	}
+	[[nodiscard]] size_t operator()(const std::u8string& str) const noexcept
+	{
+		std::hash<std::u8string_view> hasher{};
+		return hasher(str);
 	}
 	[[nodiscard]] size_t operator()(const CString& str) const noexcept
 	{
@@ -113,6 +132,54 @@ struct string_hash_equal
 		return lhs == rhs;
 	}
 	[[nodiscard]] bool operator()(const std::string& lhs, const size_t& rhs) const noexcept
+	{
+		return string_hash{}(lhs) == rhs;
+	}
+};
+
+/// A comparator function for strings that can be used with heterogeneous lookups.
+struct u8string_hash_equal
+{
+	using is_transparent = void;
+	[[nodiscard]] bool operator()(const std::u8string& lhs, const std::u8string& rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	//
+	[[nodiscard]] bool operator()(const char8_t* lhs, const std::u8string& rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	[[nodiscard]] bool operator()(const std::u8string_view& lhs, const std::u8string& rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	[[nodiscard]] bool operator()(const CString& lhs, const std::u8string& rhs) const noexcept
+	{
+		auto sv = lhs.toStringView();
+		std::u8string_view view{ reinterpret_cast<const char8_t*>(sv.data()), sv.length() };
+		return view == rhs;
+	}
+	[[nodiscard]] bool operator()(const size_t& lhs, const std::u8string& rhs) const noexcept
+	{
+		return lhs == string_hash{}(rhs);
+	}
+	//
+	[[nodiscard]] bool operator()(const std::u8string& lhs, const char8_t* rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	[[nodiscard]] bool operator()(const std::u8string& lhs, const std::u8string_view& rhs) const noexcept
+	{
+		return lhs == rhs;
+	}
+	[[nodiscard]] bool operator()(const std::u8string& lhs, const CString& rhs) const noexcept
+	{
+		auto sv = rhs.toStringView();
+		std::u8string_view view{ reinterpret_cast<const char8_t*>(sv.data()), sv.length() };
+		return lhs == view;
+	}
+	[[nodiscard]] bool operator()(const std::u8string& lhs, const size_t& rhs) const noexcept
 	{
 		return string_hash{}(lhs) == rhs;
 	}
@@ -773,7 +840,7 @@ std::vector<std::string> fromCSV(StringViewVariant auto const& str, bool ignoreL
 /// @param str1 The first string-like object to compare.
 /// @param str2 The second string-like object to compare.
 /// @return An integer less than, equal to, or greater than zero if str1 is found, respectively, to be less than, to match, or be greater than str2 in a case-insensitive comparison.
-int comparei(StringViewVariant auto str1, StringViewVariant auto str2)
+int comparei(StringViewVariantUnicode auto str1, StringViewVariantUnicode auto str2)
 {
 	auto it1 = str1.begin();
 	auto it2 = str2.begin();

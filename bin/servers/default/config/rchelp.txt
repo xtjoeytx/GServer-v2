@@ -19,3 +19,5 @@ Available commands for GServer:
 /reloadipbans: Reloads the ip bans.
 /reloadweapons: Reloads the weapons from disk.
 /find file: Finds a file.  Accepts wildcards.
+/synctranslation [language]: Scans for any new translation entries.
+/generatetranslationstubs: Generates translation files for all languages.

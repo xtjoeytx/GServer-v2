@@ -1,46 +1,63 @@
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <generator>
+#include <iterator>
 #include <string_view>
 #include <string>
+#include <tuple>
 #include <utility>
 
 #include <tomcrypt.h>
 
 #include <CString.h>
 
-#include <utilities/StringUtils.h>
-#include <utilities/manager/TranslationManagerClassic.h>
 #include <utilities/Log.h>
-#include <utilities/CommonTypes.h>
+#include <utilities/manager/ITranslationManager.h>
+#include <utilities/manager/TranslationManagerClassic.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+// https://r12a.github.io/app-conversion/
+constexpr std::array<std::string_view, 9> supportedLanguages =
+{
+	"Deutsch"sv, "English"sv, "Espa\u00F1ol"sv, "Fran\u00E7ais"sv, "Italiano"sv,
+	"Nederlands"sv, "Norsk"sv, "Portugu\u00EAs"sv, "Svenska"sv,
+};
+
 constexpr std::string_view filePrefix = "slanguage"sv;
+constexpr std::string_view originalLanguage = "Original"sv;
+
+//----------------------------
 
 void TranslationManagerClassic::loadTranslations(const std::filesystem::path& directory)
 {
 	auto indent = log::server.indent();
-	m_filesystem.addDir(directory.string());
 
-	for (const auto& [file, path] : m_filesystem.getFileList())
+	std::filesystem::directory_iterator dirSearch{ directory, std::filesystem::directory_options::follow_directory_symlink | std::filesystem::directory_options::skip_permission_denied };
+	for (const auto& entry : dirSearch)
 	{
-		auto fileName = file.toStringView();
+		if (!entry.is_regular_file())
+			continue;
 
 		// slanguageDomain.txt
+		auto fileName = entry.path().filename().string();
 		if (!fileName.starts_with(filePrefix) || !fileName.ends_with(".txt"))
 			continue;
 
-		loadDomain(path.toString());
+		loadDomain(entry.path());
 	}
 
 	// Always include the "Original" domain.
-	if (!m_domains.contains("Original"))
-		m_domains.emplace("Original", TranslationMap{ .filename = directory / "slanguageOriginal.txt" });
+	if (!m_domains.contains(originalLanguage))
+		m_domains.emplace(originalLanguage, TranslationMap{ .filename = directory / "slanguageOriginal.txt" });
 }
 
 void TranslationManagerClassic::loadDomain(const std::filesystem::path& filePath)
@@ -93,9 +110,112 @@ void TranslationManagerClassic::saveTranslations()
 
 		for (const auto& [key, value] : map.lines)
 			file << key << ": \"" << string::escapeQuotes(value) << "\"\n";
-
-		file.close();
 	}
+}
+
+std::tuple<std::string_view, size_t, size_t> TranslationManagerClassic::syncLanguageWithOriginal(std::string_view language)
+{
+	std::tuple<std::string_view, size_t, size_t> result{ ""sv, 0, 0};
+	constexpr size_t addIndex = 1;
+	constexpr size_t removeIndex = 2;
+
+	// Don't sync original with original.
+	if (string::comparei(language, originalLanguage) == 0)
+		return result;
+
+	// Find the original domain.
+	auto original = m_domains.find(originalLanguage);
+	if (original == m_domains.end())
+		return result;
+
+	// Get our calculated language domain.
+	auto calculatedLanguage = language::mapToClassic(language);
+	auto domain = m_domains.find(calculatedLanguage);
+	if (domain == m_domains.end())
+	{
+		if (std::ranges::find(supportedLanguages, calculatedLanguage) == std::ranges::end(supportedLanguages))
+			return result;
+
+		std::string languageFile{ filePrefix };
+		languageFile.append(calculatedLanguage).append(".txt");
+		domain = m_domains.emplace(calculatedLanguage, TranslationMap{ .filename = original->second.filename.parent_path() / languageFile }).first;
+	}
+
+	// Can't find a language, return failure.
+	if (domain == m_domains.end())
+		return result;
+
+	// Record the calculated language.
+	std::get<0>(result) = calculatedLanguage;
+
+	// File for unused translations.
+	std::filesystem::path unusedFileName = domain->second.filename;
+	unusedFileName.replace_extension(".unused");
+	{
+		std::ofstream unusedFile;
+
+		// Check for any translations that aren't in the original file anymore.
+		for (auto iter = domain->second.lines.begin(); iter != domain->second.lines.end();)
+		{
+			const auto& [key, value] = *iter;
+			if (!original->second.lines.contains(key))
+			{
+				if (!unusedFile.is_open())
+					unusedFile.open(unusedFileName, std::ios::out | std::ios::app);
+				if (unusedFile.is_open())
+				{
+					unusedFile << key << ": \"" << string::escapeQuotes(value) << "\"\n";
+					iter = domain->second.lines.erase(iter);
+					++std::get<removeIndex>(result);
+					continue;
+				}
+			}
+			++iter;
+		}
+	}
+
+	// Add any translations from the original that aren't in this language file.
+	for (const auto& [key, value] : original->second.lines)
+	{
+		if (!domain->second.lines.contains(key))
+		{
+			domain->second.lines.emplace(key, value);
+			++std::get<addIndex>(result);
+		}
+	}
+
+	// Save the translations.
+	std::ofstream file{ domain->second.filename };
+	if (file.is_open())
+	{
+		for (const auto& [key, value] : domain->second.lines)
+			file << key << ": \"" << string::escapeQuotes(value) << "\"\n";
+	}
+
+	return result;
+}
+
+std::generator<std::tuple<std::string_view, size_t, size_t>> TranslationManagerClassic::syncAllLanguagesWithOriginal()
+{
+	for (const auto& [domain, map] : m_domains)
+	{
+		if (domain == originalLanguage)
+			continue;
+
+		co_yield syncLanguageWithOriginal(domain);
+	}
+}
+
+size_t TranslationManagerClassic::generateAllLanguageStubs()
+{
+	size_t count = 0;
+	for (const auto& language : supportedLanguages)
+	{
+		auto result = syncLanguageWithOriginal(language);
+		if (std::get<1>(result) != 0)
+			++count;
+	}
+	return count;
 }
 
 std::string_view TranslationManagerClassic::getText(std::string_view language, std::string_view key)
@@ -115,11 +235,11 @@ std::string_view TranslationManagerClassic::getText(std::string_view language, s
 	// Search the target language, then "Original".
 	if (auto line = findTranslation(language, hash); line != nullptr)
 		return *line;
-	if (auto line = findTranslation("Original", hash); line != nullptr)
+	if (auto line = findTranslation(originalLanguage, hash); line != nullptr)
 		return *line;
 
 	// Not found, add to "Original" and return the key.
-	if (auto domain = m_domains.find("Original"); domain != m_domains.end())
+	if (auto domain = m_domains.find(originalLanguage); domain != m_domains.end())
 		domain->second.lines.emplace(hash, key);
 
 	return key;

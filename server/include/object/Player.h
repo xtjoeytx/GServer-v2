@@ -185,6 +185,7 @@ public:
 	const std::string& getVersionStr() const { return m_version; }
 	const std::string& getServerName() const { return m_serverName; }
 	const std::string& getPlatform() const { return m_os; }
+	[[inline]] std::string_view getLanguage() const;
 	int64_t getDeviceId() const { return m_deviceId; }
 	NPCID getCarryNPC() const { return m_carryNPC; }
 	NPCID getAttachedNPC() const { return m_attachNPC; }
@@ -542,6 +543,11 @@ inline bool Player::removeChatChannel(const std::string& channel)
 {
 	m_channelList.erase(channel);
 	return false;
+}
+
+inline std::string_view Player::getLanguage() const
+{
+	return account.language;
 }
 
 //----------------------------
