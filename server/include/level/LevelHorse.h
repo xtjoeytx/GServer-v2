@@ -16,6 +16,9 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+constexpr uint8_t HORSETYPE_NORMAL = 0;
+constexpr uint8_t HORSETYPE_BOAT = 1;
+
 struct LevelHorse
 {
 	float getTileX() const { return position.x() / 16.0f; }
@@ -32,6 +35,7 @@ struct LevelHorse
 	std::string image;
 	uint8_t direction;
 	uint8_t bushes;
+	uint8_t type;
 	TimeoutGenerator timeout;
 
 	[[inline]] void constructScriptParameters();
@@ -46,9 +50,9 @@ inline void LevelHorse::constructScriptParameters()
 	scriptParameters.try_emplace("y", set_temporary, "y", gameValueGetter([this]() { return position.y() / 16.0; }), GameValue::func_set{});
 	scriptParameters.try_emplace("dir", set_temporary, "dir", gameValueGetter(direction), GameValue::func_set{});
 	scriptParameters.try_emplace("bushes", set_temporary, "bushes", gameValueGetter(bushes), GameValue::func_set{});
-	//scriptParameters.try_emplace("bombs", set_temporary, "bombs", gameValueGetter([this]() { return (double)direction; }), GameValue::func_set{});
-	//scriptParameters.try_emplace("bombpower", set_temporary, "bombpower", gameValueGetter([this]() { return (double)direction; }), GameValue::func_set{});
-	//scriptParameters.try_emplace("type", set_temporary, "type", gameValueGetter([this]() { return (double)direction; }), GameValue::func_set{});
+	scriptParameters.try_emplace("bombs", set_temporary, "bombs", gameValueGetter([this]() { return 0.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("bombpower", set_temporary, "bombpower", gameValueGetter([this]() { return 0.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("type", set_temporary, "type", gameValueGetter([this]() { return static_cast<double>(type); }), GameValue::func_set{});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

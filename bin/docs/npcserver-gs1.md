@@ -239,19 +239,18 @@ Please review the lists below of implemented events, flags, functions, commands,
         .y
         .dir
         .bushes
+        .bombs          (always 0)
+        .bombpower      (always 0)
+        .type
 
-    signscount
-    signs[]
+      signscount
+      signs[]
         .x
         .y
 
 #### Not implemented
 
     * graalversion
-    * horses[]
-        .bombs
-        .bombpower
-        .type
       nwday
       nwhour
       nwmin

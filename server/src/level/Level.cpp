@@ -1337,6 +1337,9 @@ LevelHorse* Level::addHorse(std::string_view image, const PixelPosition& positio
 	auto horseLife = server->getSettings().getInt("horselifetime", 30);
 
 	LevelHorse newHorse{ .position = position, .image = std::string{ image }, .direction = direction, .bushes = bushes, .timeout = TimeoutGenerator(std::chrono::seconds(horseLife)) };
+	if (isOnWater(position.translate(16, 32)))
+		newHorse.type = HORSETYPE_BOAT;
+
 	newHorse.timeout.start();
 	m_horses.emplace_back(std::move(newHorse));
 	return &m_horses.back();
