@@ -259,6 +259,7 @@ endif ()
 FetchContent_Declare(libtommath
 	GIT_REPOSITORY https://github.com/libtom/libtommath.git
 	GIT_TAG        develop
+	EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(libtommath)
 target_include_directories(${TARGET_NAME} PUBLIC "${libtommath_SOURCE_DIR}")
