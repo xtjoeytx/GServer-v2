@@ -47,8 +47,6 @@ namespace preagonal::gs1::grammar
 using BuiltInFunctionHandleFunc = GS1ScriptValue(*)(GS1Visitor*, std::string_view, const std::vector<GS1ScriptValue*>&);
 using BuiltInFunctionHandleMap = std::unordered_map<size_t, BuiltInFunctionHandleFunc>;
 
-static GS1ScriptValue fn__(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_N_(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_abs(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_arctan(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_cos(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
@@ -119,8 +117,6 @@ static BuiltInFunctionHandleMap GenerateMap()
 	string::string_hash hash{};
 	BuiltInFunctionHandleMap map =
 	{
-		{ hash("_"), &fn__ },
-		{ hash("N_"), &fn_N_ },
 		{ hash("abs"), &fn_abs },
 		{ hash("arctan"), &fn_arctan },
 		{ hash("cos"), &fn_cos },
@@ -247,44 +243,6 @@ GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, antlr4::tree::ParseTr
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-// _(string)
-// Translates the string according to the client's language settings.
-GS1ScriptValue fn__(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function _ requires exactly one argument");
-
-	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
-
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
-	{
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-		{
-			auto& translation = server->getTranslationManager();
-			auto translated = translation.translate(player->account.language, str);
-			if (translated != str.data())
-				str = translated;
-		}
-	}
-
-	return str;
-}
-
-// N_(string)
-// Does not translate the string, but adds a stub for it in the server's translation files.
-GS1ScriptValue fn_N_(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function N_ requires exactly one argument");
-
-	// TODO: Implement this.
-
-	return *arguments[0];
-}
-
-//----------------------------
 
 // abs(value)
 // Absolute value of a number.

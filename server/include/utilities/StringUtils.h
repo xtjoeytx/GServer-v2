@@ -428,14 +428,19 @@ auto escapeQuotes(StringViewVariant auto const str)
 /// @brief Unescapes quotes in a string that were escaped using a CSV-like format.
 /// @param str The input string or string_view to unescape quotes in.
 /// @return A new string with quotes unescaped.
-auto unescapeQuotes(StringVariant auto const& str)
+auto unescapeQuotes(StringViewVariant auto const& str)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 
 	// The shortest an escaped character can be is 2 characters.
 	if (str.size() < 2)
-		return str;
+	{
+		if constexpr (StringVariant<decltype(str)>)
+			return str;
+		else
+			return std::basic_string<Elem, Traits>{ str };
+	}
 
 	std::basic_string<Elem, Traits> ret{};
 	ret.reserve(str.size());
@@ -538,6 +543,54 @@ std::vector<T> splitHard(StringViewVariant auto const& str)
 	return splitHard(str, " \t\n\r"sv);
 }
 
+
+/// @brief Splits a string into tokens based on a deliminating string, returning the results as a vector.
+/// @tparam T The type of each token in the resulting vector. Defaults to std::string.
+/// @param str The input string to split. Can be any type compatible with string view semantics.
+/// @param delim The string used to split the input string into fields. Defaults to a newline.
+/// @return A vector containing the tokens extracted from the input string, with each token converted to type T.
+template <typename T = std::string>
+std::vector<T> splitHardByString(StringViewVariant auto const& str, StringViewVariant auto delim)
+{
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+
+	std::vector<T> tokens{};
+	std::basic_string_view<Elem, Traits> strview{ str };
+
+	// Collect the tokens.
+	size_t start = 0, end = 0;
+	while (start < str.length())
+	{
+		// Find the next delimiter.
+		end = strview.find(delim, start);
+
+		// None found, so add the rest of the string.
+		if (end == std::string_view::npos)
+		{
+			tokens.push_back(T{ strview.substr(start) });
+			break;
+		}
+
+		// Add the token to the vector.
+		if (end > start)
+			tokens.push_back(T{ strview.substr(start, end - start) });
+		else
+			tokens.push_back(T{});
+
+		start = end + delim.length();
+	}
+
+	return tokens;
+}
+
+template <typename T = std::string>
+std::vector<T> splitHardByString(StringViewVariant auto const& str)
+{
+	return splitHardByString(str, "\n"sv);
+}
+
+
 /// @brief Joins the elements of a range into a single string, separated by a specified delimiter.
 /// @param range A forward range containing elements to join. The elements must be streamable to std::ostringstream.
 /// @param delim The delimiter string to insert between elements. Defaults to ','.
@@ -609,9 +662,9 @@ auto toCSV(ForwardRangeNotString auto&& range, bool force_quoted = false)
 /// @param delim The character used to split the input string into fields. Defaults to newline ('\n').
 /// @param force_quoted If true, all fields will be quoted in the resulting CSV. Defaults to false.
 /// @return A CSV-formatted string constructed from the split fields of the input.
-auto toCSV(StringViewVariant auto const& str, char delim = '\n', bool force_quoted = false)
+auto toCSV(StringViewVariant auto const& str, std::string_view delim = "\n"sv, bool force_quoted = false)
 {
-	auto s = splitHard(str, std::string_view(&delim, 1));
+	auto s = splitHard(str, delim);
 	return toCSV(s, force_quoted);
 }
 

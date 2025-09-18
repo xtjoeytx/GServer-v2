@@ -677,6 +677,10 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, std::string_view fileVersion, FileS
 				++i;
 			}
 
+			// Erase the final newline.
+			if (text.right(1) == "\n")
+				text = text.subString(0, text.length() - 1);
+
 			// Add the new sign.
 			level->addSign(LocalWholeTilePosition{ x, y }, text);
 		}

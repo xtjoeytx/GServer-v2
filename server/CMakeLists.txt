@@ -94,7 +94,10 @@ set(
 	"include/utilities/generator/IdGenerator.h"
 	"include/utilities/generator/TimeoutGenerator.h"
 	"include/utilities/manager/GuildManager.h"
+	"include/utilities/manager/ITranslationManager.h"
 	"include/utilities/manager/ResourceManager.h"
+	"include/utilities/manager/TranslationManagerClassic.h"
+	"include/utilities/manager/TranslationManagerModern.h"
 	"include/utilities/std/inplace_vector.h"
 	"include/utilities/std/views_concat.h"
 	"src/FileSystem.cpp"
@@ -152,6 +155,8 @@ set(
 	"src/utilities/PropertySerializers.cpp"
 	"src/utilities/StringUtils.cpp"
 	"src/utilities/manager/GuildManager.cpp"
+	"src/utilities/manager/TranslationManagerClassic.cpp"
+	"src/utilities/manager/TranslationManagerModern.cpp"
 )
 
 # Create the executable target.
@@ -164,9 +169,12 @@ target_link_directories(${TARGET_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
 target_sources(${TARGET_NAME} PUBLIC ${SOURCES})
 target_sources(${TARGET_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS "include" "${PROJECT_BINARY_DIR}/server/include")
 
+# ----------------------------
 # Configure our compiler options.
 set_default_compiler_options(${TARGET_NAME} FALSE)
 
+# ----------------------------
+# Tests
 if (TESTS)
 	set(APP_LIBRARY_NAME "lib${TARGET_NAME}")
 	set(APP_LIBRARY_NAME_TESTREF "${APP_LIBRARY_NAME}" PARENT_SCOPE)
@@ -182,20 +190,24 @@ if (TESTS)
 	set_default_compiler_options(${APP_LIBRARY_NAME} TRUE)
 endif()
 
+# ----------------------------
 # Packet logging.
 option(PACKET_LOGGING "Enable debug packet logging." OFF)
 if(PACKET_LOGGING)
 	target_compile_definitions(${TARGET_NAME} PUBLIC PACKETLOGGING)
 endif()
 
+# ----------------------------
 # Dependency: zlib.
 find_package(ZLIB REQUIRED)
 target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
 
+# ----------------------------
 # Dependency: bzip2
 find_package(BZip2 REQUIRED)
 target_link_libraries(${TARGET_NAME} PRIVATE BZip2::BZip2)
 
+# ----------------------------
 # Dependency: antlr4.
 find_package(antlr4-runtime CONFIG REQUIRED)
 find_package(antlr4-generator CONFIG REQUIRED)
@@ -216,6 +228,7 @@ FetchContent_Declare(AntlrJar
 FetchContent_MakeAvailable(AntlrJar)
 set(ANTLR4_JAR_LOCATION "${FETCHCONTENT_BASE_DIR}/antlr-jar/antlr.jar")
 
+# ----------------------------
 # Dependency: miniupnpc.
 option(UPNP "Enable UPNP support." ON)
 if(UPNP)
@@ -224,6 +237,7 @@ if(UPNP)
 	target_link_libraries(${TARGET_NAME} PRIVATE miniupnpc::miniupnpc miniupnpc::miniupnpc-private)
 endif()
 
+# ----------------------------
 # Dependency: gs2lib.
 FetchContent_Declare(gs2lib
 	GIT_REPOSITORY https://xtjoeytx@bitbucket.org/xtjoeytx/gs2lib.git
@@ -240,28 +254,32 @@ if(TESTS)
 	target_include_directories(${APP_LIBRARY_NAME} PUBLIC "${gs2lib_SOURCE_DIR}/include")
 endif ()
 
+# ----------------------------
 # Dependency: libtommath
-#[[
 FetchContent_Declare(libtommath
 	GIT_REPOSITORY https://github.com/libtom/libtommath.git
 	GIT_TAG        develop
 )
 FetchContent_MakeAvailable(libtommath)
-#target_link_libraries(${TARGET_NAME} PRIVATE libtommath)
-target_include_directories(${TARGET_NAME} PRIVATE "${libtommath_SOURCE_DIR}")
+target_include_directories(${TARGET_NAME} PUBLIC "${libtommath_SOURCE_DIR}")
 
+# ----------------------------
 # Dependency: libtomcrypt-preagonal.
 FetchContent_Declare(tomcrypt
 	GIT_REPOSITORY https://github.com/Preagonal/libtomcrypt.git
-	GIT_TAG        develop
+	GIT_TAG        cipher-desgr
 	FIND_PACKAGE_ARGS CONFIG
 )
 FetchContent_MakeAvailable(tomcrypt)
-target_link_libraries(${TARGET_NAME} PRIVATE tomcrypt$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
-target_include_directories(${TARGET_NAME} PRIVATE "${libtomcrypt_SOURCE_DIR}/src/headers")
+target_compile_definitions(libtomcrypt PUBLIC LTC_NOTHING LTC_MD5 LTC_DES LTC_DESGR)
+target_compile_definitions(libtomcrypt PUBLIC LTC_ECB_MODE) # Need to define this to avoid a broken header.
+set_target_properties(libtomcrypt PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+target_link_libraries(${TARGET_NAME} PUBLIC tomcrypt$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
+target_include_directories(${TARGET_NAME} PUBLIC "${libtomcrypt_SOURCE_DIR}/src/headers")
+add_dependencies(libtomcrypt libtommath)
 add_dependencies(${TARGET_NAME} libtomcrypt)
-]]
 
+# ----------------------------
 # Generate grammar.
 antlr4_generate(GS1Lexer "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar/GS1Lexer.g4" LEXER
 	FALSE						# 4: Generate listener
@@ -283,18 +301,24 @@ if(TESTS)
 	target_sources(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_SRC_FILES_GS1Lexer} ${ANTLR4_SRC_FILES_GS1Parser})
 endif()
 
+# ----------------------------
 # Windows libraries.
 if(WIN32)
 	target_link_libraries(${TARGET_NAME} PRIVATE ws2_32 wsock32 iphlpapi)
 endif()
 
-# ???
+# ----------------------------
+# macOS specific settings
 if(APPLE)
 	# Enable ARC (automatic reference counting) for OS X build
 	set_property(
 		TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
 	)
-elseif(WIN32)
+endif()
+
+# ----------------------------
+# Windows and MinGW specific settings
+if(WIN32)
 	if(MINGW)
 		# Generate version header from the above
 		configure_file(
@@ -333,6 +357,8 @@ elseif(WIN32)
 	endif()
 endif()
 
+# ----------------------------
+# GS2 Compiler
 target_link_libraries(${TARGET_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
@@ -347,6 +373,8 @@ if(TESTS)
 	target_include_directories(${APP_LIBRARY_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
 endif()
 
+# ----------------------------
+# More MinGW
 if (MINGW)
 	# Erase the INTERFACE_LINK_LIBRARIES from the miniupnpc::miniupnpc-private target.
 	# They are linked normally and the cmake configuration for miniupnpc causes bad compiler flags.

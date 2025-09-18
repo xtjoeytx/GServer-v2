@@ -1774,7 +1774,7 @@ void fn_sendpm(GS1Visitor* visitor, std::string_view commandName, const std::vec
 		auto message = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto* server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-			player->sendPrivateMessage(NPCServerPlayerID, string::replaceMutate(message, "#b", "\n"));
+			player->sendPrivateMessage(NPCServerPlayerID, player->translate(message));
 	}
 }
 

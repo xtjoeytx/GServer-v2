@@ -38,6 +38,7 @@
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
 #include <utilities/manager/GuildManager.h>
+#include <utilities/manager/ITranslationManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1::grammar
@@ -874,9 +875,9 @@ GS1ScriptValue mc_U(GS1Visitor* visitor, std::string_view messageCode, const std
 	{
 		if (auto player = server->getPlayer(source.value().first); player != nullptr)
 		{
-			auto& translation = server->getTranslationManager();
-			auto result = translation.translate(player->account.language, str);
-			if (result != str.data())
+			auto translationManager = BabyDI::Get<ITranslationManager>();
+			auto result = translationManager->getText(player->account.language, str);
+			if (result.data() != str.data())
 				return std::string{ result };
 		}
 	}

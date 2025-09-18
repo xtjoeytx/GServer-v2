@@ -328,7 +328,7 @@ public:
 	bool deleteWeapon(std::string_view name);
 	bool deleteWeapon(std::shared_ptr<Weapon> weapon);
 
-	CString translate(const CString& pKey) const;
+	std::string translate(std::string_view key) const;
 
 	virtual void sendPrivateMessage(PlayerID from, std::string_view message);
 

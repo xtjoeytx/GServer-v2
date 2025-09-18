@@ -12,7 +12,6 @@
 #include <format>
 #include <functional>
 #include <iterator>
-#include <map>
 #include <memory>
 #include <numbers>
 #include <optional>
@@ -30,10 +29,10 @@
 #include <CSocket.h>
 
 #include <CString.h>
-#include <CTranslationManager.h>
 #include <IEnums.h>
 #include <IUtil.h>
 
+#include <BabyDI.h>
 #include <FileSystem.h>
 #include <Server.h>
 #include <level/Level.h>
@@ -58,6 +57,9 @@
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 #include <utilities/manager/GuildManager.h>
+#include <utilities/manager/ITranslationManager.h>
+#include <utilities/manager/TranslationManagerClassic.h>
+#include <utilities/manager/TranslationManagerModern.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -291,7 +293,8 @@ void Server::operator()()
 void Server::cleanup()
 {
 	// Save translations.
-	this->TS_Save();
+	auto translationManager = BabyDI::Get<ITranslationManager>();
+	translationManager->saveTranslations();
 
 	// Save server flags.
 	saveServerFlags();
@@ -528,7 +531,6 @@ int Server::loadConfigFiles()
 		loadIPBans();
 
 		// Load translations.
-		log::printLine(log::server, "Loading translations.");
 		loadTranslations();
 
 		// Load word filter.
@@ -734,9 +736,32 @@ void Server::loadIPBans()
 	m_ipBans = CString::loadToken(CString() << "config/ipbans.txt", "\n", true);
 }
 
-void Server::loadTranslations()
+void Server::loadTranslations() const
 {
-	this->TS_Reload();
+	log::print(log::server, "Loading translations: ");
+
+	// If our translation manager already exists, save the translations first.
+	if (auto translationManager = BabyDI::Get<ITranslationManager>(); translationManager != nullptr)
+		translationManager->saveTranslations();
+	
+	BabyDI_RELEASE(ITranslationManager);
+
+	// Create our translation manager.
+	ITranslationManager* manager = nullptr;
+	if (Generation == ServerGeneration::MODERN)
+	{
+		log::printLine(log::server, "modern style.");
+		manager = BabyDI_PROVIDE(ITranslationManager, new TranslationManagerModern());
+	}
+	else
+	{
+		log::printLine(log::server, "classic style.");
+		manager = BabyDI_PROVIDE(ITranslationManager, new TranslationManagerClassic());
+	}
+
+	// Load the translation files.
+	if (manager != nullptr)
+		manager->loadTranslations(std::filesystem::current_path() / "translations");
 }
 
 void Server::loadWordFilter()
@@ -1714,124 +1739,7 @@ void Server::updateClassForPlayers(std::shared_ptr<ScriptClass> scriptClass)
 	}
 }
 
-/*
-	Translation Functionality
-*/
-bool Server::TS_Load(const CString& pLanguage, const CString& pFileName)
-{
-	// Load File
-	std::vector<CString> fileData = CString::loadToken(pFileName, "\n", true);
-	if (fileData.empty())
-		return false;
-
-	// Parse File
-	std::vector<CString>::const_iterator cur, next;
-	for (cur = fileData.begin(); cur != fileData.end(); ++cur)
-	{
-		if (cur->find("msgid") == 0)
-		{
-			CString msgId = cur->subString(7, cur->length() - 8);
-			CString msgStr = "";
-			bool isStr = false;
-
-			++cur;
-			while (cur != fileData.end())
-			{
-				// Make sure our string isn't empty.
-				if (cur->isEmpty())
-				{
-					++cur;
-					continue;
-				}
-
-				if ((*cur)[0] == '"' && (*cur)[cur->length() - 1] == '"')
-				{
-					CString str('\n');
-					str.write(cur->subString(1, cur->length() - 2));
-					(isStr ? msgStr.write(str) : msgId.write(str));
-				}
-				else if (cur->find("msgstr") == 0)
-				{
-					msgStr = cur->subString(8, cur->length() - 9);
-					isStr = true;
-				}
-				else
-				{
-					--cur;
-					break;
-				}
-
-				++cur;
-			}
-
-			m_translationManager.add(pLanguage.text(), msgId.text(), msgStr.text());
-		}
-
-		if (cur == fileData.end())
-			break;
-	}
-
-	return true;
-}
-
-CString Server::TS_Translate(const CString& pLanguage, const CString& pKey)
-{
-	return m_translationManager.translate(pLanguage.toLower().text(), pKey.text());
-}
-
-void Server::TS_Reload()
-{
-	// Save Translations
-	this->TS_Save();
-
-	// Reset Translations
-	m_translationManager.reset();
-
-	// Load Translation Folder
-	FileSystem translationFS;
-	translationFS.addDir("translations", "*.po");
-
-	// Load Each File
-	const std::map<CString, CString>& temp = translationFS.getFileList();
-	for (auto& i: temp)
-		this->TS_Load(removeExtension(i.first), i.second);
-}
-
-void Server::TS_Save()
-{
-	// Grab Translations
-	std::map<std::string, STRMAP>* languages = m_translationManager.getTranslationList();
-
-	// Iterate each Language
-	for (auto& language: *languages)
-	{
-		// Create Output
-		CString output;
-
-		// Iterate each Translation
-		for (auto& lang: language.second)
-		{
-			output << "msgid ";
-			std::vector<CString> sign = CString(lang.first.c_str()).removeAll("\r").tokenize("\n");
-			for (auto& s: sign)
-				output << "\"" << s << "\"\r\n";
-			output << "msgstr ";
-			if (!lang.second.empty())
-			{
-				std::vector<CString> lines = CString(lang.second.c_str()).removeAll("\r").tokenize("\n");
-				for (auto& line: lines)
-					output << "\"" << line << "\"\r\n";
-			}
-			else
-				output << "\"\"\r\n";
-
-			output << "\r\n";
-		}
-
-		// Save File
-		output.trimRight().save(CString() << "translations/" << language.first.c_str() << ".po");
-	}
-}
+//----------------------------
 
 void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level) const
 {

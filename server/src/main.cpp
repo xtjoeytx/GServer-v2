@@ -21,6 +21,7 @@
 #include <Server.h>
 #include <utilities/Log.h>
 #include <utilities/manager/GuildManager.h>
+#include <utilities/manager/ITranslationManager.h>
 
 using namespace preagonal;
 
@@ -249,6 +250,7 @@ int main(int argc, char* argv[])
 
 		BabyDI_RELEASE(Server);
 		BabyDI_RELEASE(GuildManager);
+		BabyDI_RELEASE(ITranslationManager);
 	}
 
 	return ERR_SUCCESS;

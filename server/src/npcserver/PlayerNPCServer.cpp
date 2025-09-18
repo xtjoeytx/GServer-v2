@@ -56,7 +56,7 @@ void PlayerNPCServer::sendPrivateMessage(PlayerID from, std::string_view message
 	if (auto player = m_server->getPlayer(from); player != nullptr)
 	{
 		if (!privateMessage.empty())
-			player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)m_id << privateMessage);
+			player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)m_id << player->translate(privateMessage));
 
 		m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::PRIVATEMESSAGE, source::FromPlayer(from), "pm"s, player->account.name, std::string{ message });
 	}

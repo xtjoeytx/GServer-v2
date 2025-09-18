@@ -22,6 +22,7 @@
 #include <IEnums.h>
 #include <IUtil.h>
 
+#include <BabyDI.h>
 #include <Account.h>
 #include <FileSystem.h>
 #include <Server.h>
@@ -43,6 +44,7 @@
 #include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
+#include <utilities/manager/ITranslationManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1621,14 +1623,17 @@ void PlayerClient::unfreezePlayer()
 	sendPacket(CString() >> (char)PLO_UNFREEZEPLAYER);
 }
 
-void PlayerClient::sendRPGMessage(std::string_view message)
+void PlayerClient::sendRPGMessage(std::string message)
 {
-	sendPacket(CString() >> (char)PLO_RPGWINDOW << string::toCSV(message));
+	string::replaceMutate(message, "\n", "#b");
+	auto splitString = string::splitHardByString(translate(message), "#b"sv);
+	sendPacket(CString() >> (char)PLO_RPGWINDOW << string::toCSV(splitString));
 }
 
 void PlayerClient::sendSignMessage(std::string message)
 {
-	sendPacket(CString() >> (char)PLO_SAY2 << string::replaceMutate(message, "\n", "#b"));
+	string::replaceMutate(message, "\n", "#b");
+	sendPacket(CString() >> (char)PLO_SAY2 << translate(message));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

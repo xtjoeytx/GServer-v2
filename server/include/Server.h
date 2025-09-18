@@ -23,7 +23,6 @@
 
 #include <CSettings.h>
 #include <CString.h>
-#include <CTranslationManager.h>
 #include <IEnums.h>
 
 #include <Account.h>
@@ -139,7 +138,7 @@ public:
 	void loadFileSystem();
 	void loadServerMessage();
 	void loadIPBans();
-	void loadTranslations();
+	void loadTranslations() const;
 	void loadWordFilter();
 	void loadServerFlags();
 	void loadGuilds();
@@ -182,7 +181,6 @@ public:
 	auto& getServerList() { return m_serverlist; }
 	auto& getSettings() { return m_settings; }
 	auto& getSocketManager() { return m_sockManager; }
-	auto& getTranslationManager() { return m_translationManager; }
 	auto& getTriggerDispatcher() { return m_triggerActionDispatcher; }
 	auto& getWeaponList() { return m_weaponList; }
 	auto& getWordFilter() { return m_wordFilter; }
@@ -255,13 +253,6 @@ public:
 	void sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level) const;
 
 public:
-	// Translation Management
-	bool TS_Load(const CString& pLanguage, const CString& pFileName);
-	CString TS_Translate(const CString& pLanguage, const CString& pKey);
-	void TS_Reload();
-	void TS_Save();
-
-public:
 	// Weapon Management
 	std::shared_ptr<Weapon> getWeapon(std::string_view name);
 	bool NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj);
@@ -321,7 +312,6 @@ private:
 	CSettings m_adminSettings, m_settings;
 	CSocket m_playerSock;
 	CSocketManager m_sockManager;
-	CTranslationManager m_translationManager;
 	WordFilter m_wordFilter;
 	AnimationManager m_animationManager;
 	PackageManager m_packageManager;

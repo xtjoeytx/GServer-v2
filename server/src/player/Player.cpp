@@ -39,6 +39,7 @@
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
 #include <utilities/manager/GuildManager.h>
+#include <utilities/manager/ITranslationManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -976,9 +977,10 @@ bool Player::deleteWeapon(std::shared_ptr<Weapon> weapon)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CString Player::translate(const CString& pKey) const
+std::string Player::translate(std::string_view key) const
 {
-	return m_server->TS_Translate(account.language, pKey);
+	auto translationManager = BabyDI::Get<ITranslationManager>();
+	return std::string{ translationManager->getText(account.language, key) };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -988,7 +990,7 @@ void Player::sendPrivateMessage(PlayerID from, std::string_view message)
 	if (message.empty())
 		return;
 
-	auto lines = string::splitHard(message, "\n"sv);
+	auto lines = string::splitHardByString(string::replace(message, "\n", "#b"), "#b"sv);
 	auto finalMessage = string::toCSV(lines, true);
 
 	sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)from << finalMessage);
@@ -1295,7 +1297,7 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			// Jailed people cannot send PMs to normal players.
 			if (jailed && !isStaff() && !pmPlayer->isStaff())
 			{
-				sendPrivateMessage(pmPlayer->getId(), "Server Message:\nFrom jail you can only send PMs to admins (RCs).");
+				sendPrivateMessage(pmPlayer->getId(), pmPlayer->translate("Server Message:#bFrom jail you can only send PMs to admins (RCs)."));
 				continue;
 			}
 

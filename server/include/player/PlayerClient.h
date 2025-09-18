@@ -107,7 +107,7 @@ public:
 	void enableWeapons();
 	void freezePlayer();
 	void unfreezePlayer();
-	void sendRPGMessage(std::string_view message);
+	void sendRPGMessage(std::string message);
 	void sendSignMessage(std::string message);
 
 public:

@@ -715,8 +715,6 @@ FUNC_GROUP_2
 		| 'base64encode'
 		| 'base64decode'
 		| 'hasweapon'
-		| '_'
-		| 'N_'
 		| 'getplayer'
 		| 'getnpc'
 	) { pushCommand("(S)"); } -> type(FUNCTION)

@@ -130,7 +130,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
 	auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr)
 	{
-		std::string tokenizedScript = string::toCSV(npc->getScript().getOriginalSource(), '\n');
+		std::string tokenizedScript = string::toCSV(npc->getScript().getOriginalSource(), "\n");
 		sendPacket(CString() >> (char)PLO_NC_NPCSCRIPT >> (int)npcId << tokenizedScript);
 	}
 
@@ -389,7 +389,6 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 	return HandlePacketResult::Handled;
 }
 
-
 HandlePacketResult PlayerNC::msgPLI_NC_CLASSEDIT(CString& pPacket)
 {
 	if (!isNC())
@@ -463,9 +462,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_CLASSDELETE(CString& pPacket)
 	CString logMsg;
 	if (m_server->getNPCServer()->deleteClass(className))
 	{
-		CString ret;
-		ret >> (char)PLO_NC_CLASSDELETE << className;
-		m_server->sendPacketToType(PLTYPE_ANYNC, ret);
+		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_CLASSDELETE << className);
 		logMsg << account.name << " has deleted class " << className << "\n";
 	}
 	else
