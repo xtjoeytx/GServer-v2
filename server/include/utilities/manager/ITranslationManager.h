@@ -24,39 +24,33 @@ using namespace std::literals::string_literals;
 static std::unordered_map<std::string, std::string_view, string::string_hash, string::string_hash_equal> languageAliasesToClassic =
 {
 	{ "de"s, "Deutsch"sv },
-	{ "de-de"s, "Deutsch"sv },
-	{ "deutsch"s, "Deutsch"sv },
-	{ "en"s, "English"sv },
-	{ "en-us"s, "English"sv },
-	{ "english"s, "English"sv },
-	{ "es"s, "Espa\u00F1ol"sv },
-	{ "es-es"s, "Espa\u00F1ol"sv },
-	{ "espanol"s, "Espa\u00F1ol"sv },
-	{ "fr"s, "Fran\u00E7ais"sv },
-	{ "fr-fr"s, "Fran\u00E7ais"sv },
-	{ "francais"s, "Fran\u00E7ais"sv },
-	{ "it"s, "Italiano"sv },
-	{ "it-it"s, "Italiano"sv },
-	{ "italiano"s, "Italiano"sv },
-	{ "nl"s, "Nederlands"sv },
-	{ "nl-nl"s, "Nederlands"sv },
-	{ "nederlands"s, "Nederlands"sv },
-	{ "no"s, "Norsk"sv },
-	{ "no-no"s, "Norsk"sv },
-	{ "norsk"s, "Norsk"sv },
-	{ "pt"s, "Portugu\u00EAs"sv },
-	{ "pt-pt"s, "Portugu\u00EAs"sv },
-	{ "portugues"s, "Portugu\u00EAs"sv },
-	{ "se"s, "Svenska"sv },
-	{ "se-se"s, "Svenska"sv },
-	{ "svenska"s, "Svenska"sv },
 	{ "german"s, "Deutsch"sv },
+	//
+	{ "en"s, "English"sv },
+	{ "english"s, "English"sv },
+	//
+	{ "es"s, "Espa\u00F1ol"sv },
 	{ "spanish"s, "Espa\u00F1ol"sv },
+	{ "espanol"s, "Espa\u00F1ol"sv },
+	//
+	{ "fr"s, "Fran\u00E7ais"sv },
 	{ "french"s, "Fran\u00E7ais"sv },
+	{ "francais"s, "Fran\u00E7ais"sv },
+	//
+	{ "it"s, "Italiano"sv },
 	{ "italian"s, "Italiano"sv },
+	//
+	{ "nl"s, "Nederlands"sv },
 	{ "dutch"s, "Nederlands"sv },
+	//
+	{ "no"s, "Norsk"sv },
 	{ "norwegian"s, "Norsk"sv },
+	//
+	{ "pt"s, "Portugu\u00EAs"sv },
 	{ "portuguese"s, "Portugu\u00EAs"sv },
+	{ "portugues"s, "Portugu\u00EAs"sv },
+	//
+	{ "sv"s, "Svenska"sv },
 	{ "swedish"s, "Svenska"sv },
 };
 
@@ -70,7 +64,7 @@ static std::unordered_map<std::string, std::string_view, string::string_hash, st
 	{ "Nederlands"s, "nl"sv },
 	{ "Norsk"s, "no"sv },
 	{ "Portugu\u00EAs"s, "pt"sv },
-	{ "Svenska"s, "se"sv },
+	{ "Svenska"s, "sv"sv },
 };
 
 inline static std::string_view mapToClassic(std::string_view language) noexcept

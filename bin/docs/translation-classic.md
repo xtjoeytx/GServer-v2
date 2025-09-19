@@ -29,8 +29,11 @@ The file consists of an MD5 hash of the text, followed by the translated text wi
 ## RC commands
 
 - `/synctranslation [language]`:
-Synchronizes an existing translatio files with the `Original` domain.
+Synchronizes an existing translation files with the `Original` domain.
 If the language is not specified, all loaded languages are synchronized.
+The language must be one of the endonyms listed above.
+You can also use the ISO 639 language code (e.g. `en` for `English`, `de` for `Deutsch`, etc),
+or an ISO Language Name (e.g. `English`, `German`, `Spanish`, etc).
 - `/generatetranslationstubs`:
 Generates translation files for all supported languages.
 
