@@ -244,7 +244,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			std::string gani = ganiProp->gani.value_or("idle");
 			account.character.gani = props::Limits::apply(gani, props::Limits::GaniLength);
 
-			// Hack to allow spin to hurt things.
+			// Allow spin to hurt things.
 			if (account.character.gani == "spin")
 			{
 				float tX = static_cast<float>(account.character.localPixelX / 16.0f) + 1.5f;

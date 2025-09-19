@@ -900,7 +900,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				result.resultPropIds.push_back(PROPID(NPCProp::SPRITE));
 			}
 
-			// Hack to allow spin to hurt things.
+			// Allow spin to hurt things.
 			if (character.gani == "spin")
 			{
 				auto self = server->getNPC(id);

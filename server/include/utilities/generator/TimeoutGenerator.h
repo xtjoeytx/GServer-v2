@@ -28,7 +28,11 @@ struct TimeoutGenerator
 public:
 	time_delta timeout = 5ms;
 	bool repeated = true;
+
+	/// @brief A callback function to be invoked with the current iteration index.  DO NOT USE IF STORED IN A VECTOR THAT MAY REALLOCATE!
 	std::function<void(int)> callbackIterations = nullptr;
+
+	/// @brief A callback function that takes a time duration as its parameter.  DO NOT USE IF STORED IN A VECTOR THAT MAY REALLOCATE!
 	std::function<void(time_delta)> callbackDuration = nullptr;
 
 public:
@@ -73,6 +77,13 @@ public:
 	{
 		timeout = std::chrono::duration_cast<time_delta>(timeoutDuration);
 		start();
+	}
+
+	template<typename Duration>
+	void runOnceFor(Duration timeoutDuration)
+	{
+		repeated = false;
+		startFor(timeoutDuration);
 	}
 
 	void resume()

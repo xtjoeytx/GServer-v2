@@ -449,12 +449,6 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	if (npc->storageType != NPCStorageType::DATABASE)
 		return false;
 
-	// TODO(joey): check if properties have been modified before deciding to save
-	// enumerate scriptObject variables, to save into file and load later..?
-
-	// Clean up old samples
-	//m_scriptExecutionContext.getExecutionData();
-
 	static const char* NL = "\r\n";
 	CString fileName = CString() << "npcs/npc" << npc->name << ".txt";
 	CString fileData = CString("GRNPC001") << NL;

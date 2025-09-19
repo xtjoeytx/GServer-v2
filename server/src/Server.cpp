@@ -1621,6 +1621,8 @@ void Server::sendPacketToNearby(const CString& packet, const PixelPosition& posi
 			continue;
 		if (auto player = getPlayer<PlayerClient>(playerId); player != nullptr && (!sendIf || sendIf(player.get())))
 		{
+			// Are we on the same level?
+			// Levels on a gmap are the same level and thus this would be false.
 			bool sameLevel = levelName == player->getComputedLevelName();
 
 			// TODO: Figure out when PLO_SETACTIVELEVEL was introduced.

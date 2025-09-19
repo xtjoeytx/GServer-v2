@@ -114,7 +114,6 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 	}
 
 	// Send the item now.
-	// TODO: Make this a more generic function.
 	if (dropItem != LevelItemType::INVALID)
 		level->addItem(inform_client, level->convertToMapPosition(LocalWholeTilePosition{ loc[0], loc[1] }), dropItem);
 
@@ -168,22 +167,11 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_BOMBADD(CString& pPacket)
 {
-	// TODO(joey): gmap support
 	[[maybe_unused]] unsigned char loc[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
 	[[maybe_unused]] unsigned char player_power = pPacket.readGUChar();
 	[[maybe_unused]] unsigned char player = player_power >> 2;
 	[[maybe_unused]] unsigned char power = player_power & 0x03;
 	[[maybe_unused]] unsigned char timeToExplode = pPacket.readGUChar(); // How many 0.05 sec increments until it explodes.  Defaults to 55 (3 seconds since 0 counts too)
-
-	/*
-	printf("Place bomb\n");
-	printf("Position: (%d, %d)\n", loc[0], loc[1]);
-	//printf("Position: (%0.2f, %0.2f)\n", loc[0], loc[1]);
-	printf("Player (?): %d\n", player);
-	printf("Bomb Power: %d\n", power);
-	printf("Bomb Explode Timer: %d\n", timeToExplode);
-	//for (int i = 0; i < pPacket.length(); ++i) printf( "%02x ", (unsigned char)pPacket[i] ); printf( "\n" );
-	*/
 
 	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOMBADD >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
 	return HandlePacketResult::Handled;

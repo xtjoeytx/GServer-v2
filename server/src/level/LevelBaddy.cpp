@@ -247,7 +247,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 					if (canRespawn())
 					{
 						timeout.callbackIterations = respawnBaddy;
-						timeout.startFor(std::chrono::seconds(server->getSettings().getInt("baddyrespawntime", 60)));
+						timeout.runOnceFor(std::chrono::seconds(server->getSettings().getInt("baddyrespawntime", 60)));
 					}
 
 					// Set the baddy as dead for all the other players in the level.
@@ -265,7 +265,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 				if (type == BaddyType::SWAMPSOLDIER && mode == BaddyMode::HURT)
 				{
 					timeout.callbackIterations = fixStuckSwampSoldier;
-					timeout.startFor(2s);
+					timeout.runOnceFor(2s);
 				}
 				else if (mode == BaddyMode::DIE)
 				{
@@ -275,12 +275,12 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 
 					// Set the baddy to dead after 2 seconds.
 					timeout.callbackIterations = setDead;
-					timeout.startFor(2s);
+					timeout.runOnceFor(2s);
 				}
 				else if (mode == BaddyMode::DEAD && m_canRespawn)
 				{
 					timeout.callbackIterations = respawnBaddy;
-					timeout.startFor(std::chrono::seconds(server->getSettings().getInt("baddyrespawntime", 60)));
+					timeout.runOnceFor(std::chrono::seconds(server->getSettings().getInt("baddyrespawntime", 60)));
 				}
 				break;
 			}

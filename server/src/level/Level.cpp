@@ -95,9 +95,11 @@ Level::~Level()
 		// Remove every NPC in the level.
 		for (auto& levelNPC : m_npcs)
 		{
-			// TODO(joey): we need to delete putnpc's, and move db-npcs to a different level
-			if (auto npc = server->getNPC(levelNPC); npc && npc->storageType == NPCStorageType::LEVEL)
+			auto npc = server->getNPC(levelNPC);
+			if (!npc) continue;
+			if (npc->storageType == NPCStorageType::LEVEL)
 				server->deleteNPC(npc, false);
+			else npc->level.clear();
 		}
 		m_npcs.clear();
 	}
@@ -128,7 +130,9 @@ Level::~Level()
 	// Delete board changes.
 	m_boardChanges.clear();
 
-	// TODO: Warp players out?
+	// Warp players out.
+	for (const auto& playerId : m_players)
+		server->warpPlayerToSafePlace(playerId);
 }
 
 //----------------------------
@@ -1102,8 +1106,8 @@ LevelBomb* Level::addBomb(const PixelPosition& position, uint8_t power)
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
 		return nullptr;
 
-	LevelBomb newBomb{ .position = position, .power = power, .timeout = TimeoutGenerator(3s) };
-	newBomb.timeout.start();
+	LevelBomb newBomb{ .position = position, .power = power };
+	newBomb.timeout.runOnceFor(3s);
 	m_bombs.emplace_back(std::move(newBomb));
 	return &m_bombs.back();
 }
@@ -1288,8 +1292,8 @@ LevelExplosion* Level::addExplosionPart(const PixelPosition& position, uint8_t d
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
 		return nullptr;
 
-	LevelExplosion explo{ .position = position, .power = power, .direction = direction, .timeout = TimeoutGenerator(ExplosionDuration) };
-	explo.timeout.start();
+	LevelExplosion explo{ .position = position, .power = power, .direction = direction };
+	explo.timeout.runOnceFor(ExplosionDuration);
 	m_explosions.emplace_back(std::move(explo));
 	return &m_explosions.back();
 }
@@ -1343,7 +1347,7 @@ LevelHorse* Level::addHorse(std::string_view image, const PixelPosition& positio
 	if (isOnWater(position.translate(16, 32)))
 		newHorse.type = HORSETYPE_BOAT;
 
-	newHorse.timeout.start();
+	newHorse.timeout.runOnceFor(std::chrono::seconds(horseLife));
 	m_horses.emplace_back(std::move(newHorse));
 	return &m_horses.back();
 }
@@ -1491,8 +1495,8 @@ LevelItem* Level::addItem(const PixelPosition& position, LevelItemType item)
 		}
 	}
 
-	LevelItem newItem{ .position = position, .item = item, .modTime = server->getFrameStartTime(), .timeout = TimeoutGenerator(LevelItemTimeout) };
-	newItem.timeout.start();
+	LevelItem newItem{ .position = position, .item = item, .modTime = server->getFrameStartTime() };
+	newItem.timeout.runOnceFor(LevelItemTimeout);
 	m_items.emplace_back(std::move(newItem));
 	return &m_items.back();
 }
