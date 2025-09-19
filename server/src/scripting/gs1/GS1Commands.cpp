@@ -26,6 +26,7 @@
 
 #include <BabyDI.h>
 #include <Server.h>
+#include <level/Level.h>
 #include <level/LevelArrow.h>
 #include <level/LevelBaddy.h>
 #include <level/LevelItem.h>
@@ -842,9 +843,18 @@ void fn_changeimgzoom(GS1Visitor* visitor, std::string_view commandName, const s
 }
 
 // copylevel oldfile,newfile;
+// Makes a copy of a level under a new file name.
 void fn_copylevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("copylevel is not implemented yet.");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("invalid arguments: copylevel oldfile,newfile");
+
+	auto oldfile = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto newfile = visitor->getGameValueAs<std::string>(*arguments[1]);
+
+	auto server = BabyDI::Get<Server>();
+	if (auto level = server->getLevel(oldfile); level != nullptr)
+		level->saveLevel(newfile);
 }
 
 // copystrings fromprefix,toprefix;
@@ -888,7 +898,22 @@ void fn_copystrings(GS1Visitor* visitor, std::string_view commandName, const std
 // deletelevel filename;
 void fn_deletelevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("deletelevel is not implemented yet.");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: deletelevel filename");
+
+	auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
+
+	auto server = BabyDI::Get<Server>();
+	if (auto level = server->getLevel(filename); level != nullptr)
+	{
+		for (auto playerId : level->getLevelPlayers())
+			server->warpPlayerToSafePlace(playerId);
+
+		auto path = server->getFileSystem(FS_LEVEL)->find(level->levelName).toString();
+		std::filesystem::remove(path);
+	}
+	server->getFileSystem(FS_ALL)->removeFile(filename);
+	server->getFileSystem(FS_LEVEL)->removeFile(filename);
 }
 
 // deletestring list,index;

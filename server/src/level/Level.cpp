@@ -363,7 +363,7 @@ void Level::saveLevel(const std::string& filename)
 			image = "-"; // No image is represented by "-"
 
 		fileStream << "NPC" << s << image << s << (npc->character.localPixelX / 16.0f) << s << (npc->character.localPixelY / 16.0f) << std::endl;
-		fileStream << npc->getScript().getOriginalSource() << std::endl;
+		fileStream << string::trim(npc->getScript().getOriginalSource()) << std::endl;
 		fileStream << "NPCEND" << std::endl;
 	}
 }

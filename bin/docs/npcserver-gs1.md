@@ -308,7 +308,9 @@ Please review the lists below of implemented events, flags, functions, commands,
       changeimgpart
       changeimgvis
       changeimgzoom
+      copylevel
       copystrings
+      deletelevel
       deletestring
       destroy
       detachplayer
@@ -425,8 +427,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-      copylevel
-      deletelevel
     * hitcompu
       saveinfo
     * savelevel
