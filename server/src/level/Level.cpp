@@ -81,6 +81,9 @@ short respawningTiles[] = {
 Level::Level(uint16_t fillTile)
 {
 	m_tiles[0] = LevelTiles(fillTile);
+
+	// Reserve space for baddies to avoid reallocations, which will destroy timeout callback pointers.
+	m_baddies.reserve(0xFF);
 }
 
 Level::~Level()
