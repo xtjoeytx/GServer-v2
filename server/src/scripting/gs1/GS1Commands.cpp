@@ -76,7 +76,6 @@ static void fn_changeimgmode(GS1Visitor* visitor, std::string_view commandName, 
 static void fn_changeimgpart(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_changeimgvis(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_changeimgzoom(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_copyflags(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_copylevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_copystrings(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_deletelevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -226,7 +225,6 @@ static BuiltInCommandHandleMap GenerateMap()
 		{ hash("changeimgpart"), &fn_changeimgpart },
 		{ hash("changeimgvis"), &fn_changeimgvis },
 		{ hash("changeimgzoom"), &fn_changeimgzoom },
-		{ hash("copyflags"), &fn_copyflags },
 		{ hash("copylevel"), &fn_copylevel },
 		{ hash("copystrings"), &fn_copystrings },
 		{ hash("deletelevel"), &fn_deletelevel },
@@ -843,12 +841,6 @@ void fn_changeimgzoom(GS1Visitor* visitor, std::string_view commandName, const s
 	}
 }
 
-// copyflags fromprefix,toprefix;
-void fn_copyflags(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
-{
-	throw unimplemented_error("copyflags is not implemented yet.");
-}
-
 // copylevel oldfile,newfile;
 void fn_copylevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -856,9 +848,41 @@ void fn_copylevel(GS1Visitor* visitor, std::string_view commandName, const std::
 }
 
 // copystrings fromprefix,toprefix;
+// Copies strings that start with fromprefix and replaces the prefix with toprefix.
 void fn_copystrings(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("copystrings is not implemented yet.");
+	if (arguments.size() != 2)
+		throw std::invalid_argument("invalid arguments: copystrings fromprefix,toprefix");
+
+	auto fromPrefix = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto toPrefix = visitor->getGameValueAs<std::string>(*arguments[1]);
+
+	size_t fromStorageType = GS1Parser::STORAGE_CLIENT;
+	size_t toStorageType = GS1Parser::STORAGE_CLIENT;
+	if (auto separator = fromPrefix.find('.'); separator != std::string::npos)
+	{
+		fromStorageType = visitor->getStorageFromTypeString(fromPrefix.substr(0, separator));
+		fromPrefix = fromPrefix.substr(separator + 1);
+	}
+	if (auto separator = toPrefix.find('.'); separator != std::string::npos)
+	{
+		toStorageType = visitor->getStorageFromTypeString(toPrefix.substr(0, separator));
+		toPrefix = toPrefix.substr(separator + 1);
+	}
+
+	auto fromStore = visitor->getGameVariableStoreForStorageType(fromStorageType);
+	auto toStore = visitor->getGameVariableStoreForStorageType(toStorageType);
+	if (fromStore == nullptr || toStore == nullptr)
+		return;
+
+	for (auto& [key, value] : fromStore->store)
+	{
+		if (key.starts_with(fromPrefix))
+		{
+			auto toKey = std::format("{}{}", toPrefix, key.substr(fromPrefix.size()));
+			toStore->add(toKey, GameValue{ *value });
+		}
+	}
 }
 
 // deletelevel filename;

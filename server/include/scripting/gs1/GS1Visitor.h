@@ -18,6 +18,7 @@
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
+#include <utilities/StringUtils.h>
 
 namespace preagonal
 {
@@ -67,6 +68,8 @@ public:
 	GameValue getGameValueFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
 
 public:
+	[[inline]] size_t getStorageFromTypeString(std::string_view storageType) const;
+	GameVariableStore* getGameVariableStoreForStorageType(size_t type);
 	double getColorValueFromString(std::string_view colorString);
 
 public:
@@ -87,7 +90,6 @@ protected:
 
 protected:
 	GameVariableStore* findGameVariableStoreFromSourceStack(ScriptObjectType type) const;
-	GameVariableStore* getGameVariableStoreForStorageType(size_t type);
 	GS1GameVariable getGameVariableFromAny(std::any& value);
 	GameValue getReadOnlyGameValueFromGS1ScriptValue(const GS1ScriptValue& value);
 	GameValue getReadOnlyGameValueFromAny(const std::any& value);
@@ -220,6 +222,36 @@ inline T GS1Visitor::getReadOnlyGameValueFromAnyAs(const std::any& value)
 {
 	auto gameval = getReadOnlyGameValueFromAny(value);
 	return gameval.get<T>().value_or(makeDefault<T>());
+}
+
+//----------------------------
+
+inline size_t GS1Visitor::getStorageFromTypeString(std::string_view storageType) const
+{
+	if (storageType.empty())
+		return GS1Parser::STORAGE_CLIENT;
+	if (string::comparei(storageType, "this"sv) == 0)
+		return GS1Parser::STORAGE_THIS;
+	if (string::comparei(storageType, "thiso"sv) == 0)
+		return GS1Parser::STORAGE_THISO;
+	if (string::comparei(storageType, "client"sv) == 0)
+		return GS1Parser::STORAGE_CLIENT;
+	if (string::comparei(storageType, "clientr"sv) == 0)
+		return GS1Parser::STORAGE_CLIENTR;
+	if (string::comparei(storageType, "cliento"sv) == 0)
+		return GS1Parser::STORAGE_CLIENTO;
+	if (string::comparei(storageType, "clientro"sv) == 0)
+		return GS1Parser::STORAGE_CLIENTRO;
+	if (string::comparei(storageType, "server"sv) == 0)
+		return GS1Parser::STORAGE_SERVER;
+	if (string::comparei(storageType, "serverr"sv) == 0)
+		return GS1Parser::STORAGE_SERVERR;
+	if (string::comparei(storageType, "local"sv) == 0)
+		return GS1Parser::STORAGE_LOCAL;
+	if (string::comparei(storageType, "temp"sv) == 0)
+		return GS1Parser::STORAGE_TEMP;
+
+	return GS1Parser::STORAGE_CLIENT;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

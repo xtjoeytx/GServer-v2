@@ -14,7 +14,7 @@ lexer grammar GS1Lexer;
 @lexer::context
 {
 // --------------------------------------------------------
-constexpr std::array<std::string_view, 202> builtInCommands = {
+constexpr std::array<std::string_view, 201> builtInCommands = {
     "addguildmember",
     "addstring",
     "addtiledef",
@@ -40,7 +40,6 @@ constexpr std::array<std::string_view, 202> builtInCommands = {
     "changeimgpart",
     "changeimgvis",
     "changeimgzoom",
-    "copyflags",
     "copylevel",
     "copystrings",
     "deletelevel",
@@ -641,7 +640,6 @@ CMD_ADDGUILDMEMBER       : 'addguildmember'       { pushCommand("SSS"); } -> typ
 CMD_REMOVEGUILDMEMBER    : 'removeguildmember'    { pushCommand("SSS"); } -> type(COMMAND);
 CMD_REMOVEGUILD          : 'removeguild'          { pushCommand("S"); } -> type(COMMAND);
 CMD_COPYSTRINGS          : 'copystrings'          { pushCommand("SS"); } -> type(COMMAND);
-CMD_COPYFLAGS            : 'copyflags'            { pushCommand("SS"); } -> type(COMMAND);
 CMD_SENDTORC             : 'sendtorc'             { pushCommand("S"); } -> type(COMMAND);
 CMD_SENDTONC             : 'sendtonc'             { pushCommand("S"); } -> type(COMMAND);
 CMD_SENDPM               : 'sendpm'               { pushCommand("S"); } -> type(COMMAND);
