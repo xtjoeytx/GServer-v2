@@ -380,42 +380,31 @@ void Level::saveLevel(const std::string& filename)
 void Level::doTimedEvents()
 {
 	auto server = BabyDI::Get<Server>();
+	const auto& now = server->getFrameStartTimeHighPrecision();
 
-	// Check if we should revert any board changes.
+	// Run board change events.
 	for (auto& change : m_boardChanges)
-	{
-		int respawnTimer = change.timeout.doTimeout();
-		if (respawnTimer == 0)
-		{
-			// Put the old data back in.  DON'T DELETE THE CHANGE.
-			// The client remembers board changes and if we delete the
-			// change, the client won't get the new data.
-			change.swapTiles();
-			change.setModTime(time(0));
-			auto changePosition = convertToMapPosition(LocalWholeTilePosition{ (uint8_t)change.getX(), (uint8_t)change.getY() });
-			server->sendBoardUpdatePacketToNearby(CString() >> (char)PLO_LEVELBOARD << change.getBoardStr(), changePosition, this->shared_from_this());
-		}
-	}
+		change.update(now);
 
 	// Run bomb events.
-	for (auto& bomb : m_bombs) bomb.timeout.update();
+	for (auto& bomb : m_bombs) bomb.timeout.update(now);
 	std::erase_if(m_bombs, [](const LevelBomb& bomb) { return !bomb.timeout.isRunning(); });
 
 	// Run explosion events.
-	for (auto& explosion : m_explosions) explosion.timeout.update();
+	for (auto& explosion : m_explosions) explosion.timeout.update(now);
 	std::erase_if(m_explosions, [](const LevelExplosion& explosion) { return !explosion.timeout.isRunning(); });
 
 	// Run item events.
-	for (auto& item : m_items) item.timeout.update();
+	for (auto& item : m_items) item.timeout.update(now);
 	std::erase_if(m_items, [](const LevelItem& item) { return !item.timeout.isRunning(); });
 
 	// Run horse events.
-	for (auto& horse : m_horses) horse.timeout.update();
+	for (auto& horse : m_horses) horse.timeout.update(now);
 	std::erase_if(m_horses, [](const LevelHorse& horse) { return !horse.timeout.isRunning(); });
 
 	// Run baddy events.
 	for (auto& baddy : m_baddies)
-		baddy.timeout.update();
+		baddy.timeout.update(now);
 }
 
 void Level::doFrameEvents(precise_clock::time_point time)
@@ -491,8 +480,8 @@ CString Level::getBoardChangesPacket(time_t time)
 	retVal >> (char)PLO_LEVELBOARD;
 	for (const auto& change : m_boardChanges)
 	{
-		if (change.getModTime() >= time)
-			retVal << change.getBoardStr();
+		if (clock::to_time_t(change.modTime) >= time)
+			retVal << change.getPropsForSingleLevel();
 	}
 	return retVal;
 }
@@ -503,8 +492,8 @@ CString Level::getBoardChangesPacket2(time_t time)
 	retVal >> (char)PLO_BOARDMODIFY;
 	for (const auto& change : m_boardChanges)
 	{
-		if (change.getModTime() >= time)
-			retVal << change.getBoardStr();
+		if (clock::to_time_t(change.modTime) >= time)
+			retVal << change.getPropsForSingleLevel();
 	}
 	return retVal;
 }
@@ -764,8 +753,9 @@ bool Level::alterBoard(CString& tileData, const LocalWholeTileRectangleArea& are
 	for (auto i = m_boardChanges.begin(); i != m_boardChanges.end();)
 	{
 		LevelBoardChange& change = *i;
-		if ((change.getX() >= area.position.x() && change.getX() + change.getWidth() <= area.position.x() + area.size.width()) &&
-			(change.getY() >= area.position.y() && change.getY() + change.getHeight() <= area.position.y() + area.size.height()))
+		auto changeLocalPos = toLocalWholeTilePosition(change.area.position);
+		if ((changeLocalPos.x() >= area.position.x() && changeLocalPos.y() + change.area.size.width() <= area.position.x() + area.size.width()) &&
+			(changeLocalPos.y() >= area.position.y() && changeLocalPos.y() + change.area.size.height() <= area.position.y() + area.size.height()))
 		{
 			i = m_boardChanges.erase(i);
 		}
@@ -802,9 +792,7 @@ bool Level::alterBoard(CString& tileData, const LocalWholeTileRectangleArea& are
 		}
 	}
 
-	// TODO: old gserver didn't save the board change if oldTiles.length() == 0.
-	// Should we do it that way still?
-	m_boardChanges.push_back(LevelBoardChange(area.position.x(), area.position.y(), area.size.width(), area.size.height(), tileData, oldTiles, (doRespawn ? respawnTime : -1)));
+	m_boardChanges.push_back(LevelBoardChange{ shared_from_this(), area, tileData, oldTiles, (doRespawn ? std::chrono::seconds(respawnTime) : 0s) });
 	return true;
 }
 
@@ -826,9 +814,12 @@ void Level::applyBoardChangeFromScriptTiles(const LocalWholeTileRectangleArea& a
 	// Apply the board update.
 	if (alterBoard(tileData, area, nullptr, forceRespawn, allowRespawn))
 	{
+		auto server = BabyDI::Get<Server>();
+
 		// Send the board update to nearby players.
 		auto& boardChange = m_boardChanges.back();
-		BabyDI::Get<Server>()->sendBoardUpdatePacketToNearby(CString() >> (char)PLO_LEVELBOARD << boardChange.getBoardStr(), convertToMapPosition(area.position), this->shared_from_this());
+		server->sendPacketToNearby(CString() >> (char)PLO_BOARDMODIFY2 << boardChange.getPropsForMap(), toPixelPosition(boardChange.area.position), shared_from_this(), {}, [](const Player* player) { return player->getVersion() >= CLVER_4_0211; });
+		server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << boardChange.getPropsForSingleLevel(), shared_from_this(), {}, [](const Player* player) { return player->getVersion() < CLVER_4_0211; });
 	}
 }
 

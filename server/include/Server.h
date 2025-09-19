@@ -241,13 +241,12 @@ public:
 
 public:
 	using PlayerPredicate = std::function<bool(const Player*)>;
-	void sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude = {}) const;
-	void sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}) const;
+	void sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 	void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;
 	void sendPacketToLevelAndPastVisitorsAfter(Level* level, time_t modTime, const CString& packet) const;
 	void sendPacketToNearby(const CString& packet, const PixelPosition& position, std::shared_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendBoardUpdatePacketToNearby(const CString& packet, const PixelPosition& position, std::shared_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 
 public:
 	void sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level) const;

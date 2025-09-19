@@ -118,7 +118,7 @@ static PacketHandleArray GeneratePacketHandlers()
 	handlers[PLI_SHOOT] = &PlayerClient::msgPLI_SHOOT;
 	handlers[PLI_SERVERWARP] = &PlayerClient::msgPLI_SERVERWARP;
 	handlers[PLI_PROCESSLIST] = &PlayerClient::msgPLI_PROCESSLIST;
-	handlers[PLI_UNKNOWN46] = &PlayerClient::msgPLI_UNKNOWN46;
+	handlers[PLI_ENTERLEVEL] = &PlayerClient::msgPLI_ENTERLEVEL;
 	handlers[PLI_VERIFYWANTSEND] = &PlayerClient::msgPLI_VERIFYWANTSEND;
 	handlers[PLI_SHOOT2] = &PlayerClient::msgPLI_SHOOT2;
 	handlers[PLI_REQUESTUPDATEBOARD] = &PlayerClient::msgPLI_REQUESTUPDATEBOARD;

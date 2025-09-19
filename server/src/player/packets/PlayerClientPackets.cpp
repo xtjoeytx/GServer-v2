@@ -1307,14 +1307,8 @@ HandlePacketResult PlayerClient::msgPLI_PROCESSLIST(CString& pPacket)
 	return HandlePacketResult::Handled;
 }
 
-HandlePacketResult PlayerClient::msgPLI_UNKNOWN46(CString& pPacket)
+HandlePacketResult PlayerClient::msgPLI_ENTERLEVEL(CString& pPacket)
 {
-#ifdef DEBUG
-	log::print(log::server, "TODO: PlayerClient::msgPLI_UNKNOWN46: ");
-	CString packet = pPacket.readString("");
-	for (int i = 0; i < packet.length(); ++i) log::print(log::server, "{:02x} ", (unsigned char)packet[i]);
-	log::print(log::server, "\n");
-#endif
 	return HandlePacketResult::Handled;
 }
 

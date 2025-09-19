@@ -1554,7 +1554,7 @@ void Server::sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, const PixelPos
 	Packet-Sending Functions
 */
 
-void Server::sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude) const
+void Server::sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {
 	for (auto& [id, player]: m_playerList)
 	{
@@ -1562,12 +1562,14 @@ void Server::sendPacketToAll(const CString& packet, const std::set<PlayerID>& ex
 			continue;
 		if (player->isNPCServer())
 			continue;
+		if (sendIf && !sendIf(player.get()))
+			continue;
 
 		player->sendPacket(packet);
 	}
 }
 
-void Server::sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude) const
+void Server::sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {
 	auto levelp = level.lock();
 	if (!levelp) return;
@@ -1575,7 +1577,7 @@ void Server::sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> le
 	for (auto id: levelp->getLevelPlayers())
 	{
 		if (exclude.contains(id)) continue;
-		if (auto player = this->getPlayer(id); player && player->isClient())
+		if (auto player = this->getPlayer(id); player && player->isClient() && (!sendIf || sendIf(player.get())))
 			player->sendPacket(packet);
 	}
 }
@@ -1632,28 +1634,6 @@ void Server::sendPacketToNearby(const CString& packet, const PixelPosition& posi
 			if (!sameLevel) player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
 			player->sendPacket(packet);
 			if (!sameLevel) player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << player->getComputedLevelName());
-		}
-	}
-}
-
-/// @brief Sends a board update packet to all nearby players in a level (sending PLO_LEVELNAME before and after the packet).
-///
-/// Board updates are processed in a different way by the client.  In order to cross gmap levels correctly, we need to force the level name first.
-void Server::sendBoardUpdatePacketToNearby(const CString& packet, const PixelPosition& position, std::shared_ptr<Level> level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
-{
-	if (!running || level == nullptr) return;
-
-	auto levelName = level->getMapOrLevelName();
-	auto players = level->findInRangePlayersForCommunication(position);
-	for (const auto& playerId : players)
-	{
-		if (exclude.contains(playerId))
-			continue;
-		if (auto player = getPlayer<PlayerClient>(playerId); player != nullptr && (!sendIf || sendIf(player.get())))
-		{
-			player->sendPacket(CString() >> (char)PLO_LEVELNAME << level->levelName);
-			player->sendPacket(packet);
-			player->sendPacket(CString() >> (char)PLO_LEVELNAME << player->getComputedLevelName());
 		}
 	}
 }

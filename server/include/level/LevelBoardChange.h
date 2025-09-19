@@ -1,49 +1,43 @@
 #ifndef LEVELBOARDCHANGE_H
 #define LEVELBOARDCHANGE_H
 
-#include <ctime>
+#include <chrono>
+#include <memory>
 
 #include <CString.h>
-#include <CTimeout.h>
+
+#include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
+#include <utilities/generator/TimeoutGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+class Level;
 class LevelBoardChange
 {
 public:
-	// constructor - destructor
-	LevelBoardChange(const int pX, const int pY, const int pWidth, const int pHeight,
-		const CString& pTiles, const CString& pOldTiles, const int respawn = 15)
-		: m_x(pX), m_y(pY), m_width(pWidth), m_height(pHeight),
-		m_newTiles(pTiles), m_oldTiles(pOldTiles)
-	{
-		timeout.setTimeout(respawn);
-	}
+	LevelBoardChange(std::shared_ptr<Level> level, const LocalWholeTileRectangleArea& area, const CString& pTiles, const CString& pOldTiles, std::chrono::seconds respawn = 15s);
 
-	// functions
-	CString getBoardStr() const;
+public:
+	void update(const precise_clock::time_point& time);
+
+public:
+	CString getTiles() const { return m_newTiles; }
+	CString getPropsForSingleLevel() const;
+	CString getPropsForMap() const;
 	void swapTiles();
 
-	// get private variables
-	int getX() const { return m_x; }
-	int getY() const { return m_y; }
-	int getWidth() const { return m_width; }
-	int getHeight() const { return m_height; }
-	CString getTiles() const { return m_newTiles; }
-	time_t getModTime() const { return m_modTime; }
-
-	// set private variables
-	void setModTime(time_t ntime) { m_modTime = ntime; }
-
-	CTimeout timeout;
+public:
+	WholeTileRectangleArea area;
+	clock::time_point modTime;
 
 private:
-	int m_x, m_y, m_width, m_height;
+	TimeoutGenerator m_timeout;
+	std::weak_ptr<Level> m_level;
 	CString m_newTiles, m_oldTiles;
-	time_t m_modTime = time(0);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -166,6 +166,7 @@ using LocalPixelRectangleArea = Rectangle<int16_t, uint16_t>;
 using LocalWholeTileRectangleArea = Rectangle<uint8_t, uint8_t>;
 using ImagePartRectangle = Rectangle<uint16_t, uint8_t>;
 using TileRectangleArea = Rectangle<float, float>;
+using WholeTileRectangleArea = Rectangle<float, uint8_t>;
 
 //----------------------------
 // Intersections
