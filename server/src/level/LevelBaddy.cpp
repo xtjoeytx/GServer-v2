@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <memory>
 #include <string_view>
+#include <string>
 
 #include <BabyDI.h>
 #include <CString.h>
@@ -13,7 +14,6 @@
 #include <level/Level.h>
 #include <level/LevelBaddy.h>
 #include <level/LevelItem.h>
-#include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
@@ -45,7 +45,7 @@ BaddyType LevelBaddy::getBaddyTypeFromString(const std::string& type)
 	// Try by name.
 	for (unsigned int i = 0; i < BaddyNames.size(); ++i)
 	{
-		if (string::comparei(BaddyNames[i], type))
+		if (string::comparei(BaddyNames[i], type) == 0)
 			return BaddyType(i);
 	}
 
