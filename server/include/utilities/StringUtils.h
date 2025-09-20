@@ -854,6 +854,15 @@ int comparei(StringViewVariantUnicode auto str1, StringViewVariantUnicode auto s
 	return str1.size() - str2.size();
 }
 
+/// @brief Performs a case-insensitive equality check of two string-like objects.
+/// @param str1 The first string-like object to compare.
+/// @param str2 The second string-like object to compare.
+/// @return true if the strings are equal (case-insensitive), false otherwise.
+bool equalsi(StringViewVariantUnicode auto str1, StringViewVariantUnicode auto str2)
+{
+	return comparei(std::forward<decltype(str1)>(str1), std::forward<decltype(str2)>(str2)) == 0;
+}
+
 /// @brief Finds the first occurrence of a substring within a string, ignoring case, starting from a specified position.
 /// @param str The string to search within.
 /// @param substr The substring to search for.

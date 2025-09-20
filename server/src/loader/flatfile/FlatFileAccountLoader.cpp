@@ -243,7 +243,7 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 	}
 
 	// If this is a guest account, loadonly is set to true.
-	if (string::comparei(accountName, "guest"sv) == 0)
+	if (string::equalsi(accountName, "guest"sv))
 	{
 		account.loadOnly = true;
 		srand((unsigned int)time(0));

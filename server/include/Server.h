@@ -421,7 +421,7 @@ inline std::shared_ptr<T> Server::getPlayer(const CString& account, int type) co
 			continue;
 
 		// Compare account names.
-		if (string::comparei(player->account.name, account.toStringView()) == 0)
+		if (string::equalsi(player->account.name, account.toStringView()))
 		{
 			if constexpr (std::same_as<T, Player>)
 				return player;

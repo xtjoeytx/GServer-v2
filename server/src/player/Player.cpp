@@ -676,7 +676,7 @@ bool Player::sendLogin()
 			int meClient = ((m_type & PLTYPE_ANYCLIENT) ? 0 : ((m_type & PLTYPE_ANYRC) ? 1 : 2));
 			int themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? 0 : ((player->getType() & PLTYPE_ANYRC) ? 1 : 2));
 
-			if (string::comparei(otherAccount, account.name) == 0 && meClient == themClient && otherID != m_id)
+			if (string::equalsi(otherAccount, account.name) && meClient == themClient && otherID != m_id)
 			{
 				if ((int)difftime(time(0), player->getLastData()) > 30)
 				{

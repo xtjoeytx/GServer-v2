@@ -120,7 +120,7 @@ std::tuple<std::string_view, size_t, size_t> TranslationManagerClassic::syncLang
 	constexpr size_t removeIndex = 2;
 
 	// Don't sync original with original.
-	if (string::comparei(language, originalLanguage) == 0)
+	if (string::equalsi(language, originalLanguage))
 		return result;
 
 	// Find the original domain.

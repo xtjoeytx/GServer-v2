@@ -166,7 +166,7 @@ inline std::shared_ptr<T> NPCServer::getPlayer(const std::string& account, int t
 			continue;
 
 		// Compare account names.
-		if (string::comparei(player->account.name, account) == 0)
+		if (string::equalsi(player->account.name, account))
 		{
 			if constexpr (std::same_as<T, Player>)
 				return player;

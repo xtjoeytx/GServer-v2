@@ -230,25 +230,25 @@ inline size_t GS1Visitor::getStorageFromTypeString(std::string_view storageType)
 {
 	if (storageType.empty())
 		return GS1Parser::STORAGE_CLIENT;
-	if (string::comparei(storageType, "this"sv) == 0)
+	if (string::equalsi(storageType, "this"sv))
 		return GS1Parser::STORAGE_THIS;
-	if (string::comparei(storageType, "thiso"sv) == 0)
+	if (string::equalsi(storageType, "thiso"sv))
 		return GS1Parser::STORAGE_THISO;
-	if (string::comparei(storageType, "client"sv) == 0)
+	if (string::equalsi(storageType, "client"sv))
 		return GS1Parser::STORAGE_CLIENT;
-	if (string::comparei(storageType, "clientr"sv) == 0)
+	if (string::equalsi(storageType, "clientr"sv))
 		return GS1Parser::STORAGE_CLIENTR;
-	if (string::comparei(storageType, "cliento"sv) == 0)
+	if (string::equalsi(storageType, "cliento"sv))
 		return GS1Parser::STORAGE_CLIENTO;
-	if (string::comparei(storageType, "clientro"sv) == 0)
+	if (string::equalsi(storageType, "clientro"sv))
 		return GS1Parser::STORAGE_CLIENTRO;
-	if (string::comparei(storageType, "server"sv) == 0)
+	if (string::equalsi(storageType, "server"sv))
 		return GS1Parser::STORAGE_SERVER;
-	if (string::comparei(storageType, "serverr"sv) == 0)
+	if (string::equalsi(storageType, "serverr"sv))
 		return GS1Parser::STORAGE_SERVERR;
-	if (string::comparei(storageType, "local"sv) == 0)
+	if (string::equalsi(storageType, "local"sv))
 		return GS1Parser::STORAGE_LOCAL;
-	if (string::comparei(storageType, "temp"sv) == 0)
+	if (string::equalsi(storageType, "temp"sv))
 		return GS1Parser::STORAGE_TEMP;
 
 	return GS1Parser::STORAGE_CLIENT;

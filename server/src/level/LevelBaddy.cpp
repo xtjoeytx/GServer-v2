@@ -45,7 +45,7 @@ BaddyType LevelBaddy::getBaddyTypeFromString(const std::string& type)
 	// Try by name.
 	for (unsigned int i = 0; i < BaddyNames.size(); ++i)
 	{
-		if (string::comparei(BaddyNames[i], type) == 0)
+		if (string::equalsi(BaddyNames[i], type))
 			return BaddyType(i);
 	}
 

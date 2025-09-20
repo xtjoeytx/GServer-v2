@@ -454,7 +454,7 @@ GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view messageCode, c
 	auto str1 = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto str2 = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	return GameValue{ string::comparei(str1, str2) == 0 };
+	return GameValue{ string::equalsi(str1, str2) };
 }
 
 // strlen(string)
@@ -1014,7 +1014,7 @@ GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view messageCode, 
 	{
 		if (auto player = getPlayerFromSource(*source, index); player != nullptr)
 		{
-			if (string::comparei(player->account.character.chatMessage, text) == 0)
+			if (string::equalsi(player->account.character.chatMessage, text))
 				return GameValue{ true };
 		}
 	}

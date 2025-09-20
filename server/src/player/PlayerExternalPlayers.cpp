@@ -226,7 +226,7 @@ PlayerPtr Player::getExternalPlayer(const CString& account, bool includeRC) cons
 			continue;
 
 		// Compare account names.
-		if (string::comparei(externalPlayer->account.name, account.toString()) == 0)
+		if (string::equalsi(externalPlayer->account.name, account.toString()))
 			return externalPlayer;
 	}
 	return nullptr;
