@@ -1074,8 +1074,17 @@ void fn_explodebomb(GS1Visitor* visitor, std::string_view commandName, const std
 			level->removeBomb(inform_client, index);
 
 			if (power != 2)
-				level->addExplosion(inform_client, position, source::FromServer(), 1, power);
-			// TODO: superbomb
+				level->addExplosion(inform_client, position, source::FromServer(), 2, power);
+			else
+			{
+				// Superbomb is 5 explosions.
+				// The center explosion is a size of 4.  The others are a size of 2.
+				level->addExplosion(inform_client, position, source::FromServer(), 4, power);
+				level->addExplosion(inform_client, translatePosition(position, -32, -32), source::FromServer(), 2, power);
+				level->addExplosion(inform_client, translatePosition(position,  32, -32), source::FromServer(), 2, power);
+				level->addExplosion(inform_client, translatePosition(position, -32,  32), source::FromServer(), 2, power);
+				level->addExplosion(inform_client, translatePosition(position,  32,  32), source::FromServer(), 2, power);
+			}
 		}
 	}
 }
