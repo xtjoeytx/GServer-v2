@@ -7,6 +7,7 @@
 #include <IEnums.h>
 
 #include <object/NPC.h>
+#include <object/Player.h>
 #include <player/PlayerClient.h>
 #include <scripting/gs1/GS1Flags.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
@@ -85,15 +86,13 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 
 	variableStore.add("canspin", (player->account.status & PLSTATUS_HASSPIN) != 0);
 
-	/* TODO(Nalin): Carry sprite flags. PLPROP_CARRYSPRITE
-		carrying           the player carries something
-		carriesblackstone  the player carries a blackstone
-		carriesbush        the player carries a bush
-		carriesnpc         the player carries an npc
-		carriessign        the player carries a sign
-		carriesstone       the player carries a stone
-		carriesvase        the player carries a vase
-	*/
+	variableStore.add("carrying", player->getCarrySprite() != PROPID(CarryObjectSprite::NONE));
+	variableStore.add("carriesblackstone", player->getCarrySprite() == PROPID(CarryObjectSprite::BLACKSTONE));
+	variableStore.add("carriesbush", player->getCarrySprite() == PROPID(CarryObjectSprite::BUSH));
+	variableStore.add("carriesnpc", player->getCarryNPC() != 0);
+	variableStore.add("carriessign", player->getCarrySprite() == PROPID(CarryObjectSprite::SIGN));
+	variableStore.add("carriesstone", player->getCarrySprite() == PROPID(CarryObjectSprite::STONE));
+	variableStore.add("carriesvase", player->getCarrySprite() == PROPID(CarryObjectSprite::VASE));
 
 	variableStore.add("weaponsenabled", (player->account.status & PLSTATUS_ALLOWWEAPONS) != 0);
 	variableStore.add("playerpaused", (player->account.status & PLSTATUS_PAUSED) != 0);
@@ -124,14 +123,12 @@ void setNPCFlags(ScriptEvent& event, GameVariableStore& variableStore, NPCPtr np
 	// Extension.
 	variableStore.add("shotbynpc", event.type == ScriptEventType::WASSHOT && event.initiator.second == ScriptObjectType::NPC);
 
-	/* TODO(Nalin): NPC flags.
-		peltwithblackstone  the npc was pelt with a blackstone
-		peltwithbush        the npc was pelt with a bush
-		peltwithnpc         the npc was pelt with another npc
-		peltwithsign        the npc was pelt with a sign
-		peltwithstone       the npc was pelt with a stone
-		peltwithvase        the npc was pelt with a vase
-	*/
+	variableStore.add("peltwithblackstone", false);
+	variableStore.add("peltwithbush", false);
+	variableStore.add("peltwithnpc", false);
+	variableStore.add("peltwithsign", false);
+	variableStore.add("peltwithstone", false);
+	variableStore.add("peltwithvase", false);
 }
 
 void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level)

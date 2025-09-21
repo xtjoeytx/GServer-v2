@@ -121,6 +121,21 @@ enum class GameStatsFlags : uint32_t
 	ALLSTATS = 0xFFFF
 };
 
+enum class CarryObjectSprite : uint8_t
+{
+	BOMB = 0,
+	BUSH = 1,
+	STONE = 3,
+	VASE = 5,
+	SIGN = 7,
+	SUPERBOMB = 61,
+	JOLTBOMB = 87,
+	HOTJOLTBOMB = 88,
+	HOTBOMB = 200,
+	BLACKSTONE = 201,
+	NONE = 255
+};
+
 //----------------------------
 
 struct ShootPacketWrapper
@@ -189,6 +204,7 @@ public:
 	int64_t getDeviceId() const { return m_deviceId; }
 	NPCID getCarryNPC() const { return m_carryNPC; }
 	NPCID getAttachedNPC() const { return m_attachNPC; }
+	uint8_t getCarrySprite() const { return m_carrySprite; }
 	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
 	[[inline]] PixelPosition getGlobalPosition() const noexcept;
 	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;

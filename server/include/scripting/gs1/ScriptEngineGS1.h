@@ -17,6 +17,7 @@
 
 #include <object/Character.h>
 #include <object/NPC.h>
+#include <object/Player.h>
 #include <player/PlayerClient.h>
 #include <scripting/gs1/GS1ErrorListener.h>
 #include <scripting/IScriptEngine.h>
@@ -58,6 +59,13 @@ inline constexpr std::array<std::string_view, 11> carryNames =
 	"bush"sv, "sign"sv, "vase"sv, "stone"sv, "blackstone"sv,
 	"bomb"sv, "hotbomb"sv, "superbomb"sv, "joltbomb"sv, "hotjoltbomb"sv,
 	"none"sv
+};
+
+inline constexpr std::array<CarryObjectSprite, 11> carrySprites =
+{
+	CarryObjectSprite::BUSH, CarryObjectSprite::SIGN, CarryObjectSprite::VASE, CarryObjectSprite::STONE, CarryObjectSprite::BLACKSTONE,
+	CarryObjectSprite::BOMB, CarryObjectSprite::HOTBOMB, CarryObjectSprite::SUPERBOMB, CarryObjectSprite::JOLTBOMB, CarryObjectSprite::HOTJOLTBOMB,
+	CarryObjectSprite::NONE
 };
 
 inline static const std::unordered_map<ScriptEventType, std::string_view> eventFlagMap =

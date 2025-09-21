@@ -70,6 +70,12 @@ Please review the lists below of implemented events, flags, functions, commands,
 #### Implemented
 
       canspin
+      carrying
+      carriesblackstone
+      carriesbush
+      carriessign
+      carriesstone
+      carriesvase
       compsdead
       isleader
       isonmap
@@ -89,12 +95,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    carriesblackstone
-    carriesbush
-    carriessign
-    carriesstone
-    carriesvase
-    carrying
     peltwithblackstone
     peltwithbush
     peltwithnpc
@@ -250,7 +250,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    * graalversion
       nwday
       nwhour
       nwmin
@@ -266,6 +265,7 @@ Please review the lists below of implemented events, flags, functions, commands,
 
     downloadpos
     downloadsize
+    graalversion
     mousebuttons
     mousescreenx
     mousescreeny
