@@ -649,8 +649,7 @@ void Server::loadAllowedVersions()
 					auto rangeParts = string::splitHard(version, ":"sv);
 					if (rangeParts.size() == 1)
 					{
-						if (int id = getVersionID(rangeParts[0]); id != 0)
-							formattedVersions.push_back(getVersionString(id, PLTYPE_ANYCLIENT));
+						formattedVersions.push_back(getVersionString(rangeParts[0], PLTYPE_ANYCLIENT));
 					}
 					else if (rangeParts.size() == 2)
 					{

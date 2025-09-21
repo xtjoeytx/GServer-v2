@@ -340,15 +340,16 @@ bool PlayerClient::handleLogin(CString& pPacket)
 		m_version = pPacket.readChars(8);
 		m_versionId = getVersionID(m_version);
 
-		// Unknown why we did this.
+		// 1.41 registers itself as PLTYPE_CLIENT, but does include an encryption key.
 		if (m_versionId == CLVER_UNKNOWN)
 		{
 			Encryption.setGen(ENCRYPT_GEN_3);
 			pPacket.setRead(1);
 		}
 	}
+
 	// Handle newer clients.
-	else
+	if (m_versionId == CLVER_UNKNOWN)
 	{
 		m_encryptionKey = (unsigned char)pPacket.readGChar();
 
