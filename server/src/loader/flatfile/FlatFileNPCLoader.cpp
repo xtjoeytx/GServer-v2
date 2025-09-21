@@ -531,8 +531,11 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	if (layer != 0)
 		fileData << "LAYER " << std::to_string(layer + 1) << NL;
 
-	fileData << "SHAPETYPE " << (npc->shape.width() != 0 && npc->shape.height() != 0 ? "1" : "0") << NL;
-	fileData << "SHAPE " << std::format("{} {}", npc->shape.width(), npc->shape.height()) << NL;
+	if (npc->shape.width() != 0 || npc->shape.height() != 0)
+	{
+		fileData << "SHAPETYPE " << (npc->shape.width() != 0 && npc->shape.height() != 0 ? "1" : "0") << NL;
+		fileData << "SHAPE " << std::format("{} {}", npc->shape.width(), npc->shape.height()) << NL;
+	}
 
 	if (npc->blockFlags & PROPID(NPCBlockFlags::NOBLOCK))
 		fileData << "DONTBLOCK 1" << NL;

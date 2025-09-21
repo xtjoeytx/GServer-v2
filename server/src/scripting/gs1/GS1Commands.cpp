@@ -2656,7 +2656,10 @@ void fn_showcharacter(GS1Visitor* visitor, std::string_view commandName, const s
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		{
 			npc->setPropWith<NPCProp::IMAGE>(SetBy::SERVER, "#c#"s);
+			npc->shape = { 0, 0 };
+		}
 	}
 }
 
