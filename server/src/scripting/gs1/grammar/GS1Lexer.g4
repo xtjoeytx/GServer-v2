@@ -552,7 +552,7 @@ CMD_SETBODY              : 'setbody'              { pushCommand("S"); } -> type(
 CMD_SETHEAD              : 'sethead'              { pushCommand("S"); } -> type(COMMAND);
 CMD_SETSWORD             : 'setsword'             { pushCommand("SE"); } -> type(COMMAND);
 CMD_SETSHIELD            : 'setshield'            { pushCommand("SE"); } -> type(COMMAND);
-CMD_SETANI               : 'setani'               { pushCommand("SS"); } -> type(COMMAND);
+CMD_SETANI               : 'setani'               { pushCommand("S"); } -> type(COMMAND);
 CMD_SETPLAYERDIR         : 'setplayerdir'         { pushCommand("D"); } -> type(COMMAND);
 CMD_SETGENDER            : 'setgender'            { pushCommand("G"); } -> type(COMMAND);
 CMD_SETSKINCOLOR         : 'setskincolor'         { pushCommand("C"); } -> type(COMMAND);
