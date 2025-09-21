@@ -71,16 +71,26 @@ void setGlobalVariables(GameVariableStore& variableStore)
 		})
 	});
 
+	// nwtime and derivatives.
+	variableStore.add(GameValue{ "nwtime",
+		gameValueGetter([server]() { return static_cast<double>(server->getNWTime()); }), GameValue::func_set{} });
+	variableStore.add(GameValue{ "nwmin",	// 60 min in an hour
+		gameValueGetter([server]() { return static_cast<double>(server->getNWTime() % 60); }), GameValue::func_set{} });
+	variableStore.add(GameValue{ "nwhour",	// 24 hours in a day
+		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 60) % 24); }), GameValue::func_set{} });
+	variableStore.add(GameValue{ "nwday",	// 28 days in a month
+		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 1440) % 28); }), GameValue::func_set{} });
+	variableStore.add(GameValue{ "nwweekday",
+		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 1440) % 7) + 1; }), GameValue::func_set{} });
+	variableStore.add(GameValue{ "nwweek",	// 4 weeks in a month (7 days per week)
+		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 10080) % 4); }), GameValue::func_set{} });
+	variableStore.add(GameValue{ "nwmonth",	// 10 months in a year
+		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 40320) % 10); }), GameValue::func_set{} });
+	variableStore.add(GameValue{ "nwyear",	// Years start at 1000
+		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 403200) + 1000); }), GameValue::func_set{} });
+
 	/*
 		waterheight
-		nwday
-		nwhour
-		nwmin
-		nwmonth
-		nwtime
-		nwweek
-		nwweekday
-		nwyear
 	*/
 }
 
