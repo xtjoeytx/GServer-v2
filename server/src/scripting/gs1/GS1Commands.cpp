@@ -192,6 +192,7 @@ static void fn_throwcarry(GS1Visitor* visitor, std::string_view commandName, con
 static void fn_timershow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_tokenize(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_tokenize2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_toweapons(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_triggeraction(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_unfreezeplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_unset(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -343,6 +344,7 @@ static BuiltInCommandHandleMap GenerateMap()
 		{ hash("timershow"), &fn_timershow },
 		{ hash("tokenize"), &fn_tokenize },
 		{ hash("tokenize2"), &fn_tokenize2 },
+		{ hash("toweapons"), &fn_toweapons },
 		{ hash("triggeraction"), &fn_triggeraction },
 		{ hash("unfreezeplayer"), &fn_unfreezeplayer },
 		{ hash("unset"), &fn_unset },
@@ -3046,6 +3048,49 @@ void fn_tokenize2(GS1Visitor* visitor, std::string_view commandName, const std::
 	auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
 	visitor->tokenizeTokens = string::splitHard(text, delims);
 	visitor->builtInStore->add(GameValue{ set_temporary, "tokenscount", static_cast<double>(visitor->tokenizeTokens.size()) });
+}
+
+// toweapons name;
+// Adds the NPC as a weapon for the player.
+void fn_toweapons(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: toweapons name");
+
+	// Get our source NPC.
+	auto server = BabyDI::Get<Server>();
+	const auto& source = visitor->getOriginalSource();
+	if (source.second != ScriptObjectType::NPC || server == nullptr)
+		return;
+
+	// Get the active player.
+	PlayerPtr player = nullptr;
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+		player = server->getNPCServer()->getPlayer(source.value().first);
+	if (player == nullptr)
+		return;
+
+	if (auto npc = server->getNPC(source.first); npc != nullptr)
+	{
+		// Get or create the weapon, and make sure the script is current.
+		auto name = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto weapon = server->getWeapon(name);
+		if (weapon == nullptr)
+		{
+			weapon = std::make_shared<Weapon>(name, npc->image, std::string{ npc->getScript().getOriginalSource() });
+			weapon->saveWeapon();
+			server->NC_AddWeapon(weapon);
+		}
+		// Script differs, update the weapon.
+		else if (weapon->getScript().getOriginalSource() != npc->getScript().getOriginalSource())
+		{
+			weapon->updateWeapon(npc->image, std::string{ npc->getScript().getOriginalSource() }).saveWeapon();
+			server->updateWeaponForPlayers(weapon);
+		}
+
+		// Give the weapon to the player.
+		player->addWeapon(weapon);
+	}
 }
 
 // triggeraction x,y,action,params;

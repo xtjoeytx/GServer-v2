@@ -425,6 +425,7 @@ Please review the lists below of implemented events, flags, functions, commands,
     * timershow
       tokenize
       tokenize2
+      toweapons
       triggeraction
       unfreezeplayer
       unset
@@ -440,7 +441,6 @@ Please review the lists below of implemented events, flags, functions, commands,
       savelog
       setz
     * showstats
-      toweapons
       updateterrain
 
 #### Clientside only
