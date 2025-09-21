@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <ctime>
 #include <format>
@@ -6,6 +7,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string_view>
 #include <string>
 #include <utility>
 #include <variant>
@@ -33,6 +35,40 @@ using namespace preagonal::props;
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
+///////////////////////////////////////////////////////////////////////////////
+
+#ifdef PACKETLOGGING
+#define DO_PACKETLOG(LOG) LOG
+#else
+#define DO_PACKETLOG(LOG)
+#endif
+
+#define PRINT_PLAYERPROP(prop, ...) #prop ##sv,
+constexpr std::array<std::string_view, PLAYERPROP_COUNT> playerPropNames =
+{
+	FOR_LIST_OF_PLAYER_PROPS(PRINT_PLAYERPROP)
+};
+
+#ifdef PACKETLOGGING
+static void printHeader(const Player* player, std::string_view header)
+{
+	log::printBlock(log::networkdump, "{}:\n", header);
+	log::printBlock(log::networkdump, "  PlayerProp::ID: value: {}\n", player->getId());
+}
+
+static void printProp(const Player* player, PlayerProp playerProp, PropertyBase* base)
+{
+	auto prop = player->getProp(playerProp);
+	CString data = prop->serialize();
+
+	log::printBlock(log::networkdump, "  {}: {}", playerPropNames[PROPID(playerProp)], prop);
+	log::printBlock(log::networkdump, " |");
+	for (size_t i = 0; i < data.length(); ++i)
+		log::printBlock(log::networkdump, " {:02x}", (unsigned char)data[i]);
+	log::printBlock(log::networkdump, "\n");
+}
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 
 std::shared_ptr<PropertyBase> Player::constructPropFor(PlayerProp prop) const
@@ -1103,6 +1139,8 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 
 CString Player::getPropsPacketFromList(const PropList& props) const
 {
+	DO_PACKETLOG(bool printedHeader = false);
+
 	CString propPacket;
 
 	// Create Props
@@ -1110,7 +1148,9 @@ CString Player::getPropsPacketFromList(const PropList& props) const
 	{
 		if (props[i])
 		{
+			DO_PACKETLOG(if (!printedHeader) { printedHeader = true; printHeader(this, "PlayerProps::getPropsPacketFromList"sv); });
 			auto prop = getProp(static_cast<PlayerProp>(i));
+			DO_PACKETLOG(printProp(this, (PlayerProp)i, prop.get()));
 			propPacket >> (char)i << prop->serialize();
 		}
 	}
@@ -1118,6 +1158,7 @@ CString Player::getPropsPacketFromList(const PropList& props) const
 	if (m_isExternal)
 		propPacket >> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::EXTERNAL;
 
+	DO_PACKETLOG(if (printedHeader) log::print(log::networkdump, "\n"));
 	return propPacket;
 }
 
@@ -1156,16 +1197,22 @@ CString Player::getPropsForRCPacket()
 
 CString Player::getModifiedPropsPacket() const
 {
+	DO_PACKETLOG(bool printedHeader = false);
+
 	CString result;
 	for (auto i = 0; i < PLAYERPROP_COUNT; ++i)
 	{
 		if (modTime[i] != m_savedModTime[i])
 		{
+			DO_PACKETLOG(if (!printedHeader) { printedHeader = true; printHeader(this, "PlayerProps::getPropsPacketFromList"sv); });
 			auto prop = getProp((PlayerProp)i);
+			DO_PACKETLOG(printProp(this, (PlayerProp)i, prop.get()));
 			CString data = prop->serialize();
 			result >> (char)i << data;
 		}
 	}
+
+	DO_PACKETLOG(if (printedHeader) log::print(log::networkdump, "\n"));
 	return result;
 }
 

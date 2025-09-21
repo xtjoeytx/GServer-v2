@@ -11,6 +11,7 @@
 #include <IEnums.h>
 
 #ifdef PACKETLOGGING
+#include <string_view>
 #include <utilities/Log.h>
 #endif
 
@@ -190,6 +191,7 @@ protected:
 	void parsePacketsFromBundle(CString& packet);
 	void parseLoginPacket(CString& buffer);
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) = 0;
+	virtual std::string_view whoAmI() const noexcept { return "(unknown);"sv; }
 
 public:
 	CEncryption Encryption;
@@ -337,7 +339,8 @@ inline void IPacketHandler::parsePacketsFromBundle(CString& bundle)
 		}
 
 #ifdef PACKETLOGGING
-		log::printLine(log::networkdump, "> In Packet: [{}] {} ({} bytes)", (uint32_t)id, InputPacketNamesArray[id], curPacket.length());
+		std::string_view who = whoAmI();
+		log::printLine(log::networkdump, "> In Packet from {}: [{}] {} ({} bytes)", who, (uint32_t)id, InputPacketNamesArray[id], curPacket.length());
 		log::print(log::networkdump, "{}", curPacket.text());
 		if (curPacket[curPacket.length() - 1] != '\n')
 			log::print(log::networkdump, "\n");

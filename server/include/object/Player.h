@@ -375,6 +375,7 @@ protected:
 	void sendPropsFromResults(PropertySendResults& results);
 
 protected:
+	virtual std::string_view whoAmI() const noexcept override { return account.name; }
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
 
 public:

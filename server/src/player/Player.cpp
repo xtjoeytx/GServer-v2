@@ -455,7 +455,7 @@ void Player::sendPacket(CString pPacket, bool appendNL)
 #ifdef PACKETLOGGING
 	// This will suck as long as we have gs2lib.
 	uint32_t pid = static_cast<uint32_t>(static_cast<uint8_t>(pPacket[0]) - 32);
-	log::printLine(log::networkdump, "< Out Packet: [{}] {} ({} bytes)", pid, OutputPacketNamesArray[pid], pPacket.length());
+	log::printLine(log::networkdump, "< Out Packet to {}: [{}] {} ({} bytes)", account.name, pid, OutputPacketNamesArray[pid], pPacket.length());
 	log::print(log::networkdump, "{}", pPacket.text());
 	if (pPacket[pPacket.length() - 1] != '\n')
 		log::print(log::networkdump, "\n");
