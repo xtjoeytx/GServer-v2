@@ -975,7 +975,7 @@ GS1ScriptValue mc_P(GS1Visitor* visitor, uint8_t index, std::string_view message
 {
 	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return std::make_pair(GameValue{ character.ganiAttributes[index] }, static_cast<uint8_t>(30 + index));
+		return std::make_pair(GameValue{ character.ganiAttributes[index] }, static_cast<uint8_t>(30 + index - 1));
 	});
 }
 
