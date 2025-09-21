@@ -148,7 +148,7 @@ inline constexpr PropList loginPropsClientOthers =
 	true, true, true, false, true, true,     // 30-35
 	true, true, true, true, true, true,      // 36-41
 	false, true, true, true, true, true,     // 42-47
-	true, true, true, false, false, true,    // 48-53
+	true, true, false, false, false, true,   // 48-53
 	true, true, true, true, true, true,      // 54-59
 	true, true, true, true, true, true,      // 60-65
 	true, true, true, true, true, true,      // 66-71
@@ -167,7 +167,7 @@ inline constexpr PropList loginPropsNC =
 	true, false, true, true, true, true,  // 30-35
 	true, true, true, true, true, true,   // 36-41
 	false, true, true, true, true, true,  // 42-47
-	true, true, true, false, true, true,  // 48-53
+	true, true, false, false, true, true, // 48-53
 	true, true, true, true, true, true,   // 54-59
 	true, true, true, true, true, true,   // 60-65
 	true, true, true, true, true, true,   // 66-71
@@ -205,7 +205,7 @@ inline constexpr PropList clientPropsSharedLocal =
 	true, true, true, false, true, true,      // 30-35
 	true, true, true, true, true, true,       // 36-41
 	true, true, true, true, true, true,       // 42-47
-	true, true, true, false, false, true,     // 48-53
+	true, true, false, false, false, true,    // 48-53
 	true, true, true, true, true, true,       // 54-59
 	true, true, true, true, true, true,       // 60-65
 	true, true, true, true, true, true,       // 66-71

@@ -720,8 +720,9 @@ void Player::exchangeMyPropsWithOthers()
 		>> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize()
 		>> (char)PlayerProp::COMMUNITYNAME << getProp<PlayerProp::COMMUNITYNAME>().serialize();
 
-	// Get our client props.
-	CString myClientProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << (isClient() ? getPropsPacketFromList(loginPropsClientOthers) : getPropsPacketFromList(loginPropsRC));
+	CString toOthers = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id;
+	CString joinLevel = CString() >> (char)PlayerProp::JOINLEAVELVL >> (char)1;
+	CString myClientProps = (isClient() ? getPropsPacketFromList(loginPropsClientOthers) : getPropsPacketFromList(loginPropsRC));
 
 	CString rcsOnline;
 	auto& playerList = m_server->getPlayerList();
@@ -733,19 +734,20 @@ void Player::exchangeMyPropsWithOthers()
 		if (player->isNC()) continue;
 
 		// Send the other player my props.
-		// Send my flags to the npcserver.
-		player->sendPacket(player->isClient() ? myClientProps : myRCProps);
-
+		bool sameLevel = (player->account.level == account.level);
+		if (player->isClient())
+			player->sendPacket(CString() << toOthers << (sameLevel ? joinLevel : "") << myClientProps);
+		else player->sendPacket(myRCProps);
+		
 		// Add Player / RC.
 		if (isClient())
-			sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << (player->isClient() ? player->getPropsPacketFromList(loginPropsClientOthers) : player->getPropsPacketFromList(loginPropsRC)));
+		{
+			sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId()
+				<< (sameLevel ? joinLevel : "")
+				<< (player->isClient() ? player->getPropsPacketFromList(loginPropsClientOthers) : player->getPropsPacketFromList(loginPropsRC)));
+		}
 		else
 		{
-			// TODO: Make sure this works when levels get fixed.
-			// Level name.  If no level, send an empty space.
-			//CString levelName = (player-getLevel() ? player->getLevel()->getLevelName() : " ");
-			CString levelName = player->account.level;
-
 			// Get the other player's RC props.
 			sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)player->getId() >> (char)player->account.name.length() << player->account.name
 				>> (char)PlayerProp::CURLEVEL << player->getProp<PlayerProp::CURLEVEL>().serialize()

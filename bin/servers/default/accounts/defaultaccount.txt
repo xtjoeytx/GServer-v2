@@ -1,7 +1,7 @@
 GRACC001
 NAME default
 NICK default
-COMMUNITYNAME default
+COMMUNITYNAME 
 LEVEL onlinestartlocal.nw
 X 30.00
 Y 30.50

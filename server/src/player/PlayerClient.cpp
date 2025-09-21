@@ -1403,7 +1403,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 	// Send connecting player props to players in nearby levels.
 	if (!level->isSingleplayer)
 	{
-		CString myProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << getPropsPacketFromList(loginPropsClientOthers);
+		CString myProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)1 << getPropsPacketFromList(loginPropsClientOthers);
 		for (const auto& playerId : level->findInRangePlayersForCommunication(getGlobalPosition()))
 		{
 			if (playerId == m_id) continue;
@@ -1414,7 +1414,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 
 				// Exchange props.
 				other->sendPacket(myProps);
-				this->sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)other->getId() << other->getPropsPacketFromList(loginPropsClientOthers));
+				this->sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)other->getId() >> (char)PlayerProp::JOINLEAVELVL >> (char)1 << other->getPropsPacketFromList(loginPropsClientOthers));
 			}
 		}
 	}
