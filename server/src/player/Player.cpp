@@ -1094,6 +1094,9 @@ void Player::constructScriptParameters()
 		gameValueGetter([this]() { return string::toDouble(account.character.chatMessage); }),
 		GameValue::func_set{}
 	);
+
+	// GR extensions.
+	scriptParameters.try_emplace("carrysprite", set_temporary, "carrysprite", gameValueGetter(m_carrySprite), gameValueSetter(this, PROPOPT(PlayerProp::CARRYSPRITE), m_carrySprite));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
