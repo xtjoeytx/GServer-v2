@@ -515,6 +515,8 @@ Please review the lists below of implemented events, flags, functions, commands,
       arctan(value)
       arraylen(array)
     * ascii(string)
+      base64decode(string)
+      base64encode(string)
       cos(value)
       findnearestplayer(x, y)
       getangle(dx, dy)
@@ -564,8 +566,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    base64decode(string)
-    base64encode(string)
     findnearestplayers(x, y)
     getz(x, y)
     tiletype(x, y)                    (new tileset layout)

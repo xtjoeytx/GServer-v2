@@ -8,6 +8,7 @@
 #include <iterator>
 #include <limits>
 #include <map>
+#include <memory>
 #include <numbers>
 #include <optional>
 #include <random>
@@ -19,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include <tomcrypt.h>
 #include <tree/ParseTree.h>
 
 #include <BabyDI.h>
@@ -34,6 +36,7 @@
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
@@ -408,14 +411,34 @@ GS1ScriptValue fn_ascii(GS1Visitor* visitor, std::string_view messageCode, const
 // Decodes a Base64 encoded string.
 GS1ScriptValue fn_base64decode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function base64decode not implemented");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function base64decode requires exactly one argument");
+
+	auto input = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto output = std::make_unique<unsigned char[]>(input.length());
+	unsigned long outputLength = input.length();
+	base64_decode(input.c_str(), input.length(), output.get(), &outputLength);
+
+	return std::string{ reinterpret_cast<const char*>(output.get()), outputLength };
 }
 
 // base64encode(string)
 // Encodes a string to Base64 format.
 GS1ScriptValue fn_base64encode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function base64encode not implemented");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function base64encode requires exactly one argument");
+
+	auto input = visitor->getGameValueAs<std::string>(*arguments[0]);
+
+	// Calculate the length of the resulting base64 string.
+	unsigned long outputLength = 4 * ((input.length() + 2) / 3);
+
+	// Encode.
+	auto output = std::make_unique<char[]>(outputLength);
+	base64_encode(reinterpret_cast<const unsigned char*>(input.c_str()), static_cast<unsigned long>(input.length()), output.get(), &outputLength);
+
+	return std::string{ output.get(), outputLength };
 }
 
 // startswith(prefix, string)
