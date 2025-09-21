@@ -29,6 +29,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       playerchats
       playerdies
       playerenters
+      playerhurt
       playerlaysitem
       playerleaves
       playerlogin
@@ -46,7 +47,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    playerhurt
     serverlistconnect
     washit	(anything not hitobjects)
     waspelt
@@ -148,20 +148,23 @@ Please review the lists below of implemented events, flags, functions, commands,
         .z
         .width
         .height
+        .hearts
+        .hp
+        .ap
         .rupees
         .gralats
         .bombs
         .darts
-        .hearts
         .glovepower
         .swordpower
         .shieldpower
-        .ap
+        .headset
+        .sprite
+        .dir
+      * .hurtpower
         .hurtdx
         .hurtdy
         .save[]
-        .sprite
-        .dir
         .timeout
       npcs[] shorthand: e.g., hearts
 
@@ -170,6 +173,12 @@ Please review the lists below of implemented events, flags, functions, commands,
         .x
         .y
         .z
+        .fullhearts
+        .maxhp
+        .hearts
+        .hp
+        .mp
+        .ap
         .rupees
         .gralats
         .bombs
@@ -177,18 +186,17 @@ Please review the lists below of implemented events, flags, functions, commands,
         .glovepower
         .swordpower
         .shieldpower
-        .mp
-        .ap
-        .fullhearts
-        .hearts
         .headset
         .sprite
         .dir
+        .hurtpower
         .attachid
         .attachtype
         .saysnumber
         .lastdead
         .logintime
+        .upgradestatus
+      * .carrysprite
       players[] shorthand: e.g., playerhearts
 
     * arrowscount
@@ -258,7 +266,6 @@ Please review the lists below of implemented events, flags, functions, commands,
       nwweek
       nwweekday
       nwyear
-    * playerhurtpower
       waterheight
 
 #### Clientside only

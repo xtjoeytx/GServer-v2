@@ -80,6 +80,7 @@ inline static const std::unordered_map<ScriptEventType, std::string_view> eventF
 	{ ScriptEventType::PLAYERTOUCHSOTHER, "playertouchsother" },
 	{ ScriptEventType::PLAYERLAYSITEM, "playerlaysitem" },
 	{ ScriptEventType::PLAYERCHATS, "playerchats" },
+	{ ScriptEventType::PLAYERHURT, "playerhurt" },
 	{ ScriptEventType::PLAYERDIES, "playerdies" },
 	{ ScriptEventType::COMPUSDIED, "compusdied" },
 	{ ScriptEventType::NPCWARPED, "npcwarped" },

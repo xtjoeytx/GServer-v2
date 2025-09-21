@@ -477,27 +477,39 @@ std::format_context::iterator PropertyGS1Script::format(std::format_context& ctx
 // -----------------------------------------------
 // PropertyHurtDxDy
 
+PropertyHurtDxDy::PropertyHurtDxDy(float dx, float dy)
+{
+	hurtDX = static_cast<int8_t>(std::clamp(dx, -1.0f, 1.0f) * 32);
+	hurtDY = static_cast<int8_t>(std::clamp(dy, -1.0f, 1.0f) * 32);
+}
+
+PropertyHurtDxDy::PropertyHurtDxDy(int8_t dx, int8_t dy)
+{
+	hurtDX = std::clamp(dx, static_cast<int8_t>(-32), 32_i8);
+	hurtDY = std::clamp(dy, static_cast<int8_t>(-32), 32_i8);
+}
+
 CString PropertyHurtDxDy::serialize() const
 {
-	auto clampedDX = std::clamp(hurtDX, -1.0f, 1.0f);
-	auto clampedDY = std::clamp(hurtDY, -1.0f, 1.0f);
+	auto clampedDX = std::clamp(hurtDX, static_cast<int8_t>(-32), 32_i8);
+	auto clampedDY = std::clamp(hurtDY, static_cast<int8_t>(-32), 32_i8);
 
 	// The range is from 0 - 64 with 32 being the center.
 	// So a value of 32 is 0, a value of 0 is -32, and a value of 64 is +32.
 	// This encodes the floating point in steps of 1/32.
 	// Whether this represents pixels for 2 tiles, or just a way to encode floats, I am not sure.
 
-	return CString() >> (char)((clampedDX * 32) + 32) >> (char)((clampedDY * 32) + 32);
+	return CString() >> (char)(clampedDX + 32) >> (char)(clampedDY + 32);
 }
 
 void PropertyHurtDxDy::deserialize(CString& data)
 {
-	uint8_t dx = data.readGUChar();
-	uint8_t dy = data.readGUChar();
+	int8_t dx = data.readGChar();
+	int8_t dy = data.readGChar();
 
-	// Convert the values back to a float in the range of -1.0 to 1.0.
-	hurtDX = (static_cast<float>(dx - 32)) / 32.0f;
-	hurtDY = (static_cast<float>(dy - 32)) / 32.0f;
+	// Recenter the values around 0.
+	hurtDX = static_cast<int8_t>(dx - 32);
+	hurtDY = static_cast<int8_t>(dy - 32);
 }
 
 void PropertyHurtDxDy::apply(const GameValue& gameValue)
@@ -505,19 +517,30 @@ void PropertyHurtDxDy::apply(const GameValue& gameValue)
 	auto array = gameValue.get<std::vector<double>>();
 	if (!array.has_value() || array.value().size() != 2)
 	{
-		hurtDX = 0.0f;
-		hurtDY = 0.0f;
+		hurtDX = 0;
+		hurtDY = 0;
 		return;
 	}
 
 	auto& values = array.value();
-	hurtDX = static_cast<float>(values[0]);
-	hurtDY = static_cast<float>(values[1]);
+	float dx = std::clamp(static_cast<float>(values[0]), -1.0f, 1.0f);
+	float dy = std::clamp(static_cast<float>(values[1]), -1.0f, 1.0f);
+	hurtDX = static_cast<int8_t>(dx * 32);
+	hurtDY = static_cast<int8_t>(dy * 32);
 }
 
 std::format_context::iterator PropertyHurtDxDy::format(std::format_context& ctx) const
 {
-	return std::format_to(ctx.out(), "dx: {:.2f}, dy: {:.2f}", hurtDX, hurtDY);
+	auto [dx, dy] = getAsTiles();
+	return std::format_to(ctx.out(), "dx: {:.2f}, dy: {:.2f}", dx, dy);
+}
+
+std::pair<float, float> PropertyHurtDxDy::getAsTiles() const
+{
+	std::pair<float, float> result;
+	result.first = std::clamp(hurtDX / 32.0f, -1.0f, 1.0f);
+	result.second = std::clamp(hurtDY / 32.0f, -1.0f, 1.0f);
+	return result;
 }
 
 // -----------------------------------------------

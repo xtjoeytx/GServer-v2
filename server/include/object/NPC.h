@@ -496,7 +496,7 @@ inline TilePosition NPC::getTilePosition() const noexcept
 	DO(NPCProp::VISFLAGS,	PropertyNumeric<GBYTE1>,	visFlags) \
 	DO(NPCProp::BLOCKFLAGS, PropertyNumeric<GBYTE1>,	blockFlags) \
 	DO(NPCProp::MESSAGE,	PropertyString,				character.chatMessage) \
-	DO(NPCProp::HURTDXDY,	PropertyHurtDxDy,			hurtX, hurtY) \
+	DO(NPCProp::HURTDXDY,	PropertyHurtDxDy,			character.hurtPushDeltaInHalfPixels[0], character.hurtPushDeltaInHalfPixels[1]) \
 	DO(NPCProp::ID,			PropertyNumeric<GBYTE3>,	id) \
 	DO(NPCProp::SPRITE,		PropertySprite,				character.sprite, character.direction) \
 	DO(NPCProp::COLORS,		PropertyColors,				character.colors) \

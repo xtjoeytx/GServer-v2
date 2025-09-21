@@ -781,6 +781,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
+			character.hurtDeltaInHalves = character.hitpointsInHalves - numProp->value;
 			character.hitpointsInHalves = numProp->value;
 			break;
 		}
@@ -950,8 +951,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (hurtProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			hurtX = hurtProp->hurtDX;
-			hurtY = hurtProp->hurtDY;
+			character.hurtPushDeltaInHalfPixels[0] = hurtProp->hurtDX;
+			character.hurtPushDeltaInHalfPixels[1] = hurtProp->hurtDY;
 			break;
 		}
 
@@ -1448,26 +1449,6 @@ CString NPC::getAllPropsPacket(clock::time_point newTime) const
 void NPC::constructScriptParameters()
 {
 	scriptParameters.try_emplace("id", set_temporary, "id", gameValueGetter([this]() { return static_cast<double>(id); }), GameValue::func_set{});
-	scriptParameters.try_emplace("width", set_temporary, "width", gameValueGetter([this]() { return static_cast<double>(shape.width()); }), GameValue::func_set{});
-	scriptParameters.try_emplace("height", set_temporary, "height", gameValueGetter([this]() { return static_cast<double>(shape.height()); }), GameValue::func_set{});
-	scriptParameters.try_emplace("rupees", set_temporary, "rupees", gameValueGetter(character.gralats), gameValueSetter(this, PROPOPT(NPCProp::RUPEES), character.gralats));
-	scriptParameters.try_emplace("gralats", set_temporary, "gralats", gameValueGetter(character.gralats), gameValueSetter(this, PROPOPT(NPCProp::RUPEES), character.gralats));
-	scriptParameters.try_emplace("bombs", set_temporary, "bombs", gameValueGetter(character.bombs), gameValueSetter(this, PROPOPT(NPCProp::BOMBS), character.bombs));
-	scriptParameters.try_emplace("darts", set_temporary, "darts", gameValueGetter(character.arrows), gameValueSetter(this, PROPOPT(NPCProp::ARROWS), character.arrows));
-	scriptParameters.try_emplace("glovepower", set_temporary, "glovepower", gameValueGetter(character.glovePower), gameValueSetter(this, PROPOPT(NPCProp::GLOVEPOWER), character.glovePower));
-	scriptParameters.try_emplace("swordpower", set_temporary, "swordpower", gameValueGetter(character.swordPower), gameValueSetter(this, PROPOPT(NPCProp::SWORDIMAGE), character.swordPower));
-	scriptParameters.try_emplace("shieldpower", set_temporary, "shieldpower", gameValueGetter(character.shieldPower), gameValueSetter(this, PROPOPT(NPCProp::SHIELDIMAGE), character.shieldPower));
-	scriptParameters.try_emplace("ap", set_temporary, "ap", gameValueGetter(character.ap), gameValueSetter(this, PROPOPT(NPCProp::ALIGNMENT), character.ap));
-	scriptParameters.try_emplace("hurtdx", set_temporary, "hurtdx", gameValueGetter(hurtX), gameValueSetter(this, PROPOPT(NPCProp::HURTDXDY), hurtX));
-	scriptParameters.try_emplace("hurtdy", set_temporary, "hurtdy", gameValueGetter(hurtY), gameValueSetter(this, PROPOPT(NPCProp::HURTDXDY), hurtY));
-	scriptParameters.try_emplace("save", set_temporary, "save", gameValueGetter(saves), gameValueSetter(this, PROPOPT(NPCProp::SAVE0), saves));
-
-	scriptParameters.try_emplace("hearts", set_temporary, "hearts",
-		gameValueGetter([this]() { return character.hitpointsInHalves / 2.0; }),
-		gameValueSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<size_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
-	scriptParameters.try_emplace("hp", set_temporary, "hp",
-		gameValueGetter([this]() { return character.hitpointsInHalves / 2.0; }),
-		gameValueSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<size_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
 	scriptParameters.try_emplace("x", set_temporary, "x",
 		gameValueGetter([this]() { return character.getGlobalPosition().x() / 16.0; }),
 		gameValueSetter(this, PROPOPT(NPCProp::X2),
@@ -1505,16 +1486,22 @@ void NPC::constructScriptParameters()
 	scriptParameters.try_emplace("z", set_temporary, "z",
 		gameValueGetter([this]() { return character.localPixelZ / 16.0; }),
 		gameValueSetter(this, PROPOPT(NPCProp::Z2), [this](const GameValue& value, std::optional<size_t>) { character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
-
-	scriptParameters.try_emplace("timeout", set_temporary, "timeout",
-		gameValueGetter([this]() { return timeout.count() / 1000.0; }),
-		gameValueSetter(this, PROPOPT<NPCProp>(std::nullopt),
-			[this](const GameValue& value, std::optional<size_t>)
-			{
-				if (auto doubleValue = value.get<double>(); doubleValue.has_value())
-					timeout = std::chrono::milliseconds(static_cast<int>(*doubleValue * 1000));
-			})
-		);
+	scriptParameters.try_emplace("width", set_temporary, "width", gameValueGetter([this]() { return static_cast<double>(shape.width()); }), GameValue::func_set{});
+	scriptParameters.try_emplace("height", set_temporary, "height", gameValueGetter([this]() { return static_cast<double>(shape.height()); }), GameValue::func_set{});
+	scriptParameters.try_emplace("hearts", set_temporary, "hearts",
+		gameValueGetter([this]() { return character.hitpointsInHalves / 2.0; }),
+		gameValueSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<size_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
+	scriptParameters.try_emplace("hp", set_temporary, "hp",
+		gameValueGetter([this]() { return character.hitpointsInHalves / 2.0; }),
+		gameValueSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<size_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
+	scriptParameters.try_emplace("ap", set_temporary, "ap", gameValueGetter(character.ap), gameValueSetter(this, PROPOPT(NPCProp::ALIGNMENT), character.ap));
+	scriptParameters.try_emplace("rupees", set_temporary, "rupees", gameValueGetter(character.gralats), gameValueSetter(this, PROPOPT(NPCProp::RUPEES), character.gralats));
+	scriptParameters.try_emplace("gralats", set_temporary, "gralats", gameValueGetter(character.gralats), gameValueSetter(this, PROPOPT(NPCProp::RUPEES), character.gralats));
+	scriptParameters.try_emplace("bombs", set_temporary, "bombs", gameValueGetter(character.bombs), gameValueSetter(this, PROPOPT(NPCProp::BOMBS), character.bombs));
+	scriptParameters.try_emplace("darts", set_temporary, "darts", gameValueGetter(character.arrows), gameValueSetter(this, PROPOPT(NPCProp::ARROWS), character.arrows));
+	scriptParameters.try_emplace("glovepower", set_temporary, "glovepower", gameValueGetter(character.glovePower), gameValueSetter(this, PROPOPT(NPCProp::GLOVEPOWER), character.glovePower));
+	scriptParameters.try_emplace("swordpower", set_temporary, "swordpower", gameValueGetter(character.swordPower), gameValueSetter(this, PROPOPT(NPCProp::SWORDIMAGE), character.swordPower));
+	scriptParameters.try_emplace("shieldpower", set_temporary, "shieldpower", gameValueGetter(character.shieldPower), gameValueSetter(this, PROPOPT(NPCProp::SHIELDIMAGE), character.shieldPower));
 	scriptParameters.try_emplace("headset", set_temporary, "headset",
 		gameValueGetter(
 			[this]()
@@ -1552,6 +1539,35 @@ void NPC::constructScriptParameters()
 			[this](const GameValue& value, std::optional<size_t>)
 			{
 				character.direction = std::clamp(static_cast<uint8_t>(value.get<double>().value_or(0.0)), 0_ui8, 3_ui8);
+			})
+		);
+	scriptParameters.try_emplace("hurtdpower", set_temporary, "hurtdpower", gameValueGetter(character.hurtDeltaInHalves), GameValue::func_set{});
+	scriptParameters.try_emplace("hurtdx", set_temporary, "hurtdx",
+		gameValueGetter([this]() { return character.hurtPushDeltaInHalfPixels[0] / 32.0; }),
+		gameValueSetter(this, PROPOPT(NPCProp::HURTDXDY),
+			[this](const GameValue& value, std::optional<size_t>)
+			{
+				auto clampedValue = std::clamp(value.get<double>().value_or(0.0), -1.0, 1.0);
+				character.hurtPushDeltaInHalfPixels[0] = static_cast<int8_t>(clampedValue * 32);
+			})
+		);
+	scriptParameters.try_emplace("hurtdy", set_temporary, "hurtdy",
+		gameValueGetter([this]() { return character.hurtPushDeltaInHalfPixels[1] / 32.0; }),
+		gameValueSetter(this, PROPOPT(NPCProp::HURTDXDY),
+			[this](const GameValue& value, std::optional<size_t>)
+			{
+				auto clampedValue = std::clamp(value.get<double>().value_or(0.0), -1.0, 1.0);
+				character.hurtPushDeltaInHalfPixels[1] = static_cast<int8_t>(clampedValue * 32);
+			})
+		);
+	scriptParameters.try_emplace("save", set_temporary, "save", gameValueGetter(saves), gameValueSetter(this, PROPOPT(NPCProp::SAVE0), saves));
+	scriptParameters.try_emplace("timeout", set_temporary, "timeout",
+		gameValueGetter([this]() { return timeout.count() / 1000.0; }),
+		gameValueSetter(this, PROPOPT<NPCProp>(std::nullopt),
+			[this](const GameValue& value, std::optional<size_t>)
+			{
+				if (auto doubleValue = value.get<double>(); doubleValue.has_value())
+					timeout = std::chrono::milliseconds(static_cast<int>(*doubleValue * 1000));
 			})
 		);
 }

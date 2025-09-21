@@ -135,9 +135,18 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			uint8_t power = numProp->value;
+			int8_t powerDelta = power - account.character.hitpointsInHalves;
 
-			if (account.character.ap < 40 && power > account.character.hitpointsInHalves) break;
+			if (account.character.ap < 40 && powerDelta > 0)
+				break;
+
+			account.character.hurtDeltaInHalves = -powerDelta;
 			account.character.hitpointsInHalves = props::Limits::apply(power, 0, account.maxHitpoints * 2);
+
+			if (m_server->hasNPCServer() && powerDelta < 0)
+			{
+				m_server->queueNPCEvent(level, getGlobalPosition(), ScriptEventType::PLAYERHURT, source::FromPlayer(m_id));
+			}
 			break;
 		}
 

@@ -553,16 +553,17 @@ struct PropertyGS1Script : public PropertyBase
 struct PropertyHurtDxDy : public PropertyBase
 {
 	PropertyHurtDxDy() = default;
-	PropertyHurtDxDy(float dx, float dy)
-		: hurtDX(dx), hurtDY(dy) {}
+	explicit PropertyHurtDxDy(float dx, float dy);
+	explicit PropertyHurtDxDy(int8_t dx, int8_t dy);
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
 	virtual std::format_context::iterator format(std::format_context& ctx) const override;
+	std::pair<float, float> getAsTiles() const;
 
-	float hurtDX = 0.0f;
-	float hurtDY = 0.0f;
+	int8_t hurtDX = 0;
+	int8_t hurtDY = 0;
 };
 
 /// @brief A property that stores a rectangle for an image part.

@@ -32,7 +32,6 @@ void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
 	variableStore.add("playertouchesother", event == ScriptEventType::PLAYERTOUCHSOTHER);
 
 	/*
-		playerhurt
 		washit              the npc was slayed with a sword or axe
 		waspelt             the npc was pelt
 		wasthrown           the npc was carried and then thrown
