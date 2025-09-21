@@ -154,6 +154,7 @@ public:
 public:
 	LevelBomb* addBomb(inform_client_t, const PixelPosition& position, uint8_t power);
 	LevelBomb* addBomb(const PixelPosition& position, uint8_t power);
+	LevelBomb* addBombFromClient(const PixelPosition& position, uint8_t power, PlayerID owner, std::chrono::milliseconds timeToExplode);
 	bool removeBomb(inform_client_t, size_t index);
 	bool removeBomb(size_t index);
 	bool removeBomb(const PixelPosition& position);
@@ -267,6 +268,9 @@ public:
 	bool isSingleplayer = false;
 	clock::time_point modTime;
 	ScriptContainer scripting;
+
+protected:
+	std::shared_ptr<NPC> generateItemNPC(const PixelPosition& position, LevelItemType item);
 
 private:
 	std::filesystem::path m_filePath;

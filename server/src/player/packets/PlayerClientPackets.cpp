@@ -167,13 +167,24 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_BOMBADD(CString& pPacket)
 {
-	[[maybe_unused]] unsigned char loc[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
+	[[maybe_unused]] float loc[2] = { pPacket.readGUChar() / 2.0f, pPacket.readGUChar() / 2.0f };
 	[[maybe_unused]] unsigned char player_power = pPacket.readGUChar();
 	[[maybe_unused]] unsigned char player = player_power >> 2;
 	[[maybe_unused]] unsigned char power = player_power & 0x03;
-	[[maybe_unused]] unsigned char timeToExplode = pPacket.readGUChar(); // How many 0.05 sec increments until it explodes.  Defaults to 55 (3 seconds since 0 counts too)
 
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOMBADD >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
+	// How many 0.05 sec increments until it explodes.  Defaults to 55 (3 seconds since 0 counts too when the game counts).
+	[[maybe_unused]] std::chrono::milliseconds timeToExplode = (pPacket.readGUChar() * 50ms) + 50ms;
+
+	if (auto level = getLevel(); level != nullptr && m_server->hasNPCServer())
+	{
+		auto position = level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1]));
+		if (level->addBombFromClient(position, power, m_id, timeToExplode) == nullptr)
+			sendPacket(CString() >> (char)PLO_BOMBDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
+	}
+	else
+	{
+		m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOMBADD >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
+	}
 	return HandlePacketResult::Handled;
 }
 

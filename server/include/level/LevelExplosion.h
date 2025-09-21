@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/generator/TimeoutGenerator.h>

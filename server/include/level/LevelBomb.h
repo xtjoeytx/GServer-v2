@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/generator/TimeoutGenerator.h>
@@ -21,6 +22,7 @@ struct LevelBomb
 
 	PixelPosition position;
 	uint8_t power;
+	ScriptObject owner;
 	TimeoutGenerator timeout;
 
 	[[inline]] void constructScriptParameters();
