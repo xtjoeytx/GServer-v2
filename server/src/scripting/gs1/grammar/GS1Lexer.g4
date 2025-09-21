@@ -14,7 +14,15 @@ lexer grammar GS1Lexer;
 @lexer::context
 {
 // --------------------------------------------------------
-constexpr std::array<std::string_view, 201> builtInCommands = {
+#if DEBUG
+constexpr size_t builtInCommandCount = 202;
+#else
+constexpr size_t builtInCommandCount = 201;
+#endif
+constexpr std::array<std::string_view, builtInCommandCount> builtInCommands = {
+#if DEBUG
+	"debugger",
+#endif
     "addguildmember",
     "addstring",
     "addtiledef",
@@ -453,6 +461,7 @@ tokens { COMMAND, FUNCTION, MESSAGECODE, STRING, BADDY, ITEM, COLOR, GENDER, CAR
 	- <  left parenthesis that tests if a comma is found before the ) and, if not, skips the next mode (playersays special case)
 */
 
+CMD_DEBUGGER             : 'gr-debugger'          -> type(COMMAND);
 CMD_SETSTRING            : 'setstring'            { pushCommand("VS"); } -> type(COMMAND);
 CMD_ADDSTRING            : 'addstring'            { pushCommand("VS"); } -> type(COMMAND);
 CMD_INSERTSTRING         : 'insertstring'         { pushCommand("VES"); } -> type(COMMAND);

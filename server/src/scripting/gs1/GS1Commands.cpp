@@ -56,6 +56,10 @@ namespace preagonal::gs1::grammar
 using BuiltInCommandHandleFunc = void(*)(GS1Visitor*, std::string_view, const std::vector<GS1ScriptValue*>&);
 using BuiltInCommandHandleMap = std::unordered_map<size_t, BuiltInCommandHandleFunc>;
 
+#if DEBUG
+static void fn_debugger(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+#endif
+
 static void fn_addguildmember(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_addstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_addweapon(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -206,6 +210,9 @@ static BuiltInCommandHandleMap GenerateMap()
 	string::string_hash hash{};
 	BuiltInCommandHandleMap map =
 	{
+#if DEBUG
+		{ hash("gr-debugger"), &fn_debugger },
+#endif
 		{ hash("addguildmember"), &fn_addguildmember },
 		{ hash("addstring"), &fn_addstring },
 		{ hash("addweapon"), &fn_addweapon },
@@ -481,6 +488,23 @@ static std::optional<PixelPosition> getPositionForArrow(const ScriptObject& sour
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+#if DEBUG
+void fn_debugger(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	auto server = BabyDI::Get<Server>();
+	auto sourceNPC = visitor->getOriginalSource();
+	auto sourcePlayer = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
+	NPCPtr npc = nullptr;
+	PlayerPtr player = nullptr;
+	if (sourceNPC.second == ScriptObjectType::NPC)
+		npc = server->getNPC(sourceNPC.first);
+	if (sourcePlayer.has_value())
+		player = server->getNPCServer()->getPlayer(sourcePlayer.value().first);
+
+	//player->setPropWith<PlayerProp::ID>(SetBy::SERVER, 0_ui16);
+}
+#endif
 
 // addguildmember guild,account,nick;
 void fn_addguildmember(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
