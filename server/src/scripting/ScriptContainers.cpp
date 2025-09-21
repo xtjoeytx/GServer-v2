@@ -243,11 +243,11 @@ GameValue GameVariableStore::getOrStub(std::string_view name)
 		{
 			const auto picker = visit_functions
 			{
-				[&](std::optional<bool>* ptr) { *ptr = variable->get<bool>(index).value_or(false); },
-				[&](std::optional<double>* ptr) { *ptr = variable->get<double>(index).value_or(0.0); },
-				[&](std::optional<std::string>* ptr) { *ptr = variable->get<std::string>(index).value_or(""s); },
-				[&](std::optional<std::vector<double>>* ptr) { *ptr = variable->get<std::vector<double>>(index).value_or(std::vector<double>{}); },
-				[&](std::optional<std::vector<ScriptObject>>* ptr) { *ptr = variable->get<std::vector<ScriptObject>>(index).value_or(std::vector<ScriptObject>{}); }
+				[&](std::optional<bool>* ptr) { *ptr = variable->get<bool>(index); },
+				[&](std::optional<double>* ptr) { *ptr = variable->get<double>(index); },
+				[&](std::optional<std::string>* ptr) { *ptr = variable->get<std::string>(index); },
+				[&](std::optional<std::vector<double>>* ptr) { *ptr = variable->get<std::vector<double>>(index); },
+				[&](std::optional<std::vector<ScriptObject>>* ptr) { *ptr = variable->get<std::vector<ScriptObject>>(index); }
 			};
 			std::visit(picker, incoming);
 		};

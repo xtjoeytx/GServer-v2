@@ -892,11 +892,11 @@ GameValue::func_get gameValueGetter(ValidGameValueCallable auto getter)
 		GameValue value{ getter() };
 		const auto picker = visit_functions
 		{
-			[&](std::optional<bool>* in) { if (value.has<bool>()) *in = value.get<bool>(); },
-			[&](std::optional<double>* in) { if (value.has<double>()) *in = value.get<double>(); },
-			[&](std::optional<std::string>* in) { if (value.has<std::string>()) *in = value.get<std::string>(); },
-			[&](std::optional<std::vector<double>>* in) { if (value.has<std::vector<double>>()) *in = value.get<std::vector<double>>(); },
-			[&](std::optional<std::vector<ScriptObject>>* in) {if (value.has<std::vector<ScriptObject>>()) *in = value.get<std::vector<ScriptObject>>(); }
+			[&](std::optional<bool>* in) { *in = value.get<bool>(); },
+			[&](std::optional<double>* in) { *in = value.get<double>(); },
+			[&](std::optional<std::string>* in) { *in = value.get<std::string>(); },
+			[&](std::optional<std::vector<double>>* in) { *in = value.get<std::vector<double>>(); },
+			[&](std::optional<std::vector<ScriptObject>>* in) { *in = value.get<std::vector<ScriptObject>>(); }
 		};
 		std::visit(picker, incoming);
 	};
@@ -910,11 +910,11 @@ inline GameValue::func_get gameValueGetter(ValidGameValueCallableWithIndex auto 
 		GameValue value{ getter(index) };
 		const auto picker = visit_functions
 		{
-			[&](std::optional<bool>* in) { if (value.has<bool>()) *in = value.get<bool>(); },
-			[&](std::optional<double>* in) { if (value.has<double>()) *in = value.get<double>(); },
-			[&](std::optional<std::string>* in) { if (value.has<std::string>()) *in = value.get<std::string>(); },
-			[&](std::optional<std::vector<double>>* in) { if (value.has<std::vector<double>>()) *in = value.get<std::vector<double>>(); },
-			[&](std::optional<std::vector<ScriptObject>>* in) { if (value.has<std::vector<ScriptObject>>()) *in = value.get<std::vector<ScriptObject>>(); }
+			[&](std::optional<bool>* in) { *in = value.get<bool>(); },
+			[&](std::optional<double>* in) { *in = value.get<double>(); },
+			[&](std::optional<std::string>* in) { *in = value.get<std::string>(); },
+			[&](std::optional<std::vector<double>>* in) { *in = value.get<std::vector<double>>(); },
+			[&](std::optional<std::vector<ScriptObject>>* in) { *in = value.get<std::vector<ScriptObject>>(); }
 		};
 		std::visit(picker, incoming);
 	};

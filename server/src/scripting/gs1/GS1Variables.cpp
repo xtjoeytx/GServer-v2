@@ -43,7 +43,7 @@ void setGlobalVariables(GameVariableStore& variableStore)
 	variableStore.add(GameValue{ "allplayerscount",
 		gameValueGetter([server]()
 		{
-			auto size = std::ranges::distance(server->getNPCServer()->getPlayerList() | std::views::filter([](auto& kvp) { return dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr; }));
+			auto size = std::ranges::distance(server->getNPCServer()->getPlayerList() | std::views::filter([](auto& kvp) { return dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr && kvp.second->getId() != 0; }));
 			return static_cast<double>(size);
 		}), GameValue::func_set{}
 	});
@@ -51,7 +51,7 @@ void setGlobalVariables(GameVariableStore& variableStore)
 		gameValueGetter([server]()
 		{
 			auto playerObjects = server->getNPCServer()->getPlayerList()
-					| std::views::filter([](auto& kvp) { return dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr; })
+					| std::views::filter([](auto& kvp) { return dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr && kvp.second->getId() != 0; })
 					| std::views::transform([](auto& kvp) { return ScriptObject{ std::make_pair((size_t)kvp.first, ScriptObjectType::PLAYER)}; });
 			std::vector<ScriptObject> players{ std::ranges::begin(playerObjects), std::ranges::end(playerObjects) };
 			return players;
@@ -115,8 +115,6 @@ void setPlayerVariables(GameVariableStore& variableStore, std::weak_ptr<PlayerCl
 	// weaponscount
 	variableStore.add(GameValue{ "weaponscount",
 		gameValueGetter([player]() { return player.expired() ? 0.0 : static_cast<double>(player.lock()->account.weapons.size()); }), GameValue::func_set{}});
-
-	// playerhurtpower
 
 	// levelorgx / levelorgy
 	variableStore.add(GameValue{ "levelorgx",

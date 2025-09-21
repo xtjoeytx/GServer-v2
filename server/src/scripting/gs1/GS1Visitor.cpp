@@ -496,6 +496,7 @@ void GS1Visitor::setCurrentPlayerVariables(std::optional<ScriptObject> source)
 		return;
 
 	// all the player property shortcuts
+	player->constructScriptParameters();
 	for (const auto& [name, variable] : player->scriptParameters)
 		builtInStore->add(GameValue{ set_temporary, std::format("player{}", name), variable.getGetter(), variable.getSetter() });
 }
@@ -613,7 +614,17 @@ std::any GS1Visitor::visitBlock(GS1Parser::BlockContext* ctx)
 		else if (antlr4::tree::TerminalNode::is(*currentNode))
 			visitTerminal(dynamic_cast<antlr4::tree::TerminalNode*>(currentNode));
 		else
-			currentNode->accept(this);
+		{
+			try
+			{
+				currentNode->accept(this);
+			}
+			catch (...)
+			{
+				m_callStack.pop_back();
+				throw;
+			}
+		}
 
 		// Move to the next node.
 		moveNext();
@@ -1320,6 +1331,11 @@ std::any GS1Visitor::visitCompoundIdentifier(GS1Parser::CompoundIdentifierContex
 {
 	std::string compoundIdentifier;
 
+	// Temporarily turn off the flag expectation while we build the final identifier.
+	// This allows things like server.player_#v(playerid) to read from the correct storage area.
+	bool oldExpectingFlag = expectingFlag;
+	expectingFlag = false;
+
 	for (auto& tree : context->children)
 	{
 		if (tree->getTreeType() == antlr4::tree::ParseTreeType::TERMINAL)
@@ -1330,6 +1346,8 @@ std::any GS1Visitor::visitCompoundIdentifier(GS1Parser::CompoundIdentifierContex
 			compoundIdentifier.append(getReadOnlyGameValueFromAnyAs<std::string>(piece));
 		}
 	}
+
+	expectingFlag = oldExpectingFlag;
 
 	string::trimMutate(compoundIdentifier);
 	return std::make_any<std::string>(compoundIdentifier);
