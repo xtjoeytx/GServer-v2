@@ -528,9 +528,9 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 				globalPos.x() = static_cast<int32_t>(atof(flagValue.text()) * 16.0);
 				if (auto localPos = toLocalPixelPosition(globalPos); localPos.x() != account.character.localPixelX)
 				{
-					auto xprop = getProp<PlayerProp::X2>();
+					auto xprop = getProp<PlayerProp::X>();
 					xprop.pixelCoordinate = localPos.x();
-					m_grMovementPackets >> (char)PlayerProp::X2;
+					m_grMovementPackets >> (char)PlayerProp::X;
 					m_grMovementPackets << xprop.serialize();
 					m_grMovementPackets << "\n";
 				}
@@ -543,9 +543,9 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 				globalPos.y() = static_cast<int32_t>(atof(flagValue.text()) * 16.0);
 				if (auto localPos = toLocalPixelPosition(globalPos); localPos.y() != account.character.localPixelY)
 				{
-					auto yprop = getProp<PlayerProp::Y2>();
+					auto yprop = getProp<PlayerProp::Y>();
 					yprop.pixelCoordinate = localPos.y();
-					m_grMovementPackets >> (char)PlayerProp::Y2;
+					m_grMovementPackets >> (char)PlayerProp::Y;
 					m_grMovementPackets << yprop.serialize();
 					m_grMovementPackets << "\n";
 				}
