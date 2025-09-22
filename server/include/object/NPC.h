@@ -268,6 +268,7 @@ public:
 	std::pair<CString, CString> getMoveQueuePacketData(clock::time_point modTime = clock::time_point::min()) const noexcept;
 	void sendMoveQueueToPlayer(PlayerPtr player, clock::time_point modTime = clock::time_point::min()) const noexcept;
 	void sendMoveQueueToLevel(LevelPtr level, clock::time_point modTime = clock::time_point::min()) const noexcept;
+	void refreshModTimes(clock::time_point modTime = clock::time_point::min()) noexcept;
 
 public:
 	const std::string& getWeaponName() const noexcept { return m_weaponName; }

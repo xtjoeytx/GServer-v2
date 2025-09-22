@@ -151,6 +151,10 @@ void NPC::setLevel(LevelPtr level)
 	if (level == nullptr)
 		return;
 
+	// Refresh our mod times.
+	if (auto server = BabyDI::Get<Server>(); server != nullptr)
+		refreshModTimes(server->getFrameStartTime());
+
 	this->level = level->getMapOrLevelName();
 	m_currentLevel = level;
 }
@@ -420,6 +424,15 @@ void NPC::sendMoveQueueToLevel(LevelPtr level, clock::time_point modTime) const 
 	auto server = BabyDI::Get<Server>();
 	server->sendPacketToNearby(CString() >> (char)PLO_MOVE2 >> (int)id << move2, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() >= CLVER_2_3; });
 	server->sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)id << move1, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() < CLVER_2_3; });
+}
+
+void NPC::refreshModTimes(clock::time_point modTime) noexcept
+{
+	for (auto& time : this->modTime)
+	{
+		if (time != clock::time_point::min())
+			time = modTime;
+	}
 }
 
 //----------------------------

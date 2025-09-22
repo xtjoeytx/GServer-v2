@@ -609,6 +609,9 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 					}
 				}
 			}
+
+			//m_carrySprite = newNPCID != 0 ? PROPID(CarryObjectSprite::NPC) : PROPID(CarryObjectSprite::NONE);
+			//result.resultPropIds.push_back(PROPID(PlayerProp::CARRYSPRITE));
 			player->setCarryNPC(newNPCID);
 			break;
 		}

@@ -133,6 +133,7 @@ enum class CarryObjectSprite : uint8_t
 	HOTJOLTBOMB = 88,
 	HOTBOMB = 200,
 	BLACKSTONE = 201,
+	NPC = 251,
 	NONE = 255
 };
 
