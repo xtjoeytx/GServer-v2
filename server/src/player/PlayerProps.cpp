@@ -141,6 +141,13 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				setNick(nick, setBy == props::SetBy::SERVER);
 			}
 
+			// If the nickname was changed due to restrictions, send the new nick back to the source.
+			if (account.character.nickName != nick)
+			{
+				result.resultFlags.set(props::SetResults::sendToSource);
+				result.resultFlags.set(props::SetResults::getLatestOnSend);
+			}
+
 			result.resultFlags.set(props::SetResults::sendToAll);
 			break;
 		}
