@@ -26,12 +26,12 @@
 #include <IEnums.h>
 
 #include <Account.h>
-#include <FileSystem.h>
 #include <ServerList.h>
 #include <UpdatePackage.h>
-#include "level/LevelItem.h"
 #include <animation/GameAni.h>
+#include <filesystem/FileSystem.h>
 #include <level/Level.h>
+#include <level/LevelItem.h>
 #include <level/LevelShoot.h>
 #include <loader/IAccountLoader.h>
 #include <loader/INPCLoader.h>
@@ -165,9 +165,8 @@ public:
 	const auto& getServerMessage() const { return m_serverMessage; }
 	const auto& getAllowedVersionString() const { return m_allowedVersionString; }
 	const auto& getNWTime() const { return m_serverTime; }
-	FileSystem* getFileSystem(int c = 0) { return &(m_filesystem[c]); }
-	FileSystem* getAccountsFileSystem() { return &m_filesystemAccounts; }
-	FileSystem* getFileSystemByType(CString& type);
+	auto& getFileSystem() { return m_fsWorld; }
+	auto& getFileSystemServer() { return m_fsServer; }
 	auto& getAccountLoader() { return *m_accountLoader; }
 	auto& getAdminSettings() { return m_adminSettings; }
 	auto& getAnimationManager() { return m_animationManager; }
@@ -307,7 +306,7 @@ private:
 
 	bool m_doRestart = false;
 
-	FileSystem m_filesystem[FS_COUNT], m_filesystemAccounts;
+	fs::FileSystem m_fsWorld, m_fsServer;
 	CSettings m_adminSettings, m_settings;
 	CSocket m_playerSock;
 	CSocketManager m_sockManager;

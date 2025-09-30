@@ -15,8 +15,9 @@
 #include <BabyDI.h>
 #include <CString.h>
 
-#include <FileSystem.h>
 #include <Server.h>
+#include <filesystem/File.h>
+#include <filesystem/FileSystem.h>
 #include <loader/flatfile/FlatFileNPCLoader.h>
 #include <object/NPC.h>
 #include <scripting/ScriptContainers.h>
@@ -24,6 +25,7 @@
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
+#include <filesystem/FileSystemTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -36,14 +38,12 @@ static constexpr std::array<uint8_t, 30> attrPackets = { 36, 37, 38, 39, 40, 44,
 
 NPCPtr FlatFileNPCLoader::loadNPC(std::string_view npcName) noexcept
 {
-	// Get the NPCs.
-	// TODO(Nalin): Add a proper NPC filesystem.
-	FileSystem npcFS;
-	npcFS.addDir("npcs", "npc*.txt");
+	auto server = BabyDI::Get<Server>();
+	auto fileInfo = server->getFileSystemServer().info(fs::FileCategory::NPC, std::format("npc{}.txt", npcName));
+	if (fileInfo == nullptr)
+		return nullptr;
 
-	// Find the NPC to load.
-	auto filePath = npcFS.findi(std::format("npc{}.txt", npcName));
-	return loadNPC(std::filesystem::path{ filePath.toStringView()});
+	return loadNPC(fileInfo->file);
 }
 
 NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcept
@@ -51,33 +51,28 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	auto server = BabyDI::Get<Server>();
 
 	// Load file
-	CString fileData;
-	if (!fileData.load(filePath.string()))
+	auto file = server->getFileSystemServer().open(fs::FileCategory::NPC, filePath);
+	if (file == nullptr)
 		return nullptr;
 
-	fileData.removeAllI("\r");
-
-	CString headerLine = fileData.readString("\n");
-	if (headerLine != "GRNPC001")
+	std::string header = string::trimMutate(file->readLine());
+	if (header != "GRNPC001")
 		return nullptr;
 
 	// Search for the ID of the NPC from the file data.
 	NPCID id = 0;
-	if (auto start = fileData.find("ID "); start != -1)
+	if (auto sectionId = file->readConfigLine("ID", " "sv); sectionId.has_value())
 	{
-		auto idStr = fileData.subString(start + 3, fileData.find("\n", start) - start - 3);
-		idStr.trimI();
-		id = std::strtol(idStr.text(), nullptr, 10);
-
+		id = string::toNumber<NPCID>(sectionId.value());
 		if (id < NPCID_GEN_DATABASE)
 		{
 			id = 0;
-			log::printLine(log::server, "** NPC [{}] ID is less than {}, getting next available.", filePath.filename().string(), NPCID_GEN_DATABASE);
+			log::printLine(log::server, "** NPC [{}] ID is less than {}, getting next available.", fs::getFileNameAsANSI(filePath), NPCID_GEN_DATABASE);
 		}
 		else if (server->m_npcIdGenerator.isIdUsed(id))
 		{
 			id = 0;
-			log::printLine(log::server, "** NPC [{}] ID is already in use, getting next available.", filePath.filename().string());
+			log::printLine(log::server, "** NPC [{}] ID is already in use, getting next available.", fs::getFileNameAsANSI(filePath));
 		}
 		else server->m_npcIdGenerator.markAsUsed(id);
 	}
@@ -87,12 +82,11 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 
 	// Make the NPC.
 	auto npc = std::make_shared<NPC>(id, NPCStorageType::DATABASE);
+	npc->lastSaveTime = fs::getFileModTime(filePath);
 
 	// Set the default warp type.
 	if (server->hasNPCServer())
-	{
 		npc->warpRestrictions = NPCWarpRestrictions::NOTALLOWED;
-	}
 
 	// Set some default values.
 	bool isMale = true;
@@ -103,298 +97,300 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	std::vector<std::string> joinedClasses;
 
 	// Parse File
-	while (fileData.bytesLeft())
+	std::string line;
+	std::string command;
+	while (!file->finished())
 	{
-		CString curLine = fileData.readString("\n");
+		line = string::trimMutate(file->readLine());
 
-		// Find Command
-		CString curCommand = curLine.readString();
+		std::string_view lineView = line;
+		command = string::extractLine(lineView, ' ');
 
 		// Parse Line
-		if (curCommand == "NAME")
+		if (command == "NAME")
 		{
-			npc->name = curLine.readString("").text();
+			npc->name = lineView;
 			npc->modTime[PROPID(NPCProp::NAME)] = updateTime;
 		}
-		else if (curCommand == "ID")
-			; // npc->id = strtoint(curLine.readString(""));
-		else if (curCommand == "TYPE")
-			npc->scriptType = curLine.readString("");
-		else if (curCommand == "SCRIPTER")
+		else if (command == "ID")
+			; // npc->id = string::toNumber<NPCID>(std::string{ lineView });
+		else if (command == "TYPE")
+			npc->scriptType = lineView;
+		else if (command == "SCRIPTER")
 		{
-			npc->scripter = curLine.readString("");
+			npc->scripter = lineView;
 			npc->modTime[PROPID(NPCProp::SCRIPTER)] = updateTime;
 		}
-		else if (curCommand == "IMAGE")
+		else if (command == "IMAGE")
 		{
-			npc->image = curLine.readString("").text();
+			npc->image = lineView;
 			npc->modTime[PROPID(NPCProp::IMAGE)] = updateTime;
 		}
-		else if (curCommand == "IMGPART")
+		else if (command == "IMGPART")
 		{
-			auto parts = curLine.tokenize();
+			auto parts = string::splitHard(lineView, " "sv);
 			if (parts.size() >= 4)
 			{
-				npc->imagePart.position = { static_cast<uint16_t>(strtoint(parts[0])), static_cast<uint16_t>(strtoint(parts[1])) };
-				npc->imagePart.size = { static_cast<uint8_t>(strtoint(parts[2])), static_cast<uint8_t>(strtoint(parts[3])) };
+				npc->imagePart.position = { string::toNumber<uint16_t>(parts[0]), string::toNumber<uint16_t>(parts[1]) };
+				npc->imagePart.size = { string::toNumber<uint8_t>(parts[2]), string::toNumber<uint8_t>(parts[3]) };
 				npc->modTime[PROPID(NPCProp::IMAGEPART)] = updateTime;
 			}
 		}
-		else if (curCommand == "STARTLEVEL")
-			npc->m_initialLevel = curLine.readString("");
-		else if (curCommand == "STARTX")
-			npc->m_initialCharacter.localPixelX = int(strtofloat(curLine.readString("")) * 16);
-		else if (curCommand == "STARTY")
-			npc->m_initialCharacter.localPixelY = int(strtofloat(curLine.readString("")) * 16);
-		else if (curCommand == "STARTZ")
-			npc->m_initialCharacter.localPixelZ = int(strtofloat(curLine.readString("")) * 16);
-		else if (curCommand == "LEVEL")
-			npc->level = curLine.readString("");
-		else if (curCommand == "X")
+		else if (command == "STARTLEVEL")
+			npc->m_initialLevel = lineView;
+		else if (command == "STARTX")
+			npc->m_initialCharacter.localPixelX = static_cast<int16_t>(string::toFloat(std::string{ lineView }) * 16);
+		else if (command == "STARTY")
+			npc->m_initialCharacter.localPixelY = static_cast<int16_t>(string::toFloat(std::string{ lineView }) * 16);
+		else if (command == "STARTZ")
+			npc->m_initialCharacter.localPixelZ = static_cast<int16_t>(string::toFloat(std::string{ lineView }) * 16);
+		else if (command == "LEVEL")
+			npc->level = lineView;
+		else if (command == "X")
 		{
-			npc->character.localPixelX = int(strtofloat(curLine.readString("")) * 16);
+			npc->character.localPixelX = static_cast<int16_t>(string::toFloat(std::string{ lineView }) * 16);
 			npc->modTime[PROPID(NPCProp::X)] = updateTime;
 			npc->modTime[PROPID(NPCProp::X2)] = updateTime;
 		}
-		else if (curCommand == "Y")
+		else if (command == "Y")
 		{
-			npc->character.localPixelY = int(strtofloat(curLine.readString("")) * 16);
+			npc->character.localPixelY = static_cast<int16_t>(string::toFloat(std::string{ lineView }) * 16);
 			npc->modTime[PROPID(NPCProp::Y)] = updateTime;
 			npc->modTime[PROPID(NPCProp::Y2)] = updateTime;
 		}
-		else if (curCommand == "Z")
+		else if (command == "Z")
 		{
-			npc->character.localPixelZ = int(strtofloat(curLine.readString("")) * 16);
+			npc->character.localPixelZ = static_cast<int16_t>(string::toFloat(std::string{ lineView }) * 16);
 			npc->modTime[PROPID(NPCProp::Z)] = updateTime;
 			npc->modTime[PROPID(NPCProp::Z2)] = updateTime;
 		}
-		else if (curCommand == "MAPX")
+		else if (command == "MAPX")
 		{
-			npc->character.mapX = strtoint(curLine.readString(""));
+			npc->character.mapX = string::toNumber<uint8_t>(std::string{ lineView });
 			npc->modTime[PROPID(NPCProp::GMAPLEVELX)] = updateTime;
 		}
-		else if (curCommand == "MAPY")
+		else if (command == "MAPY")
 		{
-			npc->character.mapY = strtoint(curLine.readString(""));
+			npc->character.mapY = string::toNumber<uint8_t>(std::string{ lineView });
 			npc->modTime[PROPID(NPCProp::GMAPLEVELY)] = updateTime;
 		}
-		else if (curCommand == "NICK")
+		else if (command == "NICK")
 		{
-			npc->character.nickName = curLine.readString("").text();
+			npc->character.nickName = lineView;
 			npc->modTime[PROPID(NPCProp::NICKNAME)] = updateTime;
 		}
-		else if (curCommand == "ANI")
+		else if (command == "ANI")
 		{
-			npc->character.gani = curLine.readString("").text();
+			npc->character.gani = lineView;
 			npc->modTime[PROPID(NPCProp::GANI)] = updateTime;
 		}
-		else if (curCommand == "HP")
+		else if (command == "HP")
 		{
-			npc->character.hitpointsInHalves = 2 * (int)strtofloat(curLine.readString(""));
+			npc->character.hitpointsInHalves = static_cast<uint8_t>(2 * string::toFloat(std::string{ lineView }));
 			npc->modTime[PROPID(NPCProp::POWER)] = updateTime;
 		}
-		else if (curCommand == "GRALATS")
+		else if (command == "GRALATS")
 		{
-			npc->character.gralats = strtoint(curLine.readString(""));
+			npc->character.gralats = string::toNumber<uint32_t>(std::string{ lineView });
 			npc->modTime[PROPID(NPCProp::RUPEES)] = updateTime;
 		}
-		else if (curCommand == "ARROWS")
+		else if (command == "ARROWS")
 		{
-			npc->character.arrows = strtoint(curLine.readString(""));
+			npc->character.arrows = string::toNumber<uint8_t>(std::string{ lineView });
 			npc->modTime[PROPID(NPCProp::ARROWS)] = updateTime;
 		}
-		else if (curCommand == "BOMBS")
+		else if (command == "BOMBS")
 		{
-			npc->character.bombs = strtoint(curLine.readString(""));
+			npc->character.bombs = string::toNumber<uint8_t>(std::string{ lineView });
 			npc->modTime[PROPID(NPCProp::BOMBS)] = updateTime;
 		}
-		else if (curCommand == "GLOVEP")
+		else if (command == "GLOVEP")
 		{
-			npc->character.glovePower = strtoint(curLine.readString(""));
+			npc->character.glovePower = string::toNumber<uint8_t>(std::string{ lineView });
 			npc->modTime[PROPID(NPCProp::GLOVEPOWER)] = updateTime;
 		}
-		else if (curCommand == "SWORDP")
+		else if (command == "SWORDP")
 		{
-			npc->character.swordPower = strtoint(curLine.readString(""));
+			npc->character.swordPower = string::toNumber<uint8_t>(std::string{ lineView });
 			npc->modTime[PROPID(NPCProp::SWORDIMAGE)] = updateTime;
 		}
-		else if (curCommand == "SHIELDP")
+		else if (command == "SHIELDP")
 		{
-			npc->character.shieldPower = strtoint(curLine.readString(""));
+			npc->character.shieldPower = string::toNumber<uint8_t>(std::string{ lineView });
 			npc->modTime[PROPID(NPCProp::SHIELDIMAGE)] = updateTime;
 		}
-		else if (curCommand == "BOWP")
+		else if (command == "BOWP")
 		{
-			npc->character.bowPower = strtoint(curLine.readString(""));
+			npc->character.bowPower = string::toNumber<uint8_t>(std::string{ lineView });
 			npc->modTime[PROPID(NPCProp::GANI)] = updateTime;
 		}
-		else if (curCommand == "BOW")
+		else if (command == "BOW")
 		{
-			npc->character.bowImage = curLine.readString("").toString();
+			npc->character.bowImage = lineView;
 			npc->modTime[PROPID(NPCProp::GANI)] = updateTime;
 		}
-		else if (curCommand == "HEAD")
+		else if (command == "HEAD")
 		{
-			npc->character.headImage = curLine.readString("").toString();
+			npc->character.headImage = lineView;
 			npc->modTime[PROPID(NPCProp::HEADIMAGE)] = updateTime;
 		}
-		else if (curCommand == "BODY")
+		else if (command == "BODY")
 		{
-			npc->character.bodyImage = curLine.readString("").toString();
+			npc->character.bodyImage = lineView;
 			npc->modTime[PROPID(NPCProp::BODYIMAGE)] = updateTime;
 		}
-		else if (curCommand == "SWORD")
+		else if (command == "SWORD")
 		{
-			npc->character.swordImage = curLine.readString("").toString();
+			npc->character.swordImage = lineView;
 			npc->modTime[PROPID(NPCProp::SWORDIMAGE)] = updateTime;
 		}
-		else if (curCommand == "SHIELD")
+		else if (command == "SHIELD")
 		{
-			npc->character.shieldImage = curLine.readString("").toString();
+			npc->character.shieldImage = lineView;
 			npc->modTime[PROPID(NPCProp::SHIELDIMAGE)] = updateTime;
 		}
-		else if (curCommand == "HORSE")
+		else if (command == "HORSE")
 		{
-			npc->character.horseImage = curLine.readString("").toString();
+			npc->character.horseImage = lineView;
 			npc->modTime[PROPID(NPCProp::HORSEIMAGE)] = updateTime;
 		}
-		else if (curCommand == "COLORS")
+		else if (command == "COLORS")
 		{
-			auto tokens = curLine.readString("").tokenize(",");
+			auto tokens = string::splitHard(lineView, ","sv);
 			for (size_t idx = 0; idx < std::min(tokens.size(), (size_t)5); idx++)
-				npc->character.colors[idx] = strtoint(tokens[idx]);
+				npc->character.colors[idx] = string::toNumber<uint8_t>(tokens[idx]);
 			npc->modTime[PROPID(NPCProp::COLORS)] = updateTime;
 		}
-		else if (curCommand == "SPRITE")
+		else if (command == "SPRITE")
 		{
-			auto sprite = strtoint(curLine.readString(""));
+			auto sprite = string::toNumber<uint8_t>(std::string{ lineView });
 			npc->character.sprite = sprite >> 2;
 			npc->character.direction = sprite & 0b11;
 			npc->modTime[PROPID(NPCProp::SPRITE)] = updateTime;
 		}
-		else if (curCommand == "AP")
+		else if (command == "AP")
 		{
-			npc->character.ap = strtoint(curLine.readString(""));
+			npc->character.ap = string::toNumber<uint8_t>(std::string{ lineView });
 			npc->modTime[PROPID(NPCProp::ALIGNMENT)] = updateTime;
 		}
-		else if (curCommand == "TIMEOUT")
+		else if (command == "TIMEOUT")
 		{
-			npc->timeout = std::chrono::milliseconds(strtoint(curLine.readString("")) * 20);
+			npc->timeout = std::chrono::milliseconds(string::toNumber<int>(std::string{ lineView }) * 20);
 		}
-		else if (curCommand == "LAYER")
+		else if (command == "LAYER")
 		{
-			auto layer = strtoint(curLine.readString(""));
+			auto layer = string::toNumber<uint8_t>(std::string{ lineView });
 			if (layer == 0)
 				npc->visFlags |= PROPID(NPCVisFlags::DRAWUNDERPLAYER);
 			if (layer == 2)
 				npc->visFlags |= PROPID(NPCVisFlags::DRAWOVERPLAYER);
 			npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
 		}
-		else if (curCommand == "SHAPETYPE")
+		else if (command == "SHAPETYPE")
 		{
 			// Only shape type 1 is supported, but we just look at the dimension of the shape data.
 		}
-		else if (curCommand == "SHAPE")
+		else if (command == "SHAPE")
 		{
-			std::get<0>(npc->shape.data) = strtoint(curLine.readString(" "));
-			std::get<1>(npc->shape.data) = strtoint(curLine.readString(" "));
+			std::get<0>(npc->shape.data) = string::toNumber<uint16_t>(string::extractLine(lineView, ' '));
+			std::get<1>(npc->shape.data) = string::toNumber<uint16_t>(std::string{ string::trim(lineView) });
 		}
-		else if (curCommand == "DONTBLOCK")
+		else if (command == "DONTBLOCK")
 		{
-			npc->blockFlags = strtoint(curLine.readString(""));
+			npc->blockFlags = string::toNumber<uint8_t>(std::string{ lineView });
 			npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
 		}
-		else if (curCommand == "NOPLAYERONWALL")
+		else if (command == "NOPLAYERONWALL")
 		{
-			npc->noPlayerOnWall = strtoint(curLine.readString("")) != 0;
+			npc->noPlayerOnWall = string::toNumber<uint8_t>(std::string{ lineView }) != 0;
 		}
-		else if (curCommand == "SAVEARR")
+		else if (command == "SAVEARR")
 		{
-			auto tokens = curLine.readString("").tokenize(",");
+			auto tokens = string::splitHard(lineView, ","sv);
 			for (size_t idx = 0; idx < std::min(tokens.size(), npc->saves.size()); idx++)
 			{
-				npc->saves[idx] = (unsigned char)strtoint(tokens[idx]);
+				npc->saves[idx] = string::toNumber<uint8_t>(tokens[idx]);
 				npc->modTime[PROPID(NPCProp::SAVE0) + idx] = updateTime;
 			}
 		}
-		else if (curCommand == "CANWARP")
+		else if (command == "CANWARP")
 		{
-			npc->warpRestrictions = strtoint(curLine.readString("")) != 0 ? NPCWarpRestrictions::ALLOWED : npc->warpRestrictions;
+			npc->warpRestrictions = string::toNumber<uint8_t>(std::string{ lineView }) != 0 ? NPCWarpRestrictions::ALLOWED : npc->warpRestrictions;
 		}
-		else if (curCommand == "CANWARP2")
+		else if (command == "CANWARP2")
 		{
-			npc->warpRestrictions = strtoint(curLine.readString("")) != 0 ? NPCWarpRestrictions::ONLYOVERWORLD : npc->warpRestrictions;
+			npc->warpRestrictions = string::toNumber<uint8_t>(std::string{ lineView }) != 0 ? NPCWarpRestrictions::ONLYOVERWORLD : npc->warpRestrictions;
 		}
 
 		// Official variables for these are unknown.
-		else if (curCommand == "CANCARRY")
+		else if (command == "CANCARRY")
 		{
-			auto value = strtoint(curLine.readString(""));
+			auto value = string::toNumber<uint8_t>(std::string{ lineView });
 			if (value != 0)
 				npc->blockFlags |= PROPID(NPCBlockFlags::CANBECARRIED);
 		}
-		else if (curCommand == "CANPULL")
+		else if (command == "CANPULL")
 		{
-			auto value = strtoint(curLine.readString(""));
+			auto value = string::toNumber<uint8_t>(std::string{ lineView });
 			if (value != 0)
 				npc->blockFlags |= PROPID(NPCBlockFlags::CANBEPULLED);
 		}
-		else if (curCommand == "CANPUSH")
+		else if (command == "CANPUSH")
 		{
-			auto value = strtoint(curLine.readString(""));
+			auto value = string::toNumber<uint8_t>(std::string{ lineView });
 			if (value != 0)
 				npc->blockFlags |= PROPID(NPCBlockFlags::CANBEPUSHED);
 		}
-		else if (curCommand == "VISIBLE")
+		else if (command == "VISIBLE")
 		{
-			auto value = strtoint(curLine.readString(""));
+			auto value = string::toNumber<uint8_t>(std::string{ lineView });
 			if (value == 0)
 				npc->visFlags &= ~PROPID(NPCVisFlags::VISIBLE);
 		}
-		else if (curCommand == "TIMERSHOW")
+		else if (command == "TIMERSHOW")
 		{
-			auto value = strtoint(curLine.readString(""));
+			auto value = string::toNumber<uint8_t>(std::string{ lineView });
 			if (value != 0)
 				npc->visFlags |= PROPID(NPCVisFlags::TIMERSHOW);
 		}
-		else if (curCommand == "MALE")
+		else if (command == "MALE")
 		{
-			auto value = strtoint(curLine.readString(""));
+			auto value = string::toNumber<uint8_t>(std::string{ lineView });
 			if (value == 0)
 				isMale = false;
 		}
 		//---
 
-		else if (curCommand == "FLAG")
+		else if (command == "FLAG")
 		{
-			std::string flagName = curLine.readString("=").toString();
-			std::string flagValue = curLine.readString("").toString();
+			std::string flagName = string::trimMutate(string::extractLine(lineView, '='));
+			std::string flagValue = std::string{ string::trim(lineView) };
 			npc->scripting.variables.add(GameValue::deserialize(flagName, flagValue));
 		}
-		else if (curCommand.subString(0, 4) == "ATTR")
+		else if (command.substr(0, 4) == "ATTR")
 		{
-			CString attrIdStr = curCommand.subString(5);
-			int attrId = strtoint(attrIdStr);
+			auto attrIdStr = command.substr(5);
+			int attrId = string::toNumber<uint8_t>(attrIdStr);
 			if (attrId > 0 && attrId < 30)
 			{
 				int idx = attrId - 1;
-				npc->character.ganiAttributes[idx] = curLine.readString("").toString();
+				npc->character.ganiAttributes[idx] = lineView;
 				npc->modTime[attrPackets[idx]] = updateTime;
 			}
 		}
-		else if (curCommand == "JOINEDCLASSES")
+		else if (command == "JOINEDCLASSES")
 		{
-			joinedClasses = string::fromCSV(curLine.readString("").toString());
+			joinedClasses = string::fromCSV(lineView);
 		}
-		else if (curCommand == "NPCSCRIPT")
+		else if (command == "NPCSCRIPT")
 		{
 			do {
-				curLine = fileData.readString("\n");
-				if (curLine == "NPCSCRIPTEND")
+				line = string::trimNewlines(file->readLine());
+				if (string::trim(line) == "NPCSCRIPTEND")
 					break;
 
-				script.append(curLine.text(), curLine.length()).append(1, '\n');
-			} while (fileData.bytesLeft());
+				script.append(line).append(1, '\n');
+			} while (!file->finished());
 
 			npc->modTime[PROPID(NPCProp::SCRIPT)] = updateTime;
 		}
@@ -600,6 +596,12 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		fileData << NL;
 	fileData << "NPCSCRIPTEND" << NL;
 	fileData.save(fileName);
+
+	// If the NPC exists on the filesystem, refresh its mod time to avoid any modification events.
+	if (auto info = server->getFileSystemServer().info(fs::FileCategory::NPC, fileName.toStringView()); info != nullptr)
+		info->refreshModTime();
+
+	npc->lastSaveTime = fs::getFileModTime(fileName.toString());
 
 	return true;
 }

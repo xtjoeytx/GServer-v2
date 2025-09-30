@@ -1,6 +1,8 @@
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
+#include <format>
 #include <functional>
 #include <memory>
 #include <string_view>
@@ -14,7 +16,6 @@
 #include <CString.h>
 #include <IEnums.h>
 
-#include <FileSystem.h>
 #include <Server.h>
 #include <level/LevelItem.h>
 #include <npcserver/NPCServer.h>
@@ -47,11 +48,11 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 	// Non-alphanumeric characters are encoded as %000.
 
 	// File Path
-	CString fileName = CString() << "weapons" << FileSystem::getPathSeparator() << pWeapon;
+	auto fileName = std::filesystem::path{ "weapons" } / pWeapon.toString();
 
 	// Load File
 	CString fileData;
-	if (!fileData.load(fileName))
+	if (!fileData.load(fileName.string()))
 		return nullptr;
 
 	fileData.removeAllI("\r");
@@ -126,7 +127,7 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 	auto weapon = std::make_shared<Weapon>(weaponName, weaponImage, weaponScript);
 
 	// Set the mod time to the file mod time.
-	weapon->modTime = clock::from_time_t(std::filesystem::last_write_time(fileName.toString()).time_since_epoch().count());
+	weapon->modTime = std::chrono::clock_cast<clock>(std::filesystem::last_write_time(fileName));
 
 	// Give a warning if both a script and a bytecode was found.
 	/*
@@ -171,7 +172,7 @@ bool Weapon::saveWeapon()
 	escapedName.replaceAllI("*", "@");
 	escapedName.replaceAllI(":", ";");
 	escapedName.replaceAllI("?", "!");
-	CString filename = CString() << "weapons" << FileSystem::getPathSeparator() << "weapon" << escapedName << ".txt";
+	auto filename = std::filesystem::path{ "weapons" } / std::format("weapon{}.txt", escapedName.toString());
 
 	// Write the File.
 	CString output = "GRAWP001\r\n";
@@ -192,7 +193,7 @@ bool Weapon::saveWeapon()
 	}
 
 	// Save it.
-	return output.save(filename);
+	return output.save(filename.string());
 }
 
 Weapon& Weapon::updateWeapon(std::string_view image, std::string_view script)

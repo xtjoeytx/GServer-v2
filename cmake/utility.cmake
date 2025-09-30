@@ -66,6 +66,15 @@ function(set_default_compiler_options target ISTESTTARGET)
 			target_compile_definitions(${target} PUBLIC _WIN64 WIN64)
 		endif()
 	endif()
+
+	# Platform defines.
+	if(WIN32)
+		target_compile_definitions(${target} PUBLIC PLATFORM_WINDOWS)
+	elseif(UNIX)
+		target_compile_definitions(${target} PUBLIC PLATFORM_UNIX)
+	elseif(APPLE)
+		target_compile_definitions(${target} PUBLIC PLATFORM_APPLE)
+	endif()
 endfunction()
 
 MACRO(setup_versioning_data)

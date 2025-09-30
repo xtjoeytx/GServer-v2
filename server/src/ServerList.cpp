@@ -18,8 +18,8 @@
 
 #include <IConfig.h>
 
-#include <FileSystem.h>
 #include <Server.h>
+#include <filesystem/FileSystem.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
@@ -756,37 +756,55 @@ void ServerList::msgSVI_RAWDATA(CString& pPacket)
 void ServerList::msgSVI_FILESTART3(CString& pPacket)
 {
 	unsigned char pTy = pPacket.readGUChar();
-	CString blank, filename = CString() << "world/global/";
+	std::filesystem::path filename{ "world/global/" };
+	CString blank;
 	switch (pTy)
 	{
 		case SVF_HEAD:
-			filename << "heads/";
+			filename /= "heads";
 			break;
 		case SVF_BODY:
-			filename << "bodies/";
+			filename /= "bodies";
 			break;
 		case SVF_SWORD:
-			filename << "swords/";
+			filename /= "swords";
 			break;
 		case SVF_SHIELD:
-			filename << "shields/";
+			filename /= "shields";
 			break;
 	}
-	filename << pPacket.readChars(pPacket.readGUChar());
-	FileSystem::fixPathSeparators(filename);
-	blank.save(filename);
-	m_server->getFileSystem()->addFile(filename);
+	filename /= std::format("{}.partial", pPacket.readChars(pPacket.readGUChar()).toString());
+	blank.save(filename.string());
 }
 
 void ServerList::msgSVI_FILEDATA3(CString& pPacket)
 {
 	[[maybe_unused]] unsigned char pTy = pPacket.readGUChar();
-	CString filename = m_server->getFileSystem()->find(pPacket.readChars(pPacket.readGUChar()));
-	if (filename.length() == 0) return;
-	CString filedata;
-	filedata.load(filename);
-	filedata << pPacket.readChars(pPacket.bytesLeft()); // Read the rest of the packet.
-	filedata.save(filename);
+	fs::FileCategory category = fs::FileCategory::ALL;
+	switch (pTy)
+	{
+		case SVF_HEAD:
+			category = fs::FileCategory::HEAD;
+			break;
+		case SVF_BODY:
+			category = fs::FileCategory::BODY;
+			break;
+		case SVF_SWORD:
+			category = fs::FileCategory::SWORD;
+			break;
+		case SVF_SHIELD:
+			category = fs::FileCategory::SHIELD;
+			break;
+	}
+
+	auto filename = std::format("{}.partial", pPacket.readChars(pPacket.readGUChar()).toString());
+	auto fileData = m_server->getFileSystem().info(category, filename);
+	if (fileData == nullptr) return;
+
+	CString data;
+	data.load(fileData->file.string());
+	data << pPacket.readChars(pPacket.bytesLeft()); // Read the rest of the packet.
+	data.save(fileData->file.string());
 }
 
 void ServerList::msgSVI_FILEEND3(CString& pPacket)
@@ -798,35 +816,27 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 	unsigned int fileLength = pPacket.readGUInt5();
 	CString shortName = pPacket.readString("");
 
-	// If we have folder config enabled, we need to add the file to the appropriate
-	// file system.
-	bool foldersconfig = !m_server->getSettings().getBool("nofoldersconfig", false);
-	FileSystem* fileSystem = 0;
-	CString typeString;
+	fs::FileCategory category = fs::FileCategory::ALL;
 	switch (type)
 	{
 		case SVF_HEAD:
-			typeString = "heads/";
-			if (foldersconfig) fileSystem = m_server->getFileSystem(FS_HEAD);
+			category = fs::FileCategory::HEAD;
 			break;
 		case SVF_BODY:
-			typeString = "bodies/";
-			if (foldersconfig) fileSystem = m_server->getFileSystem(FS_BODY);
+			category = fs::FileCategory::BODY;
 			break;
 		case SVF_SWORD:
-			typeString = "swords/";
-			if (foldersconfig) fileSystem = m_server->getFileSystem(FS_SWORD);
+			category = fs::FileCategory::SWORD;
 			break;
 		case SVF_SHIELD:
-			typeString = "shields/";
-			if (foldersconfig) fileSystem = m_server->getFileSystem(FS_SHIELD);
+			category = fs::FileCategory::SHIELD;
 			break;
 	}
-	CString fileName = m_server->getFileSystem()->find(shortName);
 
-	// Add the file to the filesystem.
-	if (fileSystem)
-		fileSystem->addFile(CString() << "world/global/" << typeString << shortName);
+	auto fileName = std::format("{}.partial", shortName.toString());
+	auto fileData = m_server->getFileSystem().info(category, fileName);
+	if (fileData == nullptr)
+		return;
 
 	// Uncompress the file if compressed.
 	if (doCompress == 1)
@@ -838,8 +848,11 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 	}
 
 	// Set the file mod time.
-	if (m_server->getFileSystem()->setModTime(shortName, modTime) == false)
-		log::printLine(log::server, "** [WARNING] Could not set modification time on file %s\n", fileName.text());
+	fileData->setModTime(clock::from_time_t(modTime));
+
+	// Rename the file.
+	auto newFileName = shortName.toString();
+	std::filesystem::rename(fileData->file, fileData->file.parent_path() / newFileName);
 
 	// Set the player props.
 	// TODO(joey): Confirm if we can use ANYCLIENT instead

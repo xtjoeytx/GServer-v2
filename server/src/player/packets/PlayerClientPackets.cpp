@@ -19,9 +19,10 @@
 #include <IEnums.h>
 #include <IUtil.h>
 
-#include <FileSystem.h>
 #include <Server.h>
 #include <UpdatePackage.h>
+#include <filesystem/File.h>
+#include <filesystem/FileSystem.h>
 #include <level/Level.h>
 #include <level/LevelBaddy.h>
 #include <level/LevelChest.h>
@@ -678,9 +679,14 @@ HandlePacketResult PlayerClient::msgPLI_PUTNPC(CString& pPacket)
 	if (!settings.getBool("putnpcenabled"))
 		return HandlePacketResult::Handled;
 
+	// Get the file.
+	auto file = m_server->getFileSystem().open(fs::FileCategory::FILE, ncode.toStringView());
+	if (!file)
+		return HandlePacketResult::Handled;
+
 	// Load the code.
-	CString code = m_server->getFileSystem(0)->load(ncode);
-	code.removeAllI("\r");
+	auto code = file->readAsString();
+	string::eraseCharsMutate(code, "\r"sv);
 
 	// Add NPC to level
 	m_server->addNPC(nimage, code, loc[0], loc[1], m_currentLevel, NPCStorageType::LEVEL, true);
@@ -852,16 +858,19 @@ HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_UPDATEFILE(CString& pPacket)
 {
-	FileSystem* fileSystem = m_server->getFileSystem();
-
 	// Get the packet data and file mod time.
 	time_t modTime = pPacket.readGUInt5();
 	CString file = pPacket.readString("");
-	time_t fModTime = fileSystem->getModTime(file);
 
 	// If we are the 1.41 client, make sure a file extension was sent.
 	if (m_versionId < CLVER_2_1 && getExtension(file).isEmpty())
 		file << ".gif";
+
+	auto& fileSystem = m_server->getFileSystem();
+	time_t fModTime = 0;
+
+	if (auto info = fileSystem.infoi(fs::FileCategory::ALL, file.toStringView()); info != nullptr)
+		fModTime = clock::to_time_t(fs::toModTime(info->modifiedTime));
 
 	//printf("UPDATEFILE: %s\n", file.text());
 
@@ -1008,10 +1017,11 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 					CString wepname = CString() << "-gr_exec_" << removeExtension(actions[2]);
 					CString wepimage = "wbomb1.png";
 
+					auto filePath = std::filesystem::path{ "execscripts" } / actions[2];
+
 					// Load in all the execscripts.
-					FileSystem execscripts;
-					execscripts.addDir("execscripts");
-					CString wepscript = execscripts.load(actions[2]);
+					CString wepscript;
+					wepscript.load(filePath.string());
 
 					// Check to see if we were able to load the weapon.
 					if (wepscript.isEmpty())
@@ -1338,7 +1348,13 @@ HandlePacketResult PlayerClient::msgPLI_VERIFYWANTSEND(CString& pPacket)
 
 	if (!ignoreChecksum)
 	{
-		CString fileData = m_server->getFileSystem()->load(fileName);
+		auto info = m_server->getFileSystem().infoi(fs::FileCategory::ALL, fileName.toStringView());
+		if (info == nullptr)
+			return HandlePacketResult::Handled;
+
+		CString fileData;
+		fileData.load(info->file.string());
+
 		if (!fileData.isEmpty())
 		{
 			if (calculateCrc32Checksum(fileData) == fileChecksum)

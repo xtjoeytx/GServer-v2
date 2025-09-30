@@ -33,6 +33,22 @@
       }
     },
     {
+      "name": "Linux Debug",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": {
+          "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+          "type": "FILEPATH"
+        },
+        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true,
+        "CMAKE_BUILD_WITH_INSTALL_RPATH": false,
+        "CMAKE_VERBOSE_MAKEFILE": true,
+        "PACKET_LOGGING": false
+      }
+    },
+    {
       "name": "Release x64",
       "inherits": "Release",
       "architecture": {
@@ -70,42 +86,45 @@
         "strategy": "external"
       }
     },
-    {
-      "name": "Debug x64 (Packet Logging)",
-      "inherits": "Debug",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "cacheVariables": {
-        "PACKET_LOGGING": true
-      }
-    },
+	{
+	  "name": "Debug x64 (Packet Logging)",
+	  "inherits": "Debug",
+	  "architecture": {
+		"value": "x64",
+		"strategy": "external"
+	  },
+	  "cacheVariables": {
+		"PACKET_LOGGING": true
+	  }
+	},
     {
       "name": "Linux Debug x64",
-      "inherits": "Debug",
+      "inherits": "Linux Debug",
       "architecture": {
         "value": "x64",
         "strategy": "external"
       },
-      "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-linux",
-        "VCPKG_FORCE_DOWNLOADED_BINARIES": true
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
-          "rsyncCommandArgs": [ "-t", "--delete", "--delete-excluded" ],
-          "copySourcesOptions": {
-            "exclusionList": [
-              ".vs",
-              ".git",
-              "out",
-              "build",
-              "dependencies/fc"
-            ]
-          }
-        }
-      }
+	  "cacheVariables": {
+		"VCPKG_TARGET_TRIPLET": "x64-linux",
+		"VCPKG_FORCE_DOWNLOADED_BINARIES": true
+	  },
+	  "vendor": {
+		"microsoft.com/VisualStudioSettings/CMake/1.0": {
+		  "intelliSenseMode": "linux-gcc-x64"
+		},
+		"microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+		  "rsyncCommandArgs": [ "-t", "--delete", "--delete-excluded" ],
+		  "copySourcesOptions": {
+			"exclusionList": [
+			  ".vs",
+			  ".git",
+			  "out",
+			  "build",
+			  "dependencies/fc"
+			]
+		  }
+		}
+	  }
     }
   ]
 }

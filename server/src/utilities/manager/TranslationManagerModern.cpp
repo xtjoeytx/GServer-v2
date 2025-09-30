@@ -14,6 +14,10 @@ void TranslationManagerModern::loadTranslations(const std::filesystem::path& dir
 {
 }
 
+void TranslationManagerModern::reloadTranslation(const std::filesystem::path& filePath)
+{
+}
+
 void TranslationManagerModern::saveTranslations()
 {
 }

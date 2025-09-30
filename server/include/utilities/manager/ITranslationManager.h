@@ -89,6 +89,10 @@ public:
 	/// @param directory The directory to load translations from.
 	virtual void loadTranslations(const std::filesystem::path& directory) = 0;
 
+	/// @brief Reloads the translation data from the specified file.
+	/// @param fileName The path to the translation file to reload.
+	virtual void reloadTranslation(const std::filesystem::path& filePath) = 0;
+
 	/// @brief Saves all translations in memory to the disk.
 	virtual void saveTranslations() = 0;
 

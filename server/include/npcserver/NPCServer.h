@@ -4,7 +4,9 @@
 #include <chrono>
 #include <concepts>
 #include <cstdint>
+#include <filesystem>
 #include <memory>
+#include <optional>
 #include <ranges>
 #include <string_view>
 #include <string>
@@ -76,6 +78,7 @@ public:
 	std::weak_ptr<NPC> getNPCByName(const std::string& name);
 	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, std::shared_ptr<Level> level, Position<float> location, std::string_view type = NPCTYPE_LOCAL);
 	std::shared_ptr<NPC> addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, Position<float> location);
+	std::shared_ptr<NPC> addNPCFromFile(const std::filesystem::path& filePath);
 	void deleteNPC(NPCID id);
 	void saveNPCs();
 	//std::vector<std::pair<double, std::string>> calculateNPCStats();
@@ -83,7 +86,8 @@ public:
 public:
 	bool hasClass(std::string_view name) const;
 	std::weak_ptr<ScriptClass> getClass(std::string_view name) const;
-	std::weak_ptr<ScriptClass> addClass(std::string_view className, std::string_view classCode);
+	std::shared_ptr<ScriptClass> addClass(std::string_view className, std::string_view classCode);
+	std::shared_ptr<ScriptClass> loadClass(const std::filesystem::path& filePath);
 	bool deleteClass(std::string_view className);
 	void updateClass(std::string_view className, std::string_view classCode);
 

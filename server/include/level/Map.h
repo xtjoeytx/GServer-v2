@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include <filesystem/FileSystemTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 
@@ -77,7 +78,7 @@ private:
 
 inline std::string Map::getMapName() const noexcept
 {
-	return fileName.filename().string();
+	return fs::getFileNameAsANSI(fileName);
 }
 
 inline bool Map::isGmap() const noexcept

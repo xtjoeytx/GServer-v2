@@ -15,6 +15,7 @@
 
 #include <CString.h>
 
+#include <filesystem/FileSystemTypes.h>
 #include <utilities/Log.h>
 #include <utilities/manager/ITranslationManager.h>
 #include <utilities/manager/TranslationManagerClassic.h>
@@ -48,7 +49,7 @@ void TranslationManagerClassic::loadTranslations(const std::filesystem::path& di
 			continue;
 
 		// slanguageDomain.txt
-		auto fileName = entry.path().filename().string();
+		auto fileName = fs::getFileNameAsANSI(entry.path());
 		if (!fileName.starts_with(filePrefix) || !fileName.ends_with(".txt"))
 			continue;
 
@@ -60,9 +61,19 @@ void TranslationManagerClassic::loadTranslations(const std::filesystem::path& di
 		m_domains.emplace(originalLanguage, TranslationMap{ .filename = directory / "slanguageOriginal.txt" });
 }
 
+void TranslationManagerClassic::reloadTranslation(const std::filesystem::path& filePath)
+{
+	// slanguageDomain.txt
+	auto file = fs::getFileNameAsANSI(filePath);
+	if (!file.starts_with(filePrefix) || !file.ends_with(".txt"))
+		return;
+
+	loadDomain(filePath);
+}
+
 void TranslationManagerClassic::loadDomain(const std::filesystem::path& filePath)
 {
-	auto domain = filePath.stem().string().substr(filePrefix.length());
+	auto domain = fs::getFileNameAsANSI(filePath.stem()).substr(filePrefix.length());
 	if (domain.empty())
 		return;
 

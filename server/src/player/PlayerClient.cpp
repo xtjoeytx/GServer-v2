@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
+#include <format>
 #include <memory>
 #include <optional>
 #include <random>
@@ -22,10 +23,10 @@
 #include <IEnums.h>
 #include <IUtil.h>
 
-#include <BabyDI.h>
 #include <Account.h>
-#include <FileSystem.h>
 #include <Server.h>
+#include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
 #include <level/LevelItem.h>
 #include <level/Map.h>
@@ -44,7 +45,6 @@
 #include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
-#include <utilities/manager/ITranslationManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -670,21 +670,17 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (!m_server->getSettings().getBool("setheadallowed", true)) return false;
 		processed = true;
 
-		// Get the appropriate filesystem.
-		FileSystem* filesystem = m_server->getFileSystem();
-		if (!m_server->getSettings().getBool("nofoldersconfig", false))
-			filesystem = m_server->getFileSystem(FS_HEAD);
-
 		// Try to find the file.
-		CString file = filesystem->findi(chatParse[1]);
-		if (file.length() == 0)
+		auto& filesystem = m_server->getFileSystem();
+		auto file = filesystem.findi(fs::FileCategory::HEAD, chatParse[1].toStringView());
+		if (file.empty())
 		{
 			int i = 0;
 			const char* ext[] = { ".png", ".mng", ".gif" };
 			while (i < 3)
 			{
-				file = filesystem->findi(CString() << chatParse[1] << ext[i]);
-				if (file.length() != 0)
+				file = filesystem.findi(fs::FileCategory::HEAD, std::format("{}{}", chatParse[1].toStringView(), ext[i]));
+				if (!file.empty())
 				{
 					chatParse[1] << ext[i];
 					break;
@@ -694,7 +690,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		}
 
 		// Try to load the file.
-		if (file.length() != 0)
+		if (!file.empty())
 			sendPropsFromResults(setPropWith<PlayerProp::HEADGIF>(props::SetBy::SERVER, chatParse[1].toString()));
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)0 >> (char)chatParse[1].length() << chatParse[1]);
@@ -717,21 +713,17 @@ bool PlayerClient::processChat(const CString& pChat)
 			return false;
 		}
 
-		// Get the appropriate filesystem.
-		FileSystem* filesystem = m_server->getFileSystem();
-		if (!m_server->getSettings().getBool("nofoldersconfig", false))
-			filesystem = m_server->getFileSystem(FS_BODY);
-
 		// Try to find the file.
-		CString file = filesystem->findi(chatParse[1]);
-		if (file.length() == 0)
+		auto& filesystem = m_server->getFileSystem();
+		auto file = filesystem.findi(fs::FileCategory::BODY, chatParse[1].toStringView());
+		if (file.empty())
 		{
 			int i = 0;
 			const char* ext[] = { ".png", ".mng", ".gif" };
 			while (i < 3)
 			{
-				file = filesystem->findi(CString() << chatParse[1] << ext[i]);
-				if (file.length() != 0)
+				file = filesystem.findi(fs::FileCategory::BODY, std::format("{}{}", chatParse[1].toStringView(), ext[i]));
+				if (!file.empty())
 				{
 					chatParse[1] << ext[i];
 					break;
@@ -741,7 +733,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		}
 
 		// Try to load the file.
-		if (file.length() != 0)
+		if (!file.empty())
 			sendPropsFromResults(setPropWith<PlayerProp::BODYIMG>(props::SetBy::SERVER, chatParse[1].toString()));
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)1 >> (char)chatParse[1].length() << chatParse[1]);
@@ -764,21 +756,17 @@ bool PlayerClient::processChat(const CString& pChat)
 			return false;
 		}
 
-		// Get the appropriate filesystem.
-		FileSystem* filesystem = m_server->getFileSystem();
-		if (!m_server->getSettings().getBool("nofoldersconfig", false))
-			filesystem = m_server->getFileSystem(FS_SWORD);
-
 		// Try to find the file.
-		CString file = filesystem->findi(chatParse[1]);
-		if (file.length() == 0)
+		auto& filesystem = m_server->getFileSystem();
+		auto file = filesystem.findi(fs::FileCategory::SWORD, chatParse[1].toStringView());
+		if (file.empty())
 		{
 			int i = 0;
 			const char* ext[] = { ".png", ".mng", ".gif" };
 			while (i < 3)
 			{
-				file = filesystem->findi(CString() << chatParse[1] << ext[i]);
-				if (file.length() != 0)
+				file = filesystem.findi(fs::FileCategory::SWORD, std::format("{}{}", chatParse[1].toStringView(), ext[i]));
+				if (!file.empty())
 				{
 					chatParse[1] << ext[i];
 					break;
@@ -788,7 +776,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		}
 
 		// Try to load the file.
-		if (file.length() != 0)
+		if (!file.empty())
 			sendPropsFromResults(setPropWith<PlayerProp::SWORDPOWER>(props::SetBy::SERVER, chatParse[1].toString()));
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]);
@@ -811,21 +799,17 @@ bool PlayerClient::processChat(const CString& pChat)
 			return false;
 		}
 
-		// Get the appropriate filesystem.
-		FileSystem* filesystem = m_server->getFileSystem();
-		if (!m_server->getSettings().getBool("nofoldersconfig", false))
-			filesystem = m_server->getFileSystem(FS_SHIELD);
-
 		// Try to find the file.
-		CString file = filesystem->findi(chatParse[1]);
-		if (file.length() == 0)
+		auto& filesystem = m_server->getFileSystem();
+		auto file = filesystem.findi(fs::FileCategory::SHIELD, chatParse[1].toStringView());
+		if (file.empty())
 		{
 			int i = 0;
 			const char* ext[] = { ".png", ".mng", ".gif" };
 			while (i < 3)
 			{
-				file = filesystem->findi(CString() << chatParse[1] << ext[i]);
-				if (file.length() != 0)
+				file = filesystem.findi(fs::FileCategory::SHIELD, std::format("{}{}", chatParse[1].toStringView(), ext[i]));
+				if (!file.empty())
 				{
 					chatParse[1] << ext[i];
 					break;
@@ -835,7 +819,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		}
 
 		// Try to load the file.
-		if (file.length() != 0)
+		if (!file.empty())
 			sendPropsFromResults(setPropWith<PlayerProp::SHIELDPOWER>(props::SetBy::SERVER, chatParse[1].toString()));
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);

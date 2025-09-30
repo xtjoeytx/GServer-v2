@@ -24,7 +24,6 @@ set(
 	"${PROJECT_BINARY_DIR}/server/include/IConfig.h"
 	"include/Account.h"
 	"include/BabyDI.h"
-	"include/FileSystem.h"
 	"include/IConfig.h.in"
 	"include/main.h"
 	"include/Server.h"
@@ -32,6 +31,10 @@ set(
 	"include/UpdatePackage.h"
 	"include/windresrc.h.in"
 	"include/animation/GameAni.h"
+	"include/filesystem/File.h"
+	"include/filesystem/FileSystem.h"
+	"include/filesystem/FileSystemTypes.h"
+	"include/filesystem/watch/FileWatch.h"
 	"include/level/Level.h"
 	"include/level/LevelArrow.h"
 	"include/level/LevelBaddy.h"
@@ -100,7 +103,6 @@ set(
 	"include/utilities/manager/TranslationManagerModern.h"
 	"include/utilities/std/inplace_vector.h"
 	"include/utilities/std/views_concat.h"
-	"src/FileSystem.cpp"
 	"src/main.cpp"
 	"src/Server.cpp"
 	"src/ServerList.cpp"
@@ -108,6 +110,12 @@ set(
 	"src/UpdatePackage.cpp"
 	"src/versions.txt"
 	"src/animation/GameAni.cpp"
+	"src/filesystem/File.cpp"
+	"src/filesystem/FileSystem.cpp"
+	"src/filesystem/watch/FileWatchOS_Linux.cpp"
+	"src/filesystem/watch/FileWatchOS_OSX.cpp"
+	"src/filesystem/watch/FileWatchOS_Poll.cpp"
+	"src/filesystem/watch/FileWatchOS_Windows.cpp"
 	"src/loader/LevelLoader.cpp"
 	"src/loader/flatfile/FlatFileAccountLoader.cpp"
 	"src/loader/flatfile/FlatFileNPCLoader.cpp"
@@ -159,6 +167,7 @@ set(
 	"src/utilities/manager/TranslationManagerModern.cpp"
 )
 
+# ----------------------------
 # Create the executable target.
 set(TARGET_NAME "${PROJECT_NAME_LOWER}")
 add_executable(${TARGET_NAME})

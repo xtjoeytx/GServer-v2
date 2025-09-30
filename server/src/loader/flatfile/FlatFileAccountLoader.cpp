@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
+#include <filesystem>
 #include <format>
 #include <limits>
 #include <ranges>
@@ -18,7 +19,8 @@
 #include <Account.h>
 #include <BabyDI.h>
 #include <Server.h>
-#include <FileSystem.h>
+#include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <loader/flatfile/FlatFileAccountLoader.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/Log.h>
@@ -91,17 +93,16 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 
 	// Find the account to load.
 	bool loadedFromDefault = false;
-	auto accountFS = server->getAccountsFileSystem();
-	auto path = accountFS->findi(std::format("{}.txt", accountName));
-	if (path.length() == 0)
+	auto& accountFS = server->getFileSystemServer();
+	auto path = accountFS.findi(fs::FileCategory::ACCOUNT, std::format("{}.txt", accountName));
+	if (path.empty())
 	{
 		path = "accounts/defaultaccount.txt";
-		FileSystem::fixPathSeparators(path);
 		loadedFromDefault = true;
 	}
 
 	// Load the account data.
-	auto fileData = CString::loadToken(path, "\n");
+	auto fileData = CString::loadToken(path.string(), "\n");
 	if (fileData.empty() || fileData[0].trim() != "GRACC001")
 		return false;
 
@@ -284,10 +285,7 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 
 		// Save our account now and add it to the file system.
 		if (!account.loadOnly)
-		{
 			saveAccount(account);
-			accountFS->addFile(CString() << "accounts/" << accountName << ".txt");
-		}
 	}
 
 	return true;
@@ -381,14 +379,13 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "LASTFOLDER", account.lastFolderAccessed, "");
 
 	// Get the file name for the account.
-	CString accountFileName = server->getAccountsFileSystem()->fileExistsAs(CString() << account.name << ".txt");
-	if (accountFileName.isEmpty())
-		accountFileName = CString() << account.name << ".txt";
+	auto accountFileName = std::format("{}.txt", account.name);
+	auto accountPath = server->getFileSystemServer().findi(fs::FileCategory::ACCOUNT, accountFileName);
+	if (accountPath.empty())
+		accountPath = std::filesystem::path{ "accounts" } / accountFileName;
 
 	// Save the account now.
-	CString accpath = CString() << "accounts/" << accountFileName;
-	FileSystem::fixPathSeparators(accpath);
-	if (!CString(newFile).save(accpath))
+	if (!CString(newFile).save(accountPath.string()))
 		log::printLine(log::rc, "** Error saving account: {}", account.name);
 
 	return true;

@@ -664,7 +664,7 @@ std::any GS1Visitor::visitStatementFor(GS1Parser::StatementForContext* context)
 
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && (bool)getReadOnlyGameValueFromAny(safeVisit(context->expression(0))) || enterLoopAfterSleep)
+	while ((loopCount++ < MAX_LOOPS && (bool)getReadOnlyGameValueFromAny(safeVisit(context->expression(0)))) || enterLoopAfterSleep)
 	{
 		enterLoopAfterSleep = false;
 
@@ -703,7 +703,7 @@ std::any GS1Visitor::visitStatementWhile(GS1Parser::StatementWhileContext* conte
 
 	// Condition.
 	size_t loopCount = 0;
-	while (loopCount++ < MAX_LOOPS && (bool)getReadOnlyGameValueFromAny(visit(context->expression())) || enterLoopAfterSleep)
+	while ((loopCount++ < MAX_LOOPS && (bool)getReadOnlyGameValueFromAny(visit(context->expression()))) || enterLoopAfterSleep)
 	{
 		enterLoopAfterSleep = false;
 
@@ -774,7 +774,6 @@ std::any GS1Visitor::visitStatementUserFunctionCall(GS1Parser::StatementUserFunc
 	}
 
 	// Try to call the function in our joined classes.
-	auto server = BabyDI::Get<Server>();
 	ScriptEvent eventCopy = *m_event;
 	for (auto script : getJoinedClassesFromSource(m_originalSource))
 	{

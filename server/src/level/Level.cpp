@@ -3,7 +3,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <ctime>
 #include <deque>
 #include <filesystem>
 #include <format>
@@ -26,8 +25,9 @@
 #include <IEnums.h>
 #include <IUtil.h>
 
-#include <FileSystem.h>
 #include <Server.h>
+#include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
 #include <level/LevelArrow.h>
 #include <level/LevelBaddy.h>
@@ -53,6 +53,7 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/generator/TimeoutGenerator.h>
+#include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
 
@@ -252,23 +253,25 @@ bool Level::reload()
 void Level::saveLevel(const std::string& filename)
 {
 	auto server = BabyDI::Get<Server>();
-	FileSystem* fileSystem = server->getFileSystem();
-	if (!server->getSettings().getBool("nofoldersconfig", false))
-		fileSystem = server->getFileSystem(FS_LEVEL);
+	auto& fileSystem = server->getFileSystem();
 
 	auto actualFilename = getFilename(filename);
+	auto path = fileSystem.findi(fs::FileCategory::LEVEL, actualFilename.toStringView());
 
-	auto path = fileSystem->findi(actualFilename);
-
-	if (path == "")
+	if (path.empty())
 	{
-		path << fileSystem->getDirByExtension(getExtension(actualFilename).text());
-		path << actualFilename;
+		auto dirs = fileSystem.getManagedDirectories(fs::FileCategory::LEVEL);
+		auto iter = dirs.begin();
+		if (iter == dirs.end())
+		{
+			log::printLine(log::server, "** Error saving level: {}. No level directories are configured.", actualFilename);
+			return;
+		}
 
-		fileSystem->addFile(path);
+		path = std::filesystem::path{ *iter } / actualFilename.toStringView();
 	}
 
-	std::ofstream fileStream(path.text());
+	std::ofstream fileStream(path);
 
 	fileStream << "GLEVNW01" << std::endl;
 
@@ -2432,7 +2435,7 @@ std::shared_ptr<NPC> Level::generateItemNPC(const PixelPosition& position, Level
 
 	// Create a new npc for this item.
 	bool isNew = !itemNPC;
-	if (!itemNPC)
+	if (isNew)
 	{
 		itemNPC = server->getNPCServer()->addNPC("", std::format("if (created) join {};", itemName), shared_from_this(), { loc[0], loc[1] }, NPCTYPE_ITEM);
 		itemNPC->character.gralats = itemNPC->character.arrows = itemNPC->character.bombs = itemNPC->character.hitpointsInHalves = 0;

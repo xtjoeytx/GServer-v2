@@ -1049,6 +1049,7 @@ cpp_wrap_preserve_blocks = one_liners
 # Visual C++ Include Cleanup settings
 
 cpp_include_cleanup_add_missing_error_tag_type = suggestion
+cpp_include_cleanup_excluded_files = corecrt.h,Windows.h
 cpp_include_cleanup_remove_unused_error_tag_type = dimmed
 cpp_include_cleanup_optimize_unused_error_tag_type = suggestion
 cpp_include_cleanup_sort_after_edits = false

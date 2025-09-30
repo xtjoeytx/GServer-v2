@@ -22,8 +22,9 @@
 #include <IUtil.h>
 
 #include <Account.h>
-#include <FileSystem.h>
 #include <Server.h>
+#include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
 #include <level/LevelItem.h>
 #include <misc/WordFilter.h>
@@ -484,24 +485,18 @@ bool Player::sendFile(const CString& pFile)
 		client->m_knownFiles.insert(pFile.toString());
 	}
 
-	FileSystem* fileSystem = m_server->getFileSystem();
-
-	// Find file.
-	CString path = fileSystem->find(pFile);
-	if (path.isEmpty())
+	auto& filesystem = m_server->getFileSystem();
+	if (!filesystem.has(pFile.toString()))
 	{
 		sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
 		return false;
 	}
 
-	// Strip filename from the path.
-	path.removeI(path.findl(FileSystem::getPathSeparator()) + 1);
-	auto current_path = std::filesystem::current_path().string() + (char)std::filesystem::path::preferred_separator;
-	if (path.find(current_path.c_str()) != -1)
-		path.removeI(0, current_path.length());
+	// Send matching file.
+	if (auto info = filesystem.infoi(fs::FileCategory::ALL, pFile.toString()); info != nullptr)
+		return sendFile(info->file.string(), pFile);
 
-	// Send the file now.
-	return this->sendFile(path, pFile);
+	return false;
 }
 
 bool Player::sendFile(const CString& pPath, const CString& pFile)

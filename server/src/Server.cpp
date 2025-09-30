@@ -6,7 +6,6 @@
 #include <climits>
 #include <cmath>
 #include <cstdint>
-#include <cstdio>
 #include <ctime>
 #include <filesystem>
 #include <format>
@@ -33,8 +32,10 @@
 #include <IUtil.h>
 
 #include <BabyDI.h>
-#include <FileSystem.h>
 #include <Server.h>
+#include <filesystem/File.h>
+#include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
 #include <level/LevelItem.h>
 #include <level/LevelShoot.h>
@@ -55,11 +56,11 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
-#include <utilities/StringUtils.h>
 #include <utilities/manager/GuildManager.h>
 #include <utilities/manager/ITranslationManager.h>
 #include <utilities/manager/TranslationManagerClassic.h>
 #include <utilities/manager/TranslationManagerModern.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -69,17 +70,6 @@ extern std::atomic_bool shutdownProgram;
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
-
-static const char* const filesystemTypes[] = {
-	"all",
-	"file",
-	"level",
-	"head",
-	"body",
-	"sword",
-	"shield",
-	0
-};
 
 template<class T, class R, class... Args>
 auto methodstub(T* t, R (T::*m)(Args...))
@@ -130,10 +120,6 @@ Server::Server(const CString& pName)
 		loadServerMessage();
 		loadIPBans();
 
-		// Save some stuff.
-		// TODO(joey): Is this really needed? We save weapons to disk when it is updated or created anyway..
-		saveWeapons();
-
 		// Check all of the instanced maps to see if the players have left.
 		if (!m_groupLevels.empty())
 		{
@@ -156,6 +142,235 @@ Server::Server(const CString& pName)
 				if (!playersFound)
 				{
 					m_groupLevels.erase(groupName);
+				}
+			}
+		}
+	};
+
+	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::CONFIG)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	{
+		if (events.test(fs::FileEvent::Modified))
+		{
+			auto fileName = fs::getFileNameAsANSI(file.file);
+			if (fileName == "serveroptions.txt")
+			{
+				loadSettings();
+
+				// TODO: Map loading needs to be improved to deal with maps being added/removed, and to fix a level's link to a map.
+				// Levels have a shared_ptr to the map.  Should it be switched to a weak_ptr?
+				//loadMaps();
+			}
+			else if (fileName == "adminconfig.txt")
+				loadAdminSettings();
+			else if (fileName == "allowedversions.txt")
+				loadAllowedVersions();
+			else if (fileName == "foldersconfig.txt")
+				loadFileSystem();
+			else if (fileName == "serverflags.txt")
+				loadServerFlags();
+			else if (fileName == "servermessage.html")
+				loadServerMessage();
+			else if (fileName == "ipbans.txt")
+				loadIPBans();
+			else if (fileName == "rules.txt")
+				loadWordFilter();
+		}
+	};
+	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::NPC)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	{
+		if (!hasNPCServer())
+			return;
+
+		if (events.test(fs::FileEvent::Deleted))
+		{
+			auto npcName = fs::getFileNameAsANSI(file.file);
+			if (npcName.starts_with("npc") && npcName.ends_with(".txt"))
+				npcName = npcName.substr(3, npcName.size() - 7); // Remove npc and .txt
+
+			if (auto npc = m_npcServer->getNPCByName(npcName).lock(); npc != nullptr)
+			{
+				log::printLine(log::server, "NPC deleted from filesystem: [{}] {}", npc->id, npc->name);
+				m_npcServer->deleteNPC(npc->id);
+			}
+		}
+		if (events.test(fs::FileEvent::Added))
+		{
+			auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
+			if (auto npc = m_npcServer->addNPCFromFile(file.file); npc != nullptr)
+			{
+				// TODO: Generic prop sending function NPCs.
+				CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket();
+				sendPacketToNearby(packet, npc->getGlobalPosition(), npc->getLevel());
+
+				log::printLine(log::server, "NPC added to filesystem: [{}] {}", npc->id, file.file.stem().generic_string());
+			}
+		}
+		if (events.test(fs::FileEvent::Modified))
+		{
+			fs::File npcFile{ file.file };
+			auto id = string::toNumber<NPCID>(npcFile.readConfigLine("ID", " ").value_or("0"));
+			if (id == 0)
+				return;
+
+			auto npc = getNPC(id);
+			if (npc == nullptr || npc->lastSaveTime == file.getModTime()) return;
+			npc->lastSaveTime = file.getModTime();
+
+			// TODO: Ability to serialize all the attributes from the file and send changed ones.
+
+			auto script = npcFile.readConfigSection("NPCSCRIPT", "NPCSCRIPTEND");
+			if (script.has_value())
+			{
+				npc->setScript(script.value());
+				npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
+				npc->sendScriptUpdatesToLevel(file.getModTime());
+
+				std::string logMsg = std::format("NPC script updated on filesystem: [{}] {}", npc->id, npc->name);
+				log::printLine(log::npc, logMsg);
+				sendToNC(logMsg);
+			}
+		}
+	};
+	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::SCRIPTCLASS)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	{
+		if (!hasNPCServer())
+			return;
+
+		auto className = file.file.stem().string();
+		std::string logMsg;
+
+		if (events.test(fs::FileEvent::Deleted))
+		{
+			auto className = file.file.stem().string();
+			if (m_npcServer->deleteClass(className))
+			{
+				sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_CLASSDELETE << className);
+				logMsg = std::format("Class deleted from filesystem: {}", className);
+			}
+		}
+		if (events.test(fs::FileEvent::Added))
+		{
+			// Class already exists so it was added by NC.
+			if (auto existingClass = m_npcServer->getClass(className); !existingClass.expired())
+				return;
+
+			auto className = file.file.stem().string();
+			if (auto scriptClass = m_npcServer->loadClass(file.file); scriptClass != nullptr)
+			{
+				sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_CLASSADD << className);
+				logMsg = std::format("Class added to filesystem: {}", className);
+			}
+		}
+		if (events.test(fs::FileEvent::Modified))
+		{
+			// Class mod time matches the file mod time?  Then NC modified it, not the FS.
+			auto fileModTime = fs::getFileModTime(file.file);
+			if (auto existingClass = m_npcServer->getClass(className).lock(); existingClass && existingClass->modTime == fileModTime)
+				return;
+
+			fs::File script{ file.file };
+			m_npcServer->updateClass(className, script.readAsString());
+			logMsg = std::format("Class updated on filesystem: {}", className);
+		}
+
+		if (!logMsg.empty())
+		{
+			log::printLine(log::npc, logMsg);
+			sendToNC(logMsg);
+		}
+	};
+	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::TRANSLATION)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	{
+		if (events.test(fs::FileEvent::Modified))
+		{
+			auto translationManager = BabyDI::Get<ITranslationManager>();
+			translationManager->reloadTranslation(file.file);
+		}
+	};
+	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::WEAPON)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	{
+		if (events.test(fs::FileEvent::Deleted))
+		{
+			auto weaponName = fs::getFileNameAsANSI(file.file.stem()).substr(6);
+			if (NC_DelWeapon(weaponName))
+			{
+				auto logMsg = std::format("Weapon deleted from filesystem: {}", weaponName);
+				log::printLine(log::npc, logMsg);
+				sendToNC(logMsg);
+			}
+		}
+		if (events.test(fs::FileEvent::Modified))
+		{
+			auto fileName = fs::getFileNameAsANSI(file.file);
+			auto newWeapon = Weapon::loadWeapon(fileName);
+			if (auto weapon = getWeapon(fileName); weapon)
+			{
+				if (weapon->name != newWeapon->name)
+				{
+					log::printLine(log::server, "Weapon name mismatch ('{}' became '{}'), old weapon will be deleted.", weapon->name, newWeapon->name);
+					m_weaponList.erase(weapon->name);
+					sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCWEAPONDEL << weapon->name);
+				}
+				else
+				{
+					updateWeaponForPlayers(newWeapon);
+				}
+			}
+			m_weaponList[newWeapon->name] = newWeapon;
+		}
+	};
+
+	m_fsWorld.categoryEventCallback[ENUM(fs::FileCategory::LEVEL)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	{
+		if (events.test(fs::FileEvent::Deleted))
+		{
+			// When the level gets deleted, players will be warped out.
+			m_levelList.erase(fs::getFileNameAsANSI(file.file));
+		}
+		if (events.test(fs::FileEvent::Modified))
+		{
+			auto fileName = fs::getFileNameAsANSI(file.file);
+			if (auto l = getLevel(fileName); l)
+				l->reload();
+		}
+	};
+	m_fsWorld.categoryEventCallback[ENUM(fs::FileCategory::FILE)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	{
+		auto fileName = fs::getFileNameAsANSI(file.file);
+		auto ext = file.file.extension();
+		if (events.test(fs::FileEvent::Deleted))
+		{
+			if (ext == ".gupd")
+				m_packageManager.deleteResource(fileName);
+		}
+		if (events.test(fs::FileEvent::Modified))
+		{
+			if (ext == ".gupd")
+				m_packageManager.findOrAddResource(fileName)->reload(this);
+			else if (Generation == ServerGeneration::NEWMAIN || Generation == ServerGeneration::MODERN)
+			{
+				// Ganis need to be recompiled on update
+				CString bytecodePacket;
+				if (ext == ".gani")
+				{
+					// delete the resource
+					m_animationManager.deleteResource(fileName);
+
+					// reload the resource to compile the bytecode again
+					if (auto findAni = m_animationManager.findOrAddResource(fileName); findAni)
+						bytecodePacket << findAni->getBytecodePacket();
+				}
+
+				// Send the update packet to any v4+ clients that have seen this file
+				CString updatePacket = CString() >> (char)PLO_UPDATEPACKAGEISUPDATED << fileName;
+				for (const auto& [pid, pl] : players_of_type<PlayerClient>(m_playerList))
+				{
+					if (pl->hasSeenFile(fileName))
+						pl->sendPacket(updatePacket);
+
+					// Send GS2 gani scripts
+					if (!bytecodePacket.isEmpty())
+						pl->sendPacket(bytecodePacket);
 				}
 			}
 		}
@@ -370,6 +585,12 @@ bool Server::doMain()
 
 bool Server::doTimedEvents(int)
 {
+	// File system events.
+	m_fsServer.update();
+	m_fsWorld.update();
+	if (auto guildManager = BabyDI::Get<GuildManager>(); guildManager != nullptr)
+		guildManager->update();
+
 	// Do serverlist events.
 	m_serverlist.doTimedEvents();
 
@@ -432,24 +653,20 @@ bool Server::onRecv()
 
 void Server::loadAllFolders()
 {
-	for (auto& fs: m_filesystem)
-		fs.clear();
-
-	m_filesystem[0].addDir("world");
+	m_fsWorld.reset();
+	m_fsWorld.bind("world");
 	if (m_settings.getStr("sharefolder").length() > 0)
 	{
 		std::vector<CString> folders = m_settings.getStr("sharefolder").tokenize(",");
 		for (auto& folder: folders)
-			m_filesystem[0].addDir(folder.trim());
+			m_fsWorld.bind(folder.trimI().toStringView());
 	}
 }
 
 void Server::loadFolderConfig()
 {
 	auto indent = log::server.indent();
-
-	for (auto& i: m_filesystem)
-		i.clear();
+	m_fsWorld.reset();
 
 	m_foldersConfig = CString::loadToken(CString() << "config/foldersconfig.txt", "\n", true);
 	for (auto& configLine: m_foldersConfig)
@@ -462,31 +679,31 @@ void Server::loadFolderConfig()
 		if (configLine.length() == 0) continue;
 
 		// Parse the line.
-		CString type = configLine.readString(" ");
-		CString config = configLine.readString("");
-		type.trimI();
-		config.trimI();
-		FileSystem::fixPathSeparators(config);
+		std::string type = configLine.readString(" ").trimI().toString();
+		auto world = std::filesystem::path{ "world" };
+		auto config = std::filesystem::path{ configLine.readString("").trimI().toStringView() };
 
-		// Get the directory.
-		CString dirNoWild;
-		int pos = -1;
-		if ((pos = config.findl(FileSystem::getPathSeparator())) != -1)
-			dirNoWild = config.remove(pos + 1);
-		CString dir = CString("world/") << dirNoWild;
-		CString wildcard = config.remove(0, dirNoWild.length());
+		fs::FileCategory typeEnum = fs::FileCategory::ALL;
+		if (string::equalsi(type, "file"sv))
+			typeEnum = fs::FileCategory::FILE;
+		else if (string::equalsi(type, "level"sv))
+			typeEnum = fs::FileCategory::LEVEL;
+		else if (string::equalsi(type, "head"sv))
+			typeEnum = fs::FileCategory::HEAD;
+		else if (string::equalsi(type, "body"sv))
+			typeEnum = fs::FileCategory::BODY;
+		else if (string::equalsi(type, "sword"sv))
+			typeEnum = fs::FileCategory::SWORD;
+		else if (string::equalsi(type, "shield"sv))
+			typeEnum = fs::FileCategory::SHIELD;
+		else if (string::equalsi(type, "sound"sv))
+			typeEnum = fs::FileCategory::SOUND;
 
-		// Find out which file system to add it to.
-		FileSystem* fs = getFileSystemByType(type);
-
-		// Add it to the appropriate file system.
-		if (fs != nullptr)
-		{
-			fs->addDir(dir, wildcard);
-			log::printLine(log::server, "adding {} [{}] to {}", dir, wildcard, type);
-		}
-		m_filesystem[0].addDir(dir, wildcard);
+		m_fsWorld.addFoldersConfigEntry(typeEnum, world / config);
+		log::printLine(log::server, "adding {} [{}] to {}", config.parent_path().generic_string(), fs::getFileNameAsANSI(config), type);
 	}
+
+	m_fsWorld.bind("world");
 }
 
 int Server::loadConfigFiles()
@@ -693,20 +910,26 @@ void Server::loadAllowedVersions()
 
 void Server::loadFileSystem()
 {
-	for (auto& i: m_filesystem)
-		i.clear();
+	if (m_fsServer.empty())
+	{
+		m_fsServer.addFoldersConfigEntry(fs::FileCategory::ACCOUNT, "accounts/*.txt");
+		m_fsServer.addFoldersConfigEntry(fs::FileCategory::CONFIG, "config/*");
+		m_fsServer.addFoldersConfigEntry(fs::FileCategory::NPC, "npcs/npc*.txt");
+		m_fsServer.addFoldersConfigEntry(fs::FileCategory::SCRIPTCLASS, "scripts/*.txt");
+		m_fsServer.addFoldersConfigEntry(fs::FileCategory::TRANSLATION, "translations/*");
+		m_fsServer.addFoldersConfigEntry(fs::FileCategory::WEAPON, "weapons/weapon*.txt");
+		m_fsServer.bind("accounts"s, "config"s, "npcs"s, "scripts"s, "translations"s, "weapons"s);
+	}
 
-	m_filesystemAccounts.clear();
-	m_filesystemAccounts.addDir("accounts", "*.txt");
 	if (m_settings.getBool("nofoldersconfig", false))
 		loadAllFolders();
 	else
 		loadFolderConfig();
 
-	for (auto &[file, path] : m_filesystem[0].getFileList()) {
-		if (getExtension(file) == ".gupd") {
-			getPackageManager().findOrAddResource(file.toString())->reload(this);
-		}
+	for (auto& fileData : m_fsWorld.info(fs::FileCategory::ALL))
+	{
+		if (fileData.file.extension() == ".gupd")
+			getPackageManager().findOrAddResource(fileData.file.string())->reload(this);
 	}
 }
 
@@ -901,25 +1124,13 @@ void Server::loadWeapons(bool print)
 	{
 		auto sectionProfile = log::Profile(log::server, "", "(Completed in {1:0.6} ms)");
 
-		FileSystem weaponFS;
-		weaponFS.addDir("weapons", "weapon*.txt");
-		FileSystem bcweaponFS;
-		bcweaponFS.addDir("weapon_bytecode", "*");
-
-		auto& weaponFileList = weaponFS.getFileList();
-		for (auto& weaponFile : weaponFileList)
+		for (auto& weaponFile : m_fsServer.info(fs::FileCategory::WEAPON))
 		{
 			auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
 
-			auto weapon = Weapon::loadWeapon(weaponFile.first);
+			auto fileName = fs::getFileNameAsANSI(weaponFile.file);
+			auto weapon = Weapon::loadWeapon(fileName);
 			if (weapon == nullptr) continue;
-
-			/*
-			if (weapon->getByteCodeFile().empty())
-				weapon->setModTime(weaponFS.getModTime(weaponFile.first));
-			else
-				weapon->setModTime(bcweaponFS.getModTime(weapon->getByteCodeFile()));
-			*/
 
 			// Check if the weapon exists.
 			if (m_weaponList.find(weapon->name) == m_weaponList.end())
@@ -984,23 +1195,24 @@ void Server::saveServerFlags()
 
 void Server::saveWeapons()
 {
-	FileSystem weaponFS;
-	weaponFS.addDir("weapons", "weapon*.txt");
-	//const std::map<CString, CString>& weaponFileList = weaponFS.getFileList();
-
 	for (auto& [weaponName, weapon]: m_weaponList)
 	{
 		if (weapon->isDefault())
 			continue;
 
-		// TODO(joey): add a function to weapon to get the filename?
-		CString weaponFile = CString("weapon") << weaponName << ".txt";
-		auto mod = clock::from_time_t(weaponFS.getModTime(weaponFile));
+		std::filesystem::path weaponFile{ std::format("weapon{}.txt", weaponName) };
+		clock::time_point mod{ clock::time_point::min() };
+
+		auto fileData = m_fsServer.info(fs::FileCategory::WEAPON, weaponFile);
+		if (fileData != nullptr)
+			mod = fileData->getModTime();
+
 		if (weapon->modTime > mod)
 		{
 			// The weapon in memory is newer than the weapon on disk.  Save it.
 			weapon->saveWeapon();
-			weaponFS.setModTime(weaponFS.find(weaponFile), weapon->modTime.time_since_epoch().count());
+			if (fileData != nullptr)
+				fileData->setModTime(weapon->modTime);
 		}
 	}
 }
@@ -1034,27 +1246,17 @@ std::shared_ptr<Level> Server::getLevel(std::string_view levelName)
 	if (level != nullptr && level->loaded)
 		return level;
 
-	FileSystem* fileSystem = &m_filesystem[FS_ALL];
-	if (!m_settings.getBool("nofoldersconfig", false))
-		fileSystem = &m_filesystem[FS_LEVEL];
-
-	// If the level was not found, check if it was an absolute path.
-	if (fileSystem->find(levelName).trim().length() == 0)
-	{
-		if (std::filesystem::exists(levelName))
-		{
-			fileSystem->addFile(levelName);
-			fileSystem->addDir(getPath(levelName), "*", true);
-		}
-		else return nullptr;
-	}
+	// If the level was not found, check the file system.
+	auto fileData = m_fsWorld.info(fs::FileCategory::LEVEL, string::trim(levelName));
+	if (fileData == nullptr)
+		return nullptr;
 
 	// Load the level.
 	if (level != nullptr)
-		level = LevelLoader::loadLevelInto(level, std::filesystem::path{ levelName });
+		level = LevelLoader::loadLevelInto(level, fileData->file);
 	else
 	{
-		level = LevelLoader::loadLevel(std::filesystem::path{ levelName });
+		level = LevelLoader::loadLevel(fileData->file);
 		if (level != nullptr)
 			m_levelList.insert(std::make_pair(lowerCaseLevel, level));
 	}
@@ -1097,25 +1299,6 @@ std::shared_ptr<Weapon> Server::getWeapon(std::string_view name)
 	if (iter == std::end(m_weaponList))
 		return nullptr;
 	return iter->second;
-}
-
-FileSystem* Server::getFileSystemByType(CString& type)
-{
-	// Find out the filesystem.
-	int fs = -1;
-	int j = 0;
-	while (filesystemTypes[j] != 0)
-	{
-		if (type.comparei(CString(filesystemTypes[j])))
-		{
-			fs = j;
-			break;
-		}
-		++j;
-	}
-
-	if (fs == -1) return 0;
-	return &m_filesystem[fs];
 }
 
 std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCStorageType storageType, bool sendToPlayers, std::string_view type)
@@ -1656,16 +1839,15 @@ bool Server::NC_DelWeapon(std::string_view pWeaponName)
 	if (!weaponObj || weaponObj->isDefault())
 		return false;
 
-	// Delete from File Browser
+	// Delete from the file system.
 	CString name = pWeaponName;
 	name.replaceAllI("\\", "_");
 	name.replaceAllI("/", "_");
 	name.replaceAllI("*", "@");
 	name.replaceAllI(":", ";");
 	name.replaceAllI("?", "!");
-	CString filePath = CString() << "weapons/weapon" << name << ".txt";
-	FileSystem::fixPathSeparators(filePath);
-	remove(filePath.text());
+	std::filesystem::path weaponFile{ "weapons" };
+	std::filesystem::remove(weaponFile / std::format("weapon{}.txt", name));
 
 	// Delete from Memory
 	m_weaponList.erase(std::string{ pWeaponName });

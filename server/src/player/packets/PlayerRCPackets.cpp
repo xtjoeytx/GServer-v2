@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <cstdio>
 #include <filesystem>
 #include <format>
 #include <functional>
@@ -19,12 +18,12 @@
 #include <CString.h>
 #include <IConfig.h>
 #include <IEnums.h>
-#include <IUtil.h>
 
 #include <BabyDI.h>
 #include <Account.h>
-#include <FileSystem.h>
 #include <Server.h>
+#include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
 #include <network/IPacketHandler.h>
 #include <npcserver/NPCServer.h>
@@ -36,146 +35,12 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
-#include <utilities/StringUtils.h>
 #include <utilities/manager/ITranslationManager.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
-///////////////////////////////////////////////////////////////////////////////
-
-static void updateFile(Player* player, Server* server, const std::filesystem::path& dir, const std::filesystem::path& file)
-{
-	auto& settings = server->getSettings();
-	std::string fileName = file.string();
-	std::string fullPath = (dir / file).string();
-
-	// Check and see if it is an account.
-	if (dir == "accounts/")
-	{
-		FileSystem* fs = server->getAccountsFileSystem();
-		if (fs->find(fileName).isEmpty())
-			fs->addFile(fullPath);
-		return;
-	}
-
-	bool isNewFile = false;
-
-	// If folder config is off, add it to the file list.
-	if (settings.getBool("nofoldersconfig", false))
-	{
-		FileSystem* fs = server->getFileSystem();
-		if (fs->find(fileName).isEmpty())
-		{
-			fs->addFile(fullPath);
-			isNewFile = true;
-		}
-	}
-	// If folder config is on, try to find which file system to add it to.
-	else
-	{
-		std::vector<CString> foldersConfig = CString::loadToken("config/foldersconfig.txt", "", true);
-		for (auto& folderConfig : foldersConfig)
-		{
-			CString type = folderConfig.readString(" ").trim();
-			CString folder("world/");
-			folder << folderConfig.readString("").trim();
-
-			if (CString(fullPath).match(folder))
-			{
-				FileSystem* fs = server->getFileSystemByType(type);
-				FileSystem* fs2 = server->getFileSystem();
-
-				// See if it exists in that file system.
-				if (fs->find(fileName).isEmpty())
-				{
-					if (fs2->find(fileName).isEmpty())
-						fs2->addFile(fullPath);
-
-					fs->addFile(fullPath);
-					isNewFile = true;
-					break;
-				}
-			}
-		}
-	}
-
-	// If it is a level, see if we can update it.
-	// TODO: Should combine all server options loading/saving into one function in Server.
-	auto ext = file.extension();
-	if (ext == ".nw" || ext == ".graal" || ext == ".zelda")
-	{
-		if (auto l = server->getLevel(fileName); l)
-			l->reload();
-	}
-	else if (ext == ".gupd")
-		server->getPackageManager().findOrAddResource(fileName)->reload(server);
-	else if (ext == ".dump" || CString(dir.string()).findi(CString("weapons")) > -1)
-		server->loadWeapons(true);
-	else if (file == "serveroptions.txt")
-	{
-		server->loadSettings();
-		server->loadMaps();
-	}
-	else if (file == "adminconfig.txt")
-		server->loadAdminSettings();
-	else if (file == "allowedversions.txt")
-		server->loadAllowedVersions();
-	else if (file == "foldersconfig.txt")
-		server->loadFileSystem();
-	else if (file == "serverflags.txt")
-		server->loadServerFlags();
-	else if (file == "servermessage.html")
-		server->loadServerMessage();
-	else if (file == "ipbans.txt")
-		server->loadIPBans();
-	else if (file == "rules.txt")
-		server->loadWordFilter();
-	else
-	{
-		// Check if this is a file that previously existed on the server so we
-		// can notify existing clients that the file was updated.
-		auto fileSystem = server->getFileSystem(FS_FILE);
-		if (!isNewFile && !fileSystem->find(fileName).isEmpty())
-		{
-			// Game files
-			const auto& playerList = server->getPlayerList();
-
-			CString updatePacket;
-			updatePacket >> (char)PLO_UPDATEPACKAGEISUPDATED << fileName << "\n";
-
-			// Ganis need to be recompiled on update
-			CString bytecodePacket;
-			if (ext == ".gani")
-			{
-				auto& aniManager = server->getAnimationManager();
-
-				// delete the resource
-				aniManager.deleteResource(fileName);
-
-				// reload the resource to compile the bytecode again
-				auto findAni = aniManager.findOrAddResource(fileName);
-				if (findAni)
-					bytecodePacket << findAni->getBytecodePacket();
-			}
-
-			// Send the update packet to any v4+ clients that have seen this file
-			for (const auto& [pid, pl] : players_of_type<PlayerClient>(playerList))
-			{
-				if (pl->getVersion() >= CLVER_4_0211)
-				{
-					if (pl->hasSeenFile(fileName))
-						pl->sendPacket(updatePacket);
-
-					// Send GS2 gani scripts
-					if (!bytecodePacket.isEmpty())
-						pl->sendPacket(bytecodePacket);
-				}
-			}
-		}
-	}
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSGET(CString& pPacket)
@@ -237,8 +102,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 	settings.loadSettings(options, true, true);
 
 	// Reload settings.
-	m_server->loadSettings();
-	m_server->loadMaps();
+	//m_server->loadSettings();
+	//m_server->loadMaps();
 	log::printLine(log::rc, "{} has updated the server options.", account.name);
 
 	// Send RC Information
@@ -601,30 +466,23 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	// Get the account.
 	// Prevent the defaultaccount from being deleted.
 	CString acc = pPacket.readString("");
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
 	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
-	if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
-		return HandlePacketResult::Handled;
-
 	if (acc == "defaultaccount")
 	{
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not allowed to delete the default account.");
 		return HandlePacketResult::Handled;
 	}
 
-	// See if the account exists.
-	CString accfile = CString(acc) << ".txt";
-	CString accpath = m_server->getAccountsFileSystem()->find(accfile);
-	if (accpath.isEmpty()) return HandlePacketResult::Handled;
+	// Get the account.
+	auto fileInfo = m_server->getFileSystemServer().infoi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc));
+	if (fileInfo == nullptr)
+		return HandlePacketResult::Handled;
 
 	// Remove the account from the file system.
-	m_server->getAccountsFileSystem()->removeFile(accfile);
-
-	// Delete the file now.
-	remove(accpath.text());
+	fileInfo->deleteFile();
 	log::printLine(log::rc, "{} has deleted the account: {}", account.name, acc.text());
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has deleted the account: " << acc);
 	return HandlePacketResult::Handled;
@@ -651,19 +509,13 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 	ret >> (char)PLO_RC_ACCOUNTLISTGET;
 
 	// Search through all the accounts.
-	FileSystem* fs = m_server->getAccountsFileSystem();
-	for (std::map<CString, CString>::iterator i = fs->getFileList().begin(); i != fs->getFileList().end(); ++i)
+	for (auto& fileInfo : m_server->getFileSystemServer().info(fs::FileCategory::ACCOUNT))
 	{
-		CString acc = removeExtension(i->first);
-		if (acc.isEmpty()) continue;
-		if (!acc.match(name)) continue;
-		if (conditions.length() != 0)
-		{
-			if (m_server->getAccountLoader().checkSearchConditions(i->second.toStringView(), string::splitHard(conditions, std::string_view(","))))
-				ret >> (char)acc.length() << acc;
-		}
-		else
-			ret >> (char)acc.length() << acc;
+		auto accountName = fileInfo.file.stem().generic_string();
+		if (accountName.empty()) continue;
+		if (!string::match<true>(accountName, name.toStringView())) continue;
+		if (conditions.length() == 0 || m_server->getAccountLoader().checkSearchConditions(accountName, string::splitHard(conditions, std::string_view(","))))
+			ret >> (char)accountName.length() << accountName;
 	}
 
 	sendPacket(ret);
@@ -695,7 +547,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSGET3(CString& pPacket)
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == nullptr)
 	{
-		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
+		if (!m_server->getFileSystemServer().hasi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc.toStringView())))
 			return HandlePacketResult::Handled;
 
 		p = std::make_shared<Player>(nullptr, 0);
@@ -731,7 +583,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == nullptr)
 	{
-		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
+		if (!m_server->getFileSystemServer().hasi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc.toStringView())))
 			return HandlePacketResult::Handled;
 
 		p = std::make_shared<Player>(nullptr, 0);
@@ -782,7 +634,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == nullptr)
 	{
-		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
+		if (!m_server->getFileSystemServer().hasi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc.toStringView())))
 			return HandlePacketResult::Handled;
 
 		p = std::make_shared<Player>(nullptr, 0);
@@ -830,7 +682,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == nullptr)
 	{
-		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
+		if (!m_server->getFileSystemServer().hasi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc.toStringView())))
 			return HandlePacketResult::Handled;
 
 		p = std::make_shared<Player>(nullptr, 0);
@@ -871,7 +723,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == nullptr)
 	{
-		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
+		if (!m_server->getFileSystemServer().hasi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc.toStringView())))
 			return HandlePacketResult::Handled;
 
 		p = std::make_shared<Player>(nullptr, 0);
@@ -1158,29 +1010,32 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 			for (unsigned int i = 2; i < words.size(); ++i)
 				search << " " << words[i];
 
-			// Search for the files.
-			for (unsigned int i = 0; i < FS_COUNT; ++i)
+			std::vector<std::string> categories;
+			for (auto& fileInfo : m_server->getFileSystem().info(fs::FileCategory::ALL))
 			{
-				auto& fileList = m_server->getFileSystem(i)->getFileList();
-				CString fs("none");
-				if (i == 0) fs = "all";
-				if (i == 1) fs = "file";
-				if (i == 2) fs = "level";
-				if (i == 3) fs = "head";
-				if (i == 4) fs = "body";
-				if (i == 5) fs = "sword";
-				if (i == 6) fs = "shield";
-
-				auto current_path = std::filesystem::current_path().string() + (char)std::filesystem::path::preferred_separator;
-				for (std::map<CString, CString>::const_iterator i = fileList.begin(); i != fileList.end(); ++i)
+				CString fileName = fs::getFileNameAsANSI(fileInfo.file);
+				if (fileName.match(search))
 				{
-					if (i->first.match(search))
-						found[i->second.removeAll(current_path)] = fs;
+					categories.clear();
+					if (fileInfo.categories.test(ENUM(fs::FileCategory::FILE)))
+						categories.push_back("file");
+					if (fileInfo.categories.test(ENUM(fs::FileCategory::LEVEL)))
+						categories.push_back("level");
+					if (fileInfo.categories.test(ENUM(fs::FileCategory::HEAD)))
+						categories.push_back("head");
+					if (fileInfo.categories.test(ENUM(fs::FileCategory::BODY)))
+						categories.push_back("body");
+					if (fileInfo.categories.test(ENUM(fs::FileCategory::SWORD)))
+						categories.push_back("sword");
+					if (fileInfo.categories.test(ENUM(fs::FileCategory::SHIELD)))
+						categories.push_back("shield");
+
+					found[fileName] = string::join(categories);
 				}
 			}
 
 			// Return a list of files found.
-			for (std::map<CString, CString>::const_iterator i = found.begin(); i != found.end(); ++i)
+			for (auto i = found.begin(); i != found.end(); ++i)
 			{
 				sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: File found (" << search << "): " << i->first << " [" << i->second << "]");
 			}
@@ -1263,7 +1118,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == nullptr)
 	{
-		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
+		if (!m_server->getFileSystemServer().hasi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc.toStringView())))
 			return HandlePacketResult::Handled;
 
 		p = std::make_shared<Player>(nullptr, 0);
@@ -1297,8 +1152,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	// Get player.
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == nullptr)
+		p = m_server->getPlayer(acc, PLTYPE_ANYCONTROL);
+	if (p == nullptr)
 	{
-		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
+		if (!m_server->getFileSystemServer().hasi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc.toStringView())))
 			return HandlePacketResult::Handled;
 
 		p = std::make_shared<Player>(nullptr, 0);
@@ -1399,7 +1256,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERCOMMENTSGET(CString& pPacket)
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == nullptr)
 	{
-		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
+		if (!m_server->getFileSystemServer().hasi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc.toStringView())))
 			return HandlePacketResult::Handled;
 
 		p = std::make_shared<Player>(nullptr, 0);
@@ -1429,7 +1286,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == nullptr)
 	{
-		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
+		if (!m_server->getFileSystemServer().hasi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc.toStringView())))
 			return HandlePacketResult::Handled;
 
 		p = std::make_shared<Player>(nullptr, 0);
@@ -1469,7 +1326,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERBANGET(CString& pPacket)
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == nullptr)
 	{
-		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
+		if (!m_server->getFileSystemServer().hasi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc.toStringView())))
 			return HandlePacketResult::Handled;
 
 		p = std::make_shared<Player>(nullptr, 0);
@@ -1499,7 +1356,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == nullptr)
 	{
-		if (m_server->getAccountsFileSystem()->findi(CString(acc) << ".txt").isEmpty())
+		if (!m_server->getFileSystemServer().hasi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc.toStringView())))
 			return HandlePacketResult::Handled;
 
 		p = std::make_shared<Player>(nullptr, 0);
@@ -1583,30 +1440,28 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 		account.lastFolderAccessed += '/';
 
 	// Create the file system.
-	FileSystem fs;
-	fs.addDir(account.lastFolderAccessed);
+	std::filesystem::directory_iterator dirs{ account.lastFolderAccessed };
 
 	// Construct the file list.
 	CString files;
 	std::vector<CString> wildcards = folderMap[account.lastFolderAccessed].tokenize("\n");
-	for (std::vector<CString>::iterator i = wildcards.begin(); i != wildcards.end(); ++i)
+	for (auto i = wildcards.begin(); i != wildcards.end(); ++i)
 	{
 		CString rights = (*i).readString(":");
 		CString wildcard = (*i).readString("");
 		(*i).setRead(0);
-		for (std::map<CString, CString>::iterator j = fs.getFileList().begin(); j != fs.getFileList().end(); ++j)
+		for (auto& dirEntry : dirs)
 		{
+			if (!dirEntry.is_regular_file()) continue;
+			CString fileName = fs::getFileNameAsANSI(dirEntry.path());
+
 			// See if the file matches the wildcard.
-			if (!j->first.match(wildcard))
+			if (!fileName.match(wildcard))
 				continue;
 
-			CString name = j->first;
-			CString dir;
-
 			// Add the file now.
-			int size = fs.getFileSize(j->first);
-			time_t mod = fs.getModTime(j->first);
-			dir >> (char)j->first.length() << j->first >> (char)rights.length() << rights >> (long long)size >> (long long)mod;
+			auto modTime = clock::to_time_t(fs::toModTime(dirEntry.last_write_time()));
+			CString dir = CString() >> (char)fileName.length() << fileName >> (char)rights.length() << rights >> (long long)dirEntry.file_size() >> (long long)modTime;
 			files << " " >> (char)dir.length() << dir;
 		}
 	}
@@ -1660,44 +1515,34 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 	if (!account.lastFolderAccessed.ends_with('/'))
 		account.lastFolderAccessed += '/';
 
-	// Create the file system.
-	FileSystem fs;
-	fs.addDir(account.lastFolderAccessed);
-
 	// Make sure our folder exists.
-	CString mkdir_path = std::filesystem::current_path().string() + (char)std::filesystem::path::preferred_separator;
-	auto f = string::splitHard(account.lastFolderAccessed, std::string_view{ "/" });
-	for (auto i = f.begin(); i != f.end(); ++i)
-	{
-		if (i->empty()) continue;
-		mkdir_path << *i << '/';
-
-		std::filesystem::create_directory(mkdir_path.toString());
-	}
+	std::filesystem::path fsPath{ account.lastFolderAccessed };
+	std::filesystem::create_directories(fsPath);
+	std::filesystem::directory_iterator dirs{ fsPath };
 
 	// Construct the file list.
 	// file packet: {CHAR name_length}{STRING name}{CHAR rights_length}{STRING rights}{INT5 file_size}{INT5 file_mod_time}
 	// files: {CHAR file_packet_length}{file_packet}[space]{CHAR file_packet_length}{file_packet}[space]
 	CString files;
 	std::vector<CString> wildcards = folderMap[account.lastFolderAccessed].tokenize("\n");
-	for (std::vector<CString>::iterator i = wildcards.begin(); i != wildcards.end(); ++i)
+	for (auto i = wildcards.begin(); i != wildcards.end(); ++i)
 	{
 		CString rights = (*i).readString(":");
 		CString wildcard = (*i).readString("");
 		(*i).setRead(0);
-		for (std::map<CString, CString>::iterator j = fs.getFileList().begin(); j != fs.getFileList().end(); ++j)
+		for (auto& dirEntry : dirs)
 		{
+			if (!dirEntry.is_regular_file()) continue;
+			CString fileName = fs::getFileNameAsANSI(dirEntry.path());
+
 			// See if the file matches the wildcard.
-			if (!j->first.match(wildcard))
+			if (!fileName.match(wildcard))
 				continue;
 
-			CString name = j->first;
-			CString dir;
-
 			// Add the file now.
-			int size = fs.getFileSize(j->first);
-			time_t mod = fs.getModTime(j->first);
-			dir >> (char)j->first.length() << j->first >> (char)rights.length() << rights >> (long long)size >> (long long)mod;
+			auto size = dirEntry.file_size();
+			auto modTime = clock::to_time_t(fs::toModTime(dirEntry.last_write_time()));
+			CString dir = CString() >> (char)fileName.length() << fileName >> (char)rights.length() << rights >> (long long)size >> (long long)modTime;
 			files << " " >> (char)dir.length() << dir;
 		}
 	}
@@ -1728,7 +1573,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 	// Send file.
 	std::filesystem::path file{ pPacket.readString("").toString()};
 	std::filesystem::path lastFolderAccessed{ account.lastFolderAccessed };
-	CString checkFile = (lastFolderAccessed / file).string();
+	CString checkFile = (lastFolderAccessed / file).generic_string();
 
 	// Don't let us download/view important files.
 	if (!account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
@@ -1745,8 +1590,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 
 	this->sendFile(account.lastFolderAccessed, file.string());
 
-	log::printLine(log::rc, "{} downloaded file {}", account.name, file.string());
-	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Downloaded file " << file.string());
+	log::printLine(log::rc, "{} downloaded file {}", account.name, file.generic_string());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Downloaded file " << file.generic_string());
 
 	return HandlePacketResult::Handled;
 }
@@ -1762,7 +1607,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	std::filesystem::path file{ pPacket.readChars(pPacket.readGUChar()).toString()};
 	std::filesystem::path lastFolderAccessed{ account.lastFolderAccessed };
 	CString fileData = pPacket.subString(pPacket.readPos());
-	CString checkFile = (lastFolderAccessed / file).string();
+	CString checkFile = (lastFolderAccessed / file).generic_string();
 
 	// Check if this is a protected file.
 	bool isProtected = false;
@@ -1802,11 +1647,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		// Normal file. Save it and display our message.
 		fileData.save(checkFile);
 
-		log::printLine(log::rc, "{} uploaded file {}", account.name, file.string());
-		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file.string());
-
-		// Update file.
-		updateFile(this, m_server, lastFolderAccessed, file);
+		log::printLine(log::rc, "{} uploaded file {}", account.name, file.generic_string());
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file.generic_string());
 	}
 	else
 	{
@@ -1838,7 +1680,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 	{
 		if (source == importantFile)
 		{
-			sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to move file " << source.string());
+			sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to move file " << source.generic_string());
 			return HandlePacketResult::Handled;
 		}
 	}
@@ -1853,8 +1695,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Moved file " << source.string() << " to " << destination.string());
-	log::printLine(log::rc, "{} moved file {} to {}", account.name, source.string(), destination.string());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Moved file " << source.generic_string() << " to " << destination.generic_string());
+	log::printLine(log::rc, "{} moved file {} to {}", account.name, source.generic_string(), destination.generic_string());
 	return HandlePacketResult::Handled;
 }
 
@@ -1870,7 +1712,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 	std::filesystem::path filePath = std::filesystem::path{ account.lastFolderAccessed } / file.toStringView();
 
 	// Don't let us delete important files.
-	CString checkFile = filePath.string();
+	CString checkFile = filePath.generic_string();
 	for (const auto& file : ImportantFiles)
 	{
 		if (checkFile == file)
@@ -1937,8 +1779,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	std::filesystem::path newPath = std::filesystem::path{ account.lastFolderAccessed } / f2.toStringView();
 
 	// Don't let us rename/overwrite important files.
-	CString checkFile1 = oldPath.string();
-	CString checkFile2 = newPath.string();
+	CString checkFile1 = oldPath.generic_string();
+	CString checkFile2 = newPath.generic_string();
 	for (const auto& file : ImportantFiles)
 	{
 		if (checkFile1 == file || checkFile2 == file)
@@ -2028,11 +1870,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 		}
 	}
 
-	// Update file.
-	updateFile(this, m_server, account.lastFolderAccessed, file);
-
-	log::printLine(log::rc, "{} uploaded large file {}", account.name, file.string());
-	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded large file " << file.string());
+	log::printLine(log::rc, "{} uploaded large file {}", account.name, file.generic_string());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded large file " << file.generic_string());
 
 	return HandlePacketResult::Handled;
 }
@@ -2042,19 +1881,19 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 	std::filesystem::path folder{ pPacket.readString("").toString() };
 	if (isClient())
 	{
-		log::printLine(log::rc, "[Hack] {} attempted to delete a folder through the File Browser: {}", account.name, folder.string());
+		log::printLine(log::rc, "[Hack] {} attempted to delete a folder through the File Browser: {}", account.name, folder.generic_string());
 		return HandlePacketResult::Handled;
 	}
 
 	// Try to remove folder.
 	if (!std::filesystem::remove(folder))
 	{
-		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Error removing " << folder.string() << ".  Folder may not exist or may not be empty.");
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Error removing " << folder.generic_string() << ".  Folder may not exist or may not be empty.");
 		return HandlePacketResult::Handled;
 	}
 
-	log::printLine(log::rc, "{} removed folder {}", account.name, folder.string());
-	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Folder " << folder.string() << " has been removed.\n");
+	log::printLine(log::rc, "{} removed folder {}", account.name, folder.generic_string());
+	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Folder " << folder.generic_string() << " has been removed.\n");
 	msgPLI_RC_FILEBROWSER_START(CString() << "");
 
 	return HandlePacketResult::Handled;

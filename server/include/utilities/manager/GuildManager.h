@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include <FileSystem.h>
+#include <filesystem/FileSystem.h>
 #include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -34,6 +34,7 @@ public:
 public:
 	void loadGuilds(const std::filesystem::path& directory);
 	void saveGuilds();
+	[[inline]] void update();
 
 public:
 	bool guildExists(std::string_view guildName) const;
@@ -49,12 +50,19 @@ public:
 	bool removePlayerEntirelyFromGuild(std::string_view guildName, std::string_view account);
 
 private:
-	void loadGuild(const std::filesystem::path& filePath);
+	Guild* loadGuild(const std::filesystem::path& filePath);
 
 private:
 	string_map<Guild> m_guilds;
-	FileSystem m_filesystem;
+	fs::FileSystem m_filesystem;
 };
+
+//----------------------------
+
+inline void GuildManager::update()
+{
+	m_filesystem.update();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal

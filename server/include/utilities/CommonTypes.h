@@ -28,6 +28,41 @@ namespace preagonal
 ////////////////////////////////////////////////////////////////////////////////
 
 //----------------------------
+// Concepts
+
+template<class P>
+concept Pair = requires(P p)
+{
+	typename P::first_type;
+	typename P::second_type;
+	{ p.first } -> std::same_as<typename P::first_type>;
+	{ p.second } -> std::same_as<typename P::second_type>;
+};
+
+template<class Va, class Tp>
+concept VariantContainsType = requires(Va v, Tp t)
+{
+	{ std::holds_alternative<Tp>(v) } -> std::same_as<bool>;
+};
+
+template<typename R, typename T>
+concept RangeOf = std::ranges::range<R> && std::same_as<std::ranges::range_value_t<R>, T>;
+
+template<class... Ts>
+concept AllSame = sizeof...(Ts) < 2 ||
+	std::conjunction_v<
+	std::is_same<std::tuple_element_t<0, std::tuple<Ts...>>, Ts>...
+	>;
+
+template<class O, class... Ts>
+concept AllSameAs = sizeof...(Ts) < 2 ||
+	(std::conjunction_v<std::is_same<std::tuple_element_t<0, std::tuple<Ts...>>, Ts>...>
+		&& std::same_as<O, std::tuple_element_t<0, std::tuple<Ts...>>>);
+
+template<typename T>
+concept IsEnum = std::is_enum_v<T>;
+
+//----------------------------
 // Aliases
 
 template<class T>
@@ -133,6 +168,11 @@ inline static constexpr std::optional<T> PROPOPT(std::optional<T> prop)
 	return prop;
 }
 
+inline static constexpr auto ENUM(IsEnum auto e)
+{
+	return static_cast<std::underlying_type_t<decltype(e)>>(e);
+}
+
 //----------------------------
 // Time helpers
 
@@ -153,38 +193,6 @@ inline clock::time_point convertFromTimeT(time_t time)
 {
 	return clock::from_time_t(time);
 }
-
-//----------------------------
-// Concepts
-
-template<class P>
-concept Pair = requires(P p)
-{
-	typename P::first_type;
-	typename P::second_type;
-	{ p.first } -> std::same_as<typename P::first_type>;
-	{ p.second } -> std::same_as<typename P::second_type>;
-};
-
-template<class Va, class Tp>
-concept VariantContainsType = requires(Va v, Tp t)
-{
-	{ std::holds_alternative<Tp>(v) } -> std::same_as<bool>;
-};
-
-template<typename R, typename T>
-concept RangeOf = std::ranges::range<R> && std::same_as<std::ranges::range_value_t<R>, T>;
-
-template<class... Ts>
-concept AllSame = sizeof...(Ts) < 2 ||
-	std::conjunction_v<
-	std::is_same<std::tuple_element_t<0, std::tuple<Ts...>>, Ts>...
-	>;
-
-template<class O, class... Ts>
-concept AllSameAs = sizeof...(Ts) < 2 ||
-	(std::conjunction_v<std::is_same<std::tuple_element_t<0, std::tuple<Ts...>>, Ts>...>
-		&& std::same_as<O, std::tuple_element_t<0, std::tuple<Ts...>>>);
 
 //----------------------------
 // Variant helpers

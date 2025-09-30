@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
 		// Current working directory.
 		if (overrideServer.isEmpty())
 		{
-			if (std::filesystem::exists(cwd / "config" / "serveroptions.txt") && !found_server("(current working directory)", cwd.filename().string(), cwd, {}))
+			if (std::filesystem::exists(cwd / "config" / "serveroptions.txt") && !found_server("(current working directory)", cwd.filename().generic_string(), cwd, {}))
 				return ERR_SETTINGS;
 		}
 
@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
 					servers.push_back(p.path().filename());
 			}
 
-			if (servers.size() == 1 && !found_server("(directory search)", servers.front().string(), cwd, cwd / "servers" / servers.front()))
+			if (servers.size() == 1 && !found_server("(directory search)", servers.front().generic_string(), cwd, cwd / "servers" / servers.front()))
 				return ERR_SETTINGS;
 		}
 
@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
 
 		// Create the server.
 		auto* server = BabyDI_PROVIDE(Server, new Server(overrideServer));
-		auto* guilds = BabyDI_PROVIDE(GuildManager, new GuildManager());
+		[[maybe_unused]] auto* guilds = BabyDI_PROVIDE(GuildManager, new GuildManager());
 
 		// Program announcements.
 		log::printLine(log::server, "------------------------------ START ------------------------------");
@@ -195,7 +195,7 @@ int main(int argc, char* argv[])
 		log::printLine(log::server, "Starting server: {}.", overrideServer);
 		{
 			auto indent = log::server.indent();
-			log::printLine(log::server, "{}: {}", discovery_mode, std::filesystem::current_path().string());
+			log::printLine(log::server, "{}: {}", discovery_mode, std::filesystem::current_path().generic_string());
 		}
 		if (server->init(overrideServerIp, overridePort, overrideLocalIp, overrideServerInterface) != 0)
 		{
@@ -206,9 +206,6 @@ int main(int argc, char* argv[])
 		// Save override settings.
 		{
 			auto& settings = server->getSettings();
-
-			if (!overrideName.isEmpty())
-				settings.addKey("name", overrideName);
 
 			if (!overrideStaff.isEmpty())
 			{
@@ -227,9 +224,6 @@ int main(int argc, char* argv[])
 					server->getAccountLoader().saveAccount(accfs);
 				}
 			}
-
-			settings.saveFile();
-			server->loadSettings();
 		}
 
 		// Announce that the program is now running.

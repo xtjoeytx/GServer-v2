@@ -20,6 +20,7 @@ public:
 
 public:
 	virtual void loadTranslations(const std::filesystem::path& directory) override;
+	virtual void reloadTranslation(const std::filesystem::path& filePath) override;
 	virtual void saveTranslations() override;
 	virtual std::tuple<std::string_view, size_t, size_t> syncLanguageWithOriginal(std::string_view language) override;
 	virtual std::generator<std::tuple<std::string_view, size_t, size_t>> syncAllLanguagesWithOriginal() override;

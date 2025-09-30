@@ -13,8 +13,9 @@
 #include <CString.h>
 
 #include <BabyDI.h>
-#include <FileSystem.h>
 #include <Server.h>
+#include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
 #include <level/Map.h>
 #include <utilities/CommonTypes.h>
@@ -31,14 +32,11 @@ Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
 {
 	// Get the appropriate filesystem.
 	auto server = BabyDI::Get<Server>();
-	FileSystem* fileSystem = server->getFileSystem();
-	if (!server->getSettings().getBool("nofoldersconfig", false))
-		fileSystem = server->getFileSystem(FS_FILE);
-
-	CString fullFilePath = fileSystem->find(fileName.string());
+	auto& fileSystem = server->getFileSystem();
+	auto fullFilePath = fileSystem.find(fs::FileCategory::FILE, fileName);
 
 	// Make sure the file exists.
-	if (fullFilePath.length() == 0)
+	if (fullFilePath.empty())
 		throw std::runtime_error("Map file not found!");
 
 	// Stupid.
@@ -47,7 +45,7 @@ Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
 	Position<uint8_t> currentPosition;
 
 	// Load the levels.
-	auto fileData = CString::loadToken(fullFilePath);
+	auto fileData = CString::loadToken(fullFilePath.string());
 	for (auto& line : fileData)
 	{
 		line = line.removeAll("\r").trim();
@@ -86,14 +84,11 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 {
 	// Get the appropriate filesystem.
 	auto server = BabyDI::Get<Server>();
-	FileSystem* fileSystem = server->getFileSystem();
-	if (!server->getSettings().getBool("nofoldersconfig", false))
-		fileSystem = server->getFileSystem(FS_LEVEL);
-
-	CString fullFilePath = fileSystem->find(fileName.string());
+	auto& fileSystem = server->getFileSystem();
+	auto fullFilePath = fileSystem.find(fs::FileCategory::LEVEL, fileName);
 
 	// Make sure the file exists.
-	if (fullFilePath.length() == 0)
+	if (fullFilePath.empty())
 		return;
 
 	// Stupid.
@@ -103,7 +98,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	Position<uint8_t> currentPosition;
 
 	// Load the gmap.
-	auto fileData = CString::loadToken(fullFilePath);
+	auto fileData = CString::loadToken(fullFilePath.string());
 	for (auto it = fileData.begin(); it != fileData.end(); ++it)
 	{
 		// Tokenize

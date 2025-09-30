@@ -1,7 +1,5 @@
-#include <algorithm>
 #include <cstdint>
 #include <filesystem>
-#include <iterator>
 #include <limits>
 #include <memory>
 #include <span>
@@ -12,8 +10,9 @@
 #include <IUtil.h>
 
 #include <BabyDI.h>
-#include <FileSystem.h>
 #include <Server.h>
+#include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
 #include <level/LevelBaddy.h>
 #include <level/LevelItem.h>
@@ -25,7 +24,6 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
-#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -234,27 +232,25 @@ LevelPtr LevelLoader::loadLevel(const std::filesystem::path& levelName)
 LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path& levelName)
 {
 	auto* server = BabyDI::Get<Server>();
-
-	// Get the appropriate filesystem.
-	FileSystem* fileSystem = server->getFileSystem();
-	if (!server->getSettings().getBool("nofoldersconfig", false))
-		fileSystem = server->getFileSystem(FS_LEVEL);
+	auto& fileSystem = server->getFileSystem();
 
 	// Find the level file.
-	auto levelString = levelName.string();
-	auto levelPath = fileSystem->find(levelString);
+	auto levelString = fs::getFileNameAsANSI(levelName);
+	auto levelData = fileSystem.info(fs::FileCategory::LEVEL, levelString);
+	if (levelData == nullptr)
+		return nullptr;
 
 	// Load it.
 	CString fileData;
-	if (!fileData.load(levelPath))
+	if (!fileData.load(levelData->file.string()))
 		return nullptr;
 
 	// Grab file version.
 	CString fileVersion = fileData.readChars(8);
 
 	// Save level details.
-	level->m_filePath = std::filesystem::path{ levelPath.toString() };
-	level->modTime = clock::from_time_t(fileSystem->getModTime(levelString));
+	level->m_filePath = levelData->file;
+	level->modTime = levelData->getModTime();
 	level->levelName = levelString;
 
 	// If the level is on a map, record that now.
@@ -271,11 +267,11 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 
 	// Load the level.
 	if (fileVersion == "GLEVNW01")
-		return loadNW(level, fileVersion.toStringView(), fileSystem, fileData);
+		return loadNW(level, fileVersion.toStringView(), &fileSystem, fileData);
 	if (fileVersion.subString(0, 3) == "GR-")
-		return loadGraal(level, fileVersion.toStringView(), fileSystem, fileData);
+		return loadGraal(level, fileVersion.toStringView(), &fileSystem, fileData);
 	if (fileVersion.subString(0, 3) == "Z3-")
-		return loadZelda(level, fileVersion.toStringView(), fileSystem, fileData);
+		return loadZelda(level, fileVersion.toStringView(), &fileSystem, fileData);
 
 	// Bad level version.
 	return nullptr;
@@ -283,7 +279,7 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LevelPtr LevelLoader::loadZelda(LevelPtr level, std::string_view fileVersion, FileSystem* fileSystem, CString& fileData)
+LevelPtr LevelLoader::loadZelda(LevelPtr level, std::string_view fileVersion, fs::FileSystem* fileSystem, CString& fileData)
 {
 	int version = -1;
 	if (fileVersion == "Z3-V1.03")
@@ -314,7 +310,7 @@ LevelPtr LevelLoader::loadZelda(LevelPtr level, std::string_view fileVersion, Fi
 					linkLevel << " " << vline[1 + i];
 			}
 
-			if (fileSystem->find(linkLevel).isEmpty())
+			if (!fileSystem->has(fs::FileCategory::LEVEL, linkLevel.toStringView()))
 				continue;
 
 			level->addLink(vline);
@@ -373,7 +369,7 @@ LevelPtr LevelLoader::loadZelda(LevelPtr level, std::string_view fileVersion, Fi
 	return level;
 }
 
-LevelPtr LevelLoader::loadGraal(LevelPtr level, std::string_view fileVersion, FileSystem* fileSystem, CString& fileData)
+LevelPtr LevelLoader::loadGraal(LevelPtr level, std::string_view fileVersion, fs::FileSystem* fileSystem, CString& fileData)
 {
 	// Grab file version.
 	int version = -1;
@@ -421,7 +417,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, std::string_view fileVersion, Fi
 					linkLevel << " " << vline[1 + i];
 			}
 
-			if (fileSystem->find(linkLevel).isEmpty())
+			if (!fileSystem->has(fs::FileCategory::LEVEL, linkLevel.toStringView()))
 				continue;
 
 			level->addLink(vline);
@@ -527,7 +523,7 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, std::string_view fileVersion, Fi
 	return level;
 }
 
-LevelPtr LevelLoader::loadNW(LevelPtr level, std::string_view fileVersion, FileSystem* fileSystem, CString& fileData)
+LevelPtr LevelLoader::loadNW(LevelPtr level, std::string_view fileVersion, fs::FileSystem* fileSystem, CString& fileData)
 {
 	// Load File
 	std::vector<CString> fileLines = fileData.removeAllI("\r").tokenize("\n", true);
@@ -609,7 +605,7 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, std::string_view fileVersion, FileS
 					linkLevel << " " << link[i + 1];
 			}
 
-			if (fileSystem->find(linkLevel).isEmpty())
+			if (!fileSystem->has(fs::FileCategory::LEVEL, linkLevel.toStringView()))
 				continue;
 
 			level->addLink(link);

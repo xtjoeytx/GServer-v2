@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <cstdint>
 #include <string>
 
@@ -16,7 +17,7 @@ namespace preagonal
 
 LevelItemType LevelItem::getItemId(signed char itemId)
 {
-	if (itemId < 0 || itemId >= ItemNames.size())
+	if (itemId < 0 || (size_t)itemId >= ItemNames.size())
 		return LevelItemType::INVALID;
 
 	return LevelItemType(itemId);
@@ -42,8 +43,8 @@ LevelItemType LevelItem::getItemId(const std::string& pItemName)
 
 std::string LevelItem::getItemName(LevelItemType itemId)
 {
-	auto id = LevelItem::getItemTypeId(itemId);
-	if (id < 0 || id >= ItemNames.size()) return {};
+	size_t id = LevelItem::getItemTypeId(itemId);
+	if (id >= ItemNames.size()) return {};
 	return std::string(ItemNames[id]);
 }
 

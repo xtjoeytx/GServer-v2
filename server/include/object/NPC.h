@@ -401,6 +401,7 @@ public:
 	NPCWarpRestrictions warpRestrictions = NPCWarpRestrictions::ALLOWED;
 	std::array<clock::time_point, NPCPROP_COUNT> modTime;
 	clock::time_point lastUpdateTime;
+	clock::time_point lastSaveTime;
 	ScriptContainer scripting;
 	std::unordered_map<uint8_t, ShowImg> showImgList;
 	std::deque<NPCMove> moveQueue;

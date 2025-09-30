@@ -1,0 +1,257 @@
+#ifndef FILESYSTEM_H
+#define FILESYSTEM_H
+
+#include <algorithm>
+#include <array>
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <filesystem>
+#include <functional>
+#include <generator>
+#include <memory>
+#include <mutex>
+#include <unordered_map>
+#include <unordered_set>
+
+#include <filesystem/File.h>
+#include <filesystem/FileSystemTypes.h>
+#include <filesystem/watch/FileWatch.h>
+#include <utilities/CommonTypes.h>
+#include <utilities/StringUtils.h>
+
+///////////////////////////////////////////////////////////////////////////////
+namespace preagonal::fs
+{
+///////////////////////////////////////////////////////////////////////////////
+
+struct FileData;
+
+/// @brief A callback function for file system events.
+using FileEventCallback = std::function<void(FileEventCollection, FileData&)>;
+
+//----------------------------
+
+/// @brief Data describing a file.
+struct FileData
+{
+	/// @brief The full path to the file.
+	std::filesystem::path file;
+
+	/// @brief The size of the file.
+	uintmax_t fileSize = 0;
+
+	/// @brief The categories this file belongs to.
+	FileCategoryCollection categories;
+
+	/// @brief The file's modified time.
+	std::filesystem::file_time_type modifiedTime;
+
+	/// @brief A callback function for handling file system events for a specific file.
+	FileEventCallback eventCallback;
+
+	/// @brief Retrieves the last modification time of the file.
+	/// @return A time_point representing the last write time of the file.
+	clock::time_point getModTime() const
+	{
+		return std::chrono::clock_cast<clock>(std::filesystem::last_write_time(file));
+	}
+
+	/// @brief Sets the last modification time of a file.
+	/// @param modTime The new modification time to set.
+	void setModTime(clock::time_point modTime) const
+	{
+		std::filesystem::last_write_time(file, std::chrono::clock_cast<std::filesystem::file_time_type::clock>(modTime));
+	}
+
+	/// @brief Updates the modified time with the last modification time of the file.
+	void refreshModTime()
+	{
+		modifiedTime = std::filesystem::last_write_time(file);
+	}
+
+	/// @brief Deletes the file associated with the object.
+	/// @return true if the file was successfully deleted; false otherwise.
+	bool deleteFile() const
+	{
+		return std::filesystem::remove(file);
+	}
+
+	/// @brief Opens the file associated with the object.
+	/// @return A shared pointer to the opened file.
+	std::shared_ptr<File> openFile() const
+	{
+		return std::make_shared<File>(file);
+	}
+};
+using FileDataPtr = std::unique_ptr<FileData, std::default_delete<FileData>>;
+
+//----------------------------
+
+/// @brief Manages files within a directory.
+class FileSystem
+{
+public:
+	FileSystem() = default;
+	FileSystem(const std::filesystem::path& directory);
+	~FileSystem() = default;
+
+	FileSystem(const FileSystem& other) = delete;
+	FileSystem(FileSystem&& other) = delete;
+	FileSystem& operator=(const FileSystem& other) = delete;
+	FileSystem& operator=(FileSystem&& other) = delete;
+
+public:
+	/// @brief Resets the file system.
+	void reset();
+
+	/// @brief Sets the folders configuration.
+	void addFoldersConfigEntry(FileCategory category, const std::filesystem::path& glob);
+
+	/// @brief Binds to a directory.
+	/// @param directory The directory to bind to.
+	void bind(const std::filesystem::path& directory);
+
+	/// @brief Binds to multiple directories.
+	void bind(string::StringVariant auto... directories)
+	{
+		(..., bind(std::filesystem::path{ directories }));
+	}
+
+	/// @brief Checks for changes to the underlying OS filesystem.  Call this every so often.
+	void update();
+
+public:
+	/// @brief Checks if the filesystem is empty.
+	/// @return True if the filesystem is empty, false if not.
+	[[inline]] bool empty() const noexcept;
+
+	/// @brief Checks if the file exists in the filesystem.
+	/// @param category The category the file must belong to.
+	/// @param file The file name to check for.
+	/// @return True if the file exists, false if not.
+	bool has(FileCategory category, const std::filesystem::path& file) const noexcept;
+
+	/// @brief Checks if the file exists in the filesystem.
+	/// @param file The file name to check for.
+	/// @return True if the file exists, false if not.
+	bool has(const std::filesystem::path& file) const noexcept;
+
+	/// @brief Checks if the file exists in the filesystem (case-insensitive).
+	/// @param category The category the file must belong to.
+	/// @param file The file name to check for.
+	/// @return True if the file exists, false if not.
+	bool hasi(FileCategory category, const std::filesystem::path& file) const noexcept;
+
+	/// @brief Checks whether a folders configuration is present.
+	/// @return True if a folders configuration exists; otherwise, false.
+	[[inline]] bool hasFoldersConfig() const noexcept;
+
+	/// @brief Finds a file path corresponding to the specified file category and file.
+	/// @param category The category of the file to find.
+	/// @param file The file path to search for, provided as a reference to a std::filesystem::path object.
+	/// @return A std::filesystem::path representing the found file path corresponding to the given category and file.
+	std::filesystem::path find(FileCategory category, const std::filesystem::path& file) const noexcept;
+
+	/// @brief Finds a file path corresponding to the specified file category and file (case-insensitive).
+	/// @param category The category of the file to find.
+	/// @param file The file path to search for, provided as a reference to a std::filesystem::path object.
+	/// @return A std::filesystem::path representing the found file path corresponding to the given category and file.
+	std::filesystem::path findi(FileCategory category, const std::filesystem::path& file) const noexcept;
+
+	/// @brief Returns information about the file.
+	/// @param category The category the file must belong to.
+	/// @return Information about the file.
+	FileData* info(FileCategory category, const std::filesystem::path& file) const;
+
+	/// @brief Returns information about the file.
+	/// @return Information about the file.
+	std::generator<const FileData&> info(const std::filesystem::path& file) const;
+
+	/// @brief Gets a range of all files in a category.
+	std::generator<const FileData&> info(FileCategory category) const;
+
+	/// @brief Returns information about the file (case-insensitive).
+	/// @param category The category the file must belong to.
+	/// @return Information about the file.
+	FileData* infoi(FileCategory category, const std::filesystem::path& file) const;
+
+	/// @brief Returns information about the file (case-insensitive).
+	/// @param category The category the file must belong to.
+	/// @return Information about the file.
+	std::generator<const FileData&> infoi(const std::filesystem::path& file) const;
+
+	/// @brief Gets a file by name.
+	/// @return A shared pointer to the file.
+	std::shared_ptr<File> open(FileCategory category, const std::filesystem::path& file) const;
+
+	/// @brief Gets a file by name.
+	/// @return A shared pointer to the file.
+	std::generator<std::shared_ptr<File>> open(const std::filesystem::path& file) const;
+
+	/// @brief Gets a file by name.
+	/// @return A shared pointer to the file.
+	std::shared_ptr<File> open(const FileData& fileData) const;
+
+	/// @brief Returns a generator that yields references to the managed directories.
+	/// @return A generator that produces references to each managed directory.
+	std::generator<const std::filesystem::path&> getManagedDirectories() const;
+	std::generator<const std::filesystem::path&> getManagedDirectories(FileCategory category) const;
+
+public:
+	/// @brief Returns true if we are searching the filesystem.
+	[[inline]] bool isSearchingForFiles() const;
+
+	/// @brief Blocks the thread until files have been fully searched.
+	[[inline]] void waitUntilFilesSearched();
+
+public:
+	/// @brief An array that stores a callback function for each file category type.
+	std::array<FileEventCallback, FileCategoryTypeCount> categoryEventCallback;
+
+private:
+	void assignCategoriesToFileData(FileData& fileData);
+	FileCategory categoryForDirectory(const std::filesystem::path& directory) const;
+
+private:
+	watch::FileWatch m_watcher;
+	std::atomic<bool> m_searching_files;
+	std::condition_variable m_searching_files_condition;
+	std::unordered_set<std::filesystem::path> m_directories;
+	std::unordered_set<std::filesystem::path> m_foldersConfig[FileCategoryTypeCount];
+	std::unordered_multimap<std::filesystem::path, FileDataPtr> m_files;
+
+	mutable std::mutex m_file_mutex;
+};
+
+//----------------------------
+
+inline bool FileSystem::empty() const noexcept
+{
+	return m_files.empty();
+}
+
+inline bool FileSystem::hasFoldersConfig() const noexcept
+{
+	return std::ranges::any_of(m_foldersConfig, [](const auto& cfg) { return !cfg.empty(); });
+}
+
+inline bool FileSystem::isSearchingForFiles() const
+{
+	return m_searching_files;
+}
+
+inline void FileSystem::waitUntilFilesSearched()
+{
+	if (!m_searching_files)
+		return;
+
+	std::unique_lock guard(m_file_mutex);
+	m_searching_files_condition.wait(guard);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+} // end namespace preagonal::fs
+
+#endif // FILESYSTEM_H

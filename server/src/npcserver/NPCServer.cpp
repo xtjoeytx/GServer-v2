@@ -5,7 +5,6 @@
 #include <format>
 #include <functional>
 #include <iterator>
-#include <map>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -17,8 +16,9 @@
 #include <IEnums.h>
 
 #include <Account.h>
-#include <FileSystem.h>
 #include <Server.h>
+#include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
 #include <npcserver/NPCServer.h>
 #include <npcserver/PlayerNPCServer.h>
@@ -248,19 +248,17 @@ void NPCServer::loadClasses()
 {
 	auto indent = log::server.indent();
 
-	FileSystem scriptFS;
-	scriptFS.addDir("scripts", "*.txt");
-	const std::map<CString, CString>& scriptFileList = scriptFS.getFileList();
-	for (auto& scriptFile : scriptFileList)
+	for (auto& info : m_server->getFileSystemServer().info(fs::FileCategory::SCRIPTCLASS))
 	{
 		auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
-		std::string className = scriptFile.first.subString(0, scriptFile.first.length() - 4).text();
+		std::string fileName = fs::getFileNameAsANSI(info.file);
+		std::string className = fileName.substr(0, fileName.length() - 4);
 
 		CString scriptData;
-		scriptData.load(scriptFile.second);
+		scriptData.load(info.file.string());
 
 		auto scriptClass = std::make_shared<ScriptClass>(className, scriptData.text());
-		scriptClass->modTime = clock::from_time_t(scriptFS.getModTime(scriptFile.second));
+		scriptClass->modTime = info.getModTime();
 		m_classList[className] = scriptClass;
 
 		log::print(log::server, "{}", className);
@@ -271,23 +269,11 @@ void NPCServer::loadDatabaseNPCs()
 {
 	auto indent = log::server.indent();
 
-	FileSystem npcFS;
-	npcFS.addDir("npcs", "npc*.txt");
-
-	auto& npcLoader = m_server->getNPCLoader();
-
-	auto& npcFileList = npcFS.getFileList();
-	for (const auto& [npcName, fileName] : npcFileList)
+	for (const auto& info : m_server->getFileSystemServer().info(fs::FileCategory::NPC))
 	{
 		auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
-		auto npc = npcLoader.loadNPC(std::filesystem::path{ fileName.toString()});
-		if (npc)
-		{
-			log::print(log::server, "[{}] {}", npc->id, npcName);
-			npc->scripting.events.addEvent(ScriptEventType::INITIALIZED, source::FromServer());
-			if (npc->scriptType != NPCTYPE_LOCAL)
-				m_globalNPCList[npc->id] = npc;
-		}
+		if (auto npc = addNPCFromFile(info.file); npc != nullptr)
+			log::print(log::server, "[{}] {}", npc->id, info.file.stem().generic_string());
 	}
 }
 
@@ -387,6 +373,32 @@ std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::str
 	return npc;
 }
 
+std::shared_ptr<NPC> NPCServer::addNPCFromFile(const std::filesystem::path& filePath)
+{
+	auto& npcLoader = m_server->getNPCLoader();
+	auto npc = npcLoader.loadNPC(filePath);
+	if (npc)
+	{
+		auto fileName = fs::getFileNameAsANSI(filePath);
+		auto npcName = fileName.substr(3, fileName.length() - 7); // Remove npc and .txt
+		if (npc->name != npcName)
+		{
+			log::printLine(log::server, "NPC name '{}' does not match name from filename '{}'.  Using name from filename.", npc->name, npcName);
+			npc->name = npcName;
+		}
+
+		npc->scripting.events.addEvent(ScriptEventType::INITIALIZED, source::FromServer());
+		if (npc->scriptType != NPCTYPE_LOCAL)
+		{
+			m_globalNPCList[npc->id] = npc;
+
+			CString props = npc->getPropsPacketFor<NPCProp::NAME, NPCProp::TYPE, NPCProp::CURLEVEL>();
+			m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)npc->id << props);
+		}
+	}
+	return npc;
+}
+
 void NPCServer::deleteNPC(NPCID id)
 {
 	m_deletedNPCs.insert(id);
@@ -441,16 +453,29 @@ bool NPCServer::deleteClass(std::string_view className)
 	return true;
 }
 
-std::weak_ptr<ScriptClass> NPCServer::addClass(std::string_view className, std::string_view classCode)
+std::shared_ptr<ScriptClass> NPCServer::addClass(std::string_view className, std::string_view classCode)
 {
-	CString filePath = CString("scripts/") << className << ".txt";
-	FileSystem::fixPathSeparators(filePath);
+	auto filePath = std::filesystem::path{ "scripts" } / std::format("{}.txt", className);
 
 	CString fileData(classCode);
-	fileData.save(filePath);
+	fileData.save(filePath.string());
 
 	auto scriptClass = std::make_shared<ScriptClass>(className, classCode);
-	scriptClass->modTime = clock::now();
+	scriptClass->modTime = fs::getFileModTime(filePath);
+	m_classList[std::string{ className }] = scriptClass;
+
+	m_server->updateClassForPlayers(scriptClass);
+	return scriptClass;
+}
+
+std::shared_ptr<ScriptClass> NPCServer::loadClass(const std::filesystem::path& filePath)
+{
+	CString fileData;
+	fileData.load(filePath.string());
+
+	auto className = filePath.stem().string();
+	auto scriptClass = std::make_shared<ScriptClass>(className, fileData.toStringView());
+	scriptClass->modTime = fs::getFileModTime(filePath);
 	m_classList[std::string{ className }] = scriptClass;
 
 	m_server->updateClassForPlayers(scriptClass);
@@ -466,11 +491,12 @@ void NPCServer::updateClass(std::string_view className, std::string_view classCo
 	auto& scriptClass = it->second;
 	scriptClass->setScript(classCode);
 
-	CString filePath = CString("scripts/") << className << ".txt";
-	FileSystem::fixPathSeparators(filePath);
+	auto filePath = std::filesystem::path{ "scripts" } / std::format("{}.txt", className);
 
 	CString fileData(classCode);
-	fileData.save(filePath);
+	fileData.save(filePath.string());
+
+	scriptClass->modTime = fs::getFileModTime(filePath);
 
 	// Classic servers were GS1 only and did not support GS2 classes.
 	if (m_server->Generation == ServerGeneration::CLASSIC)

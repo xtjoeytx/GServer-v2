@@ -8,10 +8,11 @@
 #include <vector>
 
 #include <BabyDI.h>
-#include <CString.h>
 
-#include <FileSystem.h>
 #include <Server.h>
+#include <filesystem/File.h>
+#include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <npcserver/NPCServer.h>
 #include <scripting/IScriptEngine.h>
 #include <scripting/Script.h>
@@ -145,11 +146,15 @@ static std::string performClientSideJoinHack(std::string_view code)
 		std::string classScript;
 		for (const auto& fileName : joins)
 		{
-			classScript = Script::minify(server->getFileSystem()->load(std::format("{}.txt", fileName)).toString());
-			string::replaceMutate(classScript, "\r", "");
-			if (result.back() != '\n')
-				result += '\n';
-			result += classScript;
+			auto file = server->getFileSystemServer().open(fs::FileCategory::SCRIPTCLASS, std::format("{}.txt", fileName));
+			if (file != nullptr)
+			{
+				classScript = Script::minify(file->readAsString());
+				string::replaceMutate(classScript, "\r", "");
+				if (result.back() != '\n')
+					result += '\n';
+				result += classScript;
+			}
 		}
 	}
 

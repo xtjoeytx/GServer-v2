@@ -28,11 +28,11 @@ namespace preagonal::string
 
 // A concept that checks if a type is a string.
 template<typename T>
-concept StringVariant = std::same_as<std::remove_cvref_t<T>, std::string>;
+concept StringVariant = std::same_as<std::remove_cvref_t<T>, std::string> || std::same_as<std::remove_cvref_t<T>, std::wstring>;
 
 // A concept that checks if a type is a string or string_view.
 template<typename T>
-concept StringViewVariant = StringVariant<T> || std::same_as<std::remove_cvref_t<T>, std::string_view>;
+concept StringViewVariant = StringVariant<T> || std::same_as<std::remove_cvref_t<T>, std::string_view> || std::same_as<std::remove_cvref_t<T>, std::wstring_view>;
 
 // A concept that checks if a type is a string or string_view.
 template<typename T>
@@ -240,7 +240,8 @@ std::string_view trimLeft(StringViewVariant auto const& str)
 	auto size = str.size();
 	for (size_t i = 0; i < size; ++i)
 	{
-		if (!std::isspace(static_cast<unsigned char>(view[i])) && view[i] != '\xa7')
+		auto ch = view[i];
+		if (!std::isspace(static_cast<unsigned char>(ch)) && ch != '\xa7')
 			return view.substr(i, size - i);
 	}
 	return {};
@@ -254,7 +255,23 @@ std::string_view trimRight(StringViewVariant auto const& str)
 	std::string_view view{ str };
 	for (size_t i = view.size(); i > 0; --i)
 	{
-		if (!std::isspace(static_cast<unsigned char>(view[i - 1])) && view[i - 1] != '\xa7')
+		auto ch = view[i - 1];
+		if (!std::isspace(static_cast<unsigned char>(ch)) && ch != '\xa7')
+			return view.substr(0, i);
+	}
+	return {};
+}
+
+/// @brief Trims newlines (\\n and \\r) from the end of a string.
+/// @param str A string or string_view to trim.
+/// @return A string_view to the trimmed string.
+std::string_view trimNewlines(StringViewVariant auto const& str)
+{
+	std::string_view view{ str };
+	for (size_t i = view.size(); i > 0; --i)
+	{
+		auto ch = view[i - 1];
+		if (ch != '\n' && ch != '\r' && ch != '\xa7')
 			return view.substr(0, i);
 	}
 	return {};
@@ -307,6 +324,34 @@ inline std::string& trimRightMutate(std::string& str)
 	const auto p = str.c_str();
 	size_t idx = str.length();
 	while (idx > 0 && (std::isspace(int(p[idx - 1])) || p[idx - 1] == '\r' || p[idx - 1] == '\n' || p[idx - 1] == '\xa7'))
+		--idx;
+
+	// No whitespace.
+	if (idx == str.length())
+		return str;
+
+	// All whitespace.
+	if (idx < 0)
+	{
+		str.clear();
+		return str;
+	}
+
+	str.resize(idx);
+	return str;
+}
+
+/// @brief Trims newlines (\\n and \\r) from the end of a string, mutating it.
+/// @param str A string to trim.
+/// @return A reference to the trimmed string.
+inline std::string& trimNewlinesMutate(std::string& str)
+{
+	if (str.empty()) return str;
+
+	// Find last non-space.
+	const auto p = str.c_str();
+	size_t idx = str.length();
+	while (idx > 0 && (p[idx - 1] == '\n' || p[idx - 1] == '\r' || p[idx - 1] == '\xa7'))
 		--idx;
 
 	// No whitespace.
@@ -570,7 +615,7 @@ auto split(std::string_view str, std::string_view delim = "\n"sv)
 /// @param delims A set of delimiter characters used to split the string. Defaults to whitespace characters (space, tab, newline, carriage return).
 /// @return A vector containing the tokens extracted from the input string, with each token converted to type T.
 template <typename T = std::string>
-std::vector<T> splitHard(StringViewVariant auto const& str, StringViewVariant auto delims)
+std::vector<T> splitHard(StringViewVariant auto const& str, StringViewVariant auto delims, bool ignoreEmpty = true)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -595,7 +640,7 @@ std::vector<T> splitHard(StringViewVariant auto const& str, StringViewVariant au
 		// Add the token to the vector.
 		if (end > start)
 			tokens.push_back(T{ strview.substr(start, end - start) });
-		else
+		else if (!ignoreEmpty)
 			tokens.push_back(T{});
 
 		start = end + 1;
@@ -1031,7 +1076,7 @@ inline double toDouble(const std::string& str)
 
 /// @brief Extracts the next line or substring from a string view, using a specified delimiter.
 /// @param str A reference to the string view to extract from. This will be updated to remove the extracted line.
-/// @param delim The delimiter character to use for splitting lines. Defaults to '\n'.
+/// @param delim The delimiter character to use for splitting lines. Defaults to '\\n'.
 /// @return A string containing the extracted line or substring up to the delimiter. If the delimiter is not found, returns the remainder of the string.
 inline std::string extractLine(std::string_view& str, char delim = '\n')
 {
@@ -1049,6 +1094,85 @@ inline std::string extractLine(std::string_view& str, char delim = '\n')
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+template<bool ignoreCase = false>
+inline bool match(StringViewVariant auto const& str, StringViewVariant auto const& mask)
+{
+	using str_value_type = std::remove_cvref_t<decltype(str)>::value_type;
+	using mask_value_type = std::remove_cvref_t<decltype(mask)>::value_type;
+
+	static_assert(std::same_as<str_value_type, mask_value_type>, "String and mask must have the same character type");
+
+	const str_value_type* curpos = str.data();
+	const mask_value_type* maskpos = mask.data();
+	const mask_value_type* laststarpos = nullptr;
+	while (*curpos != 0)
+	{
+		// Star (match any).
+		if (*maskpos == static_cast<str_value_type>('*'))
+		{
+			if (!*++maskpos)
+				return true;
+			else
+			{
+				laststarpos = maskpos - 1;
+
+				if constexpr (ignoreCase)
+				{
+					const auto m = std::tolower(static_cast<int>(*maskpos));
+					while (*curpos != 0 && std::tolower(static_cast<int>(*curpos)) != m)
+						curpos++;
+				}
+				else
+				{
+					while (*curpos != 0 && *curpos != *maskpos)
+						curpos++;
+				}
+			}
+		}
+
+		// Check for a character match.
+		bool match = false;
+		if constexpr (ignoreCase)
+		{
+			match = (std::tolower(static_cast<int>(*maskpos)) == std::tolower(static_cast<int>(*curpos)));
+		}
+		else
+		{
+			match = (*maskpos == *curpos);
+		}
+
+		// Exact match or single character (match one).
+		if (match || (*maskpos == static_cast<str_value_type>('?')))
+		{
+			maskpos++;
+			curpos++;
+		}
+		else
+		{
+			// If we did not have a previous star, abort.
+			if (!laststarpos)
+				return false;
+
+			// Otherwise, back up to it.
+			maskpos = laststarpos;
+			continue;
+		}
+
+		// Reach the end of the string.
+		if (*curpos == 0 && *maskpos == 0)
+			return true;
+
+		// Matchstring too short.
+		if (!*curpos && *maskpos && *maskpos != static_cast<str_value_type>('*'))
+			return false;
+	}
+
+	// Still match characters left.
+	return false;
+}
+
+/////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::string
 
 ///////////////////////////////////////////////////////////////////////////////

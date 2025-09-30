@@ -8,6 +8,7 @@
 
 #include <Server.h>
 #include <animation/GameAni.h>
+#include <filesystem/FileSystemTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -16,15 +17,15 @@ namespace preagonal
 
 std::optional<GameAni> GameAni::load(Server* const server, const std::string& name)
 {
-	auto fileSystem = server->getFileSystem(FS_FILE);
+	auto& fileSystem = server->getFileSystem();
 
 	// Search for the file in the filesystem
-	auto filePath = fileSystem->find(name);
-	if (filePath.isEmpty())
+	auto filePath = fileSystem.find(fs::FileCategory::FILE, name);
+	if (filePath.empty())
 		return std::nullopt;
 
 	// Load the animation file for parsing
-	std::vector<CString> fileData = CString::loadToken(filePath, "\n", true);
+	std::vector<CString> fileData = CString::loadToken(filePath.generic_string(), "\n", true);
 	if (fileData.empty())
 		return std::nullopt;
 

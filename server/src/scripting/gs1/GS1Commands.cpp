@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include <GS1Parser.h>
 #include <tree/ParseTree.h>
 
 #include <CString.h>
@@ -26,6 +27,9 @@
 
 #include <BabyDI.h>
 #include <Server.h>
+#include <filesystem/File.h>
+#include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
 #include <level/LevelArrow.h>
 #include <level/LevelBaddy.h>
@@ -44,9 +48,9 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
+#include <utilities/manager/GuildManager.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
-#include <utilities/manager/GuildManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1::grammar
@@ -935,11 +939,9 @@ void fn_deletelevel(GS1Visitor* visitor, std::string_view commandName, const std
 		for (auto playerId : level->getLevelPlayers())
 			server->warpPlayerToSafePlace(playerId);
 
-		auto path = server->getFileSystem(FS_LEVEL)->find(level->levelName).toString();
+		auto path = server->getFileSystem().find(fs::FileCategory::LEVEL, level->levelName);
 		std::filesystem::remove(path);
 	}
-	server->getFileSystem(FS_ALL)->removeFile(filename);
-	server->getFileSystem(FS_LEVEL)->removeFile(filename);
 }
 
 // deletestring list,index;
@@ -951,7 +953,7 @@ void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const st
 
 	if (auto* listVar = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
-		auto list = string::splitHard(listVar->get<std::string>().value_or(std::string{}), ","sv);
+		auto list = string::splitHard(listVar->get<std::string>().value_or(std::string{}), ","sv, false);
 		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 
 		// Check for out of bounds.
@@ -1310,7 +1312,7 @@ void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const st
 
 	if (auto* listVar = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
-		auto list = string::splitHard(listVar->get<std::string>().value_or(std::string{}), ","sv);
+		auto list = string::splitHard(listVar->get<std::string>().value_or(std::string{}), ","sv, false);
 		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 		auto text = visitor->getGameValueAs<std::string>(*arguments[2]);
 
@@ -1570,14 +1572,15 @@ void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vec
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[3]));
 
-		auto* server = BabyDI::Get<Server>();
-		if (auto* fs = server->getFileSystem(FS_FILE); fs != nullptr)
+		auto server = BabyDI::Get<Server>();
+		auto& fs = server->getFileSystem();
+		auto filepath = fs.findi(fs::FileCategory::FILE, scriptfile);
+		if (!filepath.empty())
 		{
-			auto filepath = fs->findi(scriptfile);
-			if (!filepath.isEmpty())
+			if (auto file = fs.open(fs::FileCategory::FILE, filepath); file != nullptr)
 			{
-				auto script = fs->load(filepath);
-				server->addNPC(imagefile, script.toStringView(), x, y, level, NPCStorageType::LEVEL, true);
+				auto script = file->readAsString();
+				server->addNPC(imagefile, script, x, y, level, NPCStorageType::LEVEL, true);
 			}
 		}
 	}
