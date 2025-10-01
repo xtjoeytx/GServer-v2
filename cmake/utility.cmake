@@ -19,7 +19,11 @@ function(set_default_compiler_options target ISTESTTARGET)
 	if(MINGW)
 		target_compile_options(${target} PUBLIC "-mthreads")
 		target_link_options(${target} PUBLIC "-mthreads")
-		target_compile_definitions(${target} PUBLIC -D__STDC_FORMAT_MACROS -D__USE_MINGW_ANSI_STDIO=1 -D_DEFAULT_SOURCE=1)
+		target_compile_definitions(${target} PUBLIC -D__STDC_FORMAT_MACROS -D_DEFAULT_SOURCE=1)
+	endif()
+
+	if(MSVC OR MINGW)
+		target_compile_definitions(${target} PUBLIC UNICODE _UNICODE)
 	endif()
 
 	# Compiler options.

@@ -114,9 +114,6 @@ set(FETCHCONTENT_BASE_DIR "${DEPENDENCY_DIRECTORY}/fc")
 set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE ALWAYS)
 
 # System defines.
-if(MSVC)
-	add_compile_definitions(UNICODE)
-endif()
 if(MINGW)
 	message(STATUS "Compiling with MinGW")
 	add_compile_definitions(_WIN32_WINNT=0x600 __GXX_TYPEINFO_EQUALITY_INLINE=1)
