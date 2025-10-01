@@ -17,7 +17,7 @@ function(set_default_compiler_options target ISTESTTARGET)
 	endif()
 
 	if(MINGW)
-		target_compile_options(${target} PUBLIC "-mthreads")
+		target_compile_options(${target} PUBLIC "-mthreads -Wno-builtin-macro-redefined")
 		target_link_options(${target} PUBLIC "-mthreads")
 		target_compile_definitions(${target} PUBLIC -D__STDC_FORMAT_MACROS -D_DEFAULT_SOURCE=1)
 	endif()
