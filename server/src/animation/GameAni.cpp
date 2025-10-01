@@ -1,3 +1,5 @@
+#include <any>
+#include <cstdint>
 #include <optional>
 #include <string_view>
 #include <string>
@@ -9,6 +11,7 @@
 #include <Server.h>
 #include <animation/GameAni.h>
 #include <filesystem/FileSystemTypes.h>
+#include <npcserver/NPCServer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -83,21 +86,19 @@ std::optional<GameAni> GameAni::load(Server* const server, const std::string& na
 	}
 
 	// Attempt to compile the script in GS2
-	if (!gameAni.m_script.empty())
+	gameAni.m_bytecode.clear();
+	if (!gameAni.m_script.empty() && server->hasNPCServer())
 	{
-		/*
 		// Synchronous callback
-		server->compileGS2Script(gameAni.m_script, [&gameAni](const CompilerResponse& response)
-								 {
-									 if (response.success)
-									 {
-										 gameAni.m_bytecode.clear(response.bytecode.length());
-										 gameAni.m_bytecode.write((const char*)response.bytecode.buffer(), static_cast<int>(response.bytecode.length()));
-									 }
-									 else
-										 gameAni.m_bytecode.clear();
-								 });
-		*/
+		if (auto result = server->getNPCServer()->scripting.getCompiledClientScript(name, gameAni.m_script); result != nullptr)
+		{
+			auto bytecode = std::any_cast<std::vector<uint8_t>>(result->script.get());
+			if (bytecode != nullptr)
+			{
+				gameAni.m_bytecode.clear(bytecode->size());
+				gameAni.m_bytecode.write((const char*)bytecode->data(), static_cast<int>(bytecode->size()));
+			}
+		}
 	}
 
 	return gameAni;

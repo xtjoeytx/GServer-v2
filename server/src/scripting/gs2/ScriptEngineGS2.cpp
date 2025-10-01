@@ -1,5 +1,4 @@
 #include <any>
-#include <array>
 #include <cstdint>
 #include <format>
 #include <memory>
@@ -16,7 +15,6 @@
 #include <exceptions/GS2CompilerError.h>
 #include <scripting/gs2/ScriptEngineGS2.h>
 #include <scripting/ScriptSystem.h>
-#include <scripting/ScriptTypes.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
