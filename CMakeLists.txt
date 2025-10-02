@@ -116,7 +116,7 @@ set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE ALWAYS)
 # System defines.
 if(MINGW)
 	message(STATUS "Compiling with MinGW")
-	add_compile_definitions(_WIN32_WINNT=0x600 __GXX_TYPEINFO_EQUALITY_INLINE=1)
+	add_compile_definitions(__GXX_TYPEINFO_EQUALITY_INLINE=1)
 endif()
 
 # Set up version data
@@ -137,10 +137,6 @@ if(STATIC)
 	message(STATUS "[${PROJECT_NAME}] Compile as static runtime")
 	add_definitions(-DSTATICLIB)
 	set(BUILD_SHARED_LIBS FALSE CACHE BOOL "-" FORCE)
-
-	if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-		target_compile_options(${PROJECT_NAME} PUBLIC -static-libstdc++)
-	endif()
 else()
 	message("Don't compile as a static runtime")
 	set(BUILD_SHARED_LIBS TRUE CACHE BOOL "-" FORCE)

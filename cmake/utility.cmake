@@ -1,9 +1,16 @@
 function(set_default_compiler_options target ISTESTTARGET)
-	# C++23 mode.
+
+	# --- Configure compiler -----------------------------------------------------------
+
 	set(CMAKE_CXX_STANDARD 23)
 	set(CMAKE_CXX_STANDARD_REQUIRED True)
 	target_compile_features(${target} PUBLIC cxx_std_23)
 	set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
+
+	if (NOT CONFIG MATCHES "RelWithDebInfo")
+		set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+	endif()
+
 	if(MSVC)
 		if(MSVC_VERSION GREATER_EQUAL 1910)
 			target_compile_options(${target} PUBLIC "/permissive-")
@@ -14,23 +21,7 @@ function(set_default_compiler_options target ISTESTTARGET)
 		if(MSVC_VERSION GREATER_EQUAL 1925)
 			target_compile_options(${target} PUBLIC "/Zc:preprocessor")
 		endif()
-	endif()
 
-	if(MINGW)
-		target_compile_options(${target} PUBLIC "-mthreads" "-Wno-builtin-macro-redefined")
-		target_link_options(${target} PUBLIC "-mthreads")
-		target_compile_definitions(${target} PUBLIC -D__STDC_FORMAT_MACROS -D_DEFAULT_SOURCE=1)
-	endif()
-
-	if(MSVC OR MINGW)
-		target_compile_definitions(${target} PUBLIC UNICODE _UNICODE)
-	endif()
-
-	# Compiler options.
-	if (NOT CONFIG MATCHES "RelWithDebInfo")
-		set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
-	endif()
-	if(MSVC)
 		target_compile_options(${target} PUBLIC
 			"$<$<CONFIG:Release>:/guard:cf>"			# Control Flow Guard
 			"$<$<CONFIG:Release>:/Qspectre>"			# Spectre Mitigation
@@ -40,8 +31,8 @@ function(set_default_compiler_options target ISTESTTARGET)
 			"$<$<CONFIG:RelWithDebInfo>:/dynamicdeopt>"	# Dynamic Deoptimization
 		)
 	endif()
-
-	# Ignore attribute warnings.
+	
+	# GCC ignore attribute warnings.
 	if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		target_compile_options(${target} PRIVATE
 			-Wno-attributes
@@ -50,6 +41,27 @@ function(set_default_compiler_options target ISTESTTARGET)
 		)
 	endif()
 
+	# GNU static link to libstdc++.
+	if(STATIC AND CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+		target_compile_options(${target} PUBLIC -static-libstdc++)
+	endif()
+
+	# --- Defines ----------------------------------------------------------------------
+
+	if(MINGW)
+		target_compile_options(${target} PUBLIC "-mthreads")
+		target_link_options(${target} PUBLIC "-mthreads")
+		target_compile_definitions(${target} PUBLIC -D__STDC_FORMAT_MACROS -D_DEFAULT_SOURCE=1)
+	endif()
+
+	if(MSVC OR MINGW)
+		target_compile_definitions(${target} PUBLIC UNICODE _UNICODE)
+	endif()
+
+	if(TESTS AND ISTESTTARGET)
+		target_compile_definitions(${target} PUBLIC NOMAIN _NOMAIN)
+	endif()
+	
 	# Debug definitions.
 	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 		target_compile_definitions(${target} PUBLIC DEBUG _DEBUG)
@@ -57,13 +69,9 @@ function(set_default_compiler_options target ISTESTTARGET)
 		target_compile_definitions(${target} PUBLIC NDEBUG _NDEBUG)
 	endif()
 
-	if(TESTS AND ISTESTTARGET)
-		target_compile_definitions(${target} PUBLIC NOMAIN _NOMAIN)
-	endif()
-
 	# If windows, set the standard defines.
 	if(WIN32)
-		target_compile_definitions(${target} PUBLIC _WIN32 WIN32 _WINDOWS NOMINMAX)
+		target_compile_definitions(${target} PUBLIC _WIN32 WIN32 _WINDOWS NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x600)
 
 		# If 64-bit windows...
 		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -79,6 +87,7 @@ function(set_default_compiler_options target ISTESTTARGET)
 	elseif(APPLE)
 		target_compile_definitions(${target} PUBLIC PLATFORM_APPLE)
 	endif()
+
 endfunction()
 
 MACRO(setup_versioning_data)
