@@ -114,7 +114,7 @@ static PacketHandleArray GeneratePacketHandlers()
 	handlers[PLI_ADJACENTLEVEL] = &PlayerClient::msgPLI_ADJACENTLEVEL;
 	handlers[PLI_HITOBJECTS] = &PlayerClient::msgPLI_HITOBJECTS;
 	handlers[PLI_TRIGGERACTION] = &PlayerClient::msgPLI_TRIGGERACTION;
-	handlers[PLI_MAPINFO] = &PlayerClient::msgPLI_MAPINFO;
+	handlers[PLI_TAMPERCHECK] = &PlayerClient::msgPLI_TAMPERCHECK;
 	handlers[PLI_SHOOT] = &PlayerClient::msgPLI_SHOOT;
 	handlers[PLI_SERVERWARP] = &PlayerClient::msgPLI_SERVERWARP;
 	handlers[PLI_PROCESSLIST] = &PlayerClient::msgPLI_PROCESSLIST;

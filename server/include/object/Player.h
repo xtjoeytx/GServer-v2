@@ -423,7 +423,7 @@ public:
 	//HandlePacketResult msgPLI_HITOBJECTS(CString& pPacket);
 	HandlePacketResult msgPLI_LANGUAGE(CString& pPacket);
 	//HandlePacketResult msgPLI_TRIGGERACTION(CString& pPacket);
-	//HandlePacketResult msgPLI_MAPINFO(CString& pPacket);
+	//HandlePacketResult msgPLI_TAMPERCHECK(CString& pPacket);
 	//HandlePacketResult msgPLI_SHOOT(CString& pPacket);
 	//HandlePacketResult msgPLI_SHOOT2(CString& pPacket);
 	//HandlePacketResult msgPLI_SERVERWARP(CString& pPacket);

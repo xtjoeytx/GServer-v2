@@ -1232,9 +1232,8 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 	return HandlePacketResult::Handled;
 }
 
-HandlePacketResult PlayerClient::msgPLI_MAPINFO(CString& pPacket)
+HandlePacketResult PlayerClient::msgPLI_TAMPERCHECK(CString& pPacket)
 {
-	// Don't know what this does exactly.  Might be gmap related.
 	pPacket.readString("");
 	return HandlePacketResult::Handled;
 }
