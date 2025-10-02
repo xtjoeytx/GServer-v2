@@ -57,6 +57,19 @@ std::format_context::iterator PropertyString::format(std::format_context& ctx) c
 }
 
 // -----------------------------------------------
+// PropertyLongString
+
+CString PropertyLongString::serialize() const
+{
+	return CString() >> (short)value.length() << value;
+}
+
+void PropertyLongString::deserialize(CString& data)
+{
+	value = data.readChars(data.readGUShort());
+}
+
+// -----------------------------------------------
 // PropertySwordPower
 
 CString PropertySwordPower::serialize() const

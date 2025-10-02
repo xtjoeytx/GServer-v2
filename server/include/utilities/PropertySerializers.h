@@ -291,6 +291,15 @@ struct PropertyString : public PropertyBase
 	std::string value;
 };
 
+/// @brief A property that is encoded as a packed string value (length-prefixed) where the length is 2 bytes.
+struct PropertyLongString : public PropertyString
+{
+	using PropertyString::PropertyString;
+
+	virtual CString serialize() const override;
+	virtual void deserialize(CString& data) override;
+};
+
 /// @brief A property that combines sword power and sword image.
 struct PropertySwordPower : public PropertyBase
 {
@@ -659,6 +668,12 @@ template <>
 struct std::formatter<preagonal::props::PropertyString> : std::formatter<std::string>
 {
 	auto format(const preagonal::props::PropertyString& prop, std::format_context& ctx) const { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyLongString> : std::formatter<std::string>
+{
+	auto format(const preagonal::props::PropertyLongString& prop, std::format_context& ctx) const { return prop.format(ctx); }
 };
 
 template <>

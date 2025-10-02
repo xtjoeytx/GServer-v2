@@ -1233,7 +1233,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::CLASS:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			PropertyLongString* strProp = dynamic_cast<PropertyLongString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 

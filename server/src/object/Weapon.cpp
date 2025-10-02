@@ -255,7 +255,7 @@ CString Weapon::getAddWeaponPacket() const
 	else
 	{
 		auto classes = getJoinedClassesList();
-		weaponPacket >> (char)NPCProp::CLASS >> (char)classes.length() << classes << "\n";
+		weaponPacket >> (char)NPCProp::CLASS >> (short)classes.length() << classes << "\n";
 
 		// Send the bytecode.
 		weaponPacket << getWeaponByteCodePacket();

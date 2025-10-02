@@ -556,7 +556,7 @@ inline TilePosition NPC::getTilePosition() const noexcept
 	DO(NPCProp::GATTRIB28,	PropertyString,				character.ganiAttributes[27]) \
 	DO(NPCProp::GATTRIB29,	PropertyString,				character.ganiAttributes[28]) \
 	DO(NPCProp::GATTRIB30,	PropertyString,				character.ganiAttributes[29]) \
-	DO(NPCProp::CLASS,		PropertyString,				getJoinedClassesList()) \
+	DO(NPCProp::CLASS,		PropertyLongString,			getJoinedClassesList()) \
 	DO(NPCProp::X2,			PropertyPixelCoordinate,	character.localPixelX) \
 	DO(NPCProp::Y2,			PropertyPixelCoordinate,	character.localPixelY) \
 	DO(NPCProp::Z2,			PropertyPixelCoordinate,	character.localPixelZ)
