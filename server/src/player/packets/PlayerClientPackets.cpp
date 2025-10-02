@@ -1402,7 +1402,7 @@ HandlePacketResult PlayerClient::msgPLI_UPDATESCRIPT(CString& pPacket)
 	CString weaponName = pPacket.readString("");
 
 	if (auto weaponObj = m_server->getWeapon(weaponName.toString()); weaponObj != nullptr)
-		sendPacket(weaponObj->getWeaponByteCodePacket());
+		weaponObj->sendByteCodeToPlayer(shared_from_this());
 
 	return HandlePacketResult::Handled;
 }

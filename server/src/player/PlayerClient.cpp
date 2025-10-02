@@ -522,7 +522,7 @@ bool PlayerClient::sendLogin()
 			}
 			continue;
 		}
-		sendPacket(weapon->getAddWeaponPacket());
+		weapon->registerWeaponWithPlayer(shared_from_this());
 	}
 
 	// Send any protected weapons we do not have.

@@ -1862,8 +1862,6 @@ void Server::updateWeaponForPlayers(Weapon* weapon)
 	if (weapon == nullptr)
 		return;
 
-	CString weaponPacket = weapon->getAddWeaponPacket();
-
 	// Update Weapons
 	for (auto& [id, player]: m_playerList)
 	{
@@ -1873,8 +1871,7 @@ void Server::updateWeaponForPlayers(Weapon* weapon)
 		if (player->account.hasWeapon(weapon->name))
 		{
 			player->sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon->name);
-			if (!weaponPacket.isEmpty())
-				player->sendPacket(weaponPacket);
+			weapon->registerWeaponWithPlayer(player);
 		}
 	}
 }

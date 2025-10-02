@@ -939,7 +939,7 @@ bool Player::addWeapon(std::shared_ptr<Weapon> weapon)
 	}
 
 	// Send weapon.
-	sendPacket(weapon->getAddWeaponPacket());
+	weapon->registerWeaponWithPlayer(shared_from_this());
 
 	return true;
 }

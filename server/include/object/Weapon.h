@@ -28,6 +28,7 @@ namespace preagonal
 
 // TODO: Weapon should probably just be inherited from NPC.
 class Server;
+class Player;
 class Weapon
 {
 public:
@@ -46,8 +47,8 @@ public:
 	Weapon& updateWeapon(std::string_view image, std::string_view script);
 
 public:
-	CString getAddWeaponPacket() const;
-	CString getWeaponByteCodePacket() const;
+	void registerWeaponWithPlayer(std::shared_ptr<Player> player) const;
+	void sendByteCodeToPlayer(std::shared_ptr<Player> player) const;
 
 public:
 	std::string getJoinedClassesList() const;
@@ -81,6 +82,7 @@ protected:
 	uint32_t m_checksum;
 	std::string m_desKey;
 	std::string m_header;
+	std::string m_headerWithCRC;
 
 	mutable std::vector<std::pair<EventHandle, std::weak_ptr<ScriptClass>>> m_joinedClasses;
 };

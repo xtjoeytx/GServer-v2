@@ -20,6 +20,7 @@
 #include <level/LevelItem.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
+#include <object/Player.h>
 #include <object/Weapon.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptClass.h>
@@ -68,8 +69,6 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 
 	// Definitions
 	std::string weaponName, weaponImage, weaponScript;
-	//std::string byteCodeFile;
-	//CString byteCodeData;
 
 	// Parse File
 	while (fileData.bytesLeft())
@@ -204,6 +203,7 @@ Weapon& Weapon::updateWeapon(std::string_view image, std::string_view script)
 	modTime = clock::now();
 
 	// Set the cryptographic key to be the script's hash.
+	// This will become the DES encryption key the client will use the encrypt the bytecode.
 	string::string_hash hash{};
 	uint64_t scriptHash = static_cast<uint64_t>(hash(script));
 
@@ -218,16 +218,20 @@ Weapon& Weapon::updateWeapon(std::string_view image, std::string_view script)
 
 	// Create the header.
 	// [GBYTE2 length_header_and_bytecode]
-	// [STRING type,name,[0/1 save_to_disk],[GBYTE[10] checksum]]
+	// [STRING type,name,[0/1 save_to_disk],[GBYTE[10] desKey]]
 	std::vector<std::string> headerParts =
 	{
 		"weapon",
 		name,
 		"1",
-		m_desKey,
-		(CString() >> (long long)m_checksum).toString()
+		m_desKey
 	};
 	m_header = string::toCSV(headerParts);
+
+	// Header with CRC32.
+	CString crc32{ (long long)m_checksum };
+	headerParts.push_back(crc32.toString());
+	m_headerWithCRC = string::toCSV(headerParts);
 
 	// Queue the created event.
 	scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
@@ -237,16 +241,21 @@ Weapon& Weapon::updateWeapon(std::string_view image, std::string_view script)
 
 //----------------------------
 
-CString Weapon::getAddWeaponPacket() const
+void Weapon::registerWeaponWithPlayer(std::shared_ptr<Player> player) const
 {
-	if (this->isDefault())
-		return CString() >> (char)PLO_DEFAULTWEAPON >> (char)m_weaponDefault;
+	if (isDefault())
+	{
+		player->sendPacket(CString() >> (char)PLO_DEFAULTWEAPON >> (char)m_weaponDefault);
+		return;
+	}
+
+	auto server = BabyDI::Get<Server>();
 
 	CString weaponPacket;
 	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)name.length() << name >> (char)NPCProp::IMAGE >> (char)image.length() << image;
 
 	// Classic weapons.
-	if (m_script.getClientByteCode().empty())
+	if (server->Generation != ServerGeneration::MODERN && m_script.getClientByteCode().empty())
 	{
 		std::string script = getClientSideScript();
 		weaponPacket >> (char)NPCProp::SCRIPT >> (short)script.length() << script;
@@ -255,26 +264,23 @@ CString Weapon::getAddWeaponPacket() const
 	else
 	{
 		auto classes = getJoinedClassesList();
-		weaponPacket >> (char)NPCProp::CLASS >> (short)classes.length() << classes << "\n";
+		weaponPacket >> (char)NPCProp::CLASS >> (short)classes.length() << classes;
+		player->sendPacket(weaponPacket);
 
-		// Send the bytecode.
-		weaponPacket << getWeaponByteCodePacket();
+		// Tell the client the load the script.
+		player->sendPacket(CString() >> (char)PLO_LOADSCRIPT << m_headerWithCRC);
 	}
-
-	return weaponPacket;
 }
 
-CString Weapon::getWeaponByteCodePacket() const
+void Weapon::sendByteCodeToPlayer(std::shared_ptr<Player> player) const
 {
 	// Send the bytecode.
 	if (const auto& bytecode = m_script.getClientByteCode(); !bytecode.empty())
 	{
 		const char* bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
 		std::string_view bytecodeView(bytecodePtr, bytecode.size());
-
-		return CString() >> (char)PLO_LOADSCRIPT >> (char)m_header.length() << m_header << bytecodeView;
+		player->sendPacket(CString() >> (char)PLO_NPCWEAPONSCRIPT >> (short)m_header.length() << m_header << bytecodeView);
 	}
-	return CString();
 }
 
 //----------------------------
