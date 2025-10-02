@@ -43,7 +43,8 @@ function(set_default_compiler_options target ISTESTTARGET)
 
 	# GNU static link to libstdc++.
 	if(STATIC AND CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-		target_compile_options(${target} PUBLIC -static-libstdc++)
+		target_link_options(${target} PUBLIC -static)
+		target_link_libraries(${target} PUBLIC "-static-libgcc" "-static-libstdc++")
 	endif()
 
 	# --- Defines ----------------------------------------------------------------------
