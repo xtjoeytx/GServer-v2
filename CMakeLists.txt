@@ -19,7 +19,7 @@
 #  along with GS2Emu.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.28)
 
 # Add custom CMake modules path for external dependencies.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -30,7 +30,7 @@ include(FetchContent)
 include(utility)
 
 # Set build type.
-set(default_build_type "MinSizeRel")
+set(default_build_type "RelWithDebInfo")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 	message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
 	set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
@@ -53,6 +53,7 @@ cmake_policy(SET CMP0054 NEW)	# CMP0054: Only interpret if() arguments as variab
 cmake_policy(SET CMP0074 NEW)	# CMP0074: find_package uses PackageName_ROOT variables.
 cmake_policy(SET CMP0077 NEW)	# CMP0077: option() honors normal variables.
 cmake_policy(SET CMP0091 NEW)	# CMP0091: MSVC runtime library flags are selected by an abstraction.
+cmake_policy(SET CMP0095 NEW)	# CMP0095: RPATH entries are properly escaped in the intermediary CMake install script.
 cmake_policy(SET CMP0144 NEW)	# CMP0144: Also search <PACKAGENAME>_ROOT as well as <PackageName>_ROOT.
 if(POLICY CMP0177)
 	cmake_policy(SET CMP0177 NEW)	# CMP0177: install() DESTINATION paths are normalized.
@@ -105,6 +106,7 @@ set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/lib")
+set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 set(CPACK_PACKAGE_DIRECTORY ${PROJECT_SOURCE_DIR}/dist)
 
 # Dependency and FetchContent setup.

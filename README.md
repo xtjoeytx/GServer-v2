@@ -11,7 +11,7 @@ For their additional work on the old gserver, special thanks go to:
 ### Required dependencies
 - C++23 compiler (min supported: GCC 14, Clang 18, MSVC 2022 17.7)
 - Java JRE
-- CMake
+- CMake 3.28
 - Ninja build system
 - vcpkg (https://vcpkg.io/en/getting-started)
 
