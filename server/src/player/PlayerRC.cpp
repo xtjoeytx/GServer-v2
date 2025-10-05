@@ -182,6 +182,7 @@ bool PlayerRC::handleLogin(CString& pPacket)
 	// Check for available slots on the server.
 	if (m_server->getPlayerList().size() >= (unsigned int)m_server->getSettings().getInt("maxplayers", 128))
 	{
+		log::printLine(log::rc, "** [Disconnect] '{}': Server is full.", account.name);
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server has reached its player limit.");
 		return false;
 	}

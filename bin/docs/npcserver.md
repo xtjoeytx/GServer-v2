@@ -28,6 +28,9 @@ The following languages are supported:
     gs1
         [Clientside] Clients version 5.007 and earlier.
         [Serverside] Any client version.
+    gs2
+        [Clientside] Clients version 4 and later.
+        [Serverside] N/A
 
 ## Client behavior changes
 
@@ -93,7 +96,7 @@ To talk to the Control-NPC, you would use the fourth case; any action that start
 
 ### Communicating with a clientside script
 
-It is not easy to communicate with a NPC's clientside script.
+It is not easy to communicate with an NPC's clientside script.
 The client will not process any `triggeraction` events that did not originate from the client itself, so you can't trigger the NPC's clientside script directly.
 Hacks can be done using the `shoot` command, but that is not recommended; instead, you should rewrite scripts to communicate in the other direction.
 
@@ -141,9 +144,9 @@ A `flag` is a string value that is set by `set` or `setstring`.
 A `var` is a numeric value that is assigned by normal variable assignment.
 Clients and serverside scripts only share `flags` that are prefixed with `client.`, `clientr.`, and `serverr.`
 
-Additionally, there are two special prefixes: `thiso.` and `cliento.`
-When using the `with()` statement to access a different NPC or player in serverside script, the `this.` and `client.` variables point to the accessed NPC or player.
-The `thiso.` and `cliento.` prefixes will let you access variables linked to the original NPC.
+Additionally, there are three special prefixes: `thiso.`, `cliento.`, and `clientro.`
+When using the `with()` statement to access a different NPC or player in serverside script, the `this.`, `client.`, and `clientr.` variables point to the accessed NPC or player.
+The `thiso.`, `cliento.`, and `clientro.` prefixes will let you access variables linked to the original NPC or player.
 
 Variable prefixes:
 

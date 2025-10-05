@@ -593,6 +593,7 @@ bool Player::sendLogin()
 	// Check if they are ip-banned or not.
 	if (m_server->isIpBanned(m_playerSock->getRemoteIp()) && !account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
+		log::printLine(log::server, "** [Disconnect] '{}': Attempted login from banned IP: {}", account.name, m_playerSock->getRemoteIp());
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been banned from this server.");
 		return false;
 	}
@@ -600,6 +601,7 @@ bool Player::sendLogin()
 	// Check to see if the player is banned or not.
 	if (account.banned && !account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
+		log::printLine(log::server, "** [Disconnect] '{}': Attempted login from banned account. (IP: {})", account.name, m_playerSock->getRemoteIp());
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been banned.  Reason: " << string::join(string::fromCSV(account.banReason), "\r"));
 		return false;
 	}
@@ -610,7 +612,7 @@ bool Player::sendLogin()
 		// Check and see if we are allowed in.
 		if (!isStaff() || !isAdminIp())
 		{
-			log::printLine(log::rc, "Attempted RC login by {}.", account.name);
+			log::printLine(log::rc, "** [Disconnect] '{}': Attempted RC login.", account.name);
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You do not have RC rights.");
 			return false;
 		}
@@ -622,6 +624,7 @@ bool Player::sendLogin()
 		// Staff only.
 		if (m_server->getSettings().getBool("onlystaff", false) && !isStaff())
 		{
+			log::printLine(log::rc, "** [Disconnect] '{}': Server is staff only.", account.name);
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server is currently restricted to staff only.");
 			return false;
 		}
@@ -629,6 +632,7 @@ bool Player::sendLogin()
 		// Check and see if we are allowed in.
 		if (!isAdminIp())
 		{
+			log::printLine(log::rc, "** [Disconnect] '{}': IP does not match the allowed list. (IP: {})", account.name, m_playerSock->getRemoteIp());
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your IP doesn't match one of the allowed IPs for this account.");
 			return false;
 		}
@@ -680,6 +684,7 @@ bool Player::sendLogin()
 				}
 				else
 				{
+					log::printLine(log::rc, "** [Disconnect] '{}': Attempted double login.", account.name);
 					sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Account is already in use.");
 					return false;
 				}

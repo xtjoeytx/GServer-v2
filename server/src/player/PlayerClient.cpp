@@ -218,7 +218,7 @@ bool PlayerClient::doTimedEvents()
 	// Disconnect if no data has been received in 5 minutes.
 	if ((int)difftime(currTime, m_lastData) > 300)
 	{
-		log::printLine(log::server, "Client {} has timed out.", account.name);
+		log::printLine(log::server, "** [Disconnect] {}: Client has timed out.", account.name);
 		return false;
 	}
 
@@ -229,7 +229,7 @@ bool PlayerClient::doTimedEvents()
 		int maxnomovement = settings.getInt("maxnomovement", 1200);
 		if (((int)difftime(currTime, m_lastMovement) > maxnomovement) && ((int)difftime(currTime, m_lastChat) > maxnomovement))
 		{
-			log::printLine(log::server, "Client {} has been disconnected due to inactivity.", account.name);
+			log::printLine(log::server, "** [Disconnect] {}: Client has been disconnected due to inactivity.", account.name);
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been disconnected due to inactivity.");
 			return false;
 		}
@@ -413,6 +413,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 		}
 		if (!allowed)
 		{
+			log::printLine(log::rc, "** [Disconnect] '{}': Client version not allowed. (Version: {} {})", account.name, m_version, getVersionString(m_version, m_type));
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client version is not allowed on this server.\rAllowed: " << m_server->getAllowedVersionString());
 			return false;
 		}
@@ -421,6 +422,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 	// Check for available slots on the server.
 	if (m_server->getPlayerList().size() >= (unsigned int)m_server->getSettings().getInt("maxplayers", 128))
 	{
+		log::printLine(log::rc, "** [Disconnect] '{}': Server is full.", account.name);
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server has reached its player limit.");
 		return false;
 	}
@@ -606,6 +608,7 @@ bool PlayerClient::sendLogin()
 	// warp will call sendCompress() for us.
 	if (!warp(account.level, getLocalPosition()) && m_currentLevel.expired())
 	{
+		log::printLine(log::rc, "** [Disconnect] '{}': No level available for player.", account.name);
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
 		log::printLine(log::server, "** Cannot find level for {}.", account.name);
 		return false;
