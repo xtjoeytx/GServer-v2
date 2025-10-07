@@ -485,17 +485,13 @@ bool Player::sendFile(const CString& pFile)
 		client->m_knownFiles.insert(pFile.toString());
 	}
 
-	auto& filesystem = m_server->getFileSystem();
-	if (!filesystem.has(pFile.toString()))
-	{
-		sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
-		return false;
-	}
-
 	// Send matching file.
+	auto& filesystem = m_server->getFileSystem();
 	if (auto info = filesystem.infoi(fs::FileCategory::ALL, pFile.toString()); info != nullptr)
 		return sendFile(info->file.string(), pFile);
 
+	log::printLine(log::server, "[WARNING] File not found when trying to send to player: {}", pFile);
+	sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
 	return false;
 }
 
@@ -511,6 +507,7 @@ bool Player::sendFile(const CString& pPath, const CString& pFile)
 	// See if the file exists.
 	if (fileData.length() == 0)
 	{
+		log::printLine(log::server, "[WARNING] File failed to load or empty file: {}", pFile);
 		sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
 		return false;
 	}
