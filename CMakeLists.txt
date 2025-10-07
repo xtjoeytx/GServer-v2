@@ -106,7 +106,6 @@ set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/lib")
-set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 set(CPACK_PACKAGE_DIRECTORY ${PROJECT_SOURCE_DIR}/dist)
 
 # Dependency and FetchContent setup.
@@ -139,6 +138,10 @@ if(STATIC)
 	message(STATUS "[${PROJECT_NAME}] Compile as static runtime")
 	add_definitions(-DSTATICLIB)
 	set(BUILD_SHARED_LIBS FALSE CACHE BOOL "-" FORCE)
+
+	if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+		target_compile_options(${PROJECT_NAME} PUBLIC -static-libstdc++)
+	endif()
 else()
 	message("Don't compile as a static runtime")
 	set(BUILD_SHARED_LIBS TRUE CACHE BOOL "-" FORCE)

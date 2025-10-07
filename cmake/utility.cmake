@@ -31,7 +31,7 @@ function(set_default_compiler_options target ISTESTTARGET)
 			"$<$<CONFIG:RelWithDebInfo>:/dynamicdeopt>"	# Dynamic Deoptimization
 		)
 	endif()
-	
+
 	# GCC ignore attribute warnings.
 	if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		target_compile_options(${target} PRIVATE
