@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
+#include <filesystem>
 #include <format>
 #include <memory>
 #include <optional>
@@ -23,6 +24,7 @@
 #include <UpdatePackage.h>
 #include <filesystem/File.h>
 #include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
 #include <level/LevelBaddy.h>
 #include <level/LevelChest.h>
@@ -721,7 +723,7 @@ HandlePacketResult PlayerClient::msgPLI_WANTFILE(CString& pPacket)
 	//printf("WANTFILE: %s\n", file.text());
 
 	// Send file.
-	this->sendFile(file);
+	this->sendFile(std::filesystem::path{ file.toString() });
 	return HandlePacketResult::Handled;
 }
 
@@ -1365,7 +1367,7 @@ HandlePacketResult PlayerClient::msgPLI_VERIFYWANTSEND(CString& pPacket)
 	}
 
 	// Send the file to the client
-	this->sendFile(fileName);
+	this->sendFile(std::filesystem::path{ fileName.toString() });
 	return HandlePacketResult::Handled;
 }
 

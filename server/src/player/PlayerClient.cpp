@@ -529,10 +529,11 @@ bool PlayerClient::sendLogin()
 
 	// Send any protected weapons we do not have.
 	auto protectedWeapons = m_server->getSettings().getStr("protectedweapons").gCommaStrTokens();
-	std::erase_if(protectedWeapons, [this](CString& val)
-				  {
-					  return std::find(account.weapons.begin(), account.weapons.end(), val) != account.weapons.end();
-				  });
+	std::erase_if(protectedWeapons,
+		[this](CString& val)
+		{
+			return std::find(account.weapons.begin(), account.weapons.end(), val) != account.weapons.end();
+		});
 	for (auto& weaponName : protectedWeapons)
 		this->addWeapon(weaponName.toString());
 

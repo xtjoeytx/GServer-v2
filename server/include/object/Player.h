@@ -4,6 +4,7 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -194,7 +195,7 @@ public:
 
 	// Get Properties
 	CSocket* getSocket() { return m_playerSock; }
-	PlayerID getId() const;
+	[[inline]] PlayerID getId() const;
 	time_t getLastData() const { return m_lastData; }
 	CString getGuild() const { return m_guild; }
 	int getVersion() const { return m_versionId; }
@@ -320,8 +321,7 @@ public:
 
 	// Socket-Functions
 	void sendPacket(CString pPacket, bool appendNL = true);
-	bool sendFile(const CString& pFile);
-	bool sendFile(const CString& pPath, const CString& pFile);
+	bool sendFile(const std::filesystem::path& file);
 	void setReceivedBuffer(const CString& buffer) { m_recvBuffer = buffer; }
 
 	// Type of player

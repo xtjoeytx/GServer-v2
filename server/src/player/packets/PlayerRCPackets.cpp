@@ -1588,7 +1588,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 		}
 	}
 
-	this->sendFile(account.lastFolderAccessed, file.string());
+	this->sendFile(lastFolderAccessed / file);
 
 	log::printLine(log::rc, "{} downloaded file {}", account.name, file.generic_string());
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Downloaded file " << file.generic_string());

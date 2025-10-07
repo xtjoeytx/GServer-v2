@@ -9,8 +9,10 @@
 #include <format>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string_view>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <CSocket.h>
@@ -23,6 +25,7 @@
 
 #include <Account.h>
 #include <Server.h>
+#include <filesystem/File.h>
 #include <filesystem/FileSystem.h>
 #include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
@@ -37,10 +40,10 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
-#include <utilities/PropertySerializers.h>
-#include <utilities/StringUtils.h>
 #include <utilities/manager/GuildManager.h>
 #include <utilities/manager/ITranslationManager.h>
+#include <utilities/PropertySerializers.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -211,6 +214,15 @@ static constexpr std::array<std::string, 255> FillPutputPacketNamesArray()
 
 std::array<std::string, 255> OutputPacketNamesArray = FillPutputPacketNamesArray();
 #endif
+
+///////////////////////////////////////////////////////////////////////////////
+
+// I don't want to deal with adding this to the gs2lib.
+[[maybe_unused]] static CString& operator<<(CString& first, std::span<char>&& second)
+{
+	first.write(second.data(), static_cast<int>(second.size()));
+	return first;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -476,101 +488,112 @@ void Player::sendPacket(CString pPacket, bool appendNL)
 	m_fileQueue.addPacket(pPacket);
 }
 
-bool Player::sendFile(const CString& pFile)
+bool Player::sendFile(const std::filesystem::path& file)
 {
 	// Add the filename to the list of known files so we can resend the file
 	// to the client if it gets changed after it was originally sent
 	if (auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); isClient() && client != nullptr)
 	{
-		client->m_knownFiles.insert(pFile.toString());
+		client->m_knownFiles.insert(fs::getFileNameAsANSI(file));
 	}
 
-	// Send matching file.
 	auto& filesystem = m_server->getFileSystem();
-	if (auto info = filesystem.infoi(fs::FileCategory::ALL, pFile.toString()); info != nullptr)
-		return sendFile(info->file.string(), pFile);
+	std::string filename = fs::getFileNameAsANSI(file);
 
-	log::printLine(log::server, "[WARNING] File not found when trying to send to player: {}", pFile);
-	sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
-	return false;
-}
-
-bool Player::sendFile(const CString& pPath, const CString& pFile)
-{
-	std::filesystem::path filePath{ pPath.toString() };
-	std::filesystem::path fileName{ pFile.toString() };
-	auto fullPath = filePath / fileName;
-
-	CString fileData;
-	fileData.load(fullPath.string());
-
-	// See if the file exists.
-	if (fileData.length() == 0)
+	auto sendFailure = [this, &filename](std::string_view message) -> bool
 	{
-		log::printLine(log::server, "[WARNING] File failed to load or empty file: {}", pFile);
-		sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
+		if (!message.empty())
+			log::printLine(log::server, "[WARNING] {}: {}", message, filename);
+		sendPacket(CString() >> (char)PLO_FILESENDFAILED << filename);
 		return false;
+	};
+
+	std::vector<char> fileData;
+
+	// Get the file mod time.
+	time_t modTime = 0;
+
+	// Find the file.
+	if (std::filesystem::exists(file))
+	{
+		fs::File openedFile{ file };
+		fileData = std::move(openedFile.read());
+
+		auto writeTime = std::filesystem::last_write_time(file);
+		modTime = clock::to_time_t(std::chrono::clock_cast<std::chrono::system_clock>(writeTime));
+	}
+	else
+	{
+		auto info = filesystem.infoi(fs::FileCategory::ALL, file.filename());
+		if (info == nullptr)
+			return sendFailure("File not found when trying to send to player");
+
+		// Open the file and read the data.
+		{
+			auto openedFile = info->openFile();
+			if (openedFile == nullptr)
+				return sendFailure("File failed to load");
+
+			fileData = std::move(openedFile->read());
+		}
+
+		modTime = clock::to_time_t(info->getModTime());
 	}
 
 	// Warn for very large files.  These are the cause of many bug reports.
-	if (fileData.length() > 3145728) // 3MB
-		log::printLine(log::server, "[WARNING] Sending a large file (over 3MB): {}", pFile);
+	if (fileData.size() > 3145728) // 3MB
+		log::printLine(log::server, "[WARNING] Sending a large file (over 3MB): {}", filename);
 
 	// See if we have enough room in the packet for the file.
 	// If not, we need to send it as a big file.
 	// 1 (PLO_FILE) + 5 (modTime) + 1 (file.length()) + file.length() + 1 (\n)
 	bool isBigFile = false;
-	int packetLength = 1 + 5 + 1 + pFile.length() + 1;
-	if (fileData.length() > 32000)
+	size_t packetLength = (size_t)1 + 5 + 1 + filename.length() + 1;
+	if (fileData.size() > 32000)
 		isBigFile = true;
 
 	// Clients before 2.14 didn't support large files.
 	if (isClient() && m_versionId < CLVER_2_14)
 	{
 		if (m_versionId < CLVER_2_1) packetLength -= 5; // modTime isn't sent.
-		if (fileData.length() > 64000)
-		{
-			sendPacket(CString() >> (char)PLO_FILESENDFAILED << pFile);
-			return false;
-		}
+		if (fileData.size() > 64000)
+			return sendFailure("File too large for client version");
+
 		isBigFile = false;
 	}
 
 	// If we are sending a big file, let the client know now.
 	if (isBigFile)
 	{
-		sendPacket(CString() >> (char)PLO_LARGEFILESTART << pFile);
-		sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.length());
+		sendPacket(CString() >> (char)PLO_LARGEFILESTART << filename);
+		sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.size());
 	}
 
-	// Get the file mod time.
-	auto writeTime = std::filesystem::last_write_time(fullPath);
-	time_t modTime = clock::to_time_t(std::chrono::clock_cast<std::chrono::system_clock>(writeTime));
-
 	// Send the file now.
-	while (fileData.length() != 0)
+	std::span<char> fileDataSpan{ fileData };
+	while (!fileDataSpan.empty())
 	{
-		int sendSize = std::clamp(fileData.length(), 0, 32000);
-		if (isClient() && m_versionId < CLVER_2_14) sendSize = fileData.length();
+		int sendSize = std::clamp((int)fileDataSpan.size(), 0, 32000);
+		if (isClient() && m_versionId < CLVER_2_14) sendSize = fileData.size();
 
 		// Older client versions didn't send the modTime.
 		if (isClient() && m_versionId < CLVER_2_1)
 		{
 			// We don't add a \n to the end of the packet, so subtract 1 from the packet length.
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength - 1 + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (char)pFile.length() << pFile << fileData.subString(0, sendSize), false);
+			sendPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << fileDataSpan.subspan(0, sendSize), false);
 		}
 		else
 		{
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)pFile.length() << pFile << fileData.subString(0, sendSize) << "\n", false);
+			sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)filename.length() << filename << fileDataSpan.subspan(0, sendSize) << "\n", false);
 		}
 
-		fileData.removeI(0, sendSize);
+		fileDataSpan = fileDataSpan.subspan(sendSize);
 	}
 
 	// If we had sent a large file, let the client know we finished sending it.
-	if (isBigFile) sendPacket(CString() >> (char)PLO_LARGEFILEEND << pFile);
+	if (isBigFile) sendPacket(CString() >> (char)PLO_LARGEFILEEND << filename);
 
 	return true;
 }

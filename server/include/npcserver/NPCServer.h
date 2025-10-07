@@ -239,7 +239,7 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, Scr
 			if (positionInRectangle(pos, npcRect))
 			{
 				++count;
-				npc->scripting.events.addEvent(type, source, std::forward<decltype(arg1)>(arg1), std::forward<decltype(args)...>(args)...);
+				npc->scripting.events.addEvent(type, source, arg1, args...);
 			}
 		}
 	}
