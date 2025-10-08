@@ -12,13 +12,15 @@ namespace preagonal
 
 namespace constants
 {
-inline constexpr uint16_t EmptyTile = 0xFFFF;
+inline constexpr uint16_t EmptyTileInBase = 0x0;
+inline constexpr uint16_t EmptyTileInLayer = 0xFFFF;
+inline constexpr uint16_t BasicGrassTilePics1 = 511;
 } // end namespace constants
 
 class LevelTiles
 {
 public:
-	LevelTiles(uint16_t fillTile = 0x00)
+	LevelTiles(uint16_t fillTile = constants::EmptyTileInBase)
 	{
 		m_tiles.fill(fillTile);
 	}

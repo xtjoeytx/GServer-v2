@@ -1082,6 +1082,20 @@ bool PlayerClient::processChat(const CString& pChat)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+double PlayerClient::getCalculatedTileZ() const noexcept
+{
+	auto level = getLevel();
+	if (level == nullptr || !level->hasTerrain())
+		return account.character.localPixelZ / 16.0;
+
+	PixelPosition testPosition = account.character.getGlobalPosition().translate(24, 48);
+	auto terrainHeight = level->getMapHeightAt(testPosition);
+	auto currentZ = account.character.localPixelZ / 16.0;
+	return std::max(terrainHeight, currentZ);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 std::string PlayerClient::getComputedLevelName() const
 {
 	auto level = getLevel();
@@ -1313,6 +1327,8 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 				sendPacket(CString() >> (char)PLO_RAWDATA >> (int)layer.length());
 				sendPacket(layer);
 			}
+
+			level->sendBoardHeightsToPlayer(self);
 		}
 
 		// Send links (if applicable).
@@ -1640,6 +1656,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 	static Position<int16_t> touchTest[] = { { 24, 16 - 1 }, { 0, 32 }, { 24, 56 }, { 48, 32 } };
 
 	PixelPosition testPosPixels = getGlobalPosition().translate(touchTest[movementDirection].x(), touchTest[movementDirection].y());
+	testPosPixels.z() = 0;
 	if (auto level = getLevel(); level != nullptr)
 	{
 		// Test for NPC touch.

@@ -1093,6 +1093,20 @@ inline std::string extractLine(std::string_view& str, char delim = '\n')
 	return std::string(line);
 }
 
+/// @brief Splits a string into two trimmed parts using a specified delimiter.
+/// @param str The input string to split. Can be any type compatible with StringViewVariant.
+/// @param delim The character used as the delimiter to split the string. Defaults to a space (' ').
+/// @return A pair of std::string_view objects: the first is the trimmed substring before the delimiter, the second is the trimmed substring after the delimiter (or empty if the delimiter is not found).
+inline std::pair<std::string_view, std::string_view> extractConfigParts(StringViewVariant auto const& str, char delim = ' ')
+{
+	using StrType = std::remove_cvref_t<decltype(str)>;
+
+	const auto pos = str.find(delim);
+	if (pos == StrType::npos)
+		return { string::trim(str), std::string_view{} };
+	return { string::trim(str.substr(0, pos)), string::trim(str.substr(pos + 1)) };
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template<bool ignoreCase = false>

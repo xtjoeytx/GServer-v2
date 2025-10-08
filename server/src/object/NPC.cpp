@@ -437,6 +437,23 @@ void NPC::refreshModTimes(clock::time_point modTime) noexcept
 
 //----------------------------
 
+double NPC::getCalculatedTileZ() const noexcept
+{
+	auto level = getLevel();
+	if (level == nullptr || !level->hasTerrain())
+		return character.localPixelZ / 16.0;
+
+	PixelPosition testPosition = character.getGlobalPosition();
+	if (isCharacter())
+		testPosition.translate(24, 48);
+
+	auto terrainHeight = level->getMapHeightAt(testPosition);
+	auto currentZ = character.localPixelZ / 16.0;
+	return std::max(terrainHeight, currentZ);
+}
+
+//----------------------------
+
 std::string NPC::getLevelName() const
 {
 	if (auto levelPtr = getLevel(); levelPtr != nullptr)
@@ -1497,7 +1514,7 @@ void NPC::constructScriptParameters()
 			})
 		);
 	scriptParameters.try_emplace("z", set_temporary, "z",
-		gameValueGetter([this]() { return character.localPixelZ / 16.0; }),
+		gameValueGetter([this]() { return getCalculatedTileZ(); }),
 		gameValueSetter(this, PROPOPT(NPCProp::Z2), [this](const GameValue& value, std::optional<size_t>) { character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("width", set_temporary, "width", gameValueGetter([this]() { return static_cast<double>(shape.width()); }), GameValue::func_set{});
 	scriptParameters.try_emplace("height", set_temporary, "height", gameValueGetter([this]() { return static_cast<double>(shape.height()); }), GameValue::func_set{});

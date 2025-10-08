@@ -60,7 +60,7 @@ Valid file types:
 - `body`: body images
 - `sword`: sword images
 - `shield`: shield images
-- ~~`sound`: sound files~~ (not supported)
+- ~~`sound`: sound files~~ (not supported, use `file`)
 
 The folder supports wildcards.
 

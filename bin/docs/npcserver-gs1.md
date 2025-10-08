@@ -132,6 +132,14 @@ Please review the lists below of implemented events, flags, functions, commands,
       levelorgx
       levelorgy
       npcscount
+      nwday
+      nwhour
+      nwmin
+      nwmonth
+      nwtime
+      nwweek
+      nwweekday
+      nwyear
       paramscount
       players[]
       playerscount
@@ -139,6 +147,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       timevar
       timevar2
       tokenscount
+      waterheight
       weaponscount
 
       npcs[]
@@ -247,26 +256,14 @@ Please review the lists below of implemented events, flags, functions, commands,
         .y
         .dir
         .bushes
-        .bombs          (always 0)
-        .bombpower      (always 0)
+        .bombs          (always 0, client never sends)
+        .bombpower      (always 0, client never sends)
         .type
 
       signscount
       signs[]
         .x
         .y
-
-#### Not implemented
-
-      nwday
-      nwhour
-      nwmin
-      nwmonth
-      nwtime
-      nwweek
-      nwweekday
-      nwyear
-      waterheight
 
 #### Clientside only
 
@@ -439,9 +436,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       saveinfo
     * savelevel
       savelog
-      setz
     * showstats
-      updateterrain
 
 #### Clientside only
 
@@ -493,12 +488,14 @@ Please review the lists below of implemented events, flags, functions, commands,
     setstatusimage
     seturllevel
     setzoomeffect
+    setz
     showfile
     showlocal
     stopmidi
     stopsound
     timereverywhere
     toinventory
+    updateterrain
     wraptext
     wraptext2
 
@@ -526,6 +523,7 @@ Please review the lists below of implemented events, flags, functions, commands,
     * getnearestplayers(x, y, flag)
       getnpc(name)
       getplayer(account)
+      getz(x, y)
       hasweapon(name)
       indexof(substring, string)
       int(value)
@@ -567,7 +565,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 #### Not implemented
 
     findnearestplayers(x, y)
-    getz(x, y)
     tiletype(x, y)                    (new tileset layout)
 
 #### Clientside only

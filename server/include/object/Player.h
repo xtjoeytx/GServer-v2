@@ -211,6 +211,7 @@ public:
 	[[inline]] PixelPosition getGlobalPosition() const noexcept;
 	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;
 	[[inline]] TilePosition getTilePosition() const noexcept;
+	virtual double getCalculatedTileZ() const noexcept;
 
 	// Set Properties
 	void setNick(CString pNickName, bool force = false);
@@ -528,22 +529,28 @@ inline void Player::setId(PlayerID pId)
 
 inline PixelRectangleArea Player::getBoundingBox() const noexcept
 {
-	return { account.character.getGlobalPosition(), { 48, 48 } };
+	return { getGlobalPosition(), { 48, 48, 48 } };
 }
 
 inline PixelPosition Player::getGlobalPosition() const noexcept
 {
-	return account.character.getGlobalPosition();
+	auto pos = account.character.getGlobalPosition();
+	pos.z() = static_cast<int32_t>(getCalculatedTileZ() * 16);
+	return pos;
 }
 
 inline LocalPixelPosition Player::getLocalPosition() const noexcept
 {
-	return account.character.getLocalPosition();
+	auto pos = account.character.getLocalPosition();
+	pos.z() = static_cast<int16_t>(getCalculatedTileZ() * 16);
+	return pos;
 }
 
 inline TilePosition Player::getTilePosition() const noexcept
 {
-	return account.character.getTilePosition();
+	auto pos = account.character.getTilePosition();
+	pos.z() = getCalculatedTileZ();
+	return pos;
 }
 
 inline bool Player::inChatChannel(const std::string& channel) const

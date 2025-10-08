@@ -100,7 +100,6 @@ include(GNUInstallDirs)
 
 # Debug build postfix.
 set(CMAKE_DEBUG_POSTFIX _d)
-set(BUILD_SHARED_LIBS OFF)
 
 # Directories.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")

@@ -79,10 +79,8 @@ short respawningTiles[] = {
 
 //----------------------------
 
-Level::Level(uint16_t fillTile)
+Level::Level()
 {
-	m_tiles[0] = LevelTiles(fillTile);
-
 	// Reserve space for baddies to avoid reallocations, which will destroy timeout callback pointers.
 	m_baddies.reserve(0xFF);
 }
@@ -138,16 +136,17 @@ Level::~Level()
 
 //----------------------------
 
-std::shared_ptr<Level> Level::createLevel(uint16_t fillTile, std::string_view levelName)
+std::shared_ptr<Level> Level::createLevel(std::string_view levelName, std::optional<uint16_t> fillTile)
 {
 	auto server = BabyDI::Get<Server>();
 	auto& levelList = server->getLevelList();
 
-	// Load New Level
-	auto level = std::shared_ptr<Level>(new Level(fillTile));
+	auto level = std::shared_ptr<Level>(new Level());
 	level->levelName = levelName;
 
-	// Return Level
+	if (fillTile)
+		level->m_tiles[0] = LevelTiles(*fillTile);
+
 	levelList.insert(std::make_pair(string::toLower(levelName), level));
 	return level;
 }
@@ -475,6 +474,66 @@ void Level::doFrameEvents(precise_clock::time_point time)
 
 //----------------------------
 
+bool Level::hasTerrain() const noexcept
+{
+	if (m_map == nullptr || isOnBigMap())
+		return false;
+
+	return !m_map->terrain.gridBorderTileHeightsXAxis.empty();
+}
+
+double Level::getHeightAt(const LocalPixelPosition& position) const noexcept
+{
+	if (terrain.heightmap.empty())
+		return 0.0;
+
+	auto tilePosition = toTilePosition(position);
+
+	// Determine the origin tile for our calculation.
+	// This will be the top-left tile within the quad we are calculating the height for.
+	LocalWholeTilePosition originTile = toLocalWholeTilePosition(tilePosition);
+	if (tilePosition.x() > 64) originTile.x() = 64;
+	if (tilePosition.y() > 64) originTile.y() = 64;
+
+	auto heightAtPosition = [&](const TilePosition& pos) -> double
+	{
+		return terrain.heightmap[static_cast<size_t>(pos.y()) * 65 + pos.x()];
+	};
+
+	// Generate 3D coordinates for our tiles.
+	TilePosition topLeft = toTilePosition(originTile);
+	TilePosition topRight = toTilePosition(translatePosition(originTile, 1_ui8, 0_ui8));
+	TilePosition bottomLeft = toTilePosition(translatePosition(originTile, 0_ui8, 1_ui8));
+	topLeft.z() = heightAtPosition(topLeft);
+	topRight.z() = heightAtPosition(topRight);
+	bottomLeft.z() = heightAtPosition(bottomLeft);
+
+	// Calculate our direction vectors.
+	Position<float> vecU = topRight - topLeft;
+	Position<float> vecV = bottomLeft - topLeft;
+
+	// Determine our tile offset.
+	TilePosition offset{ tilePosition.x() - topLeft.x(), tilePosition.y() - topLeft.y() };
+
+	// Calculate our point using the offset along the direction vectors.
+	TilePosition point = topLeft + (vecU * offset.x()) + (vecV * offset.y());
+
+	return point.z();
+}
+
+double Level::getMapHeightAt(const PixelPosition& position) const noexcept
+{
+	if (m_map != nullptr)
+	{
+		if (auto level = m_map->getLevelAt(position); level != nullptr)
+			return level->getHeightAt(toLocalPixelPosition(position));
+	}
+
+	return getHeightAt(toLocalPixelPosition(position));
+}
+
+//----------------------------
+
 CString Level::getBoardPacket()
 {
 	CString retVal;
@@ -518,6 +577,50 @@ CString Level::getBoardChangesPacket2(time_t time)
 			retVal << change.getPropsForSingleLevel();
 	}
 	return retVal;
+}
+
+void Level::sendBoardHeightsToPlayer(std::shared_ptr<Player> player) const
+{
+	// We only need to send heights if there are level overrides.
+	if (terrain.levelHeightOverrides.empty())
+		return;
+
+	CString retVal;
+	retVal.writeGChar(PLO_BOARDHEIGHTS);
+
+	// Maybe the map position?
+	retVal >> (char)mapPosition.x() >> (char)mapPosition.y();
+
+	// Starting x/y index of the heightmap block.
+	retVal >> (char)0 >> (char)0;
+
+	// Width/height of the heightmap block.
+	// 0 indexed for some reason so use 8 instead of 9.
+	retVal >> (char)8 >> (char)8;
+
+	// The heightmap data.
+	for (size_t y = 0; y < 9; ++y)
+	{
+		for (size_t x = 0; x < 9; ++x)
+		{
+			auto index = y * 9 + x;
+			auto height = terrain.levelHeightOverrides[index];
+
+			// The whole number and fractional part of the height are stored separately.
+			// The whole number is offset by 50, giving a range of -50 to +170.
+			// The fractional part is multiplied by 128 and stored as a byte.
+			double decimal = height - std::floor(height);
+			double whole = std::round(height - decimal);
+
+			uint8_t wholePart = static_cast<uint8_t>(whole + 50);
+			uint8_t decimalPart = static_cast<uint8_t>(decimal * 128);
+
+			retVal >> wholePart;
+			retVal >> decimalPart;
+		}
+	}
+
+	player->sendPacket(retVal);
 }
 
 void Level::sendBaddiesToPlayer(std::shared_ptr<Player> player) const
@@ -827,7 +930,7 @@ void Level::applyBoardChangeFromScriptTiles(const LocalWholeTileRectangleArea& a
 		for (int i = area.position.x(); i < area.position.x() + area.size.width(); ++i)
 		{
 			auto tile = m_scriptUpdatedTiles[i + (static_cast<size_t>(j) * 64)];
-			if (tile == constants::EmptyTile)
+			if (tile == constants::EmptyTileInLayer)
 				tile = m_tiles[0][i + (static_cast<size_t>(j) * 64)];
 			tileData.writeGShort(tile);
 		}
@@ -852,7 +955,7 @@ void Level::saveBoardChangeFromScriptTiles(const LocalWholeTileRectangleArea& ar
 		for (int i = area.position.x(); i < area.position.x() + area.size.width(); ++i)
 		{
 			auto tile = m_scriptUpdatedTiles[i + (static_cast<size_t>(j) * 64)];
-			if (tile != constants::EmptyTile)
+			if (tile != constants::EmptyTileInLayer)
 				m_tiles[0][i + (static_cast<size_t>(j) * 64)] = tile;
 		}
 	}

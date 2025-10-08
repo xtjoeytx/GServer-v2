@@ -223,7 +223,9 @@ inline static bool DoubleIsZero(double value)
 
 inline static bool DoublesAreSame(double left, double right)
 {
-	return std::abs(left - right) < std::numeric_limits<double>::epsilon();
+	// Graal uses 0.0001 as the threshold for comparing doubles.
+	return std::abs(left - right) < 0.0001;
+	//return std::abs(left - right) < std::numeric_limits<double>::epsilon();
 }
 
 template<std::integral T>

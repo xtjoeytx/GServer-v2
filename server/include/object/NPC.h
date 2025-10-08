@@ -278,6 +278,7 @@ public:
 	[[inline]] PixelPosition getGlobalPosition() const noexcept;
 	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;
 	[[inline]] TilePosition getTilePosition() const noexcept;
+	double getCalculatedTileZ() const noexcept;
 	std::string getLevelName() const;
 	std::shared_ptr<Level> getLevel() const;
 	std::vector<std::string> getVariableDump() const;
@@ -451,31 +452,37 @@ inline void NPC::recordInitialState()
 
 inline PixelRectangleArea NPC::getBoundingBox() const noexcept
 {
-	return { character.getGlobalPosition(), shape };
+	return { getGlobalPosition(), shape };
 }
 
 inline PixelRectangleArea NPC::getCollisionBoundingBox() const noexcept
 {
 	// Character NPCs have a specific bounding box.
 	if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
-		return { character.getGlobalPosition().translate(8, 16), { 32, 32 } };
+		return { getGlobalPosition().translate(8, 16), { 32, 32 } };
 
-	return { character.getGlobalPosition(), shape};
+	return { getGlobalPosition(), shape};
 }
 
 inline PixelPosition NPC::getGlobalPosition() const noexcept
 {
-	return character.getGlobalPosition();
+	auto pos = character.getGlobalPosition();
+	pos.z() = static_cast<int32_t>(getCalculatedTileZ() * 16);
+	return pos;
 }
 
 inline LocalPixelPosition NPC::getLocalPosition() const noexcept
 {
-	return character.getLocalPosition();
+	auto pos = character.getLocalPosition();
+	pos.z() = static_cast<int16_t>(getCalculatedTileZ() * 16);
+	return pos;
 }
 
 inline TilePosition NPC::getTilePosition() const noexcept
 {
-	return character.getTilePosition();
+	auto pos = character.getTilePosition();
+	pos.z() = static_cast<float>(getCalculatedTileZ());
+	return pos;
 }
 
 //----------------------------

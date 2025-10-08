@@ -82,7 +82,6 @@ static GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view
 static GS1ScriptValue fn_getnpc(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getz(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_groundsheight(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_imgheight(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_imgwidth(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
@@ -152,7 +151,6 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{ hash("getnpc"), &fn_getnpc },
 		{ hash("getplayer"), &fn_getplayer },
 		{ hash("getz"), &fn_getz },
-		{ hash("groundsheight"), &fn_groundsheight },
 		{ hash("hasweapon"), &fn_hasweapon },
 		{ hash("imgheight"), &fn_imgheight },
 		{ hash("imgwidth"), &fn_imgwidth },
@@ -819,12 +817,17 @@ GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view messageCode, c
 // Returns the Z coordinate at the specified X and Y position in the world.
 GS1ScriptValue fn_getz(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function getz not implemented");
-}
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function getz requires exactly two arguments");
 
-GS1ScriptValue fn_groundsheight(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	throw unimplemented_error("Built-in function groundsheight not implemented");
+	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	{
+		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
+		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		return level->getMapHeightAt(toPixelPosition({ x, y }));
+	}
+
+	return 0.0;
 }
 
 // hasweapon(name)

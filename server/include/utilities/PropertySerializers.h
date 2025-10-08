@@ -528,12 +528,13 @@ struct PropertyTileCoordinate : public PropertyBase
 	int16_t pixelCoordinate = 0;
 };
 
-/// @brief A property that serializes a Z coordinate in the old style (offset of 25).
+/// @brief A property that serializes a Z coordinate in the old style (offset of 50).
 struct PropertyTileCoordinateZ : public PropertyBase
 {
 	PropertyTileCoordinateZ() = default;
 	PropertyTileCoordinateZ(int16_t pixelCoordinate) : pixelCoordinate(pixelCoordinate) {}
 	PropertyTileCoordinateZ(float tileCoordinate) : pixelCoordinate(static_cast<int16_t>(tileCoordinate * 16)) {}
+	PropertyTileCoordinateZ(double tileCoordinate) : pixelCoordinate(static_cast<int16_t>(tileCoordinate * 16)) {}
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;

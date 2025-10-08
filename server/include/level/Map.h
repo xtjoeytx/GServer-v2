@@ -33,6 +33,44 @@ enum class MapType
 
 class Level;
 
+struct MapTerrain
+{
+	/// @brief Seed for the whole map.
+	uint32_t mapSeed = 0;
+
+	/// @brief The base terrain height for the map.
+	///
+	/// Not used outside of initial map generation.
+	/// If evenBorders is false, the four corners of the map are set to the base height.
+	/// If evenBorders is true, the whole outline of the map is set to the base height.
+	double heightBase = 0;
+
+	/// @brief If true, the whole outline of the map is set to the base height.
+	///
+	/// Not used outside of initial map generation.
+	bool evenBorders = false;
+
+	/// @brief Possible height variation.
+	double heightDeviation = 65.0;
+
+	/// @brief Dampening multiplier for the height value as the vertices get generated.
+	double mapChaos = 0.6;
+
+	/// @brief Base level height.
+	///
+	/// Originally calculated with: pow(mapChaos, (width / 2.0)) * mapTerrainHeight
+	double levelHeightDeviation = 4.0;
+
+	/// @brief Dampening multiplier for the height value as the level vertices get generated.
+	double levelChaos = 0.6;
+
+	/// @brief A vector containing seed values for levels.
+	std::vector<uint32_t> levelSeeds;
+
+	std::vector<double> gridBorderTileHeightsXAxis;
+	std::vector<double> gridBorderTileHeightsYAxis;
+};
+
 class Map
 {
 public:
@@ -56,6 +94,7 @@ public:
 	[[inline]] std::string getMapName() const noexcept;
 	[[inline]] bool isGmap() const noexcept;
 	[[inline]] bool isBigMap() const noexcept;
+	[[inline]] bool hasTerrain() const noexcept;
 
 public:
 	const MapType mapType;
@@ -66,6 +105,7 @@ public:
 	const bool keepAllLevelsLoaded = false;
 	const string_map<Position<uint8_t>> levels;
 	const string_set levelsToKeepInMemory;
+	const MapTerrain terrain;
 
 private:
 	void forceSetLevelLoaded(std::shared_ptr<Level> level) const noexcept;
@@ -89,6 +129,11 @@ inline bool Map::isGmap() const noexcept
 inline bool Map::isBigMap() const noexcept
 {
 	return mapType == MapType::BIGMAP;
+}
+
+inline bool Map::hasTerrain() const noexcept
+{
+	return !terrain.gridBorderTileHeightsXAxis.empty();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

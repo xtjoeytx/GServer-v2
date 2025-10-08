@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
+#include <format>
 #include <generator>
 #include <memory>
 #include <optional>
@@ -17,9 +18,12 @@
 #include <filesystem/FileSystem.h>
 #include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
+#include <level/LevelTerrain.h>
 #include <level/Map.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
+#include <utilities/Log.h>
+#include <utilities/Random.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -85,66 +89,61 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	// Get the appropriate filesystem.
 	auto server = BabyDI::Get<Server>();
 	auto& fileSystem = server->getFileSystem();
-	auto fullFilePath = fileSystem.find(fs::FileCategory::LEVEL, fileName);
+	auto fileInfo = fileSystem.infoi(fs::FileCategory::LEVEL, fileName);
 
 	// Make sure the file exists.
-	if (fullFilePath.empty())
+	if (fileInfo == nullptr)
 		return;
+
+	// Try to open the file.
+	auto file = fileInfo->openFile();
+	if (file == nullptr)
+		return;
+
+	// Save for later.
+	std::string mapName{ fs::getFileNameAsANSI(fileName.stem()) };
 
 	// Stupid.
 	auto& constructSize = const_cast<Dimension<uint8_t>&>(size);
 	auto& constructLevels = const_cast<string_map<Position<uint8_t>>&>(levels);
 	auto& constructPreload = const_cast<string_set&>(levelsToKeepInMemory);
+	auto& constructTerrain = const_cast<MapTerrain&>(terrain);
 	Position<uint8_t> currentPosition;
 
+	std::string generatedLastLevel;
+	std::vector<double> terrainGridHeights;
+
 	// Load the gmap.
-	auto fileData = CString::loadToken(fullFilePath.string());
-	for (auto it = fileData.begin(); it != fileData.end(); ++it)
+	while (!file->finished())
 	{
-		// Tokenize
-		auto curLine = string::splitHard(string::trim(it->toStringView()));
-		if (curLine.empty())
+		auto line = file->readLine();
+		auto lineView = string::trim(line);
+		if (lineView.empty() || lineView == "GRMAP001")
 			continue;
 
-		// Parse Each Type
-		if (curLine[0] == "WIDTH")
-		{
-			if (curLine.size() != 2)
-				continue;
+		auto [key, value] = string::extractConfigParts(lineView);
+		if (key.empty())
+			continue;
 
-			constructSize.width() = string::toNumber(curLine[1]);
-		}
-		else if (curLine[0] == "HEIGHT")
+		if (key == "WIDTH")
 		{
-			if (curLine.size() != 2)
-				continue;
-
-			constructSize.height() = string::toNumber(curLine[1]);
+			constructSize.width() = string::toNumber(std::string{ value });
 		}
-		else if (curLine[0] == "GENERATED")
+		else if (key == "HEIGHT")
 		{
-			if (curLine.size() != 2)
-				continue;
-
-			// Not really needed.
+			constructSize.height() = string::toNumber(std::string{ value });
 		}
-		else if (curLine[0] == "LEVELNAMES")
+		else if (key == "LEVELNAMES")
 		{
-			++it;
 			currentPosition.y() = 0;
 
-			while (it != fileData.end())
+			line = file->readLine();
+			lineView = string::trim(line);
+			while (!lineView.starts_with("LEVELNAMESEND"))
 			{
-				auto lines = string::fromCSV(string::trim(it->toStringView()));
-				if (lines.empty())
-				{
-					++it;
-					continue;
-				}
-				if (lines[0] == "LEVELNAMESEND") break;
-
 				if (currentPosition.y() < constructSize.height())
 				{
+					auto lines = string::fromCSV(lineView);
 					for (auto& levelName : lines)
 					{
 						if (currentPosition.x() < constructSize.width())
@@ -160,55 +159,242 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 					++currentPosition.y();
 				}
 
-				++it;
+				line = file->readLine();
+				lineView = string::trim(line);
 			}
 		}
-		else if (curLine[0] == "MAPIMG")
+		else if (key == "MAPIMG")
 		{
-			if (curLine.size() != 2)
-				continue;
-
-			const_cast<std::string&>(mapImage) = curLine[1];
+			const_cast<std::string&>(mapImage) = value;
 		}
-		else if (curLine[0] == "MINIMAPIMG")
+		else if (key == "MINIMAPIMG")
 		{
-			if (curLine.size() != 2)
-				continue;
-
-			const_cast<std::string&>(miniMapImage) = curLine[1];
+			const_cast<std::string&>(miniMapImage) = value;
 		}
-		else if (curLine[0] == "NOAUTOMAPPING")
+		else if (key == "NOAUTOMAPPING")
 		{
 			// Clientside only.
 		}
-		else if (curLine[0] == "LOADFULLMAP")
+		else if (key == "LOADFULLMAP")
 		{
 			const_cast<bool&>(keepAllLevelsLoaded) = true;
 		}
-		else if (curLine[0] == "LOADATSTART")
+		else if (key == "LOADATSTART")
 		{
 			const_cast<bool&>(keepAllLevelsLoaded) = false;
 
-			++it;
-			while (it != fileData.end())
+			line = file->readLine();
+			lineView = string::trim(line);
+			while (!lineView.starts_with("LOADATSTARTEND"))
 			{
-				auto lines = string::fromCSV(string::trim(it->toStringView()));
-				if (lines.empty())
-				{
-					++it;
-					continue;
-				}
-				if (lines[0] == "LOADATSTARTEND") break;
-
+				auto lines = string::fromCSV(lineView);
 				for (auto& levelName : lines)
 					constructPreload.emplace(string::toLower(levelName));
+
+				line = file->readLine();
+				lineView = string::trim(line);
 			}
 		}
-		// TODO: 3D settings maybe?
+		else if (key == "GENERATED")
+		{
+			generatedLastLevel = string::trim(value);
+		}
+		else if (key == "GENSEED")
+		{
+			constructTerrain.mapSeed = string::toNumber<uint32_t>(std::string{ value });
+		}
+		else if (key == "GENBASE")
+		{
+			constructTerrain.heightBase = string::toDouble(std::string{ value });
+		}
+		else if (key == "GENEVENBORDERS")
+		{
+			constructTerrain.evenBorders = string::equalsi(value, "true"sv);
+		}
+		else if (key == "GENHEIGHT")
+		{
+			constructTerrain.heightDeviation = string::toDouble(std::string{ value });
+		}
+		else if (key == "GENCHAOS")
+		{
+			constructTerrain.mapChaos = string::toDouble(std::string{ value });
+		}
+		else if (key == "LEVHEIGHT")
+		{
+			constructTerrain.levelHeightDeviation = string::toDouble(std::string{ value });
+		}
+		else if (key == "LEVCHAOS")
+		{
+			constructTerrain.levelChaos = string::toDouble(std::string{ value });
+		}
+		else if (key == "HEIGHTMAP")
+		{
+			line = file->readLine();
+			lineView = string::trim(line);
+			while (!lineView.starts_with("HEIGHTMAPEND"))
+			{
+				auto lines = string::fromCSV(lineView);
+				for (auto& height : lines)
+					terrainGridHeights.push_back(string::toDouble(height));
+
+				line = file->readLine();
+				lineView = string::trim(line);
+			}
+		}
+		else if (key == "RANDOMSEEDS")
+		{
+			line = file->readLine();
+			lineView = string::trim(line);
+			while (!lineView.starts_with("RANDOMSEEDSEND"))
+			{
+				auto lines = string::fromCSV(lineView);
+				for (auto& seed : lines)
+					constructTerrain.levelSeeds.push_back(string::toNumber<uint32_t>(seed));
+
+				line = file->readLine();
+				lineView = string::trim(line);
+			}
+		}
 	}
 
 	// Size the positional storage.
 	levelsByPosition.resize(static_cast<size_t>(constructSize.width()* constructSize.height()));
+
+	// If we don't have any levels, but we do have a generated level end, automatically create the levels.
+	if (constructLevels.empty() && !generatedLastLevel.empty())
+	{
+		auto columnDigits = std::floor(std::log(constructSize.width()) / std::log(26)) + 1;
+		auto rowDigits = std::floor(std::log10(constructSize.height())) + 1;
+
+		auto toColumnName = [](const size_t digits, size_t col) -> std::string
+		{
+			std::string result(digits, 'a');
+			auto iter = result.rbegin();
+			while (col > 0 && iter != result.rend())
+			{
+				auto remainder = col % 26;
+				*iter = 'a' + remainder;
+				col /= 26;
+				++iter;
+			}
+			return result;
+		};
+
+		// Using the pattern of the generated level name, create all the levels.
+		// prefix|column|row.nw
+		// Example: mymap_a-1.nw or mymap_a1.nw
+
+		// First, determine the separator between the prefix and the columns.
+		std::string_view genLevel{ generatedLastLevel };
+		std::string_view levelPrefix;
+		std::string_view columnSeparator = "_"sv;
+		std::string_view rowSeparator = "-"sv;
+
+		// Generated level starts with the map name.
+		if (genLevel.starts_with(fileName.stem().string()))
+		{
+			levelPrefix = genLevel.substr(0, fileName.stem().string().size());
+			genLevel = genLevel.substr(levelPrefix.length());
+		}
+		// Search for a - or _ separator.
+		else if (auto sepPos = genLevel.find_first_of("-_"sv); sepPos != std::string_view::npos)
+		{
+			levelPrefix = genLevel.substr(0, sepPos);
+			genLevel = genLevel.substr(levelPrefix.length());
+		}
+
+		// If we can't figure out the generated level prefix, just use the map file name.
+		if (levelPrefix.empty())
+		{
+			log::printLine(log::server, "** Could not determine generated level prefix for map '{}', using map name.", mapName);
+			levelPrefix = mapName;
+		}
+		else
+		{
+			// Find the first alphabetic character.
+			auto alphaPos = genLevel.find_first_of("abcdefghijklmnopqrstuvwxyz"sv);
+			if (alphaPos != std::string_view::npos)
+			{
+				columnSeparator = genLevel.substr(0, alphaPos);
+				genLevel = genLevel.substr(alphaPos);
+
+				if (auto last = genLevel.find_first_not_of("abcdefghijklmnopqrstuvwxyz"sv); last != std::string_view::npos)
+					genLevel = genLevel.substr(last);
+
+				// Find the first numeric character.
+				auto numericPos = genLevel.find_first_of("0123456789"sv);
+				if (numericPos != std::string_view::npos)
+					rowSeparator = genLevel.substr(0, numericPos);
+			}
+		}
+
+		std::string row;
+		for (size_t y = 0; y < constructSize.height(); ++y)
+		{
+			row = std::format("{:0{}}", y + 1, static_cast<int>(rowDigits));
+			for (size_t x = 0; x < constructSize.width(); ++x)
+			{
+				auto levelName = std::format("{}{}{}{}{}.nw", levelPrefix, columnSeparator, toColumnName(columnDigits, x), rowSeparator, row);
+				constructLevels.insert({ string::toLower(levelName), Position<uint8_t>{ static_cast<uint8_t>(x), static_cast<uint8_t>(y) } });
+			}
+		}
+	}
+
+	// If we have terrain heights, generate the row/column border heights.
+	if (!terrainGridHeights.empty())
+	{
+		size_t gridWidth = constructSize.width();
+		size_t gridHeight = constructSize.height();
+		constructTerrain.gridBorderTileHeightsXAxis.resize((gridWidth * 64 + 1)* (gridHeight + 1));
+		constructTerrain.gridBorderTileHeightsYAxis.resize((gridHeight * 64 + 1)* (gridWidth + 1));
+
+		// Get the corner heights for the map grid.
+		for (size_t column = 0; column <= gridWidth; ++column)
+		{
+			for (size_t row = 0; row <= gridHeight; ++row)
+			{
+				size_t index = (gridWidth + 1) * row + column;
+				size_t indexAxisX = ((gridWidth * 64 + 1) * row) + (column * 64);
+				size_t indexAxisY = (row * 64 * (gridWidth + 1)) + column;
+
+				if (index >= terrainGridHeights.size()
+					|| indexAxisX >= constructTerrain.gridBorderTileHeightsXAxis.size()
+					|| indexAxisY >= constructTerrain.gridBorderTileHeightsYAxis.size())
+					throw std::runtime_error("Invalid terrain height data in gmap file!");
+
+				auto heightValue = terrainGridHeights[index];
+				constructTerrain.gridBorderTileHeightsXAxis[indexAxisX] = heightValue;
+				constructTerrain.gridBorderTileHeightsYAxis[indexAxisY] = heightValue;
+			}
+		}
+
+		// Set our seed.
+		LevelTerrainWorker worker{
+			.levelHeight = constructTerrain.levelHeightDeviation,
+			.levelChaos = constructTerrain.levelChaos,
+			.random = DelphiRandomDeviceReal(constructTerrain.mapSeed),
+			.heightmap = &constructTerrain.gridBorderTileHeightsXAxis
+		};
+
+		// Fill in the border heights for the map grid.
+		for (size_t column = 0; column <= gridWidth; ++column)
+		{
+			for (size_t row = 0; row <= gridHeight; ++row)
+			{
+				if (column < gridWidth)
+				{
+					worker.heightmap = &constructTerrain.gridBorderTileHeightsXAxis;
+					floodFillHeights(worker, gridWidth * 64 + 1, worker.levelChaos, worker.levelHeight, row, (column + 1) * 64, row, column * 64);
+				}
+
+				if (row < gridHeight)
+				{
+					worker.heightmap = &constructTerrain.gridBorderTileHeightsYAxis;
+					floodFillHeights(worker, gridWidth + 1, worker.levelChaos, worker.levelHeight, (row + 1) * 64, column, row * 64, column);
+				}
+			}
+		}
+	}
 }
 
 //----------------------------

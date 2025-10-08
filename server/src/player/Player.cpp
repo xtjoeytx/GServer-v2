@@ -797,9 +797,14 @@ bool Player::isStaff()
 	return m_server->isStaff(account.name);
 }
 
-/*
-	Player: Set Properties
-*/
+///////////////////////////////////////////////////////////////////////////////
+
+double Player::getCalculatedTileZ() const noexcept
+{
+	return account.character.localPixelZ / 16.0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void Player::setNick(CString pNickName, bool force)
 {
@@ -1042,7 +1047,7 @@ void Player::constructScriptParameters()
 		gameValueGetter([this]() { return account.character.getGlobalPosition().y() / 16.0; }),
 		gameValueSetter(this, PROPOPT(PlayerProp::Y2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelY = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("z", set_temporary, "z",
-		gameValueGetter([this]() { return account.character.localPixelZ / 16.0; }),
+		gameValueGetter([this]() { return getCalculatedTileZ(); }),
 		gameValueSetter(this, PROPOPT(PlayerProp::Z2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("fullhearts", set_temporary, "fullhearts", gameValueGetter(account.maxHitpoints), gameValueSetter(this, PROPOPT(PlayerProp::MAXPOWER), account.maxHitpoints));
 	scriptParameters.try_emplace("maxhp", set_temporary, "maxhp", gameValueGetter(account.maxHitpoints), gameValueSetter(this, PROPOPT(PlayerProp::MAXPOWER), account.maxHitpoints));

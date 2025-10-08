@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
 #include <limits>
@@ -16,6 +17,7 @@
 #include <level/Level.h>
 #include <level/LevelBaddy.h>
 #include <level/LevelItem.h>
+#include <level/LevelTerrain.h>
 #include <level/LevelTiles.h>
 #include <level/Map.h>
 #include <loader/LevelLoader.h>
@@ -24,6 +26,7 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -265,16 +268,35 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 		}
 	}
 
-	// Load the level.
-	if (fileVersion == "GLEVNW01")
-		return loadNW(level, fileVersion.toStringView(), &fileSystem, fileData);
-	if (fileVersion.subString(0, 3) == "GR-")
-		return loadGraal(level, fileVersion.toStringView(), &fileSystem, fileData);
-	if (fileVersion.subString(0, 3) == "Z3-")
-		return loadZelda(level, fileVersion.toStringView(), &fileSystem, fileData);
+	// Set the default fill tile.
+	if (level->isOnGmap() && level->m_map->hasTerrain())
+		level->m_tiles[0] = LevelTiles(constants::EmptyTileInBase);
+	else
+		level->m_tiles[0] = LevelTiles(constants::BasicGrassTilePics1);
 
-	// Bad level version.
-	return nullptr;
+	// Load the level.
+	LevelPtr result = nullptr;
+	if (fileVersion == "GLEVNW01")
+		result = loadNW(level, fileVersion.toStringView(), &fileSystem, fileData);
+	if (fileVersion.subString(0, 3) == "GR-")
+		result = loadGraal(level, fileVersion.toStringView(), &fileSystem, fileData);
+	if (fileVersion.subString(0, 3) == "Z3-")
+		result = loadZelda(level, fileVersion.toStringView(), &fileSystem, fileData);
+
+	// Check for map terrain.
+	if (result != nullptr && result->m_map != nullptr && !result->m_map->terrain.levelSeeds.empty())
+	{
+		auto* map = result->m_map.get();
+		auto& terrain = result->terrain;
+		auto seedIndex = result->mapPosition.y() * map->size.width() + result->mapPosition.x();
+		terrain.levelSeed = map->terrain.levelSeeds[seedIndex];
+		terrain.levelHeight = map->terrain.levelHeightDeviation;
+		terrain.levelChaos = map->terrain.levelChaos;
+
+		generateTerrain(terrain, map->terrain, result->mapPosition, map->size);
+	}
+
+	return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -394,10 +416,14 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, std::string_view fileVersion, fs
 	}
 
 	// Load tiles.
-	for (uint8_t i = 0; i < layers; ++i)
+	for (uint8_t layer = 0; layer < layers; ++layer)
 	{
 		std::span<uint8_t> tiles(reinterpret_cast<uint8_t*>(fileData.text() + fileData.readPos()), fileData.bytesLeft());
-		auto read = readBinaryTiles(version > 1 ? 13 : 12, tiles, level->m_tiles[i], i != 0);
+
+		if (!level->m_tiles.contains(layer) && layer != 0)
+			level->m_tiles[layer] = LevelTiles(constants::EmptyTileInLayer);
+
+		auto read = readBinaryTiles(version > 1 ? 13 : 12, tiles, level->m_tiles[layer], layer != 0);
 		fileData.setRead(fileData.readPos() + read);
 	}
 
@@ -564,6 +590,9 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, std::string_view fileVersion, fs::F
 
 			if (curLine[5].length() >= w * 2)
 			{
+				if (!level->m_tiles.contains(layer) && layer != 0)
+					level->m_tiles[layer] = LevelTiles(constants::EmptyTileInLayer);
+
 				for (int ii = x; ii < x + w; ii++)
 				{
 					char left = curLine[5].readChar();
@@ -707,6 +736,31 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, std::string_view fileVersion, fs::F
 			for (char j = 0; j < (char)bverse.size(); ++j)
 				props >> (char)(PROPID(BaddyProp::VERSESIGHT) + j) >> (char)bverse[j].length() << bverse[j];
 			if (props.length() != 0) baddy->setPropsFromPacket(props);
+		}
+		else if (curLine[0] == "HEIGHTS")
+		{
+			++i;
+			size_t row = 0;
+			level->terrain.levelHeightOverrides.resize(81, std::nan(""));
+			while (i != fileLines.end())
+			{
+				if (*i == "HEIGHTSEND" || row > 8) break;
+
+				std::vector<CString> heights = i->tokenize(",");
+				if (heights.size() != 9)
+				{
+					++i;
+					++row;
+					continue;
+				}
+
+				// Load the heights into their appropriate positions.
+				for (size_t column = 0; column < 9; ++column)
+					level->terrain.levelHeightOverrides[row * 9 + column] = string::toDouble(heights[column].toString());
+
+				++i;
+				++row;
+			}
 		}
 		if (i == fileLines.end()) break;
 	}

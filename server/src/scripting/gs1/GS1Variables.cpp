@@ -66,8 +66,21 @@ void setGlobalVariables(GameVariableStore& variableStore)
 		}),
 		gameValueSetter([server](const GameValue& value, std::optional<size_t> index)
 		{
-			if (auto gravity = server->Scripting.variables.get("gravity").lock(); gravity != nullptr)
-				gravity->set(value.get<double>().value_or(2.0));
+			if (auto var = server->Scripting.variables.get("gravity").lock(); var != nullptr)
+				var->set(value.get<double>().value_or(2.0));
+		})
+	});
+
+	// waterheight
+	variableStore.add(GameValue{ "waterheight",
+		gameValueGetter([server]()
+		{
+			return server->Scripting.variables.getValue<double>("waterheight").value_or(0.0);
+		}),
+		gameValueSetter([server](const GameValue& value, std::optional<size_t> index)
+		{
+			if (auto var = server->Scripting.variables.get("waterheight").lock(); var != nullptr)
+				var->set(value.get<double>().value_or(0.0));
 		})
 	});
 
@@ -88,10 +101,6 @@ void setGlobalVariables(GameVariableStore& variableStore)
 		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 40320) % 10); }), GameValue::func_set{} });
 	variableStore.add(GameValue{ "nwyear",	// Years start at 1000
 		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 403200) + 1000); }), GameValue::func_set{} });
-
-	/*
-		waterheight
-	*/
 }
 
 void setNPCVariables(GameVariableStore& variableStore, std::weak_ptr<NPC> npc)

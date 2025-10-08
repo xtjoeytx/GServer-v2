@@ -26,9 +26,11 @@
 #include <level/LevelLink.h>
 #include <level/LevelShoot.h>
 #include <level/LevelSign.h>
+#include <level/LevelTerrain.h>
 #include <level/LevelTiles.h>
 #include <level/Map.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 
@@ -46,14 +48,14 @@ class Level : public std::enable_shared_from_this<Level>
 	friend class LevelLoader;
 
 private:
-	Level(uint16_t fillTile = 0);
+	Level();
 
 public:
 	//! Destructor.
 	~Level();
 
 public:
-	static std::shared_ptr<Level> createLevel(uint16_t fillTile = 511, std::string_view levelName = ""sv);
+	static std::shared_ptr<Level> createLevel(std::string_view levelName = ""sv, std::optional<uint16_t> fillTile = std::nullopt);
 	static std::shared_ptr<Level> clone(LevelPtr level);
 
 public:
@@ -104,10 +106,16 @@ public:
 	auto& getLayers() { return m_tiles; }
 
 public:
+	bool hasTerrain() const noexcept;
+	double getHeightAt(const LocalPixelPosition& position) const noexcept;
+	double getMapHeightAt(const PixelPosition& position) const noexcept;
+
+public:
 	CString getBoardPacket();
 	CString getLayerPacket(int i);
 	CString getBoardChangesPacket(time_t time);
 	CString getBoardChangesPacket2(time_t time);
+	void sendBoardHeightsToPlayer(std::shared_ptr<Player> player) const;
 	void sendBaddiesToPlayer(std::shared_ptr<Player> player) const;
 	void sendChestsToPlayer(std::shared_ptr<Player> player) const;
 	void sendHorsesToPlayer(std::shared_ptr<Player> player) const;
@@ -266,6 +274,7 @@ public:
 	bool isSparringZone = false;
 	bool isNoPkZone = false;
 	bool isSingleplayer = false;
+	LevelTerrain terrain;
 	clock::time_point modTime;
 	ScriptContainer scripting;
 
@@ -277,7 +286,7 @@ private:
 	std::shared_ptr<Map> m_map;
 
 	std::map<uint8_t, LevelTiles> m_tiles;
-	LevelTiles m_scriptUpdatedTiles{ constants::EmptyTile };
+	LevelTiles m_scriptUpdatedTiles{ constants::EmptyTileInLayer };
 	std::vector<LevelBoardChange> m_boardChanges;
 
 	std::deque<PlayerID> m_players;

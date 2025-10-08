@@ -207,7 +207,7 @@ inline void NPCServer::addEventToControlNPC(ScriptEventType type, ScriptObject s
 	for (auto& [id, npcPtr] : m_globalNPCList)
 	{
 		if (auto npc = npcPtr.lock(); npc != nullptr && npc->scriptType == NPCTYPE_CONTROL)
-			npc->scripting.events.addEvent(type, source, std::forward<decltype(args)>(args)...);
+			npc->scripting.events.addEvent(type, source, args...);
 	}
 }
 

@@ -81,6 +81,8 @@ public:
 	const CString& getGroup() const;
 	void setGroup(const CString& group);
 
+	virtual double getCalculatedTileZ() const noexcept override;
+
 	// Level manipulation
 	std::string getComputedLevelName() const;
 	std::shared_ptr<Level> getLevel() const;

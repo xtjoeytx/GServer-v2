@@ -1225,7 +1225,7 @@ std::shared_ptr<Level> Server::stubOrGetLevel(std::string_view levelName)
 	if (auto it = m_levelList.find(lowerCaseLevel); it != m_levelList.end())
 		return it->second;
 
-	auto level = Level::createLevel(511, levelName);
+	auto level = Level::createLevel(levelName);
 	m_levelList.insert(std::make_pair(lowerCaseLevel, level));
 	return level;
 }

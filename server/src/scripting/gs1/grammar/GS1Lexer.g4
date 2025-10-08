@@ -669,7 +669,6 @@ FUNC_GROUP_1
 		| 'onwall2'
 		| 'onwater'
 		| 'onwater2'
-		| 'groundsheight'
 		| 'keydown'
 		| 'keydown2'
 		| 'arraylen'
