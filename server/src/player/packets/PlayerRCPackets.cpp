@@ -1152,8 +1152,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	// Get player.
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
 	if (p == nullptr)
-		p = m_server->getPlayer(acc, PLTYPE_ANYCONTROL);
-	if (p == nullptr)
 	{
 		if (!m_server->getFileSystemServer().hasi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc.toStringView())))
 			return HandlePacketResult::Handled;
@@ -1176,7 +1174,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	}
 
 	// Don't allow you to remove your own PLPERM_MODIFYSTAFFACCOUNT or PLPERM_SETRIGHTS.
-	if (p.get() == this)
+	if (string::equalsi(p->account.name, this->account.name))
 	{
 		if ((n_adminRights & PLPERM_MODIFYSTAFFACCOUNT) == 0)
 			n_adminRights |= PLPERM_MODIFYSTAFFACCOUNT;

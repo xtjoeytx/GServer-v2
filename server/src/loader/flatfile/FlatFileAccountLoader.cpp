@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
@@ -298,6 +299,10 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	// Don't save 'Load Only' or RC accounts.
 	if (account.loadOnly)
 		return false;
+
+#ifdef DEBUG
+	assert(account.level.empty() == false);
+#endif
 
 	std::string colorStr = std::format("{},{},{},{},{}", account.character.colors[0], account.character.colors[1], account.character.colors[2], account.character.colors[3], account.character.colors[4]);
 	std::string defaultColorStr = "2,0,10,4,18";
