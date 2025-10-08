@@ -99,6 +99,7 @@ protected:
 	void setCurrentPlayerVariables(std::optional<ScriptObject> source);
 
 public:
+	virtual std::any visitProgram(GS1Parser::ProgramContext* ctx) override;
 	virtual std::any visitBlock(GS1Parser::BlockContext* ctx) override;
 	//
 	virtual std::any visitStatementIf(GS1Parser::StatementIfContext* context) override;

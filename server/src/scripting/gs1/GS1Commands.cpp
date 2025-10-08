@@ -497,7 +497,7 @@ static std::optional<PixelPosition> getPositionForArrow(const ScriptObject& sour
 void fn_debugger(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	auto server = BabyDI::Get<Server>();
-	auto sourceNPC = visitor->getOriginalSource();
+	const auto& sourceNPC = visitor->getOriginalSource();
 	auto sourcePlayer = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
 	NPCPtr npc = nullptr;
 	PlayerPtr player = nullptr;

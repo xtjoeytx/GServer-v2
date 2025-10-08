@@ -576,6 +576,33 @@ void GS1Visitor::reportError(std::string_view message, antlr4::tree::ParseTree* 
 
 ////////////////////////////////////////////////////////////////////////////////
 
+std::any GS1Visitor::visitProgram(GS1Parser::ProgramContext* ctx)
+{
+	for (auto node : ctx->children)
+	{
+		try
+		{
+			node->accept(this);
+		}
+		// If we get the following exceptions in the block, just continue on to the next statement.
+		catch (const break_exception&) {}
+		catch (const continue_exception&) {}
+		catch (const return_exception&) {}
+		// Sleeps stop execution.
+		catch (const sleep_exception&)
+		{
+			throw;
+		}
+		// Anything else also stops execution.
+		catch (...)
+		{
+			throw;
+		}
+	}
+
+	return {};
+}
+
 std::any GS1Visitor::visitBlock(GS1Parser::BlockContext* ctx)
 {
 	if (ctx->children.empty())
@@ -618,6 +645,11 @@ std::any GS1Visitor::visitBlock(GS1Parser::BlockContext* ctx)
 			try
 			{
 				currentNode->accept(this);
+			}
+			catch (const sleep_exception&)
+			{
+				// Don't pop off the call stack so we can resume from this spot.
+				throw;
 			}
 			catch (...)
 			{
