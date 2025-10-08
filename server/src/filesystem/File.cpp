@@ -59,12 +59,19 @@ std::string getFileNameAsANSI(const std::filesystem::path& file)
 #else
 	// Hacky version for Linux using deprecated C++.
 	// TODO: Link to ICU.
-	std::locale loc{};
-	using wcvt = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>;
-	auto wstr = wcvt{}.from_bytes(file.filename().string());
-	std::string result(wstr.size(), '0');
-	std::use_facet<std::ctype<wchar_t>>(loc).narrow(wstr.data(), wstr.data() + wstr.size(), '?', &result[0]);
-	return result;
+	try
+	{
+		std::locale loc{};
+		using wcvt = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>;
+		auto wstr = wcvt{}.from_bytes(file.filename().string());
+		std::string result(wstr.size(), '\0');
+		std::use_facet<std::ctype<wchar_t>>(loc).narrow(wstr.data(), wstr.data() + wstr.size(), '?', &result[0]);
+		return result;
+	}
+	catch (...)
+	{
+		return file.filename().string();
+	}
 #endif
 }
 
