@@ -128,7 +128,7 @@ enum class NPCProp : uint8_t
 	GATTRIB29 = 72,
 	GATTRIB30 = 73,
 
-	CLASS = 74, // NPC-Server class.  Possibly also join scripts.
+	CLASS = 74,
 	X2 = 75,
 	Y2 = 76,
 	Z2 = 77,

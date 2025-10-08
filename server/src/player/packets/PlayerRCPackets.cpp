@@ -132,11 +132,12 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERCONFIGGET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	CString foldersConfig;
-	foldersConfig.load("config/foldersconfig.txt");
-	foldersConfig.removeAllI("\r");
+	if (auto file = m_server->getFileSystemServer().open(fs::FileCategory::CONFIG, "foldersconfig.txt"); file != nullptr && file->opened())
+	{
+		auto foldersConfig = string::toCSV(file->readAllLines());
+		sendPacket(CString() >> (char)PLO_RC_FOLDERCONFIGGET << foldersConfig);
+	}
 
-	sendPacket(CString() >> (char)PLO_RC_FOLDERCONFIGGET << foldersConfig.gtokenize());
 	return HandlePacketResult::Handled;
 }
 
@@ -326,6 +327,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 		log::printLine(log::rc, "[Hack] {} attempted to view the server flags.", account.name);
 		return HandlePacketResult::Handled;
 	}
+
 	CString ret;
 	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)m_server->Scripting.variables.store.size();
 	for (const auto& [flag, value] : m_server->Scripting.variables.store | variables::no_temporary)
@@ -690,9 +692,13 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 			return HandlePacketResult::Handled;
 	}
 
-	sendPacket(CString() >> (char)PLO_RC_ACCOUNTGET >> (char)acc.length() << acc >> (char)0                                                      /*>> (char)password_length << password*/
-			   >> (char)p->account.email.size() << p->account.email >> (char)(p->account.banned ? 1 : 0) >> (char)(p->account.loadOnly ? 1 : 0) >> (char)0 /*admin level*/
-			   >> (char)4 << "main" >> (char)p->account.banLength.size() << p->account.banLength >> (char)p->account.banReason.size() << p->account.banReason);
+	sendPacket(CString() >> (char)PLO_RC_ACCOUNTGET >> (char)acc.length() << acc
+		>> (char)0 // >> (char)password_length << password
+		>> (char)p->account.email.size() << p->account.email
+		>> (char)(p->account.banned ? 1 : 0) >> (char)(p->account.loadOnly ? 1 : 0) >> (char)0 // admin level
+		>> (char)4 << "main"
+		>> (char)p->account.banLength.size() << p->account.banLength
+		>> (char)p->account.banReason.size() << p->account.banReason);
 
 	return HandlePacketResult::Handled;
 }
@@ -799,11 +805,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 #endif
 		if (words[0] == "/help" && words.size() == 1)
 		{
-			CString rchelp;
-			rchelp.load("config/rchelp.txt");
-			rchelp.removeAllI("\r").trimI();
-			for (auto& command : rchelp.tokenize("\n", true))
-				sendPacket(CString() >> (char)PLO_RC_CHAT << command);
+			if (auto file = m_server->getFileSystemServer().open(fs::FileCategory::CONFIG, "rchelp.txt"); file != nullptr)
+				sendPacket(CString() >> (char)PLO_RC_CHAT << string::toCSV(file->readAllLines()));
 		}
 		else if (words[0] == "/version" && words.size() == 1)
 		{
@@ -868,19 +871,6 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 			message.readString(" ");
 			CString acc = message.readString("");
 			return msgPLI_RC_PLAYERPROPSRESET(CString() << acc);
-		}
-		else if (words[0] == "/refreshservermessage" && words.size() == 1)
-		{
-			m_server->loadServerMessage();
-			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " refreshed the server message.");
-			log::printLine(log::rc, "{} refreshed the server message.", account.name);
-		}
-
-		else if (words[0] == "/refreshfilesystem" && words.size() == 1)
-		{
-			m_server->loadFileSystem();
-			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " refreshed the server file list.");
-			log::printLine(log::rc, "{} refreshed the server file list.", account.name);
 		}
 		else if (words[0] == "/updatelevel" && words.size() != 1 && account.hasRight(PLPERM_UPDATELEVEL))
 		{
@@ -956,30 +946,12 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server Uptime:" << msg);
 		}
-		else if (words[0] == "/reloadwordfilter" && words.size() == 1)
-		{
-			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " reloaded the word filter.");
-			log::printLine(log::rc, "{} reloaded the word filter.", account.name);
-			m_server->loadWordFilter();
-		}
-		else if (words[0] == "/reloadipbans" && words.size() == 1)
-		{
-			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " reloaded the ip bans.");
-			log::printLine(log::rc, "{} reloaded the ip bans.", account.name);
-			m_server->loadIPBans();
-		}
-		else if (words[0] == "/reloadweapons" && words.size() == 1)
-		{
-			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " reloaded the weapons.");
-			log::printLine(log::rc, "{} reloaded the weapons.", account.name);
-			m_server->loadWeapons(true);
-		}
 		else if (words[0] == "/savenpcs" && words.size() == 1)
 		{
 			if (m_server->hasNPCServer())
 			{
 				m_server->getNPCServer()->saveNPCs();
-				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " saved npc to disk.");
+				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " saved all npcs to disk.");
 				log::printLine(log::npc, "{} saved the npcs to disk.", account.name);
 			}
 		}

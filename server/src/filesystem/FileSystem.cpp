@@ -347,12 +347,8 @@ std::shared_ptr<File> FileSystem::open(FileCategory category, const std::filesys
 	}
 
 	// Check if the file exists in the native file system and file is a filename we want to find.
-	{
-		std::scoped_lock guard{ m_file_mutex };
-
-		if (auto fileData = info(category, file); fileData != nullptr)
-			return std::make_shared<File>(fileData->file);
-	}
+	if (auto fileData = info(category, file); fileData != nullptr)
+		return std::make_shared<File>(fileData->file);
 
 	return nullptr;
 }
@@ -367,12 +363,8 @@ std::generator<std::shared_ptr<File>> FileSystem::open(const std::filesystem::pa
 		co_return;
 	}
 
-	{
-		std::scoped_lock guard{ m_file_mutex };
-
-		for (auto& fileData : info(file))
-			co_yield std::make_shared<File>(fileData.file);
-	}
+	for (auto& fileData : info(file))
+		co_yield std::make_shared<File>(fileData.file);
 }
 
 std::shared_ptr<File> FileSystem::open(const FileData& fileData) const

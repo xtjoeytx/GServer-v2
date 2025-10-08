@@ -46,12 +46,12 @@ concept StringViewVariantNotUnicode = StringViewVariant<T> && !StringViewVariant
 template<typename T>
 concept PointerToConstCharString = std::is_bounded_array_v<std::remove_cvref_t<T>> && std::is_same_v<std::remove_all_extents_t<std::remove_cvref_t<T>>, char>;
 
-// A concept that checks if a type is a forward range, but not a string.
+// A concept that checks if a type is an input range, but not a string.
 template<typename T>
-concept ForwardRangeNotString = std::ranges::forward_range<T> && !StringViewVariant<T> && !PointerToConstCharString<T>;
+concept InputRangeNotString = std::ranges::input_range<T> && !StringViewVariant<T> && !PointerToConstCharString<T>;
 
 template<typename T>
-concept NotForwardRangeNotString = !ForwardRangeNotString<T>;
+concept NotInputRangeNotString = !InputRangeNotString<T>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -724,10 +724,10 @@ std::string join(std::ranges::forward_range auto&& range, std::string_view delim
 ///////////////////////////////////////////////////////////////////////////////
 
 /// @brief Converts a range of strings to a single CSV-formatted string, quoting fields as needed.
-/// @param range A forward range of string-like elements to be converted to CSV format.
+/// @param range An input range of string-like elements to be converted to CSV format.
 /// @param force_quoted If true, all fields will be quoted regardless of content. Defaults to false.
 /// @return A std::string containing the CSV-formatted representation of the input range, with fields separated by commas and quoted as necessary.
-auto toCSV(ForwardRangeNotString auto&& range, bool force_quoted = false)
+auto toCSV(InputRangeNotString auto&& range, bool force_quoted = false)
 {
 	constexpr std::array<char, 3> complexChars = { '"', ',', '\\' };
 	std::ostringstream oss;

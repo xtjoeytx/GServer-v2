@@ -736,13 +736,13 @@ public:
 	/// @param type The type of the script event to add.
 	/// @param initiator Who initiated the event.
 	/// @param ...args A list of additional arguments to be passed with the event.
-	[[inline]] void addEvent(ScriptEventType type, ScriptObject initiator, string::NotForwardRangeNotString auto&&... args);
+	[[inline]] void addEvent(ScriptEventType type, ScriptObject initiator, string::NotInputRangeNotString auto&&... args);
 
 	/// @brief Adds an event to the queue with the specified type, initiator, and additional arguments.
 	/// @param type The type of the script event to add.
 	/// @param initiator Who initiated the event.
 	/// @param range A list of additional arguments to be passed with the event.
-	[[inline]] void addEvent(ScriptEventType type, ScriptObject initiator, string::ForwardRangeNotString auto&& range);
+	[[inline]] void addEvent(ScriptEventType type, ScriptObject initiator, string::InputRangeNotString auto&& range);
 
 private:
 	void addEvent(const ScriptEvent& event);
@@ -759,13 +759,13 @@ inline std::deque<ScriptEvent>& ScriptEventQueue::queue()
 	return m_eventQueue;
 }
 
-inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObject initiator, string::NotForwardRangeNotString auto&&... args)
+inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObject initiator, string::NotInputRangeNotString auto&&... args)
 {
 	ScriptEvent event{ .type = type, .initiator = initiator, .args = { std::forward<decltype(args)>(args)... } };
 	addEvent(std::move(event));
 }
 
-inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObject initiator, string::ForwardRangeNotString auto&& range)
+inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObject initiator, string::InputRangeNotString auto&& range)
 {
 	static_assert(!string::PointerToConstCharString<decltype(range)>,
 		"Don't use a const char* in the ranged variant of ScriptEventQueue::addEvent, pass in a std::string_view instead.");

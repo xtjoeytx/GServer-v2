@@ -5,16 +5,18 @@ Available commands for GServer:
 /open accountname: Opens the player's attributes window.
 /openacc accountname: Opens the player's account window.
 /opencomments accountname: Opens the player's comments window.
+/openaccess accountname: ?
 /openban accountname: Opens the player's ban info.
 /openrights accountname: Opens the player's rights window.
 /reset accountname: Resets the account.
-/refreshservermessage: Reloads servermessage.html.
 /updatelevel level[,level]: Reloads levels from hard disk.
 /updatelevelall: updates all loaded levels.
 /restartserver: Restarts the server, kicking all joined players.
 /reloadserver: Reloads the server configuration files.
 /updateserverhq: Sends the ServerHQ information to the serverlist.
-/reloadipbans: Reloads the ip bans.
+/serveruptime: Displays the server uptime.
+/savenpcs: Saves all database NPCs.
+/stats: Displays NPC script execution statistics.
 /find file: Finds a file.  Accepts wildcards.
 /synctranslation [language]: Scans for any new translation entries.
 /generatetranslationstubs: Generates translation files for all languages.
