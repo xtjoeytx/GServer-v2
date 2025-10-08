@@ -700,7 +700,7 @@ void Server::loadFolderConfig()
 			typeEnum = fs::FileCategory::SOUND;
 
 		m_fsWorld.addFoldersConfigEntry(typeEnum, world / config);
-		log::printLine(log::server, "adding {} [{}] to {}", config.parent_path().generic_string(), fs::getFileNameAsANSI(config), type);
+		log::printLine(log::server, "adding {}/ [{}] to {}", config.parent_path().generic_string(), fs::getFileNameAsANSI(config), type);
 	}
 
 	m_fsWorld.bind("world");
