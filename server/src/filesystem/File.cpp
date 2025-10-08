@@ -21,10 +21,54 @@
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
+#ifdef PLATFORM_WINDOWS
+#include <stdexcept>
+#include <windows.h>
+#endif
+
+#ifdef PLATFORM_UNIX
+#include <codecvt>
+#include <locale>
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::fs
 {
 ///////////////////////////////////////////////////////////////////////////////
+
+std::string getFileNameAsANSI(const std::filesystem::path& file)
+{
+#ifdef PLATFORM_WINDOWS
+	// Graal uses ANSI encoding for filenames, so convert so we don't mangle the filenames in Windows.
+	std::filesystem::path::string_type fileName = file.filename().native();
+
+	// Calculate the required buffer size for the conversion.
+	int bufferSize = WideCharToMultiByte(1252, 0, fileName.c_str(), -1, nullptr, 0, nullptr, nullptr);
+	if (bufferSize == 0)
+		throw std::runtime_error("Failed to calculate buffer size for CP-1252 conversion.");
+
+	// Allocate the string.
+	std::string result(bufferSize - 1, '\0');
+
+	// Convert to CP-1252.
+	int bytesWritten = WideCharToMultiByte(1252, 0, fileName.c_str(), -1, &result[0], bufferSize, nullptr, nullptr);
+	if (bytesWritten == 0)
+		throw std::runtime_error("Failed to convert file name to CP-1252.");
+
+	return result;
+#else
+	// Hacky version for Linux using deprecated C++.
+	// TODO: Link to ICU.
+	std::locale loc{};
+	using wcvt = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>;
+	auto wstr = wcvt{}.from_bytes(fileName.string());
+	std::string result(wstr.size(), '0');
+	std::use_facet<std::ctype<char32_t>>(loc).narrow(wstr.data(), wstr.data() + wstr.size(), '?', &result[0]);
+	return result;
+#endif
+}
+
+//----------------------------
 
 bool File::open() const
 {

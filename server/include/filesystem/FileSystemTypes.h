@@ -32,24 +32,6 @@ inline clock::time_point getFileModTime(const std::filesystem::path& file)
 	return std::chrono::clock_cast<clock>(std::filesystem::last_write_time(file));
 }
 
-/// @brief Returns the filename component of a filesystem path as an ANSI encoded std::string.
-/// @param file The filesystem path from which to extract the filename.
-/// @return A std::string containing the filename part of the path, encoded in ANSI.
-inline std::string getFileNameAsANSI(const std::filesystem::path& file)
-{
-#ifdef PLATFORM_WINDOWS
-	// Graal uses ANSI encoding for filenames, so convert so we don't mangle the filenames in Windows.
-	std::filesystem::path::string_type fileName = file.filename().native();
-
-	std::vector<char> buf(fileName.size());
-	std::use_facet<std::ctype<wchar_t>>(std::locale(".1252")).narrow(fileName.data(), fileName.data() + fileName.size(), '?', buf.data());
-	return std::string{ buf.data(), buf.size() };
-#else
-	// Unix based platforms use UTF-8 filenames, which are ANSI compatible, so no conversion is necessary.  Maybe.
-	return file.filename().string();
-#endif
-}
-
 //----------------------------
 
 /// @brief A category assigned to a file.

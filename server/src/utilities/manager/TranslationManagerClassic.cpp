@@ -15,7 +15,7 @@
 
 #include <CString.h>
 
-#include <filesystem/FileSystemTypes.h>
+#include <filesystem/File.h>
 #include <utilities/Log.h>
 #include <utilities/manager/ITranslationManager.h>
 #include <utilities/manager/TranslationManagerClassic.h>

@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include <filesystem/FileSystemTypes.h>
+#include <filesystem/File.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 
