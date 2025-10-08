@@ -61,7 +61,7 @@ std::string getFileNameAsANSI(const std::filesystem::path& file)
 	// TODO: Link to ICU.
 	std::locale loc{};
 	using wcvt = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>;
-	auto wstr = wcvt{}.from_bytes(fileName.string());
+	auto wstr = wcvt{}.from_bytes(file.filename().string());
 	std::string result(wstr.size(), '0');
 	std::use_facet<std::ctype<char32_t>>(loc).narrow(wstr.data(), wstr.data() + wstr.size(), '?', &result[0]);
 	return result;

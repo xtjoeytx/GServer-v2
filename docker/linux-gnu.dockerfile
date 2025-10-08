@@ -18,7 +18,7 @@ RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
 	&& cd $VCPKG_ROOT \
 	&& sh bootstrap-vcpkg.sh -disableMetrics \
 	&& cd /tmp/gserver \
-	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build --preset "Release x64" -DVCPKG_TARGET_TRIPLET:STRING=${ARCH}-linux -DSTATIC=ON -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=ON -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
+	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build --preset "Linux Release" -DVCPKG_TARGET_TRIPLET:STRING=${ARCH}-linux -DSTATIC=ON -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=ON -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
 	&& cmake --build /tmp/gserver/build --target clean \
 	&& cmake --build /tmp/gserver/build --target package --parallel $(getconf _NPROCESSORS_ONLN) \
 	&& rm -rf /tmp/gserver/dist/_CPack_Packages \

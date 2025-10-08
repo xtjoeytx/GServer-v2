@@ -217,15 +217,6 @@ std::array<std::string, 255> OutputPacketNamesArray = FillPutputPacketNamesArray
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// I don't want to deal with adding this to the gs2lib.
-[[maybe_unused]] static CString& operator<<(CString& first, std::span<char>&& second)
-{
-	first.write(second.data(), static_cast<int>(second.size()));
-	return first;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 CString ShootPacketWrapper::constructShootV1() const
 {
 	CString packet;
@@ -584,12 +575,12 @@ bool Player::sendFile(const std::filesystem::path& file)
 		{
 			// We don't add a \n to the end of the packet, so subtract 1 from the packet length.
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength - 1 + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << fileDataSpan.subspan(0, sendSize), false);
+			sendPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{ fileDataSpan.subspan(0, sendSize) }, false);
 		}
 		else
 		{
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)filename.length() << filename << fileDataSpan.subspan(0, sendSize) << "\n", false);
+			sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)filename.length() << filename << std::string_view{ fileDataSpan.subspan(0, sendSize) } << "\n", false);
 		}
 
 		fileDataSpan = fileDataSpan.subspan(sendSize);

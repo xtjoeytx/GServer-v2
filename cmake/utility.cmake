@@ -41,18 +41,30 @@ function(set_default_compiler_options target ISTESTTARGET)
 		)
 	endif()
 
-	# --- Defines ----------------------------------------------------------------------
+	# GCC static compile.
+	if(STATIC AND CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+		target_compile_options(${target} PUBLIC -static-libstdc++)
+	endif()
 
+	# MinGW links.
 	if(MINGW)
 		target_compile_options(${target} PUBLIC "-mthreads")
 		target_link_options(${target} PUBLIC "-mthreads")
-		target_compile_definitions(${target} PUBLIC -D__STDC_FORMAT_MACROS -D_DEFAULT_SOURCE=1)
 	endif()
 
+	# --- Defines ----------------------------------------------------------------------
+
+	# Unicode in Windows.
 	if(MSVC OR MINGW)
 		target_compile_definitions(${target} PUBLIC UNICODE _UNICODE)
 	endif()
 
+	# MinGW definitions.
+	if(MINGW)
+		target_compile_definitions(${target} PUBLIC -D__STDC_FORMAT_MACROS -D_DEFAULT_SOURCE=1)
+	endif()
+
+	# Test definitions.
 	if(TESTS AND ISTESTTARGET)
 		target_compile_definitions(${target} PUBLIC NOMAIN _NOMAIN)
 	endif()
