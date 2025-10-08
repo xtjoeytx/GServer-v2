@@ -408,6 +408,9 @@ bool Player::onSend()
 	// Send data.
 	m_fileQueue.sendCompress();
 
+	// Update last send time.
+	m_lastData = time(0);
+
 	return true;
 }
 

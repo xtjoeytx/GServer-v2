@@ -215,7 +215,7 @@ bool PlayerClient::doTimedEvents()
 	// Increase online time.
 	++account.onlineSeconds;
 
-	// Disconnect if no data has been received in 5 minutes.
+	// Disconnect if no data has been sent or received in 5 minutes.
 	if ((int)difftime(currTime, m_lastData) > 300)
 	{
 		log::printLine(log::server, "** [Disconnect] {}: Client has timed out.", account.name);
