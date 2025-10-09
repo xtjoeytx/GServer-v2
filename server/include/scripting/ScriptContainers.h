@@ -577,8 +577,8 @@ GameValue GameValue::deserialize(std::string identifier, const std::string_view 
 	if constexpr (std::same_as<T, std::vector<double>>)
 	{
 		std::vector<double> array;
-		for (auto& number : string::splitHard(data, ","sv))
-			array.emplace_back(string::toDouble(number));
+		for (auto number : string::split(data, ","sv))
+			array.emplace_back(string::toDouble(std::string{ number }));
 		return GameValue{ std::move(identifier), std::move(array) };
 	}
 	return GameValue{};

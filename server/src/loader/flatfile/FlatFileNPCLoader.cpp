@@ -2,7 +2,6 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
-#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <iterator>
@@ -128,7 +127,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "IMGPART")
 		{
-			auto parts = string::splitHard(lineView, " "sv);
+			auto parts = string::splitToVector(lineView, " "sv);
 			if (parts.size() >= 4)
 			{
 				npc->imagePart.position = { string::toNumber<uint16_t>(parts[0]), string::toNumber<uint16_t>(parts[1]) };
@@ -256,7 +255,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "COLORS")
 		{
-			auto tokens = string::splitHard(lineView, ","sv);
+			auto tokens = string::splitToVector(lineView, ","sv);
 			for (size_t idx = 0; idx < std::min(tokens.size(), (size_t)5); idx++)
 				npc->character.colors[idx] = string::toNumber<uint8_t>(tokens[idx]);
 			npc->modTime[PROPID(NPCProp::COLORS)] = updateTime;
@@ -306,7 +305,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "SAVEARR")
 		{
-			auto tokens = string::splitHard(lineView, ","sv);
+			auto tokens = string::splitToVector(lineView, ","sv);
 			for (size_t idx = 0; idx < std::min(tokens.size(), npc->saves.size()); idx++)
 			{
 				npc->saves[idx] = string::toNumber<uint8_t>(tokens[idx]);

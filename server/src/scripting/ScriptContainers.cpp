@@ -154,8 +154,8 @@ std::optional<GameValue> GameValue::deserialize(const std::string_view line)
 			return GameValue{ std::string{ identifier }, string::toDouble(std::string{ value }) };
 
 		std::vector<double> array;
-		for (auto& number : string::splitHard(value.substr(1, value.length() - 2), ","sv))
-			array.emplace_back(string::toDouble(number));
+		for (std::string_view number : string::split(value.substr(1, value.length() - 2), ","sv))
+			array.emplace_back(string::toDouble(std::string{ number }));
 		return GameValue{ std::string{ identifier }, std::move(array) };
 	}
 

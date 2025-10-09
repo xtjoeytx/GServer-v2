@@ -1011,7 +1011,8 @@ void Player::sendPrivateMessage(PlayerID from, std::string_view message)
 	if (message.empty())
 		return;
 
-	auto lines = string::splitHardByString(string::replace(message, "\n", "#b"), "#b"sv);
+	auto convertedMessage = string::replace(message, "\n", "#b");
+	auto lines = string::splitByString(convertedMessage, "#b"sv);
 	auto finalMessage = string::toCSV(lines, true);
 
 	sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)from << finalMessage);

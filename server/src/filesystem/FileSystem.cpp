@@ -353,6 +353,22 @@ std::shared_ptr<File> FileSystem::open(FileCategory category, const std::filesys
 	return nullptr;
 }
 
+std::shared_ptr<File> FileSystem::openi(FileCategory category, const std::filesystem::path& file) const
+{
+	// Check if the file exists in the native file system and file is a direct path.
+	if (std::filesystem::exists(file))
+	{
+		auto f = std::make_shared<File>(file);
+		return f;
+	}
+
+	// Check if the file exists in the native file system and file is a filename we want to find.
+	if (auto fileData = infoi(category, file); fileData != nullptr)
+		return std::make_shared<File>(fileData->file);
+
+	return nullptr;
+}
+
 std::generator<std::shared_ptr<File>> FileSystem::open(const std::filesystem::path& file) const
 {
 	// Check if the file exists in the native file system and file is a direct path.

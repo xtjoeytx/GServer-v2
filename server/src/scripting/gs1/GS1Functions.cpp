@@ -543,7 +543,7 @@ GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view messageCode, co
 
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto list = visitor->getGameValueAs<std::string>(*arguments[1]);
-	auto listItems = string::splitHard(list, ","sv);
+	auto listItems = string::splitToVector(list, ","sv);
 	for (size_t i = 0; i < listItems.size(); ++i)
 	{
 		if (string::trim(listItems[i]) == string::trim(str))

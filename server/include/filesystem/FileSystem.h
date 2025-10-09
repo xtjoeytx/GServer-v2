@@ -186,13 +186,17 @@ public:
 	/// @return A shared pointer to the file.
 	std::shared_ptr<File> open(FileCategory category, const std::filesystem::path& file) const;
 
-	/// @brief Gets a file by name.
+	/// @brief Gets multiple files by name.
 	/// @return A shared pointer to the file.
 	std::generator<std::shared_ptr<File>> open(const std::filesystem::path& file) const;
 
-	/// @brief Gets a file by name.
+	/// @brief Gets a file from the file data.
 	/// @return A shared pointer to the file.
 	std::shared_ptr<File> open(const FileData& fileData) const;
+
+	/// @brief Gets a file by name (case-insensitive).
+	/// @return A shared pointer to the file.
+	std::shared_ptr<File> openi(FileCategory category, const std::filesystem::path& file) const;
 
 	/// @brief Returns a generator that yields references to the managed directories.
 	/// @return A generator that produces references to each managed directory.

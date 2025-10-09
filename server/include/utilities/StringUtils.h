@@ -7,7 +7,9 @@
 #include <concepts>
 #include <cstdint>
 #include <cstdlib>
+#include <generator>
 #include <iterator>
+#include <memory>
 #include <optional>
 #include <ranges>
 #include <sstream>
@@ -30,17 +32,23 @@ namespace preagonal::string
 template<typename T>
 concept StringVariant = std::same_as<std::remove_cvref_t<T>, std::string> || std::same_as<std::remove_cvref_t<T>, std::wstring>;
 
-// A concept that checks if a type is a string or string_view.
+// A concept that checks if a type is a string_view.
 template<typename T>
-concept StringViewVariant = StringVariant<T> || std::same_as<std::remove_cvref_t<T>, std::string_view> || std::same_as<std::remove_cvref_t<T>, std::wstring_view>;
+concept StringViewVariant = std::same_as<std::remove_cvref_t<T>, std::string_view> || std::same_as<std::remove_cvref_t<T>, std::wstring_view>;
 
 // A concept that checks if a type is a string or string_view.
 template<typename T>
-concept StringViewVariantUnicode = StringViewVariant<T> || std::same_as<std::remove_cvref_t<T>, std::u8string> || std::same_as<std::remove_cvref_t<T>, std::u8string_view>;
+concept StringViewIshVariant = StringVariant<T> || StringViewVariant<T>;
+
+/*
+// A concept that checks if a type is a string or string_view.
+template<typename T>
+concept StringViewVariantUnicode = StringViewIshVariant<T> || std::same_as<std::remove_cvref_t<T>, std::u8string> || std::same_as<std::remove_cvref_t<T>, std::u8string_view>;
 
 // A concept that checks if a type is a string or string_view.
 template<typename T>
-concept StringViewVariantNotUnicode = StringViewVariant<T> && !StringViewVariantUnicode<T>;
+concept StringViewVariantNotUnicode = StringViewIshVariant<T> && !StringViewVariantUnicode<T>;
+*/
 
 // A concept that checks if a type is a pointer to a const char string (e.g. const char[], const char[N], const char*).
 template<typename T>
@@ -48,7 +56,7 @@ concept PointerToConstCharString = std::is_bounded_array_v<std::remove_cvref_t<T
 
 // A concept that checks if a type is an input range, but not a string.
 template<typename T>
-concept InputRangeNotString = std::ranges::input_range<T> && !StringViewVariant<T> && !PointerToConstCharString<T>;
+concept InputRangeNotString = std::ranges::input_range<T> && !StringViewIshVariant<T> && !PointerToConstCharString<T>;
 
 template<typename T>
 concept NotInputRangeNotString = !InputRangeNotString<T>;
@@ -234,7 +242,7 @@ struct hash_string_equal
 /// @brief Trims whitespace from the start of a string.
 /// @param str A string or string_view to trim.
 /// @return A string_view to the trimmed string.
-std::string_view trimLeft(StringViewVariant auto const& str)
+std::string_view trimLeft(StringViewIshVariant auto const& str)
 {
 	std::string_view view{ str };
 	auto size = str.size();
@@ -250,7 +258,7 @@ std::string_view trimLeft(StringViewVariant auto const& str)
 /// @brief Trims whitespace from the end of a string.
 /// @param str A string or string_view to trim.
 /// @return A string_view to the trimmed string.
-std::string_view trimRight(StringViewVariant auto const& str)
+std::string_view trimRight(StringViewIshVariant auto const& str)
 {
 	std::string_view view{ str };
 	for (size_t i = view.size(); i > 0; --i)
@@ -265,7 +273,7 @@ std::string_view trimRight(StringViewVariant auto const& str)
 /// @brief Trims newlines (\\n and \\r) from the end of a string.
 /// @param str A string or string_view to trim.
 /// @return A string_view to the trimmed string.
-std::string_view trimNewlines(StringViewVariant auto const& str)
+std::string_view trimNewlines(StringViewIshVariant auto const& str)
 {
 	std::string_view view{ str };
 	for (size_t i = view.size(); i > 0; --i)
@@ -280,7 +288,7 @@ std::string_view trimNewlines(StringViewVariant auto const& str)
 /// @brief Trims whitespace from the start and end of a string.
 /// @param str A string or string_view to trim.
 /// @return A string_view to the trimmed string.
-std::string_view trim(StringViewVariant auto const& str)
+std::string_view trim(StringViewIshVariant auto const& str)
 {
 	return trimLeft(trimRight(str));
 }
@@ -509,7 +517,7 @@ inline std::string& eraseCharsMutate(std::string& in, std::string_view chars)
 /// @brief Escapes quotes in a string using a CSV-like format.
 /// @param str The input string or string_view to escape quotes in.
 /// @return A new string with quotes escaped.
-auto escapeQuotes(StringViewVariant auto const str)
+auto escapeQuotes(StringViewIshVariant auto const str)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -540,7 +548,7 @@ auto escapeQuotes(StringViewVariant auto const str)
 /// @brief Unescapes quotes in a string that were escaped using a CSV-like format.
 /// @param str The input string or string_view to unescape quotes in.
 /// @return A new string with quotes unescaped.
-auto unescapeQuotes(StringViewVariant auto const& str)
+auto unescapeQuotes(StringViewIshVariant auto const& str)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -599,31 +607,18 @@ auto unescapeQuotes(StringViewVariant auto const& str)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// Splits a string on the specified delimiter, returning a range.
-/* GCC hates this.
-auto split(std::string_view str, std::string_view delim = "\n"sv)
-{
-	return str
-		| std::views::split(delim)
-		| std::views::transform([](auto r) { return std::string_view{ r }; });
-}
-*/
-
-/// @brief Splits a string into tokens based on a set of delimiter characters, returning the results as a vector.
-/// @tparam T The type of each token in the resulting vector. Defaults to std::string.
-/// @param str The input string to split. Can be any type compatible with string view semantics.
-/// @param delims A set of delimiter characters used to split the string. Defaults to whitespace characters (space, tab, newline, carriage return).
-/// @return A vector containing the tokens extracted from the input string, with each token converted to type T.
-template <typename T = std::string>
-std::vector<T> splitHard(StringViewVariant auto const& str, StringViewVariant auto delims, bool ignoreEmpty = true)
+/// @brief Splits a string into tokens based on a list of delimiters and returns them as a generator of string views.
+/// @param str The input string to split. Can be any type compatible with string view.
+/// @param delims A string containing delimiter characters used to split the input.
+/// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
+/// @return A generator yielding each token as a std::string_view.
+auto split(StringViewVariant auto str, StringViewVariant auto delims, bool ignoreEmpty) -> std::generator<decltype(str)>
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
+	StringViewType strview{ str };
 
-	std::vector<T> tokens{};
-	std::basic_string_view<Elem, Traits> strview{ str };
-
-	// Collect the tokens.
 	size_t start = 0, end = 0;
 	while (start < str.length())
 	{
@@ -631,46 +626,34 @@ std::vector<T> splitHard(StringViewVariant auto const& str, StringViewVariant au
 		end = strview.find_first_of(delims, start);
 
 		// None found, so add the rest of the string.
-		if (end == std::string_view::npos)
+		if (end == StringViewType::npos)
 		{
-			tokens.push_back(T{ strview.substr(start) });
+			co_yield strview.substr(start);
 			break;
 		}
 
 		// Add the token to the vector.
 		if (end > start)
-			tokens.push_back(T{ strview.substr(start, end - start) });
+			co_yield strview.substr(start, end - start);
 		else if (!ignoreEmpty)
-			tokens.push_back(T{});
+			co_yield StringViewType{};
 
 		start = end + 1;
 	}
-
-	return tokens;
 }
 
-template <typename T = std::string>
-std::vector<T> splitHard(StringViewVariant auto const& str)
-{
-	return splitHard(str, " \t\n\r"sv);
-}
-
-
-/// @brief Splits a string into tokens based on a deliminating string, returning the results as a vector.
-/// @tparam T The type of each token in the resulting vector. Defaults to std::string.
-/// @param str The input string to split. Can be any type compatible with string view semantics.
-/// @param delim The string used to split the input string into fields. Defaults to a newline.
-/// @return A vector containing the tokens extracted from the input string, with each token converted to type T.
-template <typename T = std::string>
-std::vector<T> splitHardByString(StringViewVariant auto const& str, StringViewVariant auto delim)
+/// @brief Splits a string into tokens separated by a delimiting string and returns them as a generator of string views.
+/// @param str The input string to split. Can be any type compatible with string view.
+/// @param delim A string used to split the input.
+/// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
+/// @return A generator yielding each token as a std::string_view.
+auto splitByString(StringViewVariant auto str, StringViewVariant auto delim, bool ignoreEmpty) -> std::generator<decltype(str)>
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
+	StringViewType strview{ str };
 
-	std::vector<T> tokens{};
-	std::basic_string_view<Elem, Traits> strview{ str };
-
-	// Collect the tokens.
 	size_t start = 0, end = 0;
 	while (start < str.length())
 	{
@@ -678,36 +661,157 @@ std::vector<T> splitHardByString(StringViewVariant auto const& str, StringViewVa
 		end = strview.find(delim, start);
 
 		// None found, so add the rest of the string.
-		if (end == std::string_view::npos)
+		if (end == StringViewType::npos)
 		{
-			tokens.push_back(T{ strview.substr(start) });
+			co_yield strview.substr(start);
 			break;
 		}
 
 		// Add the token to the vector.
 		if (end > start)
-			tokens.push_back(T{ strview.substr(start, end - start) });
-		else
-			tokens.push_back(T{});
+			co_yield strview.substr(start, end - start);
+		else if (!ignoreEmpty)
+			co_yield StringViewType{};
 
 		start = end + delim.length();
 	}
+}
+
+/// @brief Splits a string into a vector of tokens based on specified delimiters.
+/// @param str The input string to split.
+/// @param delims A string containing delimiter characters used to split the input string.
+/// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the result.
+/// @return A vector of strings containing the tokens extracted from the input string.
+auto splitToVector(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delims, bool ignoreEmpty)
+{
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringType = std::basic_string<Elem, Traits>;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
+	StringViewType strview{ str };
+	StringViewType delimview{ delims };
+
+	std::vector<StringType> tokens;
+	for (const auto& token : split(strview, delimview, ignoreEmpty))
+		tokens.emplace_back(token);
 
 	return tokens;
 }
 
-template <typename T = std::string>
-std::vector<T> splitHardByString(StringViewVariant auto const& str)
+/// @brief Splits a string into a vector of substrings using a specified delimiter.
+/// @param str The input string to be split.
+/// @param delim The delimiter string used to split the input.
+/// @param ignoreEmpty If true, empty substrings are ignored; otherwise, they are included in the result.
+/// @return A vector containing the substrings resulting from splitting the input string by the delimiter.
+auto splitToVectorByString(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delim, bool ignoreEmpty)
 {
-	return splitHardByString(str, "\n"sv);
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringType = std::basic_string<Elem, Traits>;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
+	StringViewType strview{ str };
+	StringViewType delimview{ delim };
+
+	std::vector<StringType> tokens;
+	for (const auto& token : splitByString(strview, delimview, ignoreEmpty))
+		tokens.emplace_back(token);
+
+	return tokens;
 }
 
+//----------------------------
+
+/// @brief Splits a string into tokens based on whitespace and returns them as a generator of string views, ignoring empty tokens.
+/// @param str The input string to split. Can be any type compatible with string view.
+/// @return A generator yielding each token as a std::string_view.
+auto split(StringViewVariant auto str) -> std::generator<decltype(str)>
+{
+	for (const auto& item : split(str, " \t\n\r"sv, true))
+		co_yield item;
+}
+
+/// @brief Splits a string into tokens based on a list of delimiters and returns them as a generator of string views, ignoring empty tokens.
+/// @param str The input string to split. Can be any type compatible with string view.
+/// @param delims A string containing delimiter characters used to split the input. Defaults to whitespace characters.
+/// @return A generator yielding each token as a std::string_view.
+auto split(StringViewVariant auto str, StringViewVariant auto delims) -> std::generator<decltype(str)>
+{
+	for (const auto& item : split(str, delims, true))
+		co_yield item;
+}
+
+/// @brief Splits a string into tokens separated by a delimiting string and returns them as a generator of string views, ignoring empty tokens.
+/// @param str The input string to split. Can be any type compatible with string view.
+/// @param delim A string used to split the input.
+/// @return A generator yielding each token as a std::string_view.
+auto splitByString(StringViewVariant auto str, StringViewVariant auto delim) -> std::generator<decltype(str)>
+{
+	for (const auto& item : splitByString(str, delim, true))
+		co_yield item;
+}
+
+/// @brief Splits a string into a vector of tokens based on whitespace, ignoring empty tokens.
+/// @param str The input string to split.
+/// @return A vector of strings containing the tokens extracted from the input string.
+auto splitToVector(StringViewIshVariant auto const& str)
+{
+	return splitToVector(str, " \t\n\r"sv, true);
+}
+
+/// @brief Splits a string into a vector of tokens based on specified delimiters, ignoring empty tokens.
+/// @param str The input string to split.
+/// @param delims A string containing delimiter characters used to split the input string.
+/// @return A vector of strings containing the tokens extracted from the input string.
+auto splitToVector(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delims)
+{
+	return splitToVector(str, delims, true);
+}
+
+/// @brief Splits a string into a vector of substrings using a specified delimiter, ignoring empty tokens.
+/// @param str The input string to be split.
+/// @param delim The delimiter string used to split the input.
+/// @return A vector containing the substrings resulting from splitting the input string by the delimiter.
+auto splitToVectorByString(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delim)
+{
+	return splitToVectorByString(str, delim, true);
+}
+
+//----------------------------
+
+/// @brief Splits a string into tokens based on a list of delimiters and returns them as a generator of string views.
+/// @param str The input string to split. Can be any type compatible with string view.
+/// @param delims A string containing delimiter characters used to split the input.
+/// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
+/// @return A generator yielding each token as a std::string_view.
+inline std::generator<std::string_view> split(std::string& str, std::string_view delims, bool ignoreEmpty = true)
+{
+	for (const auto& item : split(std::string_view{ str }, delims, ignoreEmpty))
+		co_yield item;
+}
+inline std::generator<std::wstring_view> split(std::wstring& str, std::wstring_view delims, bool ignoreEmpty = true)
+{
+	for (const auto& item : split(std::wstring_view{ str }, delims, ignoreEmpty))
+		co_yield item;
+}
+
+/// @brief Splits a string into tokens separated by a delimiting string and returns them as a generator of string views, ignoring empty tokens.
+/// @param str The input string to split. Can be any type compatible with string view.
+/// @param delim A string used to split the input.
+/// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
+/// @return A generator yielding each token as a std::string_view.
+inline std::generator<std::string_view> splitByString(std::string& str, std::string_view delim, bool ignoreEmpty = true)
+{
+	for (const auto& item : splitByString(std::string_view{ str }, delim, ignoreEmpty))
+		co_yield item;
+}
+
+//----------------------------
 
 /// @brief Joins the elements of a range into a single string, separated by a specified delimiter.
-/// @param range A forward range containing elements to join. The elements must be streamable to std::ostringstream.
+/// @param range An input range containing elements to join. The elements must be streamable to std::ostringstream.
 /// @param delim The delimiter string to insert between elements. Defaults to ','.
 /// @return A string containing the joined elements of the range, separated by the specified delimiter.
-std::string join(std::ranges::forward_range auto&& range, std::string_view delim = ",")
+std::string join(std::ranges::input_range auto&& range, std::string_view delim = ",")
 {
 	std::ostringstream oss;
 	auto it = std::ranges::begin(range);
@@ -716,7 +820,7 @@ std::string join(std::ranges::forward_range auto&& range, std::string_view delim
 		oss << *it;
 		++it;
 	}
-	for (; it != std::end(range); ++it)
+	for (; it != std::ranges::end(range); ++it)
 		oss << delim << *it;
 	return oss.str();
 }
@@ -774,9 +878,14 @@ auto toCSV(InputRangeNotString auto&& range, bool force_quoted = false)
 /// @param delim The character used to split the input string into fields. Defaults to newline ('\n').
 /// @param force_quoted If true, all fields will be quoted in the resulting CSV. Defaults to false.
 /// @return A CSV-formatted string constructed from the split fields of the input.
-auto toCSV(StringViewVariant auto const& str, std::string_view delim = "\n"sv, bool force_quoted = false)
+auto toCSV(StringViewIshVariant auto const& str, std::string_view delim = "\n"sv, bool force_quoted = false)
 {
-	auto s = splitHard(str, delim);
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
+	StringViewType strview{ str };
+
+	auto s = splitByString(strview, delim);
 	return toCSV(s, force_quoted);
 }
 
@@ -784,7 +893,7 @@ auto toCSV(StringViewVariant auto const& str, std::string_view delim = "\n"sv, b
 /// @param str The input string or string view containing CSV data to parse.
 /// @param ignoreLeadingWhitespace If true, leading spaces and tabs before each field are ignored. Defaults to false.
 /// @return A vector of strings, each representing a parsed field from the CSV input.
-std::vector<std::string> fromCSV(StringViewVariant auto const& str, bool ignoreLeadingWhitespace = false)
+std::vector<std::string> fromCSV(StringViewIshVariant auto const& str, bool ignoreLeadingWhitespace = false)
 {
 	std::vector<std::string> tokens{};
 	auto token = std::string{};
@@ -885,7 +994,7 @@ std::vector<std::string> fromCSV(StringViewVariant auto const& str, bool ignoreL
 /// @param str1 The first string-like object to compare.
 /// @param str2 The second string-like object to compare.
 /// @return An integer less than, equal to, or greater than zero if str1 is found, respectively, to be less than, to match, or be greater than str2 in a case-insensitive comparison.
-int comparei(StringViewVariantUnicode auto str1, StringViewVariantUnicode auto str2)
+int comparei(StringViewIshVariant auto const& str1, StringViewIshVariant auto const& str2)
 {
 	auto it1 = str1.begin();
 	auto it2 = str2.begin();
@@ -903,7 +1012,7 @@ int comparei(StringViewVariantUnicode auto str1, StringViewVariantUnicode auto s
 /// @param str1 The first string-like object to compare.
 /// @param str2 The second string-like object to compare.
 /// @return true if the strings are equal (case-insensitive), false otherwise.
-bool equalsi(StringViewVariantUnicode auto str1, StringViewVariantUnicode auto str2)
+bool equalsi(StringViewIshVariant auto const& str1, StringViewIshVariant auto const& str2)
 {
 	return comparei(std::forward<decltype(str1)>(str1), std::forward<decltype(str2)>(str2)) == 0;
 }
@@ -913,7 +1022,7 @@ bool equalsi(StringViewVariantUnicode auto str1, StringViewVariantUnicode auto s
 /// @param substr The substring to search for.
 /// @param pos The position in the string to start the search from. Defaults to 0.
 /// @return The index of the first occurrence of the substring (case-insensitive) in the string after the specified position, or std::string::npos if not found.
-size_t findi(StringViewVariant auto str, StringViewVariant auto substr, size_t pos = 0)
+size_t findi(StringViewIshVariant auto const& str, StringViewIshVariant auto const& substr, size_t pos = 0)
 {
 	if (pos >= str.size())
 		return std::string::npos;
@@ -933,9 +1042,9 @@ size_t findi(StringViewVariant auto str, StringViewVariant auto substr, size_t p
 ///////////////////////////////////////////////////////////////////////////////
 
 /// @brief Converts all characters in the input string to uppercase, using the current C locale (not locale-aware).
-/// @param str The input string or string view to convert to uppercase. Accepts any type compatible with StringViewVariant.
+/// @param str The input string or string view to convert to uppercase. Accepts any type compatible with StringViewIshVariant.
 /// @return A new string with all characters converted to uppercase, preserving the original string's character type and traits.
-auto toUpper(StringViewVariant auto str)
+auto toUpper(StringViewIshVariant auto const& str)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -949,9 +1058,9 @@ auto toUpper(StringViewVariant auto str)
 }
 
 /// @brief Converts all characters in the input string to lowercase, using the current C locale (not locale-aware).
-/// @param str The input string or string view to be converted to lowercase. Accepts any type compatible with StringViewVariant.
+/// @param str The input string or string view to be converted to lowercase. Accepts any type compatible with StringViewIshVariant.
 /// @return A new string with all characters from the input converted to lowercase, preserving the original character and traits types.
-auto toLower(StringViewVariant auto str)
+auto toLower(StringViewIshVariant auto const& str)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -1094,10 +1203,10 @@ inline std::string extractLine(std::string_view& str, char delim = '\n')
 }
 
 /// @brief Splits a string into two trimmed parts using a specified delimiter.
-/// @param str The input string to split. Can be any type compatible with StringViewVariant.
+/// @param str The input string to split.
 /// @param delim The character used as the delimiter to split the string. Defaults to a space (' ').
 /// @return A pair of std::string_view objects: the first is the trimmed substring before the delimiter, the second is the trimmed substring after the delimiter (or empty if the delimiter is not found).
-inline std::pair<std::string_view, std::string_view> extractConfigParts(StringViewVariant auto const& str, char delim = ' ')
+inline std::pair<std::string_view, std::string_view> extractConfigParts(StringViewIshVariant auto const& str, char delim = ' ')
 {
 	using StrType = std::remove_cvref_t<decltype(str)>;
 
@@ -1110,7 +1219,7 @@ inline std::pair<std::string_view, std::string_view> extractConfigParts(StringVi
 ///////////////////////////////////////////////////////////////////////////////
 
 template<bool ignoreCase = false>
-inline bool match(StringViewVariant auto const& str, StringViewVariant auto const& mask)
+inline bool match(StringViewIshVariant auto const& str, StringViewIshVariant auto const& mask)
 {
 	using str_value_type = std::remove_cvref_t<decltype(str)>::value_type;
 	using mask_value_type = std::remove_cvref_t<decltype(mask)>::value_type;

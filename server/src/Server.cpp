@@ -860,10 +860,10 @@ void Server::loadAllowedVersions()
 				std::string versionRange = string::trimMutate(versions.readString("\n").toString());
 
 				std::vector<std::string> formattedVersions;
-				for (const auto& version : string::splitHard(versionRange, ","sv))
+				for (const auto& version : string::split(versionRange, ","sv))
 				{
 					m_allowedVersions.push_back(version);
-					auto rangeParts = string::splitHard(version, ":"sv);
+					auto rangeParts = string::splitToVector(version, ":"sv);
 					if (rangeParts.size() == 1)
 					{
 						formattedVersions.push_back(getVersionString(rangeParts[0], PLTYPE_ANYCLIENT));

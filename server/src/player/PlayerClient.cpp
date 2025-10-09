@@ -1622,8 +1622,8 @@ void PlayerClient::unfreezePlayer()
 void PlayerClient::sendRPGMessage(std::string message)
 {
 	string::replaceMutate(message, "\n", "#b");
-	auto splitString = string::splitHardByString(translate(message), "#b"sv);
-	sendPacket(CString() >> (char)PLO_RPGWINDOW << string::toCSV(splitString));
+	auto translated = translate(message);
+	sendPacket(CString() >> (char)PLO_RPGWINDOW << string::toCSV(string::splitByString(translated, "#b"sv)));
 }
 
 void PlayerClient::sendSignMessage(std::string message)

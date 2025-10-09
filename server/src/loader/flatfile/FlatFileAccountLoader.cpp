@@ -78,7 +78,7 @@ flagPair FlatFileAccountLoader::decomposeFlag(const std::string& flag) const
 chestPair FlatFileAccountLoader::decomposeChest(const std::string& chest) const
 {
 	chestPair result;
-	auto tokens = string::splitHard(chest, ":"sv);
+	auto tokens = string::splitToVector(chest, ":"sv);
 	if (tokens.size() == 3)
 	{
 		result.second.first = string::toNumber<int8_t>(tokens[0]);
@@ -171,7 +171,7 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 			account.character.shieldImage = val;
 		else if (section == "COLORS")
 		{
-			auto tokensAsNumbers = string::splitHard<std::string_view>(val, ","sv) | std::views::take(5) | std::views::transform([](const std::string_view& token) { return toByte(std::string{ token }); });
+			auto tokensAsNumbers = string::split(val, ","sv) | std::views::take(5) | std::views::transform([](const std::string_view& token) { return toByte(std::string{ token }); });
 			std::ranges::copy(tokensAsNumbers, account.character.colors.begin());
 		}
 		else if (section == "SPRITE")
@@ -232,7 +232,7 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 		else if (section == "LOCALRIGHTS")
 			account.adminRights = string::toNumber<uint32_t>(val);
 		else if (section == "IPRANGE")
-			account.adminIpRange = string::splitHard(val, ","sv);
+			account.adminIpRange = string::splitToVector(val, ","sv);
 		else if (section == "LOADONLY")
 			account.loadOnly = toByte(val) != 0;
 		else if (section == "FOLDERRIGHT")

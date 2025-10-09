@@ -953,7 +953,7 @@ void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const st
 
 	if (auto* listVar = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
-		auto list = string::splitHard(listVar->get<std::string>().value_or(std::string{}), ","sv, false);
+		auto list = string::splitToVector(listVar->get<std::string>().value_or(std::string{}), ","sv, false);
 		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 
 		// Check for out of bounds.
@@ -1312,7 +1312,7 @@ void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const st
 
 	if (auto* listVar = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); listVar != nullptr)
 	{
-		auto list = string::splitHard(listVar->get<std::string>().value_or(std::string{}), ","sv, false);
+		auto list = string::splitToVector(listVar->get<std::string>().value_or(std::string{}), ","sv, false);
 		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 		auto text = visitor->getGameValueAs<std::string>(*arguments[2]);
 
@@ -1574,14 +1574,10 @@ void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vec
 
 		auto server = BabyDI::Get<Server>();
 		auto& fs = server->getFileSystem();
-		auto filepath = fs.findi(fs::FileCategory::FILE, scriptfile);
-		if (!filepath.empty())
+		if (auto file = fs.openi(fs::FileCategory::FILE, scriptfile); file != nullptr)
 		{
-			if (auto file = fs.open(fs::FileCategory::FILE, filepath); file != nullptr)
-			{
-				auto script = file->readAsString();
-				server->addNPC(imagefile, script, x, y, level, NPCStorageType::LEVEL, true);
-			}
+			auto script = file->readAsString();
+			server->addNPC(imagefile, script, x, y, level, NPCStorageType::LEVEL, true);
 		}
 	}
 }
@@ -2308,7 +2304,7 @@ void fn_setpm(GS1Visitor* visitor, std::string_view commandName, const std::vect
 	auto* server = BabyDI::Get<Server>();
 	if (auto npcServerPlayer = server->getNPCServer()->getPlayerNPCServer(); npcServerPlayer != nullptr)
 	{
-		auto lines = string::splitHard(message, "#b"sv);
+		auto lines = string::split(message, "#b"sv);
 		auto finalMessage = string::toCSV(lines, true);
 		npcServerPlayer->privateMessage = finalMessage;
 	}
@@ -3069,7 +3065,7 @@ void fn_tokenize(GS1Visitor* visitor, std::string_view commandName, const std::v
 		throw std::invalid_argument("invalid arguments: tokenize text");
 
 	auto text = visitor->getGameValueAs<std::string>(*arguments[0]);
-	visitor->tokenizeTokens = string::splitHard(text, " "sv);
+	visitor->tokenizeTokens = string::splitToVector(text, " "sv);
 	visitor->builtInStore->add(GameValue{ set_temporary, "tokenscount", static_cast<double>(visitor->tokenizeTokens.size()) });
 }
 
@@ -3082,7 +3078,7 @@ void fn_tokenize2(GS1Visitor* visitor, std::string_view commandName, const std::
 
 	auto delims = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
-	visitor->tokenizeTokens = string::splitHard(text, delims);
+	visitor->tokenizeTokens = string::splitToVector(text, delims);
 	visitor->builtInStore->add(GameValue{ set_temporary, "tokenscount", static_cast<double>(visitor->tokenizeTokens.size()) });
 }
 

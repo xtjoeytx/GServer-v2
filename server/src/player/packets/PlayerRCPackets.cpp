@@ -22,6 +22,7 @@
 #include <BabyDI.h>
 #include <Account.h>
 #include <Server.h>
+#include <filesystem/File.h>
 #include <filesystem/FileSystem.h>
 #include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
@@ -516,7 +517,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 		auto accountName = fileInfo.file.stem().generic_string();
 		if (accountName.empty()) continue;
 		if (!string::match<true>(accountName, name.toStringView())) continue;
-		if (conditions.length() == 0 || m_server->getAccountLoader().checkSearchConditions(accountName, string::splitHard(conditions, std::string_view(","))))
+		if (conditions.length() == 0 || m_server->getAccountLoader().checkSearchConditions(accountName, string::splitToVector(conditions, std::string_view(","))))
 			ret >> (char)accountName.length() << accountName;
 	}
 
@@ -787,7 +788,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 
 	CString message = pPacket.readString("");
 	if (message.isEmpty()) return HandlePacketResult::Handled;
-	auto words = string::splitHard(message.toStringView());
+	auto words = string::splitToVector(message.toStringView());
 
 	if (words[0].at(0) != '/')
 	{
@@ -874,8 +875,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 		}
 		else if (words[0] == "/updatelevel" && words.size() != 1 && account.hasRight(PLPERM_UPDATELEVEL))
 		{
-			auto levels = string::splitHard(words[1]);
-			for (auto& l : levels)
+			for (std::string_view l : string::split(std::string_view{ words[1] }))
 			{
 				auto level = m_server->getLevel(l);
 				if (level)
@@ -1158,8 +1158,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	p->account.adminRights = n_adminRights;
 
 	std::string adminIp = pPacket.readChars(pPacket.readGUChar()).toString();
-	p->account.adminIpRange.clear();
-	std::ranges::copy(string::splitHard(adminIp, std::string_view{ "," }), std::back_inserter(p->account.adminIpRange));
+	p->account.adminIpRange = string::splitToVector(adminIp, ","sv);
 
 	// Untokenize and load the directories.
 	std::vector<std::string> folders = string::fromCSV(pPacket.readChars(pPacket.readGUShort()).toString());
