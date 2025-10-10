@@ -259,6 +259,7 @@ void Weapon::registerWeaponWithPlayer(std::shared_ptr<Player> player) const
 	{
 		std::string script = getClientSideScript();
 		weaponPacket >> (char)NPCProp::SCRIPT >> (short)script.length() << script;
+		player->sendPacket(weaponPacket);
 	}
 	// If we have bytecode, send the weapon headers.
 	else
