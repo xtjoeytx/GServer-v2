@@ -488,11 +488,11 @@ bool Player::sendFile(const std::filesystem::path& file)
 	// to the client if it gets changed after it was originally sent
 	if (auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); isClient() && client != nullptr)
 	{
-		client->m_knownFiles.insert(fs::getFileNameAsANSI(file));
+		client->m_knownFiles.insert(fs::getANSIFileName(file));
 	}
 
 	auto& filesystem = m_server->getFileSystem();
-	std::string filename = fs::getFileNameAsANSI(file);
+	std::string filename = fs::getANSIFileName(file);
 
 	auto sendFailure = [this, &filename](std::string_view message) -> bool
 	{

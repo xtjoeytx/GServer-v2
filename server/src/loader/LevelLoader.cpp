@@ -238,7 +238,7 @@ LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path&
 	auto& fileSystem = server->getFileSystem();
 
 	// Find the level file.
-	auto levelString = fs::getFileNameAsANSI(levelName);
+	auto levelString = fs::getANSIFileName(levelName);
 	auto levelData = fileSystem.info(fs::FileCategory::LEVEL, levelString);
 	if (levelData == nullptr)
 		return nullptr;

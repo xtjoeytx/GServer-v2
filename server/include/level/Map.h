@@ -118,7 +118,7 @@ private:
 
 inline std::string Map::getMapName() const noexcept
 {
-	return fs::getFileNameAsANSI(fileName);
+	return fs::getANSIFileName(fileName);
 }
 
 inline bool Map::isGmap() const noexcept

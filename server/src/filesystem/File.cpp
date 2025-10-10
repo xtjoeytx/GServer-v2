@@ -37,7 +37,7 @@ namespace preagonal::fs
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string getFileNameAsANSI(const std::filesystem::path& file)
+std::string getANSIFileName(const std::filesystem::path& file)
 {
 #ifdef PLATFORM_WINDOWS
 	// Graal uses ANSI encoding for filenames, so convert so we don't mangle the filenames in Windows.

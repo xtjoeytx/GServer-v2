@@ -251,7 +251,7 @@ void NPCServer::loadClasses()
 	for (auto& info : m_server->getFileSystemServer().info(fs::FileCategory::SCRIPTCLASS))
 	{
 		auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
-		std::string fileName = fs::getFileNameAsANSI(info.file);
+		std::string fileName = fs::getANSIFileName(info.file);
 		std::string className = fileName.substr(0, fileName.length() - 4);
 
 		CString scriptData;
@@ -379,7 +379,7 @@ std::shared_ptr<NPC> NPCServer::addNPCFromFile(const std::filesystem::path& file
 	auto npc = npcLoader.loadNPC(filePath);
 	if (npc)
 	{
-		auto fileName = fs::getFileNameAsANSI(filePath);
+		auto fileName = fs::getANSIFileName(filePath);
 		auto npcName = fileName.substr(3, fileName.length() - 7); // Remove npc and .txt
 		if (npc->name != npcName)
 		{

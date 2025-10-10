@@ -985,7 +985,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 			std::vector<std::string> categories;
 			for (auto& fileInfo : m_server->getFileSystem().info(fs::FileCategory::ALL))
 			{
-				CString fileName = fs::getFileNameAsANSI(fileInfo.file);
+				CString fileName = fs::getANSIFileName(fileInfo.file);
 				if (fileName.match(search))
 				{
 					categories.clear();
@@ -1422,7 +1422,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 		for (auto& dirEntry : dirs)
 		{
 			if (!dirEntry.is_regular_file()) continue;
-			CString fileName = fs::getFileNameAsANSI(dirEntry.path());
+			CString fileName = fs::getANSIFileName(dirEntry.path());
 
 			// See if the file matches the wildcard.
 			if (!fileName.match(wildcard))
@@ -1502,7 +1502,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 		for (auto& dirEntry : dirs)
 		{
 			if (!dirEntry.is_regular_file()) continue;
-			CString fileName = fs::getFileNameAsANSI(dirEntry.path());
+			CString fileName = fs::getANSIFileName(dirEntry.path());
 
 			// See if the file matches the wildcard.
 			if (!fileName.match(wildcard))

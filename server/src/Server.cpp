@@ -151,7 +151,7 @@ Server::Server(const CString& pName)
 	{
 		if (events.test(fs::FileEvent::Modified))
 		{
-			auto fileName = fs::getFileNameAsANSI(file.file);
+			auto fileName = fs::getANSIFileName(file.file);
 			if (fileName == "serveroptions.txt")
 			{
 				loadSettings();
@@ -183,7 +183,7 @@ Server::Server(const CString& pName)
 
 		if (events.test(fs::FileEvent::Deleted))
 		{
-			auto npcName = fs::getFileNameAsANSI(file.file);
+			auto npcName = fs::getANSIFileName(file.file);
 			if (npcName.starts_with("npc") && npcName.ends_with(".txt"))
 				npcName = npcName.substr(3, npcName.size() - 7); // Remove npc and .txt
 
@@ -291,7 +291,7 @@ Server::Server(const CString& pName)
 	{
 		if (events.test(fs::FileEvent::Deleted))
 		{
-			auto weaponName = fs::getFileNameAsANSI(file.file.stem()).substr(6);
+			auto weaponName = fs::getANSIFileName(file.file.stem()).substr(6);
 			if (NC_DelWeapon(weaponName))
 			{
 				auto logMsg = std::format("Weapon deleted from filesystem: {}", weaponName);
@@ -301,7 +301,7 @@ Server::Server(const CString& pName)
 		}
 		if (events.test(fs::FileEvent::Modified))
 		{
-			auto fileName = fs::getFileNameAsANSI(file.file);
+			auto fileName = fs::getANSIFileName(file.file);
 			auto newWeapon = Weapon::loadWeapon(fileName);
 			if (auto weapon = getWeapon(fileName); weapon)
 			{
@@ -325,18 +325,18 @@ Server::Server(const CString& pName)
 		if (events.test(fs::FileEvent::Deleted))
 		{
 			// When the level gets deleted, players will be warped out.
-			m_levelList.erase(fs::getFileNameAsANSI(file.file));
+			m_levelList.erase(fs::getANSIFileName(file.file));
 		}
 		if (events.test(fs::FileEvent::Modified))
 		{
-			auto fileName = fs::getFileNameAsANSI(file.file);
+			auto fileName = fs::getANSIFileName(file.file);
 			if (auto l = getLevel(fileName); l)
 				l->reload();
 		}
 	};
 	m_fsWorld.categoryEventCallback[ENUM(fs::FileCategory::FILE)] = [this](fs::FileEventCollection events, fs::FileData& file)
 	{
-		auto fileName = fs::getFileNameAsANSI(file.file);
+		auto fileName = fs::getANSIFileName(file.file);
 		auto ext = file.file.extension();
 		if (events.test(fs::FileEvent::Deleted))
 		{
@@ -700,7 +700,7 @@ void Server::loadFolderConfig()
 			typeEnum = fs::FileCategory::SOUND;
 
 		m_fsWorld.addFoldersConfigEntry(typeEnum, world / config);
-		log::printLine(log::server, "adding {}/ [{}] to {}", config.parent_path().generic_string(), fs::getFileNameAsANSI(config), type);
+		log::printLine(log::server, "adding {}/ [{}] to {}", config.parent_path().generic_string(), fs::getANSIFileName(config), type);
 	}
 
 	m_fsWorld.bind("world");
@@ -1128,7 +1128,7 @@ void Server::loadWeapons(bool print)
 		{
 			auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
 
-			auto fileName = fs::getFileNameAsANSI(weaponFile.file);
+			auto fileName = fs::getANSIFileName(weaponFile.file);
 			auto weapon = Weapon::loadWeapon(fileName);
 			if (weapon == nullptr) continue;
 
@@ -1315,7 +1315,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	// Get available NPC ID.
 	NPCID newId = m_npcIdGenerator.getAvailableId(startId);
 
-	// New NPC
+	// New NPC.
 	auto newNPC = std::make_shared<NPC>(newId, storageType);
 
 	// Add the NPC to the list.

@@ -101,7 +101,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 		return;
 
 	// Save for later.
-	std::string mapName{ fs::getFileNameAsANSI(fileName.stem()) };
+	std::string mapName{ fs::getANSIFileName(fileName.stem()) };
 
 	// Stupid.
 	auto& constructSize = const_cast<Dimension<uint8_t>&>(size);

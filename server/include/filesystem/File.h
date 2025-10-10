@@ -24,7 +24,7 @@ namespace preagonal::fs
 /// @brief Returns the filename component of a filesystem path as an ANSI encoded std::string.
 /// @param file The filesystem path from which to extract the filename.
 /// @return A std::string containing the filename part of the path, encoded in ANSI.
-std::string getFileNameAsANSI(const std::filesystem::path& file);
+std::string getANSIFileName(const std::filesystem::path& file);
 
 //----------------------------
 

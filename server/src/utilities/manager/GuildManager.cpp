@@ -39,7 +39,7 @@ void GuildManager::loadGuilds(const std::filesystem::path& directory)
 	{
 		if (events.test(fs::FileEvent::Deleted))
 		{
-			auto guildName = string::replace(fs::getFileNameAsANSI(fileData.file.stem()).substr(5), "_"sv, " "sv);
+			auto guildName = string::replace(fs::getANSIFileName(fileData.file.stem()).substr(5), "_"sv, " "sv);
 			m_guilds.erase(guildName);
 			log::printLine(log::server, "Guild '{}' removed from filesystem.", guildName);
 
@@ -94,7 +94,7 @@ Guild* GuildManager::loadGuild(const std::filesystem::path& filePath)
 		return nullptr;
 	}
 
-	auto guildName = string::replace(fs::getFileNameAsANSI(filePath.stem()).substr(5), "_"sv, " "sv);
+	auto guildName = string::replace(fs::getANSIFileName(filePath.stem()).substr(5), "_"sv, " "sv);
 	Guild guild{ .name = guildName, .filePath = filePath };
 
 	std::string line;

@@ -49,7 +49,7 @@ void TranslationManagerClassic::loadTranslations(const std::filesystem::path& di
 			continue;
 
 		// slanguageDomain.txt
-		auto fileName = fs::getFileNameAsANSI(entry.path());
+		auto fileName = fs::getANSIFileName(entry.path());
 		if (!fileName.starts_with(filePrefix) || !fileName.ends_with(".txt"))
 			continue;
 
@@ -64,7 +64,7 @@ void TranslationManagerClassic::loadTranslations(const std::filesystem::path& di
 void TranslationManagerClassic::reloadTranslation(const std::filesystem::path& filePath)
 {
 	// slanguageDomain.txt
-	auto file = fs::getFileNameAsANSI(filePath);
+	auto file = fs::getANSIFileName(filePath);
 	if (!file.starts_with(filePrefix) || !file.ends_with(".txt"))
 		return;
 
@@ -73,7 +73,7 @@ void TranslationManagerClassic::reloadTranslation(const std::filesystem::path& f
 
 void TranslationManagerClassic::loadDomain(const std::filesystem::path& filePath)
 {
-	auto domain = fs::getFileNameAsANSI(filePath.stem()).substr(filePrefix.length());
+	auto domain = fs::getANSIFileName(filePath.stem()).substr(filePrefix.length());
 	if (domain.empty())
 		return;
 
