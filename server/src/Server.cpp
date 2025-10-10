@@ -1324,6 +1324,18 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	// Set the default warp type.
 	newNPC->warpRestrictions = hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
 
+	// Determine which level we are ACTUALLY on.
+	auto levelName = levelPtr->getFilePath().stem();
+	auto localPixelPosition = toLocalPixelPosition(x, y);
+	if (levelPtr->isOnGmap())
+	{
+		if (auto map = levelPtr->getMap(); map != nullptr)
+		{
+			levelName = map->fileName.stem();
+			levelPtr = map->getLevelAt(toPixelPosition({ x, y }));
+		}
+	}
+
 	// Set the script type.
 	if (!type.empty())
 		newNPC->scriptType = type;
@@ -1336,7 +1348,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 
 	// Set the NPC's name.
 	{
-		std::string npcNamePrefix = std::format("{}_{}_{}_", string::toLower(newNPC->scriptType), removeExtension(levelPtr->levelName), m_serverTime);
+		std::string npcNamePrefix = std::format("{}_{}_{}_", string::toLower(newNPC->scriptType), levelName.string(), m_serverTime);
 		auto count = std::ranges::count_if(m_npcList, [&npcNamePrefix](const auto& pair)
 		{
 			return pair.second->name.starts_with(npcNamePrefix);
@@ -1347,8 +1359,8 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 
 	// Set NPC props.
 	newNPC->setLevel(level.lock());
-	newNPC->character.localPixelX = x * 16;
-	newNPC->character.localPixelY = y * 16;
+	newNPC->character.localPixelX = localPixelPosition.x();
+	newNPC->character.localPixelY = localPixelPosition.y();
 	newNPC->image = image;
 
 	// If the level is a gmap, set the modTime on the level props.

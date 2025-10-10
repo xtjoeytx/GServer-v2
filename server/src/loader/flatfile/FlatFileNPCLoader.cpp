@@ -58,6 +58,9 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	if (header != "GRNPC001")
 		return nullptr;
 
+	auto npcNameFromFile = filePath.stem().string();
+	auto name = file->readConfigLine("NAME", " "sv).value_or(npcNameFromFile.substr(3, npcNameFromFile.length() - 7));
+
 	// Search for the ID of the NPC from the file data.
 	NPCID id = 0;
 	if (auto sectionId = file->readConfigLine("ID", " "sv); sectionId.has_value())
@@ -66,12 +69,12 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		if (id < NPCID_GEN_DATABASE)
 		{
 			id = 0;
-			log::printLine(log::server, "** NPC [{}] ID is less than {}, getting next available.", fs::getFileNameAsANSI(filePath), NPCID_GEN_DATABASE);
+			log::printLine(log::server, "** NPC [{}] ID is less than {}, getting next available.", name, NPCID_GEN_DATABASE);
 		}
 		else if (server->m_npcIdGenerator.isIdUsed(id))
 		{
 			id = 0;
-			log::printLine(log::server, "** NPC [{}] ID is already in use, getting next available.", fs::getFileNameAsANSI(filePath));
+			log::printLine(log::server, "** NPC [{}] ID is already in use, getting next available.", name);
 		}
 		else server->m_npcIdGenerator.markAsUsed(id);
 	}
@@ -445,7 +448,8 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		return false;
 
 	static const char* NL = "\r\n";
-	CString fileName = CString() << "npcs/npc" << npc->name << ".txt";
+	CString folder{ "npcs" };
+	CString fileName = CString() << "npc" << npc->name << ".txt";
 	CString fileData = CString("GRNPC001") << NL;
 
 	auto writeProp = [&](NPCProp prop, std::string_view key, std::string_view value)
@@ -594,13 +598,13 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	if (fileData[fileData.length() - 1] != '\n')
 		fileData << NL;
 	fileData << "NPCSCRIPTEND" << NL;
-	fileData.save(fileName);
+	fileData.save(folder << "/" << fileName);
 
 	// If the NPC exists on the filesystem, refresh its mod time to avoid any modification events.
 	if (auto info = server->getFileSystemServer().info(fs::FileCategory::NPC, fileName.toStringView()); info != nullptr)
 		info->refreshModTime();
 
-	npc->lastSaveTime = fs::getFileModTime(fileName.toString());
+	npc->lastSaveTime = fs::getFileModTime(folder.toString());
 
 	return true;
 }

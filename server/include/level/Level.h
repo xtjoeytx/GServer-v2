@@ -67,6 +67,7 @@ public:
 	void doTimedEvents();
 	void doFrameEvents(precise_clock::time_point time);
 	const auto& getLastFrameTime() const { return m_lastFrameTime; }
+	const auto& getFilePath() const { return m_filePath; }
 
 private:
 	precise_clock::time_point m_lastFrameTime = precise_clock::now();
