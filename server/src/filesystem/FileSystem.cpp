@@ -250,6 +250,8 @@ bool FileSystem::hasi(FileCategory category, const std::filesystem::path& file) 
 	return false;
 }
 
+//----------------------------
+
 std::filesystem::path FileSystem::find(FileCategory category, const std::filesystem::path& file) const noexcept
 {
 	if (auto fileInfo = info(category, file); fileInfo != nullptr)
@@ -271,6 +273,8 @@ std::filesystem::path FileSystem::findi(FileCategory category, const std::filesy
 	}
 	return std::filesystem::path{};
 }
+
+//----------------------------
 
 FileData* FileSystem::info(FileCategory category, const std::filesystem::path& file) const
 {
@@ -337,34 +341,24 @@ std::generator<const FileData&> FileSystem::infoi(const std::filesystem::path& f
 	}
 }
 
+//----------------------------
+
 std::shared_ptr<File> FileSystem::open(FileCategory category, const std::filesystem::path& file) const
 {
 	// Check if the file exists in the native file system and file is a direct path.
 	if (std::filesystem::exists(file))
 	{
-		auto f = std::make_shared<File>(file);
-		return f;
+		if (auto f = std::make_shared<File>(file); f->opened())
+			return f;
+		return nullptr;
 	}
 
 	// Check if the file exists in the native file system and file is a filename we want to find.
 	if (auto fileData = info(category, file); fileData != nullptr)
-		return std::make_shared<File>(fileData->file);
-
-	return nullptr;
-}
-
-std::shared_ptr<File> FileSystem::openi(FileCategory category, const std::filesystem::path& file) const
-{
-	// Check if the file exists in the native file system and file is a direct path.
-	if (std::filesystem::exists(file))
 	{
-		auto f = std::make_shared<File>(file);
-		return f;
+		if (auto f = std::make_shared<File>(fileData->file); f->opened())
+			return f;
 	}
-
-	// Check if the file exists in the native file system and file is a filename we want to find.
-	if (auto fileData = infoi(category, file); fileData != nullptr)
-		return std::make_shared<File>(fileData->file);
 
 	return nullptr;
 }
@@ -374,21 +368,148 @@ std::generator<std::shared_ptr<File>> FileSystem::open(const std::filesystem::pa
 	// Check if the file exists in the native file system and file is a direct path.
 	if (std::filesystem::exists(file))
 	{
-		auto f = std::make_shared<File>(file);
-		co_yield f;
+		if (auto f = std::make_shared<File>(file); f->opened())
+			co_yield f;
 		co_return;
 	}
 
 	for (auto& fileData : info(file))
-		co_yield std::make_shared<File>(fileData.file);
+	{
+		if (auto f = std::make_shared<File>(fileData.file); f->opened())
+			co_yield f;
+	}
 }
 
 std::shared_ptr<File> FileSystem::open(const FileData& fileData) const
 {
 	if (std::filesystem::exists(fileData.file))
-		return std::make_shared<File>(fileData.file);
+	{
+		if (auto f = std::make_shared<File>(fileData.file); f->opened())
+			return f;
+	}
+
 	return nullptr;
 }
+
+std::shared_ptr<File> FileSystem::openi(FileCategory category, const std::filesystem::path& file) const
+{
+	// Check if the file exists in the native file system and file is a direct path.
+	if (std::filesystem::exists(file))
+	{
+		if (auto f = std::make_shared<File>(file); f->opened())
+			return f;
+		return nullptr;
+	}
+
+	// Check if the file exists in the native file system and file is a filename we want to find.
+	if (auto fileData = infoi(category, file); fileData != nullptr)
+	{
+		if (auto f = std::make_shared<File>(fileData->file); f->opened())
+			return f;
+	}
+
+	return nullptr;
+}
+
+//----------------------------
+
+std::shared_ptr<FileIO> FileSystem::openForWriting(FileCategory category, const std::filesystem::path& file, bool createNew) const
+{
+	FileIOPtr result = nullptr;
+
+	// Check if the file exists in the native file system and file is a direct path.
+	if (std::filesystem::exists(file))
+		result = std::make_shared<FileIO>(file);
+
+	// Check if the file exists in the native file system and file is a filename we want to find.
+	if (result == nullptr)
+	{
+		if (auto fileData = info(category, file); fileData != nullptr)
+			result = std::make_shared<FileIO>(fileData->file);
+	}
+
+	// If we have a file, return it.
+	if (result != nullptr)
+	{
+		if (result->opened())
+			return result;
+		return nullptr;
+	}
+	if (!createNew)
+		return nullptr;
+
+	// Create the new file.
+	auto directories = getManagedDirectories(category);
+	auto first = directories.begin();
+	if (first == directories.end())
+		return nullptr;
+
+	return std::make_shared<FileIO>((*first) / file);
+}
+
+std::generator<std::shared_ptr<FileIO>> FileSystem::openForWriting(const std::filesystem::path& file) const
+{
+	// Check if the file exists in the native file system and file is a direct path.
+	if (std::filesystem::exists(file))
+	{
+		if (auto f = std::make_shared<FileIO>(file); f->opened())
+			co_yield f;
+		co_return;
+	}
+
+	for (auto& fileData : info(file))
+	{
+		if (auto f = std::make_shared<FileIO>(fileData.file); f->opened())
+			co_yield f;
+	}
+}
+
+std::shared_ptr<FileIO> FileSystem::openForWriting(const FileData& fileData) const
+{
+	if (std::filesystem::exists(fileData.file))
+	{
+		if (auto f = std::make_shared<FileIO>(fileData.file); f->opened())
+			return f;
+	}
+
+	return nullptr;
+}
+
+std::shared_ptr<FileIO> FileSystem::openiForWriting(FileCategory category, const std::filesystem::path& file, bool createNew) const
+{
+	FileIOPtr result = nullptr;
+
+	// Check if the file exists in the native file system and file is a direct path.
+	if (std::filesystem::exists(file))
+		result = std::make_shared<FileIO>(file);
+
+	// Check if the file exists in the native file system and file is a filename we want to find.
+	if (result == nullptr)
+	{
+		if (auto fileData = infoi(category, file); fileData != nullptr)
+			result = std::make_shared<FileIO>(fileData->file);
+	}
+
+	// If we have a file, return it.
+	if (result != nullptr)
+	{
+		if (result->opened())
+			return result;
+		return nullptr;
+	}
+	if (!createNew)
+		return nullptr;
+
+	// Create the new file.
+	auto directories = getManagedDirectories(category);
+	auto first = directories.begin();
+	if (first == directories.end())
+		return nullptr;
+
+	return std::make_shared<FileIO>((*first) / file);
+}
+
+//----------------------------
 
 std::generator<const std::filesystem::path&> FileSystem::getManagedDirectories() const
 {
@@ -440,7 +561,7 @@ FileCategory FileSystem::categoryForDirectory(const std::filesystem::path& direc
 
 		for (const auto& glob : m_foldersConfig[i])
 		{
-			if (string::match(directory.native(), glob.native()))
+			if (string::match(directory.native(), glob.parent_path().native()))
 				return static_cast<FileCategory>(i);
 		}
 	}

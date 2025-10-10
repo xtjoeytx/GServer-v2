@@ -133,7 +133,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERCONFIGGET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	if (auto file = m_server->getFileSystemServer().open(fs::FileCategory::CONFIG, "foldersconfig.txt"); file != nullptr && file->opened())
+	if (auto file = m_server->getFileSystemServer().open(fs::FileCategory::CONFIG, "foldersconfig.txt"); file != nullptr)
 	{
 		auto foldersConfig = string::toCSV(file->readAllLines());
 		sendPacket(CString() >> (char)PLO_RC_FOLDERCONFIGGET << foldersConfig);

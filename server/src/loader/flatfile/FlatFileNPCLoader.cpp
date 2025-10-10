@@ -101,7 +101,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	// Parse File
 	std::string line;
 	std::string command;
-	while (!file->finished())
+	while (!file->finishedReading())
 	{
 		line = string::trimMutate(file->readLine());
 
@@ -392,7 +392,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 					break;
 
 				script.append(line).append(1, '\n');
-			} while (!file->finished());
+			} while (!file->finishedReading());
 
 			npc->modTime[PROPID(NPCProp::SCRIPT)] = updateTime;
 		}

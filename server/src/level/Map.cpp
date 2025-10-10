@@ -114,7 +114,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	std::vector<double> terrainGridHeights;
 
 	// Load the gmap.
-	while (!file->finished())
+	while (!file->finishedReading())
 	{
 		auto line = file->readLine();
 		auto lineView = string::trim(line);

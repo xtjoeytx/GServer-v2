@@ -6,6 +6,7 @@
 #include <climits>
 #include <concepts>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <iterator>
 #include <memory>
@@ -158,7 +159,7 @@ public:
 	// Save Functions
 	void saveServerFlags();
 	void saveWeapons();
-	void reportScriptException(const std::string& error_message);
+	//void reportScriptException(const std::string& error_message);
 
 public:
 	const auto& getName() const { return m_name; }

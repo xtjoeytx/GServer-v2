@@ -84,6 +84,13 @@ struct FileData
 	{
 		return std::make_shared<File>(file);
 	}
+
+	/// @brief Opens the file associated with the object for writing.
+	/// @return A shared pointer to the opened file.
+	std::shared_ptr<FileIO> openFileForWriting() const
+	{
+		return std::make_shared<FileIO>(file);
+	}
 };
 using FileDataPtr = std::unique_ptr<FileData, std::default_delete<FileData>>;
 
@@ -148,6 +155,7 @@ public:
 	/// @return True if a folders configuration exists; otherwise, false.
 	[[inline]] bool hasFoldersConfig() const noexcept;
 
+public:
 	/// @brief Finds a file path corresponding to the specified file category and file.
 	/// @param category The category of the file to find.
 	/// @param file The file path to search for, provided as a reference to a std::filesystem::path object.
@@ -160,6 +168,7 @@ public:
 	/// @return A std::filesystem::path representing the found file path corresponding to the given category and file.
 	std::filesystem::path findi(FileCategory category, const std::filesystem::path& file) const noexcept;
 
+public:
 	/// @brief Returns information about the file.
 	/// @param category The category the file must belong to.
 	/// @return Information about the file.
@@ -182,22 +191,55 @@ public:
 	/// @return Information about the file.
 	std::generator<const FileData&> infoi(const std::filesystem::path& file) const;
 
-	/// @brief Gets a file by name.
+public:
+	/// @brief Opens a file by name.
+	/// @param category The category the file must belong to.
+	/// @param file The file name to open.
 	/// @return A shared pointer to the file.
 	std::shared_ptr<File> open(FileCategory category, const std::filesystem::path& file) const;
 
-	/// @brief Gets multiple files by name.
+	/// @brief Opens multiple files by name.
+	/// @param file The file name to open.
 	/// @return A shared pointer to the file.
 	std::generator<std::shared_ptr<File>> open(const std::filesystem::path& file) const;
 
-	/// @brief Gets a file from the file data.
+	/// @brief Opens a file from the file data.
+	/// @param fileData The file data of the file to open.
 	/// @return A shared pointer to the file.
 	std::shared_ptr<File> open(const FileData& fileData) const;
 
-	/// @brief Gets a file by name (case-insensitive).
+	/// @brief Opens a file by name (case-insensitive).
+	/// @param category The category the file must belong to.
+	/// @param file The file name to open.
 	/// @return A shared pointer to the file.
 	std::shared_ptr<File> openi(FileCategory category, const std::filesystem::path& file) const;
 
+public:
+	/// @brief Opens a file by name for writing.
+	/// @param category The category the file must belong to.
+	/// @param file The file name to open.
+	/// @param createNew If true, and the file does not exist, it creates a new file in the first directory of the specified category.
+	/// @return A shared pointer to the file.
+	std::shared_ptr<FileIO> openForWriting(FileCategory category, const std::filesystem::path& file, bool createNew = false) const;
+
+	/// @brief Opens multiple files by name for writing.
+	/// @param file The file name to open.
+	/// @return A shared pointer to the file.
+	std::generator<std::shared_ptr<FileIO>> openForWriting(const std::filesystem::path& file) const;
+
+	/// @brief Opens a file from the file data for writing.
+	/// @param fileData The file data of the file to open.
+	/// @return A shared pointer to the file.
+	std::shared_ptr<FileIO> openForWriting(const FileData& fileData) const;
+
+	/// @brief Opens a file by name for writing (case-insensitive).
+	/// @param category The category the file must belong to.
+	/// @param file The file name to open.
+	/// @param createNew If true, and the file does not exist, it creates a new file in the first directory of the specified category.
+	/// @return A shared pointer to the file.
+	std::shared_ptr<FileIO> openiForWriting(FileCategory category, const std::filesystem::path& file, bool createNew = false) const;
+
+public:
 	/// @brief Returns a generator that yields references to the managed directories.
 	/// @return A generator that produces references to each managed directory.
 	std::generator<const std::filesystem::path&> getManagedDirectories() const;

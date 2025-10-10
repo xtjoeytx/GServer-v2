@@ -638,6 +638,10 @@ auto split(StringViewVariant auto str, StringViewVariant auto delims, bool ignor
 		else if (!ignoreEmpty)
 			co_yield StringViewType{};
 
+		// If the delim was \r and the next character is \n, include it in the delim.
+		if (strview[end] == '\r' && end + 1 < strview.length() && strview[end + 1] == '\n')
+			++end;
+
 		start = end + 1;
 	}
 }
