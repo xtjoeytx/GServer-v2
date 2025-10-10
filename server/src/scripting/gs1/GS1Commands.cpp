@@ -729,7 +729,7 @@ void fn_cannotwarp(GS1Visitor* visitor, std::string_view commandName, const std:
 }
 
 // canwarp;
-// Flags as being able to change levels by touching links.
+// Flags as being able to change levels by touching any links.
 void fn_canwarp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
@@ -741,7 +741,7 @@ void fn_canwarp(GS1Visitor* visitor, std::string_view commandName, const std::ve
 }
 
 // canwarp2;
-// Flags as being able to change levels by moving across levels on a gmap.
+// Flags as being able to change levels by using level-edge links.
 void fn_canwarp2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
@@ -753,6 +753,7 @@ void fn_canwarp2(GS1Visitor* visitor, std::string_view commandName, const std::v
 }
 
 // carryobject carryobjecttype;
+// Sets the carry object type of the NPC.
 void fn_carryobject(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	// TODO: There is no NPC prop for the carry image type.  We may have to investigate official.
@@ -2482,7 +2483,7 @@ void fn_setsword(GS1Visitor* visitor, std::string_view commandName, const std::v
 // setz x,y,width,height,a,b,c,d;
 void fn_setz(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("setz is not implemented yet.");
+	throw std::logic_error("setz is clientside only.");
 }
 
 // shoot x,y,z,angle,zangle,power,gani,ganiattribs;
@@ -3233,7 +3234,7 @@ void fn_updateboard2(GS1Visitor* visitor, std::string_view commandName, const st
 // updateterrain;
 void fn_updateterrain(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("updateterrain is not implemented yet.");
+	throw std::logic_error("updateterrain is clientside only.");
 }
 
 // warpto levelname,x,y;

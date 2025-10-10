@@ -169,6 +169,8 @@ public:
 protected:
 	bool dropItem(const PixelPosition& position, LevelItemType item);
 	bool removeItem(LevelItemType itemType);
+	props::SetResults addItem(LevelItemType itemType, props::SetBy setBy = props::SetBy::SERVER);
+	void addItem(inform_client_t, LevelItemType itemType, props::SetBy setBy = props::SetBy::SERVER);
 
 protected:
 	time_t m_lastMovement, m_lastSave, m_last1m;

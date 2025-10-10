@@ -424,6 +424,15 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (zProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
+			// If Z is disabled, don't allow changing it.
+			if (m_server->getSettings().getBool("lockplayerz", false))
+			{
+				result.resultFlags.reset();
+				result.resultFlags.set(SetResults::sendToSource);
+				result.resultFlags.set(SetResults::getLatestOnSend);
+				break;
+			}
+
 			account.character.localPixelZ = zProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);
 			result.resultPropIds.push_back(PROPID(PlayerProp::Z2));
@@ -932,6 +941,15 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
 			if (pixelProp == nullptr)
 				SETPROP_RETURN_ERROR;
+
+			// If Z is disabled, don't allow changing it.
+			if (m_server->getSettings().getBool("lockplayerz", false))
+			{
+				result.resultFlags.reset();
+				result.resultFlags.set(SetResults::sendToSource);
+				result.resultFlags.set(SetResults::getLatestOnSend);
+				break;
+			}
 
 			account.character.localPixelZ = pixelProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);

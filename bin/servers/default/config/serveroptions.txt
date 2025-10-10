@@ -27,6 +27,9 @@ setshieldallowed = true
 setswordallowed = true
 setcolorsallowed = true
 
+# Disables the showadmins chat command.
+disableshowadmins = false
+
 # Defines the amount of Gralats a player drops when they die.
 mindeathgralats = 1
 maxdeathgralats = 50
@@ -102,8 +105,17 @@ heartlimit = 3
 swordlimit = 3
 shieldlimit = 3
 
+# Determines if the Z value is ignored or not for serverside touch events (by default touches require Z < 3).
+playertouchsmenoz = false
+
+# Disables the player z-axis.  Locks player.z to undefined.  Z values outside of |-50, 170| is undefined.
+lockplayerz = false
+
 # If true, disable the ability.
 dontchangekills = false
+
+# Disables the updating of the sparring deviation value.
+dontupdateratingd = false
 
 # Flag options.
 # If dontaddserverflags is true, any server. flag changes sent by the client are rejected.
@@ -125,9 +137,16 @@ puthorseenabled = true
 # Allows player triggeractions to be sent to other players.
 sendplayertriggers = true
 
-# If true, each time an item is dropped the Control-NPC will receive an onItemDrop(level,x,y,itemname) action.
+# Disables player item dropping.
+disableitemdropping = false
+
+# If true, each time an item is dropped, it will be blocked.
+# Instead, the Control-NPC will receive an onItemDrop(level,x,y,itemname) action.
 # For GS1, it will be `if (itemdrop)` with #p(0)-#p(3) as the arguments.
 itemdropevents = false
+
+# Says if onItemDrop should only be used for gralats, but otherwise spawn classic items.
+itemdropeventsonlyforgralats = false
 
 # List of bigmap.txt type maps used by the server.  It lets the server know the level layout
 # so you can see players move and talk in adjacent levels.
@@ -349,9 +368,6 @@ gs2default = false
 # Controls if server-side gralats are logged.
 # disablegralatlog = false
 
-# Disables the player z-axis.  Locks player.z to undefined.  Z values outside of |-50, 170| is undefined.
-# lockplayerz = false
-
 # If true, hideplayer() only works while a player is under a bush.
 # nohidewithoutbush = false
 
@@ -409,9 +425,6 @@ gs2default = false
 # Disables the saving of player attributes.
 # dontsaveattributes = false
 
-# Disables the updating of the sparring deviation value.
-# dontupdateratingd = false
-
 # Verifies the arrow/bomb count on server-side.
 # arrowcountserverside = true/false
 # bombcountserverside = true/false
@@ -444,9 +457,6 @@ gs2default = false
 # Disables global playerlist, reduces lag on servers with thousands of players.
 # noserverlistercpp = true/false
 
-# Disables the showadmins chat command.
-# disableshowadmins = true/false
-
 # Disables player item dropping.
 # disableitemdropping = true/false
 
@@ -459,14 +469,8 @@ gs2default = false
 # When the player drops an item, `player.onItemDrop(x,y,itemname)` will be called and the item will not drop.
 # itemdropevents2 = true/false
 
-# Says if onItemDrop should only be used for gralats, but otherwise spawn classic items.
-# itemdropeventsonlyforgralats = true/false
-
 # Enables serverside onwall detection for shoot projectiles.
 # projectilesstoponwall = true/false
-
-# Determines if the Z value is ignored or not for serverside touch events (by default touches require Z < 3).
-# playertouchsmenoz = true/false
 
 # Logs attempts of modifying read-only variables to logs/scripterrors.txt
 # scriptlogwritetoreadonly = true/false

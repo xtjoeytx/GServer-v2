@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <format>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <random>
@@ -981,7 +982,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (auto level = getLevel(); level)
 			level->reload();
 	}
-	else if (pChat == "showadmins")
+	else if (pChat == "showadmins" && m_server->getSettings().getBool("disableshowadmins", false) == false)
 	{
 		processed = true;
 
@@ -1655,13 +1656,20 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 	// Oddly enough, it renders in the correct spot on a reconnect.  By allowing a single extra pixel on the touch test, this problem is resolved.
 	static Position<int16_t> touchTest[] = { { 24, 16 - 1 }, { 0, 32 }, { 24, 56 }, { 48, 32 } };
 
-	PixelPosition testPosPixels = getGlobalPosition().translate(touchTest[movementDirection].x(), touchTest[movementDirection].y());
-	testPosPixels.z() = 0;
+	// Get the bounding box to test with.
+	PixelRectangleArea testBox{ getGlobalPosition().translate(touchTest[movementDirection].x(), touchTest[movementDirection].y()), { 0, 0, 48 } };
+	if (m_server->getSettings().getBool("playertouchsmenoz", false))
+	{
+		// If the server is set to ignore Z axis for touch, do so by providing a box of max length in the Z axis.
+		testBox.position.z() = std::numeric_limits<int16_t>::min();
+		testBox.size.length() = std::numeric_limits<uint16_t>::max();
+	}
+
 	if (auto level = getLevel(); level != nullptr)
 	{
 		// Test for NPC touch.
 		bool touchedNPC = false;
-		for (const auto& npcId : level->findIntersectingNPCsForCollision(testPosPixels))
+		for (const auto& npcId : level->findIntersectingNPCsForCollision(testBox))
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 			{
@@ -1672,9 +1680,9 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 		if (touchedNPC)
 		{
 			uint32_t eventDistance = static_cast<uint32_t>(m_server->getSettings().getInt("eventdistance", 64));
-			for (const auto& npcId : level->findInRangeNPCsByDistance(testPosPixels, eventDistance))
+			for (const auto& npcId : level->findInRangeNPCsByDistance(testBox.position, eventDistance))
 			{
-				auto intersectingNPCs = level->findIntersectingNPCsForCollision(testPosPixels);
+				auto intersectingNPCs = level->findIntersectingNPCsForCollision(testBox);
 				if (!std::ranges::contains(intersectingNPCs, npcId))
 				{
 					if (auto npc = m_server->getNPC(npcId); npc != nullptr)
@@ -1964,6 +1972,44 @@ bool PlayerClient::removeItem(LevelItemType itemType)
 	}
 
 	return false;
+}
+
+props::SetResults PlayerClient::addItem(LevelItemType itemType, props::SetBy setBy)
+{
+	switch (itemType)
+	{
+		case LevelItemType::GREENRUPEE:
+		case LevelItemType::BLUERUPEE:
+		case LevelItemType::REDRUPEE:
+		case LevelItemType::GOLDRUPEE:
+			return setPropWith<PlayerProp::RUPEESCOUNT>(setBy, account.character.gralats + LevelItem::GetRupeeCount(itemType));
+
+		case LevelItemType::BOMBS:
+			return setPropWith<PlayerProp::BOMBSCOUNT>(setBy, std::min(99_ui8, static_cast<uint8_t>(account.character.bombs + 5)));
+
+		case LevelItemType::DARTS:
+			return setPropWith<PlayerProp::ARROWSCOUNT>(setBy, std::min(99_ui8, static_cast<uint8_t>(account.character.arrows + 5)));
+
+		case LevelItemType::HEART:
+		{
+			uint8_t maxHearts = static_cast<uint8_t>(std::min(account.maxHitpoints, static_cast<uint8_t>(m_server->getSettings().getInt("heartlimit", 3))) * 2);
+			return setPropWith<PlayerProp::BOMBSCOUNT>(setBy, std::min(maxHearts, static_cast<uint8_t>(account.character.hitpointsInHalves + 2)));
+		}
+
+		case LevelItemType::GLOVE1:
+		case LevelItemType::GLOVE2:
+			return setPropWith<PlayerProp::GLOVEPOWER>(setBy, std::min(2_ui8, static_cast<uint8_t>(account.character.glovePower + 1)));
+
+		case LevelItemType::SPINATTACK:
+			return setPropWith<PlayerProp::STATUS>(setBy, static_cast<uint8_t>(account.status | PLSTATUS_HASSPIN));
+	}
+
+	return {};
+}
+
+void PlayerClient::addItem(inform_client_t, LevelItemType itemType, props::SetBy setBy)
+{
+	sendPropsFromResults(addItem(itemType, setBy));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

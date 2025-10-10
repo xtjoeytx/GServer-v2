@@ -174,7 +174,10 @@ enum class NPCMoveFlags : uint8_t
 	APPLYDIR		= 0b0001'0000,
 };
 
-//! NPC warp restrictions
+/// @brief NPC warp restrictions
+///
+/// NPCs defaults to ALLOWED since classic mode NPCs could be carried between levels.
+/// If an NPC-Server is present, the default is NOTALLOWED.
 enum class NPCWarpRestrictions
 {
 	ALLOWED,

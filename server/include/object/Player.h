@@ -208,6 +208,7 @@ public:
 	NPCID getAttachedNPC() const { return m_attachNPC; }
 	uint8_t getCarrySprite() const { return m_carrySprite; }
 	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
+	[[inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
 	[[inline]] PixelPosition getGlobalPosition() const noexcept;
 	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;
 	[[inline]] TilePosition getTilePosition() const noexcept;
@@ -530,6 +531,11 @@ inline void Player::setId(PlayerID pId)
 inline PixelRectangleArea Player::getBoundingBox() const noexcept
 {
 	return { getGlobalPosition(), { 48, 48, 48 } };
+}
+
+inline PixelRectangleArea Player::getCollisionBoundingBox() const noexcept
+{
+	return { getGlobalPosition().translate(8, 16), { 32, 32, 48 }};
 }
 
 inline PixelPosition Player::getGlobalPosition() const noexcept

@@ -281,17 +281,34 @@ HandlePacketResult PlayerClient::msgPLI_THROWCARRIED(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 {
-	m_server->queueNPCEvent(m_currentLevel.lock(), getGlobalPosition(), ScriptEventType::PLAYERLAYSITEM, source::FromPlayer(m_id));
-
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 	uint8_t item = pPacket.readGUChar();
 	LevelItemType itemType = LevelItem::getItemId(item);
 
-	// If item drop events are enabled, send the item drop event to the Control-NPC # If true, each time an item is dropped the Control-NPC will receive an onItemDrop(level,x,y,itemname) action.
-	if (m_server->hasNPCServer() && m_server->getSettings().getBool("itemdropevents", false))
+	// If item drops are disabled, tell the client to delete the item and roll back the changes.
+	if (m_server->getSettings().getBool("disableitemdropping", false))
+	{
+		sendPacket(CString() >> (char)PLO_ITEMDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
+		if (m_server->hasNPCServer())
+			addItem(inform_client, itemType);
+		return HandlePacketResult::Handled;
+	}
+
+	m_server->queueNPCEvent(m_currentLevel.lock(), getGlobalPosition(), ScriptEventType::PLAYERLAYSITEM, source::FromPlayer(m_id));
+
+	// Check if we should send item drop events to the Control-NPC.
+	bool itemDropEvents = m_server->getSettings().getBool("itemdropevents", false);
+	if (itemDropEvents && m_server->getSettings().getBool("itemdropeventsonlyforgralats", false) && !LevelItem::isRupeeType(itemType))
+		itemDropEvents = false;
+
+	// If item drop events are enabled, send the item drop event to the Control-NPC.
+	// This will prevent all client item drops, so beware.
+	if (itemDropEvents)
 	{
 		m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::CUSTOM, source::FromPlayer(m_id),
 			"itemdrop", getComputedLevelName(), std::format("{}", loc[0]), std::format("{}", loc[1]), LevelItem::getItemName(itemType));
+		sendPacket(CString() >> (char)PLO_ITEMDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
+		return HandlePacketResult::Handled;
 	}
 
 	if (auto level = getLevel(); level != nullptr)
@@ -348,44 +365,47 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 	if (level == nullptr) return HandlePacketResult::Handled;
 	if (level->isSparringZone)
 	{
-		// Get some stats we are going to use.
-		// Need to parse the other player's PlayerProp::RATING.
-		auto otherRating = killer->getProp<PlayerProp::RATING>();
-		float oldStats[4] = { account.eloRating, account.eloDeviation, (float)otherRating.rating, (float)otherRating.deviation };
-
-		// If the IPs are the same, don't update the rating to prevent cheating.
-		if (CString(m_playerSock->getRemoteIp()) == CString(killer->getSocket()->getRemoteIp()))
-			return HandlePacketResult::Handled;
-
-		float gSpar[2] = { static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[3], 2)) / pow(3.14159265f, 2)), 0.5f)),   //Winner
-						   static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[1], 2)) / pow(3.14159265f, 2)), 0.5f)) }; //Loser
-		float ESpar[2] = { static_cast<float>(1.0f / (1.0f + pow(10.0f, (-gSpar[1] * (oldStats[2] - oldStats[0]) / 400.0f)))),                       //Winner
-						   static_cast<float>(1.0f / (1.0f + pow(10.0f, (-gSpar[0] * (oldStats[0] - oldStats[2]) / 400.0f)))) };                     //Loser
-		float dSpar[2] = { static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[0], 2) * ESpar[0] * (1.0f - ESpar[0]))),                        //Winner
-						   static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[1], 2) * ESpar[1] * (1.0f - ESpar[1]))) };                      //Loser
-
-		float tWinRating = oldStats[2] + (0.0057565f / (1.0f / powf(oldStats[3], 2) + 1.0f / dSpar[0])) * (gSpar[0] * (1.0f - ESpar[0]));
-		float tLoseRating = oldStats[0] + (0.0057565f / (1.0f / powf(oldStats[1], 2) + 1.0f / dSpar[1])) * (gSpar[1] * (0.0f - ESpar[1]));
-		float tWinDeviation = powf((1.0f / (1.0f / powf(oldStats[3], 2) + 1 / dSpar[0])), 0.5f);
-		float tLoseDeviation = powf((1.0f / (1.0f / powf(oldStats[1], 2) + 1 / dSpar[1])), 0.5f);
-
-		// Cap the rating.
-		tWinRating = clip(tWinRating, 0.0f, 4000.0f);
-		tLoseRating = clip(tLoseRating, 0.0f, 4000.0f);
-		tWinDeviation = clip(tWinDeviation, 50.0f, 350.0f);
-		tLoseDeviation = clip(tLoseDeviation, 50.0f, 350.0f);
-
-		// Update the Ratings.
-		if (oldStats[0] != tLoseRating || oldStats[1] != tLoseDeviation)
+		if (m_server->getSettings().getBool("dontupdateratingd", false) == false)
 		{
-			sendPropsFromResults(setProp<PlayerProp::RATING>(props::SetBy::SERVER, PropertyEloRating{ tLoseRating, tLoseDeviation }));
+			// Get some stats we are going to use.
+			// Need to parse the other player's PlayerProp::RATING.
+			auto otherRating = killer->getProp<PlayerProp::RATING>();
+			float oldStats[4] = { account.eloRating, account.eloDeviation, (float)otherRating.rating, (float)otherRating.deviation };
+
+			// If the IPs are the same, don't update the rating to prevent cheating.
+			if (CString(m_playerSock->getRemoteIp()) == CString(killer->getSocket()->getRemoteIp()))
+				return HandlePacketResult::Handled;
+
+			float gSpar[2] = { static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[3], 2)) / pow(3.14159265f, 2)), 0.5f)),   //Winner
+							   static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[1], 2)) / pow(3.14159265f, 2)), 0.5f)) }; //Loser
+			float ESpar[2] = { static_cast<float>(1.0f / (1.0f + pow(10.0f, (-gSpar[1] * (oldStats[2] - oldStats[0]) / 400.0f)))),                       //Winner
+							   static_cast<float>(1.0f / (1.0f + pow(10.0f, (-gSpar[0] * (oldStats[0] - oldStats[2]) / 400.0f)))) };                     //Loser
+			float dSpar[2] = { static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[0], 2) * ESpar[0] * (1.0f - ESpar[0]))),                        //Winner
+							   static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[1], 2) * ESpar[1] * (1.0f - ESpar[1]))) };                      //Loser
+
+			float tWinRating = oldStats[2] + (0.0057565f / (1.0f / powf(oldStats[3], 2) + 1.0f / dSpar[0])) * (gSpar[0] * (1.0f - ESpar[0]));
+			float tLoseRating = oldStats[0] + (0.0057565f / (1.0f / powf(oldStats[1], 2) + 1.0f / dSpar[1])) * (gSpar[1] * (0.0f - ESpar[1]));
+			float tWinDeviation = powf((1.0f / (1.0f / powf(oldStats[3], 2) + 1 / dSpar[0])), 0.5f);
+			float tLoseDeviation = powf((1.0f / (1.0f / powf(oldStats[1], 2) + 1 / dSpar[1])), 0.5f);
+
+			// Cap the rating.
+			tWinRating = clip(tWinRating, 0.0f, 4000.0f);
+			tLoseRating = clip(tLoseRating, 0.0f, 4000.0f);
+			tWinDeviation = clip(tWinDeviation, 50.0f, 350.0f);
+			tLoseDeviation = clip(tLoseDeviation, 50.0f, 350.0f);
+
+			// Update the Ratings.
+			if (oldStats[0] != tLoseRating || oldStats[1] != tLoseDeviation)
+			{
+				sendPropsFromResults(setProp<PlayerProp::RATING>(props::SetBy::SERVER, PropertyEloRating{ tLoseRating, tLoseDeviation }));
+			}
+			if (oldStats[2] != tWinRating || oldStats[3] != tWinDeviation)
+			{
+				killer->sendPropsFromResults(killer->setProp<PlayerProp::RATING>(props::SetBy::SERVER, PropertyEloRating{ tWinRating, tWinDeviation }));
+			}
+			this->account.lastSparTime = std::chrono::system_clock::now();
+			killer->account.lastSparTime = std::chrono::system_clock::now();
 		}
-		if (oldStats[2] != tWinRating || oldStats[3] != tWinDeviation)
-		{
-			killer->sendPropsFromResults(killer->setProp<PlayerProp::RATING>(props::SetBy::SERVER, PropertyEloRating{ tWinRating, tWinDeviation }));
-		}
-		this->account.lastSparTime = std::chrono::system_clock::now();
-		killer->account.lastSparTime = std::chrono::system_clock::now();
 	}
 	else
 	{
