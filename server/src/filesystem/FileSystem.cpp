@@ -5,7 +5,9 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <system_error>
 #include <utility>
+#include <vector>
 
 #include <filesystem/File.h>
 #include <filesystem/FileSystem.h>
@@ -22,6 +24,18 @@ namespace preagonal::fs
 FileSystem::FileSystem(const std::filesystem::path& directory)
 {
 	bind(directory);
+}
+
+FileSystem::~FileSystem()
+{
+	// Wait for any searching to finish.
+	waitUntilFilesSearched();
+
+	// Stop watching all directories.
+	m_watcher.removeAll();
+
+	// Mark ourselves as destructing so we can avoid callbacks.
+	m_destructing = true;
 }
 
 //----------------------------
@@ -95,13 +109,15 @@ void FileSystem::bind(const std::filesystem::path& directory)
 	m_searching_files_condition.notify_all();
 
 	m_directories.insert(directory);
-	m_watcher.add(directory, [this](uint32_t watch_id, const std::filesystem::path& dir, const std::filesystem::path& file, preagonal::fs::FileEventCollection e)
+	m_watcher.add(directory, [this](uint32_t id, const std::filesystem::path& dir, const std::filesystem::path& file, const std::filesystem::path& oldFile, preagonal::fs::FileEventCollection e)
 	{
-		if (e.test(FileEvent::Invalid))
+		if (m_destructing || e.test(FileEvent::Invalid))
 			return;
 
 		FileData* eventFileData = nullptr;
 		FileData deletedData;
+
+		DEBUGPRINT("[FS] Event: {} on file: {} in dir: {}", e.to_string(), file.string(), dir.string());
 
 		// Limit our lock to not include the event callbacks.
 		{
@@ -111,10 +127,8 @@ void FileSystem::bind(const std::filesystem::path& directory)
 			// Existing file.
 			if (iter != m_files.end())
 			{
-				std::unique_ptr<FileData> entry;
-
 				// The file got changed.
-				if (e.test(FileEvent::Modified))
+				if (e.test(FileEvent::Modified) || e.test(FileEvent::Renamed))
 				{
 					// Check for no change in mod time.
 					// Sometimes a modify event can get spawned multiple times.
@@ -123,13 +137,8 @@ void FileSystem::bind(const std::filesystem::path& directory)
 						return;
 
 					iter->second->modifiedTime = fileModTime;
+					DEBUGPRINT("[FS] Existing file modified: {}", file.string());
 				}
-
-				// File got renamed, so copy the existing data to a new record.
-				// There should be a file delete event coming up next, and adding this now might invalidate the iterators,
-				// so we delay the actual insertion until after processing the delete event.
-				if (e.test(FileEvent::Added))
-					entry = std::make_unique<FileData>(*iter->second);
 
 				// The file got deleted.
 				if (e.test(FileEvent::Deleted))
@@ -140,18 +149,65 @@ void FileSystem::bind(const std::filesystem::path& directory)
 
 					m_files.erase(iter);
 					iter = m_files.end();
+
+					DEBUGPRINT("[FS] Existing file deleted: {}", file.string());
 				}
 
-				// If we need to add a file, do it now.
-				if (entry)
+				// If the file got renamed, make sure we remove the old one from the file system.
+				if (e.test(FileEvent::Renamed))
 				{
-					iter = m_files.insert(std::make_pair(file.filename(), std::move(entry)));
+					DEBUGPRINT("[FS] Existing file renamed: {} -> {}", oldFile.string(), file.string());
+					auto oldIter = m_files.find(oldFile.filename());
+					if (oldIter != m_files.end())
+					{
+						// Make a copy of the data that is going to be deleted so we can pass it to the event callback.
+						deletedData = *oldIter->second;
+						eventFileData = &deletedData;
+						m_files.erase(oldIter);
+						iter = m_files.find(file.filename());
+						DEBUGPRINT("[FS] Old file deleted due to rename: {}", oldFile.string());
+					}
 				}
 			}
-			// New file.
 			else
 			{
-				if (e.test(FileEvent::Added))
+				// File got renamed and didn't overwrite an existing file, so update the file entry internals.
+				if (e.test(FileEvent::Renamed))
+				{
+					// Found the old entry.
+					iter = m_files.find(oldFile.filename());
+					if (iter != m_files.end())
+					{
+						// Update the file entry.
+						iter->second->file = dir / file;
+						iter->second->file.make_preferred();
+						iter->second->modifiedTime = std::filesystem::last_write_time(iter->second->file);
+						iter->second->categories.reset();
+						assignCategoriesToFileData(*iter->second.get());
+
+						// Change the key in the map.
+						auto node = m_files.extract(iter);
+						node.key() = file.filename();
+						iter = m_files.insert(std::move(node));
+
+						// Switch over to the added event since this is effectively a new file now.
+						e.reset();
+						e.set(FileEvent::Added);
+
+						DEBUGPRINT("[FS] New file renamed from old: {} -> {}", oldFile.string(), file.string());
+					}
+					// Not found, so treat it as a new file.
+					else
+					{
+						e.reset(FileEvent::Renamed);
+						e.set(FileEvent::Added);
+
+						DEBUGPRINT("[FS] New file added (old file not tracked): {} -> {}", oldFile.string(), file.string());
+					}
+				}
+
+				// New file.
+				if (iter == m_files.end() && e.test(FileEvent::Added) && std::filesystem::exists(dir / file))
 				{
 					auto entry = std::make_unique<FileData>();
 					entry->file = dir / file;
@@ -161,9 +217,11 @@ void FileSystem::bind(const std::filesystem::path& directory)
 					assignCategoriesToFileData(*entry);
 
 					iter = m_files.insert(std::make_pair(file.filename(), std::move(entry)));
+					DEBUGPRINT("[FS] New file added: {}", file.string());
 				}
 			}
 
+			// Extract the event data for callbacks.
 			if (iter != m_files.end() && iter->second)
 				eventFileData = iter->second.get();
 		}
@@ -238,13 +296,11 @@ bool FileSystem::hasi(FileCategory category, const std::filesystem::path& file) 
 	auto fileName = file.string();
 
 	// Check if our file is saved in the file system list.
+	std::scoped_lock guard{ m_file_mutex };
+	for (auto& [filePath, info] : m_files)
 	{
-		std::scoped_lock guard{ m_file_mutex };
-		for (auto& [filePath, info] : m_files)
-		{
-			if (string::equalsi(filePath.string(), fileName) && (skipTest || info->categories.test((size_t)category)))
-				return true;
-		}
+		if (string::equalsi(filePath.string(), fileName) && (skipTest || info->categories.test((size_t)category)))
+			return true;
 	}
 
 	return false;
@@ -291,28 +347,33 @@ FileData* FileSystem::info(FileCategory category, const std::filesystem::path& f
 	return nullptr;
 }
 
-std::generator<const FileData&> FileSystem::info(const std::filesystem::path& file) const
+std::vector<FileDataWeakPtr> FileSystem::info(const std::filesystem::path& file) const
 {
 	std::scoped_lock guard{ m_file_mutex };
+	std::vector<FileDataWeakPtr> result;
 
-	auto iter = m_files.find(file);
-	while (iter != m_files.end())
+	for (auto& [key, value] : m_files)
 	{
-		co_yield *iter->second.get();
-		++iter;
+		if (key == file)
+			result.push_back(value);
 	}
-}
 
-std::generator<const FileData&> FileSystem::info(FileCategory category) const
+	return result;
+};
+
+std::vector<FileDataWeakPtr> FileSystem::info(FileCategory category) const
 {
 	std::scoped_lock guard{ m_file_mutex };
+	std::vector<FileDataWeakPtr> result;
 
 	bool skipTest = !hasFoldersConfig();
 	for (auto& fileData : m_files)
 	{
 		if (skipTest || fileData.second->categories.test((size_t)category))
-			co_yield *fileData.second.get();
+			result.push_back(fileData.second);
 	}
+
+	return result;
 }
 
 FileData* FileSystem::infoi(FileCategory category, const std::filesystem::path& file) const
@@ -329,16 +390,19 @@ FileData* FileSystem::infoi(FileCategory category, const std::filesystem::path& 
 	return nullptr;
 }
 
-std::generator<const FileData&> FileSystem::infoi(const std::filesystem::path& file) const
+std::vector<FileDataWeakPtr> FileSystem::infoi(const std::filesystem::path& file) const
 {
 	std::scoped_lock guard{ m_file_mutex };
+	std::vector<FileDataWeakPtr> result;
 
 	auto fileName = file.string();
 	for (auto& [key, value] : m_files)
 	{
 		if (string::equalsi(key.string(), fileName))
-			co_yield *value;
+			result.push_back(value);
 	}
+
+	return result;
 }
 
 //----------------------------
@@ -363,21 +427,27 @@ std::shared_ptr<File> FileSystem::open(FileCategory category, const std::filesys
 	return nullptr;
 }
 
-std::generator<std::shared_ptr<File>> FileSystem::open(const std::filesystem::path& file) const
+std::vector<std::shared_ptr<File>> FileSystem::open(const std::filesystem::path& file) const
 {
+	std::vector<std::shared_ptr<File>> result;
+
 	// Check if the file exists in the native file system and file is a direct path.
 	if (std::filesystem::exists(file))
 	{
-		if (auto f = std::make_shared<File>(file); f->opened())
-			co_yield f;
-		co_return;
+		auto f = std::make_shared<File>();
+		f->setFilePath(file);
+		result.push_back(f);
+		return result;
 	}
 
-	for (auto& fileData : info(file))
+	for (auto& [fileName, fileData] : m_files)
 	{
-		if (auto f = std::make_shared<File>(fileData.file); f->opened())
-			co_yield f;
+		auto f = std::make_shared<File>();
+		f->setFilePath(fileName);
+		result.push_back(f);
 	}
+
+	return result;
 }
 
 std::shared_ptr<File> FileSystem::open(const FileData& fileData) const
@@ -447,21 +517,27 @@ std::shared_ptr<FileIO> FileSystem::openForWriting(FileCategory category, const 
 	return std::make_shared<FileIO>((*first) / file);
 }
 
-std::generator<std::shared_ptr<FileIO>> FileSystem::openForWriting(const std::filesystem::path& file) const
+std::vector<std::shared_ptr<FileIO>> FileSystem::openForWriting(const std::filesystem::path& file) const
 {
+	std::vector<std::shared_ptr<FileIO>> result;
+
 	// Check if the file exists in the native file system and file is a direct path.
 	if (std::filesystem::exists(file))
 	{
-		if (auto f = std::make_shared<FileIO>(file); f->opened())
-			co_yield f;
-		co_return;
+		auto f = std::make_shared<FileIO>();
+		f->setFilePath(file);
+		result.push_back(f);
+		return result;
 	}
 
-	for (auto& fileData : info(file))
+	for (auto& [fileName, fileData] : m_files)
 	{
-		if (auto f = std::make_shared<FileIO>(fileData.file); f->opened())
-			co_yield f;
+		auto f = std::make_shared<FileIO>();
+		f->setFilePath(fileName);
+		result.push_back(f);
 	}
+
+	return result;
 }
 
 std::shared_ptr<FileIO> FileSystem::openForWriting(const FileData& fileData) const
@@ -507,6 +583,53 @@ std::shared_ptr<FileIO> FileSystem::openiForWriting(FileCategory category, const
 		return nullptr;
 
 	return std::make_shared<FileIO>((*first) / file);
+}
+
+//----------------------------
+
+FileData* FileSystem::rename(const FileData& fileData, std::filesystem::path newFileName)
+{
+	if (!std::filesystem::exists(fileData.file))
+		return nullptr;
+
+	std::scoped_lock guard{ m_file_mutex };
+
+	auto files = m_files.find(fileData.file.filename());
+	while (files != m_files.end())
+	{
+		if (files->second->modifiedTime == fileData.modifiedTime && files->second->categories == fileData.categories)
+		{
+			auto newFilePath = fileData.file.parent_path() / newFileName;
+			newFilePath.make_preferred();
+
+			// Rename the file.
+			std::error_code ec;
+			std::filesystem::rename(fileData.file, newFilePath, ec);
+			if (ec)
+			{
+				log::printLine(log::server, "** Error renaming file [{}] to [{}]: {} **", fileData.file.filename().string(), newFileName.string(), ec.message());
+				return nullptr;
+			}
+
+			// Update the file data.
+			files->second->file = newFilePath;
+			files->second->refreshModTime();
+
+			// Reset the categories.
+			files->second->categories.reset();
+			assignCategoriesToFileData(*files->second.get());
+
+			// Update the key.
+			auto node = m_files.extract(files);
+			node.key() = newFilePath.filename();
+			files = m_files.insert(std::move(node));
+
+			// Return our new data.
+			return files->second.get();
+		}
+	}
+
+	return nullptr;
 }
 
 //----------------------------

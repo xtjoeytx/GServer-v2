@@ -926,10 +926,11 @@ void Server::loadFileSystem()
 	else
 		loadFolderConfig();
 
-	for (auto& fileData : m_fsWorld.info(fs::FileCategory::ALL))
+	for (auto fileData : m_fsWorld.info(fs::FileCategory::ALL) | toSharedPtr)
 	{
-		if (fileData.file.extension() == ".gupd")
-			getPackageManager().findOrAddResource(fileData.file.string())->reload(this);
+		if (fileData == nullptr) continue;
+		if (fileData->file.extension() == ".gupd")
+			getPackageManager().findOrAddResource(fileData->file.string())->reload(this);
 	}
 }
 
@@ -1124,11 +1125,13 @@ void Server::loadWeapons(bool print)
 	{
 		auto sectionProfile = log::Profile(log::server, "", "(Completed in {1:0.6} ms)");
 
-		for (auto& weaponFile : m_fsServer.info(fs::FileCategory::WEAPON))
+		for (auto weaponFile : m_fsServer.info(fs::FileCategory::WEAPON) | toSharedPtr)
 		{
+			if (weaponFile == nullptr) continue;
+
 			auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
 
-			auto fileName = fs::getANSIFileName(weaponFile.file);
+			auto fileName = fs::getANSIFileName(weaponFile->file);
 			auto weapon = Weapon::loadWeapon(fileName);
 			if (weapon == nullptr) continue;
 

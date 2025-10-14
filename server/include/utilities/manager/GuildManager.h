@@ -21,6 +21,7 @@ struct Guild
 	std::string name;
 	std::filesystem::path filePath;
 	string_multimap<std::string> members;
+	bool modifiedSinceLastSave = false;
 };
 
 class GuildManager

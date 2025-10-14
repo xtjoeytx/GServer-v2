@@ -54,10 +54,9 @@ std::filesystem::path getHTMLEscapedFileName(const std::filesystem::path& file);
 
 class File
 {
-protected:
-	File() {}
-
 public:
+	File() = default;
+
 	File(const std::filesystem::path& file, std::unique_ptr<std::ifstream>&& stream)
 		: m_file(file), m_inputStreamHandle(std::move(stream))
 	{
@@ -153,11 +152,26 @@ public:
 		return m_file;
 	}
 
+	/// @brief Sets the file path for the current object, closing any previously opened file.
+	/// @param filePath The new file path to set.
+	void setFilePath(const std::filesystem::path& filePath)
+	{
+		if (opened()) close();
+		m_file = filePath;
+	}
+
 	/// @brief Gets the file modified time.
 	/// @return The file modified time.
 	virtual std::filesystem::file_time_type modifiedTime() const
 	{
-		return std::filesystem::last_write_time(m_file);
+		try
+		{
+			return std::filesystem::last_write_time(m_file);
+		}
+		catch (...)
+		{
+			return std::filesystem::file_time_type::min();
+		}
 	}
 
 public:
@@ -219,6 +233,8 @@ using FilePtr = std::shared_ptr<File>;
 class FileIO : public File
 {
 public:
+	FileIO() = default;
+
 	FileIO(const std::filesystem::path& file, std::unique_ptr<std::fstream>&& stream)
 		: m_outputStreamHandle(std::move(stream))
 	{
@@ -244,7 +260,6 @@ public:
 	}
 
 public:
-	FileIO() = delete;
 	FileIO(const FileIO& other) = delete;
 	FileIO& operator=(const FileIO& other) = delete;
 	bool operator==(const FileIO& other) = delete;
@@ -266,6 +281,10 @@ public:
 	}
 
 public:
+	using File::operator std::istream&;
+	using File::operator std::istream*;
+	using File::operator bool;
+
 	/// @brief Converts directly into an fstream.
 	operator std::fstream& () const
 	{
@@ -346,6 +365,7 @@ protected:
 	bool open(bool truncate);
 
 protected:
+	std::filesystem::path m_tempFile;
 	std::unique_ptr<std::fstream> m_outputStreamHandle;
 };
 

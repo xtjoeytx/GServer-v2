@@ -213,6 +213,8 @@ inline static auto toRange(AllSame auto&&... range)
 
 inline auto removeNulls = std::views::filter([](auto&& ptr) { return ptr != nullptr; });
 
+inline auto toSharedPtr = std::views::transform([](auto&& ptr) { return ptr.lock(); });
+
 //----------------------------
 // Floating point helpers
 
@@ -278,5 +280,16 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 }; // end namespace preagonal
+
+
+//----------------------------
+// Macros
+
+#ifdef DEBUG
+#include <utilities/Log.h>
+#define DEBUGPRINT(...) do { log::printLine(log::server, __VA_ARGS__); } while(false)
+#else
+#define DEBUGPRINT(...)
+#endif
 
 #endif // COMMONTYPES_H

@@ -70,9 +70,10 @@ void GuildManager::loadGuilds(const std::filesystem::path& directory)
 	m_filesystem.bind(directory);
 	m_filesystem.waitUntilFilesSearched();
 
-	for (const auto& info : m_filesystem.info(fs::FileCategory::FILE))
+	for (auto info : m_filesystem.info(fs::FileCategory::FILE) | toSharedPtr)
 	{
-		if (auto guild = loadGuild(info.file); guild != nullptr)
+		if (info == nullptr) continue;
+		if (auto guild = loadGuild(info->file); guild != nullptr)
 			log::printLine(log::server, guild->name);
 	}
 }
@@ -211,6 +212,8 @@ bool GuildManager::saveGuild(std::string_view guildName)
 	if (auto it = m_guilds.find(guildName); it != m_guilds.end())
 	{
 		Guild& guild = it->second;
+		if (!guild.modifiedSinceLastSave)
+			return true;
 
 		std::ofstream file{ guild.filePath, std::ios::out | std::ios::trunc };
 		if (!file.is_open())
@@ -228,6 +231,7 @@ bool GuildManager::saveGuild(std::string_view guildName)
 		}
 
 		file.close();
+		guild.modifiedSinceLastSave = false;
 
 		// Update the file mod time so we don't get a file modified event.
 		if (auto fileInfo = m_filesystem.info(fs::FileCategory::FILE, guild.filePath.filename()); fileInfo != nullptr)
@@ -244,6 +248,7 @@ bool GuildManager::addPlayerToGuild(std::string_view guildName, std::string_view
 	if (it != m_guilds.end())
 	{
 		it->second.members.emplace(account, nickName);
+		it->second.modifiedSinceLastSave = true;
 		return true;
 	}
 
@@ -270,6 +275,7 @@ bool GuildManager::removePlayerFromGuild(std::string_view guildName, std::string
 			if (membersIt.first->second == nickName)
 			{
 				members.erase(membersIt.first);
+				it->second.modifiedSinceLastSave = true;
 				return true;
 			}
 			++membersIt.first;
@@ -285,6 +291,7 @@ bool GuildManager::removePlayerEntirelyFromGuild(std::string_view guildName, std
 	{
 		auto& members = it->second.members;
 		auto result = members.erase(std::string{ account });
+		it->second.modifiedSinceLastSave = true;
 		return result > 0;
 	}
 	return false;

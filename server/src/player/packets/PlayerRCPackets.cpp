@@ -155,14 +155,12 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERCONFIGSET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	// Save the folder config back to disk
-	CString folders = pPacket.readString("");
-	folders.guntokenizeI();
-	folders.replaceAllI("", "\r\n");
-	folders.save("config/foldersconfig.txt");
-
-	// Update file system.
-	m_server->loadFileSystem();
+	if (auto file = m_server->getFileSystemServer().openForWriting(fs::FileCategory::CONFIG, "foldersconfig.txt"); file != nullptr)
+	{
+		file->clear();
+		CString folders = pPacket.readString("");
+		file->writeLines(string::fromCSV(folders.toStringView()));
+	}
 
 	log::printLine(log::rc, "{} updated the folder config.", account.name);
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " updated the folder config.");
@@ -512,9 +510,12 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 	ret >> (char)PLO_RC_ACCOUNTLISTGET;
 
 	// Search through all the accounts.
-	for (auto& fileInfo : m_server->getFileSystemServer().info(fs::FileCategory::ACCOUNT))
+	for (auto& fileInfoPtr : m_server->getFileSystemServer().info(fs::FileCategory::ACCOUNT))
 	{
-		auto accountName = fileInfo.file.stem().generic_string();
+		auto fileInfo = fileInfoPtr.lock();
+		if (fileInfo == nullptr) continue;
+
+		auto accountName = fileInfo->file.stem().generic_string();
 		if (accountName.empty()) continue;
 		if (!string::match<true>(accountName, name.toStringView())) continue;
 		if (conditions.length() == 0 || m_server->getAccountLoader().checkSearchConditions(accountName, string::splitToVector(conditions, std::string_view(","))))
@@ -983,23 +984,26 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 				search << " " << words[i];
 
 			std::vector<std::string> categories;
-			for (auto& fileInfo : m_server->getFileSystem().info(fs::FileCategory::ALL))
+			for (auto& fileInfoPtr : m_server->getFileSystem().info(fs::FileCategory::ALL))
 			{
-				CString fileName = fs::getANSIFileName(fileInfo.file);
+				auto fileInfo = fileInfoPtr.lock();
+				if (fileInfo == nullptr) continue;
+
+				CString fileName = fs::getANSIFileName(fileInfo->file);
 				if (fileName.match(search))
 				{
 					categories.clear();
-					if (fileInfo.categories.test(ENUM(fs::FileCategory::FILE)))
+					if (fileInfo->categories.test(ENUM(fs::FileCategory::FILE)))
 						categories.push_back("file");
-					if (fileInfo.categories.test(ENUM(fs::FileCategory::LEVEL)))
+					if (fileInfo->categories.test(ENUM(fs::FileCategory::LEVEL)))
 						categories.push_back("level");
-					if (fileInfo.categories.test(ENUM(fs::FileCategory::HEAD)))
+					if (fileInfo->categories.test(ENUM(fs::FileCategory::HEAD)))
 						categories.push_back("head");
-					if (fileInfo.categories.test(ENUM(fs::FileCategory::BODY)))
+					if (fileInfo->categories.test(ENUM(fs::FileCategory::BODY)))
 						categories.push_back("body");
-					if (fileInfo.categories.test(ENUM(fs::FileCategory::SWORD)))
+					if (fileInfo->categories.test(ENUM(fs::FileCategory::SWORD)))
 						categories.push_back("sword");
-					if (fileInfo.categories.test(ENUM(fs::FileCategory::SHIELD)))
+					if (fileInfo->categories.test(ENUM(fs::FileCategory::SHIELD)))
 						categories.push_back("shield");
 
 					found[fileName] = string::join(categories);

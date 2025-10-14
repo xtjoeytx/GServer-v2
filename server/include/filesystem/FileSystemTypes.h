@@ -68,10 +68,22 @@ struct FileEvent
 	static constexpr uint8_t Added = 1;
 	static constexpr uint8_t Deleted = 2;
 	static constexpr uint8_t Modified = 3;
+	static constexpr uint8_t Renamed = 4;
 };
 
-inline constexpr size_t FileEventTypeCount = 4;
+inline constexpr size_t FileEventTypeCount = 5;
 using FileEventCollection = std::bitset<FileEventTypeCount>;
+
+//----------------------------
+
+/// @brief Represents data related to file events.
+struct FileEventData
+{
+	FileEventCollection events;
+	std::filesystem::path fileName;
+	std::filesystem::path oldFileName;
+	void* fsData = nullptr;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::fs

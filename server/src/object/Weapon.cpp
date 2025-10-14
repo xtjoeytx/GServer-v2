@@ -17,6 +17,8 @@
 #include <IEnums.h>
 
 #include <Server.h>
+#include <filesystem/File.h>
+#include <filesystem/FileSystemTypes.h>
 #include <level/LevelItem.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
@@ -164,35 +166,30 @@ bool Weapon::saveWeapon()
 	//if (!m_bytecodeFile.empty())
 	//	return false;
 
-	// Prevent the loading/saving of filenames with illegal characters.
-	CString escapedName = name;
-	escapedName.replaceAllI("\\", "_");
-	escapedName.replaceAllI("/", "_");
-	escapedName.replaceAllI("*", "@");
-	escapedName.replaceAllI(":", ";");
-	escapedName.replaceAllI("?", "!");
-	auto filename = std::filesystem::path{ "weapons" } / std::format("weapon{}.txt", escapedName.toString());
+	auto server = BabyDI::Get<Server>();
+	auto fileName = fs::getHTMLEscapedFileName(std::format("weapon{}.txt", name));
+	auto file = server->getFileSystemServer().openiForWriting(fs::FileCategory::WEAPON, fileName, true);
+	if (!file)
+		return false;
 
-	// Write the File.
-	CString output = "GRAWP001\r\n";
-	output << "REALNAME " << name << "\r\n";
-	output << "IMAGE " << image << "\r\n";
+	// Write the file.
+	file->clear();
+	file->writeLine("GRAWP001");
+	file->writeConfigLine("REALNAME"sv, name);
+	file->writeConfigLine("IMAGE"sv, image);
 
+	// Write the script.
 	const auto& originalSource = m_script.getOriginalSource();
 	if (!originalSource.empty())
 	{
-		output << "SCRIPT\r\n";
-		output << CString(originalSource).removeAllI("\r").replaceAllI("\n", "\r\n");
-
-		// Append a new line to the end of the script if one doesn't exist.
-		if (originalSource.back() != '\n')
-			output << "\r\n";
-
-		output << "SCRIPTEND\r\n";
+		std::string_view source{ originalSource };
+		file->writeLine("SCRIPT"sv);
+		file->writeLines(string::split(source, "\r\n"sv, false));
+		file->writeLine("SCRIPTEND"sv);
 	}
+	file->close();
 
-	// Save it.
-	return output.save(filename.string());
+	return true;
 }
 
 Weapon& Weapon::updateWeapon(std::string_view image, std::string_view script)

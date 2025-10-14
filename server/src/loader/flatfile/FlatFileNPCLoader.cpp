@@ -397,14 +397,19 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			npc->modTime[PROPID(NPCProp::SCRIPT)] = updateTime;
 		}
 	}
+	file->close();
 
-	// If the NPC is a character, force the shape to be 48x48.
+	// If the NPC is a character, set the gender prop.
 	// Also, set the gender.
-	if (npc->isCharacter())
+	if (npc->isCharacter() && isMale)
 	{
-		npc->shape = { 48, 48 };
-		if (isMale)
-			npc->visFlags |= PROPID(NPCVisFlags::MALE);
+		npc->visFlags |= PROPID(NPCVisFlags::MALE);
+	}
+
+	// If the NPC has no image, make it invisible.
+	if (!npc->hasImage() && !npc->hasShape())
+	{
+		npc->visFlags &= ~PROPID(NPCVisFlags::VISIBLE);
 	}
 
 	// Set the script.
@@ -439,6 +444,21 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		npc->m_currentLevel = level;
 	}
 
+	// Check if we need to rename the file.
+	auto expectedFileName = fs::getHTMLEscapedFileName(std::format("npc{}.txt", npc->name)).string();
+	auto currentFileName = fs::getANSIFileName(filePath);
+	if (expectedFileName != currentFileName)
+	{
+		auto fileData = server->getFileSystemServer().infoi(fs::FileCategory::NPC, currentFileName);
+		if (fileData == nullptr)
+			return npc;
+
+		if (server->getFileSystemServer().rename(*fileData, expectedFileName))
+			log::printLine(log::server, "Renamed NPC file [{}] to [{}]", currentFileName, expectedFileName);
+		else
+			log::printLine(log::server, "** Failed to rename NPC file [{}] to [{}]", currentFileName, expectedFileName);
+	}
+
 	return npc;
 }
 
@@ -447,52 +467,60 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	if (npc->storageType != NPCStorageType::DATABASE)
 		return false;
 
-	static const char* NL = "\r\n";
-	CString folder{ "npcs" };
-	CString fileName = CString() << "npc" << npc->name << ".txt";
-	CString fileData = CString("GRNPC001") << NL;
+	// Open the file for writing.
+	auto server = BabyDI::Get<Server>();
+	auto fileName = fs::getHTMLEscapedFileName(std::format("npc{}.txt", npc->name));
+	auto file = server->getFileSystemServer().openiForWriting(fs::FileCategory::NPC , fileName, true);
+	if (!file)
+		return false;
 
+	// Function to check for prop modification before writing.
 	auto writeProp = [&](NPCProp prop, std::string_view key, std::string_view value)
 	{
 		if (npc->modTime[PROPID(prop)] != clock::time_point::min())
-			fileData << key << " " << value << NL;
+			file->writeConfigLine(key, value);
 	};
 
 	auto level = npc->getLevel();
-	auto server = BabyDI::Get<Server>();
 
+	// Get the draw layer number.
 	int layer = 0;
 	if (npc->visFlags & PROPID(NPCVisFlags::DRAWUNDERPLAYER))
 		layer = -1;
 	else if (npc->visFlags & PROPID(NPCVisFlags::DRAWOVERPLAYER))
 		layer = 1;
 
-	fileData << "NAME " << npc->name << NL;
-	fileData << "ID " << CString(npc->id) << NL;
-	fileData << "TYPE " << npc->scriptType << NL;
-	fileData << "SCRIPTER " << npc->scripter << NL;
-	fileData << "IMAGE " << npc->image << NL;
+	// Start the file.
+	file->clear();
+	file->writeLine("GRNPC001");
+
+	// Write our data.
+	file->writeConfigLine("NAME", npc->name);
+	file->writeConfigLine("ID", string::to_string(npc->id));
+	file->writeConfigLine("TYPE", npc->scriptType);
+	file->writeConfigLine("SCRIPTER", npc->scripter);
+
+	file->writeConfigLine("IMAGE", npc->image);
 	if (npc->imagePart.size.width() > 0 && npc->imagePart.size.height() > 0)
 	{
-		fileData << "IMGPART "
-			<< CString(npc->imagePart.position.x()) << " " << CString(npc->imagePart.position.y()) << " "
-			<< CString(npc->imagePart.size.width()) << " " << CString(npc->imagePart.size.height()) << NL;
+		file->writeConfigLine("IMGPART", std::format("{} {} {} {}", npc->imagePart.position.x(), npc->imagePart.position.y(), npc->imagePart.size.width(), npc->imagePart.size.height()));
 	}
-	fileData << "STARTLEVEL " << npc->m_initialLevel << NL;
-	fileData << "STARTX " << CString((float)npc->m_initialCharacter.localPixelX / 16.0f) << NL;
-	fileData << "STARTY " << CString((float)npc->m_initialCharacter.localPixelY / 16.0f) << NL;
-	fileData << "STARTZ " << CString((float)npc->m_initialCharacter.localPixelZ / 16.0f) << NL;
+
+	file->writeConfigLine("STARTLEVEL", npc->m_initialLevel);
+	file->writeConfigLine("STARTX", string::to_string(npc->m_initialCharacter.localPixelX / 16.0, 2));
+	file->writeConfigLine("STARTY", string::to_string(npc->m_initialCharacter.localPixelY / 16.0, 2));
+	file->writeConfigLine("STARTZ", string::to_string(npc->m_initialCharacter.localPixelZ / 16.0, 2));
+
 	if (level)
 	{
-		fileData << "LEVEL " << npc->getLevelName() << NL;
-		fileData << "X " << CString((float)npc->character.localPixelX / 16.0f) << NL;
-		fileData << "Y " << CString((float)npc->character.localPixelY / 16.0f) << NL;
-		fileData << "Z " << CString((float)npc->character.localPixelZ / 16.0f) << NL;
-
+		file->writeConfigLine("LEVEL", npc->getLevelName());
+		file->writeConfigLine("X", string::to_string(npc->character.localPixelX / 16.0, 2));
+		file->writeConfigLine("Y", string::to_string(npc->character.localPixelY / 16.0, 2));
+		file->writeConfigLine("Z", string::to_string(npc->character.localPixelZ / 16.0, 2));
 		if (level->isOnGmap())
 		{
-			fileData << "MAPX " << CString(npc->character.mapX) << NL;
-			fileData << "MAPY " << CString(npc->character.mapY) << NL;
+			file->writeConfigLine("MAPX", string::to_string(npc->character.mapX));
+			file->writeConfigLine("MAPY", string::to_string(npc->character.mapY));
 		}
 	}
 
@@ -502,16 +530,16 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		writeProp(NPCProp::GANI, "ANI", npc->character.gani);
 
 	writeProp(NPCProp::POWER, "HP", std::format("{:2f}", npc->character.hitpointsInHalves / 2.0f));
-	writeProp(NPCProp::RUPEES, "GRALATS", std::to_string(npc->character.gralats));
-	writeProp(NPCProp::ARROWS, "ARROWS", std::to_string(npc->character.arrows));
-	writeProp(NPCProp::BOMBS, "BOMBS", std::to_string(npc->character.bombs));
-	writeProp(NPCProp::GLOVEPOWER, "GLOVEP", std::to_string(npc->character.glovePower));
-	writeProp(NPCProp::SWORDIMAGE, "SWORDP", std::to_string(npc->character.swordPower));
-	writeProp(NPCProp::SHIELDIMAGE, "SHIELDP", std::to_string(npc->character.shieldPower));
+	writeProp(NPCProp::RUPEES, "GRALATS", string::to_string(npc->character.gralats));
+	writeProp(NPCProp::ARROWS, "ARROWS", string::to_string(npc->character.arrows));
+	writeProp(NPCProp::BOMBS, "BOMBS", string::to_string(npc->character.bombs));
+	writeProp(NPCProp::GLOVEPOWER, "GLOVEP", string::to_string(npc->character.glovePower));
+	writeProp(NPCProp::SWORDIMAGE, "SWORDP", string::to_string(npc->character.swordPower));
+	writeProp(NPCProp::SHIELDIMAGE, "SHIELDP", string::to_string(npc->character.shieldPower));
 
 	if (server->Generation == ServerGeneration::ORIGINAL)
 	{
-		writeProp(NPCProp::GANI, "BOWP", std::to_string(npc->character.bowPower));
+		writeProp(NPCProp::GANI, "BOWP", string::to_string(npc->character.bowPower));
 		writeProp(NPCProp::GANI, "BOW", npc->character.bowImage);
 	}
 
@@ -521,47 +549,47 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	writeProp(NPCProp::SHIELDIMAGE, "SHIELD", npc->character.shieldImage);
 	writeProp(NPCProp::HORSEIMAGE, "HORSE", npc->character.horseImage);
 	writeProp(NPCProp::COLORS, "COLORS", std::format("{},{},{},{},{}", npc->character.colors[0], npc->character.colors[1], npc->character.colors[2], npc->character.colors[3], npc->character.colors[4]));
-	writeProp(NPCProp::SPRITE, "SPRITE", std::to_string(npc->character.sprite << 2 | npc->character.direction));
-	writeProp(NPCProp::ALIGNMENT, "AP", std::to_string(npc->character.ap));
+	writeProp(NPCProp::SPRITE, "SPRITE", string::to_string(npc->character.sprite << 2 | npc->character.direction));
+	writeProp(NPCProp::ALIGNMENT, "AP", string::to_string(npc->character.ap));
 
 	if (npc->timeout != 0ms)
-		fileData << "TIMEOUT " << std::to_string(static_cast<int>(npc->timeout.count() * 0.05)) << NL;
+		file->writeConfigLine("TIMEOUT", string::to_string(static_cast<int>(npc->timeout.count() * 0.05)));
 
 	if (layer != 0)
-		fileData << "LAYER " << std::to_string(layer + 1) << NL;
+		file->writeConfigLine("LAYER", string::to_string(layer + 1));
 
 	if (npc->shape.width() != 0 || npc->shape.height() != 0)
 	{
-		fileData << "SHAPETYPE " << (npc->shape.width() != 0 && npc->shape.height() != 0 ? "1" : "0") << NL;
-		fileData << "SHAPE " << std::format("{} {}", npc->shape.width(), npc->shape.height()) << NL;
+		file->writeConfigLine("SHAPETYPE", npc->shape.width() != 0 && npc->shape.height() != 0 ? "1" : "0");
+		file->writeConfigLine("SHAPE", std::format("{} {}", npc->shape.width(), npc->shape.height()));
 	}
 
 	if (npc->blockFlags & PROPID(NPCBlockFlags::NOBLOCK))
-		fileData << "DONTBLOCK 1" << NL;
+		file->writeLine("DONTBLOCK 1");
 	if (npc->noPlayerOnWall)
-		fileData << "NOPLAYERONWALL 1" << NL;
+		file->writeLine("NOPLAYERONWALL 1");
 	if (npc->warpRestrictions == NPCWarpRestrictions::NOTALLOWED)
-		fileData << "CANWARP" << NL;
+		file->writeLine("CANWARP");
 	if (npc->warpRestrictions == NPCWarpRestrictions::ONLYOVERWORLD)
-		fileData << "CANWARP2" << NL;
+		file->writeLine("CANWARP2");
 
 	// Official variables for these are unknown.
 	if (npc->blockFlags & PROPID(NPCBlockFlags::CANBECARRIED))
-		fileData << "CANCARRY 1" << NL;
+		file->writeLine("CANCARRY 1");
 	if (npc->blockFlags & PROPID(NPCBlockFlags::CANBEPULLED))
-		fileData << "CANPULL 1" << NL;
+		file->writeLine("CANPULL");
 	if (npc->blockFlags & PROPID(NPCBlockFlags::CANBEPUSHED))
-		fileData << "CANPUSH 1" << NL;
+		file->writeLine("CANPUSH");
 	if ((npc->visFlags & PROPID(NPCVisFlags::VISIBLE)) == 0)
-		fileData << "VISIBLE 0" << NL;
+		file->writeLine("VISIBLE 0");
 	if ((npc->visFlags & PROPID(NPCVisFlags::TIMERSHOW)) != 0)
-		fileData << "TIMERSHOW 1" << NL;
+		file->writeLine("TIMERSHOW 1");
 	if (npc->isCharacter() && (npc->visFlags & PROPID(NPCVisFlags::MALE)) == 0)
-		fileData << "MALE 0" << NL;
+		file->writeLine("MALE 0");
 	// ---
 
 	if (!std::ranges::empty(NPCSaveProps | std::views::filter([&npc](NPCProp prop) { return npc->modTime[PROPID(prop)] != clock::time_point::min(); })))
-		fileData << "SAVEARR " << string::toCSV(npc->saves | std::views::transform([](uint8_t x) { return std::to_string(x); })) << NL;
+		file->writeConfigLine("SAVEARR", string::toCSV(npc->saves | std::views::transform([](uint8_t x) { return string::to_string(x); })));
 
 	for (int i = 0; i < 30; i++)
 	{
@@ -580,31 +608,31 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		{
 			auto var = npc->scripting.variables.serializeModern(flag);
 			if (var.has_value())
-				fileData << "FLAG " << var.value() << NL;
+				file->writeConfigLine("FLAG", var.value());
 		}
 		else
 		{
 			for (const auto& serialized : npc->scripting.variables.serialize(flag))
-				fileData << serialized << NL;
+				file->writeLine(serialized);
 		}
 	}
 
 	if (!npc->m_joinedClasses.empty())
 	{
-		fileData << "JOINEDCLASSES " << npc->getJoinedClassesList() << NL;
+		file->writeConfigLine("JOINEDCLASSES", npc->getJoinedClassesList());
 	}
 
-	fileData << "NPCSCRIPT" << NL << CString(npc->getScript().getOriginalSource()).replaceAll("\n", NL);
-	if (fileData[fileData.length() - 1] != '\n')
-		fileData << NL;
-	fileData << "NPCSCRIPTEND" << NL;
-	fileData.save(folder << "/" << fileName);
+	file->writeConfigSection("NPCSCRIPT", npc->getScript().getOriginalSource(), "NPCSCRIPTEND");
+
+	// Finish up.
+	file->close();
+
+	// Update the NPC's last save time.
+	npc->lastSaveTime = fs::toModTime(file->modifiedTime());
 
 	// If the NPC exists on the filesystem, refresh its mod time to avoid any modification events.
-	if (auto info = server->getFileSystemServer().info(fs::FileCategory::NPC, fileName.toStringView()); info != nullptr)
+	if (auto info = server->getFileSystemServer().info(fs::FileCategory::NPC, file->filePath().filename()); info != nullptr)
 		info->refreshModTime();
-
-	npc->lastSaveTime = fs::getFileModTime(folder.toString());
 
 	return true;
 }

@@ -7,3 +7,4 @@
 #define DO_PACKETLOG(LOG)
 #define assert(expression)
 #define RECOVERABLE_PARSE_ERROR(MESSAGE, RETVAL)
+#define DEBUGPRINT(...)

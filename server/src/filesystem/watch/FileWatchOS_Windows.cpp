@@ -30,6 +30,7 @@
 
 #include <filesystem/FileSystemTypes.h>
 #include <filesystem/watch/FileWatch.h>
+#include <unordered_map>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::fs::watch
@@ -45,14 +46,12 @@ struct Watch
 	{
 		memset(&overlapped, 0, sizeof(OVERLAPPED));
 		buffer[0] = '\0';
-		fileBuffer[0] = L'\0';
 	}
 
 	OVERLAPPED overlapped;
 	HANDLE dir_handle;
 	BYTE buffer[32 * 1024];
 	DWORD notify_filter;
-	TCHAR fileBuffer[FileBufferLength];
 
 	uint32_t watch_id;
 	std::filesystem::path dir;
@@ -60,7 +59,6 @@ struct Watch
 	watch_cb callback;
 
 	std::atomic<bool> stop;
-
 };
 
 struct WatchOS
@@ -72,23 +70,25 @@ struct WatchOS
 static bool refreshWatch(Watch* watch, bool clear = false);
 static void deleteWatch(Watch* watch);
 
-static FileEventCollection translateAction(DWORD action)
+static FileEventCollection translateAction(FileEventCollection& event, DWORD action)
 {
-	FileEventCollection event;
 	switch (action)
 	{
-		case FILE_ACTION_RENAMED_NEW_NAME:
 		case FILE_ACTION_ADDED:
 			event.set(FileEvent::Added);
 			break;
 
-		case FILE_ACTION_RENAMED_OLD_NAME:
 		case FILE_ACTION_REMOVED:
+		case FILE_ACTION_RENAMED_OLD_NAME:
 			event.set(FileEvent::Deleted);
 			break;
 
 		case FILE_ACTION_MODIFIED:
 			event.set(FileEvent::Modified);
+			break;
+
+		case FILE_ACTION_RENAMED_NEW_NAME:
+			event.set(FileEvent::Renamed);
 			break;
 
 		default:
@@ -100,39 +100,96 @@ static FileEventCollection translateAction(DWORD action)
 
 static void CALLBACK watchCallback(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, LPOVERLAPPED lpOverlapped)
 {
+	thread_local TCHAR fileBuffer[Watch::FileBufferLength];
+	thread_local TCHAR oldFileBuffer[Watch::FileBufferLength];
+
 	// Maximum path length on Windows is 32767.
 	PFILE_NOTIFY_INFORMATION pNotify;
 	Watch* pWatch = (Watch*)lpOverlapped;
 	size_t offset = 0;
 
-	if (pWatch == nullptr || dwNumberOfBytesTransfered == 0)
+	if (pWatch == nullptr || pWatch->callback == nullptr || dwNumberOfBytesTransfered == 0)
 		return;
 
 	if (dwErrorCode == ERROR_SUCCESS)
 	{
+		std::unordered_map<std::filesystem::path, FileEventData> fileEvents;
+		fileBuffer[0] = TEXT('\0');
+		oldFileBuffer[0] = TEXT('\0');
+
 		do
 		{
 			pNotify = (PFILE_NOTIFY_INFORMATION)&pWatch->buffer[offset];
 			offset += pNotify->NextEntryOffset;
 
-	#if defined(UNICODE)
+			// Set our filename buffer.
+			PTCHAR targetBuffer = fileBuffer;
+			if (pNotify->Action == FILE_ACTION_RENAMED_OLD_NAME)
+				targetBuffer = oldFileBuffer;
+
+			*targetBuffer = TEXT('\0');
+
+#if defined(UNICODE)
 			{
 				size_t fileNameCharacters = pNotify->FileNameLength / sizeof(WCHAR);
-				(void)StringCchCopyNW(pWatch->fileBuffer, Watch::FileBufferLength, pNotify->FileName, fileNameCharacters);
+				(void)StringCchCopyNW(targetBuffer, Watch::FileBufferLength, pNotify->FileName, fileNameCharacters);
 			}
-	#else
+#else
 			{
 				int count = WideCharToMultiByte(CP_ACP, 0, pNotify->FileName,
-												pNotify->FileNameLength / sizeof(WCHAR),
-												pWatch->fileBuffer, Watch::FileBufferLength - 1, NULL, NULL);
-				pWatch->fileBuffer[count] = TEXT('\0');
+					pNotify->FileNameLength / sizeof(WCHAR),
+					targetBuffer, Watch::FileBufferLength - 1, NULL, NULL);
+				targetBuffer[count] = TEXT('\0');
 			}
-	#endif
+#endif
 
-			if (pWatch->callback)
-				pWatch->callback(pWatch->watch_id, pWatch->dir, std::filesystem::path{ pWatch->fileBuffer }, translateAction(pNotify->Action));
+			// If this is a rename event, and it is the old file, continue to the next entry.
+			// The old file was stored above.
+			if (pNotify->Action == FILE_ACTION_RENAMED_OLD_NAME)
+				continue;
+
+			std::filesystem::path fileName{ fileBuffer };
+			auto& data = fileEvents[fileName.filename()];
+
+			// Save information to the queued data.
+			translateAction(data.events, pNotify->Action);
+			data.fileName = fileName;
+			if (oldFileBuffer[0] != TEXT('\0'))
+				data.oldFileName = std::filesystem::path{ oldFileBuffer };
 		}
 		while (pNotify->NextEntryOffset != 0);
+
+		// Check for rename events on overwritten files.
+		// When we save files, a temp file gets created and renamed over top of the original file.
+		// The temp file will get an Added event, and the original file will get a Deleted event + a Renamed event.
+		// We want the original file to have a single Renamed event, while the temp file should be ignored.
+		for (auto& [file, data] : fileEvents)
+		{
+			if (data.events.test(FileEvent::Renamed))
+			{
+				// Make sure we are only getting a rename event.
+				data.events.reset();
+				data.events.set(FileEvent::Renamed);
+
+				// If the old file exists in our list, ignore it.
+				// The filesystem logic will take care of removing it.
+				auto oldFileIter = fileEvents.find(data.oldFileName);
+				if (oldFileIter != fileEvents.end())
+				{
+					auto& [oldFile, oldFileData] = *oldFileIter;
+					oldFileData.events.set(FileEvent::Invalid);
+				}
+			}
+		}
+
+		// Execute callbacks for our queued data.
+		for (auto& [file, data] : fileEvents)
+		{
+			if (data.events.test(FileEvent::Invalid))
+				continue;
+
+			pWatch->callback(pWatch->watch_id, pWatch->dir, data.fileName, data.oldFileName, data.events);
+		}
 	}
 
 	if (!pWatch->stop)
@@ -184,6 +241,8 @@ uint32_t FileWatch::add(const std::filesystem::path& directory, watch_cb callbac
 	Watch* watch = new Watch;
 
 	// Create the directory handle.
+	// FILE_FLAG_BACKUP_SEMANTICS lets us actually create a directory handle to get file change events.
+	// FILE_FLAG_OVERLAPPED lets us do async IO.
 	watch->dir_handle = CreateFile(directory.c_str(), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, NULL);
 	if (watch->dir_handle == INVALID_HANDLE_VALUE)
 	{
@@ -191,8 +250,13 @@ uint32_t FileWatch::add(const std::filesystem::path& directory, watch_cb callbac
 		return 0;
 	}
 
+	// Create our event.
+	// This is the important part that lets us do async IO.
+	// The callback was registered with ReadDirectoryChangesW(), and this event is passed in the overlapped data.
+	// That means that ReadDirectoryChangesW() will buffer events until the event gets signaled.
+	// The signal is kicked off by the MsgWaitForMultipleObjectsEx() function.
 	watch->overlapped.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	watch->notify_filter = FILE_NOTIFY_CHANGE_CREATION | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_FILE_NAME;
+	watch->notify_filter = FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_FILE_NAME;
 	watch->recursive = recursive;
 
 	uint32_t id = ++m_last_id;
@@ -261,6 +325,11 @@ void FileWatch::removeAll()
 
 void FileWatch::update()
 {
+	// Count is 0, so it waits only for an input event.
+	// No handles.
+	// 0ms timeout, which means this function will not block.
+	// QS_ALLINPUT means we want to wake up for all input events.
+	// Wait only for alertable input events.
 	MsgWaitForMultipleObjectsEx(0, NULL, 0, QS_ALLINPUT, MWMO_ALERTABLE);
 }
 

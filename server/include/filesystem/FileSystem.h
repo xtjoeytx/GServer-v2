@@ -92,7 +92,8 @@ struct FileData
 		return std::make_shared<FileIO>(file);
 	}
 };
-using FileDataPtr = std::unique_ptr<FileData, std::default_delete<FileData>>;
+using FileDataPtr = std::shared_ptr<FileData>;
+using FileDataWeakPtr = std::weak_ptr<FileData>;
 
 //----------------------------
 
@@ -102,7 +103,7 @@ class FileSystem
 public:
 	FileSystem() = default;
 	FileSystem(const std::filesystem::path& directory);
-	~FileSystem() = default;
+	~FileSystem();
 
 	FileSystem(const FileSystem& other) = delete;
 	FileSystem(FileSystem&& other) = delete;
@@ -176,10 +177,10 @@ public:
 
 	/// @brief Returns information about the file.
 	/// @return Information about the file.
-	std::generator<const FileData&> info(const std::filesystem::path& file) const;
+	std::vector<FileDataWeakPtr> info(const std::filesystem::path& file) const;
 
 	/// @brief Gets a range of all files in a category.
-	std::generator<const FileData&> info(FileCategory category) const;
+	std::vector<FileDataWeakPtr> info(FileCategory category) const;
 
 	/// @brief Returns information about the file (case-insensitive).
 	/// @param category The category the file must belong to.
@@ -189,7 +190,7 @@ public:
 	/// @brief Returns information about the file (case-insensitive).
 	/// @param category The category the file must belong to.
 	/// @return Information about the file.
-	std::generator<const FileData&> infoi(const std::filesystem::path& file) const;
+	std::vector<FileDataWeakPtr> infoi(const std::filesystem::path& file) const;
 
 public:
 	/// @brief Opens a file by name.
@@ -201,7 +202,7 @@ public:
 	/// @brief Opens multiple files by name.
 	/// @param file The file name to open.
 	/// @return A shared pointer to the file.
-	std::generator<std::shared_ptr<File>> open(const std::filesystem::path& file) const;
+	std::vector<std::shared_ptr<File>> open(const std::filesystem::path& file) const;
 
 	/// @brief Opens a file from the file data.
 	/// @param fileData The file data of the file to open.
@@ -225,7 +226,7 @@ public:
 	/// @brief Opens multiple files by name for writing.
 	/// @param file The file name to open.
 	/// @return A shared pointer to the file.
-	std::generator<std::shared_ptr<FileIO>> openForWriting(const std::filesystem::path& file) const;
+	std::vector<std::shared_ptr<FileIO>> openForWriting(const std::filesystem::path& file) const;
 
 	/// @brief Opens a file from the file data for writing.
 	/// @param fileData The file data of the file to open.
@@ -238,6 +239,13 @@ public:
 	/// @param createNew If true, and the file does not exist, it creates a new file in the first directory of the specified category.
 	/// @return A shared pointer to the file.
 	std::shared_ptr<FileIO> openiForWriting(FileCategory category, const std::filesystem::path& file, bool createNew = false) const;
+
+public:
+	/// @brief Renames a file to a new file path.
+	/// @param fileData The data structure containing information about the file to be renamed.
+	/// @param newFilePath The new path for the file.
+	/// @return A pointer to the updated FileData structure if the rename was successful; otherwise, nullptr.
+	FileData* rename(const FileData& fileData, std::filesystem::path newFilePath);
 
 public:
 	/// @brief Returns a generator that yields references to the managed directories.
@@ -268,6 +276,7 @@ private:
 	std::unordered_set<std::filesystem::path> m_foldersConfig[FileCategoryTypeCount];
 	std::unordered_multimap<std::filesystem::path, FileDataPtr> m_files;
 
+	bool m_destructing = false;
 	mutable std::mutex m_file_mutex;
 };
 

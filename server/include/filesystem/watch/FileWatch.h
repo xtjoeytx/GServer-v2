@@ -14,7 +14,8 @@ namespace preagonal::fs::watch
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-using watch_cb = std::function<void(uint32_t, const std::filesystem::path&, const std::filesystem::path&, FileEventCollection)>;
+// id, dir, file, oldFile, events
+using watch_cb = std::function<void(uint32_t, const std::filesystem::path&, const std::filesystem::path&, const std::filesystem::path&, FileEventCollection)>;
 
 struct Watch;
 struct WatchOS;

@@ -120,39 +120,87 @@ void FileWatch::update()
 	else if (FD_ISSET(m_watch_os->fd, &m_watch_os->descriptor_set))
 	{
 		ssize_t len, i = 0;
-		//char action[81 + FILENAME_MAX] = { 0 };
-		char buff[BUFF_SIZE] = { 0 };
+		std::unordered_map<std::filesystem::path, FileEventData> fileEvents;
+		char notifyBuff[BUFF_SIZE] = { 0 };
+		char fileBuff[FILENAME_MAX + 1] = { 0 };
 
-		len = read(m_watch_os->fd, buff, BUFF_SIZE);
+		len = read(m_watch_os->fd, notifyBuff, BUFF_SIZE);
 
 		while (i < len)
 		{
-			struct inotify_event *pevent = (struct inotify_event *)&buff[i];
+			struct inotify_event* pevent = (struct inotify_event*)&notifyBuff[i];
 
 			auto iter = m_watchers.find(pevent->wd);
 			if (iter != m_watchers.end())
 			{
 				Watch* watch = iter->second;
-				std::filesystem::path filename{ pevent->name };
-
 				if (pevent->name[0] != '.')
 				{
-					FileEventCollection e;
-					if (IN_CLOSE_WRITE & pevent->mask)
-						e.set(FileEvent::Modified);
-					if (IN_MOVED_TO & pevent->mask || IN_CREATE & pevent->mask)
-						e.set(FileEvent::Added);
-					if (IN_MOVED_FROM & pevent->mask || IN_DELETE & pevent->mask)
-						e.set(FileEvent::Deleted);
+					if (IN_MOVED_FROM & pevent->mask)
+					{
+						std::strncpy(fileBuff, pevent->name, FILENAME_MAX);
+						fileBuff[FILENAME_MAX] = '\0';
+					}
+					else
+					{
+						std::filesystem::path fileName{ pevent->name };
 
-					if (!e.any())
-						e.set(FileEvent::Invalid);
+						auto& data = fileEvents[fileName.filename()];
+						data.fsData = watch;
+						data.fileName = fileName;
+						if (fileBuff[0] != '\0')
+						{
+							data.oldFileName = std::filesystem::path{ fileBuff };
+							fileBuff[0] = '\0';
+						}
 
-					watch->callback(watch->watch_id, watch->dir, filename, e);
+						if (IN_CLOSE_WRITE & pevent->mask)
+							data.events.set(FileEvent::Modified);
+						if (IN_CREATE & pevent->mask)
+							data.events.set(FileEvent::Added);
+						if (IN_DELETE & pevent->mask)
+							data.events.set(FileEvent::Deleted);
+						if (IN_MOVED_TO & pevent->mask)
+							data.events.set(FileEvent::Renamed);
+					}
 				}
 			}
 
 			i += sizeof(struct inotify_event) + pevent->len;
+		}
+
+		// Check for rename events on overwritten files.
+		// When we save files, a temp file gets created and renamed over top of the original file.
+		// The temp file will get an Added event, and the original file will get a Deleted event + a Renamed event.
+		// We want the original file to have a single Modified event, while the original file should get a Deleted event.
+		for (auto& [file, data] : fileEvents)
+		{
+			auto* watch = (Watch*)data.fsData;
+			if (watch == nullptr) continue;
+
+			// If we have both an added and deleted event, test if the file exists and only set the appropriate one.
+			if (data.events.test(FileEvent::Added) && data.events.test(FileEvent::Deleted))
+			{
+				if (std::filesystem::exists(watch->dir / data.oldFileName))
+					data.events.reset(FileEvent::Deleted);
+				else
+					data.events.reset(FileEvent::Added);
+			}
+			// If we have an added + modified event, clear the modified.
+			else if (data.events.test(FileEvent::Added) && data.events.test(FileEvent::Modified))
+			{
+				data.events.reset(FileEvent::Modified);
+			}
+		}
+
+		// Execute callbacks for our queued data.
+		for (auto& [file, data] : fileEvents)
+		{
+			if (data.events.test(FileEvent::Invalid))
+				continue;
+
+			if (auto* watch = (Watch*)data.fsData; watch != nullptr)
+				watch->callback(watch->watch_id, watch->dir, data.fileName, data.oldFileName, data.events);
 		}
 	}
 }

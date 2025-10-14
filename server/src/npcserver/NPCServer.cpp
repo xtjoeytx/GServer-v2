@@ -248,17 +248,19 @@ void NPCServer::loadClasses()
 {
 	auto indent = log::server.indent();
 
-	for (auto& info : m_server->getFileSystemServer().info(fs::FileCategory::SCRIPTCLASS))
+	for (auto info : m_server->getFileSystemServer().info(fs::FileCategory::SCRIPTCLASS) | toSharedPtr)
 	{
+		if (info == nullptr) continue;
+
 		auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
-		std::string fileName = fs::getANSIFileName(info.file);
+		std::string fileName = fs::getANSIFileName(info->file);
 		std::string className = fileName.substr(0, fileName.length() - 4);
 
 		CString scriptData;
-		scriptData.load(info.file.string());
+		scriptData.load(info->file.string());
 
 		auto scriptClass = std::make_shared<ScriptClass>(className, scriptData.text());
-		scriptClass->modTime = info.getModTime();
+		scriptClass->modTime = info->getModTime();
 		m_classList[className] = scriptClass;
 
 		log::print(log::server, "{}", className);
@@ -269,11 +271,13 @@ void NPCServer::loadDatabaseNPCs()
 {
 	auto indent = log::server.indent();
 
-	for (const auto& info : m_server->getFileSystemServer().info(fs::FileCategory::NPC))
+	for (auto info : m_server->getFileSystemServer().info(fs::FileCategory::NPC) | toSharedPtr)
 	{
+		if (info == nullptr) continue;
+
 		auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
-		if (auto npc = addNPCFromFile(info.file); npc != nullptr)
-			log::print(log::server, "[{}] {}", npc->id, info.file.stem().generic_string());
+		if (auto npc = addNPCFromFile(info->file); npc != nullptr)
+			log::print(log::server, "[{}] {}", npc->id, info->file.stem().generic_string());
 	}
 }
 
@@ -455,10 +459,13 @@ bool NPCServer::deleteClass(std::string_view className)
 
 std::shared_ptr<ScriptClass> NPCServer::addClass(std::string_view className, std::string_view classCode)
 {
-	auto filePath = std::filesystem::path{ "scripts" } / std::format("{}.txt", className);
+	auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::SCRIPTCLASS, std::format("{}.txt", className), true);
+	if (!file) return nullptr;
 
-	CString fileData(classCode);
-	fileData.save(filePath.string());
+	const auto& filePath = file->filePath();
+	file->clear();
+	file->write(classCode);
+	file->close();
 
 	auto scriptClass = std::make_shared<ScriptClass>(className, classCode);
 	scriptClass->modTime = fs::getFileModTime(filePath);
@@ -491,18 +498,16 @@ void NPCServer::updateClass(std::string_view className, std::string_view classCo
 	auto& scriptClass = it->second;
 	scriptClass->setScript(classCode);
 
-	auto filePath = std::filesystem::path{ "scripts" } / std::format("{}.txt", className);
+	auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::SCRIPTCLASS, std::format("{}.txt", className), true);
+	if (!file) return;
 
-	CString fileData(classCode);
-	fileData.save(filePath.string());
+	const auto& filePath = file->filePath();
+	file->clear();
+	file->write(classCode);
+	file->close();
 
 	scriptClass->modTime = fs::getFileModTime(filePath);
 
-	// Classic servers were GS1 only and did not support GS2 classes.
-	if (m_server->Generation == ServerGeneration::CLASSIC)
-		return;
-
-	// Update players.
 	m_server->updateClassForPlayers(scriptClass);
 }
 

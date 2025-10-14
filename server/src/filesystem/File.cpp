@@ -16,6 +16,7 @@
 #include <sstream>
 #include <string_view>
 #include <string>
+#include <system_error>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -390,30 +391,38 @@ bool FileIO::open()
 
 bool FileIO::open(bool truncate)
 {
-	// TODO: Write to temp file and move it over the original when done.
+	// We want to write into a temp file and move it over the original when done, so record the file name of the temp file.
+	m_tempFile = m_file;
+	m_tempFile.concat(".partial");
+	//m_tempFile.replace_extension(m_tempFile.extension().concat(".partial"));
 
 	if (m_outputStreamHandle)
 		m_outputStreamHandle->close();
 
+	// Binary read/write mode.
+	// binary | in | out = open for read/write and create new if not exists.
+	// trunc = destroy contents.
+	// app | ate = append to end of file and seek to the end on open.
 	std::ios_base::openmode modeFlags = std::ios::binary | std::ios::in | std::ios::out;
-	modeFlags |= (truncate ? std::ios::trunc : std::ios::ate);
+	modeFlags |= (truncate ? std::ios::trunc : (std::ios::app | std::ios::ate));
 
 	auto fstream = std::make_unique<std::fstream>();
-	fstream->open(m_file, modeFlags);
+	fstream->open(m_tempFile, modeFlags);
 
 	// Sometimes there can be very weird OS issues where the first attempt to open fails.
-	// No idea why.  If the permission was denied, briefly sleep and try one more time.
+	// No idea why (maybe virus scanners locking the file?)
+	// If the permission was denied, briefly sleep and try one more time.
 	if (!fstream->is_open() && errno == EACCES)
 	{
 		std::this_thread::sleep_for(1ms);
-		fstream->open(m_file, modeFlags);
+		fstream->open(m_tempFile, modeFlags);
 	}
 
 	// We failed to open the file.
 	if (!fstream->is_open())
 	{
 		std::string error{ strerror(errno) };
-		log::printLine(log::server, "** File '{}' read error: {}", m_file.string(), error);
+		log::printLine(log::server, "** File '{}' read error: {}", m_tempFile.string(), error);
 	}
 
 	m_outputStreamHandle = std::move(fstream);
@@ -429,6 +438,17 @@ void FileIO::close()
 		m_outputStreamHandle->close();
 
 	File::close();
+
+	// Move the temp file over the destination file.
+	if (!m_tempFile.empty() && std::filesystem::exists(m_tempFile))
+	{
+		std::error_code ec;
+		std::filesystem::rename(m_tempFile, m_file, ec);
+		if (ec)
+			log::printLine(log::server, "** File '{}' write error: {}", m_file.string(), ec.message());
+
+		m_tempFile.clear();
+	}
 }
 
 bool FileIO::opened() const
