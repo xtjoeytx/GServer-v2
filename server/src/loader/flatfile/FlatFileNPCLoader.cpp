@@ -450,13 +450,14 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	if (expectedFileName != currentFileName)
 	{
 		auto fileData = server->getFileSystemServer().infoi(fs::FileCategory::NPC, currentFileName);
-		if (fileData == nullptr)
-			return npc;
-
-		if (server->getFileSystemServer().rename(*fileData, expectedFileName))
-			log::printLine(log::server, "Renamed NPC file [{}] to [{}]", currentFileName, expectedFileName);
-		else
-			log::printLine(log::server, "** Failed to rename NPC file [{}] to [{}]", currentFileName, expectedFileName);
+		if (fileData != nullptr)
+		{
+			auto indent = log::server.indent();
+			if (server->getFileSystemServer().rename(*fileData, expectedFileName))
+				log::printLine(log::server, "Renamed NPC file [{}] to [{}]", currentFileName, expectedFileName);
+			else
+				log::printLine(log::server, "** Failed to rename NPC file [{}] to [{}]", currentFileName, expectedFileName);
+		}
 	}
 
 	return npc;

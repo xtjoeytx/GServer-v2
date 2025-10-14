@@ -130,6 +130,24 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 	// Set the mod time to the file mod time.
 	weapon->modTime = std::chrono::clock_cast<clock>(std::filesystem::last_write_time(fileName));
 
+	// Check if we need to rename the file.
+	auto expectedFileName = fs::getHTMLEscapedFileName(std::format("weapon{}.txt", weapon->name)).string();
+	auto currentFileName = fs::getANSIFileName(pWeapon.toString());
+	if (expectedFileName != currentFileName)
+	{
+		auto server = BabyDI::Get<Server>();
+		auto fileData = server->getFileSystemServer().infoi(fs::FileCategory::WEAPON, currentFileName);
+		if (fileData != nullptr)
+		{
+			auto indent = log::server.indent();
+			if (server->getFileSystemServer().rename(*fileData, expectedFileName))
+				log::printLine(log::server, "Renamed weapon file [{}] to [{}]", currentFileName, expectedFileName);
+			else
+				log::printLine(log::server, "** Failed to rename weapon file [{}] to [{}]", currentFileName, expectedFileName);
+		}
+	}
+
+
 	// Give a warning if both a script and a bytecode was found.
 	/*
 	if (!weaponScript.empty() && !byteCodeData.isEmpty())
