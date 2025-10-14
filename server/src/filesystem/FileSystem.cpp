@@ -14,6 +14,7 @@
 #include <filesystem/FileSystemTypes.h>
 #include <filesystem/watch/FileWatch.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

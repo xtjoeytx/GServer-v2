@@ -21,9 +21,12 @@ COPY --chown=1001:1001 ./ /tmp/gserver
 RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
     && apt update \
     && apt install -y wget \
-    && wget -q https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb \
-    && apt -y install ./packages-microsoft-prod.deb \
-    && rm packages-microsoft-prod.deb \
+	&& wget -q https://github.com/berkley4/icu-74-debian/releases/download/74.2-2/libicu74_74.2-2_amd64.deb \
+	&& wget -q https://github.com/PowerShell/PowerShell/releases/download/v7.5.2/powershell_7.5.2-1.deb_amd64.deb \
+    && apt -y install ./libicu74_74.2-2_amd64.deb \
+    && apt -y install ./powershell_7.5.2-1.deb_amd64.deb \
+	&& rm ./libicu74_74.2-2_amd64.deb \
+	&& rm ./powershell_7.5.2-1.deb_amd64.deb \
     && apt update \
     && apt install -y powershell libssl-dev libzstd-dev cmake git ninja-build openjdk-21-jre \
     && ln -s /usr/x86_64-w64-mingw32/include/wincrypt.h /usr/x86_64-w64-mingw32/include/Wincrypt.h \
