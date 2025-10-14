@@ -339,15 +339,15 @@ inline PixelPosition Level::getMapPixelOffset() const noexcept
 inline PixelPosition Level::convertToMapPosition(const LocalPixelPosition& position) const noexcept
 {
 	if (isOnGmap())
-		return { position.x() + static_cast<int32_t>(mapPosition.x() * 1024), position.y() + static_cast<int32_t>(mapPosition.y() * 1024) };
-	return { position.x(), position.y() };
+		return { position.x() + static_cast<int32_t>(mapPosition.x() * 1024), position.y() + static_cast<int32_t>(mapPosition.y() * 1024), position.z() };
+	return { position.x(), position.y(), position.z() };
 }
 
 inline PixelPosition Level::convertToMapPosition(const LocalWholeTilePosition& position) const noexcept
 {
 	if (isOnGmap())
-		return { static_cast<int32_t>((position.x() * 16) + (mapPosition.x() * 1024)), static_cast<int32_t>((position.y() * 16) + (mapPosition.y() * 1024)) };
-	return { static_cast<int32_t>(position.x() * 16), static_cast<int32_t>(position.y() * 16) };
+		return { static_cast<int32_t>((position.x() * 16) + (mapPosition.x() * 1024)), static_cast<int32_t>((position.y() * 16) + (mapPosition.y() * 1024)), static_cast<int32_t>(position.z() * 16) };
+	return { static_cast<int32_t>(position.x() * 16), static_cast<int32_t>(position.y() * 16), static_cast<int32_t>(position.z() * 16) };
 }
 
 inline PixelRectangleArea Level::getMapBoundingBox() const noexcept

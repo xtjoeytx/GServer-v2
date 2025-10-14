@@ -738,10 +738,6 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (strProp == nullptr || strProp->value == image)
 				SETPROP_RETURN_ERROR;
 
-			// Make visible.
-			visFlags |= (uint8_t)NPCVisFlags::VISIBLE;
-			result.resultPropIds.push_back(PROPID(NPCProp::VISFLAGS));
-
 			// If we are changing to a character, set the gani to idle.
 			if (strProp->value == "#c#" && image != "#c")
 			{
@@ -751,6 +747,18 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			}
 
 			image = strProp->value;
+			auto oldVisFlags = visFlags;
+
+			// If the image is being set and it is empty or "-", and we don't have a shape, make us invisible.
+			// This will prevent the NPC from being seen as an obstacle in serverside checks.
+			if (!hasImage() && !hasShape())
+				visFlags &= ~(uint8_t)NPCVisFlags::VISIBLE;
+			else
+				visFlags |= (uint8_t)NPCVisFlags::VISIBLE;
+
+			// If we had a visibility change, send it.
+			if (visFlags != oldVisFlags)
+				result.resultPropIds.push_back(PROPID(NPCProp::VISFLAGS));
 			break;
 		}
 
@@ -1516,8 +1524,8 @@ void NPC::constructScriptParameters()
 	scriptParameters.try_emplace("z", set_temporary, "z",
 		gameValueGetter([this]() { return getCalculatedTileZ(); }),
 		gameValueSetter(this, PROPOPT(NPCProp::Z2), [this](const GameValue& value, std::optional<size_t>) { character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
-	scriptParameters.try_emplace("width", set_temporary, "width", gameValueGetter([this]() { return static_cast<double>(shape.width()); }), GameValue::func_set{});
-	scriptParameters.try_emplace("height", set_temporary, "height", gameValueGetter([this]() { return static_cast<double>(shape.height()); }), GameValue::func_set{});
+	scriptParameters.try_emplace("width", set_temporary, "width", gameValueGetter([this]() { return getComputedShape().width() / 16.0; }), GameValue::func_set{});
+	scriptParameters.try_emplace("height", set_temporary, "height", gameValueGetter([this]() { return getComputedShape().height() / 16.0; }), GameValue::func_set{});
 	scriptParameters.try_emplace("hearts", set_temporary, "hearts",
 		gameValueGetter([this]() { return character.hitpointsInHalves / 2.0; }),
 		gameValueSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<size_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));

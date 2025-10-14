@@ -23,7 +23,7 @@ void generateTerrain(LevelTerrain& levelTerrain, const MapTerrain& mapTerrain, c
 	size_t column = mapPosition[0];
 	size_t row = mapPosition[1];
 	size_t gridWidth = gridDimension[0];
-	size_t gridHeight = gridDimension[1];
+	[[maybe_unused]] size_t gridHeight = gridDimension[1];
 
 	auto& heightmap = levelTerrain.heightmap;
 	if (heightmap.size() != numberOfHeights)
@@ -118,11 +118,11 @@ void applyHeightOverrides(LevelTerrain& levelTerrain)
 				auto top = tileY;
 				auto bottom = tileY;
 				if (tileY >= 8) top -= 7;
-				if (tileY <= ((size_t)64 - 8)) bottom += 7;
+				if (tileY <= ((int64_t)64 - 8)) bottom += 7;
 
 				// A height override affects a 15x15 area centered on the override tile.
 				// Determine how much change should be applied to each row, then adjust all the tiles in that row.
-				for (size_t row = top; row <= bottom; ++row)
+				for (size_t row = top; row <= (size_t)bottom; ++row)
 				{
 					auto rowDelta = 8 - std::abs((int64_t)row - tileY);
 					applyHeightOverrideOnRow(levelTerrain, deltaStep * rowDelta, tileX, row);

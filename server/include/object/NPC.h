@@ -276,6 +276,9 @@ public:
 public:
 	const std::string& getWeaponName() const noexcept { return m_weaponName; }
 	bool isCharacter() const noexcept { return image == "#c#"; }
+	bool hasShape() const noexcept { return shape.width() != 0 || shape.height() != 0 || isCharacter(); }
+	bool hasImage() const noexcept { return !image.empty() && image != "-"; }
+	[[inline]] Dimension<uint16_t> getComputedShape() const noexcept;
 	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
 	[[inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
 	[[inline]] PixelPosition getGlobalPosition() const noexcept;
@@ -396,7 +399,7 @@ public:
 	Dimension<uint16_t> shape;
 	Rectangle<uint16_t, uint8_t> imagePart;
 	uint8_t visFlags = PROPID(NPCVisFlags::VISIBLE);
-	uint8_t blockFlags = 0;
+	uint8_t blockFlags = PROPID(NPCBlockFlags::BLOCK);
 	float hurtX = 0.0f;
 	float hurtY = 0.0f;
 	bool noPlayerOnWall = false;
@@ -453,18 +456,28 @@ inline void NPC::recordInitialState()
 	m_initialCharacter = character;
 }
 
+inline Dimension<uint16_t> NPC::getComputedShape() const noexcept
+{
+	// Unless overridden, characters have a shape of 3 tiles in all directions.
+	if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
+		return { 48, 48, 48 };
+
+	return shape;
+}
+
 inline PixelRectangleArea NPC::getBoundingBox() const noexcept
 {
-	return { getGlobalPosition(), shape };
+	return { getGlobalPosition(), getComputedShape() };
 }
 
 inline PixelRectangleArea NPC::getCollisionBoundingBox() const noexcept
 {
 	// Character NPCs have a specific bounding box.
+	// It is a 2x2 square centered on the character's feet, with a height of 3 tiles.
 	if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
-		return { getGlobalPosition().translate(8, 16), { 32, 32 } };
+		return { getGlobalPosition().translate(8, 16), { 32, 32, 48 } };
 
-	return { getGlobalPosition(), shape};
+	return { getGlobalPosition(), shape };
 }
 
 inline PixelPosition NPC::getGlobalPosition() const noexcept

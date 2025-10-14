@@ -7,9 +7,9 @@
 #include <concepts>
 #include <cstdint>
 #include <cstdlib>
+#include <format>
 #include <generator>
 #include <iterator>
-#include <memory>
 #include <optional>
 #include <ranges>
 #include <sstream>
@@ -1183,6 +1183,28 @@ inline double toDouble(const std::string& str)
 		return result;
 
 	return 0.0f;
+}
+
+/// @brief Bring std::to_string into this namespace so we can overload it.
+using std::to_string;
+
+/// @brief Converts a double value to a string with the specified number of decimal places.
+/// @param value The double value to convert to a string.
+/// @param precision The number of digits to display after the decimal point.
+/// @return A string representation of the value with the specified precision.
+inline auto to_string(double value, int precision)
+{
+	return std::format("{:0.{}f}", value, precision);
+}
+
+/// @brief Converts a double value to a string with specified width and precision.
+/// @param value The double value to convert to a string.
+/// @param width The minimum width of the resulting string, including padding if necessary.
+/// @param precision The number of digits to display after the decimal point.
+/// @return A string representation of the value, formatted with the given width and precision.
+inline auto to_string(double value, int width, int precision)
+{
+	return std::format("{:0{}.{}f}", value, width, precision);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

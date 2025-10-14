@@ -385,11 +385,6 @@ std::shared_ptr<NPC> NPCServer::addNPCFromFile(const std::filesystem::path& file
 	{
 		auto fileName = fs::getANSIFileName(filePath);
 		auto npcName = fileName.substr(3, fileName.length() - 7); // Remove npc and .txt
-		if (npc->name != npcName)
-		{
-			log::printLine(log::server, "NPC name '{}' does not match name from filename '{}'.  Using name from filename.", npc->name, npcName);
-			npc->name = npcName;
-		}
 
 		npc->scripting.events.addEvent(ScriptEventType::INITIALIZED, source::FromServer());
 		if (npc->scriptType != NPCTYPE_LOCAL)

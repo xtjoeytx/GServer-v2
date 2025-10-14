@@ -1661,7 +1661,10 @@ LevelShoot* Level::addShoot(const PixelPosition& position, float angle, float za
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
 		return nullptr;
 
-	LevelShoot newShoot{ .position = toTilePosition(position), .angle = angle, .zangle = zangle, .powerIn44Pixels = power, .gani = gani, .gravity = gravity, .from = from };
+	auto tilePosition = toTilePosition(position);
+	double ground = getMapHeightAt(position.translate(8, 16));
+
+	LevelShoot newShoot{ .position = tilePosition, .startingZ = ground, .angle = angle, .zangle = zangle, .powerIn44Pixels = power, .gani = gani, .gravity = gravity, .from = from };
 	if (newShoot.gani.back() == ',')
 		newShoot.gani.pop_back();
 	newShoot.calculateSpeeds();
@@ -1768,54 +1771,63 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 		// Move the shoot.
 		shoot->move();
 
-		// If the Z is <= 3, and we aren't going up, check for walls and NPCs.
-		// TODO: Player / NPC checks should be 0 <= (shoot Z - other Z) <= 3.
-		if (shoot->position.z() <= 3.0f && (DoubleIsZero(shoot->movementPerFrame.z()) || shoot->movementPerFrame.z() <= 0.0))
+		auto server = BabyDI::Get<Server>();
+		bool collided = false;
+		std::string eventParams;
+		auto constructEventParams = [&collided, &eventParams, &shoot]()
 		{
-			auto server = BabyDI::Get<Server>();
-			bool collided = false;
-			std::string eventParams;
-
-			auto constructEventParams = [&collided, &eventParams, &shoot]()
+			if (!eventParams.empty()) return;
+			collided = true;
+			eventParams = std::format("{},{}", shoot->position.x(), shoot->position.y());
+			if (!shoot->shootParams.empty())
 			{
-				if (!eventParams.empty()) return;
-				collided = true;
-				eventParams = std::format("{},{}", shoot->position.x(), shoot->position.y());
-				if (!shoot->shootParams.empty())
-				{
-					eventParams += ",";
-					eventParams += string::toCSV(shoot->shootParams);
-				}
-			};
-
-			// Check for NPC collisions.
-			PixelPosition searchPosition = toPixelPosition(shoot->position).translate(8_i16, 16_i16);
-			bool fromPlayer = (shoot->from.second == ScriptObjectType::PLAYER);
-			for (const auto& npc : findIntersectingNPCsForCollision({ searchPosition, { 32_ui16, 32_ui16 } }))
-			{
-				if (shoot->from.second == ScriptObjectType::NPC && shoot->from.first == npc)
-					continue;
-				if (auto npcPtr = server->getNPC(npc); npcPtr != nullptr)
-				{
-					constructEventParams();
-					npcPtr->scripting.events.addEvent(ScriptEventType::TRIGGERACTION, shoot->from, (fromPlayer ? "projectile" : "sprojectile"), eventParams);
-				}
+				eventParams += ",";
+				eventParams += string::toCSV(shoot->shootParams);
 			}
+		};
+
+		// Determine the ground level at the shoot position.
+		auto absoluteGroundLevel = static_cast<int16_t>(getHeightAt(translatePosition(localPosition, 8_i16, 16_i16)) * 16);
+
+		// Determine our absolute projectile position in the world space.
+		// The Z location is relative from the starting Z.
+		PixelPosition searchPosition = toPixelPosition(shoot->position).translate(8_i16, 16_i16, static_cast<int16_t>(shoot->startingZ * 16));
+
+		// Check for NPC collisions.
+		//log::printLine(log::server, "Collision search pos: ({}), ground: {}", searchPosition / 16.0f, absoluteGroundLevel / 16.0f);
+		bool fromPlayer = (shoot->from.second == ScriptObjectType::PLAYER);
+		for (const auto& npc : findIntersectingNPCsForCollision({ searchPosition, { 24_ui16, 24_ui16, 48_ui16 } }))
+		{
+			if (shoot->from.second == ScriptObjectType::NPC && shoot->from.first == npc)
+				continue;
+			if (auto npcPtr = server->getNPC(npc); npcPtr != nullptr)
+			{
+				//auto npcPos = toTilePosition(npcPtr->getGlobalPosition());
+				//log::printLine(log::server, "Collision ({}) with NPC '{}' at ({})", searchPosition / 16.0f, npcPtr->name, npcPos);
+				constructEventParams();
+				npcPtr->scripting.events.addEvent(ScriptEventType::TRIGGERACTION, shoot->from, (fromPlayer ? "projectile" : "sprojectile"), eventParams);
+			}
+		}
+
+		// If we are within 3 tiles of the ground, and we aren't going up, check for walls and the ground.
+		int16_t groundDiff = searchPosition.z() - absoluteGroundLevel;
+		if (!collided && groundDiff <= 48 && (DoubleIsZero(shoot->movementPerFrame.z()) || shoot->movementPerFrame.z() <= 0.0))
+		{
+			// Check if we hit the ground.
+			if (searchPosition.z() <= absoluteGroundLevel)
+				constructEventParams();
 
 			// Check for wall collisions.
-			if (!collided && isOnWall2({ toLocalWholeTilePosition(searchPosition), { 1_ui8, 1_ui8 } }))
+			bool onWallDetection = server->getSettings().getBool("projectilesstoponwall", true) && groundDiff < 48;
+			if (!collided && onWallDetection && isOnWall2({ toLocalWholeTilePosition(searchPosition), {1_ui8, 1_ui8} }))
 				constructEventParams();
+		}
 
-			// Check if we hit the ground.
-			if (DoubleIsZero(shoot->position.z()) || shoot->position.z() < 0)
-				constructEventParams();
-
-			// We collided, so tell the control-NPC and delete the shoot projectile.
-			if (collided)
-			{
-				server->getNPCServer()->addEventToControlNPC(ScriptEventType::TRIGGERACTION, shoot->from, (fromPlayer ? "projectile" : "sprojectile"), eventParams);
-				return false;
-			}
+		// We collided, so tell the control-NPC and delete the shoot projectile.
+		if (collided)
+		{
+			server->getNPCServer()->addEventToControlNPC(ScriptEventType::TRIGGERACTION, shoot->from, (fromPlayer ? "projectile" : "sprojectile"), eventParams);
+			return false;
 		}
 	}
 
@@ -2435,7 +2447,7 @@ std::generator<const NPCID&> Level::findInRangeNPCsByDistance(const PixelPositio
 
 std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelPosition& position, bool includeInvisible) const noexcept
 {
-	for (const auto& id : findIntersectingNPCs({ { position.x(), position.y() }, { 0, 0 } }, includeInvisible))
+	for (const auto& id : findIntersectingNPCs({ position, { 0, 0, 48 } }, includeInvisible))
 		co_yield id;
 }
 
@@ -2459,7 +2471,7 @@ std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelRectangleAre
 
 std::generator<const NPCID&> Level::findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept
 {
-	for (const auto& id : findIntersectingNPCsForCollision({ position, { 0, 0 } }))
+	for (const auto& id : findIntersectingNPCsForCollision({ position, { 0, 0, 48 } }))
 		co_yield id;
 }
 

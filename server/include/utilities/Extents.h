@@ -4,8 +4,10 @@
 #include <array>
 #include <concepts>
 #include <cstdint>
+#include <format>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -467,29 +469,57 @@ inline constexpr LocalWholeTileRectangleArea toLocalWholeTileRectangleArea(const
 //----------------------------
 // Math
 
-template<typename Type>
-inline constexpr Position<Type> operator*(const Position<Type>& left, auto right)
+template<typename Type, std::integral OtherType>
+inline constexpr Position<Type> operator*(const Position<Type>& left, const OtherType& right)
 {
 	return Position<Type>{ static_cast<Type>(left.x() * right), static_cast<Type>(left.y() * right), static_cast<Type>(left.z() * right) };
 }
 
-template<typename Type>
-inline constexpr Position<Type> operator+(const Position<Type>& left, auto right)
+template<typename Type, std::integral OtherType>
+inline constexpr Position<Type> operator+(const Position<Type>& left, const OtherType& right)
 {
 	return Position<Type>{ static_cast<Type>(left.x() + right), static_cast<Type>(left.y() + right), static_cast<Type>(left.z() + right) };
 }
 
-template<typename Type>
-inline constexpr Position<Type> operator-(const Position<Type>& left, auto right)
+template<typename Type, std::integral OtherType>
+inline constexpr Position<Type> operator-(const Position<Type>& left, const OtherType& right)
 {
 	return Position<Type>{ static_cast<Type>(left.x() - right), static_cast<Type>(left.y() - right), static_cast<Type>(left.z() - right) };
 }
 
-template<typename Type>
-inline constexpr Position<Type> operator/(const Position<Type>& left, auto right)
+template<typename Type, std::integral OtherType>
+inline constexpr Position<Type> operator/(const Position<Type>& left, const OtherType& right)
 {
 	return Position<Type>{ static_cast<Type>(left.x() / right), static_cast<Type>(left.y() / right), static_cast<Type>(left.z() / right) };
 }
+
+//
+
+template<typename Type, std::floating_point OtherType>
+inline constexpr Position<OtherType> operator*(const Position<Type>& left, const OtherType& right)
+{
+	return Position<OtherType>{ static_cast<OtherType>(left.x() * right), static_cast<OtherType>(left.y() * right), static_cast<OtherType>(left.z() * right) };
+}
+
+template<typename Type, std::floating_point OtherType>
+inline constexpr Position<OtherType> operator+(const Position<Type>& left, const OtherType& right)
+{
+	return Position<OtherType>{ static_cast<OtherType>(left.x() + right), static_cast<OtherType>(left.y() + right), static_cast<OtherType>(left.z() + right) };
+}
+
+template<typename Type, std::floating_point OtherType>
+inline constexpr Position<OtherType> operator-(const Position<Type>& left, const OtherType& right)
+{
+	return Position<OtherType>{ static_cast<OtherType>(left.x() - right), static_cast<OtherType>(left.y() - right), static_cast<OtherType>(left.z() - right) };
+}
+
+template<typename Type, std::floating_point OtherType>
+inline constexpr Position<OtherType> operator/(const Position<Type>& left, const OtherType& right)
+{
+	return Position<OtherType>{ static_cast<OtherType>(left.x() / right), static_cast<OtherType>(left.y() / right), static_cast<OtherType>(left.z() / right) };
+}
+
+//
 
 template<typename Type, typename OtherType>
 inline constexpr Position<Type> operator*(const Position<Type>& left, const Position<OtherType>& right)
@@ -517,29 +547,57 @@ inline constexpr Position<Type> operator/(const Position<Type>& left, const Posi
 
 //----------------------------
 
-template<typename Type>
-inline constexpr Dimension<Type> operator*(const Dimension<Type>& left, auto right)
+template<typename Type, std::integral OtherType>
+inline constexpr Dimension<Type> operator*(const Dimension<Type>& left, const OtherType& right)
 {
 	return Dimension<Type>{ static_cast<Type>(left.width() * right), static_cast<Type>(left.height() * right), static_cast<Type>(left.length() * right) };
 }
 
-template<typename Type>
-inline constexpr Dimension<Type> operator+(const Dimension<Type>& left, auto right)
+template<typename Type, std::integral OtherType>
+inline constexpr Dimension<Type> operator+(const Dimension<Type>& left, const OtherType& right)
 {
 	return Dimension<Type>{ static_cast<Type>(left.width() + right), static_cast<Type>(left.height() + right), static_cast<Type>(left.length() + right) };
 }
 
-template<typename Type>
-inline constexpr Dimension<Type> operator-(const Dimension<Type>& left, auto right)
+template<typename Type, std::integral OtherType>
+inline constexpr Dimension<Type> operator-(const Dimension<Type>& left, const OtherType& right)
 {
 	return Dimension<Type>{ static_cast<Type>(left.width() - right), static_cast<Type>(left.height() - right), static_cast<Type>(left.length() - right) };
 }
 
-template<typename Type>
-inline constexpr Dimension<Type> operator/(const Dimension<Type>& left, auto right)
+template<typename Type, std::integral OtherType>
+inline constexpr Dimension<Type> operator/(const Dimension<Type>& left, const OtherType& right)
 {
 	return Dimension<Type>{ static_cast<Type>(left.width() / right), static_cast<Type>(left.height() / right), static_cast<Type>(left.length() / right) };
 }
+
+//
+
+template<typename Type, std::floating_point OtherType>
+inline constexpr Dimension<OtherType> operator*(const Dimension<Type>& left, const OtherType& right)
+{
+	return Dimension<OtherType>{ static_cast<OtherType>(left.width() * right), static_cast<OtherType>(left.height() * right), static_cast<OtherType>(left.length() * right) };
+}
+
+template<typename Type, std::floating_point OtherType>
+inline constexpr Dimension<OtherType> operator+(const Dimension<Type>& left, const OtherType& right)
+{
+	return Dimension<OtherType>{ static_cast<OtherType>(left.width() + right), static_cast<OtherType>(left.height() + right), static_cast<OtherType>(left.length() + right) };
+}
+
+template<typename Type, std::floating_point OtherType>
+inline constexpr Dimension<OtherType> operator-(const Dimension<Type>& left, const OtherType& right)
+{
+	return Dimension<OtherType>{ static_cast<OtherType>(left.width() - right), static_cast<OtherType>(left.height() - right), static_cast<OtherType>(left.length() - right) };
+}
+
+template<typename Type, std::floating_point OtherType>
+inline constexpr Dimension<OtherType> operator/(const Dimension<Type>& left, const OtherType& right)
+{
+	return Dimension<OtherType>{ static_cast<OtherType>(left.width() / right), static_cast<OtherType>(left.height() / right), static_cast<OtherType>(left.length() / right) };
+}
+
+//
 
 template<typename Type, typename OtherType>
 inline constexpr Dimension<Type> operator*(const Dimension<Type>& left, const Dimension<OtherType>& right)
@@ -580,24 +638,12 @@ class tuple_size<preagonal::Position<T>> : public std::integral_constant<size_t,
 template<size_t I, typename T>
 class tuple_element<I, preagonal::Position<T>> { public: using type = T; };
 
-template<size_t I, typename T>
-constexpr T& get(preagonal::Position<T>& vec) { return vec.data[I]; }
-
-template<size_t I, typename T>
-constexpr T&& get(const preagonal::Position<T>& vec) { return vec.data[I]; }
-
 // Dimension
 template<typename T>
 class tuple_size<preagonal::Dimension<T>> : public std::integral_constant<size_t, 3> {};
 
 template<size_t I, typename T>
 class tuple_element<I, preagonal::Dimension<T>> { public: using type = T; };
-
-template<size_t I, typename T>
-constexpr T& get(preagonal::Dimension<T>& vec) { return vec.data[I]; }
-
-template<size_t I, typename T>
-constexpr T&& get(const preagonal::Dimension<T>& vec) { return vec.data[I]; }
 
 // Rectangle
 template<typename P, typename D>
@@ -609,8 +655,27 @@ class tuple_element<I, preagonal::Rectangle<P, D>> : conditional<I == 0, P, D>
 	static_assert(I < 2, "Index out of bounds for tuple_element<Rectangle>");
 };
 
+////////////////////////////////////////////////////////////////////////////////
+}
+////////////////////////////////////////////////////////////////////////////////
+namespace preagonal
+{
+////////////////////////////////////////////////////////////////////////////////
+
+template<size_t I, typename T>
+constexpr T& get(preagonal::Position<T>& vec) { return vec.data[I]; }
+
+template<size_t I, typename T>
+constexpr T&& get(const preagonal::Position<T>& vec) { return vec.data[I]; }
+
+template<size_t I, typename T>
+constexpr T& get(preagonal::Dimension<T>& vec) { return vec.data[I]; }
+
+template<size_t I, typename T>
+constexpr T&& get(const preagonal::Dimension<T>& vec) { return vec.data[I]; }
+
 template <size_t I, typename P, typename D>
-tuple_element_t<I, preagonal::Rectangle<P, D>>& get(preagonal::Rectangle<P, D>& rect)
+std::tuple_element_t<I, preagonal::Rectangle<P, D>>& get(preagonal::Rectangle<P, D>& rect)
 {
 	static_assert(I < 2, "Index out of bounds for get<Rectangle>");
 
@@ -621,7 +686,7 @@ tuple_element_t<I, preagonal::Rectangle<P, D>>& get(preagonal::Rectangle<P, D>& 
 }
 
 template <size_t I, typename P, typename D>
-tuple_element_t<I, preagonal::Rectangle<P, D>>&& get(const preagonal::Rectangle<P, D>& rect)
+std::tuple_element_t<I, preagonal::Rectangle<P, D>>&& get(const preagonal::Rectangle<P, D>& rect)
 {
 	static_assert(I < 2, "Index out of bounds for get<Rectangle>");
 
@@ -632,6 +697,46 @@ tuple_element_t<I, preagonal::Rectangle<P, D>>&& get(const preagonal::Rectangle<
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-} // end namespace std
+} // end namespace preagonal
+
+//////////////////////////////////////////////////
+// Printing
+//////////////////////////////////////////////////
+
+template<std::integral T>
+struct std::formatter<preagonal::Position<T>> : std::formatter<std::string>
+{
+	auto format(const preagonal::Position<T>& pos, std::format_context& ctx) const
+	{
+		return std::format_to(ctx.out(), "{},{},{}", pos.x(), pos.y(), pos.z());
+	}
+};
+
+template<std::floating_point T>
+struct std::formatter<preagonal::Position<T>> : std::formatter<std::string>
+{
+	auto format(const preagonal::Position<T>& pos, std::format_context& ctx) const
+	{
+		return std::format_to(ctx.out(), "{:04.2f},{:04.2f},{:04.2f}", pos.x(), pos.y(), pos.z());
+	}
+};
+
+template<std::integral T>
+struct std::formatter<preagonal::Dimension<T>> : std::formatter<std::string>
+{
+	auto format(const preagonal::Dimension<T>& dim, std::format_context& ctx) const
+	{
+		return std::format_to(ctx.out(), "{},{},{}", dim.width(), dim.height(), dim.length());
+	}
+};
+
+template<std::floating_point T>
+struct std::formatter<preagonal::Dimension<T>> : std::formatter<std::string>
+{
+	auto format(const preagonal::Dimension<T>& dim, std::format_context& ctx) const
+	{
+		return std::format_to(ctx.out(), "{:04.2f},{:04.2f},{:04.2f}", dim.width(), dim.height(), dim.length());
+	}
+};
 
 #endif // EXTENTS_H
