@@ -1037,21 +1037,21 @@ void Player::constructScriptParameters()
 	scriptParameters.try_emplace("id", set_temporary, "id", gameValueGetter([this]() { return static_cast<double>(getId()); }), GameValue::func_set{});
 	scriptParameters.try_emplace("x", set_temporary, "x",
 		gameValueGetter([this]() { return account.character.getGlobalPosition().x() / 16.0; }),
-		gameValueSetter(this, PROPOPT(PlayerProp::X2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelX = value.get<double>().value_or(0.0) * 16; }));
+		gameValueSetter(this, PROPOPT(PlayerProp::X2), [this](const GameValue& value, std::optional<int64_t>) { account.character.localPixelX = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("y", set_temporary, "y",
 		gameValueGetter([this]() { return account.character.getGlobalPosition().y() / 16.0; }),
-		gameValueSetter(this, PROPOPT(PlayerProp::Y2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelY = value.get<double>().value_or(0.0) * 16; }));
+		gameValueSetter(this, PROPOPT(PlayerProp::Y2), [this](const GameValue& value, std::optional<int64_t>) { account.character.localPixelY = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("z", set_temporary, "z",
 		gameValueGetter([this]() { return getCalculatedTileZ(); }),
-		gameValueSetter(this, PROPOPT(PlayerProp::Z2), [this](const GameValue& value, std::optional<size_t>) { account.character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
+		gameValueSetter(this, PROPOPT(PlayerProp::Z2), [this](const GameValue& value, std::optional<int64_t>) { account.character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("fullhearts", set_temporary, "fullhearts", gameValueGetter(account.maxHitpoints), gameValueSetter(this, PROPOPT(PlayerProp::MAXPOWER), account.maxHitpoints));
 	scriptParameters.try_emplace("maxhp", set_temporary, "maxhp", gameValueGetter(account.maxHitpoints), gameValueSetter(this, PROPOPT(PlayerProp::MAXPOWER), account.maxHitpoints));
 	scriptParameters.try_emplace("hearts", set_temporary, "hearts",
 		gameValueGetter([this]() { return account.character.hitpointsInHalves / 2.0; }),
-		gameValueSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<size_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
+		gameValueSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<int64_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
 	scriptParameters.try_emplace("hp", set_temporary, "hp",
 		gameValueGetter([this]() { return account.character.hitpointsInHalves / 2.0; }),
-		gameValueSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<size_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
+		gameValueSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<int64_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
 	scriptParameters.try_emplace("mp", set_temporary, "mp", gameValueGetter(account.character.mp), gameValueSetter(this, PROPOPT(PlayerProp::MAGICPOINTS), account.character.mp));
 	scriptParameters.try_emplace("ap", set_temporary, "ap", gameValueGetter(account.character.ap), gameValueSetter(this, PROPOPT(PlayerProp::ALIGNMENT), account.character.ap));
 	scriptParameters.try_emplace("rupees", set_temporary, "rupees", gameValueGetter(account.character.gralats), gameValueSetter(this, PROPOPT(PlayerProp::RUPEESCOUNT), account.character.gralats));
@@ -1071,7 +1071,7 @@ void Player::constructScriptParameters()
 				return static_cast<double>(headSet);
 			}),
 		gameValueSetter(this, PROPOPT(PlayerProp::HEADGIF),
-			[this](const GameValue& value, std::optional<size_t>)
+			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				auto headSet = std::clamp(static_cast<int>(value.get<double>().value_or(-1.0)), -1, 99);
 				if (headSet < 0) return;
@@ -1081,7 +1081,7 @@ void Player::constructScriptParameters()
 	scriptParameters.try_emplace("sprite", set_temporary, "sprite",
 		gameValueGetter(account.character.sprite),
 		gameValueSetter(this, PROPOPT(PlayerProp::SPRITE),
-			[this](const GameValue& value, std::optional<size_t>)
+			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				account.character.sprite = static_cast<uint8_t>(value.get<double>().value_or(0.0));
 				if (account.character.sprite >= 4 && BabyDI::Get<Server>()->Generation != ServerGeneration::ORIGINAL)
@@ -1094,12 +1094,12 @@ void Player::constructScriptParameters()
 	scriptParameters.try_emplace("dir", set_temporary, "dir",
 		gameValueGetter([this]() { return static_cast<double>(account.character.direction); }),
 		gameValueSetter(this, PROPOPT(PlayerProp::SPRITE),
-			[this](const GameValue& value, std::optional<size_t>)
+			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				account.character.direction = std::clamp(static_cast<uint8_t>(value.get<double>().value_or(0.0)), 0_ui8, 3_ui8);
 			})
 	);
-	scriptParameters.try_emplace("hurtdpower", set_temporary, "hurtdpower", gameValueGetter(account.character.hurtDeltaInHalves), GameValue::func_set{});
+	scriptParameters.try_emplace("hurtpower", set_temporary, "hurtpower", gameValueGetter(account.character.hurtDeltaInHalves), GameValue::func_set{});
 	scriptParameters.try_emplace("attachid", set_temporary, "attachid", gameValueGetter(m_attachNPC), GameValue::func_set{});
 	scriptParameters.try_emplace("attachtype", set_temporary, "attachtype", 1.0);
 	scriptParameters.try_emplace("saysnumber", set_temporary, "saysnumber",

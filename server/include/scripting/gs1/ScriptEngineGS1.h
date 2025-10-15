@@ -111,16 +111,16 @@ struct return_exception : public std::exception {};
 
 using PlayerOrNPC = std::optional<std::variant<PlayerPtr, NPCPtr>>;
 
-PlayerPtr getPlayerFromSource(const ScriptObject& source, std::optional<size_t> index = std::nullopt);
-PlayerClientPtr getPlayerClientFromSource(const ScriptObject& source, std::optional<size_t> index = std::nullopt);
-NPCPtr getNPCFromSource(const ScriptObject& source, std::optional<size_t> index = std::nullopt);
-PlayerOrNPC getPlayerOrNPCFromSource(const ScriptObject& source, std::optional<size_t> index = std::nullopt);
-Character* getCharacterFromSource(const ScriptObject& source, std::optional<size_t> index = std::nullopt);
+PlayerPtr getPlayerFromSource(const ScriptObject& source, std::optional<int64_t> index = std::nullopt);
+PlayerClientPtr getPlayerClientFromSource(const ScriptObject& source, std::optional<int64_t> index = std::nullopt);
+NPCPtr getNPCFromSource(const ScriptObject& source, std::optional<int64_t> index = std::nullopt);
+PlayerOrNPC getPlayerOrNPCFromSource(const ScriptObject& source, std::optional<int64_t> index = std::nullopt);
+Character* getCharacterFromSource(const ScriptObject& source, std::optional<int64_t> index = std::nullopt);
 
 //----------------------------
 
 /// @brief A GS1 variable pair of a GameValue and an index (for an array access).
-using GS1GameVariable = std::pair<GameValue, std::optional<size_t>>;
+using GS1GameVariable = std::pair<GameValue, std::optional<int64_t>>;
 
 /// @brief A GS1 script value used in the GS1 visitor pattern.
 using GS1ScriptValue = std::variant<GS1GameVariable, GameValue, ScriptObject>;

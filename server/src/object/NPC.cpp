@@ -1490,7 +1490,7 @@ void NPC::constructScriptParameters()
 	scriptParameters.try_emplace("x", set_temporary, "x",
 		gameValueGetter([this]() { return character.getGlobalPosition().x() / 16.0; }),
 		gameValueSetter(this, PROPOPT(NPCProp::X2),
-			[this](const GameValue& value, std::optional<size_t>)
+			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				auto globalPosition = character.getGlobalPosition();
 				globalPosition.x() = value.get<double>().value_or(0.0) * 16;
@@ -1507,7 +1507,7 @@ void NPC::constructScriptParameters()
 	scriptParameters.try_emplace("y", set_temporary, "y",
 		gameValueGetter([this]() { return character.getGlobalPosition().y() / 16.0; }),
 		gameValueSetter(this, PROPOPT(NPCProp::Y2),
-			[this](const GameValue& value, std::optional<size_t>)
+			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				auto globalPosition = character.getGlobalPosition();
 				globalPosition.y() = value.get<double>().value_or(0.0) * 16;
@@ -1523,15 +1523,15 @@ void NPC::constructScriptParameters()
 		);
 	scriptParameters.try_emplace("z", set_temporary, "z",
 		gameValueGetter([this]() { return getCalculatedTileZ(); }),
-		gameValueSetter(this, PROPOPT(NPCProp::Z2), [this](const GameValue& value, std::optional<size_t>) { character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
+		gameValueSetter(this, PROPOPT(NPCProp::Z2), [this](const GameValue& value, std::optional<int64_t>) { character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
 	scriptParameters.try_emplace("width", set_temporary, "width", gameValueGetter([this]() { return getComputedShape().width() / 16.0; }), GameValue::func_set{});
 	scriptParameters.try_emplace("height", set_temporary, "height", gameValueGetter([this]() { return getComputedShape().height() / 16.0; }), GameValue::func_set{});
 	scriptParameters.try_emplace("hearts", set_temporary, "hearts",
 		gameValueGetter([this]() { return character.hitpointsInHalves / 2.0; }),
-		gameValueSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<size_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
+		gameValueSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<int64_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
 	scriptParameters.try_emplace("hp", set_temporary, "hp",
 		gameValueGetter([this]() { return character.hitpointsInHalves / 2.0; }),
-		gameValueSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<size_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
+		gameValueSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<int64_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
 	scriptParameters.try_emplace("ap", set_temporary, "ap", gameValueGetter(character.ap), gameValueSetter(this, PROPOPT(NPCProp::ALIGNMENT), character.ap));
 	scriptParameters.try_emplace("rupees", set_temporary, "rupees", gameValueGetter(character.gralats), gameValueSetter(this, PROPOPT(NPCProp::RUPEES), character.gralats));
 	scriptParameters.try_emplace("gralats", set_temporary, "gralats", gameValueGetter(character.gralats), gameValueSetter(this, PROPOPT(NPCProp::RUPEES), character.gralats));
@@ -1550,7 +1550,7 @@ void NPC::constructScriptParameters()
 				return static_cast<double>(headSet);
 			}),
 		gameValueSetter(this, PROPOPT(NPCProp::HEADIMAGE),
-			[this](const GameValue& value, std::optional<size_t>)
+			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				auto headSet = std::clamp(static_cast<int>(value.get<double>().value_or(-1.0)), -1, 99);
 				if (headSet < 0) return;
@@ -1560,7 +1560,7 @@ void NPC::constructScriptParameters()
 	scriptParameters.try_emplace("sprite", set_temporary, "sprite",
 		gameValueGetter(character.sprite),
 		gameValueSetter(this, PROPOPT(NPCProp::SPRITE),
-			[this](const GameValue& value, std::optional<size_t>)
+			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				character.sprite = static_cast<uint8_t>(value.get<double>().value_or(0.0));
 				if (character.sprite >= 4 && BabyDI::Get<Server>()->Generation != ServerGeneration::ORIGINAL)
@@ -1574,7 +1574,7 @@ void NPC::constructScriptParameters()
 	scriptParameters.try_emplace("dir", set_temporary, "dir",
 		gameValueGetter([this]() { return static_cast<double>(character.direction); }),
 		gameValueSetter(this, PROPOPT(NPCProp::SPRITE),
-			[this](const GameValue& value, std::optional<size_t>)
+			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				character.direction = std::clamp(static_cast<uint8_t>(value.get<double>().value_or(0.0)), 0_ui8, 3_ui8);
 			})
@@ -1583,7 +1583,7 @@ void NPC::constructScriptParameters()
 	scriptParameters.try_emplace("hurtdx", set_temporary, "hurtdx",
 		gameValueGetter([this]() { return character.hurtPushDeltaInHalfPixels[0] / 32.0; }),
 		gameValueSetter(this, PROPOPT(NPCProp::HURTDXDY),
-			[this](const GameValue& value, std::optional<size_t>)
+			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				auto clampedValue = std::clamp(value.get<double>().value_or(0.0), -1.0, 1.0);
 				character.hurtPushDeltaInHalfPixels[0] = static_cast<int8_t>(clampedValue * 32);
@@ -1592,7 +1592,7 @@ void NPC::constructScriptParameters()
 	scriptParameters.try_emplace("hurtdy", set_temporary, "hurtdy",
 		gameValueGetter([this]() { return character.hurtPushDeltaInHalfPixels[1] / 32.0; }),
 		gameValueSetter(this, PROPOPT(NPCProp::HURTDXDY),
-			[this](const GameValue& value, std::optional<size_t>)
+			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				auto clampedValue = std::clamp(value.get<double>().value_or(0.0), -1.0, 1.0);
 				character.hurtPushDeltaInHalfPixels[1] = static_cast<int8_t>(clampedValue * 32);
@@ -1602,7 +1602,7 @@ void NPC::constructScriptParameters()
 	scriptParameters.try_emplace("timeout", set_temporary, "timeout",
 		gameValueGetter([this]() { return timeout.count() / 1000.0; }),
 		gameValueSetter(this, PROPOPT<NPCProp>(std::nullopt),
-			[this](const GameValue& value, std::optional<size_t>)
+			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				if (auto doubleValue = value.get<double>(); doubleValue.has_value())
 					timeout = std::chrono::milliseconds(static_cast<int>(*doubleValue * 1000));

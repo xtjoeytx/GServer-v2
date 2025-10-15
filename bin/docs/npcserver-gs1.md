@@ -30,6 +30,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       playerdies
       playerenters
       playerhurt
+      playerhurted
       playerlaysitem
       playerleaves
       playerlogin
@@ -44,6 +45,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       warped
       washit	(hitobjects)
       wasshot
+      wasshooted
 
 #### Not implemented
 
@@ -73,6 +75,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       carrying
       carriesblackstone
       carriesbush
+      carriesnpc
       carriessign
       carriesstone
       carriesvase
@@ -86,6 +89,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       playerisfemale
       playerismale
       playeronhorse
+      playeronline
       playerpaused
       shotbybaddy
     * shotbynpc
@@ -111,7 +115,6 @@ Please review the lists below of implemented events, flags, functions, commands,
     leftmousebutton
     lighteffectsenabled
     middlemousebutton
-    playeronline
     playermap
     playerreading
     rightmousebutton
@@ -129,6 +132,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       allplayerscount
       board[]
       gravity
+      groundheights[]
       levelorgx
       levelorgy
       npcscount
@@ -147,65 +151,64 @@ Please review the lists below of implemented events, flags, functions, commands,
       timevar
       timevar2
       tokenscount
-      waterheight
       weaponscount
 
       npcs[]
+        .ap
+        .bombs
+        .darts
+        .dir
+        .glovepower
+        .gralats
+        .headset
+        .hearts
+        .height
+        .hp
+        .hurtdx
+        .hurtdy
+      * .hurtpower
         .id
+        .rupees
+        .save[]
+        .shieldpower
+        .sprite
+        .swordpower
+        .timeout
+        .width
         .x
         .y
         .z
-        .width
-        .height
-        .hearts
-        .hp
-        .ap
-        .rupees
-        .gralats
-        .bombs
-        .darts
-        .glovepower
-        .swordpower
-        .shieldpower
-        .headset
-        .sprite
-        .dir
-      * .hurtpower
-        .hurtdx
-        .hurtdy
-        .save[]
-        .timeout
       npcs[] shorthand: e.g., hearts
 
       players[]
+        .ap
+        .attachid
+        .attachtype
+        .bombs
+      * .carrysprite
+        .darts
+        .dir
+        .fullhearts
+        .glovepower
+        .gralats
+        .headset
+        .hearts
+        .hp
+        .hurtpower
         .id
+        .lastdead
+        .logintime
+        .maxhp
+        .mp
+        .rupees
+        .saysnumber
+        .shieldpower
+        .sprite
+        .swordpower
+        .upgradestatus
         .x
         .y
         .z
-        .fullhearts
-        .maxhp
-        .hearts
-        .hp
-        .mp
-        .ap
-        .rupees
-        .gralats
-        .bombs
-        .darts
-        .glovepower
-        .swordpower
-        .shieldpower
-        .headset
-        .sprite
-        .dir
-        .hurtpower
-        .attachid
-        .attachtype
-        .saysnumber
-        .lastdead
-        .logintime
-        .upgradestatus
-      * .carrysprite
       players[] shorthand: e.g., playerhearts
 
     * arrowscount
@@ -265,10 +268,17 @@ Please review the lists below of implemented events, flags, functions, commands,
         .x
         .y
 
+#### Not implemented
+
+    players[]
+        .shootpower
+
 #### Clientside only
 
     downloadpos
     downloadsize
+    focusx
+    focusy
     graalversion
     mousebuttons
     mousescreenx
@@ -281,7 +291,14 @@ Please review the lists below of implemented events, flags, functions, commands,
     playerfreezetime
     screenheight
     screenwidth
+    selectedsword
     selectedweapon
+    waterheight
+
+    npcs[].anistep
+
+    players[]
+        .anistep
 
 ---
 ## Commands
@@ -475,6 +492,8 @@ Please review the lists below of implemented events, flags, functions, commands,
     replaceani
     resetfocus
     setbackpal
+    setbacktile
+    setbacktile2
     setcoloreffect
     setcursor 
     setcursor2
@@ -564,7 +583,9 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
+    exp(r,r)
     findnearestplayers(x, y)
+    getflagkeys()
     tiletype(x, y)                    (new tileset layout)
 
 #### Clientside only
@@ -600,10 +621,10 @@ Please review the lists below of implemented events, flags, functions, commands,
     #N | #N(index)  [Read]
     #W | #W(index)  [Read]
     #w | #w(index)  [Read]
+    #f | #f(index)  [Read]
     #p(index)       [Read / Write]
     #t(index)       [Read / Write]
     #F              [Read]
-    #f              [Read]
     #L              [Read]
     #C0 - #C4  | #C0(index) - #C4(index)   [Read / Write]
     #P1 - #P30 | #P1(index) - #P30(index)  [Read / Write]
@@ -618,6 +639,10 @@ Please review the lists below of implemented events, flags, functions, commands,
     #T(string)
     #U(string)
     #v(identifier)
+
+#### Not implemented
+
+    #C5 - #C7 | #C5(index) - #C7(index)
 
 #### Clientside only
 

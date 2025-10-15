@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdint>
 #include <format>
 #include <functional>
 #include <memory>
@@ -85,7 +86,7 @@ GameValue::operator bool() const
 	return false;
 }
 
-GameValue GameValue::flatten(size_t index) const noexcept
+GameValue GameValue::flatten(int64_t index) const noexcept
 {
 	if (m_getter)
 	{
@@ -239,7 +240,7 @@ GameValue GameVariableStore::getOrStub(std::string_view name)
 {
 	if (auto var = getOrAdd(name).lock(); var != nullptr)
 	{
-		auto getter = [this, variable = var](GameValueVariant incoming, std::optional<size_t> index)
+		auto getter = [this, variable = var](GameValueVariant incoming, std::optional<int64_t> index)
 		{
 			const auto picker = visit_functions
 			{
@@ -252,7 +253,7 @@ GameValue GameVariableStore::getOrStub(std::string_view name)
 			std::visit(picker, incoming);
 		};
 
-		auto setter = [this, variable = var](GameValueVariant incoming, std::optional<size_t> index)
+		auto setter = [this, variable = var](GameValueVariant incoming, std::optional<int64_t> index)
 		{
 			const auto picker = visit_functions
 			{

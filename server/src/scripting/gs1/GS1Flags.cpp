@@ -27,6 +27,10 @@ void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
 	for (auto& [eventType, flagName] : eventFlagMap)
 		variableStore.add(flagName, event == eventType);
 
+	// Valid alternates.
+	variableStore.add("playerhurted", event == ScriptEventType::PLAYERHURT);
+	variableStore.add("wasshooted", event == ScriptEventType::WASSHOT);
+
 	// TODO: Put extensions under a server option?
 	variableStore.add("playertouchesme", event == ScriptEventType::PLAYERTOUCHSME);
 	variableStore.add("playertouchesother", event == ScriptEventType::PLAYERTOUCHSOTHER);
@@ -35,6 +39,7 @@ void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
 		washit              the npc was slayed with a sword or axe
 		waspelt             the npc was pelt
 		wasthrown           the npc was carried and then thrown
+		emoticon
 	*/
 }
 
@@ -98,16 +103,13 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPt
 	variableStore.add("playerismale", (player->account.status & PLSTATUS_MALE) != 0);
 	variableStore.add("playerisfemale", (player->account.status & PLSTATUS_MALE) == 0);
 	variableStore.add("playeronhorse", !player->account.character.horseImage.empty());
-
-	/* TODO(Nalin): Player flags.
-		playerswimming - How does this work?  Does it check for the swim gani, or does it do a tile type check?
-		playertrial
-	*/
-
+	variableStore.add("playeronline", true);
 	variableStore.add("playerattached", npc != nullptr && player->getAttachedNPC() == npc->id);
 
 	auto level = player->getLevel();
 	variableStore.add("isleader", level != nullptr && level->isPlayerLeader(player->getId()));
+
+	// playertrial
 }
 
 void setNPCFlags(ScriptEvent& event, GameVariableStore& variableStore, NPCPtr npc)
@@ -161,6 +163,9 @@ void setOtherFlags(ScriptEvent& event, ScriptObject source, GameVariableStore& v
 		}
 		variableStore.add("actionplayer", GameValue{ (double)(found ? index : -1) });
 	}
+
+	// playerswimming
+	variableStore.add("playerswimming", player != nullptr && level != nullptr && level->isOnWater(player->getGlobalPosition().translate(24, 32)));
 
 	/* Older flags:
 	* 'gotbow' and 'gotsword' are older pre-1.3 flags.

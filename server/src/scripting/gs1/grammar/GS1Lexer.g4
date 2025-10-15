@@ -14,18 +14,18 @@ lexer grammar GS1Lexer;
 @lexer::context
 {
 // --------------------------------------------------------
+constexpr size_t builtInCommandCount = 204
 #if DEBUG
-constexpr size_t builtInCommandCount = 202;
-#else
-constexpr size_t builtInCommandCount = 201;
+	+ 1
 #endif
+	;
 constexpr std::array<std::string_view, builtInCommandCount> builtInCommands = {
 #if DEBUG
 	"debugger",
 #endif
     "addguildmember",
     "addstring",
-    "addtiledef",
+    "addtiledef ",
     "addtiledef2",
     "addweapon",
     "attachplayertoobj",
@@ -87,7 +87,7 @@ constexpr std::array<std::string_view, builtInCommandCount> builtInCommands = {
     "hitplayer",
     "hurt ",
     "insertstring",
-    "join ",
+    "join",
     "lay ",
     "lay2",
     "loadmap",
@@ -95,10 +95,10 @@ constexpr std::array<std::string_view, builtInCommandCount> builtInCommands = {
     "move ",
     "noplayerkilling",
     "noplayeronwall",
-    "openurl",
-    "openurl2",
+    "openurl ",
+    "openurl2 ",
     "play ",
-    "play2",
+    "play2 ",
     "playlooped",
     "putbomb",
     "putcomp",
@@ -126,7 +126,7 @@ constexpr std::array<std::string_view, builtInCommandCount> builtInCommands = {
     "replacestring",
     "resetfocus",
     "saveinfo",
-    "savelog ",
+    "savelog",
     "savelog2",
     "say ",
     "say2",
@@ -139,8 +139,11 @@ constexpr std::array<std::string_view, builtInCommandCount> builtInCommands = {
     "setani",
     "setarray",
     "setbackpal",
+	"setbacktile",
+	"setbacktile2",
     "setbeltcolor",
     "setbody",
+	"setbow",
     "setcharani",
     "setchargender",
     "setcharprop",
@@ -170,7 +173,7 @@ constexpr std::array<std::string_view, builtInCommandCount> builtInCommands = {
     "setshape2",
     "setshield",
     "setshoecolor",
-    "setshootparams",
+    "setshootparams ",
     "setskincolor",
     "setsleevecolor",
     "setspritesimage",
@@ -178,9 +181,9 @@ constexpr std::array<std::string_view, builtInCommandCount> builtInCommands = {
     "setstring",
     "setsword",
     "seturllevel",
-    "setz",
+    "setz ",
     "setzoomeffect",
-    "shoot",
+    "shoot ",
     "shootarrow",
     "shootball",
     "shootfireball",
@@ -212,7 +215,7 @@ constexpr std::array<std::string_view, builtInCommandCount> builtInCommands = {
     "timereverywhere",
     "timershow",
     "toinventory",
-    "tokenize",
+    "tokenize ",
     "tokenize2",
     "toweapons",
     "triggeraction",
@@ -222,8 +225,8 @@ constexpr std::array<std::string_view, builtInCommandCount> builtInCommands = {
     "updateboard2 ",
     "updateterrain",
 	"warpto",
-    "wraptext",
-    "wraptext2",
+    "wraptext ",
+    "wraptext2 ",
 };
 
 constexpr bool isBuiltInCommand(std::string_view name)
@@ -546,14 +549,14 @@ CMD_SHOWLOCAL            : 'showlocal'            -> type(COMMAND);
 CMD_DONTBLOCKLOCAL       : 'dontblocklocal'       -> type(COMMAND);
 CMD_BLOCKAGAINLOCAL      : 'blockagainlocal'      -> type(COMMAND);
 CMD_TAKEHORSE            : 'takehorse'            -> type(COMMAND);
-CMD_TOKENIZE             : 'tokenize'             { pushCommand("S"); } -> type(COMMAND);
+CMD_TOKENIZE             : 'tokenize '            { pushCommand("S"); } -> type(COMMAND);
 CMD_TOKENIZE2            : 'tokenize2'            { pushCommand("SS"); } -> type(COMMAND);
-CMD_SETSHAPE             : 'setshape'             { pushCommand("EEE"); } -> type(COMMAND);
+CMD_SETSHAPE             : 'setshape '            { pushCommand("EEE"); } -> type(COMMAND);
 CMD_SETSHAPE2            : 'setshape2'            { pushCommand("EEE"); } -> type(COMMAND);
-CMD_WRAPTEXT             : 'wraptext'             { pushCommand("ESS"); } -> type(COMMAND);
-CMD_WRAPTEXT2            : 'wraptext2'            { pushCommand("EESS"); } -> type(COMMAND);
-CMD_SETSHOOTPARAMS       : 'setshootparams'       { pushCommand("L"); } -> type(COMMAND);
-CMD_SHOOT                : 'shoot'                { pushCommand("EEEEEES"); } -> type(COMMAND);
+CMD_WRAPTEXT             : 'wraptext '            { pushCommand("ESS"); } -> type(COMMAND);
+CMD_WRAPTEXT2            : 'wraptext2 '           { pushCommand("EESS"); } -> type(COMMAND);
+CMD_SETSHOOTPARAMS       : 'setshootparams '      { pushCommand("L"); } -> type(COMMAND);
+CMD_SHOOT                : 'shoot '               { pushCommand("EEEEEES"); } -> type(COMMAND);
 CMD_SETLEVEL             : 'setlevel '            { pushCommand("S"); } -> type(COMMAND);
 CMD_SETLEVEL2            : 'setlevel2'            { pushCommand("SEE"); } -> type(COMMAND);
 CMD_SETURLLEVEL          : 'seturllevel'          { pushCommand("S"); } -> type(COMMAND);
@@ -561,6 +564,7 @@ CMD_SETBODY              : 'setbody'              { pushCommand("S"); } -> type(
 CMD_SETHEAD              : 'sethead'              { pushCommand("S"); } -> type(COMMAND);
 CMD_SETSWORD             : 'setsword'             { pushCommand("SE"); } -> type(COMMAND);
 CMD_SETSHIELD            : 'setshield'            { pushCommand("SE"); } -> type(COMMAND);
+CMD_SETBOW               : 'setbow'               { pushCommand("S"); } -> type(COMMAND);
 CMD_SETANI               : 'setani'               { pushCommand("S"); } -> type(COMMAND);
 CMD_SETPLAYERDIR         : 'setplayerdir'         { pushCommand("D"); } -> type(COMMAND);
 CMD_SETGENDER            : 'setgender'            { pushCommand("G"); } -> type(COMMAND);
@@ -596,15 +600,17 @@ CMD_UPDATEBOARD          : 'updateboard'          { pushCommand("EEEE"); } -> ty
 CMD_UPDATEBOARD2         : 'updateboard2'         { pushCommand("EEEE"); } -> type(COMMAND);
 CMD_PUTOBJECT            : 'putobject'            { pushCommand("SEE"); } -> type(COMMAND);
 CMD_PUTBOMB              : 'putbomb'              { pushCommand("EEE"); } -> type(COMMAND);
-CMD_PUTEXPLOSION         : 'putexplosion'         { pushCommand("EEE"); } -> type(COMMAND);
+CMD_PUTEXPLOSION         : 'putexplosion '        { pushCommand("EEE"); } -> type(COMMAND);
 CMD_PUTEXPLOSION2        : 'putexplosion2'        { pushCommand("EEEE"); } -> type(COMMAND);
 CMD_PUTLEAPS             : 'putleaps'             { pushCommand("EEE"); } -> type(COMMAND);
 CMD_PUTHORSE             : 'puthorse'             { pushCommand("SEE"); } -> type(COMMAND);
 CMD_SETBACKPAL           : 'setbackpal'           { pushCommand("S"); } -> type(COMMAND);
+CMD_SETBACKTILE          : 'setbacktile'          { pushCommand("E"); } -> type(COMMAND);
+CMD_SETBACKTILE2         : 'setbacktile2'         { pushCommand("EEEEE"); } -> type(COMMAND);
 CMD_SETLETTERS           : 'setletters'           { pushCommand("S"); } -> type(COMMAND);
 CMD_SETMAP               : 'setmap'               { pushCommand("SSEE"); } -> type(COMMAND);
 CMD_SETMINIMAP           : 'setminimap'           { pushCommand("SSEE"); } -> type(COMMAND);
-CMD_SETEFFECT            : 'seteffect'            { pushCommand("EEEE"); } -> type(COMMAND);
+CMD_SETEFFECT            : 'seteffect '           { pushCommand("EEEE"); } -> type(COMMAND);
 CMD_SETFOCUS             : 'setfocus'             { pushCommand("EE"); } -> type(COMMAND);
 CMD_RESETFOCUS           : 'resetfocus'           -> type(COMMAND);
 CMD_NOPLAYERKILLING      : 'noplayerkilling'      -> type(COMMAND);
@@ -616,7 +622,7 @@ CMD_REMOVEEXPLO          : 'removeexplo'          { pushCommand("E"); } -> type(
 CMD_REMOVEHORSE          : 'removehorse'          { pushCommand("E"); } -> type(COMMAND);
 CMD_EXPLODEBOMB          : 'explodebomb'          { pushCommand("E"); } -> type(COMMAND);
 CMD_REFLECTARROW         : 'reflectarrow'         { pushCommand("E"); } -> type(COMMAND);
-CMD_ADDTILEDEF           : 'addtiledef'           { pushCommand("SSE"); } -> type(COMMAND);
+CMD_ADDTILEDEF           : 'addtiledef '          { pushCommand("SSE"); } -> type(COMMAND);
 CMD_ADDTILEDEF2          : 'addtiledef2'          { pushCommand("SSEE"); } -> type(COMMAND);
 CMD_REMOVETILEDEFS       : 'removetiledefs'       { pushCommand("S"); } -> type(COMMAND);
 CMD_LOADMAP              : 'loadmap'              { pushCommand("S"); } -> type(COMMAND);
@@ -627,15 +633,15 @@ CMD_PUTNEWCOMP           : 'putnewcomp'           { pushCommand("BEESE"); } -> t
 CMD_HITCOMPU             : 'hitcompu'             { pushCommand("EEEE"); } -> type(COMMAND);
 CMD_REMOVECOMPUS         : 'removecompus'         -> type(COMMAND);
 CMD_PLAY                 : 'play '                { pushCommand("S"); } -> type(COMMAND);
-CMD_PLAY2                : 'play2'                { pushCommand("SEEE"); } -> type(COMMAND);
+CMD_PLAY2                : 'play2 '               { pushCommand("SEEE"); } -> type(COMMAND);
 CMD_PLAYLOOPED           : 'playlooped'           { pushCommand("S"); } -> type(COMMAND);
 CMD_STOPSOUND            : 'stopsound'            { pushCommand("S"); } -> type(COMMAND);
 CMD_STOPMIDI             : 'stopmidi'             -> type(COMMAND);
 CMD_SETMUSICVOLUME       : 'setmusicvolume'       { pushCommand("EE"); } -> type(COMMAND);
-CMD_OPENURL              : 'openurl'              { pushCommand("S"); } -> type(COMMAND);
-CMD_OPENURL2             : 'openurl2'             { pushCommand("SEE"); } -> type(COMMAND);
+CMD_OPENURL              : 'openurl '             { pushCommand("S"); } -> type(COMMAND);
+CMD_OPENURL2             : 'openurl2 '            { pushCommand("SEE"); } -> type(COMMAND);
 CMD_SHOWFILE             : 'showfile'             { pushCommand("S"); } -> type(COMMAND);
-CMD_JOIN                 : 'join '                { pushCommand("S"); } -> type(COMMAND);
+CMD_JOIN                 : 'join'                 { pushCommand("S"); } -> type(COMMAND);
 CMD_SETCURSOR            : 'setcursor '           { pushCommand("E"); } -> type(COMMAND);
 CMD_SETCURSOR2           : 'setcursor2'           { pushCommand("S"); } -> type(COMMAND);
 CMD_CANWARP              : 'canwarp'              -> type(COMMAND);
@@ -655,33 +661,45 @@ CMD_SENDPM               : 'sendpm'               { pushCommand("S"); } -> type(
 CMD_SETPM                : 'setpm'                { pushCommand("S"); } -> type(COMMAND);
 CMD_SENDRPGMESSAGE       : 'sendrpgmessage'       { pushCommand("S"); } -> type(COMMAND);
 CMD_SERVERWARP           : 'serverwarp'           { pushCommand("S"); } -> type(COMMAND);
-CMD_SETZ                 : 'setz'                 { pushCommand("EEEEEEEE"); } -> type(COMMAND);
+CMD_SETZ                 : 'setz '                { pushCommand("EEEEEEEE"); } -> type(COMMAND);
 CMD_COPYLEVEL            : 'copylevel'            { pushCommand("SS"); } -> type(COMMAND);
 CMD_DELETELEVEL          : 'deletelevel'          { pushCommand("S"); } -> type(COMMAND);
 CMD_SAVEINFO             : 'saveinfo'             { pushCommand("SS"); } -> type(COMMAND);
-CMD_SAVELOG              : 'savelog '             { pushCommand("S"); } -> type(COMMAND);
+CMD_SAVELOG              : 'savelog'              { pushCommand("S"); } -> type(COMMAND);
 CMD_SAVELOG2             : 'savelog2'             { pushCommand("SS"); } -> type(COMMAND);
 CMD_WARPTO               : 'warpto'               { pushCommand("SEE"); } -> type(COMMAND);
 
 FUNC_GROUP_1
 	: (
-		'onwall'
+		  'abs'
+		| 'aindexof'
+		| 'arctan'
+		| 'arraylen'
+		| 'ascii'
+		| 'cos'
+		| 'exp'
+		| 'findnearestplayer'
+		| 'findnearestplayers'
+		| 'getangle'
+		| 'getareanpcs'
+		| 'getdir'
+		| 'getnearestplayer'
+		| 'getnearestplayers'
+		| 'getz'
+		| 'int'
+		| 'keydown'
+		| 'keydown2'
+		| 'log'
+		| 'max'
+		| 'min'
+		| 'onwall'
 		| 'onwall2'
 		| 'onwater'
 		| 'onwater2'
-		| 'keydown'
-		| 'keydown2'
-		| 'arraylen'
-		| 'abs'
-		| 'arctan'
-		| 'cos'
-		| 'sin'
-		| 'getangle'
-		| 'int'
 		| 'random'
-		| 'min'
-		| 'max'
-		| 'log'
+		| 'screenx'
+		| 'screeny'
+		| 'sin'
 		| 'testbomb'
 		| 'testcompu'
 		| 'testexplo'
@@ -691,50 +709,42 @@ FUNC_GROUP_1
 		| 'testplayer'
 		| 'testsign'
 		| 'tiletype'
-		| 'ascii'
-		| 'getz'
-		| 'screenx'
-		| 'screeny'
-		| 'worldx'
-		| 'worldy'
 		| 'vecx'
 		| 'vecy'
-		| 'findnearestplayer'
-		| 'findnearestplayers'
-		| 'getnearestplayer'
-		| 'getnearestplayers'
-		| 'aindexof'
-		| 'getdir'
-		| 'getareanpcs'
+		| 'worldx'
+		| 'worldy'
 	) { pushCommand("(P)"); } -> type(FUNCTION)
 	;
 
 FUNC_GROUP_2
 	: (
-		'onmapx'
+		  'base64decode'
+		| 'base64encode'
+		| 'getflagkeys'
+		| 'getnpc'
+		| 'getplayer'
+		| 'hasweapon'
+		| 'imgheight'
+		| 'imgwidth'
+		| 'keycode'
 		| 'onmapy'
 		| 'strlen'
 		| 'strtofloat'
-		| 'imgwidth'
-		| 'imgheight'
-		| 'keycode'
-		| 'base64encode'
-		| 'base64decode'
-		| 'hasweapon'
-		| 'getplayer'
-		| 'getnpc'
+		| 'onmapx'
 	) { pushCommand("(S)"); } -> type(FUNCTION)
 	;
 
 FUNC_GROUP_3
 	: (
-		'startswith'
+		  'indexof'
 		| 'strcontains'
 		| 'strequals'
-		| 'indexof'
+		| 'startswith'
 	) { pushCommand("(SS)"); } -> type(FUNCTION)
 	;
 
+// FUNC_GROUP_4 : 'textwidth'   { pushCommand("(ESSS)"); } -> type(FUNCTION);
+// FUNC_GROUP_4 : 'textheight'   { pushCommand("(ESS)"); } -> type(FUNCTION);
 FUNC_GROUP_4 : ('textwidth' | 'textheight')   { pushCommand("(ESSS)"); } -> type(FUNCTION);
 FUNC_GROUP_5 : 'lindexof'                     { pushCommand("(SV)"); }   -> type(FUNCTION);
 FUNC_GROUP_6 : 'sarraylen'                    { pushCommand("(V)"); }    -> type(FUNCTION);

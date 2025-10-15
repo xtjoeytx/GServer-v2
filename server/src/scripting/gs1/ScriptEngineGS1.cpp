@@ -66,15 +66,19 @@ static std::string determineEventName(ScriptEvent& event)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-PlayerPtr getPlayerFromSource(const ScriptObject& source, std::optional<size_t> index)
+PlayerPtr getPlayerFromSource(const ScriptObject& source, std::optional<int64_t> index)
 {
 	if (source.second != ScriptObjectType::PLAYER)
+		return nullptr;
+
+	// TODO: Current player.
+	if (index.value_or(0) == -1)
 		return nullptr;
 
 	auto* server = BabyDI::Get<Server>();
 	if (auto player = server->getPlayer(source.first); player != nullptr)
 	{
-		if (index.has_value())
+		if (index.has_value() && index.value() >= 0)
 		{
 			if (auto level = server->getLevel(player->account.level); level != nullptr && index.value() < level->getMapPlayerCount())
 			{
@@ -90,7 +94,7 @@ PlayerPtr getPlayerFromSource(const ScriptObject& source, std::optional<size_t> 
 	return nullptr;
 }
 
-PlayerClientPtr getPlayerClientFromSource(const ScriptObject& source, std::optional<size_t> index)
+PlayerClientPtr getPlayerClientFromSource(const ScriptObject& source, std::optional<int64_t> index)
 {
 	auto player = getPlayerFromSource(source, index);
 	if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr)
@@ -98,14 +102,14 @@ PlayerClientPtr getPlayerClientFromSource(const ScriptObject& source, std::optio
 	return nullptr;
 }
 
-NPCPtr getNPCFromSource(const ScriptObject& source, std::optional<size_t> index)
+NPCPtr getNPCFromSource(const ScriptObject& source, std::optional<int64_t> index)
 {
 	if (source.second != ScriptObjectType::NPC)
 		return nullptr;
 	auto* server = BabyDI::Get<Server>();
 	if (auto npc = server->getNPC(source.first); npc != nullptr)
 	{
-		if (index.has_value())
+		if (index.has_value() && index.value() >= 0)
 		{
 			if (auto level = npc->getLevel(); level != nullptr && index.value() < level->getMapNPCCount())
 			{
@@ -120,7 +124,7 @@ NPCPtr getNPCFromSource(const ScriptObject& source, std::optional<size_t> index)
 	return nullptr;
 }
 
-PlayerOrNPC getPlayerOrNPCFromSource(const ScriptObject& source, std::optional<size_t> index)
+PlayerOrNPC getPlayerOrNPCFromSource(const ScriptObject& source, std::optional<int64_t> index)
 {
 	if (source.second == ScriptObjectType::SERVER)
 		return std::nullopt;
@@ -133,7 +137,7 @@ PlayerOrNPC getPlayerOrNPCFromSource(const ScriptObject& source, std::optional<s
 	return std::nullopt;
 }
 
-Character* getCharacterFromSource(const ScriptObject& source, std::optional<size_t> index)
+Character* getCharacterFromSource(const ScriptObject& source, std::optional<int64_t> index)
 {
 	if (source.second == ScriptObjectType::SERVER)
 		return nullptr;

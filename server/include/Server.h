@@ -302,6 +302,8 @@ public:
 	ServerGeneration Generation{ ServerGeneration::CLASSIC };
 	ScriptContainer Scripting;
 
+	std::array<double, 7> groundHeights = { 0.0, 3.0, 4.0, 5.0, 25.0, 55.0, 65.0 };
+
 private:
 	bool doTimedEvents(int iterations);
 

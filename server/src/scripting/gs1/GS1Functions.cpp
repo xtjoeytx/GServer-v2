@@ -51,27 +51,14 @@ using BuiltInFunctionHandleFunc = GS1ScriptValue(*)(GS1Visitor*, std::string_vie
 using BuiltInFunctionHandleMap = std::unordered_map<size_t, BuiltInFunctionHandleFunc>;
 
 static GS1ScriptValue fn_abs(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_aindexof(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_arctan(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_cos(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_int(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_log(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_max(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_min(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_random(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_sin(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_strtofloat(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_arraylen(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_ascii(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_base64decode(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_base64encode(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_startswith(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_strcontains(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_strlen(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_aindexof(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_arraylen(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_indexof(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_sarraylen(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_cos(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_exp(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_findnearestplayers(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getangle(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
@@ -85,9 +72,15 @@ static GS1ScriptValue fn_getz(GS1Visitor* visitor, std::string_view functionName
 static GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_imgheight(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_imgwidth(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_indexof(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_int(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_keycode(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_keydown(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_keydown2(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_log(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_max(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_min(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_onmapx(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_onmapy(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
@@ -96,8 +89,16 @@ static GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view functionN
 static GS1ScriptValue fn_onwater2(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_playersays2(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_random(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_sarraylen(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_screenx(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_screeny(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_sin(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_startswith(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_strcontains(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_strlen(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_strtofloat(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_testbomb(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_testcompu(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_testexplo(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
@@ -120,27 +121,14 @@ static BuiltInFunctionHandleMap GenerateMap()
 	BuiltInFunctionHandleMap map =
 	{
 		{ hash("abs"), &fn_abs },
+		{ hash("aindexof"), &fn_aindexof },
 		{ hash("arctan"), &fn_arctan },
-		{ hash("cos"), &fn_cos },
-		{ hash("int"), &fn_int },
-		{ hash("log"), &fn_log },
-		{ hash("max"), &fn_max },
-		{ hash("min"), &fn_min },
-		{ hash("random"), &fn_random },
-		{ hash("sin"), &fn_sin },
-		{ hash("strtofloat"), &fn_strtofloat },
+		{ hash("arraylen"), &fn_arraylen },
 		{ hash("ascii"), &fn_ascii },
 		{ hash("base64decode"), &fn_base64decode },
 		{ hash("base64encode"), &fn_base64encode },
-		{ hash("startswith"), &fn_startswith },
-		{ hash("strcontains"), &fn_strcontains },
-		{ hash("strequals"), &fn_strequals },
-		{ hash("strlen"), &fn_strlen },
-		{ hash("aindexof"), &fn_aindexof },
-		{ hash("arraylen"), &fn_arraylen },
-		{ hash("indexof"), &fn_indexof },
-		{ hash("lindexof"), &fn_lindexof },
-		{ hash("sarraylen"), &fn_sarraylen },
+		{ hash("cos"), &fn_cos },
+		{ hash("exp"), &fn_exp },
 		{ hash("findnearestplayer"), &fn_findnearestplayer },
 		{ hash("findnearestplayers"), &fn_findnearestplayers },
 		{ hash("getangle"), &fn_getangle },
@@ -154,9 +142,15 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{ hash("hasweapon"), &fn_hasweapon },
 		{ hash("imgheight"), &fn_imgheight },
 		{ hash("imgwidth"), &fn_imgwidth },
+		{ hash("indexof"), &fn_indexof },
+		{ hash("int"), &fn_int },
 		{ hash("keycode"), &fn_keycode },
 		{ hash("keydown"), &fn_keydown },
 		{ hash("keydown2"), &fn_keydown2 },
+		{ hash("lindexof"), &fn_lindexof },
+		{ hash("log"), &fn_log },
+		{ hash("max"), &fn_max },
+		{ hash("min"), &fn_min },
 		{ hash("onmapx"), &fn_onmapx },
 		{ hash("onmapy"), &fn_onmapy },
 		{ hash("onwall"), &fn_onwall },
@@ -165,8 +159,16 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{ hash("onwater2"), &fn_onwater2 },
 		{ hash("playersays"), &fn_playersays },
 		{ hash("playersays2"), &fn_playersays2 },
+		{ hash("random"), &fn_random },
+		{ hash("sarraylen"), &fn_sarraylen },
 		{ hash("screenx"), &fn_screenx },
 		{ hash("screeny"), &fn_screeny },
+		{ hash("sin"), &fn_sin },
+		{ hash("startswith"), &fn_startswith },
+		{ hash("strcontains"), &fn_strcontains },
+		{ hash("strequals"), &fn_strequals },
+		{ hash("strlen"), &fn_strlen },
+		{ hash("strtofloat"), &fn_strtofloat },
 		{ hash("testbomb"), &fn_testbomb },
 		{ hash("testcompu"), &fn_testcompu },
 		{ hash("testexplo"), &fn_testexplo },
@@ -256,6 +258,24 @@ GS1ScriptValue fn_abs(GS1Visitor* visitor, std::string_view messageCode, const s
 	return std::abs(value);
 }
 
+// aindexof(value, array)
+// Returns the index of the first occurrence of value in the array, or -1 if not found.
+GS1ScriptValue fn_aindexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function aindexof requires exactly two arguments");
+
+	auto value = visitor->getGameValueAs<double>(*arguments[0]);
+	auto array = visitor->getGameValueAs<std::vector<double>>(*arguments[1]);
+
+	auto result = std::ranges::find(array, value);
+	if (result == std::ranges::end(array))
+		return -1.0;
+
+	auto distance = std::ranges::distance(std::ranges::begin(array), result);
+	return static_cast<double>(distance);
+}
+
 // arctan(value)
 // Returns the arctangent of the value in radians.
 GS1ScriptValue fn_arctan(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
@@ -267,128 +287,17 @@ GS1ScriptValue fn_arctan(GS1Visitor* visitor, std::string_view messageCode, cons
 	return std::atan(value);
 }
 
-// cos(value)
-// Returns the cosine of the value in radians.
-GS1ScriptValue fn_cos(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+// arraylen(array)
+// Returns the length of the array.
+GS1ScriptValue fn_arraylen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function cos requires exactly one argument");
+		throw std::invalid_argument("Built-in function arraylen requires exactly one argument");
 
-	auto value = visitor->getGameValueAs<double>(*arguments[0]);
-	return std::cos(value);
+	auto array = visitor->getGameValueAs<std::vector<double>>(*arguments[0]);
+
+	return static_cast<double>(array.size());
 }
-
-// int(value)
-// Converts the value to an integer.
-GS1ScriptValue fn_int(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function int requires exactly one argument");
-
-	auto value = visitor->getGameValueAs<double>(*arguments[0]);
-	return static_cast<double>(static_cast<int64_t>(value));
-	/*
-	if (value < 0.0)
-		return static_cast<double>(static_cast<int64_t>(value - 0.5));
-	else
-		return static_cast<double>(static_cast<int64_t>(value + 0.5));
-	*/
-}
-
-// log(base, value)
-// Returns the logarithm of the value with the given base.
-GS1ScriptValue fn_log(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function log requires exactly two arguments");
-
-	auto base = visitor->getGameValueAs<double>(*arguments[0]);
-	auto value = visitor->getGameValueAs<double>(*arguments[1]);
-	if (value <= 0.0)
-		return 0.0;
-
-	return std::log(value) / std::log(base);
-}
-
-// max(value1, value2)
-// Returns the maximum of the two values.
-GS1ScriptValue fn_max(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function max requires exactly two arguments");
-
-	auto value1 = visitor->getGameValueAs<double>(*arguments[0]);
-	auto value2 = visitor->getGameValueAs<double>(*arguments[1]);
-
-	if (value1 > value2)
-		return value1;
-	else
-		return value2;
-}
-
-// min(value1, value2)
-// Returns the minimum of the two values.
-GS1ScriptValue fn_min(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function max requires exactly two arguments");
-
-	auto value1 = visitor->getGameValueAs<double>(*arguments[0]);
-	auto value2 = visitor->getGameValueAs<double>(*arguments[1]);
-
-	if (value1 < value2)
-		return value1;
-	else
-		return value2;
-}
-
-// random(min, max)
-// Returns a random number between min and max.  a <= value < b
-GS1ScriptValue fn_random(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	using namespace std::chrono;
-	static std::minstd_rand rng(static_cast<uint32_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()));
-
-	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function max requires exactly two arguments");
-
-	auto value1 = visitor->getGameValueAs<double>(*arguments[0]);
-	auto value2 = visitor->getGameValueAs<double>(*arguments[1]);
-
-	std::uniform_real_distribution dist(std::min(value1, value2), std::max(value1, value2));
-	return static_cast<double>(dist(rng));
-}
-
-// sin(value)
-// Returns the sine of the value in radians.
-GS1ScriptValue fn_sin(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function sin requires exactly one argument");
-
-	auto value = visitor->getGameValueAs<double>(*arguments[0]);
-
-	if (value < 0 || value > std::numbers::pi)
-		return 0.0;
-
-	return std::sin(value);
-}
-
-// strtofloat(string)
-// Converts a string to a float.
-GS1ScriptValue fn_strtofloat(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function strtofloat requires exactly one argument");
-
-	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
-	if (str.empty())
-		return 0.0;
-
-	return string::toDouble(str);
-}
-
-//----------------------------
 
 // ascii(string)
 // Returns the ASCII value of the first character in the string.
@@ -438,133 +347,27 @@ GS1ScriptValue fn_base64encode(GS1Visitor* visitor, std::string_view messageCode
 	return std::string{ output.get(), outputLength };
 }
 
-// startswith(prefix, string)
-// Checks if the string starts with the given prefix.
-GS1ScriptValue fn_startswith(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function startswith requires exactly two arguments");
-
-	auto prefix = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto str = visitor->getGameValueAs<std::string>(*arguments[1]);
-
-	return GameValue{ string::findi(str, prefix) == 0 };
-}
-
-// strcontains(string, substring)
-// Checks if the string contains the given substring.
-GS1ScriptValue fn_strcontains(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function strcontains requires exactly two arguments");
-
-	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto substring = visitor->getGameValueAs<std::string>(*arguments[1]);
-
-	return GameValue{ string::findi(str, substring) != std::string::npos };
-}
-
-// strequals(string1, string2)
-// Checks if the two strings are equal.
-GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function strequals requires exactly two arguments");
-
-	auto str1 = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto str2 = visitor->getGameValueAs<std::string>(*arguments[1]);
-
-	return GameValue{ string::equalsi(str1, str2) };
-}
-
-// strlen(string)
-// Returns the length of the string.
-GS1ScriptValue fn_strlen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+// cos(value)
+// Returns the cosine of the value in radians.
+GS1ScriptValue fn_cos(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function strlen requires exactly one argument");
-
-	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
-
-	return static_cast<double>(str.length());
-}
-
-//----------------------------
-
-// aindexof(value, array)
-// Returns the index of the first occurrence of value in the array, or -1 if not found.
-GS1ScriptValue fn_aindexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function aindexof requires exactly two arguments");
+		throw std::invalid_argument("Built-in function cos requires exactly one argument");
 
 	auto value = visitor->getGameValueAs<double>(*arguments[0]);
-	auto array = visitor->getGameValueAs<std::vector<double>>(*arguments[1]);
-
-	auto result = std::ranges::find(array, value);
-	if (result == std::ranges::end(array))
-		return -1.0;
-
-	auto distance = std::ranges::distance(std::ranges::begin(array), result);
-	return static_cast<double>(distance);
+	return std::cos(value);
 }
 
-// arraylen(array)
-// Returns the length of the array.
-GS1ScriptValue fn_arraylen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+// exp(value)
+// Computes e raised to the power of the value.
+GS1ScriptValue fn_exp(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function arraylen requires exactly one argument");
+		throw std::invalid_argument("Built-in function cos requires exactly one argument");
 
-	auto array = visitor->getGameValueAs<std::vector<double>>(*arguments[0]);
-
-	return static_cast<double>(array.size());
+	auto value = visitor->getGameValueAs<double>(*arguments[0]);
+	return std::exp(value);
 }
-
-// indexof(substring, string)
-// Returns the index of the first occurrence of substring in the string, or -1 if not found.
-GS1ScriptValue fn_indexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function indexof requires exactly two arguments");
-
-	auto substring = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto str = visitor->getGameValueAs<std::string>(*arguments[1]);
-
-	return str.find(substring) != std::string::npos ? static_cast<double>(str.find(substring)) : -1.0;
-}
-
-// lindexof(string, list)
-// Returns the index of the first occurrence of string in the string list, or -1 if not found.
-GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function lindexof requires exactly two arguments");
-
-	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto list = visitor->getGameValueAs<std::string>(*arguments[1]);
-	auto listItems = string::splitToVector(list, ","sv);
-	for (size_t i = 0; i < listItems.size(); ++i)
-	{
-		if (string::trim(listItems[i]) == string::trim(str))
-			return static_cast<double>(i);
-	}
-
-	return -1.0;
-}
-
-// sarraylen(list)
-// Returns the length of the string list.
-GS1ScriptValue fn_sarraylen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
-{
-	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function sarraylen requires exactly one argument");
-
-	auto list = visitor->getGameValueAs<std::string>(*arguments[0]);
-	return static_cast<double>(std::ranges::count(list, ',') + 1);
-}
-
-//----------------------------
 
 // findnearestplayer(x, y)
 // Finds the nearest player to the specified position and returns a player source.
@@ -863,6 +666,36 @@ GS1ScriptValue fn_imgwidth(GS1Visitor* visitor, std::string_view messageCode, co
 	throw std::runtime_error("Built-in function imgwidth is a clientside function");
 }
 
+// indexof(substring, string)
+// Returns the index of the first occurrence of substring in the string, or -1 if not found.
+GS1ScriptValue fn_indexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function indexof requires exactly two arguments");
+
+	auto substring = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto str = visitor->getGameValueAs<std::string>(*arguments[1]);
+
+	return str.find(substring) != std::string::npos ? static_cast<double>(str.find(substring)) : -1.0;
+}
+
+// int(value)
+// Converts the value to an integer.
+GS1ScriptValue fn_int(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function int requires exactly one argument");
+
+	auto value = visitor->getGameValueAs<double>(*arguments[0]);
+	return static_cast<double>(static_cast<int64_t>(value));
+	/*
+	if (value < 0.0)
+		return static_cast<double>(static_cast<int64_t>(value - 0.5));
+	else
+		return static_cast<double>(static_cast<int64_t>(value + 0.5));
+	*/
+}
+
 // keycode(key)
 // Returns the key code for the specified key.
 GS1ScriptValue fn_keycode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
@@ -891,6 +724,72 @@ GS1ScriptValue fn_keydown(GS1Visitor* visitor, std::string_view messageCode, con
 GS1ScriptValue fn_keydown2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::runtime_error("Built-in function keydown2 is a clientside function");
+}
+
+// lindexof(string, list)
+// Returns the index of the first occurrence of string in the string list, or -1 if not found.
+GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function lindexof requires exactly two arguments");
+
+	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto list = visitor->getGameValueAs<std::string>(*arguments[1]);
+	auto listItems = string::splitToVector(list, ","sv);
+	for (size_t i = 0; i < listItems.size(); ++i)
+	{
+		if (string::trim(listItems[i]) == string::trim(str))
+			return static_cast<double>(i);
+	}
+
+	return -1.0;
+}
+
+// log(base, value)
+// Returns the logarithm of the value with the given base.
+GS1ScriptValue fn_log(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function log requires exactly two arguments");
+
+	auto base = visitor->getGameValueAs<double>(*arguments[0]);
+	auto value = visitor->getGameValueAs<double>(*arguments[1]);
+	if (value <= 0.0)
+		return 0.0;
+
+	return std::log(value) / std::log(base);
+}
+
+// max(value1, value2)
+// Returns the maximum of the two values.
+GS1ScriptValue fn_max(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function max requires exactly two arguments");
+
+	auto value1 = visitor->getGameValueAs<double>(*arguments[0]);
+	auto value2 = visitor->getGameValueAs<double>(*arguments[1]);
+
+	if (value1 > value2)
+		return value1;
+	else
+		return value2;
+}
+
+// min(value1, value2)
+// Returns the minimum of the two values.
+GS1ScriptValue fn_min(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function max requires exactly two arguments");
+
+	auto value1 = visitor->getGameValueAs<double>(*arguments[0]);
+	auto value2 = visitor->getGameValueAs<double>(*arguments[1]);
+
+	if (value1 < value2)
+		return value1;
+	else
+		return value2;
 }
 
 // onmapx(level)
@@ -1079,6 +978,34 @@ GS1ScriptValue fn_playersays2(GS1Visitor* visitor, std::string_view messageCode,
 	return GameValue{ false };
 }
 
+// random(min, max)
+// Returns a random number between min and max.  a <= value < b
+GS1ScriptValue fn_random(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	using namespace std::chrono;
+	static std::minstd_rand rng(static_cast<uint32_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()));
+
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function max requires exactly two arguments");
+
+	auto value1 = visitor->getGameValueAs<double>(*arguments[0]);
+	auto value2 = visitor->getGameValueAs<double>(*arguments[1]);
+
+	std::uniform_real_distribution dist(std::min(value1, value2), std::max(value1, value2));
+	return static_cast<double>(dist(rng));
+}
+
+// sarraylen(list)
+// Returns the length of the string list.
+GS1ScriptValue fn_sarraylen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function sarraylen requires exactly one argument");
+
+	auto list = visitor->getGameValueAs<std::string>(*arguments[0]);
+	return static_cast<double>(std::ranges::count(list, ',') + 1);
+}
+
 // screenx(x, y)
 // Converts level coordinates (x, y) to the screen's X coordinate.
 GS1ScriptValue fn_screenx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
@@ -1091,6 +1018,86 @@ GS1ScriptValue fn_screenx(GS1Visitor* visitor, std::string_view messageCode, con
 GS1ScriptValue fn_screeny(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::logic_error("Built-in function screeny is a clientside function");
+}
+
+// sin(value)
+// Returns the sine of the value in radians.
+GS1ScriptValue fn_sin(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function sin requires exactly one argument");
+
+	auto value = visitor->getGameValueAs<double>(*arguments[0]);
+
+	if (value < 0 || value > std::numbers::pi)
+		return 0.0;
+
+	return std::sin(value);
+}
+
+// startswith(prefix, string)
+// Checks if the string starts with the given prefix.
+GS1ScriptValue fn_startswith(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function startswith requires exactly two arguments");
+
+	auto prefix = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto str = visitor->getGameValueAs<std::string>(*arguments[1]);
+
+	return GameValue{ string::findi(str, prefix) == 0 };
+}
+
+// strcontains(string, substring)
+// Checks if the string contains the given substring.
+GS1ScriptValue fn_strcontains(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function strcontains requires exactly two arguments");
+
+	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto substring = visitor->getGameValueAs<std::string>(*arguments[1]);
+
+	return GameValue{ string::findi(str, substring) != std::string::npos };
+}
+
+// strequals(string1, string2)
+// Checks if the two strings are equal.
+GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 2)
+		throw std::invalid_argument("Built-in function strequals requires exactly two arguments");
+
+	auto str1 = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto str2 = visitor->getGameValueAs<std::string>(*arguments[1]);
+
+	return GameValue{ string::equalsi(str1, str2) };
+}
+
+// strlen(string)
+// Returns the length of the string.
+GS1ScriptValue fn_strlen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function strlen requires exactly one argument");
+
+	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
+
+	return static_cast<double>(str.length());
+}
+
+// strtofloat(string)
+// Converts a string to a float.
+GS1ScriptValue fn_strtofloat(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function strtofloat requires exactly one argument");
+
+	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
+	if (str.empty())
+		return 0.0;
+
+	return string::toDouble(str);
 }
 
 // testbomb(x, y)

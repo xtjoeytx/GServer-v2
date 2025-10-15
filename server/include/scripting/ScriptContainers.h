@@ -3,6 +3,7 @@
 
 #include <any>
 #include <concepts>
+#include <cstdint>
 #include <deque>
 #include <format>
 #include <functional>
@@ -59,8 +60,8 @@ using GameValueVariant = std::variant<std::optional<bool>*, std::optional<double
 /// It provides methods to set and retrieve the value in a type-safe manner.
 struct GameValue
 {
-	using func_get = std::function<void(GameValueVariant, std::optional<size_t>)>;
-	using func_set = std::function<void(GameValueVariant, std::optional<size_t>)>;
+	using func_get = std::function<void(GameValueVariant, std::optional<int64_t>)>;
+	using func_set = std::function<void(GameValueVariant, std::optional<int64_t>)>;
 
 public:
 	/// @brief Deserializes a variable.
@@ -148,26 +149,26 @@ public:
 	/// @param index An optional index to specify which element of the array to assign the value to, if applicable.
 	/// @return A reference to a 'std::optional{ T }' containing the stored value if it exists; otherwise, throws `std::bad_variant_access` if the type is not supported.
 	template<ValidGameValue T>
-	[[inline]] const std::optional<T> get(std::optional<size_t> index = std::nullopt) const;
+	[[inline]] const std::optional<T> get(std::optional<int64_t> index = std::nullopt) const;
 
 	/// @brief Retrieves a pointer to the stored value of the specified type, if present.
 	/// @tparam T The type of value to retrieve. Must satisfy the `ValidGameValue` constraint.
 	/// @param index An optional index to specify which element of the array to assign the value to, if applicable.
 	/// @return A pointer to type T containing the stored value if it exists; otherwise, throws `std::bad_variant_access` if the type is not supported.
 	template<ValidGameValue T>
-	[[inline]] const T* get_unsafe(std::optional<size_t> index = std::nullopt) const;
+	[[inline]] const T* get_unsafe(std::optional<int64_t> index = std::nullopt) const;
 
 	/// @brief Sets the value of the GameValue object to the provided value, resetting any existing number, text, or array state.
 	/// @param value The new value to assign to the GameValue object. Must satisfy the ValidGameValue concept.
 	/// @param index An optional index to specify which element of the array to assign the value to, if applicable.
 	/// @return A reference to the modified GameValue object.
-	[[inline]] GameValue& set(ValidGameValue auto&& value, std::optional<size_t> index = std::nullopt);
+	[[inline]] GameValue& set(ValidGameValue auto&& value, std::optional<int64_t> index = std::nullopt);
 
 	/// @brief Assigns a value to the GameValue, overwriting the value of the passed type. Other types are not affected.
 	/// @param value The value to assign to the GameValue. Must satisfy the ValidGameValue concept.
 	/// @param index An optional index to specify which element of the array to assign the value to, if applicable.
 	/// @return A reference to the modified GameValue object.
-	[[inline]] GameValue& assign(ValidGameValue auto&& value, std::optional<size_t> index = std::nullopt);
+	[[inline]] GameValue& assign(ValidGameValue auto&& value, std::optional<int64_t> index = std::nullopt);
 
 	/// @brief Assigns values from another GameValue object to this one, overwriting the values of the specified types.
 	/// @tparam ...Types A list of types to assign from the other GameValue.
@@ -175,7 +176,7 @@ public:
 	/// @param index The index of the array to assign a value, if applicable.
 	/// @return A reference to the modified GameValue object.
 	template<ValidGameValue... Types>
-	GameValue& assign(const GameValue& other, std::optional<size_t> index = std::nullopt)
+	GameValue& assign(const GameValue& other, std::optional<int64_t> index = std::nullopt)
 	{
 		(assign(other.get<Types>().value_or(Types{}), index), ...);
 		return *this;
@@ -202,7 +203,7 @@ public:
 
 	/// @brief If the variable is an array, flattens it into a single value.
 	/// @return A reference to the modified GameValue object.
-	GameValue flatten(size_t index) const noexcept;
+	GameValue flatten(int64_t index) const noexcept;
 
 	/// @brief Tests the GameValue as a flag check.
 	/// @return True if the GameValue has a boolean value or a non-empty string value, false otherwise.
@@ -253,14 +254,14 @@ protected:
 	func_get m_getter;
 	func_set m_setter;
 
-	[[inline]] GameValue& insert(const ValidGameValue auto& value, std::optional<size_t> index = std::nullopt);
-	[[inline]] GameValue& insert(ValidGameValue auto&& value, std::optional<size_t> index = std::nullopt);
+	[[inline]] GameValue& insert(const ValidGameValue auto& value, std::optional<int64_t> index = std::nullopt);
+	[[inline]] GameValue& insert(ValidGameValue auto&& value, std::optional<int64_t> index = std::nullopt);
 };
 
 //----------------------------
 
 template<ValidGameValue T>
-inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
+inline const std::optional<T> GameValue::get(std::optional<int64_t> index) const
 {
 	if constexpr (std::same_as<T, double>)
 	{
@@ -272,7 +273,7 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 		}
 		else if (m_array.has_value() && index.has_value())
 		{
-			if (index.value() < m_array.value().size())
+			if (index.value() >= 0 && index.value() < m_array.value().size())
 				return m_array.value().at(index.value());
 			return 0.0;
 		}
@@ -328,7 +329,7 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 			return std::nullopt;
 		if (index.has_value())
 		{
-			if (index.value() < m_source.value().size())
+			if (index.value() >= 0 && index.value() < m_source.value().size())
 				return m_source.value().at(index.value());
 			return m_source.value().at(0);
 		}
@@ -349,14 +350,14 @@ inline const std::optional<T> GameValue::get(std::optional<size_t> index) const
 }
 
 template<ValidGameValue T>
-inline const T* GameValue::get_unsafe(std::optional<size_t> index) const
+inline const T* GameValue::get_unsafe(std::optional<int64_t> index) const
 {
 	if constexpr (std::same_as<T, double>)
 	{
 		if (m_getter) m_getter(const_cast<std::optional<double>*>(&m_number), index);
 		if (m_array.has_value() && index.has_value())
 		{
-			if (index.value() < m_array.value().size())
+			if (index.value() >= 0 && index.value() < m_array.value().size())
 				return &m_array.value().at(index.value());
 			return nullptr;
 		}
@@ -387,7 +388,7 @@ inline const T* GameValue::get_unsafe(std::optional<size_t> index) const
 		if (!m_source.has_value()) return nullptr;
 		if (index.has_value())
 		{
-			if (index.value() < m_source.value().size())
+			if (index.value() >= 0 && index.value() < m_source.value().size())
 				return &m_source.value().at(index.value());
 			return &m_source.value().at(0);
 		}
@@ -403,7 +404,7 @@ inline const T* GameValue::get_unsafe(std::optional<size_t> index) const
 		throw std::bad_variant_access();
 }
 
-inline GameValue& GameValue::set(ValidGameValue auto&& value, std::optional<size_t> index)
+inline GameValue& GameValue::set(ValidGameValue auto&& value, std::optional<int64_t> index)
 {
 	m_number = std::nullopt;
 	m_text = std::nullopt;
@@ -413,19 +414,19 @@ inline GameValue& GameValue::set(ValidGameValue auto&& value, std::optional<size
 	return insert(std::forward<decltype(value)>(value), index);
 }
 
-inline GameValue& GameValue::assign(ValidGameValue auto&& value, std::optional<size_t> index)
+inline GameValue& GameValue::assign(ValidGameValue auto&& value, std::optional<int64_t> index)
 {
 	return insert(std::forward<decltype(value)>(value), index);
 }
 
-inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optional<size_t> index)
+inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optional<int64_t> index)
 {
 	using V = std::remove_cvref_t<decltype(value)>;
 	if constexpr (std::same_as<V, double>)
 	{
 		if (m_array.has_value() && index.has_value())
 		{
-			if (index.value() < m_array.value().size())
+			if (index.value() >= 0 && index.value() < m_array.value().size())
 				m_array.value().at(index.value()) = value;
 			if (m_setter) m_setter(&m_array, index);
 		}
@@ -456,7 +457,7 @@ inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optio
 	{
 		if (m_source.has_value() && index.has_value())
 		{
-			if (index.value() < m_source.value().size())
+			if (index.value() >= 0 && index.value() < m_source.value().size())
 				m_source.value().at(index.value()) = value;
 		}
 		else
@@ -477,14 +478,14 @@ inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optio
 	return *this;
 }
 
-inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<size_t> index)
+inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<int64_t> index)
 {
 	using V = std::remove_cvref_t<decltype(value)>;
 	if constexpr (std::same_as<V, double>)
 	{
 		if (m_array.has_value() && index.has_value())
 		{
-			if (index.value() < m_array.value().size())
+			if (index.value() >= 0 && index.value() < m_array.value().size())
 				m_array.value().at(index.value()) = value;
 			if (m_setter) m_setter(&m_array, index);
 		}
@@ -515,7 +516,7 @@ inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<s
 	{
 		if (m_source.has_value() && index.has_value())
 		{
-			if (index.value() < m_source.value().size())
+			if (index.value() >= 0 && index.value() < m_source.value().size())
 				m_source.value().at(index.value()) = value;
 		}
 		else
@@ -855,7 +856,7 @@ concept ValidGameValueCallable = requires(T t)
 template<typename T>
 concept ValidGameValueCallableWithIndex = requires(T t)
 {
-	{ t(std::declval<std::optional<size_t>>()) } -> std::convertible_to<GameValue>;
+	{ t(std::declval<std::optional<int64_t>>()) } -> std::convertible_to<GameValue>;
 };
 
 
@@ -887,7 +888,7 @@ inline void stupid_ide()
 /// @brief A getter function for a property that gets its results from another getter function.
 GameValue::func_get gameValueGetter(ValidGameValueCallable auto getter)
 {
-	return [getter](GameValueVariant incoming, std::optional<size_t> index)
+	return [getter](GameValueVariant incoming, std::optional<int64_t> index)
 	{
 		GameValue value{ getter() };
 		const auto picker = visit_functions
@@ -905,7 +906,7 @@ GameValue::func_get gameValueGetter(ValidGameValueCallable auto getter)
 /// @brief A getter function for a property that gets its results from another getter function.
 inline GameValue::func_get gameValueGetter(ValidGameValueCallableWithIndex auto getter)
 {
-	return [getter](GameValueVariant incoming, std::optional<size_t> index)
+	return [getter](GameValueVariant incoming, std::optional<int64_t> index)
 	{
 		GameValue value{ getter(index) };
 		const auto picker = visit_functions
@@ -930,7 +931,7 @@ GameValue::func_get gameValueGetter(auto& value)
 	// Number.
 	if constexpr (std::integral<V> || std::floating_point<V>)
 	{
-		return [&value](GameValueVariant incoming, std::optional<size_t> index)
+		return [&value](GameValueVariant incoming, std::optional<int64_t> index)
 		{
 			if (auto var = std::get_if<std::optional<double>*>(&incoming); var != nullptr)
 				**var = value;
@@ -939,7 +940,7 @@ GameValue::func_get gameValueGetter(auto& value)
 	// String.
 	else if constexpr (string::StringVariant<V>)
 	{
-		return [&value](GameValueVariant incoming, std::optional<size_t> index)
+		return [&value](GameValueVariant incoming, std::optional<int64_t> index)
 		{
 			if (auto var = std::get_if<std::optional<std::string>*>(&incoming); var != nullptr)
 				**var = value;
@@ -948,7 +949,7 @@ GameValue::func_get gameValueGetter(auto& value)
 	// ScriptObject (and array variant).
 	else if constexpr (std::same_as<V, ScriptObject> || std::same_as<V, std::vector<ScriptObject>>)
 	{
-		return [&value](GameValueVariant incoming, std::optional<size_t> index)
+		return [&value](GameValueVariant incoming, std::optional<int64_t> index)
 		{
 			if (auto var = std::get_if<std::optional<std::vector<ScriptObject>>*>(&incoming); var != nullptr)
 			{
@@ -964,7 +965,7 @@ GameValue::func_get gameValueGetter(auto& value)
 	// Array.
 	else if constexpr (std::ranges::forward_range<V>)
 	{
-		return [&value](GameValueVariant incoming, std::optional<size_t> index)
+		return [&value](GameValueVariant incoming, std::optional<int64_t> index)
 		{
 			if (auto var = std::get_if<std::optional<std::vector<double>>*>(&incoming); var != nullptr)
 			{
@@ -979,9 +980,9 @@ GameValue::func_get gameValueGetter(auto& value)
 
 /// @brief A setter function for a property that needs an additional setter function to write the values.
 template<class Who, typename Prop>
-GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, std::function<void(const GameValue&, std::optional<size_t>)> setter)
+GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, std::function<void(const GameValue&, std::optional<int64_t>)> setter)
 {
-	return [who, prop, setter](GameValueVariant incoming, std::optional<size_t> index)
+	return [who, prop, setter](GameValueVariant incoming, std::optional<int64_t> index)
 	{
 		GameValue value;
 		const auto picker = visit_functions
@@ -1004,9 +1005,9 @@ GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, std::fun
 }
 
 /// @brief A helper setter function that converts to a GameValue and passes to the next callback function.
-inline GameValue::func_set gameValueSetter(std::function<void(const GameValue&, std::optional<size_t>)> setter)
+inline GameValue::func_set gameValueSetter(std::function<void(const GameValue&, std::optional<int64_t>)> setter)
 {
-	return [setter](GameValueVariant incoming, std::optional<size_t> index)
+	return [setter](GameValueVariant incoming, std::optional<int64_t> index)
 	{
 		GameValue value;
 		const auto picker = visit_functions
@@ -1035,15 +1036,16 @@ GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, Value& p
 	// Number.
 	if constexpr (std::integral<V> || std::floating_point<V>)
 	{
-		return [who, prop, &propvalue](GameValueVariant incoming, std::optional<size_t> index)
+		return [who, prop, &propvalue](GameValueVariant incoming, std::optional<int64_t> index)
 		{
 			if (auto value = std::get_if<std::optional<double>*>(&incoming); value != nullptr)
 				propvalue = static_cast<V>((*value)->value_or(V{}));
 			else if (auto value = std::get_if<std::optional<std::vector<double>>*>(&incoming); value != nullptr && (*value)->has_value() && !(*value)->value().empty())
 			{
 				auto& vec = (*value)->value();
-				if (index.value_or(0) < vec.size())
-					propvalue = static_cast<V>(vec.at(index.value_or(0)));
+				auto indexValue = index.value_or(0);
+				if (indexValue >= 0 && indexValue < vec.size())
+					propvalue = static_cast<V>(vec.at(indexValue));
 			}
 			else if (auto value = std::get_if<std::optional<bool>*>(&incoming); value != nullptr)
 				propvalue = static_cast<V>((*value)->value_or(false) ? 1 : 0);
@@ -1054,7 +1056,7 @@ GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, Value& p
 	// String.
 	else if constexpr (string::StringVariant<V>)
 	{
-		return [who, prop, &propvalue](GameValueVariant incoming, std::optional<size_t> index)
+		return [who, prop, &propvalue](GameValueVariant incoming, std::optional<int64_t> index)
 		{
 			if (auto value = std::get_if<std::optional<std::string>*>(&incoming); value != nullptr)
 				propvalue = static_cast<V>(**value);
@@ -1065,7 +1067,7 @@ GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, Value& p
 	// Array.
 	else if constexpr (std::ranges::random_access_range<V>)
 	{
-		return [who, prop, &propvalue](GameValueVariant incoming, std::optional<size_t> index)
+		return [who, prop, &propvalue](GameValueVariant incoming, std::optional<int64_t> index)
 		{
 			size_t propvalue_size = std::ranges::size(propvalue);
 			if (propvalue_size > 0)
@@ -1073,7 +1075,7 @@ GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, Value& p
 				using value_type = std::remove_cvref_t<decltype(propvalue[0])>;
 
 				// Setting an individual index in an array.
-				if (index.has_value() && index.value() < propvalue_size)
+				if (index.has_value() && index.value() >= 0 && index.value() < propvalue_size)
 				{
 					if (auto value = std::get_if<std::optional<std::vector<double>>*>(&incoming); value != nullptr && (*value)->has_value())
 					{

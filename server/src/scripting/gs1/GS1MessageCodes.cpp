@@ -628,11 +628,15 @@ GS1ScriptValue mc_F(GS1Visitor* visitor, std::string_view messageCode, const std
 	return std::visit(picker, result.value());
 }
 
-// #f  [Read]
+// #f | #f(index)  [Read]
 // Image filename of the NPC.
 GS1ScriptValue mc_f(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	auto npc = getNPCFromSource(visitor->getCurrentSource());
+	std::optional<size_t> index = std::nullopt;
+	if (arguments.size() == 1)
+		index = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
+
+	auto npc = getNPCFromSource(visitor->getCurrentSource(), index);
 	if (npc != nullptr)
 	{
 		// Explicitly place it in another string as the return will trigger move semantics.

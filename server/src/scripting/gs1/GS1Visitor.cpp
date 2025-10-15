@@ -1304,7 +1304,7 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 		throw std::runtime_error("IdentifierValue has no valid compound_identifier");
 
 	auto conditionalExpressions = context->conditionalExpression();
-	std::optional<size_t> index = std::nullopt;
+	std::optional<int64_t> index = std::nullopt;
 
 	// Test for tiles[x,y].
 	// Since tiles[x,y] is a unique case, we encode the index with the X/Y.
@@ -1320,7 +1320,7 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 	{
 		// Get the array index.
 		auto expression_any = visit(conditionalExpressions[0]);
-		index = static_cast<size_t>(getReadOnlyGameValueFromAnyAs<double>(expression_any));
+		index = static_cast<int64_t>(getReadOnlyGameValueFromAnyAs<double>(expression_any));
 	}
 
 	// If we have an identifier, and the flag store has a matching value, return that.
