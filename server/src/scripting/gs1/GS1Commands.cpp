@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <ios>
 #include <iterator>
 #include <memory>
 #include <numbers>
@@ -1779,15 +1780,20 @@ void fn_saveinfo(GS1Visitor* visitor, std::string_view commandName, const std::v
 }
 
 // savelog text;
+// Writes text to npclog.txt.
 void fn_savelog(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("savelog is not implemented yet.");
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: savelog text");
 
-	//if (arguments.size() != 1)
-	//	throw std::invalid_argument("invalid arguments: savelog text");
+	auto text = visitor->getGameValueAs<std::string>(*arguments[0]);
+
+	auto server = BabyDI::Get<Server>();
+	server->logToFile("npclog.txt", text);
 }
 
 // savelog2 filename,text;
+// Writes text to a specified log file.
 void fn_savelog2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
@@ -1796,12 +1802,8 @@ void fn_savelog2(GS1Visitor* visitor, std::string_view commandName, const std::v
 	auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	std::ofstream file{ std::filesystem::path{ "logs" } / filename, std::ios::out | std::ios::app };
-	if (!file.is_open())
-		throw std::runtime_error("Failed to open log file: " + filename);
-
-	file << text << '\n';
-	file.close();
+	auto server = BabyDI::Get<Server>();
+	server->logToFile(filename, text);
 }
 
 // say signindex;

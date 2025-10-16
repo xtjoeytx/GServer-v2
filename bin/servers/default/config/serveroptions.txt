@@ -209,6 +209,9 @@ cropflags = true
 # eventdistance = 64
 # triggerdistance = 10
 
+# If true, serverside scripted log commands will use the classic format.
+classicstylelogs = false
+
 # --------------------------------------------------------------------------------------
 # --- Private server options.  The changestaffacct right is required to alter these. ---
 # --------------------------------------------------------------------------------------

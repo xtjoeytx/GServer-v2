@@ -17,6 +17,7 @@
 #include <random>
 #include <ranges>
 #include <set>
+#include <string.h>
 #include <string_view>
 #include <string>
 #include <thread>
@@ -1578,13 +1579,38 @@ bool Server::isStaff(const CString& accountName)
 	return false;
 }
 
-void Server::logToFile(const std::string& fileName, const std::string& message) const
+void Server::logToFile(std::filesystem::path fileName, std::string_view message, bool writeTimestamp) const
 {
-	std::filesystem::path file{ fileName };
-	log::Log logFile{ .filename = std::filesystem::path{ "servers" } / m_name.text() / "logs" / file.filename() };
+	std::filesystem::path logPath{ "logs" };
 
-	log::printLine(logFile, "\n{}", message);
-	logFile.close();
+	fs::FileIO file{ logPath / fileName };
+	if (!file.opened())
+		return;
+
+	if (writeTimestamp)
+	{
+		if (m_settings.getBool("classicstylelogs", false))
+		{
+			// Non-standard, but make it at least a LITTLE easier to read these dumb logs.
+			file.writeLine();
+
+			// std::ctime appends a newline, so issue a normal write.
+			char buffer[32];
+			std::time_t curTime = std::time(nullptr);
+			std::strncpy(buffer, std::ctime(&curTime), 31);
+			buffer[31] = '\0';
+
+			file.write(std::string_view{ buffer });
+		}
+		else
+		{
+			auto localtime = std::chrono::floor<std::chrono::seconds>(std::chrono::zoned_time{ std::chrono::current_zone(), std::chrono::system_clock::now() }.get_local_time());
+			file.write(std::format(log::TimestampLong, localtime));
+			file.write(" "sv);
+		}
+	}
+
+	file.writeLine(message);
 }
 
 /*

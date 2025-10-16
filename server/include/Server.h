@@ -233,7 +233,12 @@ public:
 	void hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source) const;
 	void hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, NPCPtr source) const;
 	void hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source) const;
-	void logToFile(const std::string& fileName, const std::string& message) const;
+
+public:
+	void logToFile(std::filesystem::path fileName, std::string_view message, bool writeTimestamp = true) const;
+	[[inline]] void logToFile(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const;
+
+public:
 	void sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
 	void sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
 	void sendTriggerAction(PlayerID toPlayerId, NPCID fromNpcId, const LocalPixelPosition& localPosition, std::string_view action, std::string_view params) const;
@@ -370,6 +375,16 @@ inline std::shared_ptr<NPC> Server::getNPC(const NPCID id) const
 		return iter->second;
 
 	return nullptr;
+}
+
+inline void Server::logToFile(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const
+{
+	bool first = true;
+	for (const auto& message : messages)
+	{
+		logToFile(fileName, message, first);
+		first = false;
+	}
 }
 
 inline void Server::sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender) const
