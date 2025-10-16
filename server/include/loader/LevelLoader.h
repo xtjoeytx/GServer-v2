@@ -14,7 +14,12 @@ namespace preagonal
 class LevelLoader
 {
 public:
-	static LevelPtr loadLevel(const std::filesystem::path& levelName);
+	/// @brief Loads a level into the specified level pointer using the given level name path.
+	///
+	/// Always, always call Server::stubOrGetLevel() before calling this.
+	/// @param level A pointer to the level object to be loaded.
+	/// @param levelName The filesystem path representing the name or location of the level to load.
+	/// @return A pointer to the loaded level object.
 	static LevelPtr loadLevelInto(LevelPtr level, const std::filesystem::path& levelName);
 
 private:

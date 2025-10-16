@@ -1224,6 +1224,9 @@ void Server::saveWeapons()
 
 std::shared_ptr<Level> Server::stubOrGetLevel(std::string_view levelName)
 {
+	if (levelName.empty())
+		return nullptr;
+
 	std::string lowerCaseLevel = string::toLower(levelName);
 	if (auto it = m_levelList.find(lowerCaseLevel); it != m_levelList.end())
 		return it->second;
@@ -1238,12 +1241,9 @@ std::shared_ptr<Level> Server::getLevel(std::string_view levelName)
 	if (levelName.empty())
 		return nullptr;
 
-	LevelPtr level = nullptr;
-
-	// Find the level.
-	std::string lowerCaseLevel = string::toLower(levelName);
-	if (auto it = m_levelList.find(lowerCaseLevel); it != m_levelList.end())
-		level = it->second;
+	LevelPtr level = stubOrGetLevel(levelName);
+	if (level == nullptr)
+		return nullptr;
 
 	// Level was already loaded.
 	if (level != nullptr && level->loaded)
@@ -1255,15 +1255,7 @@ std::shared_ptr<Level> Server::getLevel(std::string_view levelName)
 		return nullptr;
 
 	// Load the level.
-	if (level != nullptr)
-		level = LevelLoader::loadLevelInto(level, fileData->file);
-	else
-	{
-		level = LevelLoader::loadLevel(fileData->file);
-		if (level != nullptr)
-			m_levelList.insert(std::make_pair(lowerCaseLevel, level));
-	}
-
+	level = LevelLoader::loadLevelInto(level, fileData->file);
 	return level;
 }
 

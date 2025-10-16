@@ -223,15 +223,6 @@ static size_t readBinaryTiles(uint8_t bits, std::span<uint8_t>& data, LevelTiles
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LevelPtr LevelLoader::loadLevel(const std::filesystem::path& levelName)
-{
-	// We need to construct the level object this way so the "friend" status applies.
-	// If we use the normal std::make_shared, the constructor is inaccessible.
-	std::shared_ptr<Level> level{ new Level() };
-
-	return loadLevelInto(level, levelName);
-}
-
 LevelPtr LevelLoader::loadLevelInto(LevelPtr level, const std::filesystem::path& levelName)
 {
 	auto* server = BabyDI::Get<Server>();
@@ -499,8 +490,8 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, std::string_view fileVersion, fs
 			CString line = fileData.readString("\n");
 			if (line.length() == 0 || line == "#") break;
 
-			signed char x = line.readGChar();
-			signed char y = line.readGChar();
+			float x = line.readGChar() + ((float)level->mapPosition.x() * 64);
+			float y = line.readGChar() + ((float)level->mapPosition.y() * 64);
 			CString image = line.readString("#");
 			CString code = line.readString("").replaceAll("\xa7", "\n");
 
@@ -663,8 +654,8 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, std::string_view fileVersion, fs::F
 				image.clear();
 
 			// Grab the NPC location.
-			float x = (float)strtofloat(curLine[2 + offset]);
-			float y = (float)strtofloat(curLine[3 + offset]);
+			float x = (float)strtofloat(curLine[2 + offset]) + ((float)level->mapPosition.x() * 64);
+			float y = (float)strtofloat(curLine[3 + offset]) + ((float)level->mapPosition.y() * 64);
 
 			// Grab the NPC code.
 			CString code;

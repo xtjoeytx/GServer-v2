@@ -151,10 +151,19 @@ std::shared_ptr<Level> Level::createLevel(std::string_view levelName, std::optio
 	return level;
 }
 
-std::shared_ptr<Level> Level::clone(LevelPtr level)
+std::shared_ptr<Level> Level::clone(LevelPtr level, std::string_view name)
 {
 	if (level == nullptr) return nullptr;
-	return LevelLoader::loadLevel(std::filesystem::path{ level->levelName });
+	/*
+	* TODO: The level needs to be stubbed, and the new name has to be set, without being overwritten.
+	* If not, then serverside NPCs are going to muck everything up when they try to register to the level.
+	auto server = BabyDI::Get<Server>();
+	auto cloned = server->stubOrGetLevel(name);
+	LevelLoader::loadLevelInto(cloned, std::filesystem::path{ level->levelName });
+	cloned->levelName = name;
+	cloned->m_filePath = level->m_filePath.parent_path() / name;
+	*/
+	return nullptr;
 }
 
 //----------------------------

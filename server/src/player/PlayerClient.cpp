@@ -1183,12 +1183,15 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, LocalPixelPosition p
 
 	// Check if the level is a singleplayer level.
 	// If so, see if we have been there before.  If not, duplicate it.
+	/*
+	* TODO(Nalin): Singleplayer levels
 	if (level->isSingleplayer)
 	{
 		auto nl = (m_singleplayerLevels.find(level->levelName) != m_singleplayerLevels.end() ? m_singleplayerLevels[level->levelName] : nullptr);
 		if (nl != nullptr)
 		{
-			level = Level::clone(level);
+			auto newName = std::format("{}.{}.nw", level->levelName, account.name);
+			level = Level::clone(level, newName);
 			m_currentLevel = level;
 			m_singleplayerLevels[level->levelName] = level;
 		}
@@ -1197,6 +1200,7 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, LocalPixelPosition p
 			m_currentLevel = nl;
 		}
 	}
+	*/
 
 	// Check if the map is a group map.
 	/* TODO(Nalin): Group maps.

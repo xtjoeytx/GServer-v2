@@ -47,16 +47,13 @@ class Level : public std::enable_shared_from_this<Level>
 {
 	friend class LevelLoader;
 
-private:
-	Level();
-
 public:
-	//! Destructor.
+	Level();
 	~Level();
 
 public:
 	static std::shared_ptr<Level> createLevel(std::string_view levelName = ""sv, std::optional<uint16_t> fillTile = std::nullopt);
-	static std::shared_ptr<Level> clone(LevelPtr level);
+	static std::shared_ptr<Level> clone(LevelPtr level, std::string_view name);
 
 public:
 	bool loaded = false;
