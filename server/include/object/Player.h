@@ -213,6 +213,7 @@ public:
 	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;
 	[[inline]] TilePosition getTilePosition() const noexcept;
 	virtual double getCalculatedTileZ() const noexcept;
+	virtual std::string getComputedLevelName() const { return account.level; }
 
 	// Set Properties
 	void setNick(CString pNickName, bool force = false);
@@ -612,7 +613,7 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::SPRITE,		PropertySprite,				account.character.sprite, account.character.direction) \
 	DO(PlayerProp::STATUS,		PropertyNumeric<GBYTE1>,	account.status) \
 	DO(PlayerProp::CARRYSPRITE,	PropertyUnsafeByte,			m_carrySprite) \
-	DO(PlayerProp::CURLEVEL,	PropertyString,				account.level) \
+	DO(PlayerProp::CURLEVEL,	PropertyString,				getComputedLevelName()) \
 	DO(PlayerProp::HORSEGIF,	PropertyString,				account.character.horseImage) \
 	DO(PlayerProp::HORSEBUSHES,	PropertyNumeric<GBYTE1>,	m_horseBombCount) \
 	DO(PlayerProp::EFFECTCOLORS,PropertyEffectColors,		m_effectColors) \

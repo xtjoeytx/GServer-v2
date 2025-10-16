@@ -1355,7 +1355,7 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 	// Send board changes, chests, horses, and baddies.
 	if (!fromAdjacent)
 	{
-		sendPacket(CString() << level->getBoardChangesPacket(cachedModTime));
+		level->sendBoardChangesToPlayer(self, convertFromTimeT(cachedModTime));
 		level->sendHorsesToPlayer(self);
 		if (!level->isOnGmap())
 			level->sendBaddiesToPlayer(self);
@@ -1406,8 +1406,6 @@ bool PlayerClient::sendLevel(std::shared_ptr<Level> level, time_t modTime, bool 
 
 	// Fix our levels.
 	sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << getComputedLevelName());
-	if (fromAdjacent)
-		sendPacket(CString() >> (char)PLO_LEVELNAME << getComputedLevelName());
 
 	// Send connecting player props to players in nearby levels.
 	if (!level->isSingleplayer)
@@ -1442,7 +1440,7 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> level, time_t modTime, bo
 	if (modTime == -1) modTime = levelModTime;
 	if (cachedModTime != 0)
 	{
-		sendPacket(CString() << level->getBoardChangesPacket(cachedModTime));
+		level->sendBoardChangesToPlayer(self, convertFromTimeT(cachedModTime));
 	}
 	else
 	{
@@ -1468,7 +1466,7 @@ bool PlayerClient::sendLevel141(std::shared_ptr<Level> level, time_t modTime, bo
 
 		if (!fromAdjacent)
 		{
-			sendPacket(CString() << level->getBoardChangesPacket2(cachedModTime));
+			level->sendBoardChangesToPlayer(self, convertFromTimeT(cachedModTime));
 			level->sendChestsToPlayer(self);
 		}
 	}

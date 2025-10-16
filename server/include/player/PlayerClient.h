@@ -84,7 +84,7 @@ public:
 	virtual double getCalculatedTileZ() const noexcept override;
 
 	// Level manipulation
-	std::string getComputedLevelName() const;
+	virtual std::string getComputedLevelName() const override;
 	std::shared_ptr<Level> getLevel() const;
 
 	// Forcibly move a player (the client doesn't know it is transitioning levels).

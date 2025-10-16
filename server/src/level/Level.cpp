@@ -564,28 +564,46 @@ CString Level::getLayerPacket(int layer)
 	return retVal;
 }
 
-CString Level::getBoardChangesPacket(time_t time)
+void Level::sendBoardChangesToPlayer(std::shared_ptr<Player> player, clock::time_point time) const
 {
-	CString retVal;
-	retVal >> (char)PLO_LEVELBOARD;
-	for (const auto& change : m_boardChanges)
-	{
-		if (clock::to_time_t(change.modTime) >= time)
-			retVal << change.getPropsForSingleLevel();
-	}
-	return retVal;
-}
+	if (player == nullptr)
+		return;
 
-CString Level::getBoardChangesPacket2(time_t time)
-{
-	CString retVal;
-	retVal >> (char)PLO_BOARDMODIFY;
+	// Determine the style of board changes to send.
+	// 0 = PLO_BOARDMODIFY2 with pixel position
+	// 1 = PLO_BOARDMODIFY2 with map position
+	// 2 = PLO_LEVELBOARD with batched changes
+	// 3 = PLO_BOARDMODIFY
+	int style = 0;
+	if (player->getVersion() < CLVER_4_0211)
+		style = isOnGmap() ? 1 : 2;
+	else if (player->getVersion() < CLVER_2_1)
+		style = 3;
+
+	if (style == 2)
+	{
+		CString retVal;
+		retVal >> (char)PLO_LEVELBOARD;
+		for (const auto& change : m_boardChanges)
+		{
+			if (change.modTime >= time)
+				retVal << change.getPropsForSingleLevel();
+		}
+		if (retVal.length() > 1)
+			player->sendPacket(retVal);
+		return;
+	}
+
+	// Send all board changes.
 	for (const auto& change : m_boardChanges)
 	{
-		if (clock::to_time_t(change.modTime) >= time)
-			retVal << change.getPropsForSingleLevel();
+		if (style == 0)
+			player->sendPacket(CString() >> (char)PLO_BOARDMODIFY2 << change.getPropsForMapNewMain());
+		else if (style == 1)
+			player->sendPacket(CString() >> (char)PLO_BOARDMODIFY2 << change.getPropsForMapClassic());
+		else if (style == 3)
+			player->sendPacket(CString() >> (char)PLO_BOARDMODIFY << change.getPropsForSingleLevel());
 	}
-	return retVal;
 }
 
 void Level::sendBoardHeightsToPlayer(std::shared_ptr<Player> player) const
@@ -888,7 +906,7 @@ bool Level::alterBoard(CString& tileData, const LocalWholeTileRectangleArea& are
 	{
 		LevelBoardChange& change = *i;
 		auto changeLocalPos = toLocalWholeTilePosition(change.area.position);
-		if ((changeLocalPos.x() >= area.position.x() && changeLocalPos.y() + change.area.size.width() <= area.position.x() + area.size.width()) &&
+		if ((changeLocalPos.x() >= area.position.x() && changeLocalPos.x() + change.area.size.width() <= area.position.x() + area.size.width()) &&
 			(changeLocalPos.y() >= area.position.y() && changeLocalPos.y() + change.area.size.height() <= area.position.y() + area.size.height()))
 		{
 			i = m_boardChanges.erase(i);
@@ -948,12 +966,9 @@ void Level::applyBoardChangeFromScriptTiles(const LocalWholeTileRectangleArea& a
 	// Apply the board update.
 	if (alterBoard(tileData, area, nullptr, forceRespawn, allowRespawn))
 	{
-		auto server = BabyDI::Get<Server>();
-
 		// Send the board update to nearby players.
 		auto& boardChange = m_boardChanges.back();
-		server->sendPacketToNearby(CString() >> (char)PLO_BOARDMODIFY2 << boardChange.getPropsForMap(), toPixelPosition(boardChange.area.position), shared_from_this(), {}, [](const Player* player) { return player->getVersion() >= CLVER_4_0211; });
-		server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << boardChange.getPropsForSingleLevel(), shared_from_this(), {}, [](const Player* player) { return player->getVersion() < CLVER_4_0211; });
+		boardChange.sendToPlayersOnLevel();
 	}
 }
 

@@ -23,12 +23,15 @@ public:
 
 public:
 	void update(const precise_clock::time_point& time);
+	void sendToPlayersOnLevel() const;
 
 public:
 	CString getTiles() const { return m_newTiles; }
 	CString getPropsForSingleLevel() const;
-	CString getPropsForMap() const;
+	CString getPropsForMapClassic() const;
+	CString getPropsForMapNewMain() const;
 	void swapTiles();
+	bool willRespawn() const { return m_timeout.isRunning(); }
 
 public:
 	WholeTileRectangleArea area;

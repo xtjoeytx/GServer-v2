@@ -111,8 +111,7 @@ public:
 public:
 	CString getBoardPacket();
 	CString getLayerPacket(int i);
-	CString getBoardChangesPacket(time_t time);
-	CString getBoardChangesPacket2(time_t time);
+	void sendBoardChangesToPlayer(std::shared_ptr<Player> player, clock::time_point time) const;
 	void sendBoardHeightsToPlayer(std::shared_ptr<Player> player) const;
 	void sendBaddiesToPlayer(std::shared_ptr<Player> player) const;
 	void sendChestsToPlayer(std::shared_ptr<Player> player) const;
