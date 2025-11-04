@@ -125,7 +125,7 @@ void NPC::resetToInitialState()
 	moveQueue.clear();
 
 	// Warp.
-	if (auto initialLevel = server->getLevel(m_initialLevel); initialLevel != nullptr)
+	if (auto initialLevel = server->stubOrGetLevel(m_initialLevel); initialLevel != nullptr)
 		warp(initialLevel, character.getLocalPosition());
 }
 
@@ -510,10 +510,28 @@ void NPC::setScript(std::string_view script)
 {
 	//auto profile = log::Profile(log::server, "NPC::setScript");
 
+	// Set the script.
 	auto server = BabyDI::Get<Server>();
 	setJoinedClasses("");
 	m_script = std::move(Script{ name, script });
 	modTime[PROPID(NPCProp::SCRIPT)] = server->getFrameStartTime();
+
+	// Check if we have joined classes already (due to a cached script).
+	for (const auto& [name, classPtr] : m_script.getServerJoinedClasses())
+	{
+		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
+		{
+			auto it = std::ranges::find_if(m_joinedClasses, [&scriptClass](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == scriptClass->name; });
+			if (it != m_joinedClasses.end())
+				continue;
+
+			auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
+#ifdef DEBUG
+			log::printLine(log::server, "[DEBUG] NPC '{}' auto-joining class '{}' due to cached script.", name, scriptClass->name);
+#endif
+			m_joinedClasses.emplace_back(handle, scriptClass);
+		}
+	}
 
 	auto clientside = m_script.getClientSide();
 
@@ -596,6 +614,7 @@ void NPC::setJoinedClasses(std::string_view classes)
 
 	m_joinedClasses.clear();
 
+	bool sendToLevel = false;
 	while (!classes.empty())
 	{
 		auto className = string::extractLine(classes, ',');
@@ -607,11 +626,17 @@ void NPC::setJoinedClasses(std::string_view classes)
 		{
 			auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
 			m_joinedClasses.emplace_back(handle, scriptClass);
-			sendScriptUpdatesToLevel(lastUpdateTime);
 			modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
 			lastUpdateTime = server->getFrameStartTime();
+
+			// If the joined script has clientside code, delete the NPC and resend the new code.
+			if (!scriptClass->getScript().getClientSide().empty())
+				sendToLevel = true;
 		}
 	}
+
+	if (sendToLevel)
+		sendScriptUpdatesToLevel(lastUpdateTime);
 }
 
 void NPC::joinClass(std::string_view className)
@@ -651,13 +676,20 @@ void NPC::leaveClass(std::string_view className)
 	if (server == nullptr || !server->hasNPCServer())
 		return;
 
+	bool sendToLevel = false;
 	if (auto scriptClass = it->second.lock(); scriptClass != nullptr)
 	{
 		scriptClass->onScriptModified.unsubscribe(it->first);
-		sendScriptUpdatesToLevel(lastUpdateTime);
 		modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
 		lastUpdateTime = server->getFrameStartTime();
+
+		// If the joined script has clientside code, delete the NPC and resend the new code.
+		if (!scriptClass->getScript().getClientSide().empty())
+			sendToLevel = true;
 	}
+
+	if (sendToLevel)
+		sendScriptUpdatesToLevel(lastUpdateTime);
 
 	m_joinedClasses.erase(it);
 }

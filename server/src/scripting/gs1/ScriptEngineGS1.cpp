@@ -218,32 +218,17 @@ CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::s
 	return result;
 }
 
-bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context)
+//----------------------------
+
+bool ScriptEngineGS1::prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context, NPCPtr& npc, LevelPtr& level)
 {
-	auto* wrapper = std::any_cast<GS1ScriptWrapper>(context->script.get());
-	if (wrapper == nullptr)
-		return false;
-
-	auto* server = BabyDI::Get<Server>();
-
-#if !defined(DEBUG) || 1
-	// If the event is not in the NPC script, don't bother executing it.
-	if (event.type != ScriptEventType::CREATED && event.type != ScriptEventType::INITIALIZED)
-	{
-		const auto& eventName = determineEventName(event);
-		if (!wrapper->parser->identifiers.contains(eventName) && !server->getSettings().getBool("runallscriptevents", false))
-			return false;
-	}
-#endif
-
 	auto& [source_id, source_type] = source;
 	if (source_type != ScriptObjectType::NPC && source_type != ScriptObjectType::WEAPON)
 		throw std::invalid_argument("GS1 scripts can only be executed from NPCs and weapons.");
 
+	auto server = BabyDI::Get<Server>();
 	PlayerClientPtr player = nullptr;
-	NPCPtr npc = nullptr;
 	WeaponPtr weapon = nullptr;
-	LevelPtr level = nullptr;
 
 	// Get whatever links we can.
 	if (source_type == ScriptObjectType::PLAYER)
@@ -270,13 +255,61 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 
 	// Determine the "who" for error messages.
 	if (npc != nullptr)
-		wrapper->visitor->who = npc->name;
+		wrapper.visitor->who = npc->name;
 	else if (weapon != nullptr)
-		wrapper->visitor->who = weapon->name;
+		wrapper.visitor->who = weapon->name;
 	else if (player != nullptr)
-		wrapper->visitor->who = player->account.name;
+		wrapper.visitor->who = player->account.name;
 	else
-		wrapper->visitor->who = "unknown";
+		wrapper.visitor->who = "unknown";
+
+	// Set the built-in store.
+	wrapper.visitor->builtInStore = &wrapper.variables;
+
+	// Set events.
+	setTriggerActionAndCustomEventFlags(event, wrapper.visitor->flagStore);
+	setEventFlags(event.type, wrapper.visitor->flagStore);
+
+	// Set flags.
+	setPlayerFlags(wrapper.variables, npc, player);
+	setNPCFlags(event, wrapper.variables, npc);
+	setLevelFlags(wrapper.variables, npc, level);
+	setWeaponFlags(event, source, wrapper.variables);
+	setOtherFlags(event, source, wrapper.variables, npc, player, level);
+
+	// Set variables.
+	setNPCVariables(wrapper.variables, npc);
+	setPlayerVariables(wrapper.variables, player);
+	setLevelVariables(wrapper.variables, level);
+	setOtherVariables(wrapper.variables, event);
+
+	return true;
+}
+
+//----------------------------
+
+bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context)
+{
+	auto* wrapper = std::any_cast<GS1ScriptWrapper>(context->script.get());
+	if (wrapper == nullptr)
+		return false;
+
+	auto* server = BabyDI::Get<Server>();
+	NPCPtr npc = nullptr;
+	LevelPtr level = nullptr;
+
+#if !defined(DEBUG) || 1
+	// If the event is not in the NPC script, don't bother executing it.
+	if (event.type != ScriptEventType::CREATED && event.type != ScriptEventType::INITIALIZED)
+	{
+		const auto& eventName = determineEventName(event);
+		if (!wrapper->parser->identifiers.contains(eventName) && !server->getSettings().getBool("runallscriptevents", false))
+			return false;
+	}
+#endif
+
+	if (!prepare(*wrapper, event, source, context, npc, level))
+		return false;
 
 #if defined(DEBUG) && 0
 	// Log some testing stuff.
@@ -290,26 +323,6 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 		}
 	}
 #endif
-
-	// Set the built-in store.
-	wrapper->visitor->builtInStore = &wrapper->variables;
-
-	// Set events.
-	setTriggerActionAndCustomEventFlags(event, wrapper->visitor->flagStore);
-	setEventFlags(event.type, wrapper->visitor->flagStore);
-
-	// Set flags.
-	setPlayerFlags(wrapper->variables, npc, player);
-	setNPCFlags(event, wrapper->variables, npc);
-	setLevelFlags(wrapper->variables, npc, level);
-	setWeaponFlags(event, source, wrapper->variables);
-	setOtherFlags(event, source, wrapper->variables, npc, player, level);
-
-	// Set variables.
-	setNPCVariables(wrapper->variables, npc);
-	setPlayerVariables(wrapper->variables, player);
-	setLevelVariables(wrapper->variables, level);
-	setOtherVariables(wrapper->variables, event);
 
 	// If this is a control-NPC, temporarily adjust the level it lives in.
 	bool isControlNPC = npc && npc->scriptType == NPCTYPE_CONTROL;
@@ -327,7 +340,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 	try
 	{
 		// Execute the script.
-		wrapper->visitor->execute(event, source, *wrapper->parser.get(), wrapper->program);
+		wrapper->visitor->execute(event, source, *wrapper->parser.get(), *context, wrapper->program);
 	}
 	catch (std::exception& e)
 	{
@@ -346,19 +359,17 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 
 	// Special case to handle "created" events for the NPC.
 	if (npc != nullptr && event.type == ScriptEventType::CREATED)
-	{
 		npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags | PROPID(NPCVisFlags::CREATED)));
-	}
 
-	// Clear the variables (to clear reference counted pointers, just in case).
-	wrapper->variables.clearTemporary();
-	wrapper->visitor->flagStore.clearTemporary();
-
+	cleanup(*wrapper);
 	return true;
 }
 
 bool ScriptEngineGS1::executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context)
 {
+	if (context == nullptr)
+		return false;
+
 	auto* wrapper = std::any_cast<GS1ScriptWrapper>(context->script.get());
 	if (wrapper == nullptr)
 		return false;
@@ -368,73 +379,16 @@ bool ScriptEngineGS1::executeFunction(std::string_view function, ScriptEvent& ev
 	if (userFunction == wrapper->parser->userFunctions.end())
 		return false;
 
-	auto& [source_id, source_type] = source;
-	if (source_type != ScriptObjectType::NPC && source_type != ScriptObjectType::WEAPON)
-		throw std::invalid_argument("GS1 scripts can only be executed from NPCs and weapons.");
-
-	auto server = BabyDI::Get<Server>();
-	PlayerClientPtr player = nullptr;
 	NPCPtr npc = nullptr;
-	WeaponPtr weapon = nullptr;
 	LevelPtr level = nullptr;
 
-	// Get whatever links we can.
-	if (source_type == ScriptObjectType::PLAYER)
-		player = server->getPlayer<PlayerClient>(source_id);
-	if (source_type == ScriptObjectType::NPC)
-		npc = server->getNPC(source_id);
-	if (source_type == ScriptObjectType::WEAPON)
-	{
-		if (auto it = server->getWeaponList().find(source_id); it != server->getWeaponList().end())
-			weapon = it->second;
-	}
-	if (player != nullptr)
-		level = player->getLevel();
-	if (npc != nullptr)
-		level = npc->getLevel();
-
-	// Try to get variables from the initiator now.
-	if (player == nullptr && event.initiator.second == ScriptObjectType::PLAYER)
-		player = server->getPlayer<PlayerClient>(event.initiator.first);
-	if (npc == nullptr && event.initiator.second == ScriptObjectType::NPC)
-		npc = server->getNPC(event.initiator.first);
-	if (level == nullptr)
-		level = (player != nullptr ? player->getLevel() : (npc != nullptr ? npc->getLevel() : nullptr));
-
-	// Determine the "who" for error messages.
-	if (npc != nullptr)
-		wrapper->visitor->who = npc->name;
-	else if (weapon != nullptr)
-		wrapper->visitor->who = weapon->name;
-	else if (player != nullptr)
-		wrapper->visitor->who = player->account.name;
-	else
-		wrapper->visitor->who = "unknown";
-
-	// Set the built-in store.
-	wrapper->visitor->builtInStore = &wrapper->variables;
-
-	// Set events.
-	setTriggerActionAndCustomEventFlags(event, wrapper->visitor->flagStore);
-	setEventFlags(event.type, wrapper->visitor->flagStore);
-
-	// Set flags.
-	setPlayerFlags(wrapper->variables, npc, player);
-	setNPCFlags(event, wrapper->variables, npc);
-	setLevelFlags(wrapper->variables, npc, level);
-	setWeaponFlags(event, source, wrapper->variables);
-	setOtherFlags(event, source, wrapper->variables, npc, player, level);
-
-	// Set variables.
-	setNPCVariables(wrapper->variables, npc);
-	setPlayerVariables(wrapper->variables, player);
-	setLevelVariables(wrapper->variables, level);
-	setOtherVariables(wrapper->variables, event);
+	if (!prepare(*wrapper, event, source, context, npc, level))
+		return false;
 
 	try
 	{
 		// Execute the script.
-		wrapper->visitor->execute(event, source, *wrapper->parser.get(), userFunction->second);
+		wrapper->visitor->execute(event, source, *wrapper->parser.get(), *context, userFunction->second);
 	}
 	catch (std::exception& e)
 	{
@@ -447,11 +401,17 @@ bool ScriptEngineGS1::executeFunction(std::string_view function, ScriptEvent& ev
 		context->script = nullptr;
 	}
 
-	// Clear the variables (to clear reference counted pointers, just in case).
-	wrapper->variables.clearTemporary();
-	wrapper->visitor->flagStore.clearTemporary();
-
+	cleanup(*wrapper);
 	return true;
+}
+
+//----------------------------
+
+void ScriptEngineGS1::cleanup(GS1ScriptWrapper& wrapper)
+{
+	// Clear the variables (to clear reference counted pointers, just in case).
+	wrapper.variables.clearTemporary();
+	wrapper.visitor->flagStore.clearTemporary();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

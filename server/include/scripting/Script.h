@@ -2,9 +2,11 @@
 #define SCRIPT_H
 
 #include <cstdint>
+#include <generator>
 #include <memory>
 #include <string_view>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -55,6 +57,9 @@ public:
 	[[inline]] Script& setModifiedSource(const std::string& source) noexcept;
 	[[inline]] Script& setClientCompiledScript(CompiledScriptResultPtr script) noexcept;
 	[[inline]] Script& setServerCompiledScript(CompiledScriptResultPtr script) noexcept;
+
+public:
+	std::generator<decltype(ScriptExecutionContext::joinedClasses)::const_reference> getServerJoinedClasses() const noexcept;
 
 public:
 	void executeEvents(ScriptContainer& container, ScriptObject source) const;

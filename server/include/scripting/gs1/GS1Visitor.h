@@ -17,6 +17,7 @@
 
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/StringUtils.h>
 
@@ -34,13 +35,14 @@ namespace preagonal::gs1::grammar
 class GS1Visitor : public GS1ParserBaseVisitor
 {
 public:
-	void execute(const ScriptEvent& event, ScriptObject source, GS1Parser& parser, antlr4::tree::ParseTree* startNode);
+	void execute(const ScriptEvent& event, ScriptObject source, GS1Parser& parser, ScriptExecutionContext& context, antlr4::tree::ParseTree* startNode);
 	void reportError(std::string_view message, antlr4::tree::ParseTree* node = nullptr, bool abort = true);
 
 public:
 	std::vector<std::string> tokenizeTokens;
 	GameVariableStore flagStore;
 	GameVariableStore* builtInStore = nullptr;
+	ScriptExecutionContext* scriptContext = nullptr;
 	bool expectingFlag = false;
 	bool expectingTimeoutAsVariable = false;
 	std::string who;

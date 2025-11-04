@@ -164,6 +164,10 @@ public:
 public:
 	virtual bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
 	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
+
+protected:
+	bool prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context, NPCPtr& npc, LevelPtr& level);
+	void cleanup(GS1ScriptWrapper& wrapper);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

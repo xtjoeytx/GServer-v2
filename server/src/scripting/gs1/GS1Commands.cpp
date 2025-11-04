@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <exception>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -457,8 +458,18 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 		// Execute the command.
 		it->second(visitor, commandName, arguments);
 	}
-	catch (...)
+	catch (const std::logic_error& ex)
 	{
+		auto server = BabyDI::Get<Server>();
+		log::printLine(log::npc, "[WARNING] NPC '{}', error: {}", visitor->who, ex.what());
+		server->sendToNC(std::format("Script problem: NPC '{}', issue: {}", visitor->who, ex.what()));
+	}
+	catch (const std::exception& ex)
+	{
+		auto server = BabyDI::Get<Server>();
+		log::printLine(log::npc, "[ERROR] NPC '{}', error: {}", visitor->who, ex.what());
+		server->sendToNC(std::format("Script error: NPC '{}', error: {}", visitor->who, ex.what()));
+
 		if (popContext)
 			visitor->popSource();
 		throw;
@@ -1350,6 +1361,7 @@ void fn_join(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 
 	auto class_ = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto* server = BabyDI::Get<Server>();
+	visitor->scriptContext->joinedClasses.insert({ class_, server->getNPCServer()->getClass(class_) });
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{

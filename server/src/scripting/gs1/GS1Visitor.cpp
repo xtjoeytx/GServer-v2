@@ -40,6 +40,7 @@
 #include <scripting/Script.h>
 #include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
@@ -503,8 +504,10 @@ void GS1Visitor::setCurrentPlayerVariables(std::optional<ScriptObject> source)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GS1Visitor::execute(const ScriptEvent& event, ScriptObject source, GS1Parser& parser, antlr4::tree::ParseTree* startNode)
+void GS1Visitor::execute(const ScriptEvent& event, ScriptObject source, GS1Parser& parser, ScriptExecutionContext& context, antlr4::tree::ParseTree* startNode)
 {
+	scriptContext = &context;
+
 	m_parser = &parser;
 	m_event = &event;
 	m_originalSource = source;

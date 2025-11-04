@@ -277,7 +277,7 @@ void NPCServer::loadDatabaseNPCs()
 
 		auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
 		if (auto npc = addNPCFromFile(info->file); npc != nullptr)
-			log::print(log::server, "[{}] {}", npc->id, info->file.stem().generic_string());
+			log::print(log::server, "[{}] {}", npc->id, npc->name);
 	}
 }
 

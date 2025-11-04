@@ -2,9 +2,11 @@
 #include <any>
 #include <array>
 #include <format>
+#include <generator>
 #include <iterator>
 #include <string_view>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <BabyDI.h>
@@ -17,6 +19,7 @@
 #include <scripting/IScriptEngine.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/StringUtils.h>
@@ -159,6 +162,23 @@ static std::string performClientSideJoinHack(std::string_view code)
 	}
 
 	return result;
+}
+
+//----------------------------
+
+std::generator<decltype(ScriptExecutionContext::joinedClasses)::const_reference> Script::getServerJoinedClasses() const noexcept
+{
+	if (m_server_script == nullptr)
+		co_return;
+
+	for (const auto& kvp : m_server_script->joinedClasses)
+	{
+		co_yield kvp;
+
+		// Get child classes too.
+		if (auto class_ = kvp.second.lock(); class_ != nullptr)
+			co_yield std::ranges::elements_of(class_->getScript().getServerJoinedClasses());
+	}
 }
 
 //----------------------------

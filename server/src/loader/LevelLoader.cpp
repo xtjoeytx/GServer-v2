@@ -473,13 +473,11 @@ LevelPtr LevelLoader::loadGraal(LevelPtr level, std::string_view fileVersion, fs
 	// Load NPCs.
 	{
 		auto* server = BabyDI::Get<Server>();
+		log::printLine(log::server, "Loading NPCs for level '{}'.", level->levelName);
 
 		std::unique_ptr<log::Indent> indent;
 		if (server->hasNPCServer())
-		{
 			indent = std::make_unique<log::Indent>(log::server.indent(log::server.indentLevel != 0 ? 1 : 0));
-			log::printLine(log::server, "Loading NPCs for level '{}'.", level->levelName);
-		}
 
 		while (fileData.bytesLeft())
 		{
@@ -548,13 +546,11 @@ LevelPtr LevelLoader::loadNW(LevelPtr level, std::string_view fileVersion, fs::F
 		return nullptr;
 
 	auto* server = BabyDI::Get<Server>();
+	log::printLine(log::server, "Loading NPCs for level '{}'.", level->levelName);
 
 	std::unique_ptr<log::Indent> indent;
 	if (server->hasNPCServer() && fileData.contains("NPCEND"))
-	{
 		indent = std::make_unique<log::Indent>(log::server.indent(log::server.indentLevel != 0 ? 1 : 0));
-		log::printLine(log::server, "Loading NPCs for level '{}'.", level->levelName);
-	}
 
 	// Parse Level
 	for (auto i = fileLines.begin(); i != fileLines.end(); ++i)
