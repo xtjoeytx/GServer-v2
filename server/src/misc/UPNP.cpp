@@ -17,6 +17,9 @@
 #include <miniupnpc.h>
 #include <miniwget.h>
 #include <upnpcommands.h>
+#if DEBUG
+#include <portlistingparse.h>
+#endif
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,7 +91,52 @@ void UPNP::addPortForward(std::string_view address, std::string_view port)
 	if (m_urls.controlURL == 0 || m_urls.controlURL[0] == '\0')
 		return;
 
-	int r = UPNP_AddPortMapping(m_urls.controlURL, m_data.first.servicetype, port.data(), port.data(), address.data(), "Graal GServer", "TCP", 0, 0);
+	int r = UPNP_AddPortMapping(m_urls.controlURL, m_data.first.servicetype, port.data(), port.data(), address.data(), "Graal GServer", "TCP", "", 0);
+	if (r == UPNPCOMMAND_CONFLICTING_MAPPING)
+	{
+		// Check if this port map was likely created by us and was left behind.
+		char intClient[16] = { 0 };
+		char intPort[6] = { 0 };
+		char desc[80] = { 0 };
+		int r2 = UPNP_GetSpecificPortMappingEntry(m_urls.controlURL, m_data.first.servicetype, port.data(), "TCP", "", intClient, intPort, desc, 0, 0);
+		if (r2 == 0 && std::string_view{ desc }.find("Graal GServer") != std::string_view::npos)
+		{
+			log::printLine(log::server, "[UPnP] Found existing port mapping on port {} likely created by us.", port);
+			m_portsForwarded.emplace(port);
+			return;
+		}
+#if DEBUG
+		else
+		{
+			unsigned int entries;
+			if (UPNP_GetPortMappingNumberOfEntries(m_urls.controlURL, m_data.first.servicetype, &entries) == UPNPCOMMAND_SUCCESS)
+			{
+				char index[6] = { 0 };
+				for (auto i = 0; i < entries; ++i)
+				{
+					std::snprintf(index, 6, "%u", i);
+					UPNP_GetGenericPortMappingEntry(m_urls.controlURL, m_data.first.servicetype, index, 0, intClient, intPort, 0, desc, 0, 0, 0);
+					log::printLine(log::server, "[UPnP] Existing mapping #{}: {} -> {} ({})", i, intClient, intPort, desc);
+				}
+			}
+			else
+			{
+				PortMappingParserData parserData;
+				memset(&parserData, 0, sizeof(PortMappingParserData));
+				if (UPNP_GetListOfPortMappings(m_urls.controlURL, m_data.first.servicetype, "1", "65535", "TCP", 0, &parserData) == UPNPCOMMAND_SUCCESS)
+				{
+					int i = 0;
+					for (auto pm = parserData.l_head; pm != nullptr; pm = pm->l_next)
+					{
+						log::printLine(log::server, "[UPnP] {}: {} {}", i, pm->description, pm->externalPort);
+						i++;
+					}
+					FreePortListing(&parserData);
+				}
+			}
+		}
+#endif
+	}
 	if (r != 0)
 	{
 		log::print(log::server, "** [UPnP] Failed to forward port {} to {}: ", port, address);
