@@ -52,18 +52,51 @@ namespace preagonal
 
 HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 {
-	time_t modTime = 0;
+	std::optional<clock::time_point> modTime;
 
 	if (pPacket[0] - 32 == PLI_LEVELWARPMOD)
-		modTime = (time_t)pPacket.readGUInt5();
+		modTime = clock::from_time_t((time_t)pPacket.readGUInt5());
 
-	Position<int16_t> pos = { static_cast<int16_t>(pPacket.readGChar() * 8), static_cast<int16_t>(pPacket.readGChar() * 8) };
-	CString newLevel = pPacket.readString("");
-	if (auto level = m_server->getLevel(newLevel.toStringView()); level != nullptr)
-		enterLevel(level, pos, modTime);
-	else if (auto level = getLevel(); level != nullptr)
-		warp(level->levelName, account.character.getLocalPosition());
+	LocalPixelPosition pos = { static_cast<int16_t>(pPacket.readGChar() * 8), static_cast<int16_t>(pPacket.readGChar() * 8) };
+	CString newLevelC = pPacket.readString("");
+	std::string_view newLevel = newLevelC.toStringView();
+
+	bool success = false;
+
+	// If this is a gmap, in order to prevent the client from glitching out, forcefully warp them to the gmap.
+	if (newLevel.ends_with(".gmap"))
+	{
+		success = warp(newLevel, toPixelPosition({ 0, 0 }, pos), modTime);
+	}
 	else
+	{
+		if (auto level = m_server->getLoadedLevel(newLevel, shared_from_this()); level != nullptr)
+		{
+			// If this level is part of a gmap, send the static data first, then warp second (so the appear on the correct level).
+			if (level->isGmap() && level->levelName != newLevel)
+			{
+				// Send the static data first.
+				auto subLevel = level->getSubLevelByName(newLevel);
+				success = sendStaticLevelData(subLevel->staticData.lock(), subLevel, modTime);
+
+				// Now warp.
+				success = success && warp(level, toPixelPosition(level->getSubLevelOrigin(subLevel).value_or(PixelPosition{}), pos), modTime);
+			}
+			// Otherwise, just enter the level.
+			else
+			{
+				success = enterLevel(level, toPixelPosition({ 0, 0 }, pos), modTime);
+			}
+		}
+	}
+
+	// If we failed, try to resolve this.
+	if (!success)
+	{
+		if (auto level = getLevel(); level != nullptr)
+			success = warp(level->levelName, account.character.getLocalPosition());
+	}
+	if (!success)
 	{
 		CString unstickLevel = m_server->getSettings().getStr("unstickmelevel", "onlinestartlocal.nw");
 		float unstickX = m_server->getSettings().getFloat("unstickmex", 30.0f);
@@ -88,9 +121,19 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 	if (level == nullptr)
 		return HandlePacketResult::Handled;
 
+	auto globalPosition = toPixelPosition(getSubLevelOrigin(), LocalWholeTilePosition{ loc[0], loc[1] });
+
 	// Alter level data.
-	if (level->alterBoard(tiles, { { loc[0], loc[1] }, { dim[0], dim[1] } }, this))
-		m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOARDMODIFY << (pPacket.text() + 1), level);
+	if (level->alterBoard(tiles, { toWholeTilePosition(globalPosition), { dim[0], dim[1] } }, this))
+	{
+		if (!level->isGmap())
+			m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOARDMODIFY << (pPacket.text() + 1), getGlobalPosition(), level, { m_id });
+		else
+		{
+			auto mapPosition = getMapPosition();
+			m_server->sendPacketToNearby(CString() >> (char)PLO_BOARDMODIFY2 >> (char)mapPosition.x() >> (char)mapPosition.y() << (pPacket.text() + 1), getGlobalPosition(), level, { m_id });
+		}
+	}
 
 	if (loc[0] < 0 || loc[0] > 63 || loc[1] < 0 || loc[1] > 63)
 		return HandlePacketResult::Handled;
@@ -100,7 +143,11 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 		return HandlePacketResult::Handled;
 
 	// Lay items when you destroy objects.
-	uint16_t oldTile = static_cast<uint16_t>((getLevel()->getTiles())[loc[0] + static_cast<size_t>(loc[1] * 64)]);
+	auto levelTiles = level->getTiles(getMapPosition());
+	if (!levelTiles.has_value())
+		return HandlePacketResult::Handled;
+
+	auto oldTile = levelTiles.value()->at(loc[0] + static_cast<size_t>(loc[1] * 64));
 	bool bushitems = settings.getBool("bushitems", true);
 	bool vasesdrop = settings.getBool("vasesdrop", true);
 	LevelItemType dropItem = LevelItemType::INVALID;
@@ -118,7 +165,7 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 
 	// Send the item now.
 	if (dropItem != LevelItemType::INVALID)
-		level->addItem(inform_client, level->convertToMapPosition(LocalWholeTilePosition{ loc[0], loc[1] }), dropItem);
+		level->addItem(inform_client, toPixelPosition(getSubLevelOrigin(), LocalWholeTilePosition{ loc[0], loc[1] }), dropItem);
 
 	return HandlePacketResult::Handled;
 }
@@ -170,7 +217,7 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_BOMBADD(CString& pPacket)
 {
-	[[maybe_unused]] float loc[2] = { pPacket.readGUChar() / 2.0f, pPacket.readGUChar() / 2.0f };
+	float loc[2] = { (pPacket.readGUChar() % 128) / 2.0f, (pPacket.readGUChar() % 128) / 2.0f };
 	[[maybe_unused]] unsigned char player_power = pPacket.readGUChar();
 	[[maybe_unused]] unsigned char player = player_power >> 2;
 	[[maybe_unused]] unsigned char power = player_power & 0x03;
@@ -178,53 +225,63 @@ HandlePacketResult PlayerClient::msgPLI_BOMBADD(CString& pPacket)
 	// How many 0.05 sec increments until it explodes.  Defaults to 55 (3 seconds since 0 counts too when the game counts).
 	[[maybe_unused]] std::chrono::milliseconds timeToExplode = (pPacket.readGUChar() * 50ms) + 50ms;
 
-	if (auto level = getLevel(); level != nullptr && m_server->hasNPCServer())
+	if (auto level = getLevel(); level != nullptr)
 	{
-		auto position = level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1]));
-		if (level->addBombFromClient(position, power, m_id, timeToExplode) == nullptr)
-			sendPacket(CString() >> (char)PLO_BOMBDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
+		if (m_server->hasNPCServer())
+		{
+			auto position = toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]);
+			if (level->addBombFromClient(position, power, m_id, timeToExplode) == nullptr)
+				sendPacket(CString() >> (char)PLO_BOMBDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
+		}
+		else
+		{
+			m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOMBADD >> (short)m_id << (pPacket.text() + 1), getGlobalPosition(), level, { m_id });
+		}
 	}
-	else
-	{
-		m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOMBADD >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
-	}
+
 	return HandlePacketResult::Handled;
 }
 
 HandlePacketResult PlayerClient::msgPLI_BOMBDEL(CString& pPacket)
 {
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BOMBDEL << (pPacket.text() + 1), m_currentLevel, { m_id });
-
-	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 	if (auto level = getLevel(); level != nullptr)
-		level->removeBomb(level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])));
+	{
+		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOMBDEL << (pPacket.text() + 1), getGlobalPosition(), level, { m_id });
+
+		float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
+		level->removeBomb(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]));
+	}
 
 	return HandlePacketResult::Handled;
 }
 
 HandlePacketResult PlayerClient::msgPLI_HORSEADD(CString& pPacket)
 {
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_HORSEADD << (pPacket.text() + 1), m_currentLevel, { m_id });
+	if (auto level = getLevel(); level != nullptr)
+	{
+		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_HORSEADD << (pPacket.text() + 1), getGlobalPosition(), level, { m_id });
 
-	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
-	uint8_t dir_bush = pPacket.readGUChar();
-	uint8_t hdir = dir_bush & 0x03;
-	uint8_t hbushes = dir_bush >> 2;
-	CString image = pPacket.readString("");
+		float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
+		uint8_t dir_bush = pPacket.readGUChar();
+		uint8_t hdir = dir_bush & 0x03;
+		uint8_t hbushes = dir_bush >> 2;
+		CString image = pPacket.readString("");
 
-	auto level = getLevel();
-	level->addHorse(image, level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])), hdir, hbushes);
+		level->addHorse(image, toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), hdir, hbushes);
+	}
+
 	return HandlePacketResult::Handled;
 }
 
 HandlePacketResult PlayerClient::msgPLI_HORSEDEL(CString& pPacket)
 {
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_HORSEDEL << (pPacket.text() + 1), m_currentLevel, { m_id });
-
-	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
-
 	if (auto level = getLevel(); level != nullptr)
-		level->removeHorse(level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])));
+	{
+		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_HORSEDEL << (pPacket.text() + 1), getGlobalPosition(), level, { m_id });
+
+		float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
+		level->removeHorse(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]));
+	}
 
 	return HandlePacketResult::Handled;
 }
@@ -240,15 +297,15 @@ HandlePacketResult PlayerClient::msgPLI_ARROWADD(CString& pPacket)
 	[[maybe_unused]] bool reflect = (flags & 0b100) != 0;
 	[[maybe_unused]] bool fromPlayer = (flags & 0b1000) != 0;
 
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_ARROWADD >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
-
-	// Add it to the level.
-	if (m_server->hasNPCServer())
+	if (auto level = getLevel(); level != nullptr)
 	{
-		if (auto level = getLevel(); level != nullptr)
+		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_ARROWADD >> (short)m_id << (pPacket.text() + 1), getGlobalPosition(), level, { m_id });
+
+		// Add it to the level.
+		if (m_server->hasNPCServer())
 		{
 			PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
-			level->addArrow(level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])), speed, dir, power, fromPlayer ? source::FromPlayer(m_id) : source::FromServer());
+			level->addArrow(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), speed, dir, power, fromPlayer ? source::FromPlayer(m_id) : source::FromServer());
 		}
 	}
 
@@ -261,12 +318,12 @@ HandlePacketResult PlayerClient::msgPLI_FIRESPY(CString& pPacket)
 	uint8_t power = length_power & 0b111; // Power is the last three bits.
 	uint8_t length = length_power >> 3;   // Length is the first five bits.
 
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_FIRESPY >> (short)m_id << (pPacket.text() + 1), m_currentLevel, { m_id });
-
-	// Add it to the level.
-	if (m_server->hasNPCServer())
+	if (auto level = getLevel(); level != nullptr)
 	{
-		if (auto level = getLevel(); level != nullptr)
+		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_FIRESPY >> (short)m_id << (pPacket.text() + 1), getGlobalPosition(), level, { m_id });
+
+		// Add it to the level.
+		if (m_server->hasNPCServer())
 			level->addSpyFire(getGlobalPosition(), source::FromPlayer(m_id), account.character.direction, length, power);
 	}
 
@@ -275,7 +332,7 @@ HandlePacketResult PlayerClient::msgPLI_FIRESPY(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_THROWCARRIED(CString& pPacket)
 {
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_THROWCARRIED >> (short)m_id, m_currentLevel, { m_id });
+	m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_THROWCARRIED >> (short)m_id, getGlobalPosition(), getLevel(), { m_id });
 	return HandlePacketResult::Handled;
 }
 
@@ -305,8 +362,7 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 	// This will prevent all client item drops, so beware.
 	if (itemDropEvents)
 	{
-		m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::CUSTOM, source::FromPlayer(m_id),
-			"itemdrop", getComputedLevelName(), std::format("{}", loc[0]), std::format("{}", loc[1]), LevelItem::getItemName(itemType));
+		m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::CUSTOM, source::FromPlayer(m_id), "itemdrop", getLevelName(), std::format("{}", loc[0]), std::format("{}", loc[1]), LevelItem::getItemName(itemType));
 		sendPacket(CString() >> (char)PLO_ITEMDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
 		return HandlePacketResult::Handled;
 	}
@@ -317,13 +373,13 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 		{
 			// Try to drop the item on the level.
 			// If the item was ultimately not dropped on the level (e.g., a gralats NPC was created), tell the client to delete it.
-			if (!dropItem(level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])), itemType))
+			if (!dropItem(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), itemType))
 				sendPacket(CString() >> (char)PLO_ITEMDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
 		}
 		else
 		{
-			level->addItem(level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])), itemType);
-			m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMADD >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)item, m_currentLevel, { m_id });
+			level->addItem(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), itemType);
+			m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_ITEMADD >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)item, getGlobalPosition(), level, { m_id });
 		}
 	}
 
@@ -332,21 +388,20 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_ITEMDEL(CString& pPacket)
 {
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1), m_currentLevel, { m_id });
+	if (auto level = getLevel(); level != nullptr)
+	{
+		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1), getGlobalPosition(), level, { m_id });
 
-	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
+		float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 
-	auto level = getLevel();
-	if (level == nullptr)
-		return HandlePacketResult::Handled;
+		// Remove the item from the level, getting the type of the item in the process.
+		LevelItemType item = level->removeItem(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]));
+		if (item == LevelItemType::INVALID) return HandlePacketResult::Handled;
 
-	// Remove the item from the level, getting the type of the item in the process.
-	LevelItemType item = level->removeItem(level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])));
-	if (item == LevelItemType::INVALID) return HandlePacketResult::Handled;
-
-	// If this is a PLI_ITEMTAKE packet, give the item to the player.
-	if (pPacket[0] - 32 == PLI_ITEMTAKE)
-		this->setPropsFromPacket(CString() << LevelItem::getItemPlayerProp(item, this), props::SetBy::SERVER);
+		// If this is a PLI_ITEMTAKE packet, give the item to the player.
+		if (pPacket[0] - 32 == PLI_ITEMTAKE)
+			this->setPropsFromPacket(CString() << LevelItem::getItemPlayerProp(item, this), props::SetBy::SERVER);
+	}
 
 	return HandlePacketResult::Handled;
 }
@@ -363,7 +418,7 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 	// Uses the glicko rating system.
 	auto level = getLevel();
 	if (level == nullptr) return HandlePacketResult::Handled;
-	if (level->isSparringZone)
+	if (level->isSparringZone(getMapPosition()))
 	{
 		if (m_server->getSettings().getBool("dontupdateratingd", false) == false)
 		{
@@ -449,15 +504,16 @@ HandlePacketResult PlayerClient::msgPLI_BADDYPROPS(CString& pPacket)
 	CString props = pPacket.readString("");
 
 	// Get the baddy.
-	LevelBaddy* baddy = level->getBaddy(id);
-	if (baddy == nullptr) return HandlePacketResult::Handled;
+	auto baddy = level->getBaddyById(id);
+	if (!baddy.has_value() || baddy.value() == nullptr)
+		return HandlePacketResult::Handled;
 
 	// Get the leader.
-	auto leaderId = level->getLevelPlayers().front();
+	auto leaderId = level->getPlayers().front();
 
 	// Set the props and send to everybody in the level, except the leader.
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id << props, level, { leaderId });
-	baddy->setPropsFromPacket(props);
+	m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id << props, getGlobalPosition(), level, { leaderId });
+	baddy.value()->setPropsFromPacket(props);
 
 	if (livingBaddies && !level->hasLivingBaddies())
 		m_server->queueNPCEventLocal(m_currentLevel.lock(), ScriptEventType::COMPUSDIED, source::FromPlayer(m_id));
@@ -471,7 +527,7 @@ HandlePacketResult PlayerClient::msgPLI_BADDYHURT(CString& pPacket)
 	if (level == nullptr || !level->hasPlayers())
 		return HandlePacketResult::Handled;
 
-	auto leaderId = level->getLevelPlayers().front();
+	auto leaderId = level->getPlayers().front();
 	auto leader = m_server->getPlayer(leaderId);
 	if (leader == nullptr)
 		return HandlePacketResult::Handled;
@@ -509,7 +565,7 @@ HandlePacketResult PlayerClient::msgPLI_BADDYADD(CString& pPacket)
 	baddy->setPropsFromPacket(CString() >> (char)BaddyProp::POWERIMAGE >> (char)bPower >> (char)bImage.length() << bImage);
 
 	// Send the props to everybody in the level.
-	m_server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps(), level);
+	m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps(), getGlobalPosition(), level);
 	return HandlePacketResult::Handled;
 }
 
@@ -670,7 +726,7 @@ HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 
 	if (auto level = getLevel(); level)
 	{
-		if (auto chest = level->getChest(LocalWholeTilePosition{ cX, cY }); chest.has_value())
+		if (auto chest = level->getChest(getMapPosition(), LocalWholeTilePosition{ cX, cY }); chest.has_value())
 		{
 			if (!account.hasChest(level->levelName, cX, cY))
 			{
@@ -783,15 +839,15 @@ HandlePacketResult PlayerClient::msgPLI_EXPLOSION(CString& pPacket)
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 	unsigned char epower = pPacket.readGUChar();
 
-	// Send the packet out.
-	CString packet = CString() >> (char)PLO_EXPLOSION >> (short)m_id >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
-	m_server->sendPacketToOneLevel(packet, m_currentLevel, { m_id });
-
-	// Add it to the level.
-	if (m_server->hasNPCServer())
+	if (auto level = getLevel(); level != nullptr)
 	{
-		if (auto level = getLevel(); level != nullptr)
-			level->addExplosion(level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1])), source::FromPlayer(m_id), eradius, epower);
+		// Send the packet out.
+		CString packet = CString() >> (char)PLO_EXPLOSION >> (short)m_id >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
+		m_server->sendPacketToOneLevelPart(packet, getGlobalPosition(), level, { m_id });
+
+		// Add it to the level.
+		if (m_server->hasNPCServer())
+			level->addExplosion(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), source::FromPlayer(m_id), eradius, epower);
 	}
 
 	return HandlePacketResult::Handled;
@@ -799,14 +855,13 @@ HandlePacketResult PlayerClient::msgPLI_EXPLOSION(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 {
-	// TODO(joey): Is this needed?
 	const int sendLimit = 4;
-	if (isClient() && (int)difftime(time(0), m_lastMessage) <= 4)
+	if (isClient() && timeDifference(m_server->getFrameStartTime(), m_lastMessage) < 4s)
 	{
 		sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE << "Server message:\xa7You can only send messages once every " << CString((int)sendLimit) << " seconds.");
 		return HandlePacketResult::Handled;
 	}
-	m_lastMessage = time(0);
+	m_lastMessage = m_server->getFrameStartTime();
 	return HandlePacketResult::Bubble;
 }
 
@@ -919,27 +974,31 @@ HandlePacketResult PlayerClient::msgPLI_UPDATEFILE(CString& pPacket)
 		sendPacket(CString() >> (char)PLO_FILESENDFAILED << file);
 	else
 		sendPacket(CString() >> (char)PLO_FILEUPTODATE << file);
+
 	return HandlePacketResult::Handled;
 }
 
 HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 {
-	time_t modTime = pPacket.readGUInt5();
-	CString levelName = pPacket.readString("");
-	CString packet;
-	auto adjacentLevel = m_server->getLevel(levelName);
+	std::optional<clock::time_point> modTime = clock::from_time_t((time_t)pPacket.readGUInt5());
 
-	if (!adjacentLevel)
-		return HandlePacketResult::Handled;
+	CString levelNameC = pPacket.readString("");
+	std::string_view levelName = levelNameC.toStringView();
 
-	if (m_currentLevel.expired())
-		return HandlePacketResult::Handled;
+	// Check if the adjacent level is on the player's current gmap.
+	// The gmap might have customized data.
+	if (auto currentLevel = getLevel(); currentLevel != nullptr && currentLevel->isGmap())
+	{
+		if (auto subLevel = currentLevel->getSubLevelByName(levelName); subLevel != nullptr)
+		{
+			sendStaticLevelData(subLevel->staticData.lock(), subLevel, modTime);
+			return HandlePacketResult::Handled;
+		}
+	}
 
-	// Send the level.
-	if (m_versionId >= CLVER_2_1)
-		sendLevel(adjacentLevel, modTime, true);
-	else
-		sendLevel141(adjacentLevel, modTime, true);
+	// Otherwise, send the normal static data.
+	if (auto cachedData = m_server->getCachedLevelData(levelName); cachedData != nullptr)
+		sendStaticLevelData(cachedData, nullptr, modTime);
 
 	return HandlePacketResult::Handled;
 }
@@ -987,9 +1046,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 		(float)pPacket.readGUChar() / 2.0f
 	};
 
-	PixelPosition pixelLoc{ toPixelPosition({ 0, 0 }, loc[0], loc[1]) };
-	if (auto level = getLevel(); level != nullptr)
-		pixelLoc = level->convertToMapPosition(toLocalPixelPosition(loc[0], loc[1]));
+	PixelPosition pixelLoc{ toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]) };
 
 	// Tokenize the actions.
 	auto actionData = pPacket.readString("").toString();
@@ -1206,25 +1263,25 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 			{
 				auto level = getLevel();
 				int start = actionData.find(",");
-				if (start != -1)
+				if (start == -1)
+					level->reload(getMapPosition());
+				else
 				{
 					++start;
-					CString levelName = string::trimMutate(actionData.substr(start));
-					if (levelName.isEmpty())
-						level->reload();
+					std::string levelName = string::trimMutate(actionData.substr(start));
+					if (levelName.empty())
+						level->reload(getMapPosition());
 					else
 					{
 						LevelPtr targetLevel;
-						if (getExtension(levelName) == ".singleplayer")
+						if (levelName.ends_with(".singleplayer"))
 							targetLevel = m_singleplayerLevels[removeExtension(levelName)];
 						else
-							targetLevel = m_server->getLevel(levelName.toString());
+							targetLevel = m_server->getLoadedLevel(levelName, shared_from_this());
 						if (targetLevel != nullptr)
-							targetLevel->reload();
+							targetLevel->reload(levelName);
 					}
 				}
-				else
-					level->reload();
 			}
 		}
 	}
@@ -1243,7 +1300,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 		{
 			// Send to the level.
 			if (m_server->getSettings().getBool("sendplayertriggers", true))
-				m_server->sendPacketToOneLevel(CString() >> (char)PLO_TRIGGERACTION >> (short)m_id << (pPacket.text() + 1), level, { m_id });
+				m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_TRIGGERACTION >> (short)m_id << (pPacket.text() + 1), getGlobalPosition(), level, { m_id });
 
 			// Trigger on level NPCs.
 			if (m_server->hasNPCServer())
@@ -1262,43 +1319,47 @@ HandlePacketResult PlayerClient::msgPLI_TAMPERCHECK(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 {
-	ShootPacketWrapper newPacket{};
-	[[maybe_unused]] int unknown = pPacket.readGInt(); // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
-
-	newPacket.position.x() = 8 * pPacket.readGChar();
-	newPacket.position.y() = 8 * pPacket.readGChar();
-	newPacket.position.z() = 16 * (pPacket.readGChar() - 50);
-
-	// TODO: calculate offsetx from pixelx/pixely/ - level offset
-	newPacket.offsetx = 0;
-	newPacket.offsety = 0;
-	//if (newPacket.pixelx < 0) {
-	//	newPacket.offsetx = -1;
-	//}
-	//if (newPacket.pixely < 0) {
-	//	newPacket.offsety = -1;
-	//}
-
-	newPacket.sangle = pPacket.readGUChar();  // 0 to 2*pi  = 0-220
-	newPacket.sanglez = pPacket.readGUChar(); // -pi to pi  = 0-220
-	newPacket.power = pPacket.readGUChar();   // power = 44 pixel increments
-	newPacket.gravity = static_cast<uint8_t>(m_server->Scripting.variables.getValue<double>("gravity").value_or(2.0));
-	newPacket.gani = pPacket.readChars(pPacket.readGUChar());
-
-	// This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
-	[[maybe_unused]] unsigned char someParam = pPacket.readGUChar();
-	newPacket.shootParams = pPacket.readString("");
-
-	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
-	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
-
-	m_server->sendPacketToNearby(oldPacketBuf, getGlobalPosition(), getLevel(), { m_id }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
-	m_server->sendPacketToNearby(newPacketBuf, getGlobalPosition(), getLevel(), { m_id }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
-
-	if (m_server->hasNPCServer())
+	if (auto level = getLevel(); level != nullptr)
 	{
-		if (auto level = getLevel(); level != nullptr)
-			level->addShoot(level->convertToMapPosition(newPacket.position), newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravity, newPacket.gani, source::FromPlayer(m_id));
+		ShootPacketWrapper newPacket{};
+		[[maybe_unused]] int unknown = pPacket.readGInt(); // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
+
+		newPacket.position.x() = 8 * pPacket.readGChar();
+		newPacket.position.y() = 8 * pPacket.readGChar();
+		newPacket.position.z() = 16 * (pPacket.readGChar() - 50);
+
+		// If the player is on a gmap, we need to convert the local pixel position to a map position.
+		if (level->isGmap())
+			newPacket.position.translate(getSubLevelOrigin());
+
+		// TODO: calculate offsetx from pixelx/pixely/ - level offset
+		newPacket.offsetx = 0;
+		newPacket.offsety = 0;
+		//if (newPacket.pixelx < 0) {
+		//	newPacket.offsetx = -1;
+		//}
+		//if (newPacket.pixely < 0) {
+		//	newPacket.offsety = -1;
+		//}
+
+		newPacket.sangle = pPacket.readGUChar();  // 0 to 2*pi  = 0-220
+		newPacket.sanglez = pPacket.readGUChar(); // -pi to pi  = 0-220
+		newPacket.power = pPacket.readGUChar();   // power = 44 pixel increments
+		newPacket.gravity = static_cast<uint8_t>(m_server->Scripting.variables.getValue<double>("gravity").value_or(2.0));
+		newPacket.gani = pPacket.readChars(pPacket.readGUChar());
+
+		// This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+		[[maybe_unused]] unsigned char someParam = pPacket.readGUChar();
+		newPacket.shootParams = pPacket.readString("");
+
+		CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
+		CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
+
+		m_server->sendPacketToNearby(oldPacketBuf, getGlobalPosition(), level, { m_id }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
+		m_server->sendPacketToNearby(newPacketBuf, getGlobalPosition(), level, { m_id }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
+
+		if (m_server->hasNPCServer())
+			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravity, newPacket.gani, source::FromPlayer(m_id));
 	}
 
 	return HandlePacketResult::Handled;
@@ -1306,30 +1367,30 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 {
-	ShootPacketWrapper newPacket{};
-	newPacket.position.x() = static_cast<int16_t>(pPacket.readGUShort());
-	newPacket.position.y() = static_cast<int16_t>(pPacket.readGUShort());
-	newPacket.position.z() = static_cast<int16_t>(pPacket.readGUShort());
-	newPacket.offsetx = pPacket.readGChar();  // level offset x
-	newPacket.offsety = pPacket.readGChar();  // level offset y
-	newPacket.sangle = pPacket.readGUChar();  // 0 to 2*pi  = 0-220
-	newPacket.sanglez = pPacket.readGUChar(); // -pi to pi  = 0-220
-	newPacket.power = pPacket.readGUChar();   // power = 44 pixel increments
-	newPacket.gravity = pPacket.readGUChar();
-	newPacket.gani = pPacket.readChars(pPacket.readGUShort());
-	[[maybe_unused]] unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
-	newPacket.shootParams = pPacket.readString("");
-
-	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
-	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
-
-	m_server->sendPacketToNearby(oldPacketBuf, getGlobalPosition(), getLevel(), { m_id }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
-	m_server->sendPacketToNearby(newPacketBuf, getGlobalPosition(), getLevel(), { m_id }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
-
-	if (m_server->hasNPCServer())
+	if (auto level = getLevel(); level != nullptr)
 	{
-		if (auto level = getLevel(); level != nullptr)
-			level->addShoot(level->convertToMapPosition(newPacket.position), newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravity / 16.0f, newPacket.gani, source::FromPlayer(m_id));
+		ShootPacketWrapper newPacket{};
+		newPacket.position.x() = static_cast<int16_t>(pPacket.readGUShort());
+		newPacket.position.y() = static_cast<int16_t>(pPacket.readGUShort());
+		newPacket.position.z() = static_cast<int16_t>(pPacket.readGUShort());
+		newPacket.offsetx = pPacket.readGChar();  // level offset x
+		newPacket.offsety = pPacket.readGChar();  // level offset y
+		newPacket.sangle = pPacket.readGUChar();  // 0 to 2*pi  = 0-220
+		newPacket.sanglez = pPacket.readGUChar(); // -pi to pi  = 0-220
+		newPacket.power = pPacket.readGUChar();   // power = 44 pixel increments
+		newPacket.gravity = pPacket.readGUChar();
+		newPacket.gani = pPacket.readChars(pPacket.readGUShort());
+		[[maybe_unused]] unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
+		newPacket.shootParams = pPacket.readString("");
+
+		CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
+		CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
+
+		m_server->sendPacketToNearby(oldPacketBuf, getGlobalPosition(), level, { m_id }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
+		m_server->sendPacketToNearby(newPacketBuf, getGlobalPosition(), level, { m_id }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
+
+		if (m_server->hasNPCServer())
+			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravity / 16.0f, newPacket.gani, source::FromPlayer(m_id));
 	}
 
 	return HandlePacketResult::Handled;

@@ -76,7 +76,9 @@ public:
 
 	void post(A ...args)
 	{
-		for (auto& handler : m_eventHandlers)
+		// TODO: Optimize this by not copying the entire map each time (hold a vector of newly added handlers while we are processing the list).
+		std::unordered_map<size_t, std::weak_ptr<EventHandleBase>> handlersCopy = m_eventHandlers;
+		for (auto& handler : handlersCopy)
 		{
 			auto ptr = std::static_pointer_cast<EventHandleImpl<A...>>(handler.second.lock());
 			if (ptr)

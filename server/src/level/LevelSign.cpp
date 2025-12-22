@@ -120,14 +120,18 @@ CString encodeSign(const CString& pSignText)
 }
 
 LevelSign::LevelSign(const LocalWholeTilePosition& position, std::string_view signText, bool signTextIsEncoded)
-	: position(position), unformattedText(signText)
+	: position(position)
 {
 	if (signTextIsEncoded)
 	{
-		text = unformattedText;
-		unformattedText = decodeSignCode(unformattedText);
+		encodedText = signText;
+		text = decodeSignCode(signText);
 	}
-	else text = encodeSign(unformattedText);
+	else
+	{
+		encodedText = encodeSign(signText);
+		text = signText;
+	}
 }
 
 CString LevelSign::getSignPacket(Player* pPlayer) const
@@ -139,7 +143,7 @@ CString LevelSign::getSignPacket(Player* pPlayer) const
 	outText.writeGChar(position.y());
 
 	// Write the text to the packet.
-	outText.write(pPlayer ? encodeSign(pPlayer->translate(unformattedText)) : text);
+	outText.write(pPlayer ? encodeSign(pPlayer->translate(text)) : encodedText);
 
 	return outText;
 }
@@ -148,13 +152,13 @@ void LevelSign::setText(std::string_view signText, bool signTextIsEncoded)
 {
 	if (signTextIsEncoded)
 	{
-		text = signText;
-		unformattedText = decodeSignCode(signText);
+		encodedText = signText;
+		text = decodeSignCode(signText);
 	}
 	else
 	{
-		text = encodeSign(signText);
-		unformattedText = signText;
+		encodedText = encodeSign(signText);
+		text = signText;
 	}
 }
 

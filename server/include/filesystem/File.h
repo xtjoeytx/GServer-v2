@@ -13,6 +13,7 @@
 #include <span>
 #include <string_view>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -184,6 +185,27 @@ public:
 	/// @return The file contents.
 	virtual std::vector<char> read(std::size_t count);
 
+	/// @brief Reads part of a file as a string.
+	/// @param count How many bytes to read.
+	/// @return The file contents.
+	virtual std::string readChars(std::size_t count);
+
+	/// @brief Reads a packed string (length + data).
+	/// @return The file contents.
+	virtual std::string readGString();
+
+	/// @brief Reads a packed integral value.
+	/// @tparam C The number of bytes to read. Valid values are 1, 2, 3, 4, 5, or 10.
+	/// @return An integral value whose type is deduced and corresponds to the requested size C.
+	template<size_t C>
+	[[inline]] auto readPackedIntegral();
+
+	/// @brief Reads an integral value.
+	/// @tparam C The number of bytes to read.
+	/// @return An integral value whose type is deduced and corresponds to the requested size C.
+	template<size_t C>
+	[[inline]] auto readIntegral();
+
 	/// @brief Reads from the file until it encounters the token.
 	virtual std::vector<char> readUntil(std::string_view delimiter);
 
@@ -210,6 +232,11 @@ public:
 	/// @return A generator that produces each line as a std::string.
 	std::generator<std::string> readAllLines();
 
+	/// @brief Returns a generator that yields lines until it reaches the end key.
+	/// @param endToken A string that, when encountered at the start of a line, ends the read.
+	/// @return A generator that produces each line as a std::string.
+	std::generator<std::string> readLinesUntilSectionEnd(std::string_view endKey);
+
 	/// @brief Reads data into a buffer.
 	/// @param buffer The buffer to fill.
 	/// @param count How many bytes to read.
@@ -227,6 +254,71 @@ protected:
 };
 
 using FilePtr = std::shared_ptr<File>;
+
+//----------------------------
+
+template<size_t C>
+inline auto File::readPackedIntegral()
+{
+	using Type = std::conditional_t<C == 1, uint8_t,
+		std::conditional_t<C == 2, uint16_t,
+		std::conditional_t<C == 3, uint32_t,
+		std::conditional_t<C == 4, uint32_t,
+		std::conditional_t<C == 5, uint64_t, void>>>>>;
+
+	static_assert(C >= 1 && C <= 5, "Unsupported size for readPackedIntegral.");
+
+	Type result = 0;
+	char byte = 0;
+
+	if (!opened() || finishedReading())
+		return result;
+
+	auto readAndApply = [&](size_t N)
+	{
+		m_inputStream->read(&byte, 1);
+		result |= (static_cast<Type>(static_cast<uint8_t>(byte - 32)) << ((N - 1) * 7));
+	};
+
+	readAndApply(1);
+
+	if constexpr (C <= 2)
+	{
+		readAndApply(2);
+	}
+	if constexpr (C <= 3)
+	{
+		readAndApply(3);
+	}
+	if constexpr (C <= 4)
+	{
+		readAndApply(4);
+	}
+	if constexpr (C <= 5)
+	{
+		readAndApply(5);
+	}
+
+	return result;
+}
+
+template<size_t C>
+inline auto File::readIntegral()
+{
+	static_assert(C == 1 || C == 2 || C == 4 || C == 8, "Unsupported integral size for readIntegral.");
+
+	using Type = std::conditional_t<C == 1, uint8_t,
+		std::conditional_t<C == 2, uint16_t,
+		std::conditional_t<C == 4, uint32_t,
+		std::conditional_t<C == 8, uint64_t, void>>>>;
+
+	if (!opened() || finishedReading())
+		return (Type)0;
+
+	Type value = 0;
+	m_inputStream->read(reinterpret_cast<char*>(&value), sizeof(value));
+	return value;
+}
 
 //----------------------------
 

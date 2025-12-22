@@ -273,7 +273,7 @@ inline const std::optional<T> GameValue::get(std::optional<int64_t> index) const
 		}
 		else if (m_array.has_value() && index.has_value())
 		{
-			if (index.value() >= 0 && index.value() < m_array.value().size())
+			if (index.value() >= 0 && index.value() < (int64_t)m_array.value().size())
 				return m_array.value().at(index.value());
 			return 0.0;
 		}
@@ -329,7 +329,7 @@ inline const std::optional<T> GameValue::get(std::optional<int64_t> index) const
 			return std::nullopt;
 		if (index.has_value())
 		{
-			if (index.value() >= 0 && index.value() < m_source.value().size())
+			if (index.value() >= 0 && index.value() < (int64_t)m_source.value().size())
 				return m_source.value().at(index.value());
 			return m_source.value().at(0);
 		}
@@ -357,7 +357,7 @@ inline const T* GameValue::get_unsafe(std::optional<int64_t> index) const
 		if (m_getter) m_getter(const_cast<std::optional<double>*>(&m_number), index);
 		if (m_array.has_value() && index.has_value())
 		{
-			if (index.value() >= 0 && index.value() < m_array.value().size())
+			if (index.value() >= 0 && index.value() < (int64_t)m_array.value().size())
 				return &m_array.value().at(index.value());
 			return nullptr;
 		}
@@ -388,7 +388,7 @@ inline const T* GameValue::get_unsafe(std::optional<int64_t> index) const
 		if (!m_source.has_value()) return nullptr;
 		if (index.has_value())
 		{
-			if (index.value() >= 0 && index.value() < m_source.value().size())
+			if (index.value() >= 0 && index.value() < (int64_t)m_source.value().size())
 				return &m_source.value().at(index.value());
 			return &m_source.value().at(0);
 		}
@@ -426,7 +426,7 @@ inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optio
 	{
 		if (m_array.has_value() && index.has_value())
 		{
-			if (index.value() >= 0 && index.value() < m_array.value().size())
+			if (index.value() >= 0 && index.value() < (int64_t)m_array.value().size())
 				m_array.value().at(index.value()) = value;
 			if (m_setter) m_setter(&m_array, index);
 		}
@@ -457,7 +457,7 @@ inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optio
 	{
 		if (m_source.has_value() && index.has_value())
 		{
-			if (index.value() >= 0 && index.value() < m_source.value().size())
+			if (index.value() >= 0 && index.value() < (int64_t)m_source.value().size())
 				m_source.value().at(index.value()) = value;
 		}
 		else
@@ -485,7 +485,7 @@ inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<i
 	{
 		if (m_array.has_value() && index.has_value())
 		{
-			if (index.value() >= 0 && index.value() < m_array.value().size())
+			if (index.value() >= 0 && index.value() < (int64_t)m_array.value().size())
 				m_array.value().at(index.value()) = value;
 			if (m_setter) m_setter(&m_array, index);
 		}
@@ -516,7 +516,7 @@ inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<i
 	{
 		if (m_source.has_value() && index.has_value())
 		{
-			if (index.value() >= 0 && index.value() < m_source.value().size())
+			if (index.value() >= 0 && index.value() < (int64_t)m_source.value().size())
 				m_source.value().at(index.value()) = value;
 		}
 		else
@@ -1044,7 +1044,7 @@ GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, Value& p
 			{
 				auto& vec = (*value)->value();
 				auto indexValue = index.value_or(0);
-				if (indexValue >= 0 && indexValue < vec.size())
+				if (indexValue >= 0 && indexValue < (int64_t)vec.size())
 					propvalue = static_cast<V>(vec.at(indexValue));
 			}
 			else if (auto value = std::get_if<std::optional<bool>*>(&incoming); value != nullptr)
@@ -1075,12 +1075,12 @@ GameValue::func_set gameValueSetter(Who* who, std::optional<Prop> prop, Value& p
 				using value_type = std::remove_cvref_t<decltype(propvalue[0])>;
 
 				// Setting an individual index in an array.
-				if (index.has_value() && index.value() >= 0 && index.value() < propvalue_size)
+				if (index.has_value() && index.value() >= 0 && index.value() < (int64_t)propvalue_size)
 				{
 					if (auto value = std::get_if<std::optional<std::vector<double>>*>(&incoming); value != nullptr && (*value)->has_value())
 					{
 						std::vector<double>& darray = (**value).value();
-						if (index.value() < darray.size())
+						if (index.value() < (int64_t)darray.size())
 							propvalue[index.value()] = static_cast<value_type>(darray.at(index.value()));
 						else propvalue[index.value()] = value_type{};
 					}

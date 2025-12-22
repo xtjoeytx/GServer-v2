@@ -36,7 +36,7 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 // Helper to avoid having to write uint8_t everywhere.
-const auto& toByte = static_cast<uint8_t(*)(const std::string&)>(string::toNumber);
+const auto& toByte = static_cast<uint8_t(*)(std::string_view)>(string::toNumber);
 
 static bool setIfEmpty(std::string& str, std::string_view value, std::string_view defaultValue = {})
 {
@@ -137,6 +137,10 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 			account.character.localPixelY = static_cast<int16_t>(string::toFloat(val) * 16);
 		else if (section == "Z")
 			account.character.localPixelZ = static_cast<int16_t>(string::toFloat(val) * 16);
+		else if (section == "MAPX")
+			account.character.mapX = toByte(val);
+		else if (section == "MAPY")
+			account.character.mapY = toByte(val);
 		else if (section == "MAXHP")
 			account.maxHitpoints = toByte(val);
 		else if (section == "HP")
@@ -315,6 +319,8 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "X", account.character.localPixelX / 16.0f);
 	writeLine(newFile, "Y", account.character.localPixelY / 16.0f);
 	writeLine(newFile, "Z", account.character.localPixelZ / 16.0f, 0.0f);
+	writeLine(newFile, "MAPX", account.character.mapX);
+	writeLine(newFile, "MAPY", account.character.mapY);
 	writeLine(newFile, "MAXHP", account.maxHitpoints);
 	writeLine(newFile, "HP", account.character.hitpointsInHalves / 2.0f);
 	writeLine(newFile, "ANI", account.character.gani);

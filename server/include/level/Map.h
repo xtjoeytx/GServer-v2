@@ -8,6 +8,7 @@
 #include <optional>
 #include <string_view>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <filesystem/File.h>
@@ -31,7 +32,7 @@ enum class MapType
 	GMAP = 1,
 };
 
-class Level;
+class StaticLevelData;
 
 struct MapTerrain
 {
@@ -79,16 +80,17 @@ public:
 
 public:
 	void loadMapLevels() const;
-	void setLevelLoaded(std::shared_ptr<Level> level);
+	void setLevelDataLoaded(std::shared_ptr<StaticLevelData> level);
 
 public:
 	bool hasLevel(std::string_view levelName) const;
-	std::optional<Position<uint8_t>> getLevelPosition(std::string_view levelName) const;
-	std::shared_ptr<Level> getLevelAt(int x, int y) const;
-	std::shared_ptr<Level> getLevelAt(const PixelPosition& globalPosition) const;
-	std::generator<std::shared_ptr<Level>> getLevelsInRange(const TilePosition& position, int syncTilesX, int syncTilesY) const noexcept;
-	std::generator<std::shared_ptr<Level>> getLevelsInRectangle(const PixelRectangleArea& area) const noexcept;
-	std::generator<std::shared_ptr<Level>> getAllLevels() const noexcept;
+	std::optional<MapPosition> getLevelPosition(std::string_view levelName) const;
+	std::string getLevelNameAt(int x, int y) const;
+	std::shared_ptr<StaticLevelData> getLevelDataAt(int x, int y) const;
+	std::shared_ptr<StaticLevelData> getLevelDataAt(const PixelPosition& globalPosition) const;
+	std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> getLevelDataInRange(const TilePosition& position, int syncTilesX, int syncTilesY) const noexcept;
+	std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> getLevelDataInRectangle(const PixelRectangleArea& area) const noexcept;
+	std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> getAllLevelData() const noexcept;
 
 public:
 	[[inline]] std::string getMapName() const noexcept;
@@ -103,15 +105,15 @@ public:
 	const std::string miniMapImage;
 	const Dimension<uint8_t> size;
 	const bool keepAllLevelsLoaded = false;
-	const string_map<Position<uint8_t>> levels;
+	const string_map<MapPosition> levels;
 	const string_set levelsToKeepInMemory;
 	const MapTerrain terrain;
 
 private:
-	void forceSetLevelLoaded(std::shared_ptr<Level> level) const noexcept;
-	std::shared_ptr<Level> getLevelPtr(std::string_view levelName, std::weak_ptr<Level> levelPtr) const noexcept;
-	mutable std::vector<std::weak_ptr<Level>> levelsByPosition;
-	mutable string_map<std::weak_ptr<Level>> levelsByName;
+	void forceSetLevelDataLoaded(std::shared_ptr<StaticLevelData> level) const noexcept;
+	std::shared_ptr<StaticLevelData> getLevelDataPtr(std::string_view levelName, std::weak_ptr<StaticLevelData> levelPtr) const noexcept;
+	mutable std::vector<std::weak_ptr<StaticLevelData>> levelDataByPosition;
+	mutable string_map<std::weak_ptr<StaticLevelData>> levelDataByName;
 };
 
 //----------------------------

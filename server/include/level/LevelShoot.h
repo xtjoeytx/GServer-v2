@@ -45,7 +45,6 @@ Every second (but done spread out every 0.05ms):
 struct LevelShoot
 {
 	TilePosition position;
-	double startingZ = 0.0;
 	float angle = 0.0f;
 	float zangle = 0.0f;
 	uint8_t powerIn44Pixels = 0;

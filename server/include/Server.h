@@ -34,6 +34,7 @@
 #include <level/Level.h>
 #include <level/LevelItem.h>
 #include <level/LevelShoot.h>
+#include <level/Map.h>
 #include <loader/IAccountLoader.h>
 #include <loader/INPCLoader.h>
 #include <misc/UPNP.h>
@@ -173,9 +174,11 @@ public:
 	auto& getAnimationManager() { return m_animationManager; }
 	auto& getGroupLevels() { return m_groupLevels; }
 	auto& getLevelList() { return m_levelList; }
+	auto& getGmapLevelList() { return m_gmapLevels; }
 	auto& getNPCList() { return m_npcList; }
 	auto& getNPCLoader() { return *m_npcLoader; }
 	auto& getPackageManager() { return m_packageManager; }
+	auto& getNPCIdGenerator() { return m_npcIdGenerator; }
 	auto& getPlayerIdGenerator() { return m_playerIdGenerator; }
 	auto& getPlayerList() { return m_playerList; }
 	auto& getServerList() { return m_serverlist; }
@@ -192,9 +195,53 @@ public:
 	const auto& getStatusList() const { return m_statusList; }
 
 public:
-	std::shared_ptr<Level> stubOrGetLevel(std::string_view levelName);
-	std::shared_ptr<Level> getLevel(std::string_view levelName);
+	/// @brief Gets a stubbed level with the given name (a stubbed level is not yet loaded).
+	/// @param levelName The name of the level.
+	/// @return A shared pointer to a Level.
+	std::shared_ptr<Level> getStubbedLevel(std::string_view levelName);
+
+	/// @brief Gets a fully loaded level with the given name using no hinting.
+	/// @param levelName The name of the level.
+	/// @return A shared pointer to a Level.
+	std::shared_ptr<Level> getLoadedLevelNoHint(std::string_view levelName);
+
+	/// @brief Gets a fully loaded level with the given name, using a player as a hint.
+	/// @param levelName The name of the level.
+	/// @param player The player to get the level for (since the level might be instanced for that player).
+	/// @return A shared pointer to a Level.
+	std::shared_ptr<Level> getLoadedLevel(std::string_view levelName, std::shared_ptr<Player> player);
+
+	/// @brief Gets a fully loaded level with the given name, using the a level as a hint.
+	/// @param levelName The name of the level.
+	/// @param hintLevel The level to use as a hint (since it might be a group map).
+	/// @return A shared pointer to a Level.
+	std::shared_ptr<Level> getLoadedLevel(std::string_view levelName, std::shared_ptr<Level> hintLevel);
+
+	/// @brief Gets the cached static data for the given level (tiles, links, signs, npcs, etc), loading it if it hasn't been loaded yet.
+	/// @param levelName The name of the level.
+	/// @return A shared pointer to a LevelStaticData.
+	std::shared_ptr<StaticLevelData> getCachedLevelData(std::string_view levelName);
+
+	/// @brief Finds a loaded map.
+	/// @param mapName The name of the map.
+	/// @return A shared pointer to a Map.
 	std::shared_ptr<Map> findMap(std::string_view mapName) const noexcept;
+
+	/// @brief Finds the map that contains the given level.
+	/// @param levelName The name of the level.
+	/// @return A shared pointer to a Map.
+	std::shared_ptr<Map> findMapForLevel(std::string_view levelName) const noexcept;
+
+	/// @brief Finds the map that contains the given level.
+	/// @param mapType Restricts the search to maps of the given type.
+	/// @param levelName The name of the level.
+	/// @return A shared pointer to a Map.
+	std::shared_ptr<Map> findMapForLevel(MapType mapType, std::string_view levelName) const noexcept;
+
+	/// @brief Finds the appropriate gmap that contains the given level, given the level's name and taking into account singleplayer or group maps.
+	/// @param levelName The name of the level.
+	/// @return A shared pointer to a Level.
+	std::shared_ptr<Level> findGmapForLevel(std::string_view levelName, std::shared_ptr<Player> player) const noexcept;
 
 public:
 	LevelItemType rollBushItemDrop() const;
@@ -247,11 +294,12 @@ public:
 public:
 	using PlayerPredicate = std::function<bool(const Player*)>;
 	void sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
 	void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
 	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;
-	void sendPacketToLevelAndPastVisitorsAfter(Level* level, time_t modTime, const CString& packet) const;
-	void sendPacketToNearby(const CString& packet, const PixelPosition& position, std::shared_ptr<Level> level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToOneLevelPart(const CString& packet, const PixelPosition& position, LevelPtr level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToOneLevelPart(const CString& packet, LevelPtr level, const MapPosition& mapPosition, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToNearby(const CString& packet, const PixelPosition& position, LevelPtr level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
+	void sendPacketToLevelAndPastVisitorsAfter(StaticLevelData* level, clock::time_point modTime, const CString& packet) const;
 
 public:
 	void sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level) const;
@@ -273,7 +321,7 @@ public:
 	{
 		if (!hasNPCServer()) return;
 		if (level == nullptr) return;
-		for (auto& npcid : level->getLevelNPCs())
+		for (auto& npcid : level->getNPCs())
 		{
 			if (auto npc = getNPC(npcid); npc)
 				npc->scripting.events.addEvent(type, source, std::forward<decltype(args)>(args)...);
@@ -331,7 +379,9 @@ private:
 	std::unique_ptr<INPCLoader> m_npcLoader;
 
 	std::vector<std::shared_ptr<Map>> m_mapList;
+	string_map<std::shared_ptr<StaticLevelData>> m_cachedLevelDataList;
 	string_map<std::shared_ptr<Level>> m_levelList;
+	string_multimap<std::weak_ptr<Level>> m_gmapLevels;
 	std::unordered_multimap<std::string, std::weak_ptr<Level>> m_groupLevels;
 
 	string_map<std::shared_ptr<Weapon>> m_weaponList;

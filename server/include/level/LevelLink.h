@@ -22,6 +22,7 @@ public:
 	// constructor - destructor
 	LevelLink() = default;
 	LevelLink(const std::vector<CString>& pLink);
+	LevelLink(const Rectangle<uint8_t, uint8_t>& coordinates, std::string_view destinationX, std::string_view destinationY, std::string_view destinationLevel);
 
 	// functions
 	CString getLinkStr() const;

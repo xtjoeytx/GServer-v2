@@ -20,6 +20,22 @@ LevelLink::LevelLink(const std::vector<CString>& pLink)
 	parseLinkStr(pLink);
 }
 
+LevelLink::LevelLink(const Rectangle<uint8_t, uint8_t>& coordinates, std::string_view destinationX, std::string_view destinationY, std::string_view destinationLevel)
+	: m_destinationLevel{ destinationLevel }, m_destinationX{ destinationX }, m_destinationY{ destinationY }, m_boundingBox{ coordinates }
+{
+	if (m_destinationX == "-1")
+	{
+		m_constantX = true;
+		m_destinationX = "playerx";
+	}
+
+	if (m_destinationY == "-1")
+	{
+		m_constantY = true;
+		m_destinationY = "playery";
+	}
+}
+
 CString LevelLink::getLinkStr() const
 {
 	return std::format("{} {} {} {} {} {} {}", m_destinationLevel,

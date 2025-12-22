@@ -203,8 +203,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 	{
 		if (auto client = dynamic_cast<PlayerClient*>(player); getSettings().getBool("triggerhack_groups", true) && triggerData.size() == 2 && client != nullptr)
 		{
-			const auto& playerList = client->getLevel()->getLevelPlayers();
-			for (auto& id : playerList)
+			for (const auto& id : client->getLevel()->getPlayers())
 			{
 				auto pl = getPlayer(id);
 				client->setGroup(triggerData[1]);

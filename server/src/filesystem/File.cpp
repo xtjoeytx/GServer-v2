@@ -10,6 +10,7 @@
 #include <generator>
 #include <ios>
 #include <istream>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <span>
@@ -18,6 +19,7 @@
 #include <string>
 #include <system_error>
 #include <thread>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -39,6 +41,20 @@
 namespace preagonal::fs
 {
 ///////////////////////////////////////////////////////////////////////////////
+
+template <size_t C>
+auto readGPacked(std::istream& stream) -> std::conditional_t<C <= 2, std::conditional_t<C == 1, uint8_t, uint16_t>, uint32_t>
+{
+	using ReturnType = std::conditional_t<C <= 2, std::conditional_t<C == 1, uint8_t, uint16_t>, uint32_t>;
+	ReturnType result = 0;
+	for (size_t i = 0; i < C; ++i)
+	{
+		char byte = 0;
+		stream.read(&byte, 1);
+		result |= (static_cast<ReturnType>(static_cast<uint8_t>(byte - 32)) << (i * 7));
+	}
+	return result;
+}
 
 std::string getANSIFileName(const std::filesystem::path& file)
 {
@@ -190,6 +206,31 @@ std::vector<char> File::read(std::size_t count)
 	return result;
 }
 
+std::string File::readChars(std::size_t count)
+{
+	if (!opened() || finishedReading())
+		return std::string{};
+
+	std::string result;
+	result.reserve(count);
+
+	std::copy_n(std::istreambuf_iterator(*m_inputStream), count, std::back_inserter(result));
+
+	// For some reason it doesn't advance the last byte read, so do it manually.
+	m_inputStream->seekg(1, std::ios::cur);
+
+	return result;
+}
+
+std::string File::readGString()
+{
+	if (!opened() || finishedReading())
+		return std::string{};
+
+	size_t length = readPackedIntegral<1>();
+	return readChars(length);
+}
+
 std::vector<char> File::readUntil(std::string_view delimiter)
 {
 	if (delimiter.empty())
@@ -329,6 +370,18 @@ std::generator<std::string> File::readAllLines()
 	while (!finishedReading())
 	{
 		co_yield readLine();
+	}
+}
+
+std::generator<std::string> File::readLinesUntilSectionEnd(std::string_view endKey)
+{
+	std::string result;
+	while (!finishedReading())
+	{
+		result = readLine();
+		if (string::trim(result) == endKey)
+			break;
+		co_yield result;
 	}
 }
 

@@ -10,10 +10,12 @@ bin/*.bin
 bin/*.dat
 bin/*.dll
 bin/*.exe
-bin/*.pdb
-bin/*.zip
-bin/*.txt
+bin/*.idb
 bin/*.ilk
+bin/*.obj
+bin/*.pdb
+bin/*.txt
+bin/*.zip
 bin/GS2Emu.*
 bin/gs2emu*
 bin/servers/*

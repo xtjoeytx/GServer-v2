@@ -380,7 +380,7 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messag
 	{
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
-		auto position = level->convertToMapPosition(toLocalPixelPosition(x, y));
+		auto position = toPixelPosition({ x, y });
 
 		// Find the nearest player.
 		std::tuple<PlayerID, double> nearestPlayer{ 0, std::numeric_limits<double>::max() };
@@ -510,7 +510,7 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view message
 	{
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
-		auto position = level->convertToMapPosition(toLocalPixelPosition(x, y));
+		auto position = toPixelPosition({ x, y });
 
 		// Find the nearest player.
 		std::tuple<PlayerID, double> nearestPlayer{ 0, std::numeric_limits<double>::max() };
@@ -545,7 +545,7 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messag
 	{
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
-		auto position = level->convertToMapPosition(toLocalPixelPosition(x, y));
+		auto position = toPixelPosition({ x, y });
 
 		std::string flag;
 		if (arguments.size() > 2)
@@ -627,7 +627,7 @@ GS1ScriptValue fn_getz(GS1Visitor* visitor, std::string_view messageCode, const 
 	{
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
-		return level->getMapHeightAt(toPixelPosition({ x, y }));
+		return level->getHeightAt(toPixelPosition({ x, y }));
 	}
 
 	return 0.0;
@@ -735,7 +735,7 @@ GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view messageCode, co
 
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto list = visitor->getGameValueAs<std::string>(*arguments[1]);
-	auto listItems = string::splitToVector(list, ","sv);
+	auto listItems = string::splitToVectorView(list, ","sv);
 	for (size_t i = 0; i < listItems.size(); ++i)
 	{
 		if (string::trim(listItems[i]) == string::trim(str))
@@ -799,10 +799,12 @@ GS1ScriptValue fn_onmapx(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function onmapx requires exactly one argument");
 
-	auto level = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto* server = BabyDI::Get<Server>();
-	if (auto levelPtr = server->getLevel(level); levelPtr != nullptr)
-		return static_cast<double>(levelPtr->mapPosition.x());
+	if (auto curLevel = visitor->findCurrentLevel(); curLevel != nullptr)
+	{
+		auto level = visitor->getGameValueAs<std::string>(*arguments[0]);
+		if (auto map = curLevel->getMap(); map != nullptr)
+			return static_cast<double>(map->getLevelPosition(level).value_or(MapPosition{ 0, 0 }).x());
+	}
 
 	return 0.0;
 }
@@ -814,10 +816,12 @@ GS1ScriptValue fn_onmapy(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function onmapy requires exactly one argument");
 
-	auto level = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto* server = BabyDI::Get<Server>();
-	if (auto levelPtr = server->getLevel(level); levelPtr != nullptr)
-		return static_cast<double>(levelPtr->mapPosition.y());
+	if (auto curLevel = visitor->findCurrentLevel(); curLevel != nullptr)
+	{
+		auto level = visitor->getGameValueAs<std::string>(*arguments[0]);
+		if (auto map = curLevel->getMap(); map != nullptr)
+			return static_cast<double>(map->getLevelPosition(level).value_or(MapPosition{ 0, 0 }).y());
+	}
 
 	return 0.0;
 }
@@ -845,6 +849,7 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 		}
 		return GameValue{ true };
 	}
+
 	return GameValue{ false };
 }
 
@@ -873,6 +878,7 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, con
 		}
 		return GameValue{ true };
 	}
+
 	return GameValue{ false };
 }
 
@@ -891,6 +897,7 @@ GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, con
 		if (level->isOnWater(toPixelPosition({ x, y })))
 			return GameValue{ true };
 	}
+
 	return GameValue{ false };
 }
 
@@ -911,6 +918,7 @@ GS1ScriptValue fn_onwater2(GS1Visitor* visitor, std::string_view messageCode, co
 		if (level->isOnWater2(PixelRectangleArea{ toPixelPosition({ x, y }), { width, height } }))
 			return GameValue{ true };
 	}
+
 	return GameValue{ false };
 }
 
@@ -1136,12 +1144,12 @@ GS1ScriptValue fn_testcompu(GS1Visitor* visitor, std::string_view messageCode, c
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto& baddies = level->getBaddies();
-		for (size_t i = 0; i < baddies.size(); ++i)
+		size_t index = 0;
+		for (const auto& baddy : level->getBaddies())
 		{
-			auto& baddy = baddies[i];
 			if (baddy.position.x() == x && baddy.position.y() == y && baddy.mode != BaddyMode::DEAD)
-				return static_cast<double>(i);
+				return static_cast<double>(index);
+			++index;
 		}
 	}
 
@@ -1227,14 +1235,13 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, con
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testnpc requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
-	auto localPosition = LocalPixelPosition{ x, y };
+	auto x = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto position = PixelPosition{ x, y };
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto* server = BabyDI::Get<Server>();
-		auto position = level->convertToMapPosition(localPosition);
 
 		bool found = false;
 		size_t index = 0;
@@ -1242,7 +1249,7 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, con
 		{
 			if (auto npc = server->getNPC(npcId); npc != nullptr)
 			{
-				if (positionInRectangle(localPosition, npc->getBoundingBox()))
+				if (positionInRectangle(position, npc->getBoundingBox()))
 				{
 					found = true;
 					break;
@@ -1266,9 +1273,9 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, 
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testplayer requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
-	auto localPosition = LocalPixelPosition{ x, y };
+	auto x = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
+	auto y = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto position = PixelPosition{ x, y };
 	auto* server = BabyDI::Get<Server>();
 
 	if (auto source = visitor->getOriginalSource(); source.second == ScriptObjectType::NPC)
@@ -1276,22 +1283,20 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, 
 		if (auto npc = server->getNPC(source.first); npc != nullptr)
 		{
 			// If the current NPC is the one being tested, return -1.
-			if (positionInRectangle(localPosition, npc->getBoundingBox()))
+			if (positionInRectangle(position, npc->getBoundingBox()))
 				return -1.0;
 		}
 	}
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto position = level->convertToMapPosition(localPosition);
-
 		bool found = false;
 		size_t index = 0;
 		for (const auto& playerId : level->findInRangePlayers(position))
 		{
 			if (auto player = server->getPlayer(playerId); player != nullptr)
 			{
-				if (positionInRectangle(localPosition, player->getBoundingBox()))
+				if (positionInRectangle(position, player->getBoundingBox()))
 				{
 					found = true;
 					break;
@@ -1314,17 +1319,17 @@ GS1ScriptValue fn_testsign(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testsign requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto x = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[0]));
+	auto y = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[1]));
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto& signs = level->getSigns();
-		for (size_t i = 0; i < signs.size(); ++i)
+		size_t index = 0;
+		for (const auto& [_, position] : level->getSignPositions())
 		{
-			auto& sign = signs[i];
-			if (sign.position.x() == x && sign.position.y() == y)
-				return static_cast<double>(i);
+			if (position.x() == x && position.y() == y)
+				return static_cast<double>(index);
+			++index;
 		}
 	}
 	return -1.0;
@@ -1357,21 +1362,17 @@ GS1ScriptValue fn_tiletype(GS1Visitor* visitor, std::string_view messageCode, co
 		auto x = visitor->getGameValueAs<double>(*arguments[0]);
 		auto y = visitor->getGameValueAs<double>(*arguments[1]);
 
-		if (!level->isOnGmap())
+		auto tilePosition = toTilePosition(Position<double>{ x, y });
+		auto mapPosition = toMapPosition(tilePosition);
+
+		if (!level->isGmap())
+			mapPosition = { 0 ,0 };
+
+		if (auto tiles = level->getTiles(mapPosition); tiles.has_value())
 		{
-			auto pos = std::clamp((int)x, 0, 63) + (std::clamp((int)y, 0, 63) * 64);
-			auto tile = level->getTiles(0)[static_cast<size_t>(pos)];
+			auto index = std::clamp((int)x, 0, 63) + (std::clamp((int)y, 0, 63) * 64);
+			auto tile = tiles.value()->at(index);
 			return static_cast<double>(tiletypes[tile]);
-		}
-		else
-		{
-			TilePosition tilePos{ (float)x, (float)y };
-			if (auto mapLevel = level->getMap()->getLevelAt(toPixelPosition(tilePos)); mapLevel != nullptr)
-			{
-				LocalWholeTilePosition localTilePos = toLocalWholeTilePosition(tilePos);
-				auto tile = mapLevel->getTiles(0)[localTilePos.x() + (static_cast<size_t>(localTilePos.y()) * 64)];
-				return static_cast<double>(tiletypes[tile]);
-			}
 		}
 	}
 

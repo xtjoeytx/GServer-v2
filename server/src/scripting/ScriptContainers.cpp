@@ -100,9 +100,9 @@ GameValue GameValue::flatten(int64_t index) const noexcept
 		if (object.has_value())
 			return *object;
 	}
-	if (m_array.has_value() && index < m_array->size())
+	if (m_array.has_value() && index < (int64_t)m_array->size())
 		return (*m_array)[index];
-	if (m_source.has_value() && index < m_source->size())
+	if (m_source.has_value() && index < (int64_t)m_source->size())
 		return (*m_source)[index];
 
 	return 0.0;

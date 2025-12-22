@@ -134,8 +134,8 @@ void setNPCFlags(ScriptEvent& event, GameVariableStore& variableStore, NPCPtr np
 
 void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level)
 {
-	variableStore.add("issparringzone", level != nullptr && level->isSparringZone);
-	variableStore.add("nopkzone", level != nullptr && level->isNoPkZone);
+	variableStore.add("issparringzone", level != nullptr && npc != nullptr && level->isSparringZone(npc->character.getMapPosition()));
+	variableStore.add("nopkzone", level != nullptr && npc != nullptr && level->isNoPkZone(npc->character.getMapPosition()));
 	variableStore.add("isonmap", level != nullptr && level->getMap() != nullptr);
 	variableStore.add("compsdead", level != nullptr && !level->hasLivingBaddies());
 }
@@ -152,7 +152,7 @@ void setOtherFlags(ScriptEvent& event, ScriptObject source, GameVariableStore& v
 	{
 		bool found = false;
 		size_t index = 0;
-		for (const auto& playerId : level->getMapPlayers())
+		for (const auto& playerId : level->getPlayers())
 		{
 			if (playerId == static_cast<PlayerID>(source.first))
 			{

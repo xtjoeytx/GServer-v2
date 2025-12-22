@@ -102,9 +102,12 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCRESET(CString& pPacket)
 	{
 		if (auto level = npc->getLevel(); level != nullptr)
 		{
-			auto levelName = level->getMapOrLevelName();
-			CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)npc->id;
-			m_server->sendPacketToLevelAndPastVisitorsAfter(level.get(), clock::to_time_t(npc->lastUpdateTime), packet);
+			auto& levelName = level->levelName;
+			if (auto levelData = level->getStaticLevelDataAtPosition(npc->character.getMapPosition()); levelData != nullptr)
+			{
+				CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)npc->id;
+				m_server->sendPacketToLevelAndPastVisitorsAfter(levelData.get(), npc->lastUpdateTime, packet);
+			}
 		}
 		npc->resetToInitialState();
 		npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
@@ -157,21 +160,8 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCWARP(CString& pPacket)
 	// Warping to a different level entirely.
 	if (npcLevel != npc->getLevelName())
 	{
-		// If this is a gmap, at least try to find a level.
-		if (npcLevel.ends_with(".gmap"))
-		{
-			if (auto map = m_server->findMap(npcLevel); map != nullptr)
-			{
-				PixelPosition globalPosition{ tileX.pixelCoordinate, tileY.pixelCoordinate };
-				if (auto level = map->getLevelAt(globalPosition); level != nullptr)
-					npc->warp(level, toLocalPixelPosition(globalPosition));
-			}
-		}
-		else
-		{
-			if (auto newLevel = m_server->getLevel(npcLevel); newLevel != nullptr)
-				npc->warp(newLevel, { tileX.pixelCoordinate, tileY.pixelCoordinate });
-		}
+		if (auto newLevel = m_server->getLoadedLevel(npcLevel, npc->getLevel()); newLevel != nullptr)
+			npc->warp(newLevel, { tileX.pixelCoordinate, tileY.pixelCoordinate });
 	}
 	// Changing position in the current level.
 	else
@@ -355,7 +345,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	auto level = m_server->getLevel(npcLevel);
+	auto level = m_server->getLoadedLevelNoHint(npcLevel);
 	if (level == nullptr)
 	{
 		m_server->sendToNC("Error adding database npc: Level does not exist");
@@ -490,14 +480,13 @@ HandlePacketResult PlayerNC::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 	if (level.isEmpty())
 		return HandlePacketResult::Handled;
 
-	auto npcLevel = m_server->getLevel(level.toString());
-	if (npcLevel != nullptr)
+	if (auto npcLevel = m_server->getLoadedLevelNoHint(level.toString()); npcLevel != nullptr)
 	{
 		CString npcDump;
 		// Variables dump from level mapname (level.nw)
 		npcDump << "Variables dump from level " << npcLevel->levelName << "\n";
 
-		for (auto npcId : npcLevel->getLevelNPCs())
+		for (auto npcId : npcLevel->getNPCs())
 		{
 			auto npc = m_server->getNPC(npcId);
 			npcDump << "\n"

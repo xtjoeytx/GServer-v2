@@ -2,6 +2,7 @@
 #define PLAYERCLIENT_H
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -78,30 +79,43 @@ public:
 
 	bool processChat(const CString& pChat);
 
-	const CString& getGroup() const;
-	void setGroup(const CString& group);
+	[[inline]] const CString& getGroup() const;
+	[[inline]] void setGroup(const CString& group);
 
 	virtual double getCalculatedTileZ() const noexcept override;
 
 	// Level manipulation
-	virtual std::string getComputedLevelName() const override;
+	virtual std::string getLevelName() const override;
 	std::shared_ptr<Level> getLevel() const;
+	std::shared_ptr<SubLevel> getSubLevel() const;
 
+public:
 	// Forcibly move a player (the client doesn't know it is transitioning levels).
-	bool warp(std::string_view levelName, LocalPixelPosition pos, time_t modTime = 0);
+	virtual bool warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
+	virtual bool warp(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
 
 	// Place the player in a new level (the client knows it is transitioning levels).
-	virtual bool enterLevel(std::shared_ptr<Level> level, LocalPixelPosition pos, time_t modTime = 0) override;
+	virtual bool enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
+	using Player::enterLevel;
 
-	bool sendLevel(std::shared_ptr<Level> level, time_t modTime, bool fromAdjacent = false);
-	bool sendLevel141(std::shared_ptr<Level> level, time_t modTime, bool fromAdjacent = false);
-	bool leaveLevel(bool resetCache = false);
-	time_t getLevelLastEnteredTime(const Level* level) const;
-	void resetLevelCache(const Level* level);
+	virtual bool leaveLevel() override;
+	virtual bool leaveSubLevel(std::shared_ptr<SubLevel> subLevel) override;
 
-	bool hasSeenFile(const std::string& file) const;
-	void setLastChatTime(time_t time) { m_lastChat = time; }
-	void setLastMovementTime(time_t time);
+	virtual bool sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
+	virtual bool sendDynamicLevelData(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
+	//virtual bool sendNearbyObjects(std::shared_ptr<Level> level) override;
+
+public:
+	//bool sendLevel(std::shared_ptr<Level> level, time_t modTime, bool fromAdjacent = false);
+	//bool sendLevel141(std::shared_ptr<Level> level, time_t modTime, bool fromAdjacent = false);
+
+	std::optional<clock::time_point> getLevelLastEnteredTime(const StaticLevelData* level) const;
+	void resetLevelCache(const StaticLevelData* level);
+
+public:
+	[[inline]] bool hasSeenFile(const std::string& file) const;
+	[[inline]] void setLastChatTime(clock::time_point time);
+	[[inline]] void setLastMovementTime(clock::time_point time);
 	void dropItemsOnDeath();
 
 public:
@@ -173,10 +187,10 @@ protected:
 	void addItem(inform_client_t, LevelItemType itemType, props::SetBy setBy = props::SetBy::SERVER);
 
 protected:
-	time_t m_lastMovement, m_lastSave, m_last1m;
-	time_t m_lastChat = 0;
-	time_t m_lastMessage = 0;
-	time_t m_lastNick = 0;
+	clock::time_point m_lastMovement, m_lastSave, m_last1m;
+	clock::time_point m_lastChat;
+	clock::time_point m_lastMessage;
+	clock::time_point m_lastNick;
 	std::vector<std::unique_ptr<CachedLevel>> m_cachedLevels;
 	std::map<CString, std::shared_ptr<Level>> m_singleplayerLevels;
 	std::weak_ptr<Level> m_currentLevel;
@@ -184,7 +198,6 @@ protected:
 	std::unordered_set<std::string> m_knownFiles;
 
 	bool m_grMovementUpdated = false;
-	bool m_firstLevel = true;
 	CString m_grMovementPackets;
 	CString m_levelGroup;
 	CString m_grExecParameterList;
@@ -209,7 +222,12 @@ inline bool PlayerClient::hasSeenFile(const std::string& file) const
 	return m_knownFiles.find(file) != m_knownFiles.end();
 }
 
-inline void PlayerClient::setLastMovementTime(time_t time)
+inline void PlayerClient::setLastChatTime(clock::time_point time)
+{
+	m_lastChat = time;
+}
+
+inline void PlayerClient::setLastMovementTime(clock::time_point time)
 {
 	m_lastMovement = time;
 	m_grMovementUpdated = true;

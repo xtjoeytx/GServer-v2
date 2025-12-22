@@ -63,7 +63,7 @@ Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
 			if (!lvl.empty())
 			{
 				constructLevels.insert({ string::toLower(lvl), currentPosition });
-				levelsByName.insert({ string::toLower(lvl), std::weak_ptr<Level>() });
+				levelDataByName.insert({ string::toLower(lvl), std::weak_ptr<StaticLevelData>() });
 			}
 			else ++empty;
 
@@ -80,7 +80,7 @@ Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
 	}
 
 	// Size the positional storage.
-	levelsByPosition.resize(static_cast<size_t>(constructSize.width() * constructSize.height()));
+	levelDataByPosition.resize(static_cast<size_t>(constructSize.width() * constructSize.height()));
 }
 
 Map::Map(is_gmap_t, const std::filesystem::path& fileName)
@@ -258,7 +258,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	}
 
 	// Size the positional storage.
-	levelsByPosition.resize(static_cast<size_t>(constructSize.width()* constructSize.height()));
+	levelDataByPosition.resize(static_cast<size_t>(constructSize.width() * constructSize.height()));
 
 	// If we don't have any levels, but we do have a generated level end, automatically create the levels.
 	if (constructLevels.empty() && !generatedLastLevel.empty())
@@ -395,6 +395,14 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 			}
 		}
 	}
+
+	// Register all of our levels as being part of a gmap so we can fix any links or warps.
+	if (auto stub = server->getStubbedLevel(fileName.string()); stub != nullptr)
+	{
+		auto& gmapLevels = server->getGmapLevelList();
+		for (const auto& [levelName, levelPos] : levels)
+			gmapLevels.insert({ levelName, stub });
+	}
 }
 
 //----------------------------
@@ -407,11 +415,11 @@ void Map::loadMapLevels() const
 		auto server = BabyDI::Get<Server>();
 		for (const auto& [levelName, position] : levels)
 		{
-			if (auto level = server->getLevel(levelName); level != nullptr)
+			if (auto level = server->getCachedLevelData(levelName); level != nullptr)
 			{
 				auto index = position.x() + position.y() * size.width();
-				levelsByName[levelName] = level;
-				levelsByPosition[index] = level;
+				levelDataByName[levelName] = level;
+				levelDataByPosition[index] = level;
 			}
 		}
 	}
@@ -419,22 +427,23 @@ void Map::loadMapLevels() const
 	{
 		for (const auto& levelName : levelsToKeepInMemory)
 		{
-			if (auto level = server->getLevel(levelName); level != nullptr)
+			if (auto level = server->getCachedLevelData(levelName); level != nullptr)
 			{
-				auto index = level->mapPosition.x() + level->mapPosition.y() * size.width();
-				levelsByName[levelName] = level;
-				levelsByPosition[index] = level;
+				auto levelIter = levels.find(levelName);
+				if (levelIter == levels.end())
+					continue;
+
+				auto index = levelIter->second.x() + levelIter->second.y() * size.width();
+				levelDataByName[levelName] = level;
+				levelDataByPosition[index] = level;
 			}
 		}
 	}
 }
 
-void Map::setLevelLoaded(std::shared_ptr<Level> level)
+void Map::setLevelDataLoaded(std::shared_ptr<StaticLevelData> level)
 {
-	if (auto it = levelsByName.find(level->levelName); it != levelsByName.end())
-		it->second = level;
-	if (size_t index = level->mapPosition.x() + level->mapPosition.y() * size.width(); index < levelsByPosition.size())
-		levelsByPosition[index] = level;
+	forceSetLevelDataLoaded(level);
 }
 
 //----------------------------
@@ -445,7 +454,7 @@ bool Map::hasLevel(std::string_view levelName) const
 	return it != levels.end();
 }
 
-std::optional<Position<uint8_t>> Map::getLevelPosition(std::string_view levelName) const
+std::optional<MapPosition> Map::getLevelPosition(std::string_view levelName) const
 {
 	auto it = levels.find(levelName);
 	if (it != levels.end())
@@ -453,24 +462,34 @@ std::optional<Position<uint8_t>> Map::getLevelPosition(std::string_view levelNam
 	return std::nullopt;
 }
 
-std::shared_ptr<Level> Map::getLevelAt(int x, int y) const
+std::string Map::getLevelNameAt(int x, int y) const
 {
 	for (const auto& [levelName, levelPos] : levels)
 	{
 		if (levelPos.x() == x && levelPos.y() == y)
-			return getLevelPtr(levelName, levelsByName[levelName]);
+			return levelName;
+	}
+	return std::string{};
+}
+
+std::shared_ptr<StaticLevelData> Map::getLevelDataAt(int x, int y) const
+{
+	for (const auto& [levelName, levelPos] : levels)
+	{
+		if (levelPos.x() == x && levelPos.y() == y)
+			return getLevelDataPtr(levelName, levelDataByName[levelName]);
 	}
 	return nullptr;
 }
 
-std::shared_ptr<Level> Map::getLevelAt(const PixelPosition& globalPosition) const
+std::shared_ptr<StaticLevelData> Map::getLevelDataAt(const PixelPosition& globalPosition) const
 {
 	int x = static_cast<int>(std::floor(globalPosition.x() / 1024));
 	int y = static_cast<int>(std::floor(globalPosition.y() / 1024));
-	return getLevelAt(x, y);
+	return getLevelDataAt(x, y);
 }
 
-std::generator<std::shared_ptr<Level>> Map::getLevelsInRange(const TilePosition& position, int syncTilesX, int syncTilesY) const noexcept
+std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> Map::getLevelDataInRange(const TilePosition& position, int syncTilesX, int syncTilesY) const noexcept
 {
 	Position<int16_t> searchPos{ static_cast<int16_t>(position.x() / 64), static_cast<int16_t>(position.y() / 64) };
 	Dimension<uint8_t> levelSyncDistance{ static_cast<uint8_t>(std::ceilf(syncTilesX / 64)), static_cast<uint8_t>(std::ceilf(syncTilesY / 64)) };
@@ -481,59 +500,61 @@ std::generator<std::shared_ptr<Level>> Map::getLevelsInRange(const TilePosition&
 		if (levelPos.x() >= area.left() && levelPos.x() <= area.right() &&
 			levelPos.y() >= area.top() && levelPos.y() <= area.bottom())
 		{
-			if (auto level = getLevelPtr(levelName, levelsByName[levelName]); level != nullptr)
-				co_yield level;
+			if (auto level = getLevelDataPtr(levelName, levelDataByName[levelName]); level != nullptr)
+				co_yield std::make_pair(level, levelPos);
 		}
 	}
 }
 
-std::generator<std::shared_ptr<Level>> Map::getLevelsInRectangle(const PixelRectangleArea& area) const noexcept
+std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> Map::getLevelDataInRectangle(const PixelRectangleArea& area) const noexcept
 {
-	for (const auto& [levelName, levelPtr] : levelsByName)
+	for (const auto& [levelName, levelPos] : levels)
 	{
-		if (auto level = getLevelPtr(levelName, levelPtr); level != nullptr)
+		PixelPosition levelOrigin{ levelPos.x() * 1024, levelPos.y() * 1024 };
+		if (positionInRectangle(levelOrigin, area))
 		{
-			auto levelBox = level->getMapBoundingBox();
-			if (area.right() < levelBox.left() || area.bottom() < levelBox.top() || area.left() > levelBox.right() || area.top() > levelBox.bottom())
-				continue;
-
-			co_yield level;
+			auto index = (levelPos.y() * size.width()) + levelPos.x();
+			co_yield std::make_pair(getLevelDataPtr(levelName, levelDataByPosition[index]), levelPos);
 		}
 	}
 }
 
-std::generator<std::shared_ptr<Level>> Map::getAllLevels() const noexcept
+std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> Map::getAllLevelData() const noexcept
 {
-	for (const auto& [levelName, levelPtr] : levelsByName)
+	for (const auto& [levelName, levelPos] : levels)
 	{
-		if (auto level = getLevelPtr(levelName, levelPtr); level != nullptr)
-			co_yield level;
+		auto index = (levelPos.y() * size.width()) + levelPos.x();
+		co_yield std::make_pair(getLevelDataPtr(levelName, levelDataByPosition[index]), levelPos);
 	}
 }
 
 //----------------------------
 
-void Map::forceSetLevelLoaded(std::shared_ptr<Level> level) const noexcept
+void Map::forceSetLevelDataLoaded(std::shared_ptr<StaticLevelData> level) const noexcept
 {
-	if (auto it = levelsByName.find(level->levelName); it != levelsByName.end())
+	if (auto it = levelDataByName.find(level->levelName); it != levelDataByName.end())
 		it->second = level;
-	if (size_t index = level->mapPosition.x() + level->mapPosition.y() * size.width(); index < levelsByPosition.size())
-		levelsByPosition[index] = level;
+
+	if (auto position = getLevelPosition(level->levelName); position.has_value())
+	{
+		if (size_t index = position.value().x() + position.value().y() * size.width(); index < levelDataByPosition.size())
+			levelDataByPosition[index] = level;
+	}
 }
 
-std::shared_ptr<Level> Map::getLevelPtr(std::string_view levelName, std::weak_ptr<Level> levelPtr) const noexcept
+std::shared_ptr<StaticLevelData> Map::getLevelDataPtr(std::string_view levelName, std::weak_ptr<StaticLevelData> levelPtr) const noexcept
 {
 	if (levelName.empty())
 		return nullptr;
 	if (auto level = levelPtr.lock(); level != nullptr)
 		return level;
 
-	// The level could not be locked, so ask the server for a stub.
+	// The level could not be locked, so ask the server to load it.
 	auto server = BabyDI::Get<Server>();
-	if (auto level = server->stubOrGetLevel(levelName); level != nullptr)
+	if (auto level = server->getCachedLevelData(levelName); level != nullptr)
 	{
-		level->setMap(server->findMap(getMapName()));
-		forceSetLevelLoaded(level);
+		//level->setMap(server->findMap(getMapName()));
+		forceSetLevelDataLoaded(level);
 		return level;
 	}
 

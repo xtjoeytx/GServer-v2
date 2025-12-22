@@ -194,6 +194,12 @@ inline clock::time_point convertFromTimeT(time_t time)
 	return clock::from_time_t(time);
 }
 
+template <typename T = std::chrono::seconds>
+inline T timeDifference(const clock::time_point& start, const clock::time_point& end)
+{
+	return std::chrono::duration_cast<T>(end - start);
+}
+
 //----------------------------
 // Variant helpers
 
@@ -246,6 +252,19 @@ template<class T>
 inline auto toWeakPtr(std::shared_ptr<T>& ptr)
 {
 	return std::weak_ptr<T>(ptr);
+}
+
+//----------------------------
+// Other helpers
+
+inline constexpr auto inRangeInclusive(std::integral auto value, std::integral auto min, std::integral auto max)
+{
+	return value >= min && value <= max;
+}
+
+inline constexpr auto inRangeExclusive(std::integral auto value, std::integral auto min, std::integral auto max)
+{
+	return value > min && value < max;
 }
 
 //----------------------------

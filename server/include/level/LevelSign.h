@@ -28,7 +28,7 @@ struct LevelSign
 
 	LocalWholeTilePosition position;
 	std::string text;
-	std::string unformattedText;
+	std::string encodedText;
 
 	[[inline]] void constructScriptParameters();
 	string_map<GameValue> scriptParameters;

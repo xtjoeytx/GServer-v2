@@ -87,8 +87,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	npc->lastSaveTime = fs::getFileModTime(filePath);
 
 	// Set the default warp type.
-	if (server->hasNPCServer())
-		npc->warpRestrictions = NPCWarpRestrictions::NOTALLOWED;
+	auto warpRestriction = server->hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
 
 	// Set some default values.
 	bool isMale = true;
@@ -130,7 +129,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "IMGPART")
 		{
-			auto parts = string::splitToVector(lineView, " "sv);
+			auto parts = string::splitToVectorView(lineView, " "sv);
 			if (parts.size() >= 4)
 			{
 				npc->imagePart.position = { string::toNumber<uint16_t>(parts[0]), string::toNumber<uint16_t>(parts[1]) };
@@ -258,7 +257,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "COLORS")
 		{
-			auto tokens = string::splitToVector(lineView, ","sv);
+			auto tokens = string::splitToVectorView(lineView, ","sv);
 			for (size_t idx = 0; idx < std::min(tokens.size(), (size_t)5); idx++)
 				npc->character.colors[idx] = string::toNumber<uint8_t>(tokens[idx]);
 			npc->modTime[PROPID(NPCProp::COLORS)] = updateTime;
@@ -308,7 +307,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "SAVEARR")
 		{
-			auto tokens = string::splitToVector(lineView, ","sv);
+			auto tokens = string::splitToVectorView(lineView, ","sv);
 			for (size_t idx = 0; idx < std::min(tokens.size(), npc->saves.size()); idx++)
 			{
 				npc->saves[idx] = string::toNumber<uint8_t>(tokens[idx]);
@@ -317,11 +316,11 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "CANWARP")
 		{
-			npc->warpRestrictions = string::toNumber<uint8_t>(std::string{ lineView }) != 0 ? NPCWarpRestrictions::ALLOWED : npc->warpRestrictions;
+			warpRestriction = string::toNumber<uint8_t>(std::string{ lineView }) != 0 ? NPCWarpRestrictions::ALLOWED : warpRestriction;
 		}
 		else if (command == "CANWARP2")
 		{
-			npc->warpRestrictions = string::toNumber<uint8_t>(std::string{ lineView }) != 0 ? NPCWarpRestrictions::ONLYOVERWORLD : npc->warpRestrictions;
+			warpRestriction = string::toNumber<uint8_t>(std::string{ lineView }) != 0 ? NPCWarpRestrictions::ONLYOVERWORLD : warpRestriction;
 		}
 
 		// Official variables for these are unknown.
@@ -422,27 +421,11 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			npc->joinClass(className);
 	}
 
-	// Check if the level is a gmap.
-	// If it is, we need to determine the actual level.
-	string::trimMutate(npc->level);
-	if (npc->level.ends_with(".gmap"))
-	{
-		if (auto foundMap = server->findMap(npc->level); foundMap != nullptr)
-		{
-			if (auto mapLevel = foundMap->getLevelAt(npc->character.mapX, npc->character.mapY); mapLevel != nullptr)
-				npc->level = mapLevel->levelName;
-		}
-	}
-
 	// Add the NPC to the server.
 	server->addNPC(npc, false);
 
-	// Add it to the level.
-	if (auto level = server->stubOrGetLevel(npc->level); level != nullptr)
-	{
-		level->addNPC(npc);
-		npc->m_currentLevel = level;
-	}
+	// Set the warp restriction (do this after adding to the server since that will overwrite the restriction).
+	npc->warpRestrictions = warpRestriction;
 
 	// Check if we need to rename the file.
 	auto expectedFileName = fs::getHTMLEscapedFileName(std::format("npc{}.txt", npc->name)).string();
@@ -518,7 +501,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		file->writeConfigLine("X", string::to_string(npc->character.localPixelX / 16.0, 2));
 		file->writeConfigLine("Y", string::to_string(npc->character.localPixelY / 16.0, 2));
 		file->writeConfigLine("Z", string::to_string(npc->character.localPixelZ / 16.0, 2));
-		if (level->isOnGmap())
+		if (level->isGmap())
 		{
 			file->writeConfigLine("MAPX", string::to_string(npc->character.mapX));
 			file->writeConfigLine("MAPY", string::to_string(npc->character.mapY));

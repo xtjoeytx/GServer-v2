@@ -4,14 +4,15 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 #include <string>
 #include <vector>
 
 #include <CString.h>
 
-#include <utilities/Extents.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -90,8 +91,8 @@ struct ShowImg
 	uint8_t drawMode = 0;
 	uint8_t layer = 1;
 	std::array<float, 4> colors = { 0.0f, 0.0f, 0.0f, 1.0f };
-	std::array<clock::time_point, SHOWIMGPROP_COUNT> modTime;
-	std::array<clock::time_point, SHOWIMGPROP_COUNT> savedModTime;
+	std::array<std::optional<clock::time_point>, SHOWIMGPROP_COUNT> modTime;
+	std::array<std::optional<clock::time_point>, SHOWIMGPROP_COUNT> savedModTime;
 
 	static ShowImg ConstructImage(clock::time_point modTime, const PixelPosition& position, std::string_view image) noexcept;
 	static ShowImg ConstructText(clock::time_point modTime, const PixelPosition& position, std::string_view text, std::string_view font = {}, std::string_view style = {}) noexcept;
@@ -100,7 +101,7 @@ struct ShowImg
 
 	void processProps(CString& props);
 	CString getPropPacket(ShowImgProp prop) const;
-	CString getAllPropsPacket(clock::time_point newTime = clock::time_point::min()) const;
+	CString getAllPropsPacket(std::optional<clock::time_point> newTime = std::nullopt) const;
 	CString getModifiedPropsPacket() const;
 
 	[[inline]] void recordCurrentPropModTime();

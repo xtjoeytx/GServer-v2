@@ -12,6 +12,7 @@
 #include <npcserver/PlayerNPCServer.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
+#include <player/PlayerClientOriginal.h>
 #include <player/PlayerLogin.h>
 #include <player/PlayerNC.h>
 #include <player/PlayerRC.h>
@@ -59,7 +60,11 @@ HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 	// Create our appropriate player.
 	std::shared_ptr<Player> player = nullptr;
 	if (m_type & PLTYPE_ANYCLIENT)
-		player = std::make_shared<PlayerClient>(m_playerSock, m_id);
+	{
+		if (m_type == PLTYPE_CLIENT)
+			player = std::make_shared<PlayerClientOriginal>(m_playerSock, m_id);
+		else player = std::make_shared<PlayerClient>(m_playerSock, m_id);
+	}
 	else if (m_type & PLTYPE_ANYRC)
 		player = std::make_shared<PlayerRC>(m_playerSock, m_id);
 	else if (m_type & PLTYPE_ANYNC)

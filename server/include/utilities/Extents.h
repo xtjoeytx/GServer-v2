@@ -34,6 +34,10 @@ struct Position
 	constexpr Position() : data{ T{}, T{}, T{} } {}
 	constexpr Position(T x, T y) : data{ x, y, T{} } {}
 	constexpr Position(T x, T y, T z) : data{ x, y, z } {}
+	constexpr Position(const Position<T>& other) : data{ other.data } {}
+
+	template<typename O>
+	constexpr Position(const Position<O>& other) : data{ T{ other.data[0] }, T{ other.data[1] }, T{ other.data[2] } } {}
 
 	constexpr bool operator==(const Position<T>& other) const
 	{
@@ -111,8 +115,12 @@ struct Position
 
 using PixelPosition = Position<int32_t>;
 using LocalPixelPosition = Position<int16_t>;
+
 using TilePosition = Position<float>;
+using WholeTilePosition = Position<uint16_t>;
 using LocalWholeTilePosition = Position<uint8_t>;
+
+using MapPosition = Position<uint8_t>;
 
 //----------------------------
 // Dimension
@@ -125,6 +133,10 @@ struct Dimension
 	constexpr Dimension(T width, T height) requires PixelBasedPosition<T> : data{ width, height, T{48} } {}
 	constexpr Dimension(T width, T height) requires TileBasedPosition<T> : data{ width, height, T{3} } {}
 	constexpr Dimension(T width, T height, T length) : data{ width, height, length } {}
+	constexpr Dimension(const Dimension<T>& other) : data{ other.data } {}
+
+	template<typename O>
+	constexpr Dimension(const Dimension<O>& other) : data{ T{ other.data[0] }, T{ other.data[1] }, T{ other.data[2] } } {}
 
 	constexpr bool operator==(const Dimension<T>& other) const
 	{
@@ -178,10 +190,12 @@ struct Rectangle
 
 using PixelRectangleArea = Rectangle<int32_t, uint16_t>;
 using LocalPixelRectangleArea = Rectangle<int16_t, uint16_t>;
-using LocalWholeTileRectangleArea = Rectangle<uint8_t, uint8_t>;
-using ImagePartRectangle = Rectangle<uint16_t, uint8_t>;
+
 using TileRectangleArea = Rectangle<float, float>;
-using WholeTileRectangleArea = Rectangle<float, uint8_t>;
+using WholeTileRectangleArea = Rectangle<uint16_t, uint8_t>;
+using LocalWholeTileRectangleArea = Rectangle<uint8_t, uint8_t>;
+
+using ImagePartRectangle = Rectangle<uint16_t, uint8_t>;
 
 //----------------------------
 // Intersections
@@ -204,6 +218,17 @@ inline constexpr bool rectanglesIntersect(const Rectangle<RectPosL, RectDimL>& f
 		|| first.sky() < second.ground()
 		|| second.sky() < first.ground()
 		) == false;
+}
+
+template<typename RectPosL, typename RectDimL, typename RectPosR, typename RectDimR>
+inline constexpr bool rectangleContained(const Rectangle<RectPosL, RectDimL>& child, const Rectangle<RectPosR, RectDimR>& parent)
+{
+	return (child.left() >= parent.left()
+		&& child.right() <= parent.right()
+		&& child.top() >= parent.top()
+		&& child.bottom() <= parent.bottom()
+		&& child.ground() >= parent.ground()
+		&& child.sky() <= parent.sky());
 }
 
 //----------------------------
@@ -340,6 +365,14 @@ inline constexpr LocalWholeTilePosition toLocalWholeTilePosition(const Position<
 		auto z = static_cast<int32_t>(position.z() + std::numeric_limits<float>::epsilon());
 		return LocalWholeTilePosition{ static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z) };
 	}
+	// Whole tiles to local whole tiles.
+	else if constexpr (std::same_as<Type, uint16_t>)
+	{
+		auto x = static_cast<int32_t>(position.x());
+		auto y = static_cast<int32_t>(position.y());
+		auto z = static_cast<int32_t>(position.z());
+		return LocalWholeTilePosition{ static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z) };
+	}
 	// Just convert the units.
 	else
 	{
@@ -347,9 +380,50 @@ inline constexpr LocalWholeTilePosition toLocalWholeTilePosition(const Position<
 	}
 }
 
-inline constexpr std::pair<uint8_t, uint8_t> toMapPosition(const PixelPosition& position)
+template<typename Type>
+inline constexpr WholeTilePosition toWholeTilePosition(const Position<Type>& position)
+{
+	// Pixels to whole tiles.
+	if constexpr (std::same_as<Type, int16_t> || std::same_as<Type, int32_t>)
+	{
+		auto x = static_cast<uint16_t>(position.x() / 16);
+		auto y = static_cast<uint16_t>(position.y() / 16);
+		auto z = static_cast<uint16_t>(position.z() / 16);
+		return WholeTilePosition{ static_cast<uint16_t>(x), static_cast<uint16_t>(y), static_cast<uint16_t>(z) };
+	}
+	// Same coordinates.
+	else if constexpr (std::same_as<Type, uint16_t>)
+	{
+		return position;
+	}
+	// Tiles to whole tiles.
+	else if constexpr (std::same_as<Type, float>)
+	{
+		auto x = static_cast<int32_t>(position.x() + std::numeric_limits<float>::epsilon());
+		auto y = static_cast<int32_t>(position.y() + std::numeric_limits<float>::epsilon());
+		auto z = static_cast<int32_t>(position.z() + std::numeric_limits<float>::epsilon());
+		return WholeTilePosition{ static_cast<uint16_t>(x), static_cast<uint16_t>(y), static_cast<uint16_t>(z) };
+	}
+	// Just convert the units.
+	else
+	{
+		return WholeTilePosition{ static_cast<uint16_t>(position.x()), static_cast<uint16_t>(position.y()), static_cast<uint16_t>(position.z()) };
+	}
+}
+
+inline constexpr MapPosition toMapPosition(const PixelPosition& position)
 {
 	return { static_cast<uint8_t>(position.x() / 1024), static_cast<uint8_t>(position.y() / 1024) };
+}
+
+inline constexpr MapPosition toMapPosition(const TilePosition& position)
+{
+	return { static_cast<uint8_t>((position.x() + std::numeric_limits<float>::epsilon()) / 64), static_cast<uint8_t>((position.y() + std::numeric_limits<float>::epsilon()) / 64) };
+}
+
+inline constexpr MapPosition toMapPosition(const WholeTilePosition& position)
+{
+	return { static_cast<uint8_t>(position.x() / 64), static_cast<uint8_t>(position.y() / 64) };
 }
 
 //----------------------------
@@ -361,7 +435,7 @@ inline constexpr PixelRectangleArea toPixelRectangleArea(const TileRectangleArea
 }
 
 template<typename P, typename S>
-inline constexpr PixelRectangleArea toPixelRectangleArea(const PixelPosition& origin, const Rectangle<P, S>& rect)
+inline constexpr PixelRectangleArea toPixelRectangleArea(const MapPosition& origin, const Rectangle<P, S>& rect)
 {
 	// Same coordinates.
 	if constexpr (std::same_as<P, int32_t>)
@@ -389,7 +463,7 @@ inline constexpr PixelRectangleArea toPixelRectangleArea(const PixelPosition& or
 }
 
 template<typename P, typename S>
-inline constexpr LocalWholeTileRectangleArea toLocalWholeTileRectangleArea(const PixelPosition& origin, const Rectangle<P, S>& rect)
+inline constexpr LocalWholeTileRectangleArea toLocalWholeTileRectangleArea(const Rectangle<P, S>& rect)
 {
 	// Same coordinates.
 	if constexpr (std::same_as<P, uint8_t>)
@@ -397,65 +471,43 @@ inline constexpr LocalWholeTileRectangleArea toLocalWholeTileRectangleArea(const
 		Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
 		return LocalWholeTileRectangleArea{ rect.position, size };
 	}
+
+	int32_t x;
+	int32_t y;
+	int32_t z;
+	int32_t width;
+	int32_t height;
+	int32_t length;
+
 	// Tiles to local whole tiles.
-	else if constexpr (std::same_as<P, float>)
+	if constexpr (std::same_as<P, float>)
 	{
-		auto x = static_cast<int32_t>(rect.position.x() + std::numeric_limits<float>::epsilon());
-		auto y = static_cast<int32_t>(rect.position.y() + std::numeric_limits<float>::epsilon());
-		auto z = static_cast<int32_t>(rect.position.z() + std::numeric_limits<float>::epsilon());
-		auto width = static_cast<int32_t>(rect.size.width() + std::numeric_limits<float>::epsilon());
-		auto height = static_cast<int32_t>(rect.size.height() + std::numeric_limits<float>::epsilon());
-		auto length = static_cast<int32_t>(rect.size.length() + std::numeric_limits<float>::epsilon());
-
-		// If the relative position to the origin is negative, we need to adjust it to be within the local level.
-		if (x * 16 < origin.x())
-		{
-			width -= (origin.x() - (x * 16)) / 16;
-			x = 0;
-		}
-		if (y * 16 < origin.y())
-		{
-			height -= (origin.y() - (y * 16)) / 16;
-			y = 0;
-		}
-
-		// Adjust the position to fit within the local level.
-		x %= 64;
-		y %= 64;
-
-		// If the boundaries are out of the local level, adjust them to fit.
-		if (x + width > 64) width = 64 - x;
-		if (y + height > 64) height = 64 - y;
-
-		LocalWholeTilePosition pos{ static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(z) };
-		Dimension<uint8_t> size{ static_cast<uint8_t>(width), static_cast<uint8_t>(height), static_cast<uint8_t>(length) };
-		return LocalWholeTileRectangleArea{ pos, size };
+		x = static_cast<int32_t>(rect.position.x() + std::numeric_limits<float>::epsilon());
+		y = static_cast<int32_t>(rect.position.y() + std::numeric_limits<float>::epsilon());
+		z = static_cast<int32_t>(rect.position.z() + std::numeric_limits<float>::epsilon());
+		width = static_cast<int32_t>(rect.size.width() + std::numeric_limits<float>::epsilon());
+		height = static_cast<int32_t>(rect.size.height() + std::numeric_limits<float>::epsilon());
+		length = static_cast<int32_t>(rect.size.length() + std::numeric_limits<float>::epsilon());
+	}
+	// Whole tiles to local whole tiles.
+	else if constexpr (std::same_as<P, uint16_t>)
+	{
+		x = static_cast<int32_t>(rect.position.x());
+		y = static_cast<int32_t>(rect.position.y());
+		z = static_cast<int32_t>(rect.position.z());
+		width = static_cast<int32_t>(rect.size.width());
+		height = static_cast<int32_t>(rect.size.height());
+		length = static_cast<int32_t>(rect.size.length());
 	}
 	// Pixels to local whole tiles.
 	else if constexpr (std::same_as<P, int16_t> || std::same_as<P, int32_t>)
 	{
-		auto x = static_cast<int32_t>(rect.position.x() / 16);
-		auto y = static_cast<int32_t>(rect.position.y() / 16);
-		auto z = static_cast<int32_t>(rect.position.z() / 16);
-		auto width = static_cast<int32_t>(rect.size.width() / 16);
-		auto height = static_cast<int32_t>(rect.size.height() / 16);
-		auto length = static_cast<int32_t>(rect.size.length() / 16);
-
-		// If the relative position to the origin is negative, we need to adjust it to be within the local level.
-		if (x * 16 < origin.x()) x = 0;
-		if (y * 16 < origin.y()) y = 0;
-
-		// Adjust the position to fit within the local level.
-		x %= 64;
-		y %= 64;
-
-		// If the boundaries are out of the local level, adjust them to fit.
-		if (x + width > 64) width = 64 - x;
-		if (y + height > 64) height = 64 - y;
-
-		LocalWholeTilePosition pos{ static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(z) };
-		Dimension<uint8_t> size{ static_cast<uint8_t>(width), static_cast<uint8_t>(height), static_cast<uint8_t>(length) };
-		return LocalWholeTileRectangleArea{ pos, size };
+		x = static_cast<int32_t>(rect.position.x() / 16);
+		y = static_cast<int32_t>(rect.position.y() / 16);
+		z = static_cast<int32_t>(rect.position.z() / 16);
+		width = static_cast<int32_t>(rect.size.width() / 16);
+		height = static_cast<int32_t>(rect.size.height() / 16);
+		length = static_cast<int32_t>(rect.size.length() / 16);
 	}
 	// Just convert the units.
 	else
@@ -464,6 +516,103 @@ inline constexpr LocalWholeTileRectangleArea toLocalWholeTileRectangleArea(const
 		Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
 		return LocalWholeTileRectangleArea{ pos, size };
 	}
+
+	LocalWholeTilePosition pos{ static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z) };
+	Dimension<uint8_t> size{ static_cast<uint8_t>(width), static_cast<uint8_t>(height), static_cast<uint8_t>(length) };
+	return LocalWholeTileRectangleArea{ pos, size };
+}
+
+template<typename P, typename S>
+inline constexpr LocalWholeTileRectangleArea clipLocalWholeTileRectangleArea(const MapPosition& origin, const Rectangle<P, S>& rect)
+{
+	// Same coordinates.
+	if constexpr (std::same_as<P, uint8_t>)
+	{
+		Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
+		return LocalWholeTileRectangleArea{ rect.position, size };
+	}
+
+	int32_t x;
+	int32_t y;
+	int32_t z;
+	int32_t width;
+	int32_t height;
+	int32_t length;
+	PixelPosition pixelOrigin = PixelPosition{ static_cast<int32_t>(origin.x()) * 1024, static_cast<int32_t>(origin.y()) * 1024, 0 };
+
+	// Tiles to local whole tiles.
+	if constexpr (std::same_as<P, float>)
+	{
+		x = static_cast<int32_t>(rect.position.x() + std::numeric_limits<float>::epsilon());
+		y = static_cast<int32_t>(rect.position.y() + std::numeric_limits<float>::epsilon());
+		z = static_cast<int32_t>(rect.position.z() + std::numeric_limits<float>::epsilon());
+		width = static_cast<int32_t>(rect.size.width() + std::numeric_limits<float>::epsilon());
+		height = static_cast<int32_t>(rect.size.height() + std::numeric_limits<float>::epsilon());
+		length = static_cast<int32_t>(rect.size.length() + std::numeric_limits<float>::epsilon());
+	}
+	// Whole tiles to local whole tiles.
+	else if constexpr (std::same_as<P, uint16_t>)
+	{
+		x = static_cast<int32_t>(rect.position.x());
+		y = static_cast<int32_t>(rect.position.y());
+		z = static_cast<int32_t>(rect.position.z());
+		width = static_cast<int32_t>(rect.size.width());
+		height = static_cast<int32_t>(rect.size.height());
+		length = static_cast<int32_t>(rect.size.length());
+	}
+	// Pixels to local whole tiles.
+	else if constexpr (std::same_as<P, int16_t> || std::same_as<P, int32_t>)
+	{
+		x = static_cast<int32_t>(rect.position.x() / 16);
+		y = static_cast<int32_t>(rect.position.y() / 16);
+		z = static_cast<int32_t>(rect.position.z() / 16);
+		width = static_cast<int32_t>(rect.size.width() / 16);
+		height = static_cast<int32_t>(rect.size.height() / 16);
+		length = static_cast<int32_t>(rect.size.length() / 16);
+	}
+	// Just convert the units.
+	else
+	{
+		Position<uint8_t> pos{ static_cast<uint8_t>(rect.position.x()), static_cast<uint8_t>(rect.position.y()), static_cast<uint8_t>(rect.position.z()) };
+		Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
+		return LocalWholeTileRectangleArea{ pos, size };
+	}
+
+	// If the relative position to the origin is negative, we need to adjust it to be within the local level.
+	if (x * 16 < pixelOrigin.x())
+	{
+		width -= (pixelOrigin.x() - (x * 16)) / 16;
+		x = 0;
+	}
+	if (y * 16 < pixelOrigin.y())
+	{
+		height -= (pixelOrigin.y() - (y * 16)) / 16;
+		y = 0;
+	}
+
+	// Adjust the position to fit within the local level.
+	x %= 64;
+	y %= 64;
+
+	// If the boundaries are out of the local level, adjust them to fit.
+	if (x + width > 64) width = 64 - x;
+	if (y + height > 64) height = 64 - y;
+
+	LocalWholeTilePosition pos{ static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(z) };
+	Dimension<uint8_t> size{ static_cast<uint8_t>(width), static_cast<uint8_t>(height), static_cast<uint8_t>(length) };
+	return LocalWholeTileRectangleArea{ pos, size };
+}
+
+inline constexpr WholeTileRectangleArea toWholeTileRectangleArea(const PixelRectangleArea& rect)
+{
+	return WholeTileRectangleArea{ toWholeTilePosition(rect.position), Dimension<uint8_t>(static_cast<uint8_t>(rect.size.width() / 16), static_cast<uint8_t>(rect.size.height() / 16)) };
+}
+
+inline constexpr WholeTileRectangleArea toWholeTileRectangleArea(const TileRectangleArea& rect)
+{
+	auto width = static_cast<uint8_t>(rect.size.width() + std::numeric_limits<float>::epsilon());
+	auto height = static_cast<uint8_t>(rect.size.height() + std::numeric_limits<float>::epsilon());
+	return WholeTileRectangleArea{ toWholeTilePosition(rect.position), Dimension<uint8_t>(width, height) };
 }
 
 //----------------------------
@@ -666,13 +815,13 @@ template<size_t I, typename T>
 constexpr T& get(preagonal::Position<T>& vec) { return vec.data[I]; }
 
 template<size_t I, typename T>
-constexpr T&& get(const preagonal::Position<T>& vec) { return vec.data[I]; }
+constexpr const T& get(const preagonal::Position<T>& vec) { return vec.data[I]; }
 
 template<size_t I, typename T>
 constexpr T& get(preagonal::Dimension<T>& vec) { return vec.data[I]; }
 
 template<size_t I, typename T>
-constexpr T&& get(const preagonal::Dimension<T>& vec) { return vec.data[I]; }
+constexpr const T& get(const preagonal::Dimension<T>& vec) { return vec.data[I]; }
 
 template <size_t I, typename P, typename D>
 std::tuple_element_t<I, preagonal::Rectangle<P, D>>& get(preagonal::Rectangle<P, D>& rect)

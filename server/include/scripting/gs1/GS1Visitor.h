@@ -7,6 +7,7 @@
 #include <optional>
 #include <string_view>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -24,6 +25,8 @@
 namespace preagonal
 {
 class Level;
+class SubLevel;
+class StaticLevelData;
 class Character;
 }
 
@@ -57,6 +60,7 @@ public:
 	[[inline]] auto sourceStack() const;
 	std::optional<ScriptObject> findNearestScriptObjectSourceFromStack(ScriptObjectType type) const;
 	std::shared_ptr<Level> findCurrentLevel() const;
+	std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<StaticLevelData>> findCurrentLevelData() const;
 
 public:
 	template<ValidGameValue T>

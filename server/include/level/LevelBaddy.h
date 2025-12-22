@@ -97,6 +97,7 @@ public:
 
 	void reset();
 	void dropItem() const;
+	bool isAlive() const { return mode != BaddyMode::DEAD; }
 	bool canRespawn() const { return m_canRespawn; }
 	bool canBeReplaced() const { return !m_canRespawn && mode == BaddyMode::DEAD; }
 
@@ -108,6 +109,7 @@ public:
 public:
 	void setRespawn(const bool pRespawn) { m_canRespawn = pRespawn; }
 	void setImage(std::string_view image);
+	[[inline]] void setLevel(LevelPtr level);
 
 public:
 	float getTileX() const { return position.x() / 16.0f; }
@@ -139,6 +141,11 @@ private:
 };
 
 //----------------------------
+
+inline void LevelBaddy::setLevel(LevelPtr level)
+{
+	m_level = level;
+}
 
 inline void LevelBaddy::constructScriptParameters()
 {

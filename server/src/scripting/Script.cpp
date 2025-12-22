@@ -370,10 +370,14 @@ void Script::split(std::string& source) noexcept
 		m_serverside = string::trim(source);
 		m_clientside = {};
 	}
+}
 
+void Script::compileScript() noexcept
+{
 	m_client_script.reset();
 	m_server_script.reset();
 
+	auto server = BabyDI::Get<Server>();
 	if (server && server->hasNPCServer())
 	{
 		auto npcServer = server->getNPCServer();

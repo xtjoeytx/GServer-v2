@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <ctime>
 #include <format>
 #include <iterator>
 #include <memory>
@@ -17,9 +16,9 @@
 #include <IEnums.h>
 
 #include <Account.h>
+#include <BabyDI.h>
 #include <Server.h>
 #include <level/Level.h>
-#include <level/Map.h>
 #include <misc/WordFilter.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
@@ -71,6 +70,20 @@ static void printProp(const Player* player, PlayerProp playerProp, PropertyBase*
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static bool canSendProp(PlayerProp prop)
+{
+	static Server* server = nullptr;
+	if (server == nullptr)
+		server = BabyDI::Get<Server>();
+
+	if (server->Generation == ServerGeneration::ORIGINAL && PROPID(prop) > PROPID(PlayerProp::RATING))
+		return false;
+
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 std::shared_ptr<PropertyBase> Player::constructPropFor(PlayerProp prop) const
 {
 	switch (prop)
@@ -115,7 +128,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 	result.resultFlags.set(props::SetResults::sendToSource, setBy == props::SetBy::SERVER);
 
 	const auto& curTime = m_server->getFrameStartTime();
-	clock::time_point oldTime = modTime[PROPID(prop)];
+	auto oldTime = modTime[PROPID(prop)];
 	modTime[PROPID(prop)] = curTime;
 
 #define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); modTime[PROPID(prop)] = oldTime; return result; } while(false)
@@ -343,7 +356,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			if (player != nullptr)
 			{
-				player->setLastChatTime(time(0));
+				player->setLastChatTime(m_server->getFrameStartTime());
 
 				// Try to process the chat.  If it wasn't processed, apply the word filter to it.
 				if (!player->processChat(account.character.chatMessage))
@@ -390,7 +403,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			if (player != nullptr)
 			{
-				player->setLastMovementTime(time(0));
+				player->setLastMovementTime(m_server->getFrameStartTime());
 				player->testForTouch(result, movementDirection);
 			}
 			break;
@@ -412,7 +425,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			if (player != nullptr)
 			{
-				player->setLastMovementTime(time(0));
+				player->setLastMovementTime(m_server->getFrameStartTime());
 				player->testForTouch(result, movementDirection);
 			}
 			break;
@@ -438,7 +451,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			result.resultPropIds.push_back(PROPID(PlayerProp::Z2));
 
 			if (player != nullptr)
-				player->setLastMovementTime(time(0));
+				player->setLastMovementTime(m_server->getFrameStartTime());
 			break;
 		}
 
@@ -496,7 +509,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			// When they die, increase deaths and make somebody else level leader.
 			if ((oldStatus & PLSTATUS_DEAD) == 0 && (account.status & PLSTATUS_DEAD) > 0 && level != nullptr)
 			{
-				if (level->isSparringZone == false)
+				if (level->isSparringZone(getMapPosition()) == false)
 				{
 					++account.deaths;
 					player->dropItemsOnDeath();
@@ -504,12 +517,12 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 				// If we are the leader and there are more players on the level, we want to remove
 				// ourself from the leader position and tell the new leader that they are the leader.
-				if (level->isPlayerLeader(m_id) && level->getLevelPlayers().size() > 1 && !level->isOnGmap())
+				if (level->isPlayerLeader(m_id) && level->getPlayers().size() > 1 && !level->isGmap())
 				{
 					level->removePlayer(m_id);
 					level->addPlayer(m_id);
 
-					if (auto leader = m_server->getPlayer(level->getLevelPlayers().front()); leader != nullptr)
+					if (auto leader = m_server->getPlayer(level->getPlayers().front()); leader != nullptr)
 						leader->sendPacket(CString() >> (char)PLO_ISLEADER);
 				}
 
@@ -589,7 +602,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			// Not supported on gmaps.
 			// If we want carry npcs to work with database npcs, a lot of work would be required.
 			// The throw range is 9 tiles.  We could probably send a move2 command on a throw.
-			if (level && level->isOnGmap())
+			if (level && level->isGmap())
 			{
 				// I tried to throw the NPC and make it visible again, but there seems to be a race condition with the client.
 				// The client wasn't throwing the NPC automatically when setting the PlayerProp::CARRYNPC to 0.
@@ -754,19 +767,18 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::GMAPLEVELX:
 		{
 			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
+			if (numProp == nullptr || level == nullptr || !level->isGmap())
 				SETPROP_RETURN_ERROR;
 
-			if (level == nullptr)
-				break;
+			if (auto subLevel = level->getSubLevelAtPosition(getMapPosition()); subLevel != nullptr)
+				leaveSubLevel(subLevel);
 
-			if (auto cmap = level->getMap(); cmap && cmap->isGmap())
+			account.character.mapX = numProp->value;
+
+			if (auto levelData = level->getStaticLevelDataAtPosition(getMapPosition()); levelData != nullptr)
 			{
-				if (auto newLevel = cmap->getLevelAt(numProp->value, level->mapPosition.y()); newLevel != nullptr)
-				{
-					account.character.mapX = numProp->value;
-					enterLevel(newLevel, account.character.getLocalPosition(), player->getLevelLastEnteredTime(newLevel.get()));
-				}
+				auto lastEnteredTime = player->getLevelLastEnteredTime(levelData.get());
+				sendDynamicLevelData(level, lastEnteredTime);
 			}
 			break;
 		}
@@ -774,19 +786,18 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::GMAPLEVELY:
 		{
 			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
+			if (numProp == nullptr || level == nullptr || !level->isGmap())
 				SETPROP_RETURN_ERROR;
 
-			if (level == nullptr)
-				break;
+			if (auto subLevel = level->getSubLevelAtPosition(getMapPosition()); subLevel != nullptr)
+				leaveSubLevel(subLevel);
 
-			if (auto cmap = level->getMap(); cmap && cmap->isGmap())
+			account.character.mapY = numProp->value;
+
+			if (auto levelData = level->getStaticLevelDataAtPosition(getMapPosition()); levelData != nullptr)
 			{
-				if (auto newLevel = cmap->getLevelAt(level->mapPosition.x(), numProp->value); newLevel != nullptr)
-				{
-					account.character.mapY = numProp->value;
-					enterLevel(newLevel, account.character.getLocalPosition(), player->getLevelLastEnteredTime(newLevel.get()));
-				}
+				auto lastEnteredTime = player->getLevelLastEnteredTime(levelData.get());
+				sendDynamicLevelData(level, lastEnteredTime);
 			}
 			break;
 		}
@@ -908,7 +919,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			if (player != nullptr)
 			{
-				player->setLastMovementTime(time(0));
+				player->setLastMovementTime(m_server->getFrameStartTime());
 				player->testForTouch(result, movementDirection);
 			}
 			break;
@@ -930,7 +941,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			if (player != nullptr)
 			{
-				player->setLastMovementTime(time(0));
+				player->setLastMovementTime(m_server->getFrameStartTime());
 				player->testForTouch(result, movementDirection);
 			}
 			break;
@@ -956,7 +967,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			result.resultPropIds.push_back(PROPID(PlayerProp::Z));
 
 			if (player != nullptr)
-				player->setLastMovementTime(time(0));
+				player->setLastMovementTime(m_server->getFrameStartTime());
 			break;
 		}
 
@@ -1037,6 +1048,11 @@ bool Player::checkPropSetAccess(PlayerProp prop, SetBy setBy, Player* originator
 void Player::sendPropsFromResults(PropertySendResults& results)
 {
 	CString sendAll, sendLevel, sendSource;
+
+	std::erase_if(results, [](const PropertySendResults::value_type& res)
+	{
+		return !canSendProp((PlayerProp)res.first.propId);
+	});
 
 	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId)
 	{
@@ -1161,7 +1177,7 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 	if (isLoaded() && isClient())
 	{
 		if (auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr)
-			player->warp(account.level, account.character.getLocalPosition(), 0);
+			player->warp(account.level, account.character.getLocalPosition(), std::nullopt);
 	}
 }
 
@@ -1174,6 +1190,9 @@ CString Player::getPropsPacketFromList(const PropList& props) const
 	// Create Props
 	for (int i = 0; i < PLAYERPROP_COUNT; ++i)
 	{
+		if (!canSendProp((PlayerProp)i))
+			continue;
+
 		if (props[i])
 		{
 			DO_PACKETLOG(if (!printedHeader) { printedHeader = true; printHeader(this, "PlayerProps::getPropsPacketFromList"sv); });
@@ -1230,7 +1249,10 @@ CString Player::getModifiedPropsPacket() const
 	CString result;
 	for (auto i = 0; i < PLAYERPROP_COUNT; ++i)
 	{
-		if (modTime[i] != m_savedModTime[i])
+		if (!canSendProp((PlayerProp)i))
+			continue;
+
+		if (modTime[i].has_value() && modTime[i] != m_savedModTime[i])
 		{
 			DO_PACKETLOG(if (!printedHeader) { printedHeader = true; printHeader(this, "PlayerProps::getPropsPacketFromList"sv); });
 			auto prop = getProp((PlayerProp)i);

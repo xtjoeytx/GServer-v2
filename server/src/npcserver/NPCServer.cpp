@@ -333,14 +333,14 @@ std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
 	return {};
 }
 
-std::shared_ptr<NPC> NPCServer::addNPC(std::string_view image, std::string_view script, std::shared_ptr<Level> level, Position<float> location, std::string_view type)
+std::shared_ptr<NPC> NPCServer::addNPC(std::string_view image, std::string_view script, std::shared_ptr<Level> level, const TilePosition& location, std::string_view type)
 {
 	auto npc = m_server->addNPC(image, script, location.x(), location.y(), level, NPCStorageType::DATABASE, true, type);
 	m_globalNPCList[npc->id] = npc;
 	return npc;
 }
 
-std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, Position<float> location)
+std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, const TilePosition& location)
 {
 	NPCPtr npc = nullptr;
 
@@ -348,21 +348,21 @@ std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::str
 		npc = std::make_shared<NPC>(id, NPCStorageType::LEVEL);
 	else npc = std::make_shared<NPC>(id, NPCStorageType::DATABASE);
 
+	auto pixelPosition = toPixelPosition(location);
+	auto localPixelPosition = toLocalPixelPosition(pixelPosition);
+	auto mapPosition = toMapPosition(pixelPosition);
+
 	npc->name = name;
-	npc->setLevel(level);
+	npc->level = level->levelName;
 	npc->setPropWith<NPCProp::TYPE>(SetBy::SERVER, type);
 	npc->setPropWith<NPCProp::SCRIPTER>(SetBy::SERVER, scripter);
-	npc->setPropWith<NPCProp::X>(SetBy::SERVER, location.x());
-	npc->setPropWith<NPCProp::Y>(SetBy::SERVER, location.y());
+	npc->setPropWith<NPCProp::X2>(SetBy::SERVER, localPixelPosition.x());
+	npc->setPropWith<NPCProp::Y2>(SetBy::SERVER, localPixelPosition.y());
 
-	if (level)
+	if (level && level->isGmap())
 	{
-		if (level->isOnGmap())
-		{
-			npc->setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, level->mapPosition.x());
-			npc->setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, level->mapPosition.y());
-		}
-		level->addNPC(npc);
+		npc->setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, mapPosition.x());
+		npc->setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, mapPosition.y());
 	}
 
 	m_server->addNPC(npc, true);

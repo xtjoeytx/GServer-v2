@@ -261,17 +261,17 @@ public:
 	void resetToInitialState();
 
 public:
-	bool warp(LevelPtr level, const LocalPixelPosition& position);
+	bool warp(LevelPtr level, const PixelPosition& position);
 	void setLevel(LevelPtr level);
-	CString getShowImagesPacket(clock::time_point modTime = clock::time_point::min()) const noexcept;
-	void sendShowImagesToPlayer(PlayerPtr player, clock::time_point modTime = clock::time_point::min()) const noexcept;
-	void sendAllShowImagesToLevel(clock::time_point modTime = clock::time_point::min()) const noexcept;
+	CString getShowImagesPacket(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
+	void sendShowImagesToPlayer(PlayerPtr player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
+	void sendAllShowImagesToLevel(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
 	void addMoveToQueue(const LocalPixelPosition& moveDelta, float durationInSeconds, uint8_t options);
 	void processMoveQueue(std::chrono::milliseconds deltaTime);
-	std::pair<CString, CString> getMoveQueuePacketData(clock::time_point modTime = clock::time_point::min()) const noexcept;
-	void sendMoveQueueToPlayer(PlayerPtr player, clock::time_point modTime = clock::time_point::min()) const noexcept;
-	void sendMoveQueueToLevel(LevelPtr level, clock::time_point modTime = clock::time_point::min()) const noexcept;
-	void refreshModTimes(clock::time_point modTime = clock::time_point::min()) noexcept;
+	std::pair<CString, CString> getMoveQueuePacketData(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
+	void sendMoveQueueToPlayer(PlayerPtr player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
+	void sendMoveQueueToLevel(LevelPtr level, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
+	void refreshModTimes(clock::time_point modTime) noexcept;
 
 public:
 	const std::string& getWeaponName() const noexcept { return m_weaponName; }
@@ -291,6 +291,7 @@ public:
 
 public:
 	void executeEvents(ScriptEventQueue& events, ScriptObject source) const;
+	void setScript(const Script& script);
 	void setScript(std::string_view script);
 	Script& getScript() noexcept { return m_script; }
 	const Script& getScript() const noexcept { return m_script; }
@@ -378,7 +379,7 @@ public:
 	void setPropsFromPacket(CString& packet, PlayerPtr source = nullptr);
 
 	CString getModifiedPropsPacket() const;
-	CString getAllPropsPacket(clock::time_point newTime = clock::time_point::min()) const;
+	CString getAllPropsPacket(std::optional<clock::time_point> newTime = std::nullopt) const;
 
 	template<NPCProp... Props>
 	[[inline]] CString getPropsPacketFor() const;
@@ -406,7 +407,7 @@ public:
 	std::array<uint8_t, 10> saves;
 	std::chrono::milliseconds timeout = 0ms;
 	NPCWarpRestrictions warpRestrictions = NPCWarpRestrictions::ALLOWED;
-	std::array<clock::time_point, NPCPROP_COUNT> modTime;
+	std::array<std::optional<clock::time_point>, NPCPROP_COUNT> modTime;
 	clock::time_point lastUpdateTime;
 	clock::time_point lastSaveTime;
 	ScriptContainer scripting;
@@ -414,7 +415,7 @@ public:
 	std::deque<NPCMove> moveQueue;
 
 private:
-	std::array<clock::time_point, NPCPROP_COUNT> m_savedModTime;
+	std::array<std::optional<clock::time_point>, NPCPROP_COUNT> m_savedModTime;
 	bool m_blockPositionUpdates = false;
 	mutable bool m_hadShowImgs = false;
 

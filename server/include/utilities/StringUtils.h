@@ -12,6 +12,7 @@
 #include <iterator>
 #include <optional>
 #include <ranges>
+#include <span>
 #include <sstream>
 #include <string_view>
 #include <string>
@@ -512,12 +513,24 @@ inline std::string& eraseCharsMutate(std::string& in, std::string_view chars)
 	return in;
 }
 
+inline auto removeExtension(StringViewIshVariant auto const& str)
+{
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+
+	std::basic_string_view<Elem, Traits> view{ str };
+	auto pos = view.rfind('.');
+	if (pos == std::string_view::npos)
+		return view;
+	return view.substr(0, pos);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 /// @brief Escapes quotes in a string using a CSV-like format.
 /// @param str The input string or string_view to escape quotes in.
 /// @return A new string with quotes escaped.
-auto escapeQuotes(StringViewIshVariant auto const str)
+auto escapeQuotes(StringViewIshVariant auto const& str)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -612,7 +625,7 @@ auto unescapeQuotes(StringViewIshVariant auto const& str)
 /// @param delims A string containing delimiter characters used to split the input.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
 /// @return A generator yielding each token as a std::string_view.
-auto split(StringViewVariant auto str, StringViewVariant auto delims, bool ignoreEmpty) -> std::generator<decltype(str)>
+auto split(StringViewVariant auto const& str, StringViewVariant auto delims, bool ignoreEmpty) -> std::generator<std::remove_cvref_t<decltype(str)>>
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -651,7 +664,7 @@ auto split(StringViewVariant auto str, StringViewVariant auto delims, bool ignor
 /// @param delim A string used to split the input.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
 /// @return A generator yielding each token as a std::string_view.
-auto splitByString(StringViewVariant auto str, StringViewVariant auto delim, bool ignoreEmpty) -> std::generator<decltype(str)>
+auto splitByString(StringViewVariant auto const& str, StringViewVariant auto delim, bool ignoreEmpty) -> std::generator<std::remove_cvref_t<decltype(str)>>
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -696,6 +709,26 @@ auto splitToVector(StringViewIshVariant auto const& str, StringViewIshVariant au
 	StringViewType delimview{ delims };
 
 	std::vector<StringType> tokens;
+	for (const auto& token : split(strview, delimview, ignoreEmpty))
+		tokens.emplace_back(token);
+
+	return tokens;
+}
+
+/// @brief Splits a string into a vector of tokens based on specified delimiters.
+/// @param str The input string to split.
+/// @param delims A string containing delimiter characters used to split the input string.
+/// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the result.
+/// @return A vector of strings containing the tokens extracted from the input string.
+auto splitToVectorView(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delims, bool ignoreEmpty)
+{
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
+	StringViewType strview{ str };
+	StringViewType delimview{ delims };
+
+	std::vector<StringViewType> tokens;
 	for (const auto& token : split(strview, delimview, ignoreEmpty))
 		tokens.emplace_back(token);
 
@@ -769,6 +802,23 @@ auto splitToVector(StringViewIshVariant auto const& str)
 auto splitToVector(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delims)
 {
 	return splitToVector(str, delims, true);
+}
+
+/// @brief Splits a string into a vector of tokens based on whitespace, ignoring empty tokens.
+/// @param str The input string to split.
+/// @return A vector of strings containing the tokens extracted from the input string.
+auto splitToVectorView(StringViewIshVariant auto const& str)
+{
+	return splitToVectorView(str, " \t\n\r"sv, true);
+}
+
+/// @brief Splits a string into a vector of tokens based on specified delimiters, ignoring empty tokens.
+/// @param str The input string to split.
+/// @param delims A string containing delimiter characters used to split the input string.
+/// @return A vector of strings containing the tokens extracted from the input string.
+auto splitToVectorView(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delims)
+{
+	return splitToVectorView(str, delims, true);
 }
 
 /// @brief Splits a string into a vector of substrings using a specified delimiter, ignoring empty tokens.
@@ -1043,6 +1093,33 @@ size_t findi(StringViewIshVariant auto const& str, StringViewIshVariant auto con
 	return std::distance(str.begin(), it);
 }
 
+/// @brief Checks whether a string begins with a given prefix using a case-insensitive comparison.
+/// @param str The string to check.
+/// @param prefix The prefix to test for.
+/// @return true if str starts with prefix (case-insensitive), otherwise false.
+bool starts_withi(StringViewIshVariant auto const& str, StringViewIshVariant auto const& prefix)
+{
+	return findi(str, prefix, 0) == 0;
+}
+
+/// @brief Returns true if str ends with suffix, performing a case-insensitive comparison.
+/// @param str The string to test.
+/// @param suffix The suffix to check for. If suffix.size() > str.size(), the function returns false.
+/// @return true if str ends with suffix when compared case-insensitively; otherwise false.
+bool ends_withi(StringViewIshVariant auto const& str, StringViewIshVariant auto const& suffix)
+{
+	if (suffix.size() > str.size())
+		return false;
+
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
+	StringViewType strview{ str };
+
+	strview = strview.substr(strview.size() - suffix.size());
+	return equalsi(strview, suffix);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 /// @brief Converts all characters in the input string to uppercase, using the current C locale (not locale-aware).
@@ -1085,13 +1162,13 @@ auto toLower(StringViewIshVariant auto const& str)
 /// @param result Reference to a variable where the converted number will be stored if the conversion succeeds.
 /// @return true if the conversion was successful; false otherwise.
 template <std::integral T = int32_t>
-bool toNumber(const std::string& str, T& result)
+bool toNumber(std::string_view str, T& result)
 {
 	try
 	{
 		char* p_end = nullptr;
-		const long num = std::strtol(str.c_str(), &p_end, 10);
-		if (p_end == str.c_str())
+		const long num = std::strtol(str.data(), &p_end, 10);
+		if (p_end == str.data())
 			return false;
 
 		result = num;
@@ -1109,7 +1186,7 @@ bool toNumber(const std::string& str, T& result)
 /// @param str The string to convert to a number.
 /// @return The converted number if the conversion succeeds; otherwise, returns 0 of the specified type.
 template <std::integral T = int32_t>
-T toNumber(const std::string& str)
+T toNumber(std::string_view str)
 {
 	if (T result{}; toNumber(str, result))
 		return result;
@@ -1121,13 +1198,13 @@ T toNumber(const std::string& str)
 /// @param str The input string to convert to a float.
 /// @param result Reference to a float variable where the converted value will be stored if the conversion succeeds.
 /// @return true if the conversion was successful and the result is stored in 'result'; false otherwise.
-inline bool toFloat(const std::string& str, float& result)
+inline bool toFloat(std::string_view str, float& result)
 {
 	try
 	{
 		char* p_end = nullptr;
-		const float num = std::strtof(str.c_str(), &p_end);
-		if (p_end == str.c_str())
+		const float num = std::strtof(str.data(), &p_end);
+		if (p_end == str.data())
 			return false;
 
 		result = num;
@@ -1143,7 +1220,7 @@ inline bool toFloat(const std::string& str, float& result)
 /// @brief Converts a string to a float value.
 /// @param str The string to convert to a float.
 /// @return The float value represented by the string, or 0.0f if the conversion fails.
-inline float toFloat(const std::string& str)
+inline float toFloat(std::string_view str)
 {
 	if (float result; toFloat(str, result))
 		return result;
@@ -1155,13 +1232,13 @@ inline float toFloat(const std::string& str)
 /// @param str The input string to convert.
 /// @param result Reference to a double where the converted value will be stored if the conversion succeeds.
 /// @return true if the conversion was successful and the result is stored in 'result'; false otherwise.
-inline bool toDouble(const std::string& str, double& result)
+inline bool toDouble(std::string_view str, double& result)
 {
 	try
 	{
 		char* p_end = nullptr;
-		const double num = std::strtod(str.c_str(), &p_end);
-		if (p_end == str.c_str())
+		const double num = std::strtod(str.data(), &p_end);
+		if (p_end == str.data())
 			return false;
 
 		result = num;
@@ -1177,12 +1254,121 @@ inline bool toDouble(const std::string& str, double& result)
 /// @brief Converts a string to a double-precision floating-point number.
 /// @param str The string to convert to a double.
 /// @return The converted double value if the conversion is successful; otherwise, returns 0.0.
-inline double toDouble(const std::string& str)
+inline double toDouble(std::string_view str)
 {
 	if (double result; toDouble(str, result))
 		return result;
 
 	return 0.0f;
+}
+
+/// @brief Converts a string to its Base64 encoded representation.
+/// @param str The string-like object to be encoded.
+/// @return A Base64 encoded string.
+inline std::string toBase64(std::span<uint8_t> in)
+{
+	static constexpr std::array<const char, 64> encodingTable = {
+		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+		'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+		'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+		'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+		'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+		'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+		'w', 'x', 'y', 'z', '0', '1', '2', '3',
+		'4', '5', '6', '7', '8', '9', '+', '/'
+	};
+
+	// Calculate the lengths of the input and output.
+	size_t in_len = in.size();
+	size_t out_len = 4 * ((in_len + 2) / 3);
+
+	// Create the output buffer.
+	std::string out(out_len, '\0');
+	auto p = out.data();
+
+	// Encode the input string.
+	size_t i;
+	for (i = 0; i < in_len - 2; i += 3)
+	{
+		*p++ = encodingTable[(in[i] >> 2) & 0x3F];
+		*p++ = encodingTable[(static_cast<size_t>(in[i] & 0x3) << 4) | (static_cast<size_t>(in[i + 1] & 0xF0) >> 4)];
+		*p++ = encodingTable[(static_cast<size_t>(in[i + 1] & 0xF) << 2) | (static_cast<size_t>(in[i + 2] & 0xC0) >> 6)];
+		*p++ = encodingTable[static_cast<size_t>(in[i + 2] & 0x3F)];
+	}
+
+	// Handle padding for remaining bytes.
+	if (i < in_len)
+	{
+		*p++ = encodingTable[(in[i] >> 2) & 0x3F];
+		if (i == (in_len - 1))
+		{
+			*p++ = encodingTable[(static_cast<size_t>(in[i] & 0x3) << 4)];
+			*p++ = '=';
+		}
+		else
+		{
+			*p++ = encodingTable[(static_cast<size_t>(in[i] & 0x3) << 4) | (static_cast<size_t>(in[i + 1] & 0xF0) >> 4)];
+			*p++ = encodingTable[(static_cast<size_t>(in[i + 1] & 0xF) << 2)];
+		}
+		*p++ = '=';
+	}
+
+	return out;
+}
+
+/// @brief Converts a Base64 encoded string back to its original representation.
+/// @param str The Base64 encoded string-like object to be decoded.
+/// @return A string containing the decoded data. If the input is not valid Base64, returns the input as is.
+inline std::vector<uint8_t> fromBase64(StringViewIshVariant auto const& str)
+{
+	static constexpr std::array<uint8_t, 256> decodingTable = {
+		64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+		64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+		64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 64, 64, 64, 63,
+		52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 64, 64, 64, 64, 64, 64,
+		64,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+		15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64, 64,
+		64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+		41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64,
+		64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+		64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+		64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+		64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+		64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+		64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+		64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+		64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64
+	};
+
+	// Check if our input is a valid length.
+	size_t in_len = str.length();
+	if (in_len % 4 != 0)
+		return {};
+
+	// Calculate the output length.
+	size_t out_len = in_len / 4 * 3;
+	if (str[in_len - 1] == '=') out_len--;
+	if (str[in_len - 2] == '=') out_len--;
+
+	// Prepare the output buffer.
+	std::vector<uint8_t> out{ out_len, 0 };
+
+	// Decode.
+	for (size_t i = 0, j = 0; i < in_len;)
+	{
+		uint32_t a = str[i] == '=' ? 0 & i++ : decodingTable[static_cast<int>(str[i++])];
+		uint32_t b = str[i] == '=' ? 0 & i++ : decodingTable[static_cast<int>(str[i++])];
+		uint32_t c = str[i] == '=' ? 0 & i++ : decodingTable[static_cast<int>(str[i++])];
+		uint32_t d = str[i] == '=' ? 0 & i++ : decodingTable[static_cast<int>(str[i++])];
+
+		uint32_t triple = (a << 3 * 6) + (b << 2 * 6) + (c << 1 * 6) + (d << 0 * 6);
+
+		if (j < out_len) out[j++] = (triple >> 2 * 8) & 0xFF;
+		if (j < out_len) out[j++] = (triple >> 1 * 8) & 0xFF;
+		if (j < out_len) out[j++] = (triple >> 0 * 8) & 0xFF;
+	}
+
+	return out;
 }
 
 /// @brief Bring std::to_string into this namespace so we can overload it.

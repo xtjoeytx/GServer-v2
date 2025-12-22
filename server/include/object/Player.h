@@ -41,6 +41,8 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 class Level;
+class SubLevel;
+class StaticLevelData;
 class Map;
 class Weapon;
 
@@ -143,7 +145,7 @@ enum class CarryObjectSprite : uint8_t
 struct ShootPacketWrapper
 {
 	NPCID source;
-	LocalPixelPosition position;
+	PixelPosition position;
 	int8_t offsetx;
 	int8_t offsety;
 	uint8_t sangle;
@@ -159,9 +161,8 @@ struct ShootPacketWrapper
 
 struct CachedLevel
 {
-	CachedLevel(std::weak_ptr<Level> pLevel, time_t pModTime) : level(pLevel), modTime(pModTime) {}
-	std::weak_ptr<Level> level;
-	time_t modTime;
+	std::weak_ptr<StaticLevelData> level;
+	clock::time_point lastEnteredTime;
 };
 
 //----------------------------
@@ -196,7 +197,7 @@ public:
 	// Get Properties
 	CSocket* getSocket() { return m_playerSock; }
 	[[inline]] PlayerID getId() const;
-	time_t getLastData() const { return m_lastData; }
+	clock::time_point getLastData() const { return m_lastData; }
 	CString getGuild() const { return m_guild; }
 	int getVersion() const { return m_versionId; }
 	const std::string& getVersionStr() const { return m_version; }
@@ -212,8 +213,10 @@ public:
 	[[inline]] PixelPosition getGlobalPosition() const noexcept;
 	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;
 	[[inline]] TilePosition getTilePosition() const noexcept;
+	[[inline]] PixelPosition getSubLevelOrigin() const noexcept;
+	[[inline]] MapPosition getMapPosition() const noexcept;
 	virtual double getCalculatedTileZ() const noexcept;
-	virtual std::string getComputedLevelName() const { return account.level; }
+	virtual std::string getLevelName() const { return account.level; }
 
 	// Set Properties
 	void setNick(CString pNickName, bool force = false);
@@ -320,8 +323,19 @@ public:
 	bool setFlag(std::string_view flagPair, bool sendToPlayers = false);
 	bool setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool sendToPlayer = false);
 
-	virtual bool enterLevel(std::shared_ptr<Level> level, Position<int16_t> pos, time_t modTime = 0);
+public:
+	virtual bool warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
+	virtual bool warp(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
+	virtual bool enterLevel(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
+	virtual bool enterLevel(std::shared_ptr<Level> level, const MapPosition& mapPosition, const LocalPixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
+	virtual bool enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt);
+	virtual bool leaveLevel();
+	virtual bool leaveSubLevel(std::shared_ptr<SubLevel> subLevel);
+	virtual bool sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime = std::nullopt);
+	virtual bool sendDynamicLevelData(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt);
+	virtual bool sendNearbyObjects(std::shared_ptr<Level> level);
 
+public:
 	// Socket-Functions
 	void sendPacket(CString pPacket, bool appendNL = true);
 	bool sendFile(const std::filesystem::path& file);
@@ -369,7 +383,7 @@ public:
 
 public:
 	Account account;
-	std::array<clock::time_point, PLAYERPROP_COUNT> modTime;
+	std::array<std::optional<clock::time_point>, PLAYERPROP_COUNT> modTime;
 	uint32_t loginTime = 0;
 	uint32_t lastDeadTime = 0;
 
@@ -468,12 +482,12 @@ protected:
 	uint8_t m_additionalFlags = 0;
 	uint32_t m_envCodePage = 1252;
 	std::set<std::string> m_channelList;
-	time_t m_lastData;
+	clock::time_point m_lastData;
 	uint8_t m_encryptionKey = 0;
 	int64_t m_accountIp = 0;
 	uint16_t m_udpport = 0;
 	int64_t m_deviceId = 0;
-	std::array<clock::time_point, PLAYERPROP_COUNT> m_savedModTime;
+	std::array<std::optional<clock::time_point>, PLAYERPROP_COUNT> m_savedModTime;
 
 	uint8_t m_horseBombCount = 0;
 	uint8_t m_carrySprite = 0xFF;
@@ -560,6 +574,16 @@ inline TilePosition Player::getTilePosition() const noexcept
 	return pos;
 }
 
+inline PixelPosition Player::getSubLevelOrigin() const noexcept
+{
+	return PixelPosition{ account.character.mapX * 1024, account.character.mapY * 1024, 0 };
+}
+
+inline MapPosition Player::getMapPosition() const noexcept
+{
+	return MapPosition{ account.character.mapX, account.character.mapY, 0 };
+}
+
 inline bool Player::inChatChannel(const std::string& channel) const
 {
 	return m_channelList.find(channel) != m_channelList.end();
@@ -613,7 +637,7 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::SPRITE,		PropertySprite,				account.character.sprite, account.character.direction) \
 	DO(PlayerProp::STATUS,		PropertyNumeric<GBYTE1>,	account.status) \
 	DO(PlayerProp::CARRYSPRITE,	PropertyUnsafeByte,			m_carrySprite) \
-	DO(PlayerProp::CURLEVEL,	PropertyString,				getComputedLevelName()) \
+	DO(PlayerProp::CURLEVEL,	PropertyString,				getLevelName()) \
 	DO(PlayerProp::HORSEGIF,	PropertyString,				account.character.horseImage) \
 	DO(PlayerProp::HORSEBUSHES,	PropertyNumeric<GBYTE1>,	m_horseBombCount) \
 	DO(PlayerProp::EFFECTCOLORS,PropertyEffectColors,		m_effectColors) \

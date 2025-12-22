@@ -201,49 +201,49 @@ std::optional<GameValue> GS1Visitor::getGameValueFromSource(const ScriptObject& 
 		case ScriptObjectType::BADDY:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto baddy = level->getBaddy(source.first); baddy != nullptr)
-					return getScriptParameter(*baddy, identifier);
+				if (auto baddy = level->getBaddyById(source.first); baddy.has_value())
+					return getScriptParameter(*baddy.value(), identifier);
 			}
 			break;
 		case ScriptObjectType::BOMB:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto bomb = level->getMapBomb(source.first); bomb.has_value())
+				if (auto bomb = level->getBomb(source.first); bomb.has_value())
 					return getScriptParameter(*bomb.value(), identifier);
 			}
 			break;
 		case ScriptObjectType::ARROW:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto arrow = level->getMapArrow(source.first); arrow.has_value())
+				if (auto arrow = level->getArrow(source.first); arrow.has_value())
 					return getScriptParameter(*arrow.value(), identifier);
 			}
 			break;
 		case ScriptObjectType::ITEM:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto item = level->getMapItem(source.first); item.has_value())
+				if (auto item = level->getItem(source.first); item.has_value())
 					return getScriptParameter(*item.value(), identifier);
 			}
 			break;
 		case ScriptObjectType::EXPLOSION:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto explo = level->getMapExplosion(source.first); explo.has_value())
+				if (auto explo = level->getExplosion(source.first); explo.has_value())
 					return getScriptParameter(*explo.value(), identifier);
 			}
 			break;
 		case ScriptObjectType::HORSE:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto horse = level->getMapHorse(source.first); horse.has_value())
+				if (auto horse = level->getHorse(source.first); horse.has_value())
 					return getScriptParameter(*horse.value(), identifier);
 			}
 			break;
 		case ScriptObjectType::SIGN:
 			if (auto level = findCurrentLevel(); level != nullptr)
 			{
-				if (auto sign = level->getMapSign(source.first); sign.has_value())
+				if (auto sign = level->getSign(source.first); sign.has_value())
 					return getScriptParameter(*sign.value(), identifier);
 			}
 			break;
@@ -358,7 +358,7 @@ std::shared_ptr<Level> GS1Visitor::findCurrentLevel() const
 		else if (source.second == ScriptObjectType::PLAYER)
 		{
 			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
-				return server->getLevel(player->account.level);
+				return server->getLoadedLevel(player->account.level, player);
 		}
 		else if (source.second == ScriptObjectType::LEVEL)
 		{
@@ -375,6 +375,50 @@ std::shared_ptr<Level> GS1Visitor::findCurrentLevel() const
 			return level;
 	}
 	return nullptr;
+}
+
+std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<StaticLevelData>> GS1Visitor::findCurrentLevelData() const
+{
+	auto* server = BabyDI::Get<Server>();
+	auto testSource = [server](const ScriptObject& source) -> std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<StaticLevelData>>
+	{
+		if (source.second == ScriptObjectType::NPC)
+		{
+			if (auto npc = server->getNPC(source.first); npc != nullptr)
+			{
+				if (auto level = npc->getLevel(); level != nullptr)
+				{
+					auto [subLevel, levelData] = level->getSubLevelAndStaticDataAtPosition(npc->character.getMapPosition());
+					return std::make_tuple(level, subLevel, levelData);
+				}
+			}
+		}
+		else if (source.second == ScriptObjectType::PLAYER)
+		{
+			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
+			{
+				if (auto level = server->getLoadedLevel(player->account.level, player); level != nullptr)
+				{
+					auto [subLevel, levelData] = level->getSubLevelAndStaticDataAtPosition(player->getMapPosition());
+					return std::make_tuple(level, subLevel, levelData);
+				}
+			}
+		}
+		else if (source.second == ScriptObjectType::LEVEL)
+		{
+			auto& levelList = server->getLevelList();
+			if (auto level = levelList.find(source.first); level != levelList.end())
+				return std::make_tuple(level->second, nullptr, nullptr);
+		}
+		return std::make_tuple(nullptr, nullptr, nullptr);
+	};
+
+	for (const auto& source : sourceStack())
+	{
+		if (auto level = testSource(source); std::get<0>(level) != nullptr)
+			return level;
+	}
+	return std::make_tuple(nullptr, nullptr, nullptr);;
 }
 
 GameVariableStore* GS1Visitor::findGameVariableStoreFromSourceStack(ScriptObjectType type) const
@@ -421,7 +465,7 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 
 			const auto picker = visit_functions
 			{
-				[&server](PlayerPtr& player) -> LevelPtr { return server->getLevel(player->account.level); },
+				[&server](PlayerPtr& player) -> LevelPtr { return server->getLoadedLevel(player->account.level, player); },
 				[&server](NPCPtr& npc) -> LevelPtr { return npc->getLevel(); }
 			};
 

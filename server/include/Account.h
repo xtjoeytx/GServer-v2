@@ -69,6 +69,7 @@ struct Account
 	uint32_t onlineSeconds = 0;		// GR only?
 	std::string ipAddress;
 	std::string language{ "English" };
+	std::string groupName;
 	uint32_t kills = 0;
 	uint32_t deaths = 0;
 	float eloRating = 1500.0f;

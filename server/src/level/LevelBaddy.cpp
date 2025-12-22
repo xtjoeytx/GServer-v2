@@ -108,7 +108,7 @@ void LevelBaddy::dropItem() const
 	if (itemType != LevelItemType::INVALID)
 	{
 		if (auto lvl = m_level.lock(); lvl)
-			lvl->addItem(inform_client, lvl->convertToMapPosition(position), itemType);
+			lvl->addItem(inform_client, toPixelPosition({ 0, 0 }, position), itemType);
 	}
 }
 
@@ -226,7 +226,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 					{
 						mode = BaddyMode::SWAMPSHOT;
 						auto server = BabyDI::Get<Server>();
-						server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, m_level);
+						server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, { 0, 0 }, m_level.lock());
 					}
 				};
 
@@ -236,7 +236,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 					if (!canRespawn()) return;
 					reset();
 					auto server = BabyDI::Get<Server>();
-					server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id << getProps(), m_level);
+					server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id << getProps(), { 0, 0 }, m_level.lock());
 				};
 
 				// Set baddies to dead.
@@ -251,12 +251,12 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 						timeout.runOnceFor(std::chrono::seconds(server->getSettings().getInt("baddyrespawntime", 60)));
 					}
 
-					// Set the baddy as dead for all the other players in the level.
-					server->sendPacketToOneLevel(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, m_level);
-
-					// TODO(Nalin): Record the last player who hit the baddy so we can record the source properly.
 					if (auto level = m_level.lock(); level != nullptr)
 					{
+						// Set the baddy as dead for all the other players in the level.
+						server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, { 0, 0 }, level);
+
+						// TODO(Nalin): Record the last player who hit the baddy so we can record the source properly.
 						if (!level->hasLivingBaddies())
 							server->queueNPCEventLocal(level, ScriptEventType::COMPUSDIED, source::FromLevel(level));
 					}

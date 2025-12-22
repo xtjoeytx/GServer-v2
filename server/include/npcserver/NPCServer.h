@@ -76,8 +76,8 @@ public:
 
 public:
 	std::weak_ptr<NPC> getNPCByName(const std::string& name);
-	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, std::shared_ptr<Level> level, Position<float> location, std::string_view type = NPCTYPE_LOCAL);
-	std::shared_ptr<NPC> addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, Position<float> location);
+	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, std::shared_ptr<Level> level, const TilePosition& location, std::string_view type = NPCTYPE_LOCAL);
+	std::shared_ptr<NPC> addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, const TilePosition& location);
 	std::shared_ptr<NPC> addNPCFromFile(const std::filesystem::path& filePath);
 	void deleteNPC(NPCID id);
 	void saveNPCs();

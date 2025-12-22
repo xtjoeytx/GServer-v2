@@ -112,7 +112,7 @@ void UPNP::addPortForward(std::string_view address, std::string_view port)
 			if (UPNP_GetPortMappingNumberOfEntries(m_urls.controlURL, m_data.first.servicetype, &entries) == UPNPCOMMAND_SUCCESS)
 			{
 				char index[6] = { 0 };
-				for (auto i = 0; i < entries; ++i)
+				for (unsigned int i = 0; i < entries; ++i)
 				{
 					std::snprintf(index, 6, "%u", i);
 					UPNP_GetGenericPortMappingEntry(m_urls.controlURL, m_data.first.servicetype, index, 0, intClient, intPort, 0, desc, 0, 0, 0);

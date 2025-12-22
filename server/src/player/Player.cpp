@@ -204,7 +204,7 @@ namespace preagonal
 	DO(PLO_BUNDLE)
 #define FILL_OUTPUT_ARRAY(name) names[(uint8_t)name] = #name;
 
-static constexpr std::array<std::string, 255> FillPutputPacketNamesArray()
+static constexpr std::array<std::string, 255> FillOutputPacketNamesArray()
 {
 	std::array<std::string, 255> names;
 	names.fill("(unknown packet)");
@@ -212,7 +212,7 @@ static constexpr std::array<std::string, 255> FillPutputPacketNamesArray()
 	return names;
 }
 
-std::array<std::string, 255> OutputPacketNamesArray = FillPutputPacketNamesArray();
+std::array<std::string, 255> OutputPacketNamesArray = FillOutputPacketNamesArray();
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -221,8 +221,8 @@ CString ShootPacketWrapper::constructShootV1() const
 {
 	CString packet;
 	packet.writeGInt(source);
-	packet.writeGChar(position.x() / 8);
-	packet.writeGChar(position.y() / 8);
+	packet.writeGChar((position.x() % 1024) / 8);
+	packet.writeGChar((position.y() % 1024) / 8);
 	packet.writeGChar((position.z() / 16) + 50);
 	packet.writeGChar(sangle);
 	packet.writeGChar(sanglez);
@@ -282,7 +282,7 @@ HandlePacketResult Player::handlePacket(std::optional<uint8_t> id, CString& pack
 {
 	static PacketHandleArray PacketHandlers = GeneratePacketHandlers();
 
-	m_lastData = time(0);
+	m_lastData = clock::now();
 
 	auto handle = id.has_value() ? PacketHandlers[id.value()] : &Player::msgPLI_NULL;
 	return (this->*handle)(packet);
@@ -294,10 +294,8 @@ Player::Player(CSocket* pSocket, PlayerID pId)
 	: m_playerSock(pSocket), m_id(pId), m_fileQueue(pSocket)
 {
 	m_server = BabyDI::Get<Server>();
-	m_lastData = time(0);
+	m_lastData = clock::now();
 	m_serverName = m_server->getName();
-	modTime.fill(clock::time_point::min());
-	m_savedModTime.fill(clock::time_point::min());
 
 	srand((unsigned int)time(0));
 }
@@ -400,7 +398,7 @@ bool Player::onSend()
 	m_fileQueue.sendCompress();
 
 	// Update last send time.
-	m_lastData = time(0);
+	m_lastData = clock::now();
 
 	return true;
 }
@@ -691,7 +689,7 @@ bool Player::sendLogin()
 
 			if (string::equalsi(otherAccount, account.name) && meClient == themClient && otherID != m_id)
 			{
-				if ((int)difftime(time(0), player->getLastData()) > 30)
+				if (std::chrono::duration_cast<std::chrono::seconds>(m_server->getFrameStartTime() - player->getLastData()) > 30s)
 				{
 					player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Someone else has logged into your account.");
 					player->disconnect();
@@ -1020,10 +1018,104 @@ void Player::sendPrivateMessage(PlayerID from, std::string_view message)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Player::enterLevel(std::shared_ptr<Level> level, Position<int16_t> pos, time_t modTime)
+bool Player::warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime)
 {
-	// TODO: Check if level exists.
-	account.level = level->levelName;
+	auto server = BabyDI::Get<Server>();
+	if (auto level = server->getLoadedLevel(levelName, shared_from_this()); level != nullptr)
+		return enterLevel(level, position, clientCachedTime);
+	return false;
+}
+
+bool Player::warp(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime)
+{
+	return enterLevel(level, position, clientCachedTime);
+}
+
+bool Player::enterLevel(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime)
+{
+	auto localPosition = toLocalPixelPosition(position);
+	auto mapPosition = toMapPosition(position);
+
+	// Sanity check.
+	if (!level->isGmap())
+		mapPosition = { 0, 0 };
+
+	return enterLevel(level, mapPosition, localPosition, clientCachedTime);
+}
+
+bool Player::enterLevel(std::shared_ptr<Level> level, const MapPosition& mapPosition, const LocalPixelPosition& position, std::optional<clock::time_point> clientCachedTime)
+{
+	auto server = BabyDI::Get<Server>();
+	auto now = server->getFrameStartTime();
+
+	// If we are already on the level, set the position and abort.
+	if (account.level == level->levelName)
+	{
+		sendPropsFromResults(
+			setPropWith<PlayerProp::X2>(props::SetBy::SERVER, position.x()),
+			setPropWith<PlayerProp::Y2>(props::SetBy::SERVER, position.y()),
+			setPropWith<PlayerProp::GMAPLEVELX>(props::SetBy::SERVER, mapPosition.x()),
+			setPropWith<PlayerProp::GMAPLEVELY>(props::SetBy::SERVER, mapPosition.y())
+		);
+
+		return true;
+	}
+
+	// Set position.
+	account.character.localPixelX = position.x();
+	account.character.localPixelY = position.y();
+	modTime[PROPID(PlayerProp::X)] = now;
+	modTime[PROPID(PlayerProp::X2)] = now;
+	modTime[PROPID(PlayerProp::Y)] = now;
+	modTime[PROPID(PlayerProp::Y2)] = now;
+
+	// Set map position.
+	account.character.mapX = mapPosition.x();
+	account.character.mapY = mapPosition.y();
+	modTime[PROPID(PlayerProp::GMAPLEVELX)] = now;
+	modTime[PROPID(PlayerProp::GMAPLEVELY)] = now;
+
+	// Enter the level.
+	return enterLevel(level, clientCachedTime);
+}
+
+bool Player::enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime)
+{
+	return true;
+}
+
+bool Player::leaveLevel()
+{
+	auto now = BabyDI::Get<Server>()->getFrameStartTime();
+
+	account.level.clear();
+	account.character.mapX = 0;
+	account.character.mapY = 0;
+
+	modTime[PROPID(PlayerProp::CURLEVEL)] = now;
+	modTime[PROPID(PlayerProp::GMAPLEVELX)] = now;
+	modTime[PROPID(PlayerProp::GMAPLEVELY)] = now;
+
+	return true;
+}
+
+bool Player::leaveSubLevel(std::shared_ptr<SubLevel> subLevel)
+{
+	return true;
+}
+
+bool Player::sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime)
+{
+	return true;
+}
+
+bool Player::sendDynamicLevelData(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime)
+{
+	return true;
+}
+
+bool Player::sendNearbyObjects(std::shared_ptr<Level> level)
+{
 	return true;
 }
 

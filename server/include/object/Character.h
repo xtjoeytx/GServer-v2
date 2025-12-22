@@ -62,6 +62,11 @@ struct Character
 	{
 		return { static_cast<float>((mapX * 64) + (localPixelX / 16.0f)), static_cast<float>((mapY * 64) + (localPixelY / 16.0f)), static_cast<float>(localPixelZ / 16.0f) };
 	}
+
+	MapPosition getMapPosition() const noexcept
+	{
+		return { mapX, mapY, 0 };
+	}
 };
 
 //----------------------------

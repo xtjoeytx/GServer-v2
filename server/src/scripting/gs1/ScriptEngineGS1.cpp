@@ -80,12 +80,10 @@ PlayerPtr getPlayerFromSource(const ScriptObject& source, std::optional<int64_t>
 	{
 		if (index.has_value() && index.value() >= 0)
 		{
-			if (auto level = server->getLevel(player->account.level); level != nullptr && index.value() < level->getMapPlayerCount())
+			if (auto level = server->getLoadedLevel(player->account.level, player); level != nullptr && index.value() < (int64_t)level->getPlayers().size())
 			{
-				auto mapPlayers = level->getMapPlayers();
-				auto iter = mapPlayers.begin();
-				std::ranges::advance(iter, index.value(), mapPlayers.end());
-				player = server->getPlayer(*iter);
+				auto& mapPlayers = level->getPlayers();
+				player = server->getPlayer(mapPlayers[index.value()]);
 			}
 		}
 		return player;
@@ -111,12 +109,13 @@ NPCPtr getNPCFromSource(const ScriptObject& source, std::optional<int64_t> index
 	{
 		if (index.has_value() && index.value() >= 0)
 		{
-			if (auto level = npc->getLevel(); level != nullptr && index.value() < level->getMapNPCCount())
+			if (auto level = npc->getLevel(); level != nullptr && index.value() < (int64_t)level->getNPCs().size())
 			{
-				auto mapNPCs = level->getMapNPCs();
+				auto& mapNPCs = level->getNPCs();
 				auto iter = mapNPCs.begin();
 				std::ranges::advance(iter, index.value(), mapNPCs.end());
-				npc = server->getNPC(*iter);
+				if (iter != mapNPCs.end())
+					npc = server->getNPC(*iter);
 			}
 		}
 		return npc;

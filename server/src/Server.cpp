@@ -136,7 +136,7 @@ Server::Server(const CString& pName)
 				auto range = m_groupLevels.equal_range(groupName);
 				std::for_each(range.first, range.second, [&playersFound](decltype(m_groupLevels)::value_type& pair)
 				{
-					if (auto level = pair.second.lock(); level && !level->getLevelPlayers().empty())
+					if (auto level = pair.second.lock(); level && !level->getPlayers().empty())
 						playersFound = true;
 				});
 
@@ -331,8 +331,8 @@ Server::Server(const CString& pName)
 		if (events.test(fs::FileEvent::Modified))
 		{
 			auto fileName = fs::getANSIFileName(file.file);
-			if (auto l = getLevel(fileName); l)
-				l->reload();
+			if (auto l = getCachedLevelData(fileName); l)
+				StaticLevelData::reload(l);
 		}
 	};
 	m_fsWorld.categoryEventCallback[ENUM(fs::FileCategory::FILE)] = [this](fs::FileEventCollection events, fs::FileData& file)
@@ -1223,7 +1223,7 @@ void Server::saveWeapons()
 
 /////////////////////////////////////////////////////
 
-std::shared_ptr<Level> Server::stubOrGetLevel(std::string_view levelName)
+std::shared_ptr<Level> Server::getStubbedLevel(std::string_view levelName)
 {
 	if (levelName.empty())
 		return nullptr;
@@ -1237,12 +1237,13 @@ std::shared_ptr<Level> Server::stubOrGetLevel(std::string_view levelName)
 	return level;
 }
 
-std::shared_ptr<Level> Server::getLevel(std::string_view levelName)
+std::shared_ptr<Level> Server::getLoadedLevelNoHint(std::string_view levelName)
 {
 	if (levelName.empty())
 		return nullptr;
 
-	LevelPtr level = stubOrGetLevel(levelName);
+	// Get the stub for the level.
+	LevelPtr level = getStubbedLevel(levelName);
 	if (level == nullptr)
 		return nullptr;
 
@@ -1250,14 +1251,61 @@ std::shared_ptr<Level> Server::getLevel(std::string_view levelName)
 	if (level != nullptr && level->loaded)
 		return level;
 
-	// If the level was not found, check the file system.
-	auto fileData = m_fsWorld.info(fs::FileCategory::LEVEL, string::trim(levelName));
-	if (fileData == nullptr)
+	// Load the level.
+	if (LevelLoader::loadLevelInto(levelName, level))
+	{
+		m_levelList.insert(std::make_pair(string::toLower(levelName), level));
+		return level;
+	}
+
+	return nullptr;
+}
+
+std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, std::shared_ptr<Player> player)
+{
+	if (levelName.empty())
 		return nullptr;
 
-	// Load the level.
-	level = LevelLoader::loadLevelInto(level, fileData->file);
-	return level;
+	// See if this level belongs to a gmap.
+	LevelPtr level = findGmapForLevel(levelName, player);
+	if (level != nullptr)
+	{
+		if (!level->loaded && LevelLoader::loadLevelInto(level->levelName, level))
+			m_levelList.insert(std::make_pair(string::toLower(level->levelName), level));
+		return level;
+	}
+
+	return getLoadedLevelNoHint(levelName);
+}
+
+std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, std::shared_ptr<Level> hintLevel)
+{
+	if (levelName.empty())
+		return nullptr;
+
+	// See if this level belongs to the hinted level.
+	if (hintLevel != nullptr && hintLevel->isGmap() && hintLevel->getSubLevelByName(levelName) != nullptr)
+	{
+		if (!hintLevel->loaded && LevelLoader::loadLevelInto(hintLevel->levelName, hintLevel))
+			m_levelList.insert(std::make_pair(string::toLower(hintLevel->levelName), hintLevel));
+		return hintLevel;
+	}
+
+	return getLoadedLevelNoHint(levelName);
+}
+
+std::shared_ptr<StaticLevelData> Server::getCachedLevelData(std::string_view levelName)
+{
+	if (levelName.empty())
+		return nullptr;
+
+	std::string lowerCaseLevel = string::toLower(levelName);
+	if (auto it = m_cachedLevelDataList.find(lowerCaseLevel); it != m_cachedLevelDataList.end())
+		return it->second;
+
+	auto levelData = LevelLoader::loadStaticData(levelName);
+	m_cachedLevelDataList.insert(std::make_pair(lowerCaseLevel, levelData));
+	return levelData;
 }
 
 std::shared_ptr<Map> Server::findMap(std::string_view mapName) const noexcept
@@ -1266,6 +1314,48 @@ std::shared_ptr<Map> Server::findMap(std::string_view mapName) const noexcept
 	if (foundMap != std::ranges::end(m_mapList))
 		return *foundMap;
 	return nullptr;
+}
+
+std::shared_ptr<Map> Server::findMapForLevel(std::string_view levelName) const noexcept
+{
+	auto foundMap = std::ranges::find_if(m_mapList, [&levelName](const auto& map) { return map->hasLevel(levelName); });
+	if (foundMap != std::ranges::end(m_mapList))
+		return *foundMap;
+	return nullptr;
+}
+
+std::shared_ptr<Map> Server::findMapForLevel(MapType mapType, std::string_view levelName) const noexcept
+{
+	auto foundMap = std::ranges::find_if(m_mapList, [&mapType, &levelName](const auto& map) { return map->mapType == mapType && map->hasLevel(levelName); });
+	if (foundMap != std::ranges::end(m_mapList))
+		return *foundMap;
+	return nullptr;
+}
+
+std::shared_ptr<Level> Server::findGmapForLevel(std::string_view levelName, std::shared_ptr<Player> player) const noexcept
+{
+	LevelPtr returnLevel = nullptr;
+
+	auto [iter, end] = m_gmapLevels.equal_range(levelName);
+	while (iter != end)
+	{
+		if (auto level = iter->second.lock(); level != nullptr)
+		{
+			// If this is a group map, and our group matches, use this one.
+			if (level->isGroupMap && player->account.groupName == level->groupMapName)
+				return level;
+
+			// If this is a singleplayer map, and our account matches, use this one.
+			if (level->isSinglePlayer && player->account.name == level->groupMapName)
+				return level;
+
+			// Otherwise, record this the level we will return if we don't find anything.
+			returnLevel = level;
+		}
+		++iter;
+	}
+
+	return returnLevel;
 }
 
 /////////////////////////////////////////////////////
@@ -1308,98 +1398,95 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	if (storageType == NPCStorageType::DATABASE)
 		startId = NPCID_GEN_DATABASE_LOCALN;
 
-	// Get available NPC ID.
+	// Create the NPC.
 	NPCID newId = m_npcIdGenerator.getAvailableId(startId);
-
-	// New NPC.
 	auto newNPC = std::make_shared<NPC>(newId, storageType);
-
-	// Add the NPC to the list.
-	m_npcList.insert(std::make_pair(newId, newNPC));
-
-	// Set the default warp type.
-	newNPC->warpRestrictions = hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
-
-	// Determine which level we are ACTUALLY on.
-	auto levelName = levelPtr->getFilePath().stem();
-	auto localPixelPosition = toLocalPixelPosition(x, y);
-	if (levelPtr->isOnGmap())
-	{
-		if (auto map = levelPtr->getMap(); map != nullptr)
-		{
-			levelName = map->fileName.stem();
-			levelPtr = map->getLevelAt(toPixelPosition({ x, y }));
-		}
-	}
 
 	// Set the script type.
 	if (!type.empty())
 		newNPC->scriptType = type;
-	else
-	{
-		if (storageType == NPCStorageType::LEVEL)
-			newNPC->scriptType = NPCTYPE_LOCAL;
-		else newNPC->scriptType = NPCTYPE_OBJECT;
-	}
-
-	// Set the NPC's name.
-	{
-		std::string npcNamePrefix = std::format("{}_{}_{}_", string::toLower(newNPC->scriptType), levelName.string(), m_serverTime);
-		auto count = std::ranges::count_if(m_npcList, [&npcNamePrefix](const auto& pair)
-		{
-			return pair.second->name.starts_with(npcNamePrefix);
-		});
-
-		newNPC->name = std::format("{}{}", npcNamePrefix, (count + 1));
-	}
 
 	// Set NPC props.
-	newNPC->setLevel(level.lock());
+	auto localPixelPosition = toLocalPixelPosition(x, y);
 	newNPC->character.localPixelX = localPixelPosition.x();
 	newNPC->character.localPixelY = localPixelPosition.y();
 	newNPC->image = image;
 
-	// If the level is a gmap, set the modTime on the level props.
-	if (auto map = levelPtr->getMap(); map && map->isGmap())
+	// Set the level details.
+	if (levelPtr != nullptr)
 	{
-		newNPC->character.mapX = levelPtr->mapPosition.x();
-		newNPC->character.mapY = levelPtr->mapPosition.y();
-		newNPC->modTime[PROPID(NPCProp::GMAPLEVELX)] = m_frameStartTime;
-		newNPC->modTime[PROPID(NPCProp::GMAPLEVELY)] = m_frameStartTime;
+		newNPC->level = levelPtr->levelName;
+
+		// If the level is a gmap, set the modTime on the map position props.
+		if (auto map = levelPtr->getMap(); map && map->isGmap())
+		{
+			auto mapPosition = toMapPosition(TilePosition{ x, y });
+			newNPC->character.mapX = mapPosition.x();
+			newNPC->character.mapY = mapPosition.y();
+			newNPC->modTime[PROPID(NPCProp::GMAPLEVELX)] = m_frameStartTime;
+			newNPC->modTime[PROPID(NPCProp::GMAPLEVELY)] = m_frameStartTime;
+		}
 	}
 
 	// Set the script and record the initial state.
 	newNPC->setScript(script);
 	newNPC->recordInitialState();
 
-	// Add the NPC to the level.
-	if (levelPtr != nullptr)
-		levelPtr->addNPC(newNPC);
-
-	// Created event.
-	if (hasNPCServer())
-	{
-		newNPC->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
-	}
-
-#ifdef DEBUG
-	log::printLine(log::server, "Adding NPC [{}] '{}' at ({}, {}) in level '{}'.", newNPC->id, newNPC->name, newNPC->character.localPixelX, newNPC->character.localPixelY, levelPtr ? levelPtr->levelName : "null");
-#endif
-
-	// Send the NPC's props to everybody in range.
-	if (sendToPlayers)
-	{
-		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)newNPC->id << newNPC->getAllPropsPacket();
-		sendPacketToNearby(packet, newNPC->getGlobalPosition(), levelPtr);
-	}
-
-	return newNPC;
+	// Finish adding the NPC.
+	return addNPC(newNPC, sendToPlayers);
 }
 
 std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 {
 	// Add the NPC to the list.
 	m_npcList.insert(std::make_pair(npc->id, npc));
+
+	// Set the default warp type.
+	npc->warpRestrictions = hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
+
+	// Set the default script type.
+	if (npc->scriptType.empty())
+	{
+		if (npc->storageType == NPCStorageType::LEVEL)
+			npc->scriptType = NPCTYPE_LOCAL;
+		else npc->scriptType = NPCTYPE_OBJECT;
+	}
+
+	// Set the NPC's name.
+	if (npc->name.empty())
+	{
+		std::string npcNamePrefix = std::format("{}_{}_{}_", string::toLower(npc->scriptType), string::removeExtension(npc->level), m_serverTime);
+		auto count = std::ranges::count_if(m_npcList, [&npcNamePrefix](const auto& pair)
+		{
+			return pair.second->name.starts_with(npcNamePrefix);
+		});
+
+		npc->name = std::format("{}{}", npcNamePrefix, (count + 1));
+	}
+
+	// Add the NPC to the level.
+	if (!npc->level.empty())
+	{
+		if (auto level = getStubbedLevel(npc->level); level != nullptr)
+			level->addNPC(npc);
+	}
+
+	// Created event.
+	if (hasNPCServer())
+	{
+		npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
+	}
+
+#ifdef DEBUG
+	if (auto server = BabyDI::Get<Server>(); server && server->running)
+	{
+		log::printLine(log::server, "Adding NPC [{}] '{}' at ({}, {})[{},{}] in level '{}'.",
+			npc->id, npc->name, npc->character.localPixelX, npc->character.localPixelY, npc->character.mapX, npc->character.mapY, npc->level);
+	}
+#endif
+
+	// Record the current prop modification time.
+	npc->recordCurrentPropModTime();
 
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)
@@ -1427,6 +1514,9 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 
 	if (auto level = npc->getLevel(); level)
 	{
+		// Get the sub-level the NPC is on.
+		auto [subLevel, levelData] = level->getSubLevelAndStaticDataAtPosition(MapPosition{ npc->character.mapX, npc->character.mapY });
+
 		// Remove the NPC from the level
 		if (eraseFromLevel)
 			level->removeNPC(npc);
@@ -1434,13 +1524,17 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 		// Tell the clients to delete the NPC.
 		std::string levelName = npc->getLevelName();
 
-		auto lastLevelChange = clock::to_time_t(npc->modTime[PROPID(NPCProp::CURLEVEL)]);
+		auto lastLevelChange = npc->modTime[PROPID(NPCProp::CURLEVEL)];
 		for (auto& [pid, p]: m_playerList)
 		{
+			std::optional<clock::time_point> lastEntered = std::nullopt;
 			auto playerClient = std::dynamic_pointer_cast<PlayerClient>(p);
-			if (playerClient != nullptr && (playerClient->getLevelLastEnteredTime(level.get()) >= lastLevelChange || playerClient->getLevel() == level))
+			if (playerClient != nullptr)
+				lastEntered = playerClient->getLevelLastEnteredTime(levelData.get());
+
+			if (playerClient != nullptr && (!lastEntered.has_value() || lastEntered.value() >= lastLevelChange || playerClient->getLevel() == level))
 			{
-				if (playerClient->getComputedLevelName() != levelName)
+				if (playerClient->getLevelName() != levelName)
 					p->sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)npc->id);
 				else p->sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npc->id);
 			}
@@ -1784,19 +1878,6 @@ void Server::sendPacketToAll(const CString& packet, const std::set<PlayerID>& ex
 	}
 }
 
-void Server::sendPacketToOneLevel(const CString& packet, std::weak_ptr<Level> level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
-{
-	auto levelp = level.lock();
-	if (!levelp) return;
-
-	for (auto id: levelp->getLevelPlayers())
-	{
-		if (exclude.contains(id)) continue;
-		if (auto player = this->getPlayer(id); player && player->isClient() && (!sendIf || sendIf(player.get())))
-			player->sendPacket(packet);
-	}
-}
-
 void Server::sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer) const
 {
 	auto p = pPlayer.lock();
@@ -1808,29 +1889,33 @@ void Server::sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Pla
 void Server::sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const
 {
 	if (!running) return;
-	for (auto& [id, player]: m_playerList)
+	for (auto& [id, player] : m_playerList)
 	{
 		if ((player->getType() & who) && (!pPlayer || id != pPlayer->getId()))
 			player->sendPacket(pPacket);
 	}
 }
 
-void Server::sendPacketToLevelAndPastVisitorsAfter(Level* level, time_t modTime, const CString& packet) const
+void Server::sendPacketToOneLevelPart(const CString& packet, const PixelPosition& position, LevelPtr level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {
-	if (!running) return;
-	for (const auto& [id, player] : players_of_type<PlayerClient>(m_playerList))
+	auto mapPosition = toMapPosition(position);
+	sendPacketToOneLevelPart(packet, level, mapPosition, exclude, sendIf);
+}
+
+void Server::sendPacketToOneLevelPart(const CString& packet, LevelPtr level, const MapPosition& mapPosition, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
+{
+	for (const auto& id : level->findPlayersInLevelPart(mapPosition))
 	{
-		auto playerLevel = player->getLevel();
-		if (player->getLevelLastEnteredTime(level) > modTime || (playerLevel != nullptr && playerLevel.get() == level))
+		if (exclude.contains(id)) continue;
+		if (auto player = this->getPlayer(id); player && player->isClient() && (!sendIf || sendIf(player.get())))
 			player->sendPacket(packet);
 	}
 }
 
-void Server::sendPacketToNearby(const CString& packet, const PixelPosition& position, std::shared_ptr<Level> level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToNearby(const CString& packet, const PixelPosition& position, LevelPtr level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {
 	if (!running || level == nullptr) return;
 
-	auto levelName = level->getMapOrLevelName();
 	auto players = level->findInRangePlayersForCommunication(position);
 	for (const auto& playerId : players)
 	{
@@ -1840,16 +1925,35 @@ void Server::sendPacketToNearby(const CString& packet, const PixelPosition& posi
 		{
 			// Are we on the same level?
 			// Levels on a gmap are the same level and thus this would be false.
-			bool sameLevel = levelName == player->getComputedLevelName();
+			bool sameLevel = level->levelName == player->getLevelName();
 
-			// TODO: Figure out when PLO_SETACTIVELEVEL was introduced.
-			if (!sameLevel && player->getVersion() < CLVER_2_17)
+			// TODO: Enable nearby data for bigmaps again.
+			// The current problem is that the NPC-Server will send modified NPC props to players when they don't know about the NPC yet, which breaks the NPCs.
+			// We need to add the ability to send the full NPC details of adjacent levels when entering a bigmap level before we can re-enable this.
+			if (!sameLevel)
 				continue;
 
-			if (!sameLevel) player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
+			// TODO: Figure out when PLO_SETACTIVELEVEL was introduced.
+			//if (!sameLevel && player->getVersion() < CLVER_2_17)
+			//	continue;
+			//
+			//if (!sameLevel) player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
 			player->sendPacket(packet);
-			if (!sameLevel) player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << player->getComputedLevelName());
+			//if (!sameLevel) player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << player->getLevelName());
 		}
+	}
+}
+
+void Server::sendPacketToLevelAndPastVisitorsAfter(StaticLevelData* level, clock::time_point modTime, const CString& packet) const
+{
+	if (!running) return;
+	for (const auto& [id, player] : players_of_type<PlayerClient>(m_playerList))
+	{
+		auto playerLevel = player->getLevel();
+		auto levelData = playerLevel->getStaticLevelDataAtPosition(player->getMapPosition());
+		auto lastEntered = player->getLevelLastEnteredTime(level);
+		if ((lastEntered.has_value() && lastEntered.value() > modTime) || (levelData != nullptr && levelData.get() == level))
+			player->sendPacket(packet);
 	}
 }
 
@@ -1944,7 +2048,7 @@ void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level
 
 	ShootPacketWrapper newPacket{};
 	newPacket.source = (shoot->from.second == ScriptObjectType::NPC ? shoot->from.first : 0);
-	newPacket.position = toLocalPixelPosition(shoot->position);
+	newPacket.position = toPixelPosition(shoot->position);
 	newPacket.offsetx = 0;
 	newPacket.offsety = 0;
 	newPacket.sangle = static_cast<uint8_t>(220 * (std::clamp(shoot->angle, 0.0f, 2 * pi) / (2 * pi)));
@@ -1957,8 +2061,8 @@ void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)0 << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)0 << newPacket.constructShootV2();
 
-	sendPacketToNearby(oldPacketBuf, level->convertToMapPosition(newPacket.position), level, { 0 }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
-	sendPacketToNearby(newPacketBuf, level->convertToMapPosition(newPacket.position), level, { 0 }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
+	sendPacketToNearby(oldPacketBuf, newPacket.position, level, { 0 }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
+	sendPacketToNearby(newPacketBuf, newPacket.position, level, { 0 }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

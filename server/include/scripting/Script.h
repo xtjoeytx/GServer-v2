@@ -82,6 +82,7 @@ private:
 	size_t m_hash = 0;
 
 	void split(std::string& source) noexcept;
+	void compileScript() noexcept;
 };
 
 //----------------------------
@@ -95,7 +96,8 @@ inline Script& Script::operator=(const Script& o) noexcept
 {
 	m_who = o.m_who;
 	m_original_source = o.m_original_source;
-	setModifiedSource(m_original_source);
+	m_modified_source = o.m_modified_source;
+	split(m_modified_source);
 	m_client_script = o.m_client_script;
 	m_server_script = o.m_server_script;
 	m_hash = o.m_hash;
@@ -157,6 +159,7 @@ inline Script& Script::setModifiedSource(const std::string& source) noexcept
 {
 	m_modified_source = std::move(minify(source));
 	split(m_modified_source);
+	compileScript();
 	return *this;
 }
 

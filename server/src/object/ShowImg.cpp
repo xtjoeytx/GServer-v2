@@ -2,6 +2,7 @@
 #include <chrono>
 #include <cstdint>
 #include <format>
+#include <optional>
 #include <ranges>
 #include <string_view>
 #include <string>
@@ -262,13 +263,13 @@ CString ShowImg::getPropPacket(ShowImgProp prop) const
 	return CString();
 }
 
-CString ShowImg::getAllPropsPacket(clock::time_point newTime) const
+CString ShowImg::getAllPropsPacket(std::optional<clock::time_point> newTime) const
 {
 	CString result;
 
 	for (uint8_t i = 0; i < SHOWIMGPROP_COUNT; ++i)
 	{
-		if (modTime[i] != clock::time_point::min() && modTime[i] >= newTime)
+		if (modTime[i].has_value() && modTime[i] >= newTime)
 		{
 			auto prop = static_cast<ShowImgProp>(i);
 			result >> (char)i << getPropPacket(prop);

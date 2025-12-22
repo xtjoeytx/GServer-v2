@@ -229,7 +229,7 @@ void PropertyGaniOrBowGif::deserialize(CString& data)
 		{
 			// Otherwise, its a custom bow image.
 			auto image = data.readChars(preset - 10);
-			if (!image.contains("."))
+			if (!image.isEmpty() && !image.contains("."))
 				image += ".gif";
 			bowGif = std::make_pair(std::move(image), 0);
 		}

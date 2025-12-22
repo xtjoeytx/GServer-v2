@@ -233,7 +233,7 @@ struct PropertyUnsafeByte : public PropertyBase
 
 	virtual void apply(const GameValue& gameValue) override
 	{
-		value = static_cast<uint8_t>(gameValue.get<double>().value_or(0));
+		value = static_cast<uint8_t>(gameValue.get<double>().value_or(0.0));
 	}
 
 	virtual std::format_context::iterator format(std::format_context& ctx) const override

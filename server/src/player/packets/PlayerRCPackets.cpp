@@ -266,8 +266,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_UPDATELEVELS(CString& pPacket)
 	unsigned short levelCount = pPacket.readGUShort();
 	for (int i = 0; i < levelCount; ++i)
 	{
-		auto level = m_server->getLevel(pPacket.readChars(pPacket.readGUChar()).toString());
-		if (level) level->reload();
+		auto levelName = pPacket.readChars(pPacket.readGUChar()).toString();
+		auto level = m_server->getLoadedLevelNoHint(levelName);
+		if (level) level->reload(levelName);
 	}
 	return HandlePacketResult::Handled;
 }
@@ -789,7 +790,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 
 	CString message = pPacket.readString("");
 	if (message.isEmpty()) return HandlePacketResult::Handled;
-	auto words = string::splitToVector(message.toStringView());
+	auto words = string::splitToVectorView(message.toStringView());
 
 	if (words[0].at(0) != '/')
 	{
@@ -878,12 +879,12 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 		{
 			for (std::string_view l : string::split(std::string_view{ words[1] }))
 			{
-				auto level = m_server->getLevel(l);
+				auto level = m_server->getLoadedLevelNoHint(l);
 				if (level)
 				{
 					m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " updated level: " << level->levelName);
 					log::printLine(log::rc, "{} updated level: {}", account.name, level->levelName);
-					level->reload();
+					level->reload(l);
 				}
 			}
 		}
@@ -894,7 +895,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 			auto& levels = m_server->getLevelList();
 			for (auto& [name, level] : levels)
 			{
-				level->reload();
+				level->reload(MapPosition{});
 				++count;
 			}
 			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " updated all the levels (" << CString((int)count) << " levels updated).");
@@ -1048,8 +1049,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 		// Try to send to the control-NPC.
 		else if (m_server->hasNPCServer())
 		{
-			words[0].erase(0, 1); // Remove the slash.
-			words.insert(words.begin(), "rcchat"s);
+			words[0].remove_prefix(1); // Remove the slash.
+			words.insert(words.begin(), "rcchat"sv);
 			m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::CUSTOM, source::FromPlayer(m_id), words);
 		}
 	}
