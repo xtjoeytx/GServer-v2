@@ -17,7 +17,7 @@
 #ifdef V8NPCSERVER
 
 	#include "ScriptBindings.h"
-	#include "wolfssl/ssl.h"
+	#include <wolfssl/ssl.h>
 
 #endif
 

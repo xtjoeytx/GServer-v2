@@ -14,6 +14,9 @@ if(MAKE_TESTS)
 	FetchContent_MakeAvailable(Catch2)
 
 	subdir_list(SUBDIRS ${CMAKE_CURRENT_SOURCE_DIR})
+	if(WOLFSSL)
+        	include_directories(${PROJECT_SOURCE_DIR}/dependencies/gs2lib/dependencies/wolfssl)
+	endif()
 
 	foreach(subdir ${SUBDIRS})
 		add_test_og(${subdir} ${CMAKE_CURRENT_SOURCE_DIR})

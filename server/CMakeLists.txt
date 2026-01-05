@@ -167,6 +167,10 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/dependencies/gs2lib/include)
 
+if(WOLFSSL)
+	include_directories(${PROJECT_SOURCE_DIR}/dependencies/gs2lib/dependencies/wolfssl)
+endif()
+
 if(APPLE)
 	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 

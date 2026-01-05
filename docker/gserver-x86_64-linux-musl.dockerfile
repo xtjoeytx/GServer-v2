@@ -1,7 +1,7 @@
 ARG NPCSERVER=on
 ARG VER_EXTRA=""
 
-FROM xtjoeytx/v8:9.1.269.9 as local-v8
+FROM xtjoeytx/v8:9.1.269.9 AS local-v8
 ARG NPCSERVER
 ARG VER_EXTRA
 
