@@ -5,6 +5,5 @@ cmake-build-*/
 vcpkg/
 docker/
 dependencies/fc/
-v8.tar
-mingw-v8.tar
+*.tar
 *.diff
