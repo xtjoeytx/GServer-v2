@@ -4,7 +4,7 @@
 #include <functional>
 #include <thread>
 
-#include <fmt/format.h>
+#include <format>
 
 #include "IUtil.h"
 #include "Level.h"
@@ -1867,19 +1867,19 @@ void Server::handleGS2Errors(const std::vector<GS2CompilerError>& errors, const 
 		switch (err.level())
 		{
 			case ErrorLevel::E_INFO:
-				errorMsg += fmt::format("info: {}\n", err.msg());
+				errorMsg += std::format("info: {}\n", err.msg());
 				break;
 			case ErrorLevel::E_WARNING:
-				errorMsg += fmt::format("warning: {}\n", err.msg());
+				errorMsg += std::format("warning: {}\n", err.msg());
 				break;
 			default:
-				errorMsg += fmt::format("error: {}\n", err.msg());
+				errorMsg += std::format("error: {}\n", err.msg());
 				break;
 		}
 	}
 
 	if (!errorMsg.empty())
-		reportScriptException(fmt::format("Script compiler output for {}:\n{}", origin, errorMsg));
+		reportScriptException(std::format("Script compiler output for {}:\n{}", origin, errorMsg));
 }
 
 /*

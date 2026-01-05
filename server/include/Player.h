@@ -352,7 +352,7 @@ public:
 
 	bool msgPLI_WANTFILE(CString& pPacket);
 
-	bool msgPLI_SHOWIMG(CString& pPacket);
+	bool msgPLI_SHOWIMGPLAYER(CString& pPacket);
 
 	// PLI_UNKNOWN25
 	bool msgPLI_HURTPLAYER(CString& pPacket);
@@ -377,7 +377,7 @@ public:
 
 	bool msgPLI_TRIGGERACTION(CString& pPacket);
 
-	bool msgPLI_MAPINFO(CString& pPacket);
+	bool msgPLI_TAMPERCHECK(CString& pPacket);
 
 	bool msgPLI_SHOOT(CString& pPacket);
 
@@ -550,14 +550,17 @@ public:
 	bool m_newProtocol;
 
 	// SSL Stuff
+	/*
 	static int serverRecv(WOLFSSL* ssl, char* buf, int sz, void* ctx);
 
 	static int serverSend(WOLFSSL* ssl, char* buf, int sz, void* ctx);
+	*/
 
 private:
+	/*
 	WOLFSSL* ssl = nullptr;
 	WOLFSSL_CTX* ctx = nullptr;
-
+*/
 	// SendPacket functions.
 	void
 	sendPacketNewProtocol(unsigned char packetId, const CString& pPacket, bool sendNow = false, bool appendNL = true);

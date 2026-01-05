@@ -27,8 +27,7 @@ bool Player::msgPLI_UPDATEGANI(CString& pPacket)
 			sendPacket(packet);
 
 	// v4 and up needs this for some reason.
-	sendPacket({ PLO_UNKNOWN195,
-				 CString() >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"" });
+	sendPacket({ PLO_LOADGANI, CString() >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"" });
 	return true;
 }
 

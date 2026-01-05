@@ -14,7 +14,7 @@
 #endif
 
 #include "utilities/timeunits.h"
-#include <fmt/format.h>
+#include <format>
 #include <stdio.h>
 
 #include "IConfig.h"
@@ -1134,7 +1134,7 @@ bool Player::msgPLI_RC_CHAT(CString& pPacket)
 			{
 				if (t > 0)
 				{
-					m.append(fmt::format(" {} {}", t, fmtStr));
+					m.append(std::format(" {} {}", t, fmtStr));
 					if (t > 1)
 						m.append("s");
 				}

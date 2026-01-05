@@ -95,7 +95,7 @@ bool Player::sendLogin()
 	sendPacket({ PLO_SIGNATURE, CString() >> (char)73 });
 
 	//if(loginserver) {
-	sendPacket({ PLO_FULLSTOP, "" });
+	sendPacket({ PLO_DISABLECLASSICMODE, "" });
 	sendPacket({ PLO_GHOSTICON, CString() >> (char)1 });
 	//}
 
@@ -345,7 +345,7 @@ bool Player::sendLoginClient()
 	}
 
 	// Was blank.  Sent before weapon list.
-	sendPacket({ PLO_UNKNOWN190, CString() << "" });
+	sendPacket({ PLO_SERVERLISTCONNECTED, CString() << "" });
 
 	// Send the level to the player.
 	// warp will call sendCompress() for us.
@@ -453,7 +453,7 @@ bool Player::sendLoginRC()
 	for (const auto& i: rcmessage)
 		sendPacket({ PLO_RC_CHAT, CString() << i });
 
-	sendPacket({ PLO_UNKNOWN190, CString() << "" });
+	sendPacket({ PLO_SERVERLISTCONNECTED, CString() << "" });
 
 	m_server->sendPacketToType(PLTYPE_ANYRC, { PLO_RC_CHAT, CString() << "New RC: " << m_accountName });
 	return true;

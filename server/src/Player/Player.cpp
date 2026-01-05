@@ -17,10 +17,10 @@
 #include "TPacket.h"
 #include "Weapon.h"
 #include "utilities/stringutils.h"
-
+/*
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
-
+*/
 /*
 	Logs
 */
@@ -204,7 +204,7 @@ void Player::createFunctions()
 	TPLFunc[PLI_PUTNPC] = &Player::msgPLI_PUTNPC;
 	TPLFunc[PLI_NPCDEL] = &Player::msgPLI_NPCDEL;
 	TPLFunc[PLI_WANTFILE] = &Player::msgPLI_WANTFILE;
-	TPLFunc[PLI_SHOWIMG] = &Player::msgPLI_SHOWIMG;
+	TPLFunc[PLI_SHOWIMGPLAYER] = &Player::msgPLI_SHOWIMGPLAYER;
 
 	TPLFunc[PLI_HURTPLAYER] = &Player::msgPLI_HURTPLAYER;
 	TPLFunc[PLI_EXPLOSION] = &Player::msgPLI_EXPLOSION;
@@ -219,14 +219,14 @@ void Player::createFunctions()
 	TPLFunc[PLI_HITOBJECTS] = &Player::msgPLI_HITOBJECTS;
 	TPLFunc[PLI_LANGUAGE] = &Player::msgPLI_LANGUAGE;
 	TPLFunc[PLI_TRIGGERACTION] = &Player::msgPLI_TRIGGERACTION;
-	TPLFunc[PLI_MAPINFO] = &Player::msgPLI_MAPINFO;
+	TPLFunc[PLI_TAMPERCHECK] = &Player::msgPLI_TAMPERCHECK;
 	TPLFunc[PLI_SHOOT] = &Player::msgPLI_SHOOT;
 	TPLFunc[PLI_SHOOT2] = &Player::msgPLI_SHOOT2;
 	TPLFunc[PLI_SERVERWARP] = &Player::msgPLI_SERVERWARP;
 
 	TPLFunc[PLI_PROCESSLIST] = &Player::msgPLI_PROCESSLIST;
 
-	TPLFunc[PLI_UNKNOWN46] = &Player::msgPLI_UNKNOWN46;
+	TPLFunc[PLI_ENTERLEVEL] = &Player::msgPLI_UNKNOWN46;
 	TPLFunc[PLI_VERIFYWANTSEND] = &Player::msgPLI_VERIFYWANTSEND;
 	TPLFunc[PLI_UPDATECLASS] = &Player::msgPLI_UPDATECLASS;
 	TPLFunc[PLI_RAWDATA] = &Player::msgPLI_RAWDATA;
@@ -462,7 +462,7 @@ bool Player::canSend()
 	return m_fileQueue.canSend();
 }
 
-/* server recv callback */
+/* server recv callback *
 int Player::serverRecv(WOLFSSL* ssl, char* buf, int sz, void* ctx)
 {
 	printf("ServerRecv\n");
@@ -493,7 +493,7 @@ int Player::serverRecv(WOLFSSL* ssl, char* buf, int sz, void* ctx)
 	return -1;
 }
 
-/* client send callback */
+/* client send callback *
 int Player::serverSend(WOLFSSL* ssl, char* buf, int sz, void* ctx)
 {
 	printf("ServerSend\n");
@@ -508,7 +508,7 @@ int Player::serverSend(WOLFSSL* ssl, char* buf, int sz, void* ctx)
 
 	return -1;
 }
-
+*/
 /*
 	Socket-Control Functions
 */
@@ -607,6 +607,7 @@ bool Player::doMain()
 			break;
 		}
 
+		/*
 		m_recvBuffer.save("indata.bin");
 		if (m_recvBuffer[0] == 0x16)
 		{
@@ -614,13 +615,13 @@ bool Player::doMain()
 			char* hostname = nullptr;
 
 			WOLFSSL_METHOD* method;
-			/* Initialize wolfSSL library */
+			/* Initialize wolfSSL library *
 			wolfSSL_Init();
 
-			/* Get encryption method */
+			/* Get encryption method *
 			method = wolfTLS_server_method();
 
-			/* Create wolfSSL_CTX */
+			/* Create wolfSSL_CTX *
 			if ((ctx = wolfSSL_CTX_new(method)) == nullptr)
 			{
 				printf("wolfSSL_CTX_new error\n");
@@ -635,7 +636,7 @@ bool Player::doMain()
 				return false;
 			}
 
-			/* Load server certs into ctx */
+			/* Load server certs into ctx *
 			if (wolfSSL_CTX_use_certificate_file(ctx, "certs/server-cert.pem", SSL_FILETYPE_PEM) != SSL_SUCCESS)
 			{
 				printf("Error loading certs/server-cert.pem\n");
@@ -643,7 +644,7 @@ bool Player::doMain()
 				return false;
 			}
 
-			/* Load server key into ctx */
+			/* Load server key into ctx *
 			if (wolfSSL_CTX_use_PrivateKey_file(ctx, "certs/server-key.pem", SSL_FILETYPE_PEM) != SSL_SUCCESS)
 			{
 				printf("Error loading certs/server-key.pem\n");
@@ -654,7 +655,7 @@ bool Player::doMain()
 			wolfSSL_SetIOSend(ctx, serverSend);
 			wolfSSL_SetIORecv(ctx, serverRecv);
 
-			/* Create wolfSSL object */
+			/* Create wolfSSL object *
 			if ((ssl = wolfSSL_new(ctx)) == nullptr)
 			{
 				printf("wolfSSL_new error\n");
@@ -667,7 +668,7 @@ bool Player::doMain()
 
 			wolfSSL_set_ex_data(ssl, 0, this);
 
-			/* accept tls connection without tcp sockets */
+			/* accept tls connection without tcp sockets *
 			int ret = wolfSSL_accept(ssl);
 			if (ret != SSL_SUCCESS)
 			{
@@ -711,6 +712,7 @@ bool Player::doMain()
 			m_recvBuffer << *buf;
 			printf("client msg = %s\n", buf);
 		}
+	*/
 		// packet length
 		auto len = (unsigned short)m_recvBuffer.readShort();
 		if ((unsigned int)len > (unsigned int)m_recvBuffer.length() - 2)
@@ -2708,6 +2710,23 @@ bool Player::msgPLI_LOGIN(CString& pPacket)
 		m_versionId = getVersionIDByVersion(m_version);
 	}
 
+	if (m_versionId == CLVER_WORLDS)
+	{
+		sendPacket({ PLO_SERVERWARP, "Offline,Offline,127.0.0.1,14915" }, true);
+		/*
+		for (const auto& weapon: m_server->getWeaponList())
+		{
+			for (const auto& packet: weapon.second->getWeaponPackets(CLVER_4_0211))
+			{
+				sendPacket(packet, true);
+			}
+			sendPacket({ PLO_NPCWEAPONSCRIPT, weapon.second->getByteCode() }, true);
+		}
+		*/
+
+		return true;
+	}
+
 	// Read Account & Password
 	m_accountName = pPacket.readChars(pPacket.readGUChar());
 	CString password = pPacket.readChars(pPacket.readGUChar());
@@ -3577,9 +3596,9 @@ bool Player::msgPLI_WANTFILE(CString& pPacket)
 	return true;
 }
 
-bool Player::msgPLI_SHOWIMG(CString& pPacket)
+bool Player::msgPLI_SHOWIMGPLAYER(CString& pPacket)
 {
-	m_server->sendPacketToLevelArea({ PLO_SHOWIMG, CString() >> (short)m_id << (pPacket.text() + 1) },
+	m_server->sendPacketToLevelArea({ PLO_SHOWIMGPLAYER, CString() >> (short)m_id << (pPacket.text() + 1) },
 									this->shared_from_this(), { m_id });
 	return true;
 }
@@ -4209,7 +4228,7 @@ bool Player::msgPLI_TRIGGERACTION(CString& pPacket)
 	return true;
 }
 
-bool Player::msgPLI_MAPINFO(CString& pPacket)
+bool Player::msgPLI_TAMPERCHECK(CString& pPacket)
 {
 	// Don't know what this does exactly.  Might be gmap related.
 	pPacket.readString("");

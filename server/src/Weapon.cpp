@@ -207,7 +207,7 @@ PlayerOutPackets Weapon::getWeaponPackets(int clientVersion) const
 			CString header = b.readChars(b.readGUShort());
 
 			// Get the mod time and send packet 197.
-			packets.push_back({ PLO_UNKNOWN197, CString() << header << "," >> (long long)time(nullptr) });
+			packets.push_back({ PLO_LOADSCRIPT, CString() << header << "," >> (long long)time(nullptr) });
 			return packets;
 		}
 
