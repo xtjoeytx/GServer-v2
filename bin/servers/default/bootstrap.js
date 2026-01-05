@@ -1,26 +1,121 @@
 'use strict';
 
+const INTERNAL_VAR = "__internal";
+
 (function (env) {
+	function addInternalData(obj, key, value) {
+		if (!(INTERNAL_VAR in obj)) {
+			obj[INTERNAL_VAR] = {
+				'': obj['__main'] || {}
+			};
+		}
+
+		if (typeof value !== 'object') {
+			delete obj[INTERNAL_VAR][key];
+		} else {
+			obj[INTERNAL_VAR][key] = value;
+		}
+
+		mapInternalData(obj);
+	}
+
+	function unmapInternalData(obj) {
+		if ("__public" in obj) {
+			for (const fnName in obj['__public'])
+				obj[fnName] = undefined;
+		}
+
+		obj['__events'] = {};
+		obj['__public'] = {};
+	}
+
+	function mapInternalData(obj) {
+		if (!(INTERNAL_VAR in obj)) {
+			return;
+		}
+
+		unmapInternalData(obj);
+
+		const internalData = obj[INTERNAL_VAR];
+		for (const [className, classData] of Object.entries(internalData)) {
+			const scopeFn = internalData[className]['scope'];
+
+			for (const [ dataType, dataRows] of Object.entries(classData)) {
+				if (dataType === "events" && typeof scopeFn === 'function') {
+					for (const [ fnName, fnObj ] of Object.entries(dataRows)) {
+						if (!(fnName in obj["__events"]))
+							obj["__events"][fnName] = [];
+						obj["__events"][fnName].push([fnObj, scopeFn]);
+					}
+				} else if (dataType === "public") {
+					for (const [ fnName, fnObj ] of Object.entries(dataRows)) {
+						obj["__public"][fnName] = true;
+						obj[fnName] = fnObj;
+					}
+				}
+			}
+		}
+	}
+
+	function callEvent(obj, player, eventName, ...args) {
+		if (eventName in obj['__events']) {
+			for (const val of obj['__events'][eventName]) {
+				// val[0] -> event function
+				// val[1] -> set player scope
+				val[1](player);
+				val[0].apply(obj, args);
+				val[1](undefined);
+			}
+		}
+	}
+
+	/**
+	 * NPC -> Join Class
+	 */
+	env.setCallBack("npc.joinclass", function (npc, className, classData) {
+		try {
+			if (className.length > 0) {
+				addInternalData(npc, className, classData);
+				env.setNpcEvents(npc, Object.keys(npc["__events"] || {}));
+			}
+		} catch (e) {
+			env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
+		}
+	});
+
+	/**
+	 * NPC -> Leave Class
+	 */
+	env.setCallBack("npc.leaveclass", function (npc, className) {
+		try {
+			if (className.length > 0) {
+				addInternalData(npc, className, undefined);
+				env.setNpcEvents(npc, Object.keys(npc["__events"] || {}));
+			}
+		} catch (e) {
+			env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
+		}
+	});
+
 	/**
 	 * Events -> onCreated(npc, args...)
 	 */
-	env.setCallBack("npc.created", function (npc, ...args) {
+	env.setCallBack("npc.created", function (npc) {
 		try {
 			// Set whether the npc supports these events
-			env.setNpcEvents(npc,
-				(npc.onCreated && 1 << 0) |
-				(npc.onTimeout && 1 << 1) |
-				(npc.onPlayerChats && 1 << 2) |
-				(npc.onPlayerEnters && 1 << 3) |
-				(npc.onPlayerLeaves && 1 << 4) |
-				(npc.onPlayerTouchsMe && 1 << 5) |
-				(npc.onPlayerLogin && 1 << 6) |
-				(npc.onPlayerLogout && 1 << 7) |
-				(npc.onNpcWarped && 1 << 8)
-			);
+			addInternalData(npc, "", npc.__main);
+			env.setNpcEvents(npc, Object.keys(npc["__events"] || {}));
 
-			if (npc.onCreated)
-				npc.onCreated.apply(npc, args);
+			callEvent(npc, undefined, "onCreated");
+		} catch (e) {
+			env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
+		}
+	});
+
+	// Eventually migrate everything to this
+	env.setCallBack("npc.callevent", function (npc, player, eventName, args) {
+		try {
+			callEvent(npc, player, eventName, args);
 		} catch (e) {
 			env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}
@@ -31,8 +126,7 @@
 	 */
 	env.setCallBack("npc.playerchats", function (npc, player, message) {
 		try {
-			if (npc.onPlayerChats)
-				npc.onPlayerChats(player, message);
+			callEvent(npc, player, "onPlayerChats", player, message);
 		} catch (e) {
 			env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}
@@ -43,8 +137,7 @@
 	 */
 	env.setCallBack("npc.playerenters", function (npc, player) {
 		try {
-			if (npc.onPlayerEnters)
-				npc.onPlayerEnters(player);
+			callEvent(npc, player, "onPlayerEnters", player);
 		} catch (e) {
 			env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}
@@ -55,8 +148,7 @@
 	 */
 	env.setCallBack("npc.playerleaves", function (npc, player) {
 		try {
-			if (npc.onPlayerLeaves)
-				npc.onPlayerLeaves(player);
+			callEvent(npc, player, "onPlayerLeaves", player);
 		} catch (e) {
 			env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}
@@ -67,8 +159,7 @@
 	 */
 	env.setCallBack("npc.playertouchsme", function (npc, player) {
 		try {
-			if (npc.onPlayerTouchsMe)
-				npc.onPlayerTouchsMe(player);
+			callEvent(npc, player, "onPlayerTouchsMe", player);
 		} catch (e) {
 			env.reportException("NPC Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}
@@ -79,8 +170,7 @@
 	 */
 	env.setCallBack("npc.playerlogin", function (npc, player) {
 		try {
-			if (npc.onPlayerLogin)
-				npc.onPlayerLogin(player);
+			callEvent(npc, player, "onPlayerLogin", player);
 		} catch (e) {
 			env.reportException(npc.name + " Exception at onPlayerLogin: " + e.name + " - " + e.message);
 		}
@@ -91,8 +181,7 @@
 	 */
 	env.setCallBack("npc.playerlogout", function (npc, player) {
 		try {
-			if (npc.onPlayerLogout)
-				npc.onPlayerLogout(player);
+			callEvent(npc, player, "onPlayerLogout", player);
 		} catch (e) {
 			env.reportException(npc.name + " Exception at onPlayerLogout: " + e.name + " - " + e.message);
 		}
@@ -115,10 +204,22 @@
 	 */
 	env.setCallBack("npc.warped", function (npc, ...args) {
 		try {
-			if (npc.onNpcWarped)
-				npc.onNpcWarped.apply(npc, args);
+			callEvent(npc, player, "onNpcWarped", ...args);
 		} catch (e) {
 			env.reportException("NPC Warped Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
+		}
+	});
+
+	env.setCallBack("npc.triggeron", function (npc, evName, player, data) {
+		try {
+			if (npc[evName]) {
+				const params = tokenize(data, ',');
+				npc[evName].apply(npc, params);
+			} else {
+				env.reportException("Unknown event: " + evName);
+            }
+		} catch (e) {
+			env.reportException("NPC Trigger Exception at " + npc.levelname + "," + npc.x + "," + npc.y + ": " + e.name + " - " + e.message);
 		}
 	});
 

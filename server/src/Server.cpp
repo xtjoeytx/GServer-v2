@@ -562,13 +562,7 @@ int Server::loadConfigFiles()
 	loadAllowedVersions();
 
 	// Load folders config and file system.
-	m_serverLog.out("     Folder config: ");
-	if (!m_settings.getBool("nofoldersconfig", false))
-	{
-		m_serverLog.append("ENABLED\n");
-	}
-	else
-		m_serverLog.append("disabled\n");
+	m_serverLog.out("     Folder config: ", m_settings.getBool("nofoldersconfig", false) ? "DISABLED" : "ENABLED");
 
 	m_serverLog.out("     Loading file system...\n");
 	loadFileSystem();

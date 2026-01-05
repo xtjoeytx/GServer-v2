@@ -2,6 +2,7 @@
 
 	#include <cassert>
 	#include <stdio.h>
+	#include <set>
 	#include <unordered_map>
 	#include <v8.h>
 
@@ -94,6 +95,30 @@ void Environment_SetNpcEvents(const v8::FunctionCallbackInfo<v8::Value>& args)
 		{
 			NPC* npcObject = unwrapObject<NPC>(obj);
 			npcObject->setScriptEvents(args[1]->Int32Value(context).ToChecked());
+		}
+	}
+	else if (args[0]->IsObject() && args[1]->IsArray())
+	{
+		v8::Local<v8::Context> context = args.GetIsolate()->GetCurrentContext();
+		v8::Local<v8::Object> obj = args[0]->ToObject(context).ToLocalChecked();
+
+		std::string npcConstructor = *v8::String::Utf8Value(isolate, obj->GetConstructorName());
+		if (npcConstructor == "npc")
+		{
+			auto arrayobj = v8::Local<v8::Array>::Cast(args[1]);
+
+			std::set<std::string> vec;
+			for (auto i = 0; i < arrayobj->Length(); i++) {
+				auto arrayValue = arrayobj->Get(context, i);
+				if (!arrayValue.IsEmpty())
+				{
+					auto arrayStrValue = arrayValue.ToLocalChecked()->ToString(context).ToLocalChecked();
+					vec.insert(*v8::String::Utf8Value(isolate, arrayStrValue));
+				}
+			}
+
+			TNPC *npcObject = UnwrapObject<TNPC>(obj);
+			npcObject->setScriptEvents(vec);
 		}
 	}
 
