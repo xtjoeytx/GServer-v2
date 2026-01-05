@@ -6,21 +6,23 @@ function(add_test_og TARGET_NAME TARGET_PATH)
 
   add_executable(${TARGET_NAME} ${TESTS})
   target_link_libraries(${TARGET_NAME} PRIVATE ${APP_LIBRARY_NAME} Catch2::Catch2WithMain)
-  target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
-  target_link_libraries(${TARGET_NAME} PUBLIC -static-libgcc -static-libstdc++)
+  if(STATIC)
+    target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
+    target_link_libraries(${TARGET_NAME} PUBLIC -static-libgcc -static-libstdc++)
+  endif()
 
   target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
 
   target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
 
   target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include)
-  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/TLevel)
-  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/Scripting)
-  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/Scripting/v8)
-  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/Scripting/interface)
-  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/Misc)
+  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/level)
+  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/scripting)
+  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/scripting/v8)
+  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/scripting/interface)
+  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/misc)
   target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/utilities)
-  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/Animation)
+  target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include/animation)
 
   add_dependencies(${TARGET_NAME} ${APP_LIBRARY_NAME})
 

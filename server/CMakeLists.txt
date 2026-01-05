@@ -24,34 +24,33 @@ include(CheckSymbolExists)
 
 set(
 	SOURCES
-	src/CFileSystem.cpp
-	src/main.cpp
-	src/TAccount.cpp
-	src/TMap.cpp
-	src/TNPC.cpp
-	src/TScriptClass.cpp
-	src/TServer.cpp
-	src/TServerList.cpp
-	src/TUpdatePackage.cpp
-	src/TWeapon.cpp
-	src/Scripting/GS2ScriptManager.cpp
-	src/TriggerCommandHandlers.cpp
-	${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js
+	"src/Account.cpp"
+	"src/FileSystem.cpp"
+	"src/main.cpp"
+	"src/NPC.cpp"
+	"src/Server.cpp"
+	"src/ServerList.cpp"
+	"src/TriggerCommandHandlers.cpp"
+	"src/UpdatePackage.cpp"
+	"src/Weapon.cpp"
+	"src/scripting/GS2ScriptManager.cpp"
+	"src/scripting/ScriptClass.cpp"
+	"${PROJECT_SOURCE_DIR}/bin/servers/default/bootstrap.js"
 )
 
-file(GLOB TPLAYER_SOURCES src/TPlayer/**.cpp)
-list(APPEND SOURCES ${TPLAYER_SOURCES})
+file(GLOB PLAYER_SOURCES src/player/**.cpp)
+list(APPEND SOURCES ${PLAYER_SOURCES})
 
-file(GLOB TLEVEL_SOURCES src/TLevel/**.cpp)
-list(APPEND SOURCES ${TLEVEL_SOURCES})
+file(GLOB LEVEL_SOURCES src/level/**.cpp)
+list(APPEND SOURCES ${LEVEL_SOURCES})
 
-file(GLOB MISC_SOURCES src/Misc/**.cpp)
+file(GLOB MISC_SOURCES src/misc/**.cpp)
 list(APPEND SOURCES ${MISC_SOURCES})
 
 file(GLOB UTILITIES_SOURCES src/utilities/**.cpp)
 list(APPEND SOURCES ${UTILITIES_SOURCES})
 
-file(GLOB ANIMATION_SOURCES src/Animation/**.cpp)
+file(GLOB ANIMATION_SOURCES src/animation/**.cpp)
 list(APPEND SOURCES ${ANIMATION_SOURCES})
 
 include(bin2h)
@@ -59,48 +58,48 @@ include(bin2h)
 set(EXE_HEADERS "")
 set(
 	HEADERS
-	${PROJECT_BINARY_DIR}/server/include/IConfig.h
-	include/CFileSystem.h
-	include/main.h
-	include/TAccount.h
-	include/TMap.h
-	include/TNPC.h
-	include/TPlayer.h
-	include/TScriptClass.h
-	include/TServer.h
-	include/TServerList.h
-	include/TUpdatePackage.h
-	include/TWeapon.h
-	include/Scripting/GS2ScriptManager.h
-	include/Scripting/ScriptOrigin.h
-	include/Scripting/SourceCode.h)
+	"${PROJECT_BINARY_DIR}/server/include/IConfig.h"
+	"include/FileSystem.h"
+	"include/main.h"
+	"include/Account.h"
+	"include/NPC.h"
+	"include/Player.h"
+	"include/Server.h"
+	"include/ServerList.h"
+	"include/UpdatePackage.h"
+	"include/Weapon.h"
+	"include/scripting/GS2ScriptManager.h"
+	"include/scripting/ScriptClass.h"
+	"include/scripting/ScriptOrigin.h"
+	"include/scripting/SourceCode.h"
+)
 
-file(GLOB TLEVEL_HEADERS include/TLevel/**.h)
-list(APPEND HEADERS ${TLEVEL_HEADERS})
+file(GLOB LEVEL_HEADERS include/level/**.h)
+list(APPEND HEADERS ${LEVEL_HEADERS})
 
-file(GLOB MISC_HEADERS include/Misc/**.h)
+file(GLOB MISC_HEADERS include/misc/**.h)
 list(APPEND HEADERS ${MISC_HEADERS})
 
 file(GLOB UTILITIES_HEADERS include/utilities/**.h)
 list(APPEND HEADERS ${UTILITIES_HEADERS})
 
-file(GLOB ANIMATION_HEADERS include/Animation/**.h)
+file(GLOB ANIMATION_HEADERS include/animation/**.h)
 list(APPEND HEADERS ${ANIMATION_HEADERS})
 
 if(V8NPCSERVER)
 	# Headers for script library interface
-	file(GLOB SCRIPT_INTERFACE_HEADERS include/Scripting/interface/**.h)
+	file(GLOB SCRIPT_INTERFACE_HEADERS include/scripting/interface/**.h)
 	list(APPEND HEADERS ${SCRIPT_INTERFACE_HEADERS})
 
 	# Headers for script library v8 implementation
-	file(GLOB SCRIPT_V8_HEADERS include/Scripting/v8/**.h)
+	file(GLOB SCRIPT_V8_HEADERS include/scripting/v8/**.h)
 	list(APPEND HEADERS ${SCRIPT_V8_HEADERS})
 
 	# Source for script library v8 implementation
 	list(
 		APPEND
 		SOURCES
-		src/Scripting/v8/V8ScriptEnv.cpp
+		src/scripting/v8/V8ScriptEnv.cpp
 	)
 
 	# GServer specific headers for implementation
@@ -108,29 +107,29 @@ if(V8NPCSERVER)
 		APPEND
 		HEADERS
 		${PROJECT_BINARY_DIR}/server/include/EmbeddedBootstrapScript.h
-		include/Scripting/CScriptEngine.h
-		include/Scripting/ScriptAction.h
-		include/Scripting/ScriptExecutionContext.h
-		include/Scripting/ScriptFactory.h
-		include/Scripting/v8/V8ScriptWrappers.h
+		include/scripting/ScriptEngine.h
+		include/scripting/ScriptAction.h
+		include/scripting/ScriptExecutionContext.h
+		include/scripting/ScriptFactory.h
+		include/scripting/v8/V8ScriptWrappers.h
 	)
 
 	# GServer specific source for implementation
 	list(
 		APPEND
 		SOURCES
-		src/Scripting/CScriptEngine.cpp
-		src/Scripting/v8/V8EnvironmentImpl.cpp
-		src/Scripting/v8/V8FunctionsImpl.cpp
-		src/Scripting/v8/V8LevelImpl.cpp
-		src/Scripting/v8/V8LevelLinkImpl.cpp
-		src/Scripting/v8/V8LevelSignImpl.cpp
-		src/Scripting/v8/V8LevelChestImpl.cpp
-		src/Scripting/v8/V8NPCImpl.cpp
-		src/Scripting/v8/V8PlayerImpl.cpp
-		src/Scripting/v8/V8ScriptEnv.cpp
-		src/Scripting/v8/V8ServerImpl.cpp
-		src/Scripting/v8/V8WeaponImpl.cpp
+		"src/scripting/ScriptEngine.cpp"
+		"src/scripting/v8/V8EnvironmentImpl.cpp"
+		"src/scripting/v8/V8FunctionsImpl.cpp"
+		"src/scripting/v8/V8LevelImpl.cpp"
+		"src/scripting/v8/V8LevelLinkImpl.cpp"
+		"src/scripting/v8/V8LevelSignImpl.cpp"
+		"src/scripting/v8/V8LevelChestImpl.cpp"
+		"src/scripting/v8/V8NPCImpl.cpp"
+		"src/scripting/v8/V8PlayerImpl.cpp"
+		"src/scripting/v8/V8ScriptEnv.cpp"
+		"src/scripting/v8/V8ServerImpl.cpp"
+		"src/scripting/v8/V8WeaponImpl.cpp"
 	)
 endif()
 
@@ -138,12 +137,12 @@ include_directories(
 	# Include the CMake-generated version header from the build directory
 	${PROJECT_BINARY_DIR}/server/include
 	${PROJECT_SOURCE_DIR}/server/include
-	${PROJECT_SOURCE_DIR}/server/include/Misc
-	${PROJECT_SOURCE_DIR}/server/include/TLevel
+	${PROJECT_SOURCE_DIR}/server/include/misc
+	${PROJECT_SOURCE_DIR}/server/include/level
 	${PROJECT_SOURCE_DIR}/server/include/utilities
-	${PROJECT_SOURCE_DIR}/server/include/Scripting
-	${PROJECT_SOURCE_DIR}/server/include/Scripting/interface
-	${PROJECT_SOURCE_DIR}/server/include/Scripting/v8
+	${PROJECT_SOURCE_DIR}/server/include/scripting
+	${PROJECT_SOURCE_DIR}/server/include/scripting/interface
+	${PROJECT_SOURCE_DIR}/server/include/scripting/v8
 )
 
 # Set target names for the executables
@@ -158,7 +157,12 @@ else()
 endif()
 
 set(TARGET_NAME_OLD ${TARGET_NAME})
-set(TARGET_NAME ${TARGET_NAME}_lib)
+set(TARGET_NAME "lib${TARGET_NAME}")
+if(STATIC)
+	set(LIBRARY_TYPE STATIC)
+else()
+	set(LIBRARY_TYPE SHARED)
+endif()
 
 if(UPNP AND NOT MINIUPNPC_FOUND)
 	include_directories(${PROJECT_SOURCE_DIR}/dependencies/miniupnp ${PROJECT_SOURCE_DIR}/dependencies/miniupnp/miniupnpc)
@@ -168,7 +172,7 @@ endif()
 include_directories(${PROJECT_SOURCE_DIR}/dependencies/gs2lib/include)
 
 if(APPLE)
-	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} ${LIBRARY_TYPE} ${SOURCES} ${HEADERS})
 
 	# Enable ARC (automatic reference counting) for OS X build
 	set_property(
@@ -201,7 +205,7 @@ elseif(WIN32)
 				"<CMAKE_RC_COMPILER> <FLAGS> -O coff <DEFINES> -i <SOURCE> -o <OBJECT>")
 	endif()
 
-	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} ${LIBRARY_TYPE} ${SOURCES} ${HEADERS})
 
 	if(MINGW)
 		if(V8NPCSERVER)
@@ -229,15 +233,16 @@ elseif(WIN32)
 		endif()
 	endif()
 elseif(EMSCRIPTEN)
-	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} ${LIBRARY_TYPE} ${SOURCES} ${HEADERS})
 else()
-	add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+	add_library(${TARGET_NAME} ${LIBRARY_TYPE} ${SOURCES} ${HEADERS})
 endif()
 
+set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
 target_compile_definitions(${TARGET_NAME} PRIVATE NOMAIN)
 
 add_executable(${TARGET_NAME_OLD} src/main.cpp ${EXE_HEADERS})
-target_link_libraries(${TARGET_NAME_OLD} PUBLIC ${TARGET_NAME})
+target_link_libraries(${TARGET_NAME_OLD} PRIVATE ${TARGET_NAME})
 
 target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
@@ -265,10 +270,12 @@ if(UPNP)
 endif()
 
 if (MINGW)
-	target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
-	target_link_libraries(${TARGET_NAME} -static-libgcc -static-libstdc++)
-	target_link_options(${TARGET_NAME_OLD} PRIVATE -static -fstack-protector)
-	target_link_libraries(${TARGET_NAME_OLD} PUBLIC -static-libgcc -static-libstdc++)
+	if(STATIC)
+		target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
+		target_link_libraries(${TARGET_NAME} -static-libgcc -static-libstdc++)
+		target_link_options(${TARGET_NAME_OLD} PRIVATE -static -fstack-protector)
+		target_link_libraries(${TARGET_NAME_OLD} PUBLIC -static-libgcc -static-libstdc++)
+	endif()
 
 	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME_OLD}.exe\")")
 

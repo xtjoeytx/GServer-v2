@@ -1,0 +1,2 @@
+#define BabyDI_INJECT(c,v)
+#define BabyDI_PROVIDE(c,v)
