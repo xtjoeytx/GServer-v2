@@ -1,6 +1,7 @@
 #include <IDebug.h>
 
-#include <fmt/format.h>
+#include <cmath>
+#include <format>
 
 #include <CCommon.h>
 #include <IEnums.h>
@@ -271,7 +272,7 @@ void ServerList::sendVersionConfig()
 		versionNames << version.gtokenize();
 	}
 
-	sendText(fmt::format("Listserver,settings,allowedversions,{}", versionNames.text()));
+	sendText(std::format("Listserver,settings,allowedversions,{}", versionNames.text()));
 }
 
 void ServerList::sendPacket(CString& pPacket, bool sendNow)

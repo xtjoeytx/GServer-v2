@@ -1,7 +1,7 @@
 ARG NPCSERVER=on
 ARG VER_EXTRA=""
 
-FROM xtjoeytx/v8:9.1.269.9-mingw as v8
+FROM xtjoeytx/v8:9.1.269.9-mingw AS v8
 
 # GServer Build Environment
 FROM amigadev/crosstools:x86_64-w64-mingw32 AS build-env

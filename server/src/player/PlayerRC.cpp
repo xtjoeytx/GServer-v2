@@ -1,4 +1,4 @@
-#include <fmt/format.h>
+#include <format>
 #include <map>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -1086,7 +1086,7 @@ bool Player::msgPLI_RC_CHAT(CString& pPacket)
 			{
 				if (t > 0)
 				{
-					m.append(fmt::format(" {} {}", t, fmtStr));
+					m.append(std::format(" {} {}", t, fmtStr));
 					if (t > 1)
 						m.append("s");
 				}

@@ -7,6 +7,7 @@
 #include <regex>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 class FilePermissions
 {

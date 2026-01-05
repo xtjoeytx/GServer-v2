@@ -1,5 +1,5 @@
 dependencies/v8
 .git
-build
-cmake-build-debug/
-cmake-build-release/
+build*/
+cmake-*/
+*.tar
