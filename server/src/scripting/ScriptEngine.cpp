@@ -45,7 +45,7 @@ bool ScriptEngine::initialize()
 
 	m_env->callFunctionInScope([&]() -> void
 							   {
-								   ScriptEngine* engine = this;
+								   auto* engine = this;
 
 								   // Bind global functions
 								   bindGlobalFunctions(engine);
