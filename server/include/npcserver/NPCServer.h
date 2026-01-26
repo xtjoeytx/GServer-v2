@@ -51,7 +51,7 @@ public:
 	void sendNCLoginToPlayer(std::shared_ptr<Player> player);
 
 public:
-	void update(TimeoutGenerator::time_point currentTime = std::chrono::high_resolution_clock::now());
+	void update(TimeoutGenerator::time_point currentTime = precise_clock::now());
 
 public:
 	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;

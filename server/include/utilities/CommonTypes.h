@@ -178,7 +178,7 @@ inline static constexpr auto ENUM(IsEnum auto e)
 
 namespace chrono = std::chrono;
 using clock = std::chrono::system_clock;
-using precise_clock = std::chrono::high_resolution_clock;
+using precise_clock = std::chrono::steady_clock;
 using clock_duration_double = std::chrono::duration<double, std::chrono::system_clock::period>;
 using duration_seconds_double = std::chrono::duration<double>;
 using duration_milli_double = std::chrono::duration<double, std::milli>;

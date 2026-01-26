@@ -16,7 +16,7 @@ namespace preagonal
 /// @brief A utility struct for generating periodic timeouts and invoking a callback after a specified interval.
 struct TimeoutGenerator
 {
-	using time_point = std::chrono::high_resolution_clock::time_point;
+	using time_point = precise_clock::time_point;
 	using time_delta = std::chrono::milliseconds;
 
 	TimeoutGenerator() = default;
@@ -36,7 +36,7 @@ public:
 	std::function<void(time_delta)> callbackDuration = nullptr;
 
 public:
-	int update(time_point now = std::chrono::high_resolution_clock::now())
+	int update(time_point now = precise_clock::now())
 	{
 		if (!m_running)
 			return 0;
@@ -61,7 +61,7 @@ public:
 		return iterations;
 	}
 
-	void setLastTimeout(time_point lastTimeout = std::chrono::high_resolution_clock::now())
+	void setLastTimeout(time_point lastTimeout = precise_clock::now())
 	{
 		m_lastTimeout = lastTimeout;
 	}
@@ -69,7 +69,7 @@ public:
 	void start()
 	{
 		m_running = true;
-		m_lastTimeout = std::chrono::high_resolution_clock::now();
+		m_lastTimeout = precise_clock::now();
 	}
 
 	template<typename Duration>
@@ -101,7 +101,7 @@ public:
 		return m_running;
 	}
 
-	clock::duration getRemainingTime(time_point now = std::chrono::high_resolution_clock::now()) const
+	clock::duration getRemainingTime(time_point now = precise_clock::now()) const
 	{
 		if (!m_running) return clock::duration::zero();
 		auto elapsed = now - m_lastTimeout;
@@ -109,7 +109,7 @@ public:
 		return std::chrono::duration_cast<clock::duration>(remaining > clock::duration::zero() ? remaining : clock::duration::zero());
 	}
 
-	size_t getRemainingTimeIn50msIncrements(time_point now = std::chrono::high_resolution_clock::now()) const
+	size_t getRemainingTimeIn50msIncrements(time_point now = precise_clock::now()) const
 	{
 		if (!m_running) return 0;
 		auto elapsed = now - m_lastTimeout;
@@ -121,7 +121,7 @@ public:
 
 protected:
 	bool m_running = false;
-	time_point m_lastTimeout = std::chrono::high_resolution_clock::now();
+	time_point m_lastTimeout = precise_clock::now();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
