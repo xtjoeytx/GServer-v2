@@ -73,6 +73,7 @@ void LevelBaddy::reset()
 	mode = baddyStartMode[PROPID(type)];
 	power = baddyPower[PROPID(type)];
 	image = baddyImages[PROPID(type)];
+	position = m_originalPosition;
 	direction = 2;
 	headDirection = 2;
 	animation = 0;

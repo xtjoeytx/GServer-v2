@@ -301,6 +301,16 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 				// If we collide, then stop the movement.
 				auto boundingBox = getCollisionBoundingBox();
 				boundingBox.position = currentPosition;
+
+				// Fix offsets for characters.
+				if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
+					boundingBox.position.translate(8, 16);
+
+				// Apply offset for movement.
+				auto globalPosition = getGlobalPosition();
+				boundingBox.position.translate(currentPosition.x() - globalPosition.x(), currentPosition.y() - globalPosition.y());
+
+				// Check for wall collision.
 				if (levelPtr->isOnWall2(boundingBox))
 				{
 					// Queue the movement finished event.
@@ -309,7 +319,7 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 
 					// Stop the movement here.
 					moveQueue.pop_front();
-					continue;
+					return;
 				}
 			}
 		}

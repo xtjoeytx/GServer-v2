@@ -1710,7 +1710,7 @@ bool PlayerClient::testForSigns(SetResults& result, uint8_t movementDirection)
 				LocalPixelPosition signPos = toLocalPixelPosition(sign.getTileX(), sign.getTileY());
 				if (account.character.localPixelY == signPos.y() && account.character.localPixelX >= signPos.x() - 24 && account.character.localPixelX <= signPos.x() + 8)
 				{
-					sendSignMessage(sign.unformattedText);
+					sendSignMessage(sign.text);
 					return true;
 				}
 			}
