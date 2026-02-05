@@ -98,7 +98,7 @@ protected:
 	std::any safeVisit(antlr4::tree::ParseTree* node);
 
 protected:
-	GameVariableStore* findGameVariableStoreFromSourceStack(ScriptObjectType type) const;
+	GameVariableStore* findGameVariableStoreFromSourceStack(ScriptObjectType type, int skip = 0) const;
 	GS1GameVariable getGameVariableFromAny(std::any& value);
 	GameValue getReadOnlyGameValueFromGS1ScriptValue(const GS1ScriptValue& value);
 	GameValue getReadOnlyGameValueFromAny(const std::any& value);

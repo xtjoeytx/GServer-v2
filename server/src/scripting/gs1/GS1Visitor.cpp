@@ -420,36 +420,50 @@ std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<St
 	return std::make_tuple(nullptr, nullptr, nullptr);;
 }
 
-GameVariableStore* GS1Visitor::findGameVariableStoreFromSourceStack(ScriptObjectType type) const
+GameVariableStore* GS1Visitor::findGameVariableStoreFromSourceStack(ScriptObjectType type, int skip) const
 {
+	std::optional<ScriptObject> foundSource;
+
 	for (const auto& source : sourceStack())
 	{
 		if (source.second == type)
-			return getGameVariableStoreFromSource(source);
+		{
+			if (skip <= 0)
+				return getGameVariableStoreFromSource(source);
+
+			foundSource = source;
+			--skip;
+		}
 	}
+
+	if (foundSource.has_value())
+		return getGameVariableStoreFromSource(foundSource.value());
+
 	return nullptr;
 }
 
 GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 {
 	GameVariableStore* store = nullptr;
+	int skip = 0;
+	if (inList(type, GS1Parser::STORAGE_THISO, GS1Parser::STORAGE_CLIENTO, GS1Parser::STORAGE_CLIENTRO))
+		skip = 1;
+
 	switch (type)
 	{
 		case GS1Parser::STORAGE_THIS:
 		case GS1Parser::STORAGE_LOCAL:
 		case GS1Parser::STORAGE_TEMP:
-			store = findGameVariableStoreFromSourceStack(ScriptObjectType::NPC);
-			if (store == nullptr)
-				store = findGameVariableStoreFromSourceStack(ScriptObjectType::WEAPON);
-			break;
 		case GS1Parser::STORAGE_THISO:
-			store = getGameVariableStoreFromSource(m_originalSource);
+			store = findGameVariableStoreFromSourceStack(ScriptObjectType::NPC, skip);
+			if (store == nullptr)
+				store = findGameVariableStoreFromSourceStack(ScriptObjectType::WEAPON, skip);
 			break;
 		case GS1Parser::STORAGE_CLIENT:
 		case GS1Parser::STORAGE_CLIENTR:
-		case GS1Parser::STORAGE_CLIENTO:	// Not supported yet.  GR extension.
-		case GS1Parser::STORAGE_CLIENTRO:	// Not supported yet.  GR extension.
-			store = findGameVariableStoreFromSourceStack(ScriptObjectType::PLAYER);
+		case GS1Parser::STORAGE_CLIENTO:
+		case GS1Parser::STORAGE_CLIENTRO:
+			store = findGameVariableStoreFromSourceStack(ScriptObjectType::PLAYER, skip);
 			break;
 		case GS1Parser::STORAGE_SERVER:
 		case GS1Parser::STORAGE_SERVERR:
