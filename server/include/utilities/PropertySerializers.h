@@ -343,6 +343,8 @@ struct PropertyGaniOrBowGif : public PropertyBase
 {
 	PropertyGaniOrBowGif() = default;
 	PropertyGaniOrBowGif(std::string_view gani) : gani(gani) {}
+	PropertyGaniOrBowGif(uint8_t bowPower)
+		: bowGif(std::make_pair(std::string{}, bowPower)) {}
 	PropertyGaniOrBowGif(uint8_t bowPower, std::string_view bowGif)
 		: bowGif(std::make_pair(std::string{ bowGif }, bowPower)) {}
 	PropertyGaniOrBowGif(std::string_view gani, uint8_t bowPower, std::string_view bowGif)

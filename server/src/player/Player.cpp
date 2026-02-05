@@ -1153,6 +1153,7 @@ void Player::constructScriptParameters()
 	scriptParameters.try_emplace("glovepower", set_temporary, "glovepower", gameValueGetter(account.character.glovePower), gameValueSetter(this, PROPOPT(PlayerProp::GLOVEPOWER), account.character.glovePower));
 	scriptParameters.try_emplace("swordpower", set_temporary, "swordpower", gameValueGetter(account.character.swordPower), gameValueSetter(this, PROPOPT(PlayerProp::SWORDPOWER), account.character.swordPower));
 	scriptParameters.try_emplace("shieldpower", set_temporary, "shieldpower", gameValueGetter(account.character.shieldPower), gameValueSetter(this, PROPOPT(PlayerProp::SHIELDPOWER), account.character.shieldPower));
+	scriptParameters.try_emplace("shootpower", set_temporary, "shootpower", gameValueGetter(account.character.bowPower), gameValueSetter(this, PROPOPT(PlayerProp::GANI), account.character.bowPower));
 	scriptParameters.try_emplace("headset", set_temporary, "headset",
 		gameValueGetter(
 			[this]()

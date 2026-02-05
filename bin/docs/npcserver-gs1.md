@@ -207,6 +207,7 @@ Please review the lists below of implemented events, flags, functions, commands,
         .rupees
         .saysnumber
         .shieldpower
+        .shootpower
         .sprite
         .swordpower
         .upgradestatus
@@ -271,11 +272,6 @@ Please review the lists below of implemented events, flags, functions, commands,
       signs[]
         .x
         .y
-
-#### Not implemented
-
-    players[]
-        .shootpower
 
 #### Clientside only
 
@@ -522,6 +518,7 @@ Please review the lists below of implemented events, flags, functions, commands,
     wraptext2
 
 #### Won't implement
+
     * saveinfo      (internal command to control an official database, won't be implemented)
 
 ---
