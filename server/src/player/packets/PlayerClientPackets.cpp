@@ -867,6 +867,12 @@ HandlePacketResult PlayerClient::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_NPCWEAPONDEL(CString& pPacket)
 {
 	std::string weapon = pPacket.readString("").toString();
+
+	// If it is a protected weapon, don't delete it.
+	auto protectedWeapons = m_server->getSettings().getStr("protectedweapons").gCommaStrTokens();
+	if (std::find(protectedWeapons.begin(), protectedWeapons.end(), weapon) != protectedWeapons.end())
+		return HandlePacketResult::Handled;
+
 	std::erase(account.weapons, weapon);
 	return HandlePacketResult::Handled;
 }
