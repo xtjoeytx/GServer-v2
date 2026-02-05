@@ -1788,10 +1788,7 @@ void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const s
 // saveinfo text,text;
 void fn_saveinfo(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("saveinfo is not implemented yet.");
-
-	//if (arguments.size() != 2)
-	//	throw std::invalid_argument("invalid arguments: saveinfo text,text");
+	throw unimplemented_error("saveinfo is not implemented.");
 }
 
 // savelog text;

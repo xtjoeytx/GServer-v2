@@ -750,8 +750,6 @@ FUNC_GROUP_5 : 'lindexof'                     { pushCommand("(SV)"); }   -> type
 FUNC_GROUP_6 : 'sarraylen'                    { pushCommand("(V)"); }    -> type(FUNCTION);
 FUNC_GROUP_7 : ('playersays' | 'playersays2') { pushCommand("<ES)"); }   -> type(FUNCTION);
 
-// getflagkeys(string)
-
 // #S was 'selectedsword', which was some New World thing that never got used.
 // Seems like both sword and weapon were selectable NPCs in New World.
 

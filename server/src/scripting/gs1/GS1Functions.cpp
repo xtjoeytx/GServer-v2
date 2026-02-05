@@ -24,6 +24,7 @@
 #include <tree/ParseTree.h>
 
 #include <BabyDI.h>
+#include <GS1Parser.h>
 #include <IEnums.h>
 
 #include <Server.h>
@@ -63,6 +64,7 @@ static GS1ScriptValue fn_findnearestplayers(GS1Visitor* visitor, std::string_vie
 static GS1ScriptValue fn_getangle(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getareanpcs(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getdir(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_getflagkeys(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getnpc(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
@@ -133,6 +135,7 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{ hash("getangle"), &fn_getangle },
 		{ hash("getareanpcs"), &fn_getareanpcs },
 		{ hash("getdir"), &fn_getdir },
+		{ hash("getflagkeys"), &fn_getflagkeys },
 		{ hash("getnearestplayer"), &fn_getnearestplayer },
 		{ hash("getnearestplayers"), &fn_getnearestplayers },
 		{ hash("getnpc"), &fn_getnpc },
@@ -496,6 +499,41 @@ GS1ScriptValue fn_getdir(GS1Visitor* visitor, std::string_view messageCode, cons
 
 	// Default to looking down.
 	return 2.0;
+}
+
+// getflagkeys(prefix)
+// Searches for all flags in the format of prefix### and returns an array of all the ###.
+// E.g., bankaccount_0, bankaccount_1, etc. with the prefix "bankaccount_" would return an array of {0, 1, ...}.
+GS1ScriptValue fn_getflagkeys(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("Built-in function getflagkeys requires exactly one argument");
+
+	auto prefix = visitor->getGameValueAs<std::string>(*arguments[0]);
+
+	std::vector<double> results;
+	size_t storageType = GS1Parser::STORAGE_CLIENT;
+	if (auto separator = prefix.find('.'); separator != std::string::npos)
+	{
+		storageType = visitor->getStorageFromTypeString(prefix.substr(0, separator));
+		prefix = prefix.substr(separator + 1);
+		visitor->applyStorageToIdentifier(storageType, prefix);
+	}
+
+	auto variableStore = visitor->getGameVariableStoreForStorageType(storageType);
+	if (variableStore == nullptr)
+		return results;
+
+	for (auto& [key, value] : variableStore->store)
+	{
+		if (key.starts_with(prefix))
+		{
+			auto index = string::toNumber(std::string_view{ key.c_str() + prefix.length(), key.length() - prefix.length() });
+			results.push_back(index);
+		}
+	}
+
+	return results;
 }
 
 // getnearestplayer(x, y)

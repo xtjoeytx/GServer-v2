@@ -378,6 +378,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       removestring
       removeweapon
       replacestring
+      savelog
       savelog2
       say
       say2
@@ -454,9 +455,7 @@ Please review the lists below of implemented events, flags, functions, commands,
 #### Not implemented
 
     * hitcompu
-      saveinfo
     * savelevel
-      savelog
     * showstats
 
 #### Clientside only
@@ -522,6 +521,9 @@ Please review the lists below of implemented events, flags, functions, commands,
     wraptext
     wraptext2
 
+#### Won't implement
+    * saveinfo      (internal command to control an official database, won't be implemented)
+
 ---
 ## Functions
 
@@ -542,6 +544,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       getangle(dx, dy)
     * getareanpcs(x, y, width, height)
     * getdir(dx, dy)
+      getflagkeys(prefix)
     * getnearestplayer(x, y)
     * getnearestplayers(x, y, flag)
       getnpc(name)
@@ -589,7 +592,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 
     exp(r,r)
     findnearestplayers(x, y)
-    getflagkeys()
 
 #### Clientside only
 

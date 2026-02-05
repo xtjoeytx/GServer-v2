@@ -146,7 +146,10 @@ static GS1ScriptValue getGS1ScriptValueFromAny(std::any& value)
 	return {};
 }
 
-static void applyStorageToIdentifier(std::optional<size_t> storage, std::string& identifier)
+///////////////////////////////////////////////////////////////////////////////
+// Static member functions.
+
+void GS1Visitor::applyStorageToIdentifier(std::optional<size_t> storage, std::string& identifier) noexcept
 {
 	if (!storage.has_value())
 		return;
@@ -169,10 +172,6 @@ static void applyStorageToIdentifier(std::optional<size_t> storage, std::string&
 			break;
 	}
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// Static member functions.
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Public member functions.

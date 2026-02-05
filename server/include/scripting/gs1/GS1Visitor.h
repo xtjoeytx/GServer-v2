@@ -74,6 +74,9 @@ public:
 	GameValue getGameValueFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
 
 public:
+	static void applyStorageToIdentifier(std::optional<size_t> storage, std::string& identifier) noexcept;
+
+public:
 	[[inline]] size_t getStorageFromTypeString(std::string_view storageType) const;
 	GameVariableStore* getGameVariableStoreForStorageType(size_t type);
 	double getColorValueFromString(std::string_view colorString);
