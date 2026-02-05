@@ -184,6 +184,10 @@ minimap =
 # If true, and savelevels is true, then updateboard2 commands are automatically saved to the level file.
 # levelsautosave = true
 
+# Controls if levels use the new tileset layout server-side, or a match list of levels that will (file-globbing).
+# newtilesets = false
+# newtilesetlevels = 
+
 # --------------------------------------------------------------------------------------
 # --- Public Graal Reborn non-standard extensions.                                   ---
 # --------------------------------------------------------------------------------------
@@ -335,10 +339,6 @@ gs2default = false
 
 # The default language of the server.
 # defaultlanguage = en
-
-# Controls if levels use the new tileset layout server-side, or a match list of levels that will.
-# newtilesets = false
-# newtilesetlevels = 
 
 # The order in which weapons will be sent to the player.
 # weaponorder = 

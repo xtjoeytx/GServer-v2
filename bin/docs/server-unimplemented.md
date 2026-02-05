@@ -16,7 +16,6 @@ Client authoritative:
 Server authoritative (NPC-server):
 - No support for trial accounts or ghost mode.
 - Translations for NPC messages in GS1 scripts are not supported.
-- Lacking script support for tile types 1 (new order) and 5 (3D terrain).
 - Lacking some script commands / features that may or may not have been implemented on official servers (lack of documentation to make full judgement).
 
 ## Newmain era

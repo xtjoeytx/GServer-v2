@@ -28,7 +28,6 @@
 
 #include <Server.h>
 #include <level/LevelBaddy.h>
-#include <level/tiletypes.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
@@ -1350,10 +1349,9 @@ GS1ScriptValue fn_textwidth(GS1Visitor* visitor, std::string_view messageCode, c
 }
 
 // tiletype(x, y)
-// Returns the "new order" tile type used for setshape2 on level position (x, y).
+// Returns the tile type at level position (x, y).
 GS1ScriptValue fn_tiletype(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	// TODO: New tile type.
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function tiletype requires exactly two arguments");
 
@@ -1370,13 +1368,18 @@ GS1ScriptValue fn_tiletype(GS1Visitor* visitor, std::string_view messageCode, co
 
 		if (auto tiles = level->getTiles(mapPosition); tiles.has_value())
 		{
-			auto index = std::clamp((int)x, 0, 63) + (std::clamp((int)y, 0, 63) * 64);
-			auto tile = tiles.value()->at(index);
-			return static_cast<double>(tiletypes[tile]);
+			auto index = static_cast<size_t>(std::max(x, 0.0) + (std::max(y, 0.0) * 64));
+			if (index < 4096)
+			{
+				auto server = BabyDI::Get<Server>();
+				auto tile = tiles.value()->at(index);
+				return static_cast<double>(ENUM(server->getNPCServer()->getTileType(tile, level)));
+			}
 		}
 	}
 
-	return -1.0;
+	// Not found?  Default to blocking.
+	return 22.0;
 }
 
 // vecx(dir)

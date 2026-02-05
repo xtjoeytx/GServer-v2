@@ -40,6 +40,7 @@
 #include <level/Level.h>
 #include <level/LevelItem.h>
 #include <level/LevelShoot.h>
+#include <level/LevelTileTypes.h>
 #include <level/Map.h>
 #include <loader/flatfile/FlatFileAccountLoader.h>
 #include <loader/flatfile/FlatFileNPCLoader.h>
@@ -1356,6 +1357,61 @@ std::shared_ptr<Level> Server::findGmapForLevel(std::string_view levelName, std:
 	}
 
 	return returnLevel;
+}
+
+tileset::TilesetType Server::getTilesetTypeForLevel(std::shared_ptr<Level> level) const noexcept
+{
+	if (level == nullptr)
+		return tileset::TilesetType::CLASSIC;
+
+	// Levels with terrain always use the terrain tileset.
+	if (level->hasTerrain())
+		return tileset::TilesetType::TERRAIN;
+
+	// Check for tileset type 1 (new tilesets).
+	if (auto key = m_settings.getKey("newtilesetlevels"); key != nullptr)
+	{
+		auto newlevels = string::split(key->value.toStringView(), ","sv);
+		for (const auto& newlevel : newlevels)
+		{
+			if (string::match(level->levelName, newlevel) || level->levelName.starts_with(newlevel))
+				return tileset::TilesetType::NEWFORMAT;
+		}
+	}
+
+	// If all levels are the new tileset, return that.
+	if (m_settings.getBool("newtilesets", false))
+		return tileset::TilesetType::NEWFORMAT;
+
+	// Otherwise, return classic.
+	return tileset::TilesetType::CLASSIC;
+}
+
+tileset::TilesetType Server::getTilesetTypeForLevel(std::shared_ptr<const Level> level) const noexcept
+{
+	return getTilesetTypeForLevel(std::const_pointer_cast<Level>(level));
+}
+
+tileset::TileType Server::getTileTypeForTile(tileset::TilesetType tileset, uint16_t tile) const noexcept
+{
+	// Terrain tileset uses non-blocking for all tiles.
+	if (tileset == tileset::TilesetType::TERRAIN)
+		return tileset::TileType::NONBLOCKING;
+
+	// If tile is out of range, return blocking.
+	if (tile >= 4096)
+		return tileset::TileType::BLOCKING;
+
+	// Classic (type 0).
+	if (tileset == tileset::TilesetType::CLASSIC)
+		return ENUM<tileset::TileType>(tileset::Type0.at(tile));
+
+	// New format (type 1).
+	if (tileset == tileset::TilesetType::NEWFORMAT)
+		return ENUM<tileset::TileType>(tileset::Type1.at(tile));
+
+	// Default to blocking.
+	return tileset::TileType::BLOCKING;
 }
 
 /////////////////////////////////////////////////////

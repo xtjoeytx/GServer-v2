@@ -29,6 +29,7 @@
 #include <level/LevelSign.h>
 #include <level/LevelTerrain.h>
 #include <level/LevelTiles.h>
+#include <level/LevelTileTypes.h>
 #include <level/Map.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptContainers.h>
@@ -343,6 +344,8 @@ public:
 	bool isOnWater2(const PixelRectangleArea& area) const noexcept;
 	bool isOnPlayer(const PixelPosition& position) const noexcept;
 	bool isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept;
+	tileset::TileType getTileTypeAt(const WholeTilePosition& tilePosition) const noexcept;
+	tileset::TileType getTileTypeAt(const PixelPosition& position) const noexcept;
 
 public:
 	std::generator<const PlayerID&> findInRangePlayers(const PixelPosition& position, std::optional<std::pair<uint32_t, uint32_t>> range = std::nullopt) const noexcept;

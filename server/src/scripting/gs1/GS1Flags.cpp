@@ -6,6 +6,7 @@
 
 #include <IEnums.h>
 
+#include <level/LevelTileTypes.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
@@ -165,7 +166,7 @@ void setOtherFlags(ScriptEvent& event, ScriptObject source, GameVariableStore& v
 	}
 
 	// playerswimming
-	variableStore.add("playerswimming", player != nullptr && level != nullptr && level->isOnWater(player->getGlobalPosition().translate(24, 32)));
+	variableStore.add("playerswimming", player != nullptr && level != nullptr && inList(level->getTileTypeAt(player->getGlobalPosition().translate(24, 32)), tileset::TileType::WATER, tileset::TileType::LAVA));
 
 	/* Older flags:
 	* 'gotbow' and 'gotsword' are older pre-1.3 flags.

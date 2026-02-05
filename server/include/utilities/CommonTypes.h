@@ -173,6 +173,12 @@ inline static constexpr auto ENUM(IsEnum auto e)
 	return static_cast<std::underlying_type_t<decltype(e)>>(e);
 }
 
+template<IsEnum E>
+inline static constexpr E ENUM(std::underlying_type_t<E> value)
+{
+	return static_cast<E>(value);
+}
+
 //----------------------------
 // Time helpers
 
@@ -257,14 +263,20 @@ inline auto toWeakPtr(std::shared_ptr<T>& ptr)
 //----------------------------
 // Other helpers
 
-inline constexpr auto inRangeInclusive(std::integral auto value, std::integral auto min, std::integral auto max)
+inline constexpr bool inRangeInclusive(std::integral auto value, std::integral auto min, std::integral auto max)
 {
 	return value >= min && value <= max;
 }
 
-inline constexpr auto inRangeExclusive(std::integral auto value, std::integral auto min, std::integral auto max)
+inline constexpr bool inRangeExclusive(std::integral auto value, std::integral auto min, std::integral auto max)
 {
 	return value > min && value < max;
+}
+
+template<typename C, typename... Pack>
+inline constexpr bool inList(C&& check, Pack&&... values)
+{
+	return ((check == values) || ...);
 }
 
 //----------------------------

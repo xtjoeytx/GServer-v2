@@ -17,9 +17,11 @@
 
 #include <Account.h>
 #include <Server.h>
+#include <filesystem/File.h>
 #include <filesystem/FileSystem.h>
 #include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
+#include <level/LevelTileTypes.h>
 #include <npcserver/NPCServer.h>
 #include <npcserver/PlayerNPCServer.h>
 #include <object/NPC.h>
@@ -676,6 +678,14 @@ void NPCServer::hideImages(std::shared_ptr<NPC> npc, uint8_t index, std::optiona
 		npc->showImgList.erase(i);
 
 	npc->sendAllShowImagesToLevel();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tileset::TileType NPCServer::getTileType(uint16_t tile, std::shared_ptr<Level> level) const noexcept
+{
+	auto tilesetType = m_server->getTilesetTypeForLevel(level);
+	return m_server->getTileTypeForTile(tilesetType, tile);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

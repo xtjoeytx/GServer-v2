@@ -42,8 +42,8 @@
 #include <level/LevelShoot.h>
 #include <level/LevelSign.h>
 #include <level/LevelTiles.h>
+#include <level/LevelTileTypes.h>
 #include <level/Map.h>
-#include <level/tiletypes.h>
 #include <loader/LevelLoader.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
@@ -2579,18 +2579,16 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 
 bool Level::isOnWall(const WholeTilePosition& tilePosition) const noexcept
 {
-	auto tileDimensions = sizeInTiles();
-	if (tilePosition.x() >= tileDimensions.width() || tilePosition.y() >= tileDimensions.height())
-		return true;
+	auto tiletype = getTileTypeAt(tilePosition);
+	switch (tiletype)
+	{
+		case tileset::TileType::THROW_THROUGH:
+		case tileset::TileType::JUMP_STONE:
+		case tileset::TileType::BLOCKING:
+			return true;
+	}
 
-	auto mapPosition = toMapPosition(tilePosition);
-	auto tiles = getTiles(mapPosition);
-	if (!tiles.has_value())
-		return true;
-
-	auto localPosition = toLocalWholeTilePosition(tilePosition);
-	auto tile = tiles.value()->at(static_cast<size_t>(localPosition.y()) * 64 + localPosition.x());
-	return tiletypes[tile] >= 20;
+	return false;
 }
 
 bool Level::isOnWall(const PixelPosition& position) const noexcept
@@ -2600,6 +2598,7 @@ bool Level::isOnWall(const PixelPosition& position) const noexcept
 
 bool Level::isOnWall2(const WholeTileRectangleArea& tileArea) const noexcept
 {
+	// TODO: Optimize this.
 	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + tileArea.size.height(); ++cy)
 	{
 		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + tileArea.size.width(); ++cx)
@@ -2618,18 +2617,8 @@ bool Level::isOnWall2(const PixelRectangleArea& area) const noexcept
 
 bool Level::isOnWater(const WholeTilePosition& tilePosition) const noexcept
 {
-	auto tileDimensions = sizeInTiles();
-	if (tilePosition.x() >= tileDimensions.width() || tilePosition.y() >= tileDimensions.height())
-		return true;
-
-	auto mapPosition = toMapPosition(tilePosition);
-	auto tiles = getTiles(mapPosition);
-	if (!tiles.has_value())
-		return true;
-
-	auto localPosition = toLocalWholeTilePosition(tilePosition);
-	auto tile = tiles.value()->at(static_cast<size_t>(localPosition.y()) * 64 + localPosition.x());
-	return tiletypes[tile] == 11;
+	auto tiletype = getTileTypeAt(tilePosition);
+	return tiletype == tileset::TileType::WATER;
 }
 
 bool Level::isOnWater(const PixelPosition& position) const noexcept
@@ -2639,6 +2628,7 @@ bool Level::isOnWater(const PixelPosition& position) const noexcept
 
 bool Level::isOnWater2(const WholeTileRectangleArea& tileArea) const noexcept
 {
+	// TODO: Optimize this.
 	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + tileArea.size.height(); ++cy)
 	{
 		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + tileArea.size.width(); ++cx)
@@ -2681,6 +2671,32 @@ bool Level::isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept
 		}
 	}
 	return false;
+}
+
+tileset::TileType Level::getTileTypeAt(const WholeTilePosition& tilePosition) const noexcept
+{
+	using namespace tileset;
+
+	auto tileDimensions = sizeInTiles();
+	if (tilePosition.x() >= tileDimensions.width() || tilePosition.y() >= tileDimensions.height())
+		return TileType::BLOCKING;
+
+	auto mapPosition = toMapPosition(tilePosition);
+	auto tiles = getTiles(mapPosition);
+	if (!tiles.has_value())
+		return TileType::BLOCKING;
+
+	auto localPosition = toLocalWholeTilePosition(tilePosition);
+	auto tile = tiles.value()->at(static_cast<size_t>(localPosition.y()) * 64 + localPosition.x());
+
+	auto server = BabyDI::Get<Server>();
+	auto tileset = server->getTilesetTypeForLevel(shared_from_this());
+	return server->getTileTypeForTile(tileset, tile);
+}
+
+tileset::TileType Level::getTileTypeAt(const PixelPosition& position) const noexcept
+{
+	return getTileTypeAt(toWholeTilePosition(position));
 }
 
 //----------------------------

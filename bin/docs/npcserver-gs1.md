@@ -91,6 +91,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       playeronhorse
       playeronline
       playerpaused
+      playerswimming
       shotbybaddy
     * shotbynpc
       shotbyplayer
@@ -105,7 +106,6 @@ Please review the lists below of implemented events, flags, functions, commands,
     peltwithsign
     peltwithstone
     peltwithvase
-    playerswimming
     playertrial
 
 #### Clientside only
@@ -553,10 +553,10 @@ Please review the lists below of implemented events, flags, functions, commands,
     * min(value1, value2)
       onmapx(level)
       onmapy(level)
-      onwall(x, y)                    (old tileset layout only)
-      onwall2(x, y, width, height)    (old tileset layout only)
-      onwater(x, y)                   (old tileset layout only)
-      onwater2(x, y, width, height)   (old tileset layout only)
+      onwall(x, y)
+      onwall2(x, y, width, height)
+      onwater(x, y)
+      onwater2(x, y, width, height)
     * playersays(index, text)
     * playersays(text)
     * playersays2(index, text)
@@ -577,7 +577,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       testnpc(x, y)
       testplayer(x, y)
       testsign(x, y)
-    * tiletype(x, y)                  (old tileset layout only)
+    * tiletype(x, y)
       vecx(dir)
       vecy(dir)
 
@@ -586,7 +586,6 @@ Please review the lists below of implemented events, flags, functions, commands,
     exp(r,r)
     findnearestplayers(x, y)
     getflagkeys()
-    tiletype(x, y)                    (new tileset layout)
 
 #### Clientside only
 

@@ -34,6 +34,7 @@
 #include <level/Level.h>
 #include <level/LevelItem.h>
 #include <level/LevelShoot.h>
+#include <level/LevelTileTypes.h>
 #include <level/Map.h>
 #include <loader/IAccountLoader.h>
 #include <loader/INPCLoader.h>
@@ -242,6 +243,18 @@ public:
 	/// @param levelName The name of the level.
 	/// @return A shared pointer to a Level.
 	std::shared_ptr<Level> findGmapForLevel(std::string_view levelName, std::shared_ptr<Player> player) const noexcept;
+
+	/// @brief Gets the tileset type for the given level.
+	/// @param levelName The name of the level.
+	/// @return A TilesetType enum value.
+	tileset::TilesetType getTilesetTypeForLevel(std::shared_ptr<Level> level) const noexcept;
+	tileset::TilesetType getTilesetTypeForLevel(std::shared_ptr<const Level> level) const noexcept;
+
+	/// @brief Gets the tile type at the given index for the given tileset.
+	/// @param tileset The tileset type.
+	/// @param index The tile index.
+	/// @return The TileType enum value.
+	tileset::TileType getTileTypeForTile(tileset::TilesetType tileset, uint16_t tile) const noexcept;
 
 public:
 	LevelItemType rollBushItemDrop() const;

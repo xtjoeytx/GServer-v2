@@ -16,6 +16,7 @@
 
 #include <BabyDI.h>
 #include <level/Level.h>
+#include <level/LevelTileTypes.h>
 #include <npcserver/PlayerNPCServer.h>
 #include <object/NPC.h>
 #include <scripting/ScriptClass.h>
@@ -102,6 +103,9 @@ public:
 	void changeShowImgLayer(std::shared_ptr<NPC> npc, uint8_t index, uint8_t layer) const;
 	void changeShowImgZoom(std::shared_ptr<NPC> npc, uint8_t index, float zoom) const;
 	void hideImages(std::shared_ptr<NPC> npc, uint8_t index, std::optional<uint8_t> endIndex = std::nullopt) const;
+
+public:
+	tileset::TileType getTileType(uint16_t tile, std::shared_ptr<Level> level) const noexcept;
 
 public:
 	ScriptSystem scripting;
