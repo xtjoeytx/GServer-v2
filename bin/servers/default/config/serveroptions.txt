@@ -111,10 +111,7 @@ playertouchsmenoz = false
 # Disables the player z-axis.  Locks player.z to undefined.  Z values outside of |-50, 170| is undefined.
 lockplayerz = false
 
-# If true, disable the ability.
-dontchangekills = false
-
-# Disables the updating of the sparring deviation value.
+# If true, the ratingd (deviation) value does not change.
 dontupdateratingd = false
 
 # Flag options.
@@ -127,6 +124,9 @@ maxnomovement = 1200
 
 # If false, it will prevent the player from obtaining items like bomb, bow, superbomb, etc.
 defaultweapons = true
+
+# If true, player deaths and kills cannot be changed via serverside scripting.
+dontchangekills = false
 
 # Enables or disables the putnpc script command.
 putnpcenabled = true
@@ -463,9 +463,6 @@ gs2default = false
 # Disables global playerlist, reduces lag on servers with thousands of players.
 # noserverlistercpp = true/false
 
-# Disables player item dropping.
-# disableitemdropping = true/false
-
 # Enables extended v6 body colors (disable v5 clients if using this).
 # enableexbodycolors = true/false
 
@@ -474,9 +471,6 @@ gs2default = false
 
 # When the player drops an item, `player.onItemDrop(x,y,itemname)` will be called and the item will not drop.
 # itemdropevents2 = true/false
-
-# Enables serverside onwall detection for shoot projectiles.
-# projectilesstoponwall = true/false
 
 # Logs attempts of modifying read-only variables to logs/scripterrors.txt
 # scriptlogwritetoreadonly = true/false

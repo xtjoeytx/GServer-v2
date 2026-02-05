@@ -187,6 +187,7 @@ Please review the lists below of implemented events, flags, functions, commands,
         .bombs
       * .carrysprite
         .darts
+        .deaths
         .dir
         .fullhearts
         .glovepower
@@ -196,10 +197,13 @@ Please review the lists below of implemented events, flags, functions, commands,
         .hp
         .hurtpower
         .id
+        .kills
         .lastdead
         .logintime
         .maxhp
         .mp
+        .rating
+        .ratingd
         .rupees
         .saysnumber
         .shieldpower

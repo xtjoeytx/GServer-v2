@@ -1200,6 +1200,41 @@ void Player::constructScriptParameters()
 	);
 	scriptParameters.try_emplace("lastdead", set_temporary, "lastdead", gameValueGetter(lastDeadTime), GameValue::func_set{});
 	scriptParameters.try_emplace("logintime", set_temporary, "logintime", gameValueGetter(loginTime), GameValue::func_set{});
+	scriptParameters.try_emplace("kills", set_temporary, "kills",
+		gameValueGetter(account.kills),
+		gameValueSetter(this, PROPOPT(PlayerProp::KILLSCOUNT),
+		[this](const GameValue& value, std::optional<int64_t>)
+		{
+			if (!m_server->getSettings().getBool("dontchangekills", false))
+				account.kills = static_cast<uint32_t>(std::max(0.0, value.get<double>().value_or(0.0)));
+		})
+	);
+	scriptParameters.try_emplace("deaths", set_temporary, "deaths",
+		gameValueGetter(account.deaths),
+		gameValueSetter(this, PROPOPT(PlayerProp::DEATHSCOUNT),
+		[this](const GameValue& value, std::optional<int64_t>)
+		{
+			if (!m_server->getSettings().getBool("dontchangekills", false))
+				account.deaths = static_cast<uint32_t>(std::max(0.0, value.get<double>().value_or(0.0)));
+		})
+	);
+	scriptParameters.try_emplace("rating", set_temporary, "rating",
+		gameValueGetter(account.eloRating),
+		gameValueSetter(this, PROPOPT(PlayerProp::RATING),
+		[this](const GameValue& value, std::optional<int64_t>)
+		{
+			account.eloRating = static_cast<float>(std::max(0.0, value.get<double>().value_or(0.0)));
+		})
+	);
+	scriptParameters.try_emplace("ratingd", set_temporary, "ratingd",
+		gameValueGetter(account.eloDeviation),
+		gameValueSetter(this, PROPOPT(PlayerProp::RATING),
+		[this](const GameValue& value, std::optional<int64_t>)
+		{
+			if (!m_server->getSettings().getBool("dontupdateratingd", false))
+				account.eloDeviation = static_cast<float>(std::clamp(value.get<double>().value_or(0.0), 0.0, 350.0));
+		})
+	);
 
 	// trial, classic, vip, gold
 	scriptParameters.try_emplace("upgradestatus", set_temporary, "upgradestatus",

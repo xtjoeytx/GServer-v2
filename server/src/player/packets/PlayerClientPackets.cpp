@@ -467,8 +467,7 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 		CSettings& settings = m_server->getSettings();
 
 		// Give a kill to the player who killed me.
-		if (!settings.getBool("dontchangekills", false))
-			++killer->account.kills;
+		++killer->account.kills;
 
 		// Now, adjust their AP if allowed.
 		if (settings.getBool("apsystem", true))
