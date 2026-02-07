@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include <GS2Context.h>
+#include <compiler/GS2Context.h>
 #include <exceptions/GS2CompilerError.h>
 #include <utils/ContextThreadPool.h>
 

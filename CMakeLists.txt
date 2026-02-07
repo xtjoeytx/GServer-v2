@@ -158,9 +158,6 @@ if(NOT MSVC)
 	endif()
 endif()
 
-# Fetch.
-add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/gs2compiler EXCLUDE_FROM_ALL)
-
 # Server.
 add_subdirectory(${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(${PROJECT_SOURCE_DIR}/server)

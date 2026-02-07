@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 
-#include <GS2Context.h>
+#include <compiler/GS2Context.h>
 
 #include <scripting/GS2ScriptManager.h>
 

@@ -13,6 +13,7 @@
       "version>=": "3.4.0"
     },
     "miniupnpc",
+    "pkgconf",
     {
       "name": "wolfssl",
       "version>=": "5.8.0"

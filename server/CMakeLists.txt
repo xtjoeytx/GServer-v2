@@ -212,6 +212,15 @@ if(PACKET_LOGGING)
 endif()
 
 # ----------------------------
+# Dependency: gs2parser.
+FetchContent_Declare(gs2parser
+	GIT_REPOSITORY https://github.com/xtjoeytx/gs2-parser.git
+	GIT_TAG        73e7ea8d6ed88112967547c5e6941bfa035fec6c		# main 2026-07-02
+)
+FetchContent_MakeAvailable(gs2parser)
+target_link_libraries(${TARGET_NAME} PUBLIC gs2parser::gs2compiler)
+
+# ----------------------------
 # Dependency: zlib.
 find_package(ZLIB REQUIRED)
 target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
@@ -381,22 +390,6 @@ if(WIN32)
 		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:CONSOLE")
 		set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 	endif()
-endif()
-
-# ----------------------------
-# GS2 Compiler
-target_link_libraries(${TARGET_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
-target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
-target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
-
-add_dependencies(${TARGET_NAME} gs2compiler)
-target_link_libraries(${TARGET_NAME} PRIVATE gs2compiler)
-
-if(TESTS)
-	target_link_libraries(${APP_LIBRARY_NAME} PRIVATE gs2compiler)
-	target_link_libraries(${APP_LIBRARY_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
-	target_include_directories(${APP_LIBRARY_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
-	target_include_directories(${APP_LIBRARY_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
 endif()
 
 # ----------------------------

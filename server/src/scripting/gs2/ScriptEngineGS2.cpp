@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-#include <GS2Context.h>
+#include <compiler/GS2Context.h>
 
 #include <Server.h>
 #include <exceptions/GS2CompilerError.h>

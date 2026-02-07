@@ -3,6 +3,7 @@
   "configurePresets": [
 	{
 	  "name": "Release",
+	  "hidden": true,
 	  "binaryDir": "${sourceDir}/build",
 	  "architecture": {
 		"value": "x64",
@@ -21,6 +22,7 @@
 	},
 	{
 	  "name": "Debug",
+	  "hidden": true,
 	  "binaryDir": "${sourceDir}/build",
 	  "architecture": {
 		"value": "x64",
@@ -39,6 +41,35 @@
 	  }
 	},
 	{
+	  "name": "Release Debug Info",
+	  "inherits": "Release",
+	  "hidden": true,
+	  "cacheVariables": {
+		"CMAKE_BUILD_TYPE": "RelWithDebInfo"
+	  }
+	},
+	{
+	  "name": "Windows Release",
+	  "inherits": "Release",
+	  "cacheVariables": {
+		"VCPKG_TARGET_TRIPLET": "x64-windows-static"
+	  }
+	},
+	{
+	  "name": "Windows Debug",
+	  "inherits": "Debug",
+	  "cacheVariables": {
+		"VCPKG_TARGET_TRIPLET": "x64-windows-static"
+	  }
+	},
+	{
+	  "name": "Windows Debug (Packet Logging)",
+	  "inherits": "Windows Debug",
+	  "cacheVariables": {
+		"PACKET_LOGGING": true
+	  }
+	},
+	{
 	  "name": "Linux Release",
 	  "inherits": "Release",
 	  "cacheVariables": {
@@ -52,29 +83,16 @@
 		"VCPKG_TARGET_TRIPLET": "x64-linux"
 	  }
 	},
-    {
-      "name": "Release Debug Info",
-      "inherits": "Release",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
-      }
-    },
-    {
-      "name": "Release MINGW",
-      "inherits": "Release",
-      "cacheVariables": {
-        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": {
-          "value": "${sourceDir}/cmake/crosscompile/x86_64-mingw64.cmake",
-          "type": "FILEPATH"
-        },
-        "CMAKE_BUILD_WITH_INSTALL_RPATH": true
-      }
-    },
 	{
-	  "name": "Debug (Packet Logging)",
-	  "inherits": "Debug",
+	  "name": "Release MINGW",
+	  "hidden": true,
+	  "inherits": "Release",
 	  "cacheVariables": {
-		"PACKET_LOGGING": true
+		"VCPKG_CHAINLOAD_TOOLCHAIN_FILE": {
+		  "value": "${sourceDir}/cmake/crosscompile/x86_64-mingw64.cmake",
+		  "type": "FILEPATH"
+		},
+		"CMAKE_BUILD_WITH_INSTALL_RPATH": true
 	  }
 	},
 	{
@@ -101,9 +119,9 @@
 		}
 	  }
 	},
-    {
-      "name": "Linux Remote Debug",
-      "inherits": "Linux Debug",
+	{
+	  "name": "Linux Remote Debug",
+	  "inherits": "Linux Debug",
 	  "vendor": {
 		"microsoft.com/VisualStudioSettings/CMake/1.0": {
 		  "intelliSenseMode": "linux-gcc-x64"
@@ -121,6 +139,6 @@
 		  }
 		}
 	  }
-    }
+	}
   ]
 }
