@@ -92,6 +92,36 @@ endif()
 # GS2 project.
 project(GS2Emu VERSION 4.0.0 DESCRIPTION "Graal Online v1.380 to v6.037 compatible server" LANGUAGES C CXX)
 
+# Homebrew GCC on macOS: disable Clang/Apple-specific flags that GCC doesn't support.
+if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	message(STATUS "[${PROJECT_NAME}] GNU on macOS detected, disabling Apple-specific compiler flags.")
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-stdlib=libstdc++>)
+	add_link_options($<$<LINK_LANGUAGE:CXX>:-stdlib=libstdc++>)
+
+	# GCC doesn't support -arch; clear CMAKE_OSX_ARCHITECTURES to prevent CMake from adding it.
+	set(CMAKE_OSX_ARCHITECTURES "" CACHE STRING "" FORCE)
+
+	# Clear the sysroot so CMake doesn't add -isystem <SDK>/usr/include, which is
+	# incompatible with GCC's libstdc++ (type definition ordering issues with
+	# size_t, ptrdiff_t, __darwin_wint_t, etc.).
+	#set(CMAKE_OSX_SYSROOT "" CACHE STRING "" FORCE)
+
+	# Disable C++ module scanning to prevent CMake from adding -fmodule-mapper.
+	set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+
+	# Prefer Homebrew packages so that find_package() finds them instead of SDK ones.
+	execute_process(
+		COMMAND brew --prefix
+		OUTPUT_VARIABLE HOMEBREW_PREFIX
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		ERROR_QUIET
+	)
+	if(HOMEBREW_PREFIX)
+		set(ZLIB_ROOT "${HOMEBREW_PREFIX}/opt/zlib" CACHE PATH "" FORCE)
+		set(BZIP2_ROOT "${HOMEBREW_PREFIX}/opt/bzip2" CACHE PATH "" FORCE)
+	endif()
+endif()
+
 # Lowercase project name for binaries and packaging.
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 

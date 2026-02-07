@@ -89,10 +89,10 @@ function(set_default_compiler_options target ISTESTTARGET)
 	# Platform defines.
 	if(WIN32)
 		target_compile_definitions(${target} PUBLIC PLATFORM_WINDOWS)
-	elseif(UNIX)
-		target_compile_definitions(${target} PUBLIC PLATFORM_UNIX)
 	elseif(APPLE)
 		target_compile_definitions(${target} PUBLIC PLATFORM_APPLE)
+	elseif(UNIX)
+		target_compile_definitions(${target} PUBLIC PLATFORM_UNIX)
 	endif()
 
 endfunction()

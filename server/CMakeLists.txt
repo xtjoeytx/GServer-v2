@@ -232,13 +232,30 @@ target_link_libraries(${TARGET_NAME} PRIVATE BZip2::BZip2)
 
 # ----------------------------
 # Dependency: antlr4.
-find_package(antlr4-runtime CONFIG REQUIRED)
+if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	# Homebrew antlr4-runtime is built with Apple Clang/libc++, which is
+	# ABI-incompatible with GCC/libstdc++. Build from source instead.
+	set(ANTLR4_INSTALL OFF CACHE BOOL "" FORCE)
+	set(ANTLR_BUILD_CPP_TESTS OFF CACHE BOOL "" FORCE)
+	set(DISABLE_WARNINGS ON CACHE BOOL "" FORCE)
+	FetchContent_Declare(antlr4_runtime
+		GIT_REPOSITORY https://github.com/antlr/antlr4.git
+		GIT_TAG        4.13.2
+		GIT_SHALLOW    TRUE
+		SOURCE_SUBDIR  runtime/Cpp
+	)
+	FetchContent_MakeAvailable(antlr4_runtime)
+else()
+	find_package(antlr4-runtime CONFIG REQUIRED)
+	target_link_directories(${TARGET_NAME} PRIVATE ${ANTLR4_LIB_DIR})
+	if(TESTS)
+		target_link_directories(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_LIB_DIR})
+	endif()
+endif()
 find_package(antlr4-generator CONFIG REQUIRED)
-target_link_directories(${TARGET_NAME} PRIVATE ${ANTLR4_LIBRARY_DIR})
 target_include_directories(${TARGET_NAME} PRIVATE ${ANTLR4_INCLUDE_DIR})
 target_link_libraries(${TARGET_NAME} PRIVATE antlr4_static Threads::Threads)
 if(TESTS)
-	target_link_directories(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_LIBRARY_DIR})
 	target_include_directories(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_INCLUDE_DIR})
 	target_link_libraries(${APP_LIBRARY_NAME} PUBLIC antlr4_static)
 endif()
@@ -268,6 +285,19 @@ FetchContent_Declare(gs2lib
 	#URL "${PROJECT_SOURCE_DIR}/../gs2lib"
 )
 FetchContent_MakeAvailable(gs2lib)
+if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+	# gs2lib adds -stdlib=libc++ on Apple; remove it since GCC doesn't support -stdlib=.
+	get_target_property(_gs2lib_opts gs2lib COMPILE_OPTIONS)
+	if(_gs2lib_opts)
+		list(REMOVE_ITEM _gs2lib_opts "-stdlib=libc++")
+		set_target_properties(gs2lib PROPERTIES COMPILE_OPTIONS "${_gs2lib_opts}")
+	endif()
+	get_target_property(_gs2lib_link_opts gs2lib LINK_OPTIONS)
+	if(_gs2lib_link_opts)
+		list(REMOVE_ITEM _gs2lib_link_opts "-stdlib=libc++")
+		set_target_properties(gs2lib PROPERTIES LINK_OPTIONS "${_gs2lib_link_opts}")
+	endif()
+endif()
 add_dependencies(${TARGET_NAME} gs2lib)
 target_link_libraries(${TARGET_NAME} PUBLIC gs2lib)
 target_include_directories(${TARGET_NAME} PUBLIC "${gs2lib_SOURCE_DIR}/include")
@@ -346,9 +376,9 @@ endif()
 # macOS specific settings
 if(APPLE)
 	# Enable ARC (automatic reference counting) for OS X build
-	set_property(
-		TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
-	)
+#	set_property(
+#		TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
+#	)
 endif()
 
 # ----------------------------
