@@ -9,7 +9,7 @@ For their additional work on the old gserver, special thanks go to:
 ## Building
 
 ### Required dependencies
-- C++23 compiler (min supported: GCC 14, Clang 18, MSVC 2022 17.7)
+- C++23 compiler (min supported: GCC 14, MSVC 2022 17.7)
 - Java JRE
 - CMake 3.28
 - Ninja build system
