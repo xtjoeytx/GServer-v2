@@ -1430,7 +1430,7 @@ bool PlayerClient::sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLe
 	// If we have not entered this level during this session, send board data.
 	// Also send if the client sends a cache time that doesn't match the level.
 	// Clients will cache level data so this can be skipped if nothing has changed.
-	if (!cachedModTime.has_value() || clientCachedTime.value() != levelModTime)
+	if (!cachedModTime.has_value() || clientCachedTime.value() < levelModTime)
 	{
 		// Send board data (tiles, layers, heights).
 		if (subLevel != nullptr)
