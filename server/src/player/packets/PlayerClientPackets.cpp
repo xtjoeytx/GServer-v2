@@ -444,10 +444,10 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 			float tLoseDeviation = powf((1.0f / (1.0f / powf(oldStats[1], 2) + 1 / dSpar[1])), 0.5f);
 
 			// Cap the rating.
-			tWinRating = clip(tWinRating, 0.0f, 4000.0f);
-			tLoseRating = clip(tLoseRating, 0.0f, 4000.0f);
-			tWinDeviation = clip(tWinDeviation, 50.0f, 350.0f);
-			tLoseDeviation = clip(tLoseDeviation, 50.0f, 350.0f);
+			tWinRating = std::clamp(tWinRating, 0.0f, 4000.0f);
+			tLoseRating = std::clamp(tLoseRating, 0.0f, 4000.0f);
+			tWinDeviation = std::clamp(tWinDeviation, 50.0f, 350.0f);
+			tLoseDeviation = std::clamp(tLoseDeviation, 50.0f, 350.0f);
 
 			// Update the Ratings.
 			if (oldStats[0] != tLoseRating || oldStats[1] != tLoseDeviation)

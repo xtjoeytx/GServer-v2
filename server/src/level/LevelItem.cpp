@@ -67,25 +67,25 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 			else
 				rupeeCount += 1;
 
-			rupeeCount = clip(rupeeCount, 0, 9999999);
+			rupeeCount = std::clamp(rupeeCount, 0, 9999999);
 			return CString() >> (char)PlayerProp::RUPEESCOUNT >> (int)rupeeCount;
 		}
 
 		case LevelItemType::BOMBS: // bombs
 		{
-			int bombCount = clip(player->account.character.bombs + 5, 0, 99);
+			int bombCount = std::clamp(player->account.character.bombs + 5, 0, 99);
 			return CString() >> (char)PlayerProp::BOMBSCOUNT >> (char)bombCount;
 		}
 
 		case LevelItemType::DARTS: // darts
 		{
-			int arrowCount = clip(player->account.character.arrows + 5, 0, 99);
+			int arrowCount = std::clamp(player->account.character.arrows + 5, 0, 99);
 			return CString() >> (char)PlayerProp::ARROWSCOUNT >> (char)arrowCount;
 		}
 
 		case LevelItemType::HEART: // heart
 		{
-			uint8_t newPower = clip(player->account.character.hitpointsInHalves + 2, 0, player->account.maxHitpoints * 2);
+			uint8_t newPower = std::clamp(player->account.character.hitpointsInHalves + 2, 0, player->account.maxHitpoints * 2);
 			return CString() >> (char)PlayerProp::CURPOWER >> (char)(newPower);
 		}
 
@@ -147,7 +147,7 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 
 		case LevelItemType::FULLHEART: // fullheart
 		{
-			char heartMax = clip(player->account.maxHitpoints + 1, 0, 20); // Hard limit of 20 hearts.
+			char heartMax = std::clamp(player->account.maxHitpoints + 1, 0, 20); // Hard limit of 20 hearts.
 			return CString() >> (char)PlayerProp::MAXPOWER >> (char)heartMax >> (char)PlayerProp::CURPOWER >> (char)(heartMax * 2);
 		}
 
