@@ -5,6 +5,8 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -15,6 +17,7 @@
 #include <CString.h>
 
 #include <Server.h>
+#include <object/Character.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
@@ -628,6 +631,82 @@ void PropertySprite::apply(const GameValue& gameValue)
 std::format_context::iterator PropertySprite::format(std::format_context& ctx) const
 {
 	return std::format_to(ctx.out(), "sprite: {}, direction: {}", sprite, direction);
+}
+
+// -----------------------------------------------
+// PropertyColors
+
+CString PropertyColors::serialize() const
+{
+	size_t count = getColorCount();
+	size_t maxValue = getMaxColorValue();
+	CString result;
+	for (size_t i = 0; i < count; ++i)
+	{
+		result >> std::clamp((ValueType)values[i], static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
+	}
+	return result;
+}
+
+void PropertyColors::deserialize(CString& data)
+{
+	size_t count = getColorCount();
+	size_t maxValue = getMaxColorValue();
+	for (size_t i = 0; i < count; ++i)
+	{
+		if (static_cast<size_t>(data.bytesLeft()) < sizeof(ValueType))
+			throw std::runtime_error("Not enough data to deserialize PropertyArray.");
+		data.readGInto(values[i]);
+		values[i] = std::clamp(values[i], static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
+	}
+}
+
+void PropertyColors::apply(const GameValue& gameValue)
+{
+	if (gameValue.get<std::vector<double>>().has_value())
+	{
+		auto* vec = gameValue.get_unsafe<std::vector<double>>();
+		if (vec == nullptr)
+			return;
+
+		// Convert all values to type T and insert into the values array.
+		size_t count = getColorCount();
+		size_t maxValue = getMaxColorValue();
+		for (size_t i = 0; i < count && i < vec->size(); ++i)
+		{
+			values[i] = std::clamp(static_cast<ValueType>((*vec)[i]), static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
+		}
+	}
+}
+
+std::format_context::iterator PropertyColors::format(std::format_context& ctx) const
+{
+	std::ostringstream out;
+	size_t count = getColorCount();
+
+	for (size_t i = 0; i < count; ++i)
+	{
+		out << std::format("{}", values[i]);
+		if (i < count - 1)
+			out << ", ";
+	}
+
+	return std::format_to(ctx.out(), "values: [{}]", out.str());
+}
+
+int PropertyColors::getColorCount() const noexcept
+{
+	auto server = BabyDI::Get<Server>();
+	return server->isNewWorldMode() ? 8 : 5;
+}
+
+size_t PropertyColors::getMaxColorValue() const noexcept
+{
+	auto server = BabyDI::Get<Server>();
+	size_t colorCount = CLASSICCOLORS_COUNT;
+	if (server->Generation == ServerGeneration::MODERN && server->getSettings().getBool("enableexbodycolors", false))
+		colorCount += HTMLCOLORS_COUNT;
+	return colorCount;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -97,7 +97,7 @@ enum class PlayerProp : uint8_t
 	// In Graal v5, where players have the Graal######## accounts, this is their chosen account alias (community name.)
 	COMMUNITYNAME = 82,
 
-	// v6 will read 5 bytes if it sees this, but doesn't use it.
+	// v6 will read a GBYTE5 and store it inside some variable, as long as the number is less than 1,000,000,000.
 	UNKNOWN83 = 83,
 
 	PLAYERPROP_COUNT

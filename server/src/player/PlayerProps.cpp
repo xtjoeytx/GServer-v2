@@ -991,6 +991,16 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
+		case PlayerProp::UNKNOWN83:
+		{
+			PropertyNumeric<GBYTE5>* numProp = dynamic_cast<PropertyNumeric<GBYTE5>*>(base);
+			if (numProp == nullptr)
+				SETPROP_RETURN_ERROR;
+
+			log::printLine(log::server, "Player {} set prop 83 to value {}.  This prop is currently unknown.", account.name, numProp->value);
+			break;
+		}
+
 		default:
 		{
 			log::printLine(log::server, "Player {} sent an unidentified prop: {}.", account.name, PROPID(prop));

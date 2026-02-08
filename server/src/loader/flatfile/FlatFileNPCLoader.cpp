@@ -258,7 +258,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (command == "COLORS")
 		{
 			auto tokens = string::splitToVectorView(lineView, ","sv);
-			for (size_t idx = 0; idx < std::min(tokens.size(), (size_t)5); idx++)
+			for (size_t idx = 0; idx < std::min(tokens.size(), (size_t)8); idx++)
 				npc->character.colors[idx] = string::toNumber<uint8_t>(tokens[idx]);
 			npc->modTime[PROPID(NPCProp::COLORS)] = updateTime;
 		}
@@ -532,7 +532,11 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	writeProp(NPCProp::SWORDIMAGE, "SWORD", npc->character.swordImage);
 	writeProp(NPCProp::SHIELDIMAGE, "SHIELD", npc->character.shieldImage);
 	writeProp(NPCProp::HORSEIMAGE, "HORSE", npc->character.horseImage);
-	writeProp(NPCProp::COLORS, "COLORS", std::format("{},{},{},{},{}", npc->character.colors[0], npc->character.colors[1], npc->character.colors[2], npc->character.colors[3], npc->character.colors[4]));
+
+	if (server->isNewWorldMode())
+		writeProp(NPCProp::COLORS, "COLORS", std::format("{},{},{},{},{},{},{},{}", npc->character.colors[0], npc->character.colors[1], npc->character.colors[2], npc->character.colors[3], npc->character.colors[4], npc->character.colors[5], npc->character.colors[6], npc->character.colors[7]));
+	else writeProp(NPCProp::COLORS, "COLORS", std::format("{},{},{},{},{}", npc->character.colors[0], npc->character.colors[1], npc->character.colors[2], npc->character.colors[3], npc->character.colors[4]));
+
 	writeProp(NPCProp::SPRITE, "SPRITE", string::to_string(npc->character.sprite << 2 | npc->character.direction));
 	writeProp(NPCProp::ALIGNMENT, "AP", string::to_string(npc->character.ap));
 

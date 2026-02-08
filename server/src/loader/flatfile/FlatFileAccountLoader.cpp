@@ -175,7 +175,7 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 			account.character.shieldImage = val;
 		else if (section == "COLORS")
 		{
-			auto tokensAsNumbers = string::split(val, ","sv) | std::views::take(5) | std::views::transform([](const std::string_view& token) { return toByte(std::string{ token }); });
+			auto tokensAsNumbers = string::split(val, ","sv) | std::views::take(8) | std::views::transform([](const std::string_view& token) { return toByte(std::string{ token }); });
 			std::ranges::copy(tokensAsNumbers, account.character.colors.begin());
 		}
 		else if (section == "SPRITE")
@@ -309,7 +309,9 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 #endif
 
 	std::string colorStr = std::format("{},{},{},{},{}", account.character.colors[0], account.character.colors[1], account.character.colors[2], account.character.colors[3], account.character.colors[4]);
+	std::string colorStrEx = std::format("{},{},{},{}", colorStr, account.character.colors[5], account.character.colors[6], account.character.colors[7]);
 	std::string defaultColorStr = "2,0,10,4,18";
+	std::string defaultColorStrEx = "2,0,10,4,18,0,0,0";
 
 	std::string newFile = "GRACC001\r\n";
 	writeLine(newFile, "NAME", account.name);
@@ -338,7 +340,11 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "BODY", account.character.bodyImage);
 	writeLine(newFile, "SWORD", account.character.swordImage);
 	writeLine(newFile, "SHIELD", account.character.shieldImage);
-	writeLine(newFile, "COLORS", colorStr, defaultColorStr);
+
+	if (server->isNewWorldMode())
+		writeLine(newFile, "COLORS", colorStrEx, defaultColorStrEx);
+	else writeLine(newFile, "COLORS", colorStr, defaultColorStr);
+
 	writeLine(newFile, "STATUS", account.status);
 	writeLine(newFile, "MP", account.character.mp, 0_ui8);
 	writeLine(newFile, "AP", account.character.ap);

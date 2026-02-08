@@ -281,7 +281,7 @@ struct PropertyString : public PropertyBase
 	PropertyString(const char* value) : value(value) {}
 	PropertyString(std::string_view value) : value(value) {}
 	PropertyString(const std::string& value) : value(value) {}
-	PropertyString(std::string&& value) : value(std::move(value)) {}
+	PropertyString(std::string&& value) noexcept : value(std::move(value)) {}
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
@@ -305,10 +305,10 @@ struct PropertySwordPower : public PropertyBase
 {
 	PropertySwordPower() = default;
 	PropertySwordPower(int8_t power) : power(power) {}
-	PropertySwordPower(std::string image) : image(std::move(image)) {}
-	PropertySwordPower(std::string&& image) : image(std::move(image)) {}
-	PropertySwordPower(std::string image, int8_t power) : image(std::move(image)), power(power) {}
-	PropertySwordPower(std::string&& image, int8_t power) : image(std::move(image)), power(power) {}
+	PropertySwordPower(const std::string& image) : image(image) {}
+	PropertySwordPower(const std::string& image, int8_t power) : image(image), power(power) {}
+	PropertySwordPower(std::string&& image) noexcept : image(std::move(image)) {}
+	PropertySwordPower(std::string&& image, int8_t power) noexcept : image(std::move(image)), power(power) {}
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
@@ -324,10 +324,10 @@ struct PropertyShieldPower : public PropertyBase
 {
 	PropertyShieldPower() = default;
 	PropertyShieldPower(uint8_t power) : power(power) {}
-	PropertyShieldPower(std::string image) : image(std::move(image)) {}
-	PropertyShieldPower(std::string&& image) : image(std::move(image)) {}
-	PropertyShieldPower(std::string image, uint8_t power) : image(std::move(image)), power(power) {}
-	PropertyShieldPower(std::string&& image, uint8_t power) : image(std::move(image)), power(power) {}
+	PropertyShieldPower(const std::string& image) : image(image) {}
+	PropertyShieldPower(const std::string& image, uint8_t power) : image(image), power(power) {}
+	PropertyShieldPower(std::string&& image) noexcept : image(std::move(image)) {}
+	PropertyShieldPower(std::string&& image, uint8_t power) noexcept : image(std::move(image)), power(power) {}
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
@@ -364,7 +364,8 @@ struct PropertyHeadGif : public PropertyBase
 {
 	PropertyHeadGif() = default;
 	PropertyHeadGif(uint8_t preset) : image(preset) {}
-	PropertyHeadGif(std::string image) : image(std::move(image)) {}
+	PropertyHeadGif(const std::string& image) : image(image) {}
+	PropertyHeadGif(std::string&& image) noexcept : image(std::move(image)) {}
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
@@ -383,10 +384,12 @@ struct PropertyHeadGif : public PropertyBase
 template<typename T, size_t N, bool StopIfFirstZero = false>
 struct PropertyArray : public PropertyBase
 {
+	using ValueType = T;
+
 	PropertyArray() = default;
-	PropertyArray(std::array<T, N> input) : values(std::move(input)) {}
-	PropertyArray(std::array<T, N>&& input) : values(std::move(input)) {}
-	PropertyArray(std::ranges::input_range auto&& input)
+	PropertyArray(const std::array<T, N>& input) : values(input) {}
+	PropertyArray(std::array<T, N>&& input) noexcept : values(std::move(input)) {}
+	PropertyArray(std::ranges::input_range auto&& input) noexcept
 	{
 		std::ranges::copy(input | std::views::take(N), values.begin());
 	}
@@ -550,8 +553,9 @@ struct PropertyTileCoordinateZ : public PropertyBase
 struct PropertyGS1Script : public PropertyBase
 {
 	PropertyGS1Script() = default;
-	PropertyGS1Script(std::string&& script) : script(std::move(script)) {}
 	PropertyGS1Script(std::string_view script) : script(script) {}
+	PropertyGS1Script(const std::string& script) : script(script) {}
+	PropertyGS1Script(std::string&& script) noexcept : script(std::move(script)) {}
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
@@ -585,7 +589,7 @@ struct PropertyImagePart : public PropertyBase
 	PropertyImagePart(uint16_t x, uint16_t y, uint8_t width, uint8_t height)
 		: imagePart({ x, y }, { width, height }) {}
 	PropertyImagePart(const ImagePartRectangle& imagePart) : imagePart(imagePart) {}
-	PropertyImagePart(ImagePartRectangle&& imagePart) : imagePart(std::move(imagePart)) {}
+	PropertyImagePart(ImagePartRectangle&& imagePart) noexcept : imagePart(std::move(imagePart)) {}
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;
@@ -611,8 +615,22 @@ struct PropertySprite : public PropertyBase
 	uint8_t direction = 2;
 };
 
+/// @brief A property that stores an array of colors.
+struct PropertyColors : public PropertyArray<GBYTE1, 8>
+{
+	PropertyColors() = default;
+	PropertyColors(const std::array<GBYTE1, 8>& input) : PropertyArray(input) {}
+	PropertyColors(std::array<GBYTE1, 8>&& input) noexcept : PropertyArray(std::move(input)) {}
+	PropertyColors(std::ranges::input_range auto&& input) noexcept : PropertyArray(std::move(input)) {}
+	virtual CString serialize() const override;
+	virtual void deserialize(CString& data) override;
+	virtual void apply(const GameValue& gameValue) override;
+	virtual std::format_context::iterator format(std::format_context& ctx) const override;
+	int getColorCount() const noexcept;
+	size_t getMaxColorValue() const noexcept;
+};
+
 // Renames these properties so they can be used inside the X-macro.
-using PropertyColors = PropertyArray<GBYTE1, 5>;
 using PropertyEffectColors = PropertyArray<GBYTE1, 5, true>;
 
 //////////////////////////////////////////////////

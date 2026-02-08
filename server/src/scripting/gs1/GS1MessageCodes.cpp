@@ -69,7 +69,7 @@ static constexpr PlayerProp GetPlayerPropFromIndex(uint8_t index)
 			return PlayerProp::NICKNAME;
 	}
 
-	if (index >= 20 && index <= 24)
+	if (index >= 20 && index <= 27)
 		return PlayerProp::COLORS;
 
 	if (index >= 30 && index <= 60)
@@ -102,7 +102,7 @@ static constexpr NPCProp GetNPCPropFromIndex(uint8_t index)
 			return NPCProp::NICKNAME;
 	}
 
-	if (index >= 20 && index <= 24)
+	if (index >= 20 && index <= 27)
 		return NPCProp::COLORS;
 
 	if (index >= 30 && index <= 60)
@@ -965,6 +965,8 @@ GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std
 // #C2 - sleeves color
 // #C3 - shoes color
 // #C4 - belt color
+// New World additional body colors:
+// #C5 - #C7 | #C5(index) - #C7(index)  [Read / Write]
 GS1ScriptValue mc_C(GS1Visitor* visitor, uint8_t index, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> pickerReturn

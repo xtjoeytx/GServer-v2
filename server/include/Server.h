@@ -288,6 +288,7 @@ public:
 	void calculateNWTime();
 	bool isIpBanned(const CString& ip);
 	bool isStaff(const CString& accountName);
+	[[inline]] bool isNewWorldMode() const noexcept;
 
 public:
 	void hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source) const;
@@ -387,6 +388,7 @@ private:
 	std::vector<CString> m_allowedVersions, m_foldersConfig, m_ipBans, m_statusList, m_staffList;
 	std::vector<std::pair<LevelItemType, int>> m_bushDrops;
 	std::vector<LevelItemType> m_deathDrops;
+	bool m_newWorldMode = false;
 
 	std::unique_ptr<IAccountLoader> m_accountLoader;
 	std::unique_ptr<INPCLoader> m_npcLoader;
@@ -438,6 +440,11 @@ inline std::shared_ptr<NPC> Server::getNPC(const NPCID id) const
 		return iter->second;
 
 	return nullptr;
+}
+
+inline bool Server::isNewWorldMode() const noexcept
+{
+	return m_newWorldMode;
 }
 
 inline void Server::logToFile(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const

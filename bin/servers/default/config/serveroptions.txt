@@ -188,6 +188,9 @@ minimap =
 # newtilesets = false
 # newtilesetlevels = 
 
+# Enables extended v6 body colors (disable v5 clients if using this).
+# enableexbodycolors = true/false
+
 # --------------------------------------------------------------------------------------
 # --- Public Graal Reborn non-standard extensions.                                   ---
 # --------------------------------------------------------------------------------------
@@ -463,9 +466,6 @@ gs2default = false
 # Disables global playerlist, reduces lag on servers with thousands of players.
 # noserverlistercpp = true/false
 
-# Enables extended v6 body colors (disable v5 clients if using this).
-# enableexbodycolors = true/false
-
 # List of levels where you don't see other players.
 # singleplayerlevels = 
 
@@ -480,3 +480,6 @@ gs2default = false
 
 # Limits how many gralats can be stacked on the ground.
 # maxgralatvalue = 0 or number
+
+# Enables use of //#GS3 code.
+# enablegs3 = true/false
