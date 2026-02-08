@@ -9,3 +9,4 @@ set(VCPKG_CXX_FLAGS_RELEASE " -Wno-error=type-limits -Wno-type-limits -Wno-error
 set(VCPKG_C_FLAGS_RELEASE " -Wno-error=type-limits -Wno-type-limits -Wno-error=stringop-overflow -Wno-stringop-overflow ")
 
 set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "${CMAKE_CURRENT_LIST_DIR}/osx-gcc-15-toolchain.cmake")
+message(STATUS "Using chainload toolchain file: ${VCPKG_CHAINLOAD_TOOLCHAIN_FILE}")

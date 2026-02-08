@@ -1,14 +1,18 @@
 # Allow CC environment variable to set the C compiler, otherwise default to gcc-15 from Homebrew.
 if(DEFINED ENV{CC})
+	message(STATUS "Using C compiler from CC environment variable: $ENV{CC}")
 	set(CMAKE_C_COMPILER "$ENV{CC}")
 else()
+	message(STATUS "CC environment variable not set, defaulting to /opt/homebrew/bin/gcc-15")
 	set(CMAKE_C_COMPILER "/opt/homebrew/bin/gcc-15")
 endif()
 
 # Allow CXX environment variable to set the C++ compiler, otherwise default to g++-15 from Homebrew.
 if(DEFINED ENV{CXX})
+	message(STATUS "Using C++ compiler from CXX environment variable: $ENV{CXX}")
 	set(CMAKE_CXX_COMPILER "$ENV{CXX}")
 else()
+	message(STATUS "CXX environment variable not set, defaulting to /opt/homebrew/bin/g++-15")
 	set(CMAKE_CXX_COMPILER "/opt/homebrew/bin/g++-15")
 endif()
 
