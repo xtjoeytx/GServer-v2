@@ -25,8 +25,8 @@ endif()
 # /scripts/toolchains/osx.cmake
 #-------------------------------------------------------------------------------
 
-if(NOT _VCPKG_OSX_TOOLCHAIN)
-    set(_VCPKG_OSX_TOOLCHAIN 1)
+if(NOT _VCPKG_OSXGCC_TOOLCHAIN)
+    set(_VCPKG_OSXGCC_TOOLCHAIN 1)
 
     if(POLICY CMP0056)
         cmake_policy(SET CMP0056 NEW)

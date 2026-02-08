@@ -2,7 +2,17 @@
   "version": 5,
   "configurePresets": [
     {
-      "name": "Release",
+      "name": "vcpkg",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": {
+          "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+          "type": "FILEPATH"
+        }
+      }
+    },
+    {
+      "name": "release",
       "hidden": true,
       "binaryDir": "${sourceDir}/build",
       "architecture": {
@@ -11,17 +21,13 @@
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "MinSizeRel",
-        "CMAKE_TOOLCHAIN_FILE": {
-          "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-          "type": "FILEPATH"
-        },
         "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true,
         "CMAKE_BUILD_WITH_INSTALL_RPATH": false,
         "PACKET_LOGGING": false
       }
     },
     {
-      "name": "Debug",
+      "name": "debug",
       "hidden": true,
       "binaryDir": "${sourceDir}/build",
       "architecture": {
@@ -30,10 +36,6 @@
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_TOOLCHAIN_FILE": {
-          "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-          "type": "FILEPATH"
-        },
         "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true,
         "CMAKE_BUILD_WITH_INSTALL_RPATH": false,
         "CMAKE_VERBOSE_MAKEFILE": true,
@@ -41,73 +43,84 @@
       }
     },
     {
-      "name": "Release Debug Info",
-      "inherits": "Release",
+      "name": "releasedebuginfo",
       "hidden": true,
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
     },
     {
-      "name": "Windows Release",
-      "inherits": "Release",
-      "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
-      }
-    },
-    {
-      "name": "Windows Debug",
-      "inherits": "Debug",
-      "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
-      }
-    },
-    {
-      "name": "Windows Debug (Packet Logging)",
-      "inherits": "Windows Debug",
-      "cacheVariables": {
-        "PACKET_LOGGING": true
-      }
-    },
-    {
-      "name": "Linux Release",
-      "inherits": "Release",
-      "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-linux"
-      }
-    },
-    {
-      "name": "Linux Debug",
-      "inherits": "Debug",
-      "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-linux"
-      }
-    },
-    {
-      "name": "Release MINGW",
+      "name": "platform-windows",
       "hidden": true,
-      "inherits": "Release",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+      }
+    },
+    {
+      "name": "platform-linux",
+      "hidden": true,
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux"
+      }
+    },
+    {
+      "name": "platform-osx-gcc",
+      "hidden": true,
+      "environment": {
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/triplets"
+      },
+      "cacheVariables": {
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/triplets",
+        "VCPKG_TARGET_TRIPLET": "arm64-osx-gcc",
+        "VCPKG_HOST_TRIPLET": "arm64-osx-gcc"
+      }
+    },
+    {
+      "name": "platform-mingw",
+      "hidden": true,
       "cacheVariables": {
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": {
-          "value": "${sourceDir}/cmake/crosscompile/x86_64-mingw64.cmake",
+          "value": "${sourceDir}/cmake/toolchains/x86_64-mingw64.cmake",
           "type": "FILEPATH"
         },
         "CMAKE_BUILD_WITH_INSTALL_RPATH": true
       }
     },
     {
-      "name": "OSX Debug",
-      "inherits": "Debug",
-      "environment": {
-        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/crosscompile"
-      },
+      "name": "Release MINGW",
+      "hidden": true,
+      "inherits": [ "platform-mingw", "release", "vcpkg" ]
+    },
+    {
+      "name": "Windows Release",
+      "inherits": [ "platform-windows", "release", "vcpkg" ]
+    },
+    {
+      "name": "Windows Debug",
+      "inherits": [ "platform-windows", "debug", "vcpkg" ]
+    },
+    {
+      "name": "Windows Debug (Packet Logging)",
+      "inherits": [ "platform-windows", "debug", "vcpkg" ],
       "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "arm64-osx-gcc"
+        "PACKET_LOGGING": true
       }
     },
     {
+      "name": "Linux Release",
+      "inherits": [ "platform-linux", "release", "vcpkg" ]
+    },
+    {
+      "name": "Linux Debug",
+      "inherits": [ "platform-linux", "debug", "vcpkg" ]
+    },
+    {
+      "name": "OSX GCC Debug",
+      "inherits": [ "platform-osx-gcc", "debug", "vcpkg" ]
+    },
+    {
       "name": "Linux Remote Release Debug Info",
-      "inherits": "Linux Release",
+      "inherits": [ "platform-linux", "releasedebuginfo", "release", "vcpkg" ],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       },
@@ -131,7 +144,7 @@
     },
     {
       "name": "Linux Remote Debug",
-      "inherits": "Linux Debug",
+      "inherits": [ "platform-linux", "debug", "vcpkg" ],
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
           "intelliSenseMode": "linux-gcc-x64"
