@@ -25,6 +25,11 @@
 
 using namespace preagonal;
 
+// Mac specific stuff.
+#ifdef __APPLE__
+	#include <mach-o/dyld.h>
+#endif
+
 // Linux specific stuff.
 #if !(defined(_WIN32) || defined(_WIN64))
 	#include <unistd.h>

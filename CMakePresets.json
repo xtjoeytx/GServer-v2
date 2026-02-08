@@ -1,144 +1,152 @@
 {
   "version": 5,
   "configurePresets": [
-	{
-	  "name": "Release",
-	  "hidden": true,
-	  "binaryDir": "${sourceDir}/build",
-	  "architecture": {
-		"value": "x64",
-		"strategy": "external"
-	  },
-	  "cacheVariables": {
-		"CMAKE_BUILD_TYPE": "MinSizeRel",
-		"CMAKE_TOOLCHAIN_FILE": {
-		  "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-		  "type": "FILEPATH"
-		},
-		"CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true,
-		"CMAKE_BUILD_WITH_INSTALL_RPATH": false,
-		"PACKET_LOGGING": false
-	  }
-	},
-	{
-	  "name": "Debug",
-	  "hidden": true,
-	  "binaryDir": "${sourceDir}/build",
-	  "architecture": {
-		"value": "x64",
-		"strategy": "external"
-	  },
-	  "cacheVariables": {
-		"CMAKE_BUILD_TYPE": "Debug",
-		"CMAKE_TOOLCHAIN_FILE": {
-		  "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-		  "type": "FILEPATH"
-		},
-		"CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true,
-		"CMAKE_BUILD_WITH_INSTALL_RPATH": false,
-		"CMAKE_VERBOSE_MAKEFILE": true,
-		"PACKET_LOGGING": false
-	  }
-	},
-	{
-	  "name": "Release Debug Info",
-	  "inherits": "Release",
-	  "hidden": true,
-	  "cacheVariables": {
-		"CMAKE_BUILD_TYPE": "RelWithDebInfo"
-	  }
-	},
-	{
-	  "name": "Windows Release",
-	  "inherits": "Release",
-	  "cacheVariables": {
-		"VCPKG_TARGET_TRIPLET": "x64-windows-static"
-	  }
-	},
-	{
-	  "name": "Windows Debug",
-	  "inherits": "Debug",
-	  "cacheVariables": {
-		"VCPKG_TARGET_TRIPLET": "x64-windows-static"
-	  }
-	},
-	{
-	  "name": "Windows Debug (Packet Logging)",
-	  "inherits": "Windows Debug",
-	  "cacheVariables": {
-		"PACKET_LOGGING": true
-	  }
-	},
-	{
-	  "name": "Linux Release",
-	  "inherits": "Release",
-	  "cacheVariables": {
-		"VCPKG_TARGET_TRIPLET": "x64-linux"
-	  }
-	},
-	{
-	  "name": "Linux Debug",
-	  "inherits": "Debug",
-	  "cacheVariables": {
-		"VCPKG_TARGET_TRIPLET": "x64-linux"
-	  }
-	},
-	{
-	  "name": "Release MINGW",
-	  "hidden": true,
-	  "inherits": "Release",
-	  "cacheVariables": {
-		"VCPKG_CHAINLOAD_TOOLCHAIN_FILE": {
-		  "value": "${sourceDir}/cmake/crosscompile/x86_64-mingw64.cmake",
-		  "type": "FILEPATH"
-		},
-		"CMAKE_BUILD_WITH_INSTALL_RPATH": true
-	  }
-	},
-	{
-	  "name": "Linux Remote Release Debug Info",
-	  "inherits": "Linux Release",
-	  "cacheVariables": {
-		"CMAKE_BUILD_TYPE": "RelWithDebInfo"
-	  },
-	  "vendor": {
-		"microsoft.com/VisualStudioSettings/CMake/1.0": {
-		  "intelliSenseMode": "linux-gcc-x64"
-		},
-		"microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
-		  "rsyncCommandArgs": [ "-t", "--delete", "--delete-excluded" ],
-		  "copySourcesOptions": {
-			"exclusionList": [
-			  ".vs",
-			  ".git",
-			  "out",
-			  "build",
-			  "dependencies/fc"
-			]
-		  }
-		}
-	  }
-	},
-	{
-	  "name": "Linux Remote Debug",
-	  "inherits": "Linux Debug",
-	  "vendor": {
-		"microsoft.com/VisualStudioSettings/CMake/1.0": {
-		  "intelliSenseMode": "linux-gcc-x64"
-		},
-		"microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
-		  "rsyncCommandArgs": [ "-t", "--delete", "--delete-excluded" ],
-		  "copySourcesOptions": {
-			"exclusionList": [
-			  ".vs",
-			  ".git",
-			  "out",
-			  "build",
-			  "dependencies/fc"
-			]
-		  }
-		}
-	  }
-	}
+    {
+      "name": "Release",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "CMAKE_TOOLCHAIN_FILE": {
+          "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+          "type": "FILEPATH"
+        },
+        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true,
+        "CMAKE_BUILD_WITH_INSTALL_RPATH": false,
+        "PACKET_LOGGING": false
+      }
+    },
+    {
+      "name": "Debug",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": {
+          "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+          "type": "FILEPATH"
+        },
+        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true,
+        "CMAKE_BUILD_WITH_INSTALL_RPATH": false,
+        "CMAKE_VERBOSE_MAKEFILE": true,
+        "PACKET_LOGGING": false
+      }
+    },
+    {
+      "name": "Release Debug Info",
+      "inherits": "Release",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "Windows Release",
+      "inherits": "Release",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+      }
+    },
+    {
+      "name": "Windows Debug",
+      "inherits": "Debug",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+      }
+    },
+    {
+      "name": "Windows Debug (Packet Logging)",
+      "inherits": "Windows Debug",
+      "cacheVariables": {
+        "PACKET_LOGGING": true
+      }
+    },
+    {
+      "name": "Linux Release",
+      "inherits": "Release",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux"
+      }
+    },
+    {
+      "name": "Linux Debug",
+      "inherits": "Debug",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux"
+      }
+    },
+    {
+      "name": "Release MINGW",
+      "hidden": true,
+      "inherits": "Release",
+      "cacheVariables": {
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": {
+          "value": "${sourceDir}/cmake/crosscompile/x86_64-mingw64.cmake",
+          "type": "FILEPATH"
+        },
+        "CMAKE_BUILD_WITH_INSTALL_RPATH": true
+      }
+    },
+    {
+      "name": "OSX Debug",
+      "inherits": "Debug",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "arm64-osx",
+        "VCPKG_FORCE_DOWNLOADED_BINARIES": true
+      }
+    },
+    {
+      "name": "Linux Remote Release Debug Info",
+      "inherits": "Linux Release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "intelliSenseMode": "linux-gcc-x64"
+        },
+        "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+          "rsyncCommandArgs": [ "-t", "--delete", "--delete-excluded" ],
+          "copySourcesOptions": {
+            "exclusionList": [
+              ".vs",
+              ".git",
+              "out",
+              "build",
+              "dependencies/fc"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "Linux Remote Debug",
+      "inherits": "Linux Debug",
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "intelliSenseMode": "linux-gcc-x64"
+        },
+        "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+          "rsyncCommandArgs": [ "-t", "--delete", "--delete-excluded" ],
+          "copySourcesOptions": {
+            "exclusionList": [
+              ".vs",
+              ".git",
+              "out",
+              "build",
+              "dependencies/fc"
+            ]
+          }
+        }
+      }
+    }
   ]
 }

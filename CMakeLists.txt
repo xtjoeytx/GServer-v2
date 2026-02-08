@@ -65,22 +65,6 @@ if(POLICY CMP0179)
 	cmake_policy(SET CMP0179 NEW)	# CMP0179: De-duplication of static libraries on link lines keeps first occurrence
 endif()
 
-# Get submodules.
-find_package(Git QUIET)
-if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
-	# Update submodules as needed
-	option(GIT_SUBMODULE "Check submodules during build" ON)
-	if (GIT_SUBMODULE)
-		message(STATUS "Submodule update")
-		execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-						WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-						RESULT_VARIABLE GIT_SUBMOD_RESULT)
-		if (NOT GIT_SUBMOD_RESULT EQUAL "0")
-			message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
-		endif()
-	endif()
-endif()
-
 # vcpkg configuration.
 set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "vcpkg triplet")
 set(VCPKG_INSTALLED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed")
@@ -88,6 +72,19 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 	set(CMAKE_EXECUTABLE_SUFFIX ".exe")
 endif()
+
+# Homebrew GCC on macOS: disable Clang/Apple-specific flags that GCC doesn't support.
+if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	message(STATUS "[${PROJECT_NAME}] GNU on macOS detected, disabling Apple-specific compiler flags.")
+
+	# GCC doesn't support -arch; clear CMAKE_OSX_ARCHITECTURES to prevent CMake from adding it.
+	set(CMAKE_OSX_ARCHITECTURES "" CACHE STRING "" FORCE)
+
+	# Disable C++ module scanning to prevent CMake from adding -fmodule-mapper.
+	set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+endif()
+
+################################################################################
 
 # GS2 project.
 project(GS2Emu VERSION 4.0.0 DESCRIPTION "Graal Online v1.380 to v6.037 compatible server" LANGUAGES C CXX)

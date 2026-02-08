@@ -1,9 +1,9 @@
 #define UPNPCOMMAND_CONFLICTING_MAPPING 718
 
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <format>
-#include <malloc.h>
 #include <string_view>
 #include <string>
 #include <utility>

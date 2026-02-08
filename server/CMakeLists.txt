@@ -284,11 +284,6 @@ FetchContent_Declare(libtommath
 	GIT_TAG        develop
 	EXCLUDE_FROM_ALL
 )
-#FetchContent_GetProperties(libtommath)
-#if(NOT libtommath_POPULATED)
-#	FetchContent_Populate(libtommath)
-#	add_subdirectory(${libtommath_SOURCE_DIR} ${libtommath_BINARY_DIR} EXCLUDE_FROM_ALL)
-#endif()
 FetchContent_MakeAvailable(libtommath)
 target_include_directories(${TARGET_NAME} PUBLIC "${libtommath_SOURCE_DIR}")
 
@@ -300,11 +295,6 @@ FetchContent_Declare(tomcrypt
 	EXCLUDE_FROM_ALL
 	FIND_PACKAGE_ARGS CONFIG
 )
-#FetchContent_GetProperties(tomcrypt)
-#if(NOT tomcrypt_POPULATED)
-#	FetchContent_Populate(tomcrypt)
-#	add_subdirectory(${tomcrypt_SOURCE_DIR} ${tomcrypt_BINARY_DIR} EXCLUDE_FROM_ALL)
-#endif()
 FetchContent_MakeAvailable(tomcrypt)
 target_compile_definitions(libtomcrypt PUBLIC LTC_NOTHING LTC_MD5 LTC_DES LTC_DESGR LTC_BASE64)
 target_compile_definitions(libtomcrypt PUBLIC LTC_ECB_MODE) # Need to define this to avoid a broken header.
@@ -346,9 +336,9 @@ endif()
 # macOS specific settings
 if(APPLE)
 	# Enable ARC (automatic reference counting) for OS X build
-	set_property(
-		TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
-	)
+	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+		set_property(TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
+	endif()
 endif()
 
 # ----------------------------
