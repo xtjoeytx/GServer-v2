@@ -98,9 +98,11 @@
     {
       "name": "OSX Debug",
       "inherits": "Debug",
+      "environment": {
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/crosscompile"
+      },
       "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "arm64-osx",
-        "VCPKG_FORCE_DOWNLOADED_BINARIES": true
+        "VCPKG_TARGET_TRIPLET": "arm64-osx-gcc"
       }
     },
     {
