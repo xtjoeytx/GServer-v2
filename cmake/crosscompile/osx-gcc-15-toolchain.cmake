@@ -1,9 +1,25 @@
-set(CMAKE_C_COMPILER "/opt/homebrew/bin/gcc-15")
-set(CMAKE_CXX_COMPILER "/opt/homebrew/bin/g++-15")
+# Allow CC environment variable to set the C compiler, otherwise default to gcc-15 from Homebrew.
+if(DEFINED ENV{CC})
+	set(CMAKE_C_COMPILER "$ENV{CC}")
+else()
+	set(CMAKE_C_COMPILER "/opt/homebrew/bin/gcc-15")
+endif()
 
-set(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk)
+# Allow CXX environment variable to set the C++ compiler, otherwise default to g++-15 from Homebrew.
+if(DEFINED ENV{CXX})
+	set(CMAKE_CXX_COMPILER "$ENV{CXX}")
+else()
+	set(CMAKE_CXX_COMPILER "/opt/homebrew/bin/g++-15")
+endif()
 
+# If the CMAKE_OSX_SYSROOT variable is not defined, set it to the 26.2 macOS SDK path.
+if(NOT DEFINED CMAKE_OSX_SYSROOT)
+	set(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk)
+endif()
+
+#-------------------------------------------------------------------------------
 # /scripts/toolchains/osx.cmake
+#-------------------------------------------------------------------------------
 
 if(NOT _VCPKG_OSX_TOOLCHAIN)
     set(_VCPKG_OSX_TOOLCHAIN 1)
