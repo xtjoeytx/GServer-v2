@@ -854,7 +854,7 @@ GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std
 }
 
 // #T(string)
-// Trims the tring.
+// Trims the string.
 GS1ScriptValue mc_T(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)

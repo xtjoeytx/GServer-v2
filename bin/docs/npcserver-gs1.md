@@ -46,13 +46,13 @@ Please review the lists below of implemented events, flags, functions, commands,
       washit	(hitobjects)
       wasshot
       wasshooted
+      wasthrown
 
 #### Not implemented
 
     serverlistconnect
     washit	(anything not hitobjects)
     waspelt
-    wasthrown
 
 #### Clientside only
 
@@ -608,47 +608,44 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Implemented
 
-    #1 | #1(index)  [Read / Write]
-    #2 | #2(index)  [Read / Write]
-    #3 | #3(index)  [Read / Write]
-    #5 | #5(index)  [Read / Write]
-    #6 | #6(index)  [Read]
-    #7 | #7(index)  [Read / Write]
-    #8 | #8(index)  [Read / Write]
-    #a | #a(index)  [Read]
-    #c | #c(index)  [Read / Write]
-    #g | #g(index)  [Read]
-    #m | #m(index)  [Read / Write]
-    #n | #n(index)  [Read / Write]
-    #N | #N(index)  [Read]
-    #W | #W(index)  [Read]
-    #w | #w(index)  [Read]
-    #f | #f(index)  [Read]
-    #p(index)       [Read / Write]
-    #t(index)       [Read / Write]
-    #F              [Read]
-    #L              [Read]
-    #C0 - #C4  | #C0(index) - #C4(index)   [Read / Write]
-    #P1 - #P30 | #P1(index) - #P30(index)  [Read / Write]
-    #Q(guild_name, account_name)  [Read]
-    #G | #G(index)                [Read]
-    #b
-    #e(start_index, length, string)
-    #I(string_list, index)
-    #K(ascii_number)
-    #R(string_list)
-    #s(identifier)
-    #T(string)
-    #U(string)
-    #v(identifier)
-
-#### Not implemented
-
-    #C5 - #C7 | #C5(index) - #C7(index)
+    #1 | #1(index)  [RW]    - Sword image
+    #2 | #2(index)  [RW]    - Shield image
+    #3 | #3(index)  [RW]    - Head image
+    #5 | #5(index)  [RW]    - Horse image
+    #6 | #6(index)  [R]     - Carried NPC image
+    #7 | #7(index)  [RW]    - Bow image (1.x)
+    #8 | #8(index)  [RW]    - Body image (2.x+)
+    #a | #a(index)  [R]     - Player account name
+    #c | #c(index)  [RW]    - Chat text
+    #g | #g(index)  [R]     - Guild name
+    #m | #m(index)  [RW]    - Animation
+    #n | #n(index)  [RW]    - Nickname
+    #N | #N(index)  [R]     - Database NPC name
+    #W | #W(index)  [R]     - Weapon image
+    #w | #w(index)  [R]     - Weapon name
+    #f | #f(index)  [R]     - NPC image
+    #p(index)       [RW]    - Action parameter (triggeraction)
+    #t(index)       [RW]    - Token (tokenize)
+    #F              [R]     - Level of the player
+    #L              [R]     - Level of the source NPC
+    #C0 - #C4(index)  [RW]  - Body colors
+    #C5 - #C7(index)  [RW]  - New World body colors (NW only)
+    #P1 - #P30(index) [RW]  - Gani attributes
+    #Q(guild_name, account_name)  [R]  - Nickname of a guild member
+    #G | #G(index)                [R]  - Player's account level (e.g., gold, classic, trial, etc.)
+    #e(start_index, length, string)    - Extracts a substring from the given string
+    #I(string_list, index)  - Returns the string at the given index from the string list
+    #K(ascii_number)        - The character represented by the given ASCII code
+    #R(string_list)         - Randomly selects a string from the given string list
+    #s(identifier)          - The string value of a variable
+    #T(string)              - Trims the string
+    #U(string)              - Replaces the string with a translated version of it
+    #v(identifier)          - The value of an number variable as a string
+    #b                      - Line break
 
 #### Clientside only
 
-    #D | #D(filename)
-    #E
-    #i(image) | #i(image, x, y, width, height)
-    #k(key_index)
+    #D | #D(filename)       - Current file being downloaded | The download position of the specified file
+    #E                      - The current emoticon character being displayed by the player
+    #i(image) | #i(image, x, y, width, height)  - Displays an image or part of an image when used in a sign
+    #k(key_index)           - The description of the specified key (in client language/key assignments)
