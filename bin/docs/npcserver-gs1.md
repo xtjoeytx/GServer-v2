@@ -621,15 +621,15 @@ Please review the lists below of implemented events, flags, functions, commands,
     #m | #m(index)  [RW]    - Animation
     #n | #n(index)  [RW]    - Nickname
     #N | #N(index)  [R]     - Database NPC name
-    #W | #W(index)  [R]     - Weapon image
-    #w | #w(index)  [R]     - Weapon name
     #f | #f(index)  [R]     - NPC image
+    #W(index)       [R]     - Weapon image
+    #w(index)       [R]     - Weapon name
     #p(index)       [RW]    - Action parameter (triggeraction)
     #t(index)       [RW]    - Token (tokenize)
     #F              [R]     - Level of the player
     #L              [R]     - Level of the source NPC
     #C0 - #C4(index)  [RW]  - Body colors
-    #C5 - #C7(index)  [RW]  - New World body colors (NW only)
+    #C5 - #C7(index)  [RW]  - Newworld body colors (NW only)
     #P1 - #P30(index) [RW]  - Gani attributes
     #Q(guild_name, account_name)  [R]  - Nickname of a guild member
     #G | #G(index)                [R]  - Player's account level (e.g., gold, classic, trial, etc.)
@@ -649,3 +649,6 @@ Please review the lists below of implemented events, flags, functions, commands,
     #E                      - The current emoticon character being displayed by the player
     #i(image) | #i(image, x, y, width, height)  - Displays an image or part of an image when used in a sign
     #k(key_index)           - The description of the specified key (in client language/key assignments)
+    #W                      - The image of the player's currently selected weapon
+    #w                      - The name of the player's currently selected weapon
+    #S                      - The player's currently selected sword (Newworld only)

@@ -144,6 +144,7 @@ static GS1ScriptValue mc_N(GS1Visitor* visitor, std::string_view messageCode, co
 static GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_R(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_S(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_s(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_T(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
@@ -188,6 +189,7 @@ static MessageCodeHandleMap GenerateMap()
 		{ hash("p"), &mc_p },
 		{ hash("Q"), &mc_Q },
 		{ hash("R"), &mc_R },
+		{ hash("S"), &mc_S },
 		{ hash("s"), &mc_s },
 		{ hash("t"), &mc_t },
 		{ hash("T"), &mc_T },
@@ -828,6 +830,13 @@ GS1ScriptValue mc_R(GS1Visitor* visitor, std::string_view messageCode, const std
 	return visitor->getGameValueAs<std::string>(*arguments[index]);
 }
 
+// #S
+// The player's selected sword (Newworld).
+GS1ScriptValue mc_S(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	throw std::logic_error("Message Code #S is registered as a clientside message code");
+}
+
 // #s(identifier)
 // The string value of a variable.
 GS1ScriptValue mc_s(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
@@ -904,6 +913,9 @@ GS1ScriptValue mc_v(GS1Visitor* visitor, std::string_view messageCode, const std
 // Image filename of a player's weapon.
 GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() == 0)
+		throw std::logic_error("Message Code #W is registered as a clientside message code, specify a weapon index: #W(index)");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
@@ -913,10 +925,7 @@ GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std
 			if (weaponList.empty())
 				return std::string{};
 
-			int64_t index = 0;
-			if (arguments.size() == 1)
-				index = DoubleAsIntegralFloor<int64_t>(visitor->getGameValueAs<double>(*arguments[0]));
-
+			int64_t index = DoubleAsIntegralFloor<int64_t>(visitor->getGameValueAs<double>(*arguments[0]));
 			if (index >= 0 && index < (int64_t)weaponList.size())
 			{
 				if (auto weapon = server->getWeapon(weaponList[(size_t)index]); weapon != nullptr)
@@ -934,6 +943,9 @@ GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std
 // The name of the player's weapon.
 GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
+	if (arguments.size() == 0)
+		throw std::logic_error("Message Code #w is registered as a clientside message code, specify a weapon index: #w(index)");
+
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto* server = BabyDI::Get<Server>();
@@ -943,10 +955,7 @@ GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std
 			if (weaponList.empty())
 				return std::string{};
 
-			int64_t index = 0;
-			if (arguments.size() == 1)
-				index = DoubleAsIntegralFloor<int64_t>(visitor->getGameValueAs<double>(*arguments[0]));
-
+			int64_t index = DoubleAsIntegralFloor<int64_t>(visitor->getGameValueAs<double>(*arguments[0]));
 			if (index >= 0 && index < (int64_t)weaponList.size())
 			{
 				// Explicitly place it in another string as the return will trigger move semantics.

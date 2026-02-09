@@ -311,7 +311,7 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	std::string colorStr = std::format("{},{},{},{},{}", account.character.colors[0], account.character.colors[1], account.character.colors[2], account.character.colors[3], account.character.colors[4]);
 	std::string colorStrEx = std::format("{},{},{},{}", colorStr, account.character.colors[5], account.character.colors[6], account.character.colors[7]);
 	std::string defaultColorStr = "2,0,10,4,18";
-	std::string defaultColorStrEx = "2,0,10,4,18,0,0,0";
+	std::string defaultColorStrEx = "2,0,10,4,18,18,18,18";
 
 	std::string newFile = "GRACC001\r\n";
 	writeLine(newFile, "NAME", account.name);
