@@ -134,7 +134,7 @@ inline constexpr PropList loginPropsClientSelf =
 	true, true, true, true, true, true,     // 60-65
 	true, true, true, true, true, true,     // 66-71
 	true, true, true, false, false, false,  // 72-77
-	false, false, false, false, true,       // 78-82
+	true, true, true, false, true,          // 78-82
 };
 
 // Sent to nearby players when a player logs in.
@@ -210,7 +210,7 @@ inline constexpr PropList clientPropsSharedLocal =
 	true, true, true, true, true, true,       // 60-65
 	true, true, true, true, true, true,       // 66-71
 	true, true, true, false, false, false,    // 72-77
-	false, false, false, true, true,          // 78-82
+	true, true, true, true, true,             // 78-82
 };
 
 // When the RC views a player's account, these props are sent.
