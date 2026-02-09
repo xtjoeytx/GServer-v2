@@ -222,8 +222,10 @@ HandlePacketResult PlayerClient::msgPLI_BOMBADD(CString& pPacket)
 	[[maybe_unused]] unsigned char player = player_power >> 2;
 	[[maybe_unused]] unsigned char power = player_power & 0x03;
 
-	// How many 0.05 sec increments until it explodes.  Defaults to 55 (3 seconds since 0 counts too when the game counts).
-	[[maybe_unused]] std::chrono::milliseconds timeToExplode = (pPacket.readGUChar() * 50ms) + 50ms;
+	// How many 0.05 sec increments until it explodes.
+	// It takes 3 seconds for a bomb to explode, but by the time the client sends the packet, it has already counted down to 2.75 seconds.
+	// The 0 is counted as a 0.05 second increment, so we add 50ms to the total.  Then we add an extra 5ms to account for any discrepancies (testing shows better results).
+	[[maybe_unused]] std::chrono::milliseconds timeToExplode = (pPacket.readGUChar() * 50ms) + 50ms + 5ms;
 
 	if (auto level = getLevel(); level != nullptr)
 	{
