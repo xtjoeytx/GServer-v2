@@ -1994,7 +1994,8 @@ std::vector<std::string> NPC::getVariableDump() const
 					activeVisFlags += ", created";
 				if (visFlags & PROPID(NPCVisFlags::UNKNOWNBIT6))
 					activeVisFlags += ", unknownbit6";
-				activeVisFlags += (visFlags & PROPID(NPCVisFlags::MALE) ? ", male" : ", female");
+				if (isCharacter())
+					activeVisFlags += (visFlags & PROPID(NPCVisFlags::MALE) ? ", male" : ", female");
 				
 				result.emplace_back(std::format("{}: {}", nameprop, activeVisFlags));
 				break;
