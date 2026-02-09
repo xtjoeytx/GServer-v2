@@ -88,6 +88,7 @@ inline static const std::unordered_map<ScriptEventType, std::string_view> eventF
 	{ ScriptEventType::WASHIT, "washit" },
 	{ ScriptEventType::WASSHOT, "wasshot" },
 	{ ScriptEventType::WASPELT, "waspelt" },
+	{ ScriptEventType::WASTHROWN, "wasthrown" },
 	{ ScriptEventType::TIMEOUT, "timeout" },
 	{ ScriptEventType::PRIVATEMESSAGE, "pm" },
 	{ ScriptEventType::MOVEMENTFINISHED, "movementfinished" },

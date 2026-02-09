@@ -20,14 +20,17 @@
 #include <Server.h>
 #include <level/Level.h>
 #include <misc/WordFilter.h>
+#include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerProps.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/Extents.h>
 #include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
+#include <utilities/std/inplace_vector.h>
 
 using namespace preagonal::props;
 
@@ -600,20 +603,27 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				break;
 
 			// Not supported on gmaps.
-			// If we want carry npcs to work with database npcs, a lot of work would be required.
-			// The throw range is 9 tiles.  We could probably send a move2 command on a throw.
 			if (level && level->isGmap())
 			{
-				// I tried to throw the NPC and make it visible again, but there seems to be a race condition with the client.
-				// The client wasn't throwing the NPC automatically when setting the PlayerProp::CARRYNPC to 0.
-				// It would also permanently hide the NPC when thrown and I couldn't bring it back.
-				// There are probably race conditions with how long it takes for the pick up and throw animations to fully play out.
+				// The client seems to freak out when picking up a character on the gmap.
+				// Normally, the client would "delete" the NPC when picking it up and respawn it when thrown, but on the gmap the
+				// NPC doesn't get deleted, causing a lot of weird problems.
 				break;
 			}
 
 			// Picked up.
 			if (player->getCarryNPC() == 0 && newNPCID != 0)
 			{
+				// Make the NPC invisible while its being carried so other players don't see a ghost NPC sitting on the ground.
+				// Do not send this to the player who picked up the NPC.  It will cause a duplicate NPC to generate in their client, breaking future interactions with the NPC.
+				// Except, DO send it to the player if the NPC is on a gmap, since, for some reason, the client does the opposite there.
+				if (auto npc = m_server->getNPC(newNPCID); npc != nullptr)
+				{
+					std::inplace_vector<SetResults, 2> results;
+					results.push_back(npc->setPropWith<NPCProp::VISFLAGS>(props::SetBy::SERVER, static_cast<uint8_t>(npc->visFlags & ~ENUM(NPCVisFlags::VISIBLE))));
+					npc->sendPropsFromResults(level && level->isGmap() ? nullptr : player, results);
+				}
+
 				// TODO: Remove when an npcserver is created.
 				if (m_server->getSettings().getBool("duplicatecanbecarried", false) == false)
 				{
@@ -638,9 +648,66 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 					}
 				}
 			}
+			// Thrown.
+			else if (player->getCarryNPC() != 0 && newNPCID == 0)
+			{
+				if (auto npc = m_server->getNPC(player->getCarryNPC()); npc != nullptr)
+				{
+					// Player carries NPC above their head.  The bottom center of the NPC is carried at x + 1.5, y + 1.
+					// When thrown, the NPC travels 9 tiles in the direction the player is facing and lands on the ground after 0.5 seconds.
 
-			//m_carrySprite = newNPCID != 0 ? PROPID(CarryObjectSprite::NPC) : PROPID(CarryObjectSprite::NONE);
-			//result.resultPropIds.push_back(PROPID(PlayerProp::CARRYSPRITE));
+					// Determine the starting position of the NPC.
+					// Clients handle the rendering, so there is no point to simulate the Z movement, so just place it at the feet of the player.
+					constexpr int16_t moveDistance = 16 * 9;
+					auto dir = player->account.character.direction;
+					auto bbox = npc->getBoundingBox();
+					auto pos = player->getLocalPosition();
+					pos.translate(24 - static_cast<int16_t>(bbox.size.width()) / 2, 48 - static_cast<int16_t>(bbox.size.height()));
+
+					// Send the position of the NPC to other players in the level so the it will appear in the right spot after the move completes.
+					// Do not send to the player who threw it.
+					// The client is still "throwing" the NPC and sending props will break things!
+					npc->sendPropsFromResults(
+						player,
+						SetResults{ .propId = PROPID(NPCProp::VISFLAGS), .resultFlags = (1 << SetResults::sendToLevel) },
+						npc->setPropWith<NPCProp::X2>(props::SetBy::SERVER, pos.x()),
+						npc->setPropWith<NPCProp::Y2>(props::SetBy::SERVER, pos.y())
+					);
+
+					// Queue up the movement of the NPC so clients position it properly.
+					LocalPixelPosition moveDelta{ dir == 1 ? -moveDistance : dir == 3 ? moveDistance : 0, dir == 0 ? -moveDistance : dir == 2 ? moveDistance : 0 };
+					npc->addMoveToQueue(moveDelta, 0.5, ENUM(NPCMoveFlags::NOCACHE));
+					if (npc->moveQueue.size() != 0)
+					{
+						// Set up the WASTHROWN event to trigger after 0.5 seconds.
+						// Also, make the NPC visible again.
+						auto& move = npc->moveQueue.back();
+						move.onComplete = [snpc = npc, pid = player->getId(), server = m_server, dir]()
+						{
+							std::inplace_vector<SetResults, 3> results;
+
+							// Make the NPC visible for everybody again.
+							results.push_back(snpc->setPropWith<NPCProp::VISFLAGS>(props::SetBy::SERVER, static_cast<uint8_t>(snpc->visFlags | ENUM(NPCVisFlags::VISIBLE))));
+
+							// If the NPC is a character, set their gani to idle and fix their direction.
+							if (snpc->isCharacter())
+							{
+								auto dirprop = snpc->getProp<NPCProp::SPRITE>();
+								dirprop.direction = dir;
+								results.push_back(snpc->setProp<NPCProp::SPRITE>(props::SetBy::SERVER, dirprop));
+								results.push_back(snpc->setPropWith<NPCProp::GANI>(props::SetBy::SERVER, "idle"));
+							}
+
+							// Send the results.
+							snpc->sendPropsFromResults(results);
+
+							// Trigger the WASTHROWN event.
+							snpc->scripting.events.addEvent(ScriptEventType::WASTHROWN, source::FromPlayer(pid));
+						};
+					}
+				}
+			}
+
 			player->setCarryNPC(newNPCID);
 			break;
 		}

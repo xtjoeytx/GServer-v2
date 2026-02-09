@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <generator>
 #include <memory>
 #include <ranges>
@@ -223,6 +224,9 @@ struct NPCMove
 	/// @brief The set options for the movement.
 	std::bitset<5> options;
 
+	/// @brief Callback function to execute when the movement is complete.
+	std::function<void()> onComplete;
+
 	static const int cacheNearbyMovement = 0;	// Value: 1
 	static const int appendMovement = 1;		// Value: 2
 	static const int blockCheck = 2;			// Value: 4
@@ -271,6 +275,8 @@ public:
 	std::pair<CString, CString> getMoveQueuePacketData(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
 	void sendMoveQueueToPlayer(PlayerPtr player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
 	void sendMoveQueueToLevel(LevelPtr level, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
+	void sendMoveQueueToLevel(LevelPtr level, const std::pair<CString, CString>& queue) const noexcept;
+	void sendMoveQueueUpdatesToLevel(LevelPtr level) noexcept;
 	void refreshModTimes(clock::time_point modTime) noexcept;
 
 public:
@@ -366,7 +372,16 @@ public:
 
 	/// @brief Sends the results of setting properties across the network.
 	/// @param results A range of SetResults results to send.
-	void sendPropsFromResults(std::ranges::forward_range auto&& results);
+	[[inline]] void sendPropsFromResults(std::ranges::forward_range auto&& results);
+
+	/// @brief Sends the results of setting a property across the network.
+	/// @param ...results A list of SetResults results to send.
+	template<typename... Results> requires AllSameAs<SetResults, Results...>
+	[[inline]] void sendPropsFromResults(PlayerPtr source, const Results&... results);
+
+	/// @brief Sends the results of setting properties across the network.
+	/// @param results A range of SetResults results to send.
+	[[inline]] void sendPropsFromResults(PlayerPtr source, std::ranges::forward_range auto&& results);
 
 protected:
 	SetResults setProp(NPCProp prop, SetBy setBy, PropertyBase* base);
@@ -413,6 +428,7 @@ public:
 	ScriptContainer scripting;
 	std::unordered_map<uint8_t, ShowImg> showImgList;
 	std::deque<NPCMove> moveQueue;
+	clock::time_point lastMoveQueueSentTime;
 
 private:
 	std::array<std::optional<clock::time_point>, NPCPROP_COUNT> m_savedModTime;
@@ -633,6 +649,24 @@ void NPC::sendPropsFromResults(std::ranges::forward_range auto&& results)
 		send_results.emplace_back(r);
 
 	sendPropsFromSendResults(send_results);
+}
+
+template<typename... Results> requires AllSameAs<SetResults, Results...>
+void NPC::sendPropsFromResults(PlayerPtr source, const Results&... results)
+{
+	PropertySendResults send_results;
+	(send_results.emplace_back(results, nullptr), ...);
+	sendPropsFromSendResults(send_results, source);
+}
+
+void NPC::sendPropsFromResults(PlayerPtr source, std::ranges::forward_range auto&& results)
+{
+	PropertySendResults send_results;
+	auto results_range = results | std::views::transform([](const SetResults& results) { return std::make_pair(results, nullptr); });
+	for (const auto& r : results_range)
+		send_results.emplace_back(r);
+
+	sendPropsFromSendResults(send_results, source);
 }
 
 template<NPCProp... Props>

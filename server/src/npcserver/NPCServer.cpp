@@ -208,7 +208,7 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 					m_server->sendPacketToNearby(propsPacket, npc->getGlobalPosition(), level);
 
 				// Send movements.
-				npc->sendMoveQueueToLevel(level, m_server->getFrameStartTime());
+				npc->sendMoveQueueUpdatesToLevel(level);
 			}
 		}
 	}

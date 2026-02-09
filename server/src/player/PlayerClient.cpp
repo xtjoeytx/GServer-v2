@@ -1360,7 +1360,7 @@ bool PlayerClient::leaveLevel()
 		if (auto npc = m_server->getNPC(m_carryNPC); npc)
 		{
 			levelp->removeNPC(m_carryNPC);
-			CString deletePacket = CString() >> (char)PLO_NPCDEL << (short)m_carryNPC;
+			CString deletePacket = CString() >> (char)PLO_NPCDEL >> (int)m_carryNPC;
 			m_server->sendPacketToLevelAndPastVisitorsAfter(levelData.get(), npc->lastUpdateTime, deletePacket);
 		}
 	}
@@ -1556,91 +1556,6 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 
 	return true;
 }
-
-/*
-bool PlayerClient::sendLevel141(std::shared_ptr<Level> level, time_t modTime, bool fromAdjacent)
-{
-	if (level == nullptr) return false;
-
-	// Get the sub-level and static data we are on.
-	auto [subLevel, levelData] = level->getSubLevelAndStaticDataAtPosition(getMapPosition());
-	if (subLevel == nullptr || levelData == nullptr)
-		return false;
-
-	PlayerPtr self = shared_from_this();
-	CSettings& settings = m_server->getSettings();
-	time_t levelModTime = clock::to_time_t(level->modTime);
-	time_t cachedModTime = getLevelLastEnteredTime(levelData.get());
-	if (modTime == -1) modTime = levelModTime;
-	if (cachedModTime != 0)
-	{
-		subLevel->sendBoardChangesToPlayer(self, convertFromTimeT(cachedModTime));
-	}
-	else
-	{
-		if (modTime != levelModTime)
-		{
-			subLevel->sendBoardToPlayer(self);
-
-			if (m_firstLevel)
-				sendPacket(CString() >> (char)PLO_LEVELNAME << levelData->levelName);
-			m_firstLevel = false;
-
-			// Send links, signs, and mod time.
-			if (!settings.getBool("serverside", false)) // TODO: NPC server check instead.
-			{
-				levelData->sendLinksToPlayer(self);
-				levelData->sendSignsToPlayer(self);
-			}
-			sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)levelModTime);
-		}
-		else
-			sendPacket(CString() >> (char)PLO_LEVELBOARD);
-
-		if (!fromAdjacent)
-		{
-			subLevel->sendBoardChangesToPlayer(self, convertFromTimeT(cachedModTime));
-			levelData->sendChestsToPlayer(self);
-		}
-	}
-
-	// Send board changes, chests, horses, and baddies.
-	if (!fromAdjacent)
-	{
-		level->sendHorsesToPlayer(self);
-		level->sendBaddiesToPlayer(self);
-	}
-
-	if (fromAdjacent == false)
-	{
-		// If we are the leader, send it now.
-		if (level->isPlayerLeader(getId()) || level->isSingleplayer == true)
-			sendPacket(CString() >> (char)PLO_ISLEADER);
-	}
-
-	// Send new world time.
-	sendPacket(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(m_server->getNWTime()));
-
-	// Send NPCs.
-	if (!fromAdjacent)
-		level->sendNPCsToPlayer(self, convertFromTimeT(cachedModTime));
-
-	// Send connecting player props to players in nearby levels.
-	if (!level->isSingleplayer && !fromAdjacent)
-	{
-		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << getPropsPacketFromList(loginPropsClientOthers), getGlobalPosition(), getLevel(), { m_id });
-
-		for (auto id : level->findInRangePlayersForCommunication(getGlobalPosition()))
-		{
-			if (id == getId()) continue;
-			if (auto player = m_server->getPlayer(id); player != nullptr)
-				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << player->getPropsPacketFromList(loginPropsClientOthers));
-		}
-	}
-
-	return true;
-}
-*/
 
 ///////////////////////////////////////////////////////////////////////////////
 

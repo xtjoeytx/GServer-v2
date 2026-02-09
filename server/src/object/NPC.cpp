@@ -255,8 +255,13 @@ void NPC::addMoveToQueue(const LocalPixelPosition& moveDelta, float durationInSe
 	// and execute the last movement to the end (so any events get called).
 	if (finishAllMovements)
 	{
-		if (moveQueue.size() > 1)
-			moveQueue.erase(moveQueue.begin(), std::prev(moveQueue.end()));
+		while (moveQueue.size() > 1)
+		{
+			auto& queue = moveQueue.front();
+			if (queue.onComplete)
+				queue.onComplete();
+			moveQueue.pop_front();
+		}
 		if (!moveQueue.empty())
 			processMoveQueue(moveQueue.front().duration);
 	}
@@ -336,6 +341,8 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 						scripting.events.addEvent(ScriptEventType::MOVEMENTFINISHED, source::FromNPC(id));
 
 					// Stop the movement here.
+					if (move.onComplete)
+						move.onComplete();
 					moveQueue.pop_front();
 					return;
 				}
@@ -367,6 +374,10 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 			// Queue the movement finished event.
 			if (move.options.test(NPCMove::informWhenDone))
 				scripting.events.addEvent(ScriptEventType::MOVEMENTFINISHED, source::FromNPC(id));
+
+			// Finish callback.
+			if (move.onComplete)
+				move.onComplete();
 
 			// Pop the front movement.
 			moveQueue.pop_front();
@@ -444,14 +455,25 @@ void NPC::sendMoveQueueToLevel(LevelPtr level, std::optional<clock::time_point> 
 	if (moveQueue.empty())
 		return;
 
-	auto [move1, move2] = getMoveQueuePacketData(modTime);
-	if (move1.isEmpty())
+	sendMoveQueueToLevel(level, getMoveQueuePacketData(modTime));
+}
+
+void NPC::sendMoveQueueToLevel(LevelPtr level, const std::pair<CString, CString>& queue) const noexcept
+{
+	if (queue.first.isEmpty())
 		return;
 
 	// Send them out.
 	auto server = BabyDI::Get<Server>();
-	server->sendPacketToNearby(CString() >> (char)PLO_MOVE2 >> (int)id << move2, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() >= CLVER_2_3; });
-	server->sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)id << move1, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() < CLVER_2_3; });
+	server->sendPacketToNearby(CString() >> (char)PLO_MOVE2 >> (int)id << queue.second, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() >= CLVER_2_3; });
+	server->sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)id << queue.first, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() < CLVER_2_3; });
+}
+
+void NPC::sendMoveQueueUpdatesToLevel(LevelPtr level) noexcept
+{
+	auto result = getMoveQueuePacketData(lastMoveQueueSentTime);
+	lastMoveQueueSentTime = BabyDI::Get<Server>()->getFrameStartTime();
+	sendMoveQueueToLevel(level, result);
 }
 
 void NPC::refreshModTimes(clock::time_point modTime) noexcept
@@ -1431,7 +1453,7 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 		exclude = source->getId();
 
 	if (sendLevel.length() > 0 && !m_currentLevel.expired())
-		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, character.getGlobalPosition(), getLevel(), {exclude});
+		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, character.getGlobalPosition(), getLevel(), { exclude });
 
 	if (sendSource.length() > 0 && source != nullptr)
 		source->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)id << sendSource);
