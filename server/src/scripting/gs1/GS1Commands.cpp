@@ -1057,7 +1057,11 @@ void fn_drawoverplayer(GS1Visitor* visitor, std::string_view commandName, const 
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
-			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags & (PROPID(NPCVisFlags::DRAWOVERPLAYER) | PROPID(NPCVisFlags::VISIBLE))));
+		{
+			uint8_t newVisFlags = npc->visFlags & ~(PROPID(NPCVisFlags::DRAWUNDERPLAYER) | PROPID(NPCVisFlags::DRAWOVERPLAYER));
+			newVisFlags |= (PROPID(NPCVisFlags::DRAWOVERPLAYER) | PROPID(NPCVisFlags::VISIBLE));
+			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, newVisFlags);
+		}
 	}
 }
 
@@ -1085,7 +1089,11 @@ void fn_drawunderplayer(GS1Visitor* visitor, std::string_view commandName, const
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
-			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags & (PROPID(NPCVisFlags::DRAWUNDERPLAYER) | PROPID(NPCVisFlags::VISIBLE))));
+		{
+			uint8_t newVisFlags = npc->visFlags & ~(PROPID(NPCVisFlags::DRAWUNDERPLAYER) | PROPID(NPCVisFlags::DRAWOVERPLAYER));
+			newVisFlags |= (PROPID(NPCVisFlags::DRAWUNDERPLAYER) | PROPID(NPCVisFlags::VISIBLE));
+			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, newVisFlags);
+		}
 	}
 }
 
