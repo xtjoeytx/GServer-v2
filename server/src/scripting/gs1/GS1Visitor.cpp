@@ -264,38 +264,39 @@ GameValue GS1Visitor::getGameValueFromStorage(std::string_view identifier, std::
 	if (builtInStore != nullptr && builtInStore->contains(identifier))
 		return builtInStore->getOrStub(identifier);
 
-	// Second, look in the current source's store.
-	auto* currentStore = getGameVariableStoreFromSource(getCurrentSource());
+	auto checkStore = [&](const ScriptObject& source) -> std::optional<GameValue>
 	{
-		// For the current store, we only want to return a variable if it exists.
-		// If the variable does not exist, it will be added to the source store.
-		if (currentStore != nullptr && currentStore->contains(identifier))
-			return currentStore->getOrStub(identifier);
-		else if (auto property = getGameValueFromSource(getCurrentSource(), identifier); property.has_value())
+		auto* store = getGameVariableStoreFromSource(source);
+		bool storeHasIdentifier = store != nullptr && store->contains(identifier);
+
+		// First, if we have a storage type, get directly from the variable store.
+		if (type.has_value() && storeHasIdentifier)
+			return store->getOrStub(identifier);
+
+		// Second, if we have no storage type, check for a property.
+		if (auto property = getGameValueFromSource(source, identifier); property.has_value())
 			return property.value();
-	}
+
+		// Lastly, check the variable store.
+		if (storeHasIdentifier)
+			return store->getOrStub(identifier);
+
+		return std::nullopt;
+	};
+
+	// Second, look in the current source's store.
+	if (auto result = checkStore(getCurrentSource()); result.has_value())
+		return result.value();
 
 	// Now look in the original source's store.
-	{
-		if (auto* sourceStore = getGameVariableStoreFromSource(getOriginalSource()); sourceStore != nullptr)
-		{
-			if (sourceStore->contains(identifier))
-				return sourceStore->getOrStub(identifier);
-		}
-		if (auto property = getGameValueFromSource(getOriginalSource(), identifier); property.has_value())
-			return property.value();
-	}
+	if (auto result = checkStore(getOriginalSource()); result.has_value())
+		return result.value();
 
-	// Now look at the initiator's store.
+	// Lastly, look at the initiator's store.
 	if (m_event->initiator != getOriginalSource())
 	{
-		if (auto* initiatorStore = getGameVariableStoreFromSource(m_event->initiator); initiatorStore != nullptr)
-		{
-			if (initiatorStore->contains(identifier))
-				return initiatorStore->getOrStub(identifier);
-		}
-		if (auto property = getGameValueFromSource(m_event->initiator, identifier); property.has_value())
-			return property.value();
+		if (auto result = checkStore(m_event->initiator); result.has_value())
+			return result.value();
 	}
 
 	// If we still don't have a store, use the built-in store.
