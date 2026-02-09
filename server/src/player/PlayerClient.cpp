@@ -1354,7 +1354,6 @@ bool PlayerClient::leaveLevel()
 	}
 
 	// If I am carrying an NPC, tell others the NPC left the level.
-	// TODO: How should this work on gmaps?
 	if (m_carryNPC != 0)
 	{
 		if (auto npc = m_server->getNPC(m_carryNPC); npc)
@@ -1517,14 +1516,24 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 	// Move the carry NPC to the new level.
 	if (m_carryNPC != 0)
 	{
-		level->addNPC(m_carryNPC);
 		if (auto npc = m_server->getNPC(m_carryNPC); npc)
 		{
-			npc->setLevel(level);
-			npc->sendPropsFromResults(
-				npc->setPropWith<NPCProp::GMAPLEVELX>(props::SetBy::SERVER, account.character.mapX),
-				npc->setPropWith<NPCProp::GMAPLEVELY>(props::SetBy::SERVER, account.character.mapY)
-			);
+			if (npc->level != level->levelName)
+			{
+				level->addNPC(m_carryNPC);
+				npc->character.mapX = account.character.mapX;
+				npc->character.mapY = account.character.mapY;
+
+				// setLevel should refresh all of the modTimes.
+				npc->setLevel(level);
+			}
+			else if (level->isGmap())
+			{
+				npc->sendPropsFromResults(
+					npc->setPropWith<NPCProp::GMAPLEVELX>(props::SetBy::SERVER, account.character.mapX),
+					npc->setPropWith<NPCProp::GMAPLEVELY>(props::SetBy::SERVER, account.character.mapY)
+				);
+			}
 
 			// Send the carry NPC props to other players.
 			// if (!level->isSingleplayer)
