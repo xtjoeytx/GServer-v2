@@ -85,7 +85,6 @@
 	},
 	{
 	  "name": "Release MINGW",
-	  "hidden": true,
 	  "inherits": "Release",
 	  "cacheVariables": {
 		"VCPKG_CHAINLOAD_TOOLCHAIN_FILE": {

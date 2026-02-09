@@ -33,6 +33,7 @@ RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
         ninja-is-really-ninja \
         openssl-dev \
         openssl-libs-static \
+		python3 \
 	&& git clone https://github.com/microsoft/vcpkg $VCPKG_ROOT \
 	&& cd $VCPKG_ROOT \
 	&& sh bootstrap-vcpkg.sh -disableMetrics \
