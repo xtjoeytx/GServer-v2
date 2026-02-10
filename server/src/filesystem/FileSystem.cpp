@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <filesystem>
-#include <generator>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -15,6 +14,7 @@
 #include <filesystem/watch/FileWatch.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
+#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

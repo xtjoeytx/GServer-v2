@@ -2,14 +2,14 @@
 #define TRANSLATIONMANAGERCLASSIC_H
 
 #include <filesystem>
-#include <generator>
 #include <string_view>
 #include <string>
 #include <tuple>
 #include <unordered_map>
 
-#include <utilities/manager/ITranslationManager.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/manager/ITranslationManager.h>
+#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

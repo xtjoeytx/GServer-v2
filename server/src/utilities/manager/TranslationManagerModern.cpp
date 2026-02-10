@@ -1,9 +1,9 @@
 #include <filesystem>
-#include <generator>
 #include <string_view>
 #include <tuple>
 
 #include <utilities/manager/TranslationManagerModern.h>
+#include <utilities/std/generator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

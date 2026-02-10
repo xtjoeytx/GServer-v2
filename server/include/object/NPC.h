@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
-#include <generator>
 #include <memory>
 #include <ranges>
 #include <stdexcept>
@@ -29,6 +28,7 @@
 #include <utilities/Events.h>
 #include <utilities/Extents.h>
 #include <utilities/PropertySerializers.h>
+#include <utilities/std/generator.h>
 
 using namespace preagonal::props;
 

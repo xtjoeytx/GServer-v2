@@ -3,7 +3,6 @@
 
 #include <chrono>
 #include <cstdint>
-#include <generator>
 #include <memory>
 #include <ranges>
 #include <string_view>
@@ -20,6 +19,7 @@
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Events.h>
+#include <utilities/std/generator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

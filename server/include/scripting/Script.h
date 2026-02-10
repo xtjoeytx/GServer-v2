@@ -2,7 +2,6 @@
 #define SCRIPT_H
 
 #include <cstdint>
-#include <generator>
 #include <memory>
 #include <string_view>
 #include <string>
@@ -14,6 +13,7 @@
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
 
 using namespace std::literals;

@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <format>
-#include <generator>
 #include <iterator>
 #include <optional>
 #include <ranges>
@@ -21,6 +20,8 @@
 #include <vector>
 
 #include <CString.h>
+
+#include <utilities/std/generator.h>
 
 using namespace std::literals::string_view_literals;
 

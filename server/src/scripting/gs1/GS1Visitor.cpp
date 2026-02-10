@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <exception>
 #include <format>
-#include <generator>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -44,6 +43,7 @@
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
+#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
 
 #ifdef DEBUG

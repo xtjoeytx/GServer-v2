@@ -2,11 +2,11 @@
 #define TRANSLATIONMANAGERMODERN_H
 
 #include <filesystem>
-#include <generator>
 #include <string_view>
 #include <tuple>
 
 #include <utilities/manager/ITranslationManager.h>
+#include <utilities/std/generator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

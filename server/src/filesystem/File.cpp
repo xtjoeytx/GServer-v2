@@ -7,7 +7,6 @@
 #include <format>
 #include <fstream>
 #include <functional>
-#include <generator>
 #include <ios>
 #include <istream>
 #include <iterator>
@@ -25,6 +24,7 @@
 
 #include <filesystem/File.h>
 #include <utilities/Log.h>
+#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
 
 #ifdef PLATFORM_WINDOWS

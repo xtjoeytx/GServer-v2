@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <generator>
 #include <iterator>
 #include <string_view>
 #include <string>
@@ -19,6 +18,7 @@
 #include <utilities/Log.h>
 #include <utilities/manager/ITranslationManager.h>
 #include <utilities/manager/TranslationManagerClassic.h>
+#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

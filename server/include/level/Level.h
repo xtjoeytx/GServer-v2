@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <deque>
 #include <filesystem>
-#include <generator>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -37,6 +36,7 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Events.h>
 #include <utilities/Extents.h>
+#include <utilities/std/generator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal

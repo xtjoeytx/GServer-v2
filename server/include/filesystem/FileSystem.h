@@ -9,7 +9,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
-#include <generator>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
@@ -19,6 +18,7 @@
 #include <filesystem/FileSystemTypes.h>
 #include <filesystem/watch/FileWatch.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

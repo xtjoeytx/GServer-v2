@@ -104,6 +104,7 @@ set(
 	"include/utilities/manager/ResourceManager.h"
 	"include/utilities/manager/TranslationManagerClassic.h"
 	"include/utilities/manager/TranslationManagerModern.h"
+	"include/utilities/std/generator.h"
 	"include/utilities/std/inplace_vector.h"
 	"include/utilities/std/views_concat.h"
 	"src/main.cpp"

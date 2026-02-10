@@ -2,7 +2,6 @@
 #include <any>
 #include <array>
 #include <format>
-#include <generator>
 #include <iterator>
 #include <string_view>
 #include <string>
@@ -22,6 +21,7 @@
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
+#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

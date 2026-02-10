@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
-#include <generator>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -25,6 +24,7 @@
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
 #include <utilities/Random.h>
+#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

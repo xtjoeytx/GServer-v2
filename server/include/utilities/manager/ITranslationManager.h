@@ -2,13 +2,13 @@
 #define ITRANSLATIONMANAGER_H
 
 #include <filesystem>
-#include <generator>
 #include <string_view>
 #include <string>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
 
+#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////

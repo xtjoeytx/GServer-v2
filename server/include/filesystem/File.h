@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
-#include <generator>
 #include <ios>
 #include <istream>
 #include <memory>
@@ -16,6 +15,8 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#include <utilities/std/generator.h>
 
 using namespace std::literals;
 

@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <filesystem>
-#include <generator>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -14,6 +13,7 @@
 #include <filesystem/File.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
+#include <utilities/std/generator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
