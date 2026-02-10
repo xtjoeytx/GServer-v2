@@ -1730,7 +1730,7 @@ LevelArrow* Level::addArrow(const PixelPosition& position, const PixelPosition& 
 	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
 		return nullptr;
 
-	LevelArrow newArrow{ .position = position, .speed = speed, .direction = direction, .type = type, .from = from };
+	LevelArrow newArrow{ .startPosition = position, .position = position, .speed = speed, .direction = direction, .type = type, .from = from };
 	m_arrows.emplace_back(std::move(newArrow));
 	return &m_arrows.back();
 }
@@ -2538,36 +2538,37 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 
 		// If the arrow has gone out of bounds, delete it.
 		// TODO: Maybe just set a max range and make it behave like a shoot?  Like the sync distance?  Or 2 levels distance?
-		auto localPosition = toLocalPixelPosition(arrow->position);
-		if (localPosition.x() < 0 || localPosition.x() > 1024 || localPosition.y() < 0 || localPosition.y() > 1024)
+		constexpr auto maxDistance = pixelsPerSubLevel().width() * 2;
+		if (std::abs(arrow->position.x() - arrow->startPosition.x()) > maxDistance || std::abs(arrow->position.y() - arrow->startPosition.y()) > maxDistance)
 			return false;
 
-		bool produceExplosion = false;
+		bool hitWall = false;
 
 		// Check for NPC collision.
-		PixelRectangleArea searchBox = { translatePosition(arrow->position, 16_i32, 0_i32), { 32_ui16, 32_ui16  } };
+		PixelRectangleArea searchBox = { translatePosition(arrow->position, 16_i32, -8_i32), { 32_ui16, 32_ui16  } };
 		for (const auto& npc : findIntersectingNPCsForCollision(searchBox))
 		{
 			if (arrow->from.second == ScriptObjectType::NPC && arrow->from.first == npc)
 				continue;
 			if (auto npcPtr = BabyDI::Get<Server>()->getNPC(npc); npcPtr != nullptr)
-			{
 				npcPtr->scripting.events.addEvent(ScriptEventType::WASSHOT, arrow->from);
-				produceExplosion = (arrow->type == arrowTypeFireblast || arrow->type == arrowTypeNukeshot);
-			}
+
+			hitWall = true;
 		}
 
 		// If the arrow is a fireblast or nukeshot, check for walls.
-		if (!produceExplosion && (arrow->type == arrowTypeFireblast || arrow->type == arrowTypeNukeshot))
+		if (!hitWall && (arrow->type == arrowTypeFireblast || arrow->type == arrowTypeNukeshot))
 		{
 			if (isOnWall(toWholeTilePosition(arrow->position).translate(1_ui8, 0_ui8)))
-				produceExplosion = true;
+				hitWall = true;
 		}
 
-		// If we are producing an explosion, add it and remove the arrow.
-		if (produceExplosion)
+		// We hit a wall (or an NPC), so destroy the arrow.
+		if (hitWall)
 		{
-			addExplosion(arrow->position, arrow->from, 1_ui8, 1_ui8);
+			// If we are producing an explosion on hit, do it now.
+			if (arrow->type == arrowTypeFireblast || arrow->type == arrowTypeNukeshot)
+				addExplosion(arrow->position, arrow->from, 1_ui8, 1_ui8);
 			return false;
 		}
 	}

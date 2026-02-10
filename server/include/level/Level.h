@@ -155,9 +155,9 @@ public:
 	[[inline]] auto getMap() const noexcept;
 	bool isGmap() const noexcept;
 	[[inline]] bool isOnBigMap() const noexcept;
-	[[inline]] Dimension<uint8_t> tilesPerSubLevel() const noexcept;
-	[[inline]] Dimension<uint8_t> pixelsPerTile() const noexcept;
-	[[inline]] Dimension<uint16_t> pixelsPerSubLevel() const noexcept;
+	[[inline]] static constexpr Dimension<uint8_t> tilesPerSubLevel() noexcept;
+	[[inline]] static constexpr Dimension<uint8_t> pixelsPerTile() noexcept;
+	[[inline]] static constexpr Dimension<uint16_t> pixelsPerSubLevel() noexcept;
 	[[inline]] Dimension<uint8_t> sizeInSubLevels() const noexcept;
 	[[inline]] Dimension<uint32_t> sizeInTiles() const noexcept;
 	[[inline]] Dimension<uint32_t> sizeInPixels() const noexcept;
@@ -411,17 +411,17 @@ inline bool Level::isOnBigMap() const noexcept
 	return m_map != nullptr && m_map->isBigMap();
 }
 
-inline Dimension<uint8_t> Level::tilesPerSubLevel() const noexcept
+inline constexpr Dimension<uint8_t> Level::tilesPerSubLevel() noexcept
 {
 	return { 64_ui8, 64_ui8 };
 }
 
-inline Dimension<uint8_t> Level::pixelsPerTile() const noexcept
+inline constexpr Dimension<uint8_t> Level::pixelsPerTile() noexcept
 {
 	return { 16_ui8, 16_ui8 };
 }
 
-inline Dimension<uint16_t> Level::pixelsPerSubLevel() const noexcept
+inline constexpr Dimension<uint16_t> Level::pixelsPerSubLevel() noexcept
 {
 	return Dimension<uint16_t>{ tilesPerSubLevel() } * pixelsPerTile();
 }

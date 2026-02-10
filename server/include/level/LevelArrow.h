@@ -48,6 +48,7 @@ struct LevelArrow
 	float getTileX() const { return position.x() / 16.0f; }
 	float getTileY() const { return position.y() / 16.0f; }
 
+	PixelPosition startPosition;
 	PixelPosition position;
 	PixelPosition speed;
 	uint8_t direction;
