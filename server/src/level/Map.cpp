@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
@@ -35,8 +36,9 @@ Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
 	: mapType(MapType::BIGMAP), fileName(fileName)
 {
 	// Get the appropriate filesystem.
-	auto server = BabyDI::Get<Server>();
-	auto& fileSystem = server->getFileSystem();
+	m_server = BabyDI::Get<Server>();
+	assert(m_server != nullptr);
+	auto& fileSystem = m_server->getFileSystem();
 	auto fullFilePath = fileSystem.find(fs::FileCategory::FILE, fileName);
 
 	// Make sure the file exists.
@@ -87,8 +89,9 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	: mapType(MapType::GMAP), fileName(fileName)
 {
 	// Get the appropriate filesystem.
-	auto server = BabyDI::Get<Server>();
-	auto& fileSystem = server->getFileSystem();
+	m_server = BabyDI::Get<Server>();
+	assert(m_server != nullptr);
+	auto& fileSystem = m_server->getFileSystem();
 	auto fileInfo = fileSystem.infoi(fs::FileCategory::LEVEL, fileName);
 
 	// Make sure the file exists.
@@ -397,9 +400,9 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	}
 
 	// Register all of our levels as being part of a gmap so we can fix any links or warps.
-	if (auto stub = server->getStubbedLevel(fileName.string()); stub != nullptr)
+	if (auto stub = m_server->getStubbedLevel(fileName.string()); stub != nullptr)
 	{
-		auto& gmapLevels = server->getGmapLevelList();
+		auto& gmapLevels = m_server->getGmapLevelList();
 		for (const auto& [levelName, levelPos] : levels)
 			gmapLevels.insert({ levelName, stub });
 	}
@@ -409,13 +412,11 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 
 void Map::loadMapLevels() const
 {
-	auto server = BabyDI::Get<Server>();
 	if (keepAllLevelsLoaded)
 	{
-		auto server = BabyDI::Get<Server>();
 		for (const auto& [levelName, position] : levels)
 		{
-			if (auto level = server->getCachedLevelData(levelName); level != nullptr)
+			if (auto level = m_server->getCachedLevelData(levelName); level != nullptr)
 			{
 				auto index = position.x() + position.y() * size.width();
 				levelDataByName[levelName] = level;
@@ -427,7 +428,7 @@ void Map::loadMapLevels() const
 	{
 		for (const auto& levelName : levelsToKeepInMemory)
 		{
-			if (auto level = server->getCachedLevelData(levelName); level != nullptr)
+			if (auto level = m_server->getCachedLevelData(levelName); level != nullptr)
 			{
 				auto levelIter = levels.find(levelName);
 				if (levelIter == levels.end())
@@ -550,8 +551,7 @@ std::shared_ptr<StaticLevelData> Map::getLevelDataPtr(std::string_view levelName
 		return level;
 
 	// The level could not be locked, so ask the server to load it.
-	auto server = BabyDI::Get<Server>();
-	if (auto level = server->getCachedLevelData(levelName); level != nullptr)
+	if (auto level = m_server->getCachedLevelData(levelName); level != nullptr)
 	{
 		//level->setMap(server->findMap(getMapName()));
 		forceSetLevelDataLoaded(level);

@@ -29,15 +29,13 @@ namespace preagonal
 // TODO: Weapon should probably just be inherited from NPC.
 class Server;
 class Player;
+
 class Weapon
 {
 public:
-	Weapon(LevelItemType itemType) : name(LevelItem::getItemName(itemType)), modTime(clock::now()), m_weaponDefault(itemType), m_checksum(0) {}
+	Weapon(LevelItemType itemType);
 	Weapon(std::string_view name, std::string_view image, std::string_view script);
 	~Weapon() = default;
-
-private:
-	Weapon() = default;
 
 public:
 	static std::shared_ptr<Weapon> loadWeapon(const CString& pWeapon);
@@ -77,6 +75,7 @@ public:
 	ScriptContainer scripting;
 
 protected:
+	Server* m_server;
 	LevelItemType m_weaponDefault;
 	Script m_script;
 	uint32_t m_checksum;

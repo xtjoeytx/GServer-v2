@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -82,6 +83,8 @@ constexpr std::array<std::string_view, NPCPROP_COUNT> npcPropNames =
 NPC::NPC(NPCID id, NPCStorageType storageType)
 	: id(id), storageType(storageType), m_savedModTime()
 {
+	m_server = BabyDI::Get<Server>();
+	assert(m_server != nullptr);
 	resetToInitialState();
 }
 
@@ -109,23 +112,22 @@ void NPC::resetToInitialState()
 	character = m_initialCharacter;
 	saves.fill(0);
 
-	auto server = BabyDI::Get<Server>();
-	warpRestrictions = server->hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
+	warpRestrictions = m_server->hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
 
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
 	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::Z, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::X2, NPCProp::Y2, NPCProp::Z2 });
-	std::ranges::for_each(props, [this, now = server->getFrameStartTime()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
+	std::ranges::for_each(props, [this, now = m_server->getFrameStartTime()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
 
 	m_savedModTime = modTime;
-	lastUpdateTime = server->getFrameStartTime();
+	lastUpdateTime = m_server->getFrameStartTime();
 
 	// Clear the variables and queues.
 	scripting.variables.store.clear();
 	moveQueue.clear();
 
 	// Warp.
-	if (auto initialLevel = server->getStubbedLevel(m_initialLevel); initialLevel != nullptr)
+	if (auto initialLevel = m_server->getStubbedLevel(m_initialLevel); initialLevel != nullptr)
 		warp(initialLevel, character.getLocalPosition());
 }
 
@@ -170,8 +172,7 @@ void NPC::setLevel(LevelPtr level)
 		return;
 
 	// Refresh our mod times.
-	if (auto server = BabyDI::Get<Server>(); server != nullptr)
-		refreshModTimes(server->getFrameStartTime());
+	refreshModTimes(m_server->getFrameStartTime());
 
 	this->level = level->levelName;
 	m_currentLevel = level;
@@ -210,16 +211,14 @@ void NPC::sendAllShowImagesToLevel(std::optional<clock::time_point> modTime) con
 	if (!m_hadShowImgs && showImgList.size() == 0)
 		return;
 
-	auto server = BabyDI::Get<Server>();
-	server->sendPacketToNearby(getShowImagesPacket(modTime), getGlobalPosition(), getLevel());
+	m_server->sendPacketToNearby(getShowImagesPacket(modTime), getGlobalPosition(), getLevel());
 }
 
 //----------------------------
 
 void NPC::addMoveToQueue(const LocalPixelPosition& moveDelta, float durationInSeconds, uint8_t options)
 {
-	auto server = BabyDI::Get<Server>();
-	NPCMove move{ .duration = std::chrono::duration_cast<std::chrono::milliseconds>(duration_seconds_double{ durationInSeconds }), .modTime = server->getFrameStartTime() };
+	NPCMove move{ .duration = std::chrono::duration_cast<std::chrono::milliseconds>(duration_seconds_double{ durationInSeconds }), .modTime = m_server->getFrameStartTime() };
 
 	if (options & (1 << NPCMove::cacheNearbyMovement))
 		move.options.set(NPCMove::cacheNearbyMovement);
@@ -457,15 +456,14 @@ void NPC::sendMoveQueueToLevel(LevelPtr level, const std::pair<CString, CString>
 		return;
 
 	// Send them out.
-	auto server = BabyDI::Get<Server>();
-	server->sendPacketToNearby(CString() >> (char)PLO_MOVE2 >> (int)id << queue.second, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() >= CLVER_2_3; });
-	server->sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)id << queue.first, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() < CLVER_2_3; });
+	m_server->sendPacketToNearby(CString() >> (char)PLO_MOVE2 >> (int)id << queue.second, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() >= CLVER_2_3; });
+	m_server->sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)id << queue.first, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() < CLVER_2_3; });
 }
 
 void NPC::sendMoveQueueUpdatesToLevel(LevelPtr level) noexcept
 {
 	auto result = getMoveQueuePacketData(lastMoveQueueSentTime);
-	lastMoveQueueSentTime = BabyDI::Get<Server>()->getFrameStartTime();
+	lastMoveQueueSentTime = m_server->getFrameStartTime();
 	sendMoveQueueToLevel(level, result);
 }
 
@@ -509,10 +507,7 @@ std::shared_ptr<Level> NPC::getLevel() const
 {
 	// If we are a control-NPC, our level constantly changes, so don't rely on our pointer.
 	if (scriptType == NPCTYPE_CONTROL)
-	{
-		auto server = BabyDI::Get<Server>();
-		return server->getLoadedLevelNoHint(level);
-	}
+		return m_server->getLoadedLevelNoHint(level);
 
 	return m_currentLevel.lock();
 }
@@ -544,15 +539,14 @@ void NPC::setScript(const Script& script)
 	auto classes = string::join(m_script.getServerJoinedClasses() | std::views::transform([](const auto& pair) { return pair.first; }));
 	setJoinedClasses(classes);
 
-	auto server = BabyDI::Get<Server>();
 	auto clientside = m_script.getClientSide();
 
 	// Check for position update blocking.
-	if (server->hasNPCServer() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
+	if (m_server->hasNPCServer() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
 		m_blockPositionUpdates = true;
 
 	// If we have no npc-server, we support toweapons, so extract the weapon name.
-	if (!server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		m_weaponName = toWeaponName(clientside);
 
 	// Just a little warning for people who don't know.
@@ -565,10 +559,9 @@ void NPC::setScript(std::string_view script)
 	//auto profile = log::Profile(log::server, "NPC::setScript");
 
 	// Set the script.
-	auto server = BabyDI::Get<Server>();
 	setJoinedClasses("");
 	m_script = std::move(Script{ name, script });
-	modTime[PROPID(NPCProp::SCRIPT)] = server->getFrameStartTime();
+	modTime[PROPID(NPCProp::SCRIPT)] = m_server->getFrameStartTime();
 
 	// Check if we have joined classes already (due to a cached script).
 	for (const auto& [name, classPtr] : m_script.getServerJoinedClasses())
@@ -590,11 +583,11 @@ void NPC::setScript(std::string_view script)
 	auto clientside = m_script.getClientSide();
 
 	// Check for position update blocking.
-	if (server->hasNPCServer() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
+	if (m_server->hasNPCServer() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
 		m_blockPositionUpdates = true;
 
 	// If we have no npc-server, we support toweapons, so extract the weapon name.
-	if (!server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		m_weaponName = toWeaponName(clientside);
 
 	// Just a little warning for people who don't know.
@@ -657,8 +650,7 @@ bool NPC::hasJoinedClass(std::string_view className) const
 
 void NPC::setJoinedClasses(std::string_view classes)
 {
-	auto server = BabyDI::Get<Server>();
-	if (server == nullptr || !server->hasNPCServer()) return;
+	if (!m_server->hasNPCServer()) return;
 
 	for (const auto& [handle, classPtr] : m_joinedClasses)
 	{
@@ -676,12 +668,12 @@ void NPC::setJoinedClasses(std::string_view classes)
 			continue;
 
 		className = string::trim(className);
-		if (auto scriptClass = server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+		if (auto scriptClass = m_server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
 		{
 			auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
 			m_joinedClasses.emplace_back(handle, scriptClass);
-			modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
-			lastUpdateTime = server->getFrameStartTime();
+			modTime[PROPID(NPCProp::CLASS)] = m_server->getFrameStartTime();
+			lastUpdateTime = m_server->getFrameStartTime();
 
 			// If the joined script has clientside code, delete the NPC and resend the new code.
 			if (!scriptClass->getScript().getClientSide().empty())
@@ -699,16 +691,15 @@ void NPC::joinClass(std::string_view className)
 	if (it != m_joinedClasses.end())
 		return;
 
-	auto server = BabyDI::Get<Server>();
-	if (server == nullptr || !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return;
 
-	if (auto scriptClass = server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+	if (auto scriptClass = m_server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
 	{
 		auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
 		m_joinedClasses.emplace_back(handle, scriptClass);
-		modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
-		lastUpdateTime = server->getFrameStartTime();
+		modTime[PROPID(NPCProp::CLASS)] = m_server->getFrameStartTime();
+		lastUpdateTime = m_server->getFrameStartTime();
 
 		// If the joined script has clientside code, delete the NPC and resend the new code.
 		if (!scriptClass->getScript().getClientSide().empty())
@@ -726,16 +717,15 @@ void NPC::leaveClass(std::string_view className)
 	if (it == m_joinedClasses.end())
 		return;
 
-	auto server = BabyDI::Get<Server>();
-	if (server == nullptr || !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return;
 
 	bool sendToLevel = false;
 	if (auto scriptClass = it->second.lock(); scriptClass != nullptr)
 	{
 		scriptClass->onScriptModified.unsubscribe(it->first);
-		modTime[PROPID(NPCProp::CLASS)] = server->getFrameStartTime();
-		lastUpdateTime = server->getFrameStartTime();
+		modTime[PROPID(NPCProp::CLASS)] = m_server->getFrameStartTime();
+		lastUpdateTime = m_server->getFrameStartTime();
 
 		// If the joined script has clientside code, delete the NPC and resend the new code.
 		if (!scriptClass->getScript().getClientSide().empty())
@@ -754,27 +744,25 @@ void NPC::sendScriptUpdatesToLevel(clock::time_point when) const
 	{
 		if (auto levelData = npclevel->getStaticLevelDataAtPosition(character.getMapPosition()); levelData != nullptr)
 		{
-			auto server = BabyDI::Get<Server>();
 			const auto& levelName = npclevel->levelName;
 
 			CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)id;
-			server->sendPacketToLevelAndPastVisitorsAfter(levelData.get(), when, packet);
-			server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), npclevel);
+			m_server->sendPacketToLevelAndPastVisitorsAfter(levelData.get(), when, packet);
+			m_server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), npclevel);
 		}
 	}
 }
 
 void NPC::updateScriptClass(ScriptClass* scriptClass)
 {
-	auto server = BabyDI::Get<Server>();
-	if (server == nullptr || scriptClass == nullptr || !server->hasNPCServer())
+	if (scriptClass == nullptr || !m_server->hasNPCServer())
 		return;
 	if (scriptClass->getScript().getClientSide().empty())
 		return;
 
 	sendScriptUpdatesToLevel(lastUpdateTime);
-	modTime[PROPID(NPCProp::SCRIPT)] = server->getFrameStartTime();
-	lastUpdateTime = server->getFrameStartTime();
+	modTime[PROPID(NPCProp::SCRIPT)] = m_server->getFrameStartTime();
+	lastUpdateTime = m_server->getFrameStartTime();
 }
 
 //----------------------------
@@ -821,8 +809,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 	result.resultFlags.set(props::SetResults::sendToLevel, true);
 	result.resultFlags.set(props::SetResults::sendToSource, false);
 
-	auto server = BabyDI::Get<Server>();
-	const auto& curTime = server->getFrameStartTime();
+	const auto& curTime = m_server->getFrameStartTime();
 	auto oldTime = modTime[PROPID(prop)];
 	auto oldLastUpdateTime = lastUpdateTime;
 
@@ -843,7 +830,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (strProp->value == "#c#" && image != "#c")
 			{
 				visFlags |= PROPID(NPCVisFlags::MALE);
-				if (server->Generation != ServerGeneration::ORIGINAL)
+				if (m_server->Generation != ServerGeneration::ORIGINAL)
 				{
 					character.gani = "idle";
 					result.resultPropIds.push_back(PROPID(NPCProp::GANI));
@@ -1011,7 +998,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// 1.x servers didn't have ganis.  This prop was used for the bow instead.
-			if (server->Generation == ServerGeneration::ORIGINAL)
+			if (m_server->Generation == ServerGeneration::ORIGINAL)
 			{
 				if (!ganiProp->bowGif.has_value())
 					SETPROP_RETURN_ERROR;
@@ -1046,13 +1033,13 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			// Allow spin to hurt things.
 			if (character.gani == "spin")
 			{
-				auto self = server->getNPC(id);
+				auto self = m_server->getNPC(id);
 				float tX = static_cast<float>(character.localPixelX / 16.0f) + 1.5f;
 				float tY = static_cast<float>(character.localPixelY / 16.0f) + 2.0f;
-				server->hitObjectsAtPoint({ tX, tY + 2.0f }, character.swordPower, m_currentLevel, self);
-				server->hitObjectsAtPoint({ tX, tY - 2.0f }, character.swordPower, m_currentLevel, self);
-				server->hitObjectsAtPoint({ tX + 2.0f, tY }, character.swordPower, m_currentLevel, self);
-				server->hitObjectsAtPoint({ tX - 2.0f, tY }, character.swordPower, m_currentLevel, self);
+				m_server->hitObjectsAtPoint({ tX, tY + 2.0f }, character.swordPower, m_currentLevel, self);
+				m_server->hitObjectsAtPoint({ tX, tY - 2.0f }, character.swordPower, m_currentLevel, self);
+				m_server->hitObjectsAtPoint({ tX + 2.0f, tY }, character.swordPower, m_currentLevel, self);
+				m_server->hitObjectsAtPoint({ tX - 2.0f, tY }, character.swordPower, m_currentLevel, self);
 			}
 			break;
 		}
@@ -1112,7 +1099,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			result.resultFlags.set(SetResults::getLatestOnSend);
 
 			// If we manually set a sprite, change the gani.
-			if (server->Generation != ServerGeneration::ORIGINAL && character.sprite != 0)
+			if (m_server->Generation != ServerGeneration::ORIGINAL && character.sprite != 0)
 			{
 				auto gani = std::format("def[{}]", character.sprite);
 				//visFlags |= static_cast<uint8_t>(NPCVisFlags::UNKNOWNBIT5);
@@ -1150,7 +1137,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 			character.horseImage = strProp->value;
 
-			if (server->Generation == ServerGeneration::ORIGINAL && !character.horseImage.empty() && !character.horseImage.contains('.'))
+			if (m_server->Generation == ServerGeneration::ORIGINAL && !character.horseImage.empty() && !character.horseImage.contains('.'))
 				character.horseImage += ".gif";
 			break;
 		}
@@ -1163,11 +1150,11 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 			std::string img;
 			if (std::holds_alternative<uint8_t>(headProp->image))
-				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (server->Generation != ServerGeneration::ORIGINAL ? "png" : "gif"));
+				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (m_server->Generation != ServerGeneration::ORIGINAL ? "png" : "gif"));
 			else
 				img = std::get<std::string>(headProp->image);
 
-			if (server->Generation == ServerGeneration::ORIGINAL && !img.empty() && !img.contains('.'))
+			if (m_server->Generation == ServerGeneration::ORIGINAL && !img.empty() && !img.contains('.'))
 				img += ".gif";
 
 			character.headImage = props::Limits::apply(img, props::Limits::HeadImageLength);
@@ -1289,14 +1276,14 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// See if the level exists.
-			auto newLevel = server->getLoadedLevel(strProp->value, levelPtr);
+			auto newLevel = m_server->getLoadedLevel(strProp->value, levelPtr);
 			if (newLevel == nullptr)
 				SETPROP_RETURN_ERROR;
 
 			// Tell everybody we are moving.
 			// This should technically only be sent to players in the level or those who had been in the level.
 			auto localPosition = getLocalPosition();
-			server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCMOVED >> (int)id >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) << strProp->value);
+			m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCMOVED >> (int)id >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) << strProp->value);
 
 			// Remove ourself from the old level.
 			if (auto oldLevel = getLevel(); oldLevel != nullptr)
@@ -1306,11 +1293,11 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			newLevel->addNPC(id);
 
 			// Send our props to people in the new level.
-			server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), newLevel);
+			m_server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), newLevel);
 
 			// Tell NCs about our new position.
 			CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
-			server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
+			m_server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
 
 			// Send the NPCWARPED event to the NPC.
 			scripting.events.addEvent(ScriptEventType::NPCWARPED, source::FromNPC(id));
@@ -1425,7 +1412,6 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr source) const
 {
 	CString sendAll, sendLevel, sendSource;
-	auto server = BabyDI::Get<Server>();
 
 	std::erase_if(results, [](const PropertySendResults::value_type& res)
 	{
@@ -1439,14 +1425,14 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 
 	// Send the buffers out.
 	if (sendAll.length() > 0)
-		server->sendPacketToAll(CString() >> (char)PLO_NPCPROPS >> (int)id << sendAll);
+		m_server->sendPacketToAll(CString() >> (char)PLO_NPCPROPS >> (int)id << sendAll);
 
 	PlayerID exclude = 0;
 	if (source != nullptr)
 		exclude = source->getId();
 
 	if (sendLevel.length() > 0 && !m_currentLevel.expired())
-		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, character.getGlobalPosition(), getLevel(), { exclude });
+		m_server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, character.getGlobalPosition(), getLevel(), { exclude });
 
 	if (sendSource.length() > 0 && source != nullptr)
 		source->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)id << sendSource);
@@ -1599,7 +1585,7 @@ void NPC::constructScriptParameters()
 				moveQueue.clear();
 
 				// Also update the X prop mod time so older clients can see the movement.
-				auto now = BabyDI::Get<Server>()->getFrameStartTime();
+				auto now = m_server->getFrameStartTime();
 				this->modTime[PROPID(NPCProp::X)] = now;
 
 				// Fix the map position if applicable.
@@ -1624,7 +1610,7 @@ void NPC::constructScriptParameters()
 				moveQueue.clear();
 
 				// Also update the Y prop mod time so older clients can see the movement.
-				auto now = BabyDI::Get<Server>()->getFrameStartTime();
+				auto now = m_server->getFrameStartTime();
 				this->modTime[PROPID(NPCProp::Y)] = now;
 
 				// Fix the map position if applicable.
@@ -1671,7 +1657,7 @@ void NPC::constructScriptParameters()
 			{
 				auto headSet = std::clamp(static_cast<int>(value.get<double>().value_or(-1.0)), -1, 99);
 				if (headSet < 0) return;
-				character.headImage = std::format("head{}.{}", headSet, (BabyDI::Get<Server>()->Generation == ServerGeneration::ORIGINAL ? "gif" : "png"));
+				character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::ORIGINAL ? "gif" : "png"));
 			})
 		);
 	scriptParameters.try_emplace("sprite", set_temporary, "sprite",
@@ -1680,11 +1666,10 @@ void NPC::constructScriptParameters()
 			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				character.sprite = static_cast<uint8_t>(value.get<double>().value_or(0.0));
-				if (character.sprite >= 4 && BabyDI::Get<Server>()->Generation != ServerGeneration::ORIGINAL)
+				if (character.sprite >= 4 && m_server->Generation != ServerGeneration::ORIGINAL)
 				{
 					character.gani = std::format("def[{}]", character.sprite);
-					auto server = BabyDI::Get<Server>();
-					this->modTime[PROPID(NPCProp::GANI)] = server->getFrameStartTime();
+					this->modTime[PROPID(NPCProp::GANI)] = m_server->getFrameStartTime();
 				}
 			})
 		);
@@ -1734,26 +1719,24 @@ void NPC::testForLinks(SetResults& result)
 	auto levelPtr = getLevel();
 	if (levelPtr == nullptr) return;
 
-	auto* server = BabyDI::Get<Server>();
-
 	// The NPC changed their level and position.
 	auto informNPCWarped = [&]()
 	{
 		// Tell NCs about our new position.
 		CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
-		server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
+		m_server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
 
 		// Tell players that we changed level.
 		auto localPosition = getLocalPosition();
-		server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) << getLevelName());
-		server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), levelPtr);
+		m_server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) << getLevelName());
+		m_server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), levelPtr);
 
 		// Add a scripting event for the warp.
 		scripting.events.addEvent(ScriptEventType::NPCWARPED, source::FromNPC(id));
 	};
 
 	// The NPC only changed their position, not their level.
-	auto informNPCOnlyMoved = [&server, &result, this]()
+	auto informNPCOnlyMoved = [&result, this]()
 	{
 		result.resultPropIds.push_back(PROPID(NPCProp::X));
 		result.resultPropIds.push_back(PROPID(NPCProp::Y));
@@ -1786,7 +1769,7 @@ void NPC::testForLinks(SetResults& result)
 
 			if (levelPtr->isOnBigMap())
 			{
-				if (auto newLevel = server->getLoadedLevel(newLevelName, levelPtr); newLevel != nullptr)
+				if (auto newLevel = m_server->getLoadedLevel(newLevelName, levelPtr); newLevel != nullptr)
 				{
 					setLevel(newLevel);
 					result.resultPropIds.push_back(PROPID(NPCProp::CURLEVEL));
@@ -1817,7 +1800,7 @@ void NPC::testForLinks(SetResults& result)
 			// Destination level was not found on the map, so check the server for the level.
 			if (destSubLevel == nullptr)
 			{
-				if (auto newLevel = server->getLoadedLevel(destLevelName, levelPtr); newLevel != nullptr)
+				if (auto newLevel = m_server->getLoadedLevel(destLevelName, levelPtr); newLevel != nullptr)
 				{
 					destSubLevel = newLevel->getSubLevelByName(destLevelName);
 					setLevel(newLevel);
@@ -1852,8 +1835,7 @@ void NPC::testForLinks(SetResults& result)
 
 void NPC::testForTouch(SetResults& result)
 {
-	auto server = BabyDI::Get<Server>();
-	if (m_currentLevel.expired() || !server->hasNPCServer())
+	if (m_currentLevel.expired() || !m_server->hasNPCServer())
 		return;
 
 	testForLinks(result);

@@ -43,9 +43,10 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-class Player;
-class NPC;
 class LevelLoader;
+class NPC;
+class Player;
+class Server;
 
 //----------------------------
 
@@ -126,7 +127,7 @@ class Level : public std::enable_shared_from_this<Level>
 	friend class LevelLoader;
 
 public:
-	Level() = default;
+	Level();
 	~Level();
 
 public:
@@ -374,6 +375,7 @@ protected:
 	size_t getMapIndexAtPosition(const MapPosition& mapLevel) const noexcept;
 
 private:
+	Server* m_server;
 	std::filesystem::path m_filePath;
 	mutable std::shared_ptr<Map> m_map;
 

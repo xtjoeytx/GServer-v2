@@ -1,3 +1,4 @@
+#include <cassert>
 #include <chrono>
 #include <memory>
 
@@ -19,8 +20,10 @@ namespace preagonal
 LevelBoardChange::LevelBoardChange(std::shared_ptr<Level> level, const LocalWholeTileRectangleArea& area, const CString& tiles, const CString& oldTiles, std::chrono::seconds respawnTime)
 	: area(area), m_level(level), m_newTiles(tiles), m_oldTiles(oldTiles)
 {
-	auto server = BabyDI::Get<Server>();
-	modTime = server->getFrameStartTime();
+	m_server = BabyDI::Get<Server>();
+	assert(m_server != nullptr);
+
+	modTime = m_server->getFrameStartTime();
 
 	if (respawnTime != 0s)
 		m_timeout.runOnceFor(respawnTime);
@@ -47,14 +50,13 @@ void LevelBoardChange::update(const precise_clock::time_point& time)
 
 void LevelBoardChange::sendToPlayersOnLevel() const
 {
-	auto server = BabyDI::Get<Server>();
-	if (auto level = m_level.lock(); level != nullptr && server != nullptr)
+	if (auto level = m_level.lock(); level != nullptr)
 	{
 		if (!level->isGmap())
-			server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOARDMODIFY << getPropsForSingleLevel(), { 0, 0 }, level);
+			m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOARDMODIFY << getPropsForSingleLevel(), { 0, 0 }, level);
 		else
 		{
-			server->sendPacketToNearby(CString() >> (char)PLO_BOARDMODIFY2 << getPropsForMapClassic(), toPixelPosition(m_mapPosition.value(), area.position), level, {});
+			m_server->sendPacketToNearby(CString() >> (char)PLO_BOARDMODIFY2 << getPropsForMapClassic(), toPixelPosition(m_mapPosition.value(), area.position), level, {});
 
 			/*
 			// Classic mode clients don't support board updates in adjacent levels, but still need the map position.
@@ -107,8 +109,7 @@ void LevelBoardChange::swapTiles()
 	m_newTiles = m_oldTiles;
 	m_oldTiles = temp;
 
-	auto server = BabyDI::Get<Server>();
-	modTime = server->getFrameStartTime();
+	modTime = m_server->getFrameStartTime();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

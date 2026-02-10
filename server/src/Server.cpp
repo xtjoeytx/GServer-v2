@@ -1534,7 +1534,7 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 	}
 
 #ifdef DEBUG
-	if (auto server = BabyDI::Get<Server>(); server && server->running)
+	if (running)
 	{
 		log::printLine(log::server, "Adding NPC [{}] '{}' at ({}, {})[{},{}] in level '{}'.",
 			npc->id, npc->name, npc->character.localPixelX, npc->character.localPixelY, npc->character.mapX, npc->character.mapY, npc->level);

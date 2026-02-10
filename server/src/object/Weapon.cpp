@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
@@ -37,9 +38,18 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+Weapon::Weapon(LevelItemType itemType)
+	: name(LevelItem::getItemName(itemType)), modTime(clock::now()), m_weaponDefault(itemType), m_checksum(0)
+{
+	m_server = BabyDI::Get<Server>();
+	assert(m_server != nullptr);
+}
+
 Weapon::Weapon(std::string_view name, std::string_view image, std::string_view script)
 	: name(name), modTime(clock::now()), m_weaponDefault(LevelItemType::INVALID)
 {
+	m_server = BabyDI::Get<Server>();
+	assert(m_server != nullptr);
 	updateWeapon(image, script);
 }
 
@@ -147,7 +157,6 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 		}
 	}
 
-
 	// Give a warning if both a script and a bytecode was found.
 	/*
 	if (!weaponScript.empty() && !byteCodeData.isEmpty())
@@ -184,9 +193,8 @@ bool Weapon::saveWeapon()
 	//if (!m_bytecodeFile.empty())
 	//	return false;
 
-	auto server = BabyDI::Get<Server>();
 	auto fileName = fs::getHTMLEscapedFileName(std::format("weapon{}.txt", name));
-	auto file = server->getFileSystemServer().openiForWriting(fs::FileCategory::WEAPON, fileName, true);
+	auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::WEAPON, fileName, true);
 	if (!file)
 		return false;
 
@@ -264,13 +272,11 @@ void Weapon::registerWeaponWithPlayer(std::shared_ptr<Player> player) const
 		return;
 	}
 
-	auto server = BabyDI::Get<Server>();
-
 	CString weaponPacket;
 	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)name.length() << name >> (char)NPCProp::IMAGE >> (char)image.length() << image;
 
 	// Classic weapons.
-	if (server->Generation != ServerGeneration::MODERN && m_script.getClientByteCode().empty())
+	if (m_server->Generation != ServerGeneration::MODERN && m_script.getClientByteCode().empty())
 	{
 		std::string script = getClientSideScript();
 		weaponPacket >> (char)NPCProp::SCRIPT >> (short)script.length() << script;
@@ -327,8 +333,7 @@ std::string Weapon::getJoinedClassesList() const
 
 void Weapon::setJoinedClasses(std::string_view classes)
 {
-	auto server = BabyDI::Get<Server>();
-	if (server == nullptr || !server->hasNPCServer()) return;
+	if (!m_server->hasNPCServer()) return;
 
 	for (const auto& [handle, classPtr] : m_joinedClasses)
 	{
@@ -345,11 +350,11 @@ void Weapon::setJoinedClasses(std::string_view classes)
 			continue;
 
 		className = string::trim(className);
-		if (auto scriptClass = server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+		if (auto scriptClass = m_server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
 		{
 			auto handle = scriptClass->onScriptModified.subscribe(std::bind(&Weapon::updateScriptClass, this, std::placeholders::_1));
 			m_joinedClasses.emplace_back(handle, scriptClass);
-			server->updateWeaponForPlayers(this);
+			m_server->updateWeaponForPlayers(this);
 		}
 	}
 }
@@ -360,15 +365,14 @@ void Weapon::joinClass(std::string_view className)
 	if (it != m_joinedClasses.end())
 		return;
 
-	auto server = BabyDI::Get<Server>();
-	if (server == nullptr || !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return;
 
-	if (auto scriptClass = server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+	if (auto scriptClass = m_server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
 	{
 		auto handle = scriptClass->onScriptModified.subscribe(std::bind(&Weapon::updateScriptClass, this, std::placeholders::_1));
 		m_joinedClasses.emplace_back(handle, scriptClass);
-		server->updateWeaponForPlayers(this);
+		m_server->updateWeaponForPlayers(this);
 	}
 	else
 	{
@@ -382,15 +386,14 @@ void Weapon::leaveClass(std::string_view className)
 	if (it == m_joinedClasses.end())
 		return;
 
-	auto server = BabyDI::Get<Server>();
-	if (server == nullptr || !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return;
 
 	if (auto scriptClass = it->second.lock(); scriptClass != nullptr)
 		scriptClass->onScriptModified.unsubscribe(it->first);
 
 	m_joinedClasses.erase(it);
-	server->updateWeaponForPlayers(this);
+	m_server->updateWeaponForPlayers(this);
 }
 
 std::string Weapon::getClientSideScript() const
@@ -413,8 +416,7 @@ std::string Weapon::getClientSideScript() const
 
 void Weapon::updateScriptClass(ScriptClass* scriptClass)
 {
-	auto server = BabyDI::Get<Server>();
-	server->updateWeaponForPlayers(this);
+	m_server->updateWeaponForPlayers(this);
 }
 
 //----------------------------

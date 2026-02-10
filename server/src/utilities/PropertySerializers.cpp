@@ -465,7 +465,7 @@ std::format_context::iterator PropertyTileCoordinateZ::format(std::format_contex
 
 CString PropertyGS1Script::serialize() const
 {
-	auto* server = BabyDI::Get<Server>();
+	auto server = BabyDI::Get<Server>();
 
 	// Modern sends scripts in a different way.
 	if (server->Generation == ServerGeneration::MODERN)

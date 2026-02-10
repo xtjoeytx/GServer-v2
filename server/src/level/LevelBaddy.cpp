@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
@@ -63,6 +64,8 @@ BaddyType LevelBaddy::getBaddyTypeFromString(const std::string& type)
 LevelBaddy::LevelBaddy(const LocalPixelPosition& position, BaddyType type, std::weak_ptr<Level> level)
 	: type(type), position(position), m_level(level), m_originalPosition(position)
 {
+	m_server = BabyDI::Get<Server>();
+	assert(m_server != nullptr);
 	if (PROPID(type) > baddytypes) type = BaddyType::GRAYSOLDIER;
 	verses.resize(3);
 	reset();
@@ -130,8 +133,7 @@ CString LevelBaddy::getProp(BaddyProp propId) const
 
 		case BaddyProp::POWERIMAGE:
 		{
-			auto server = BabyDI::Get<Server>();
-			if (server->Generation == ServerGeneration::ORIGINAL && image == baddyImages[PROPID(type)])
+			if (m_server->Generation == ServerGeneration::ORIGINAL && image == baddyImages[PROPID(type)])
 				return CString() >> (char)power >> (char)image.length() << string::replace(image, ".png", ".gif");
 			else
 				return CString() >> (char)power >> (char)image.length() << image;
@@ -225,8 +227,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 					if (power == 1)
 					{
 						mode = BaddyMode::SWAMPSHOT;
-						auto server = BabyDI::Get<Server>();
-						server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, { 0, 0 }, m_level.lock());
+						m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, { 0, 0 }, m_level.lock());
 					}
 				};
 
@@ -235,34 +236,30 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 				{
 					if (!canRespawn()) return;
 					reset();
-					auto server = BabyDI::Get<Server>();
-					server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id << getProps(), { 0, 0 }, m_level.lock());
+					m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id << getProps(), { 0, 0 }, m_level.lock());
 				};
 
 				// Set baddies to dead.
 				auto setDead = [this, respawnBaddy](int)
 				{
-					auto server = BabyDI::Get<Server>();
-
 					mode = BaddyMode::DEAD;
 					if (canRespawn())
 					{
 						timeout.callbackIterations = respawnBaddy;
-						timeout.runOnceFor(std::chrono::seconds(server->getSettings().getInt("baddyrespawntime", 60)));
+						timeout.runOnceFor(std::chrono::seconds(m_server->getSettings().getInt("baddyrespawntime", 60)));
 					}
 
 					if (auto level = m_level.lock(); level != nullptr)
 					{
 						// Set the baddy as dead for all the other players in the level.
-						server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, { 0, 0 }, level);
+						m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, { 0, 0 }, level);
 
 						// TODO(Nalin): Record the last player who hit the baddy so we can record the source properly.
 						if (!level->hasLivingBaddies())
-							server->queueNPCEventLocal(level, ScriptEventType::COMPUSDIED, source::FromLevel(level));
+							m_server->queueNPCEventLocal(level, ScriptEventType::COMPUSDIED, source::FromLevel(level));
 					}
 				};
 
-				auto server = BabyDI::Get<Server>();
 				if (type == BaddyType::SWAMPSOLDIER && mode == BaddyMode::HURT)
 				{
 					timeout.callbackIterations = fixStuckSwampSoldier;
@@ -271,7 +268,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 				else if (mode == BaddyMode::DIE)
 				{
 					// Drop items when dead.
-					if (server->getSettings().getBool("baddyitems", false) == true)
+					if (m_server->getSettings().getBool("baddyitems", false) == true)
 						dropItem();
 
 					// Set the baddy to dead after 2 seconds.
@@ -281,7 +278,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 				else if (mode == BaddyMode::DEAD && m_canRespawn)
 				{
 					timeout.callbackIterations = respawnBaddy;
-					timeout.runOnceFor(std::chrono::seconds(server->getSettings().getInt("baddyrespawntime", 60)));
+					timeout.runOnceFor(std::chrono::seconds(m_server->getSettings().getInt("baddyrespawntime", 60)));
 				}
 				break;
 			}

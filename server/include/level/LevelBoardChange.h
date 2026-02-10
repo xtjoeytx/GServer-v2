@@ -18,6 +18,8 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 class Level;
+class Server;
+
 class LevelBoardChange
 {
 public:
@@ -42,6 +44,7 @@ public:
 	clock::time_point modTime;
 
 private:
+	Server* m_server;
 	TimeoutGenerator m_timeout;
 	std::weak_ptr<Level> m_level;
 	std::optional<MapPosition> m_mapPosition;

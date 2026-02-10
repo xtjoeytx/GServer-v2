@@ -32,6 +32,7 @@ enum class MapType
 	GMAP = 1,
 };
 
+class Server;
 class StaticLevelData;
 
 struct MapTerrain
@@ -112,6 +113,9 @@ public:
 private:
 	void forceSetLevelDataLoaded(std::shared_ptr<StaticLevelData> level) const noexcept;
 	std::shared_ptr<StaticLevelData> getLevelDataPtr(std::string_view levelName, std::weak_ptr<StaticLevelData> levelPtr) const noexcept;
+
+private:
+	Server* m_server;
 	mutable std::vector<std::weak_ptr<StaticLevelData>> levelDataByPosition;
 	mutable string_map<std::weak_ptr<StaticLevelData>> levelDataByName;
 };

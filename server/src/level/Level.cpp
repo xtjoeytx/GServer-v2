@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <bit>
+#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -525,19 +526,23 @@ void SubLevel::sendBoardChangesToPlayer(std::shared_ptr<Player> player, std::opt
 
 //----------------------------
 
+Level::Level()
+{
+	m_server = BabyDI::Get<Server>();
+	assert(m_server != nullptr);
+}
+
 Level::~Level()
 {
-	auto server = BabyDI::Get<Server>();
-
 	// Delete NPCs.
 	{
 		// Remove every NPC in the level.
 		for (auto& levelNPC : m_npcs)
 		{
-			auto npc = server->getNPC(levelNPC);
+			auto npc = m_server->getNPC(levelNPC);
 			if (!npc) continue;
 			if (npc->storageType == NPCStorageType::LEVEL)
-				server->deleteNPC(npc, false);
+				m_server->deleteNPC(npc, false);
 			else npc->level.clear();
 		}
 		m_npcs.clear();
@@ -566,7 +571,7 @@ Level::~Level()
 
 	// Warp players out.
 	for (const auto& playerId : m_players)
-		server->warpPlayerToSafePlace(playerId);
+		m_server->warpPlayerToSafePlace(playerId);
 }
 
 //----------------------------
@@ -628,7 +633,6 @@ void Level::reload(StaticLevelDataPtr staticData)
 	if (staticData == nullptr)
 		return;
 
-	auto server = BabyDI::Get<Server>();
 	auto mapPosition = getSubLevelPositionInMap(staticData->levelName);
 	auto subLevelIndex = getMapIndexAtPosition(mapPosition.value_or(MapPosition{}));
 
@@ -704,11 +708,11 @@ void Level::reload(StaticLevelDataPtr staticData)
 	// Older clients (1.x) may crash if things don't happen in the right order.
 	for (auto iter = m_npcs.begin(); iter != m_npcs.end();)
 	{
-		if (auto npc = server->getNPC(*iter); npc == nullptr || npc->storageType == NPCStorageType::LEVEL)
+		if (auto npc = m_server->getNPC(*iter); npc == nullptr || npc->storageType == NPCStorageType::LEVEL)
 		{
 			if (npc && (!mapPosition.has_value() || npc->character.getMapPosition() == mapPosition))
 			{
-				server->deleteNPC(npc, false);
+				m_server->deleteNPC(npc, false);
 				iter = m_npcs.erase(iter);
 				continue;
 			}
@@ -720,7 +724,7 @@ void Level::reload(StaticLevelDataPtr staticData)
 	std::deque<PlayerID> oldplayers = m_players;
 	for (auto& id : oldplayers)
 	{
-		if (auto p = server->getPlayer<PlayerClient>(id); p)
+		if (auto p = m_server->getPlayer<PlayerClient>(id); p)
 		{
 			if (p->getMapPosition() == mapPosition)
 				p->leaveLevel();
@@ -729,7 +733,7 @@ void Level::reload(StaticLevelDataPtr staticData)
 
 	// Clear the level cache for all players on the server.
 	// Make sure this always gets called AFTER we leave the level.
-	auto& playerList = server->getPlayerList();
+	auto& playerList = m_server->getPlayerList();
 	for (const auto& [id, p] : players_of_type<PlayerClient>(playerList))
 	{
 		p->resetLevelCache(staticData.get());
@@ -757,7 +761,7 @@ void Level::reload(StaticLevelDataPtr staticData)
 	// Warp all players back to the level.
 	for (auto& id : oldplayers)
 	{
-		if (auto p = server->getPlayer<PlayerClient>(id); p)
+		if (auto p = m_server->getPlayer<PlayerClient>(id); p)
 			p->warp(shared_from_this(), p->getGlobalPosition());
 	}
 }
@@ -768,8 +772,7 @@ bool Level::saveLevel(const MapPosition& mapPosition, std::string_view filename)
 	if (subLevel == nullptr || staticData == nullptr)
 		return false;
 
-	auto server = BabyDI::Get<Server>();
-	auto& fileSystem = server->getFileSystem();
+	auto& fileSystem = m_server->getFileSystem();
 
 	auto actualFilename = getFilename(filename);
 	auto path = fileSystem.findi(fs::FileCategory::LEVEL, actualFilename.toStringView());
@@ -886,7 +889,7 @@ bool Level::saveLevel(const MapPosition& mapPosition, std::string_view filename)
 
 	for (const auto& npcId : m_npcs)
 	{
-		auto npc = server->getNPC(npcId);
+		auto npc = m_server->getNPC(npcId);
 		if (npc == nullptr || npc->storageType != NPCStorageType::LEVEL)
 			continue;
 
@@ -911,8 +914,7 @@ bool Level::saveLevel(const MapPosition& mapPosition, std::string_view filename)
 
 void Level::doTimedEvents()
 {
-	auto server = BabyDI::Get<Server>();
-	const auto& now = server->getFrameStartTimeHighPrecision();
+	const auto& now = m_server->getFrameStartTimeHighPrecision();
 
 	// Run board change events.
 	for (auto& part : m_levelParts | removeNulls)
@@ -967,7 +969,7 @@ void Level::doTimedEvents()
 void Level::doFrameEvents(precise_clock::time_point time)
 {
 	// Don't bother with shoot and arrow processing if we don't have an npc-server.
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return;
 
 	// Determine elapsed time.
@@ -1309,10 +1311,9 @@ void Level::sendHorsesToPlayer(std::shared_ptr<Player> player) const
 // TODO: Replace with a function in server that sends npc props from a list of ids.
 void Level::sendNPCsToPlayer(std::shared_ptr<Player> player, std::optional<clock::time_point> time) const
 {
-	auto server = BabyDI::Get<Server>();
 	for (const auto& npcId : m_npcs)
 	{
-		auto npc = server->getNPC(npcId);
+		auto npc = m_server->getNPC(npcId);
 		if (!npc) continue;
 
 		auto packet = npc->getAllPropsPacket(time);
@@ -1363,9 +1364,8 @@ int Level::addPlayer(PlayerID id)
 	m_players.push_back(id);
 
 	// Set the player enters event on all the NPCs.
-	auto server = BabyDI::Get<Server>();
-	if (auto player = server->getPlayer(id); player != nullptr)
-		server->queueNPCEvent(shared_from_this(), player->getGlobalPosition(), ScriptEventType::PLAYERENTERS, source::FromPlayer(id));
+	if (auto player = m_server->getPlayer(id); player != nullptr)
+		m_server->queueNPCEvent(shared_from_this(), player->getGlobalPosition(), ScriptEventType::PLAYERENTERS, source::FromPlayer(id));
 
 	return static_cast<int>(m_players.size() - 1);
 }
@@ -1375,9 +1375,8 @@ void Level::removePlayer(PlayerID id)
 	std::erase(m_players, id);
 
 	// Set the player leaves event on all the NPCs.
-	auto server = BabyDI::Get<Server>();
-	if (auto player = server->getPlayer(id); player != nullptr)
-		server->queueNPCEvent(shared_from_this(), player->getGlobalPosition(), ScriptEventType::PLAYERLEAVES, source::FromPlayer(id));
+	if (auto player = m_server->getPlayer(id); player != nullptr)
+		m_server->queueNPCEvent(shared_from_this(), player->getGlobalPosition(), ScriptEventType::PLAYERLEAVES, source::FromPlayer(id));
 }
 
 //----------------------------
@@ -1409,8 +1408,7 @@ bool Level::addNPC(std::shared_ptr<NPC> npc)
 
 bool Level::addNPC(NPCID npcId)
 {
-	auto server = BabyDI::Get<Server>();
-	auto npc = server->getNPC(npcId);
+	auto npc = m_server->getNPC(npcId);
 	return addNPC(npc);
 }
 
@@ -1424,8 +1422,7 @@ void Level::removeNPC(std::shared_ptr<NPC> npc)
 
 void Level::removeNPC(NPCID npcId)
 {
-	auto server = BabyDI::Get<Server>();
-	auto npc = server->getNPC(npcId);
+	auto npc = m_server->getNPC(npcId);
 	removeNPC(npc);
 }
 
@@ -1433,8 +1430,7 @@ void Level::removeNPC(NPCID npcId)
 
 bool Level::alterBoard(CString& tileData, const WholeTileRectangleArea& area, Player* player, bool forceRespawn, bool allowRespawn, bool sendToPlayers)
 {
-	auto server = BabyDI::Get<Server>();
-	auto& settings = server->getSettings();
+	auto& settings = m_server->getSettings();
 
 	// Do the check for the push-pull block.
 	if (area.position.z() == 0 && area.size.width() == 4 && area.size.height() == 4 && settings.getBool("clientsidepushpull", true))
@@ -1678,8 +1674,7 @@ void Level::updateBoard(const TileRectangleArea& area) noexcept
 void Level::updateBoard2(const TileRectangleArea& area) noexcept
 {
 	// If we don't allow permanent tile modifications, just call updateBoard().
-	auto server = BabyDI::Get<Server>();
-	if (server->getSettings().getBool("savelevels", false) == false)
+	if (m_server->getSettings().getBool("savelevels", false) == false)
 	{
 		updateBoard(area);
 		return;
@@ -1688,7 +1683,7 @@ void Level::updateBoard2(const TileRectangleArea& area) noexcept
 	auto wholeTileArea = toWholeTileRectangleArea(area);
 	applyBoardChangeFromScriptTiles(wholeTileArea, false, false);
 
-	bool levelsAutoSave = server->getSettings().getBool("levelsautosave", true);
+	bool levelsAutoSave = m_server->getSettings().getBool("levelsautosave", true);
 	if (levelsAutoSave)
 	{
 		auto mapPosition = toMapPosition(area.position);
@@ -1704,7 +1699,7 @@ void Level::updateBoard2(const TileRectangleArea& area) noexcept
 
 LevelArrow* Level::addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObject from)
 {
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return nullptr;
 
 	auto result = addArrow(position, speed, direction, type, from);
@@ -1720,14 +1715,14 @@ LevelArrow* Level::addArrow(inform_client_t, const PixelPosition& position, cons
 			sprite += (result->direction & 0b11);
 
 		uint8_t flags = (result->direction & 0b11) | (result->getPacketFrom() << 3);
-		BabyDI::Get<Server>()->sendPacketToOneLevelPart(CString() >> (char)PLO_ARROWADD >> (short)0 >> (char)x >> (char)y >> (char)flags >> (char)sprite >> (char)type, position, shared_from_this());
+		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_ARROWADD >> (short)0 >> (char)x >> (char)y >> (char)flags >> (char)sprite >> (char)type, position, shared_from_this());
 	}
 	return result;
 }
 
 LevelArrow* Level::addArrow(const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObject from)
 {
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return nullptr;
 
 	LevelArrow newArrow{ .startPosition = position, .position = position, .speed = speed, .direction = direction, .type = type, .from = from };
@@ -1792,11 +1787,10 @@ LevelBaddy* Level::putNewBaddy(const LocalPixelPosition& position, BaddyType typ
 	if (baddy == nullptr)
 		return nullptr;
 
-	auto server = BabyDI::Get<Server>();
 	CString packet = CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps();
 	for (auto& playerId : m_players)
 	{
-		if (auto player = server->getPlayer(playerId); player)
+		if (auto player = m_server->getPlayer(playerId); player)
 			player->sendPacket(packet);
 	}
 
@@ -1812,11 +1806,10 @@ LevelBaddy* Level::putNewBaddy(const LocalPixelPosition& position, BaddyType typ
 	baddy->setImage(image);
 	baddy->power = power;
 
-	auto server = BabyDI::Get<Server>();
 	CString packet = CString() >> (char)PLO_BADDYPROPS >> (char)baddy->id << baddy->getProps();
 	for (auto& playerId : m_players)
 	{
-		if (auto player = server->getPlayer(playerId); player)
+		if (auto player = m_server->getPlayer(playerId); player)
 			player->sendPacket(packet);
 	}
 
@@ -1842,11 +1835,10 @@ bool Level::removeBaddy(uint8_t pId)
 	baddy.setRespawn(false);
 
 	// Set the baddy as dead for all the other players in the level.
-	auto server = BabyDI::Get<Server>();
 	CString props = CString() >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
 	for (const auto& playerId : m_players)
 	{
-		if (auto player = server->getPlayer(playerId); player != nullptr)
+		if (auto player = m_server->getPlayer(playerId); player != nullptr)
 			player->sendPacket(CString() >> (char)PLO_BADDYPROPS >> (char)baddy.id << props);
 	}
 	return true;
@@ -1858,7 +1850,6 @@ bool Level::removeAllBaddies()
 	if (isGmap() || subLevel == nullptr)
 		return false;
 
-	auto server = BabyDI::Get<Server>();
 	CString propsPacket;
 	for (auto& baddy : subLevel->baddies)
 	{
@@ -1873,7 +1864,7 @@ bool Level::removeAllBaddies()
 		propsPacket >> (char)PLO_BADDYPROPS >> (char)baddy.id >> (char)BaddyProp::MODE >> (char)BaddyMode::DEAD;
 		for (const auto& playerId : m_players)
 		{
-			if (auto player = server->getPlayer(playerId); player != nullptr)
+			if (auto player = m_server->getPlayer(playerId); player != nullptr)
 				player->sendPacket(propsPacket);
 		}
 	}
@@ -1916,7 +1907,7 @@ std::optional<LevelBaddy*> Level::getAliveBaddyByIndex(size_t index) noexcept
 
 LevelBomb* Level::addBomb(inform_client_t, const PixelPosition& position, uint8_t power)
 {
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return nullptr;
 
 	auto result = addBomb(position, power);
@@ -1926,7 +1917,7 @@ LevelBomb* Level::addBomb(inform_client_t, const PixelPosition& position, uint8_
 		char x = static_cast<char>(localPosition.x() / 8.0f);
 		char y = static_cast<char>(localPosition.y() / 8.0f);
 		uint8_t timeToExplode = static_cast<uint8_t>(std::min<std::chrono::milliseconds::rep>(223, std::chrono::duration_cast<std::chrono::milliseconds>(result->timeout.timeout).count() / 50));
-		BabyDI::Get<Server>()->sendPacketToOneLevelPart(CString() >> (char)PLO_BOMBADD >> (short)0 >> (char)x >> (char)y >> (char)result->power >> (char)timeToExplode, position, shared_from_this());
+		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOMBADD >> (short)0 >> (char)x >> (char)y >> (char)result->power >> (char)timeToExplode, position, shared_from_this());
 		// PLO_BOMBADD might support a bomb image at the end of the packet.
 	}
 	return result;
@@ -1934,7 +1925,7 @@ LevelBomb* Level::addBomb(inform_client_t, const PixelPosition& position, uint8_
 
 LevelBomb* Level::addBomb(const PixelPosition& position, uint8_t power)
 {
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return nullptr;
 
 	LevelBomb newBomb{ .position = position, .power = power };
@@ -1945,7 +1936,7 @@ LevelBomb* Level::addBomb(const PixelPosition& position, uint8_t power)
 
 LevelBomb* Level::addBombFromClient(const PixelPosition& position, uint8_t power, PlayerID owner, std::chrono::milliseconds timeToExplode)
 {
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return nullptr;
 
 	// If we generate an item NPC, remove the bomb from the level.
@@ -1967,7 +1958,7 @@ bool Level::removeBomb(inform_client_t, size_t index)
 		auto mapPosition = toMapPosition(m_bombs[index].position);
 		auto localPosition = toLocalPixelPosition(m_bombs[index].position);
 		CString packet = CString() >> (char)PLO_BOMBDEL >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8);
-		BabyDI::Get<Server>()->sendPacketToOneLevelPart(packet, this->shared_from_this(), mapPosition);
+		m_server->sendPacketToOneLevelPart(packet, this->shared_from_this(), mapPosition);
 	}
 	return removeBomb(index);
 }
@@ -2046,19 +2037,19 @@ std::optional<const LevelChest*> Level::getChest(const MapPosition& mapPosition,
 
 void Level::addExplosion(inform_client_t, const PixelPosition& position, ScriptObject from, uint8_t radius, uint8_t power)
 {
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return;
 
 	addExplosion(position, from, radius, power);
 
 	auto localPosition = toLocalPixelPosition(position);
 	CString packet = CString() >> (char)PLO_EXPLOSION >> (short)0 >> (char)radius >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) >> (char)power;
-	BabyDI::Get<Server>()->sendPacketToOneLevelPart(packet, position, shared_from_this());
+	m_server->sendPacketToOneLevelPart(packet, position, shared_from_this());
 }
 
 void Level::addExplosion(const PixelPosition& position, ScriptObject from, uint8_t radius, uint8_t power)
 {
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return;
 
 	addExplosionPart(position, 2, power);
@@ -2073,18 +2064,18 @@ void Level::addExplosion(const PixelPosition& position, ScriptObject from, uint8
 	}
 
 	// Add exploded events to NPCs in the level.
-	if (auto server = BabyDI::Get<Server>(); server && server->hasNPCServer())
+	if (m_server->hasNPCServer())
 	{
 		PixelRectangleArea vertTest = { position.translate(0, -(radius * 32)), { static_cast<uint16_t>(32), static_cast<uint16_t>((1 + (radius * 2)) * 32) } };
 		PixelRectangleArea horzTest = { position.translate(-(radius * 32), 0), { static_cast<uint16_t>((1 + (radius * 2)) * 32), static_cast<uint16_t>(32) } };
 		for (const NPCID& npcId : findIntersectingNPCsForCollision(vertTest))
 		{
-			if (auto npc = server->getNPC(npcId); npc != nullptr)
+			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, from);
 		}
 		for (const NPCID& npcId : findIntersectingNPCsForCollision(horzTest))
 		{
-			if (auto npc = server->getNPC(npcId); npc != nullptr)
+			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, from);
 		}
 	}
@@ -2101,7 +2092,7 @@ void Level::addSpyFire(const PixelPosition& position, ScriptObject from, uint8_t
 	right: x+3.0,y+0.2  1 3 3 3
 	*/
 
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return;
 
 	const PixelPosition startingPosition = position.translate(
@@ -2118,7 +2109,7 @@ void Level::addSpyFire(const PixelPosition& position, ScriptObject from, uint8_t
 	}
 
 	// Add exploded events to NPCs in the level.
-	if (auto server = BabyDI::Get<Server>(); server && server->hasNPCServer())
+	if (m_server->hasNPCServer())
 	{
 		int16_t lengthInPixels = (length + 1) * 32;
 		PixelPosition testPosition = startingPosition.translate(
@@ -2130,7 +2121,7 @@ void Level::addSpyFire(const PixelPosition& position, ScriptObject from, uint8_t
 
 		for (const NPCID& npcId : findIntersectingNPCsForCollision({ testPosition, testDimension }))
 		{
-			if (auto npc = server->getNPC(npcId); npc != nullptr)
+			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, from);
 		}
 	}
@@ -2138,7 +2129,7 @@ void Level::addSpyFire(const PixelPosition& position, ScriptObject from, uint8_t
 
 LevelExplosion* Level::addExplosionPart(const PixelPosition& position, uint8_t direction, uint8_t power)
 {
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return nullptr;
 
 	LevelExplosion explo{ .position = position, .power = power, .direction = direction };
@@ -2180,14 +2171,13 @@ LevelHorse* Level::addHorse(inform_client_t, std::string_view image, const Pixel
 {
 	auto result = addHorse(image, position, direction, bushes);
 	if (result != nullptr)
-		BabyDI::Get<Server>()->sendPacketToOneLevelPart(CString() >> (char)PLO_HORSEADD << result->getPacket(), position, shared_from_this());
+		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_HORSEADD << result->getPacket(), position, shared_from_this());
 	return result;
 }
 
 LevelHorse* Level::addHorse(std::string_view image, const PixelPosition& position, uint8_t direction, uint8_t bushes)
 {
-	auto server = BabyDI::Get<Server>();
-	auto horseLife = server->getSettings().getInt("horselifetime", 30);
+	auto horseLife = m_server->getSettings().getInt("horselifetime", 30);
 
 	LevelHorse newHorse{ .position = position, .image = std::string{ image }, .direction = direction, .bushes = bushes, .timeout = TimeoutGenerator(std::chrono::seconds(horseLife)) };
 	if (isOnWater(position.translate(16, 32)))
@@ -2205,7 +2195,7 @@ bool Level::removeHorse(inform_client_t, size_t index)
 		auto mapPosition = toMapPosition(m_horses[index].position);
 		auto localPosition = toLocalPixelPosition(m_horses[index].position);
 		CString packet = CString() >> (char)PLO_HORSEDEL >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8);
-		BabyDI::Get<Server>()->sendPacketToOneLevelPart(packet, this->shared_from_this(), mapPosition);
+		m_server->sendPacketToOneLevelPart(packet, this->shared_from_this(), mapPosition);
 	}
 	return removeHorse(index);
 }
@@ -2245,7 +2235,7 @@ LevelItem* Level::addItem(inform_client_t, const PixelPosition& position, LevelI
 	if (result != nullptr)
 	{
 		auto localPosition = toLocalPixelPosition(result->position);
-		BabyDI::Get<Server>()->sendPacketToOneLevelPart(CString() >> (char)PLO_ITEMADD
+		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_ITEMADD
 			>> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) >> (char)LevelItem::getItemTypeId(result->item),
 			result->position, shared_from_this());
 	}
@@ -2254,15 +2244,14 @@ LevelItem* Level::addItem(inform_client_t, const PixelPosition& position, LevelI
 
 LevelItem* Level::addItem(const PixelPosition& position, LevelItemType item)
 {
-	auto server = BabyDI::Get<Server>();
-	if (server->hasNPCServer())
+	if (m_server->hasNPCServer())
 	{
 		// If we were able to generate the item NPC, don't add the item to the ground.
 		if (auto itemNPC = generateItemNPC(position, item); itemNPC != nullptr)
 			return nullptr;
 	}
 
-	LevelItem newItem{ .position = position, .item = item, .modTime = server->getFrameStartTime() };
+	LevelItem newItem{ .position = position, .item = item, .modTime = m_server->getFrameStartTime() };
 	newItem.timeout.runOnceFor(LevelItemTimeout);
 	m_items.emplace_back(std::move(newItem));
 	return &m_items.back();
@@ -2275,7 +2264,7 @@ bool Level::removeItem(inform_client_t, size_t index)
 		auto mapPosition = toMapPosition(m_items[index].position);
 		auto localPosition = toLocalPixelPosition(m_items[index].position);
 		CString packet = CString() >> (char)PLO_ITEMDEL >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8);
-		BabyDI::Get<Server>()->sendPacketToOneLevelPart(packet, this->shared_from_this(), mapPosition);
+		m_server->sendPacketToOneLevelPart(packet, this->shared_from_this(), mapPosition);
 	}
 	return removeItem(index);
 }
@@ -2385,19 +2374,19 @@ LevelShoot* Level::addShoot(LevelShoot* existingShoot)
 
 LevelShoot* Level::addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObject from)
 {
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return nullptr;
 
 	auto result = addShoot(position, angle, zangle, power, gravity, gani, from);
 	if (result != nullptr)
-		BabyDI::Get<Server>()->sendShootToOneLevel(result, shared_from_this());
+		m_server->sendShootToOneLevel(result, shared_from_this());
 
 	return result;
 }
 
 LevelShoot* Level::addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObject from)
 {
-	if (auto server = BabyDI::Get<Server>(); server != nullptr && !server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return nullptr;
 
 	auto tilePosition = toTilePosition(position);
@@ -2453,8 +2442,6 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 	if (shoot == nullptr)
 		return false;
 
-	auto server = BabyDI::Get<Server>();
-
 	for (int i = 0; i < iterations; ++i)
 	{
 		// If the shoot is out of bounds, delete it.
@@ -2493,7 +2480,7 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 		{
 			if (shoot->from.second == ScriptObjectType::NPC && shoot->from.first == npc)
 				continue;
-			if (auto npcPtr = server->getNPC(npc); npcPtr != nullptr)
+			if (auto npcPtr = m_server->getNPC(npc); npcPtr != nullptr)
 			{
 				//log::printLine(log::server, "Collision ({}) with NPC '{}' at ({})", searchPosition / 16.0f, npcPtr->name, npcPos);
 				constructEventParams();
@@ -2510,7 +2497,7 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 				constructEventParams();
 
 			// Check for wall collisions.
-			bool onWallDetection = server->getSettings().getBool("projectilesstoponwall", true) && groundDiff < 48;
+			bool onWallDetection = m_server->getSettings().getBool("projectilesstoponwall", true) && groundDiff < 48;
 			if (!collided && onWallDetection && isOnWall2(WholeTileRectangleArea{ toWholeTilePosition(pixelPosition), {1_ui8, 1_ui8} }))
 				constructEventParams();
 		}
@@ -2518,7 +2505,7 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 		// We collided, so tell the control-NPC and delete the shoot projectile.
 		if (collided)
 		{
-			server->getNPCServer()->addEventToControlNPC(ScriptEventType::TRIGGERACTION, shoot->from, (fromPlayer ? "projectile" : "sprojectile"), eventParams);
+			m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::TRIGGERACTION, shoot->from, (fromPlayer ? "projectile" : "sprojectile"), eventParams);
 			return false;
 		}
 	}
@@ -2550,7 +2537,7 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 		{
 			if (arrow->from.second == ScriptObjectType::NPC && arrow->from.first == npc)
 				continue;
-			if (auto npcPtr = BabyDI::Get<Server>()->getNPC(npc); npcPtr != nullptr)
+			if (auto npcPtr = m_server->getNPC(npc); npcPtr != nullptr)
 				npcPtr->scripting.events.addEvent(ScriptEventType::WASSHOT, arrow->from);
 
 			hitWall = true;
@@ -2648,10 +2635,9 @@ bool Level::isOnWater2(const PixelRectangleArea& area) const noexcept
 
 bool Level::isOnPlayer(const PixelPosition& position) const noexcept
 {
-	auto server = BabyDI::Get<Server>();
 	for (const auto& playerId : findInRangePlayers(position))
 	{
-		if (auto player = server->getPlayer(playerId); player != nullptr)
+		if (auto player = m_server->getPlayer(playerId); player != nullptr)
 		{
 			if (positionInRectangle(position, player->getBoundingBox()))
 				return true;
@@ -2662,10 +2648,9 @@ bool Level::isOnPlayer(const PixelPosition& position) const noexcept
 
 bool Level::isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept
 {
-	auto server = BabyDI::Get<Server>();
 	for (const auto& playerId : findInRangePlayers(pixelArea.position))
 	{
-		if (auto player = server->getPlayer(playerId); player != nullptr)
+		if (auto player = m_server->getPlayer(playerId); player != nullptr)
 		{
 			if (rectanglesIntersect(pixelArea, player->getBoundingBox()))
 				return true;
@@ -2690,9 +2675,8 @@ tileset::TileType Level::getTileTypeAt(const WholeTilePosition& tilePosition) co
 	auto localPosition = toLocalWholeTilePosition(tilePosition);
 	auto tile = tiles.value()->at(static_cast<size_t>(localPosition.y()) * 64 + localPosition.x());
 
-	auto server = BabyDI::Get<Server>();
-	auto tileset = server->getTilesetTypeForLevel(shared_from_this());
-	return server->getTileTypeForTile(tileset, tile);
+	auto tileset = m_server->getTilesetTypeForLevel(shared_from_this());
+	return m_server->getTileTypeForTile(tileset, tile);
 }
 
 tileset::TileType Level::getTileTypeAt(const PixelPosition& position) const noexcept
@@ -2709,7 +2693,7 @@ bool Level::isGmap() const noexcept
 	// TODO: Find a better way to handle this.
 	if (m_map == nullptr && levelName.ends_with(".gmap"sv))
 	{
-		m_map = BabyDI::Get<Server>()->findMap(levelName);
+		m_map = m_server->findMap(levelName);
 		return true;
 	}
 	return m_map != nullptr && m_map->isGmap();
@@ -2805,8 +2789,7 @@ std::generator<SubLevelPtr> Level::getNearbySubLevels(const PixelPosition& posit
 
 std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& position, std::optional<std::pair<uint32_t, uint32_t>> range) const noexcept
 {
-	auto server = BabyDI::Get<Server>();
-	bool syncInside = server->getSettings().getBool("syncbydistanceinside", false);
+	bool syncInside = m_server->getSettings().getBool("syncbydistanceinside", false);
 	bool isInsideLevel = !isGmap();
 
 	// If this is not a gmap, and we aren't syncing by distance inside, return all level players.
@@ -2816,8 +2799,8 @@ std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& p
 		co_return;
 	}
 
-	uint32_t syncx = (uint32_t)server->getSettings().getInt("syncdistancex", 192);
-	uint32_t syncy = (uint32_t)server->getSettings().getInt("syncdistancey", 192);
+	uint32_t syncx = (uint32_t)m_server->getSettings().getInt("syncdistancex", 192);
+	uint32_t syncy = (uint32_t)m_server->getSettings().getInt("syncdistancey", 192);
 	auto mapSize = sizeInTiles();
 	auto tilePosition = toTilePosition(position);
 
@@ -2836,7 +2819,7 @@ std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& p
 
 	auto playerInRange = [&](const PlayerID& playerId)
 	{
-		if (auto player = server->getPlayer(playerId); player != nullptr)
+		if (auto player = m_server->getPlayer(playerId); player != nullptr)
 		{
 			auto otherTilePosition = player->getTilePosition();
 			return std::abs(tilePosition.x() - otherTilePosition.x()) <= syncx && std::abs(tilePosition.y() - otherTilePosition.y()) <= syncy;
@@ -2867,7 +2850,6 @@ std::generator<const PlayerID&> Level::findInRangePlayersForCommunication(const 
 		co_return;
 	}
 
-	auto server = BabyDI::Get<Server>();
 	auto& mapPosition = mapPositionOpt.value();
 	int startX = mapPosition.x() - 1, endX = mapPosition.x() + 1;
 	int startY = mapPosition.y() - 1, endY = mapPosition.y() + 1;
@@ -2882,7 +2864,7 @@ std::generator<const PlayerID&> Level::findInRangePlayersForCommunication(const 
 		for (int x = startX; x <= endX; ++x)
 		{
 			auto hintLevel = std::const_pointer_cast<Level>(shared_from_this());
-			if (auto level = server->getLoadedLevel(m_map->getLevelNameAt(x, y), hintLevel); level != nullptr)
+			if (auto level = m_server->getLoadedLevel(m_map->getLevelNameAt(x, y), hintLevel); level != nullptr)
 				co_yield std::ranges::elements_of(level->m_players);
 		}
 	}
@@ -2899,10 +2881,9 @@ std::generator<const PlayerID&> Level::findPlayersInLevelPart(std::string_view l
 
 std::generator<const PlayerID&> Level::findPlayersInLevelPart(const MapPosition& mapLevel) const noexcept
 {
-	auto server = BabyDI::Get<Server>();
 	for (const auto& playerId : m_players)
 	{
-		if (auto player = server->getPlayer(playerId); player != nullptr)
+		if (auto player = m_server->getPlayer(playerId); player != nullptr)
 		{
 			if (player->account.character.mapX == mapLevel.x() && player->account.character.mapY == mapLevel.y())
 				co_yield playerId;
@@ -2912,8 +2893,7 @@ std::generator<const PlayerID&> Level::findPlayersInLevelPart(const MapPosition&
 
 std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& position) const noexcept
 {
-	auto server = BabyDI::Get<Server>();
-	bool syncInside = server->getSettings().getBool("syncbydistanceinside", false);
+	bool syncInside = m_server->getSettings().getBool("syncbydistanceinside", false);
 	bool isInsideLevel = !isGmap();
 
 	// If this is an inside level and we aren't going to sync by distance inside, return all level NPCs.
@@ -2923,14 +2903,14 @@ std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& positio
 		co_return;
 	}
 
-	unsigned int syncx = (unsigned int)server->getSettings().getInt("syncdistancex", 192);
-	unsigned int syncy = (unsigned int)server->getSettings().getInt("syncdistancey", 192);
+	unsigned int syncx = (unsigned int)m_server->getSettings().getInt("syncdistancex", 192);
+	unsigned int syncy = (unsigned int)m_server->getSettings().getInt("syncdistancey", 192);
 	auto mapSize = sizeInTiles();
 	auto tilePosition = toTilePosition(position);
 
 	auto npcInRange = [&](const NPCID& npcId)
 	{
-		if (auto npc = server->getNPC(npcId); npc != nullptr)
+		if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 		{
 			auto otherTilePosition = npc->getTilePosition();
 			return std::abs(tilePosition.x() - otherTilePosition.x()) <= syncx && std::abs(tilePosition.y() - otherTilePosition.y()) <= syncy;
@@ -2974,12 +2954,11 @@ std::generator<const NPCID&> Level::findInRangeNPCsByDistance(const PixelPositio
 		co_return;
 	}
 
-	auto server = BabyDI::Get<Server>();
 	auto tilePosition = toTilePosition(position);
 
 	auto npcInRange = [&](const NPCID& npcId)
 	{
-		if (auto npc = server->getNPC(npcId); npc != nullptr)
+		if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 		{
 			auto otherTilePosition = npc->getTilePosition();
 			auto distance = std::hypotf(tilePosition.x() - otherTilePosition.x(), tilePosition.y() - otherTilePosition.y());
@@ -3004,10 +2983,9 @@ std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelPosition& po
 
 std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible) const noexcept
 {
-	auto server = BabyDI::Get<Server>();
 	for (const auto& npcId : findInRangeNPCs(area.position))
 	{
-		if (auto npc = server->getNPC(npcId); npc != nullptr)
+		if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 		{
 			// If the NPC is invisible and we don't want to include invisible NPCs, skip it.
 			if (!includeInvisible && (npc->visFlags & PROPID(NPCVisFlags::VISIBLE)) == 0)
@@ -3028,10 +3006,9 @@ std::generator<const NPCID&> Level::findIntersectingNPCsForCollision(const Pixel
 
 std::generator<const NPCID&> Level::findIntersectingNPCsForCollision(const PixelRectangleArea& area) const noexcept
 {
-	auto server = BabyDI::Get<Server>();
 	for (const auto& npcId : findInRangeNPCs(area.position))
 	{
-		if (auto npc = server->getNPC(npcId); npc != nullptr)
+		if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 		{
 			// If the NPC is invisible, skip it.
 			if ((npc->visFlags & PROPID(NPCVisFlags::VISIBLE)) == 0)
@@ -3048,15 +3025,14 @@ std::generator<const NPCID&> Level::findIntersectingNPCsForCollision(const Pixel
 
 std::shared_ptr<NPC> Level::generateItemNPC(const PixelPosition& position, LevelItemType item)
 {
-	auto server = BabyDI::Get<Server>();
-	if (!server->hasNPCServer())
+	if (!m_server->hasNPCServer())
 		return nullptr;
 
 	auto itemName = LevelItem::getItemName(item);
 	if (LevelItem::isRupeeType(item))
 		itemName = "gralats";
 
-	auto itemclass = server->getNPCServer()->getClass(itemName).lock();
+	auto itemclass = m_server->getNPCServer()->getClass(itemName).lock();
 	if (itemclass == nullptr)
 		return nullptr;
 
@@ -3094,7 +3070,7 @@ std::shared_ptr<NPC> Level::generateItemNPC(const PixelPosition& position, Level
 		auto npcList = findIntersectingNPCs(searchArea);
 		for (const auto& npcId : npcList)
 		{
-			if (auto npc = server->getNPC(npcId); npc != nullptr && npc->hasJoinedClass(itemName))
+			if (auto npc = m_server->getNPC(npcId); npc != nullptr && npc->hasJoinedClass(itemName))
 				itemNPC = npc;
 		}
 	}
@@ -3103,7 +3079,7 @@ std::shared_ptr<NPC> Level::generateItemNPC(const PixelPosition& position, Level
 	bool isNew = !itemNPC;
 	if (isNew)
 	{
-		itemNPC = server->getNPCServer()->addNPC("", std::format("if (created) join {};", itemName), shared_from_this(), { loc[0], loc[1] }, NPCTYPE_ITEM);
+		itemNPC = m_server->getNPCServer()->addNPC("", std::format("if (created) join {};", itemName), shared_from_this(), { loc[0], loc[1] }, NPCTYPE_ITEM);
 		itemNPC->character.gralats = itemNPC->character.arrows = itemNPC->character.bombs = itemNPC->character.hitpointsInHalves = 0;
 	}
 

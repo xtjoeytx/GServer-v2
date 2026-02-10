@@ -86,6 +86,7 @@ constexpr size_t BADDYMODE_COUNT = static_cast<size_t>(BaddyMode::COUNT);
 //----------------------------
 
 class Level;
+class Server;
 
 class LevelBaddy
 {
@@ -134,6 +135,7 @@ public:
 	string_map<GameValue> scriptParameters;
 
 private:
+	Server* m_server;
 	std::weak_ptr<Level> m_level;
 	LocalPixelPosition m_originalPosition;
 	bool m_canRespawn = true;

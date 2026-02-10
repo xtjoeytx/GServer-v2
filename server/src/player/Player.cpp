@@ -1020,8 +1020,7 @@ void Player::sendPrivateMessage(PlayerID from, std::string_view message)
 
 bool Player::warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime)
 {
-	auto server = BabyDI::Get<Server>();
-	if (auto level = server->getLoadedLevel(levelName, shared_from_this()); level != nullptr)
+	if (auto level = m_server->getLoadedLevel(levelName, shared_from_this()); level != nullptr)
 		return enterLevel(level, position, clientCachedTime);
 	return false;
 }
@@ -1045,8 +1044,7 @@ bool Player::enterLevel(std::shared_ptr<Level> level, const PixelPosition& posit
 
 bool Player::enterLevel(std::shared_ptr<Level> level, const MapPosition& mapPosition, const LocalPixelPosition& position, std::optional<clock::time_point> clientCachedTime)
 {
-	auto server = BabyDI::Get<Server>();
-	auto now = server->getFrameStartTime();
+	auto now = m_server->getFrameStartTime();
 
 	// If we are already on the level, set the position and abort.
 	if (account.level == level->levelName)
@@ -1086,7 +1084,7 @@ bool Player::enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_
 
 bool Player::leaveLevel()
 {
-	auto now = BabyDI::Get<Server>()->getFrameStartTime();
+	auto now = m_server->getFrameStartTime();
 
 	account.level.clear();
 	account.character.mapX = 0;
@@ -1168,7 +1166,7 @@ void Player::constructScriptParameters()
 			{
 				auto headSet = std::clamp(static_cast<int>(value.get<double>().value_or(-1.0)), -1, 99);
 				if (headSet < 0) return;
-				account.character.headImage = std::format("head{}.{}", headSet, (BabyDI::Get<Server>()->Generation == ServerGeneration::ORIGINAL ? "gif" : "png"));
+				account.character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::ORIGINAL ? "gif" : "png"));
 			})
 	);
 	scriptParameters.try_emplace("sprite", set_temporary, "sprite",
@@ -1177,7 +1175,7 @@ void Player::constructScriptParameters()
 			[this](const GameValue& value, std::optional<int64_t>)
 			{
 				account.character.sprite = static_cast<uint8_t>(value.get<double>().value_or(0.0));
-				if (account.character.sprite >= 4 && BabyDI::Get<Server>()->Generation != ServerGeneration::ORIGINAL)
+				if (account.character.sprite >= 4 && m_server->Generation != ServerGeneration::ORIGINAL)
 				{
 					account.character.gani = std::format("def[{}]", account.character.sprite);
 					this->modTime[PROPID(PlayerProp::GANI)] = currentTime();

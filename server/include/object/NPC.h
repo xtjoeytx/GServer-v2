@@ -39,10 +39,11 @@ namespace preagonal
 
 inline constexpr std::array<uint8_t, 30> NPCGaniAttrPackets = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
 
+class FlatFileNPCLoader;
 class Level;
 class Player;
 class ScriptClass;
-class FlatFileNPCLoader;
+class Server;
 
 using PlayerPtr = std::shared_ptr<Player>;
 
@@ -431,6 +432,8 @@ public:
 	clock::time_point lastMoveQueueSentTime;
 
 private:
+	Server* m_server;
+
 	std::array<std::optional<clock::time_point>, NPCPROP_COUNT> m_savedModTime;
 	bool m_blockPositionUpdates = false;
 	mutable bool m_hadShowImgs = false;
@@ -443,7 +446,6 @@ private:
 	std::weak_ptr<Level> m_currentLevel;
 	Position<uint8_t> m_initialMapPosition;
 	Character m_initialCharacter;
-
 	std::string m_weaponName;
 };
 
