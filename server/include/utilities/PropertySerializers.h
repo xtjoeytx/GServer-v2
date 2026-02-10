@@ -569,8 +569,18 @@ struct PropertyGS1Script : public PropertyBase
 struct PropertyHurtDxDy : public PropertyBase
 {
 	PropertyHurtDxDy() = default;
+
+	/// @brief Displacement from -1.0 to 1.0 (-9 tiles to 9 tiles).
 	explicit PropertyHurtDxDy(float dx, float dy);
+
+	/// @brief Displacement from -32 to 32 (-9 tiles to 9 tiles).
 	explicit PropertyHurtDxDy(int8_t dx, int8_t dy);
+
+	/// @brief Displacement in tiles from -9.0 to 9.0.
+	explicit PropertyHurtDxDy(const Position<float>& displacement);
+
+	/// @brief Displacement in pixel tiles from -144 to 144 (-9 tiles to 9 tiles).
+	explicit PropertyHurtDxDy(const Position<int16_t>& displacement);
 
 	virtual CString serialize() const override;
 	virtual void deserialize(CString& data) override;

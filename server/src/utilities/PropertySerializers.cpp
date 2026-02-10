@@ -505,6 +505,18 @@ PropertyHurtDxDy::PropertyHurtDxDy(int8_t dx, int8_t dy)
 	hurtDY = std::clamp(dy, static_cast<int8_t>(-32), 32_i8);
 }
 
+PropertyHurtDxDy::PropertyHurtDxDy(const Position<float>& displacement)
+{
+	hurtDX = static_cast<int8_t>((std::clamp(displacement.x(), -9.0f, 9.0f) / 9.0f) * 32);
+	hurtDY = static_cast<int8_t>((std::clamp(displacement.y(), -9.0f, 9.0f) / 9.0f) * 32);
+}
+
+PropertyHurtDxDy::PropertyHurtDxDy(const Position<int16_t>& displacement)
+{
+	hurtDX = (std::clamp(displacement.x(), static_cast<int16_t>(-144), 144_i16) * 32) / 144_i16;
+	hurtDY = (std::clamp(displacement.y(), static_cast<int16_t>(-144), 144_i16) * 32) / 144_i16;
+}
+
 CString PropertyHurtDxDy::serialize() const
 {
 	auto clampedDX = std::clamp(hurtDX, static_cast<int8_t>(-32), 32_i8);
@@ -512,8 +524,7 @@ CString PropertyHurtDxDy::serialize() const
 
 	// The range is from 0 - 64 with 32 being the center.
 	// So a value of 32 is 0, a value of 0 is -32, and a value of 64 is +32.
-	// This encodes the floating point in steps of 1/32.
-	// Whether this represents pixels for 2 tiles, or just a way to encode floats, I am not sure.
+	// 32 represents 9 tiles of displacement.
 
 	return CString() >> (char)(clampedDX + 32) >> (char)(clampedDY + 32);
 }

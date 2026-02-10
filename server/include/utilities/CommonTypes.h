@@ -203,6 +203,8 @@ inline clock::time_point convertFromTimeT(time_t time)
 template <typename T = std::chrono::seconds>
 inline T timeDifference(const clock::time_point& start, const clock::time_point& end)
 {
+	if (start == clock::time_point::min() || end == clock::time_point::min())
+		return T::max();
 	return std::chrono::duration_cast<T>(end - start);
 }
 

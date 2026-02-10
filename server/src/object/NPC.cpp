@@ -315,6 +315,27 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 		// Determine where we will end up this frame.
 		PixelPosition currentPosition{ move.getCurrentPosition() };
 
+		// If the map position changed, set that now.
+		const auto& [mapX, mapY, _] = toMapPosition(currentPosition);
+		if (mapX != character.mapX)
+			setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, mapX);
+		if (mapY != character.mapY)
+			setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, mapY);
+
+		// Set the new position.
+		auto localPosition = toLocalPixelPosition(currentPosition);
+		auto sendX = setPropWith<NPCProp::X2>(SetBy::SERVER, localPosition.x());
+		auto sendY = setPropWith<NPCProp::Y2>(SetBy::SERVER, localPosition.y());
+
+		// Adjust our saved mod times, just in case.
+		// We don't want the position to be accidentally sent.
+		m_savedModTime[PROPID(NPCProp::X)] = modTime[PROPID(NPCProp::X)];
+		m_savedModTime[PROPID(NPCProp::Y)] = modTime[PROPID(NPCProp::Y)];
+		m_savedModTime[PROPID(NPCProp::X2)] = modTime[PROPID(NPCProp::X2)];
+		m_savedModTime[PROPID(NPCProp::Y2)] = modTime[PROPID(NPCProp::Y2)];
+
+		bool movementFinished = false;
+
 		// If we are testing for walls, do that now.
 		if (move.options.test(NPCMove::blockCheck))
 		{
@@ -329,47 +350,19 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 				if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
 					boundingBox.position.translate(8, 16);
 
-				// Apply offset for movement.
-				auto globalPosition = getGlobalPosition();
-				boundingBox.position.translate(currentPosition.x() - globalPosition.x(), currentPosition.y() - globalPosition.y());
-
 				// Check for wall collision.
-				if (levelPtr->isOnWall2(boundingBox))
-				{
-					// Queue the movement finished event.
-					if (move.options.test(NPCMove::informWhenDone))
-						scripting.events.addEvent(ScriptEventType::MOVEMENTFINISHED, source::FromNPC(id));
-
-					// Stop the movement here.
-					if (move.onComplete)
-						move.onComplete();
-					moveQueue.pop_front();
-					return;
-				}
+				bool isOnWall = levelPtr->isOnWall2(boundingBox);
+				if (isOnWall)
+					movementFinished = true;
 			}
 		}
 
-		// If the map position changed, set that now.
-		const auto& [mapX, mapY, _] = toMapPosition(currentPosition);
-		if (mapX != character.mapX)
-			setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, mapX);
-		if (mapY != character.mapY)
-			setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, mapY);
-
-		// Set the new position.
-		auto localPosition = toLocalPixelPosition(currentPosition);
-		setPropWith<NPCProp::X2>(SetBy::SERVER, localPosition.x());
-		setPropWith<NPCProp::Y2>(SetBy::SERVER, localPosition.y());
-
-		// Adjust our saved mod times, just in case.
-		// We don't want the position to be accidentally sent.
-		m_savedModTime[PROPID(NPCProp::X)] = modTime[PROPID(NPCProp::X)];
-		m_savedModTime[PROPID(NPCProp::Y)] = modTime[PROPID(NPCProp::Y)];
-		m_savedModTime[PROPID(NPCProp::X2)] = modTime[PROPID(NPCProp::X2)];
-		m_savedModTime[PROPID(NPCProp::Y2)] = modTime[PROPID(NPCProp::Y2)];
-
 		// Check if our movement is done.
-		if (timeRemaining == 0ms)
+		if (timeRemaining <= 0ms)
+			movementFinished = true;
+
+		// If the movement is finished, terminate!
+		if (movementFinished)
 		{
 			// Queue the movement finished event.
 			if (move.options.test(NPCMove::informWhenDone))
