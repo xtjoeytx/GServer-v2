@@ -281,6 +281,10 @@ public:
 	void refreshModTimes(clock::time_point modTime) noexcept;
 
 public:
+	void hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEventType = std::nullopt, std::optional<ScriptObject> source = std::nullopt);
+	void hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, std::optional<ScriptEventType> damageEventType = std::nullopt, std::optional<ScriptObject> source = std::nullopt);
+
+public:
 	const std::string& getWeaponName() const noexcept { return m_weaponName; }
 	bool isCharacter() const noexcept { return image == "#c#"; }
 	bool hasShape() const noexcept { return shape.width() != 0 || shape.height() != 0 || isCharacter(); }
@@ -420,6 +424,7 @@ public:
 	float hurtX = 0.0f;
 	float hurtY = 0.0f;
 	bool noPlayerOnWall = false;
+	bool allowServerDamageReactions = false;
 	std::array<uint8_t, 10> saves;
 	std::chrono::milliseconds timeout = 0ms;
 	NPCWarpRestrictions warpRestrictions = NPCWarpRestrictions::ALLOWED;

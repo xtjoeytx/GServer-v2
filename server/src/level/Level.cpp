@@ -2068,15 +2068,16 @@ void Level::addExplosion(const PixelPosition& position, ScriptObject from, uint8
 	{
 		PixelRectangleArea vertTest = { position.translate(0, -(radius * 32)), { static_cast<uint16_t>(32), static_cast<uint16_t>((1 + (radius * 2)) * 32) } };
 		PixelRectangleArea horzTest = { position.translate(-(radius * 32), 0), { static_cast<uint16_t>((1 + (radius * 2)) * 32), static_cast<uint16_t>(32) } };
+		auto center = vertTest.center();
 		for (const NPCID& npcId : findIntersectingNPCsForCollision(vertTest))
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
-				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, from);
+				npc->hurtAndPush(power, center, ScriptEventType::EXPLODED, from);
 		}
 		for (const NPCID& npcId : findIntersectingNPCsForCollision(horzTest))
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
-				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, from);
+				npc->hurtAndPush(power, center, ScriptEventType::EXPLODED, from);
 		}
 	}
 }
@@ -2119,10 +2120,11 @@ void Level::addSpyFire(const PixelPosition& position, ScriptObject from, uint8_t
 			static_cast<uint16_t>((direction == 0 || direction == 2) ? 32 : lengthInPixels),
 			static_cast<uint16_t>((direction == 1 || direction == 3) ? 32 : lengthInPixels) };
 
+		auto center = translatePosition(startingPosition, 16, 16);
 		for (const NPCID& npcId : findIntersectingNPCsForCollision({ testPosition, testDimension }))
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
-				npc->scripting.events.addEvent(ScriptEventType::EXPLODED, from);
+				npc->hurtAndPush(power, center, ScriptEventType::EXPLODED, from);
 		}
 	}
 }
@@ -2533,12 +2535,14 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 
 		// Check for NPC collision.
 		PixelRectangleArea searchBox = { translatePosition(arrow->position, 16_i32, -8_i32), { 32_ui16, 32_ui16  } };
+		auto center = searchBox.center();
+		int8_t arrowPower = arrow->type == arrowTypeFireball ? 2 : 1;
 		for (const auto& npc : findIntersectingNPCsForCollision(searchBox))
 		{
 			if (arrow->from.second == ScriptObjectType::NPC && arrow->from.first == npc)
 				continue;
 			if (auto npcPtr = m_server->getNPC(npc); npcPtr != nullptr)
-				npcPtr->scripting.events.addEvent(ScriptEventType::WASSHOT, arrow->from);
+				npcPtr->hurtAndPush(arrowPower, center, ScriptEventType::WASSHOT, arrow->from);
 
 			hitWall = true;
 		}

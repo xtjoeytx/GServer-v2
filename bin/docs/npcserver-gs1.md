@@ -15,8 +15,8 @@ Please review the lists below of implemented events, flags, functions, commands,
 ---
 ## Events
 
-    * - GR extension (not in official)
-        Enable extensions in server options to use.
+    *    - Existed on official, but not serverside.
+    [GR] - Never existed on official.
 
 #### Implemented
 
@@ -66,8 +66,8 @@ Please review the lists below of implemented events, flags, functions, commands,
 ---
 ## Flags
 
-    * - GR extension (not in official)
-        Enable extensions in server options to use.
+    *    - Existed on official, but not serverside.
+    [GR] - Never existed on official.
 
 #### Implemented
 
@@ -100,13 +100,13 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    peltwithblackstone
-    peltwithbush
-    peltwithnpc
-    peltwithsign
-    peltwithstone
-    peltwithvase
-    playertrial
+    * peltwithblackstone
+    * peltwithbush
+    * peltwithnpc
+    * peltwithsign
+    * peltwithstone
+    * peltwithvase
+      playertrial
 
 #### Clientside only
 
@@ -122,8 +122,8 @@ Please review the lists below of implemented events, flags, functions, commands,
 ---
 ## Variables
 
-    * - GR extension (not in official)
-        Enable extensions in server options to use.
+    *    - Existed on official, but not serverside.
+    [GR] - Never existed on official.
 
 #### Implemented
 
@@ -303,8 +303,8 @@ Please review the lists below of implemented events, flags, functions, commands,
 ---
 ## Commands
 
-    * - GR extension (not in official)
-        Enable extensions in server options to use.
+    *    - Existed on official, but not serverside.
+    [GR] - Never existed on official.
 
 #### Implemented
 
@@ -335,11 +335,13 @@ Please review the lists below of implemented events, flags, functions, commands,
       deletestring
       destroy
       detachplayer
+    * disabledamagereactions    [GR]
       disableweapons
       dontblock
       drawoverplayer
     * drawovertrees
       drawunderplayer
+    * enabledamagereactions     [GR]
       enableweapons
     * explodebomb
       freezeplayer2
@@ -524,8 +526,8 @@ Please review the lists below of implemented events, flags, functions, commands,
 ---
 ## Functions
 
-    * - GR extension (not in official)
-        Enable extensions in server options to use.
+    *    - Existed on official, but not serverside.
+    [GR] - Never existed on official.
 
 #### Implemented
 

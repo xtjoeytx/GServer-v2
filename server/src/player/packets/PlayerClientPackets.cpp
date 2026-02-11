@@ -1034,7 +1034,7 @@ HandlePacketResult PlayerClient::msgPLI_HITOBJECTS(CString& pPacket)
 				if (auto npc = m_server->getNPC(npcId); npc != nullptr && npc->isCharacter() && npc->visFlags != PROPID(NPCVisFlags::HIDDEN))
 				{
 					npc->setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<GBYTE1>(std::max(0, (int)npc->getProp<NPCProp::POWER>().value - int(power * 2))));
-					npc->scripting.events.addEvent(ScriptEventType::WASHIT, source::FromPlayer(m_id));
+					npc->hurtAndPush(power, translatePosition(getGlobalPosition(), 24_i32, 32_i32), ScriptEventType::WASHIT, source::FromPlayer(m_id));
 				}
 			}
 		}

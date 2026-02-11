@@ -110,6 +110,60 @@ struct Position
 		return result;
 	}
 
+	T length2D() const
+	{
+		return static_cast<T>(std::sqrt(data[0] * data[0] + data[1] * data[1]));
+	}
+
+	T length3D() const
+	{
+		return static_cast<T>(std::sqrt(data[0] * data[0] + data[1] * data[1] + data[2] * data[2]));
+	}
+
+	template<typename O>
+	Position<T>& normalize2D(O length)
+	{
+		if (length == O{})
+			throw std::invalid_argument("Cannot normalize a position with zero length.");
+		data[0] = static_cast<T>(data[0] / length);
+		data[1] = static_cast<T>(data[1] / length);
+		return *this;
+	}
+
+	template<typename O>
+	Position<T> normalize2D(O length) const
+	{
+		if (length == O{})
+			throw std::invalid_argument("Cannot normalize a position with zero length.");
+		Position<T> result{ *this };
+		result.data[0] = static_cast<T>(result.data[0] / length);
+		result.data[1] = static_cast<T>(result.data[1] / length);
+		return result;
+	}
+
+	template<typename O>
+	Position<T>& normalize3D(O length)
+	{
+		if (length == O{})
+			throw std::invalid_argument("Cannot normalize a position with zero length.");
+		data[0] = static_cast<T>(data[0] / length);
+		data[1] = static_cast<T>(data[1] / length);
+		data[2] = static_cast<T>(data[2] / length);
+		return *this;
+	}
+
+	template<typename O>
+	Position<T> normalize3D(O length) const
+	{
+		if (length == O{})
+			throw std::invalid_argument("Cannot normalize a position with zero length.");
+		Position<T> result{ *this };
+		result.data[0] = static_cast<T>(result.data[0] / length);
+		result.data[1] = static_cast<T>(result.data[1] / length);
+		result.data[2] = static_cast<T>(result.data[2] / length);
+		return result;
+	}
+
 	std::array<T, 3> data;
 };
 
@@ -183,6 +237,7 @@ struct Rectangle
 	constexpr P bottom() const noexcept { return position.y() + size.height(); }
 	constexpr P ground() const noexcept { return position.z(); }
 	constexpr P sky() const noexcept { return position.z() + size.length(); }
+	constexpr Position<P> center() const noexcept { return { position.x() + static_cast<P>(size.width() / (S)2), position.y() + static_cast<P>(size.height() / (S)2) }; }
 
 	Position<P> position{};
 	Dimension<S> size{};

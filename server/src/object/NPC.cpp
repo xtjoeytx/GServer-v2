@@ -514,6 +514,67 @@ std::shared_ptr<Level> NPC::getLevel() const
 
 //----------------------------
 
+void NPC::hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEventType, std::optional<ScriptObject> source)
+{
+	// Adjust the NPC's HP.
+	if (allowServerDamageReactions && isCharacter())
+	{
+		sendPropsFromResults(
+			setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<uint8_t>(std::max(0, character.hitpointsInHalves - damageInHalves)))
+		);
+	}
+
+	// Queue the hurt event.
+	if (damageEventType.has_value())
+		scripting.events.addEvent(damageEventType.value(), source.value_or(source::FromServer()));
+}
+
+void NPC::hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, std::optional<ScriptEventType> damageEventType, std::optional<ScriptObject> source)
+{
+	if (allowServerDamageReactions && isCharacter())
+	{
+		// Become invulerable for 1.6 seconds.
+		if (timeDifference<std::chrono::milliseconds>(character.lastHurtTime, m_server->getFrameStartTime()) < 1600ms)
+			return;
+
+		// Push the character away from the source of damage.
+		auto tileOrigin = toTilePosition(pushOrigin);
+		TilePosition pushVector{ character.getTilePosition().x() + 1.5f - tileOrigin.x(), character.getTilePosition().y() + 2.0f - tileOrigin.y() };
+		pushVector.normalize2D(pushVector.length2D());
+		pushVector = pushVector * 5.0f;
+
+		// Set the hurt animation and force an X/Y prop update (to cancel any current movements), then clear the move queue.
+		// This will let us abort any movements in progress.
+		std::inplace_vector<SetResults, 3> results;
+		results.push_back(setPropWith<NPCProp::X2>(SetBy::SERVER, character.localPixelX));
+		results.push_back(setPropWith<NPCProp::Y2>(SetBy::SERVER, character.localPixelY));
+		results.push_back(setPropWith<NPCProp::GANI>(SetBy::SERVER, "hurt"));
+		moveQueue.clear();
+
+		// Add our new movement to the queue and send it out.
+		addMoveToQueue(toLocalPixelPosition(pushVector), 0.5, ENUM(NPCMoveFlags::BLOCKCHECK));
+		sendMoveQueueUpdatesToLevel(getLevel());
+
+		// Set up a task to fix the animation.
+		m_server->scheduleTask(500ms, [self = m_server->getNPC(id)]()
+		{
+			if (self != nullptr && self->character.gani == "hurt")
+				self->sendPropsFromResults(self->setPropWith<NPCProp::GANI>(SetBy::SERVER, "idle"));
+		});
+
+		// Send prop changes.
+		sendPropsFromResults(results);
+
+		// Set the last hurt time.
+		character.lastHurtTime = m_server->getFrameStartTime();
+	}
+
+	// Do the damage.
+	hurt(damageInHalves, damageEventType, source);
+}
+
+//----------------------------
+
 void NPC::executeEvents(ScriptEventQueue& events, ScriptObject source) const
 {
 	if (events.queue().empty())
@@ -912,6 +973,9 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 			character.hurtDeltaInHalves = character.hitpointsInHalves - numProp->value;
 			character.hitpointsInHalves = numProp->value;
+
+			if (character.hurtDeltaInHalves != 0)
+				character.lastHurtTime = curTime;
 			break;
 		}
 
@@ -1029,6 +1093,10 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				character.sprite = 0;
 				result.resultPropIds.push_back(PROPID(NPCProp::SPRITE));
 			}
+
+			// If we are hurting, and didn't get hurt this frame, unset the hurt time.
+			if (character.lastHurtTime != curTime)
+				character.lastHurtTime = clock::time_point::min();
 
 			// Allow spin to hurt things.
 			if (character.gani == "spin")

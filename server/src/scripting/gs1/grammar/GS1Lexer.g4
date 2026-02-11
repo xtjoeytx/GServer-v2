@@ -14,7 +14,7 @@ lexer grammar GS1Lexer;
 @lexer::context
 {
 // --------------------------------------------------------
-constexpr size_t builtInCommandCount = 204
+constexpr size_t builtInCommandCount = 206
 #if DEBUG
 	+ 1
 #endif
@@ -227,6 +227,10 @@ constexpr std::array<std::string_view, builtInCommandCount> builtInCommands = {
 	"warpto",
     "wraptext ",
     "wraptext2 ",
+
+	// GR extensions
+	"enabledamagereactions",
+	"disabledamagereactions",
 };
 
 constexpr bool isBuiltInCommand(std::string_view name)
@@ -668,6 +672,9 @@ CMD_SAVEINFO             : 'saveinfo'             { pushCommand("SS"); } -> type
 CMD_SAVELOG              : 'savelog'              { pushCommand("S"); } -> type(COMMAND);
 CMD_SAVELOG2             : 'savelog2'             { pushCommand("SS"); } -> type(COMMAND);
 CMD_WARPTO               : 'warpto'               { pushCommand("SEE"); } -> type(COMMAND);
+// GR extensions
+CMD_ENABLEDAMAGEREACTIONS  : 'enabledamagereactions'  -> type(COMMAND);
+CMD_DISABLEDAMAGEREACTIONS : 'disabledamagereactions' -> type(COMMAND);
 
 FUNC_GROUP_1
 	: (

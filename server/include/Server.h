@@ -366,6 +366,12 @@ public:
 	}
 
 public:
+	/// @brief Schedules a task to be executed after a specified delay.
+	/// @param delay The time duration to wait before executing the task.
+	/// @param task The function to execute after the delay.
+	void scheduleTask(precise_clock::duration delay, std::function<void()> task);
+
+public:
 	ServerGeneration Generation{ ServerGeneration::CLASSIC };
 	ScriptContainer Scripting;
 
@@ -410,6 +416,7 @@ private:
 	TimeoutGenerator m_timedNWTime{ 5s, true };
 	TimeoutGenerator m_timedSave{ 1min, true };
 	TimeoutGenerator m_timedMaintenance{ 5min, true };
+	std::vector<std::pair<precise_clock::duration, std::function<void()>>> m_scheduledTasks;
 	clock::time_point m_serverStartTime;
 	clock::time_point m_frameStartTime;
 	precise_clock::time_point m_frameStartTimeHighPrecision;

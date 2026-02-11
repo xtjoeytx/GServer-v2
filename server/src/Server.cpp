@@ -562,6 +562,7 @@ bool Server::doMain()
 	m_sockManager.update(0, 5000); // 5ms
 
 	// Current time
+	auto oldTime = m_frameStartTimeHighPrecision;
 	m_frameStartTimeHighPrecision = precise_clock::now();
 	m_frameStartTime = currentTime();
 
@@ -581,6 +582,33 @@ bool Server::doMain()
 		if (level != nullptr)
 			level->doFrameEvents(m_frameStartTimeHighPrecision);
 	}
+
+	// Execute our scheduled tasks.
+	auto startingTasks = m_scheduledTasks.size();
+	auto tasks = startingTasks;
+	auto diff = m_frameStartTimeHighPrecision - oldTime;
+	for (size_t i = 0; i < tasks;)
+	{
+		auto& task = m_scheduledTasks.at(i);
+		if (task.first < diff)
+		{
+			// Execute the task.
+			task.second();
+
+			// Swap the finished task with end, then decrement the number of tasks.
+			// We just want to erase the finished tasks at the end for efficiency.
+			if (i < tasks - 1)
+				std::swap(m_scheduledTasks.at(i), m_scheduledTasks.at(tasks - 1));
+
+			--tasks;
+		}
+		else
+		{
+			task.first -= diff;
+			++i;
+		}
+	}
+	m_scheduledTasks.erase(m_scheduledTasks.begin() + tasks, m_scheduledTasks.begin() + startingTasks);
 
 	return true;
 }
@@ -2119,6 +2147,13 @@ void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level
 
 	sendPacketToNearby(oldPacketBuf, newPacket.position, level, { 0 }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
 	sendPacketToNearby(newPacketBuf, newPacket.position, level, { 0 }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
+}
+
+//----------------------------
+
+void Server::scheduleTask(precise_clock::duration delay, std::function<void()> task)
+{
+	m_scheduledTasks.emplace_back(delay, std::move(task));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

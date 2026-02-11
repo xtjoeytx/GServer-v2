@@ -211,6 +211,9 @@ static void fn_updateboard(GS1Visitor* visitor, std::string_view commandName, co
 static void fn_updateboard2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_updateterrain(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_warpto(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+// GR extensions
+static void fn_enabledamagereactions(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_disabledamagereactions(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 
 static BuiltInCommandHandleMap GenerateMap()
 {
@@ -366,6 +369,9 @@ static BuiltInCommandHandleMap GenerateMap()
 		{ hash("updateboard2"), &fn_updateboard2 },
 		{ hash("updateterrain"), &fn_updateterrain },
 		{ hash("warpto"), &fn_warpto },
+		// GR extensions
+		{ hash("enabledamagereactions"), &fn_enabledamagereactions },
+		{ hash("disabledamagereactions"), &fn_disabledamagereactions },
 	};
 	return map;
 }
@@ -565,7 +571,7 @@ void fn_addweapon(GS1Visitor* visitor, std::string_view commandName, const std::
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto weaponname = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->addWeapon(weaponname);
 	}
@@ -583,7 +589,7 @@ void fn_attachplayertoobj(GS1Visitor* visitor, std::string_view commandName, con
 		auto objecttype = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto id = DoubleAsIntegralFloor<NPCID>(visitor->getGameValueAs<double>(*arguments[1]));
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::ATTACHNPC>(SetBy::SERVER, id, objecttype);
 	}
@@ -595,7 +601,7 @@ void fn_blockagain(GS1Visitor* visitor, std::string_view commandName, const std:
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::NOBLOCK);
@@ -627,7 +633,7 @@ void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::ve
 			eventAndParams.insert(eventAndParams.end(), std::ranges::begin(params), std::ranges::end(params));
 		}
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (index < level->getNPCs().size())
 		{
 			auto& mapNPCs = level->getNPCs();
@@ -648,7 +654,7 @@ void fn_canbecarried(GS1Visitor* visitor, std::string_view commandName, const st
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::CANBECARRIED);
@@ -663,7 +669,7 @@ void fn_canbepulled(GS1Visitor* visitor, std::string_view commandName, const std
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::CANBEPULLED);
@@ -678,7 +684,7 @@ void fn_canbepushed(GS1Visitor* visitor, std::string_view commandName, const std
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::CANBEPUSHED);
@@ -693,7 +699,7 @@ void fn_cannotbecarried(GS1Visitor* visitor, std::string_view commandName, const
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::CANBECARRIED);
@@ -708,7 +714,7 @@ void fn_cannotbepulled(GS1Visitor* visitor, std::string_view commandName, const 
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::CANBEPULLED);
@@ -723,7 +729,7 @@ void fn_cannotbepushed(GS1Visitor* visitor, std::string_view commandName, const 
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::CANBEPUSHED);
@@ -738,7 +744,7 @@ void fn_cannotwarp(GS1Visitor* visitor, std::string_view commandName, const std:
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->warpRestrictions = NPCWarpRestrictions::NOTALLOWED;
 	}
@@ -750,7 +756,7 @@ void fn_canwarp(GS1Visitor* visitor, std::string_view commandName, const std::ve
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->warpRestrictions = NPCWarpRestrictions::ALLOWED;
 	}
@@ -762,7 +768,7 @@ void fn_canwarp2(GS1Visitor* visitor, std::string_view commandName, const std::v
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->warpRestrictions = NPCWarpRestrictions::ONLYOVERWORLD;
 	}
@@ -777,7 +783,7 @@ void fn_carryobject(GS1Visitor* visitor, std::string_view commandName, const std
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
 		[[maybe_unused]] auto carryObjectTypeId = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr && npc->isCharacter())
 			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, "carrystill"s);
 	}
@@ -792,7 +798,7 @@ void fn_changeimgcolors(GS1Visitor* visitor, std::string_view commandName, const
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -815,7 +821,7 @@ void fn_changeimgmode(GS1Visitor* visitor, std::string_view commandName, const s
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -835,7 +841,7 @@ void fn_changeimgpart(GS1Visitor* visitor, std::string_view commandName, const s
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -858,7 +864,7 @@ void fn_changeimgvis(GS1Visitor* visitor, std::string_view commandName, const st
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -878,7 +884,7 @@ void fn_changeimgzoom(GS1Visitor* visitor, std::string_view commandName, const s
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -1016,7 +1022,7 @@ void fn_detachplayer(GS1Visitor* visitor, std::string_view commandName, const st
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::ATTACHNPC>(SetBy::SERVER, static_cast<NPCID>(0), 0_ui8);
 	}
@@ -1028,7 +1034,7 @@ void fn_disableweapons(GS1Visitor* visitor, std::string_view commandName, const 
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->disableWeapons();
 	}
@@ -1040,7 +1046,7 @@ void fn_dontblock(GS1Visitor* visitor, std::string_view commandName, const std::
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::NOBLOCK);
@@ -1055,7 +1061,7 @@ void fn_drawoverplayer(GS1Visitor* visitor, std::string_view commandName, const 
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			uint8_t newVisFlags = npc->visFlags & ~(PROPID(NPCVisFlags::DRAWUNDERPLAYER) | PROPID(NPCVisFlags::DRAWOVERPLAYER));
@@ -1071,7 +1077,7 @@ void fn_drawovertrees(GS1Visitor* visitor, std::string_view commandName, const s
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto visFlags = npc->visFlags;
@@ -1087,7 +1093,7 @@ void fn_drawunderplayer(GS1Visitor* visitor, std::string_view commandName, const
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			uint8_t newVisFlags = npc->visFlags & ~(PROPID(NPCVisFlags::DRAWUNDERPLAYER) | PROPID(NPCVisFlags::DRAWOVERPLAYER));
@@ -1103,7 +1109,7 @@ void fn_enableweapons(GS1Visitor* visitor, std::string_view commandName, const s
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->enableWeapons();
 	}
@@ -1147,7 +1153,7 @@ void fn_freezeplayer2(GS1Visitor* visitor, std::string_view commandName, const s
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->freezePlayer();
 	}
@@ -1159,7 +1165,7 @@ void fn_hide(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags & ~PROPID(NPCVisFlags::VISIBLE)));
 	}
@@ -1174,7 +1180,7 @@ void fn_hideimg(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -1192,7 +1198,7 @@ void fn_hideimgs(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto indexstart = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -1224,7 +1230,7 @@ void fn_hitnpc(GS1Visitor* visitor, std::string_view commandName, const std::vec
 
 		if (index < level->getNPCs().size())
 		{
-			auto* server = BabyDI::Get<Server>();
+			auto server = BabyDI::Get<Server>();
 			auto& mapNPCs = level->getNPCs();
 			auto iter = mapNPCs.begin();
 			std::ranges::advance(iter, index, mapNPCs.end());
@@ -1291,7 +1297,7 @@ void fn_hitplayer(GS1Visitor* visitor, std::string_view commandName, const std::
 		auto fromx = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
 		auto fromy = static_cast<float>(visitor->getGameValueAs<double>(*arguments[3]));
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			if (auto level = npc->getLevel(); level != nullptr)
@@ -1318,7 +1324,7 @@ void fn_hurt(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 		if (visitor->getOriginalSource().second != ScriptObjectType::NPC)
 			npcId = 0;
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto tilePos = toTilePosition(player->account.character.getLocalPosition());
@@ -1371,7 +1377,7 @@ void fn_join(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 		throw std::invalid_argument("invalid arguments: join class");
 
 	auto class_ = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto* server = BabyDI::Get<Server>();
+	auto server = BabyDI::Get<Server>();
 	visitor->scriptContext->joinedClasses.insert({ class_, server->getNPCServer()->getClass(class_) });
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
@@ -1439,7 +1445,7 @@ void fn_message(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		if (arguments.size() != 0)
 			text = visitor->getGameValueAs<std::string>(*arguments[0]);
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::MESSAGE>(SetBy::SERVER, text);
 	}
@@ -1459,7 +1465,7 @@ void fn_move(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 		auto time = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
 		auto options = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->addMoveToQueue(toLocalPixelPosition(dx, dy), time, options);
 	}
@@ -1471,7 +1477,7 @@ void fn_noplayeronwall(GS1Visitor* visitor, std::string_view commandName, const 
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->noPlayerOnWall = true;
 	}
@@ -1621,7 +1627,7 @@ void fn_putnpc2(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		auto script = visitor->getGameValueAs<std::string>(*arguments[2]);
 		string::trimMutate(script);
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		server->getNPCServer()->addNPC({}, script, level, { (float)x, (float)y });
 	}
 }
@@ -1759,7 +1765,7 @@ void fn_removeweapon(GS1Visitor* visitor, std::string_view commandName, const st
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto weaponname = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->deleteWeapon(weaponname);
 	}
@@ -1846,7 +1852,7 @@ void fn_say(GS1Visitor* visitor, std::string_view commandName, const std::vector
 				auto& sign = levelData->signs[signIndex];
 				if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 				{
-					auto* server = BabyDI::Get<Server>();
+					auto server = BabyDI::Get<Server>();
 					if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 						player->sendSignMessage(sign.text);
 				}
@@ -1868,7 +1874,7 @@ void fn_say2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 			string::eraseCharsMutate(message, "\r\n"sv);
 		}
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->sendSignMessage(message);
 	}
@@ -1884,7 +1890,7 @@ void fn_sendpm(GS1Visitor* visitor, std::string_view commandName, const std::vec
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto message = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->sendPrivateMessage(NPCServerPlayerID, player->translate(message));
 	}
@@ -1900,7 +1906,7 @@ void fn_sendrpgmessage(GS1Visitor* visitor, std::string_view commandName, const 
 		if (arguments.size() != 0)
 			message = visitor->getGameValueAs<std::string>(*arguments[0]);
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->sendRPGMessage(message);
 	}
@@ -1914,7 +1920,7 @@ void fn_sendtonc(GS1Visitor* visitor, std::string_view commandName, const std::v
 	if (arguments.size() != 0)
 		message = visitor->getGameValueAs<std::string>(*arguments[0]);
 
-	auto* server = BabyDI::Get<Server>();
+	auto server = BabyDI::Get<Server>();
 	server->sendToNC(message);
 }
 
@@ -1926,7 +1932,7 @@ void fn_sendtorc(GS1Visitor* visitor, std::string_view commandName, const std::v
 	if (arguments.size() != 0)
 		message = visitor->getGameValueAs<std::string>(*arguments[0]);
 
-	auto* server = BabyDI::Get<Server>();
+	auto server = BabyDI::Get<Server>();
 	server->sendToRC(message);
 }
 
@@ -1940,7 +1946,7 @@ void fn_serverwarp(GS1Visitor* visitor, std::string_view commandName, const std:
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto servername = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			server->getServerList().sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)player->getId() << servername);
 	}
@@ -1955,7 +1961,7 @@ void fn_set(GS1Visitor* visitor, std::string_view commandName, const std::vector
 
 	if (auto* flag = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); flag != nullptr)
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (flag->identifier.starts_with("client.") || flag->identifier.starts_with("clientr."))
 		{
 			if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
@@ -1986,7 +1992,7 @@ void fn_setani(GS1Visitor* visitor, std::string_view commandName, const std::vec
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto gani = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::GANI>(SetBy::SERVER, gani);
 	}
@@ -2019,7 +2025,7 @@ void fn_setbeltcolor(GS1Visitor* visitor, std::string_view commandName, const st
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto color = visitor->getGameValueAs<double>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
@@ -2039,7 +2045,7 @@ void fn_setbody(GS1Visitor* visitor, std::string_view commandName, const std::ve
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::BODYIMG>(SetBy::SERVER, filename);
 	}
@@ -2056,7 +2062,7 @@ void fn_setcharani(GS1Visitor* visitor, std::string_view commandName, const std:
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
 		auto gani = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, gani);
 	}
@@ -2072,7 +2078,7 @@ void fn_setchargender(GS1Visitor* visitor, std::string_view commandName, const s
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
 		auto gender = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto visFlags = npc->visFlags;
@@ -2112,7 +2118,7 @@ void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const st
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto color = visitor->getGameValueAs<double>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
@@ -2132,7 +2138,7 @@ void fn_setgender(GS1Visitor* visitor, std::string_view commandName, const std::
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto gender = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto status = player->account.status;
@@ -2156,7 +2162,7 @@ void fn_sethead(GS1Visitor* visitor, std::string_view commandName, const std::ve
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			// This needs to go to everybody (for the player list), so we have to send it immediately.
@@ -2177,7 +2183,7 @@ void fn_setimg(GS1Visitor* visitor, std::string_view commandName, const std::vec
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::IMAGE>(SetBy::SERVER, filename);
 	}
@@ -2198,7 +2204,7 @@ void fn_setimgpart(GS1Visitor* visitor, std::string_view commandName, const std:
 		auto width = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
 		auto height = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[4]));
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			npc->setPropWith<NPCProp::IMAGE>(SetBy::SERVER, filename);
@@ -2217,7 +2223,7 @@ void fn_setlevel(GS1Visitor* visitor, std::string_view commandName, const std::v
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto filename = visitor->getGameValueAs<std::string>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->warp(filename, player->account.character.getLocalPosition());
 	}
@@ -2236,7 +2242,7 @@ void fn_setlevel2(GS1Visitor* visitor, std::string_view commandName, const std::
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->warp(filename, { static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16) });
 	}
@@ -2256,7 +2262,7 @@ void fn_setmap(GS1Visitor* visitor, std::string_view commandName, const std::vec
 		auto x = visitor->getGameValueAs<double>(*arguments[2]);
 		auto y = visitor->getGameValueAs<double>(*arguments[3]);
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->sendPacket(CString() >> (char)PLO_BIGMAP << imgfile << "," << levelsfile << "," << CString(x) << "," << CString(y));
 	}
@@ -2276,7 +2282,7 @@ void fn_setminimap(GS1Visitor* visitor, std::string_view commandName, const std:
 		auto x = visitor->getGameValueAs<double>(*arguments[2]);
 		auto y = visitor->getGameValueAs<double>(*arguments[3]);
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->sendPacket(CString() >> (char)PLO_MINIMAP << imgfile << "," << levelsfile << "," << CString(x) << "," << CString(y));
 	}
@@ -2292,7 +2298,7 @@ void fn_setplayerdir(GS1Visitor* visitor, std::string_view commandName, const st
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			// Set the new player direction relative to their current sprite.
@@ -2330,7 +2336,7 @@ void fn_setpm(GS1Visitor* visitor, std::string_view commandName, const std::vect
 	if (arguments.size() != 0)
 		message = visitor->getGameValueAs<std::string>(*arguments[0]);
 
-	auto* server = BabyDI::Get<Server>();
+	auto server = BabyDI::Get<Server>();
 	if (auto npcServerPlayer = server->getNPCServer()->getPlayerNPCServer(); npcServerPlayer != nullptr)
 	{
 		auto lines = string::split(message, "#b"sv);
@@ -2354,7 +2360,7 @@ void fn_setshape(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 		auto width = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto height = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]));
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->shape = { width, height };
 	}
@@ -2371,7 +2377,7 @@ void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::
 	{
 		auto image = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto power = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::SHIELDPOWER>(SetBy::SERVER, image, power);
 	}
@@ -2387,7 +2393,7 @@ void fn_setshoecolor(GS1Visitor* visitor, std::string_view commandName, const st
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto color = visitor->getGameValueAs<double>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
@@ -2405,7 +2411,7 @@ void fn_setshootparams(GS1Visitor* visitor, std::string_view commandName, const 
 		throw std::invalid_argument("invalid arguments: setshootparams params");
 
 	auto params = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto* server = BabyDI::Get<Server>();
+	auto server = BabyDI::Get<Server>();
 	server->setShootParams(string::fromCSV(params));
 }
 
@@ -2419,7 +2425,7 @@ void fn_setskincolor(GS1Visitor* visitor, std::string_view commandName, const st
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto color = visitor->getGameValueAs<double>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
@@ -2439,7 +2445,7 @@ void fn_setsleevecolor(GS1Visitor* visitor, std::string_view commandName, const 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto color = visitor->getGameValueAs<double>(*arguments[0]);
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
@@ -2465,7 +2471,7 @@ void fn_setstring(GS1Visitor* visitor, std::string_view commandName, const std::
 
 		// Special handling for prefixed variables.
 		// Maybe think of a way to do this automatically on the assign rather than doing this.
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (var->identifier.starts_with("client.") || var->identifier.starts_with("clientr."))
 		{
 			if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
@@ -2502,7 +2508,7 @@ void fn_setsword(GS1Visitor* visitor, std::string_view commandName, const std::v
 	{
 		auto image = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto power = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[1]));
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::SWORDPOWER>(SetBy::SERVER, image, power);
 	}
@@ -2535,7 +2541,7 @@ void fn_shoot(GS1Visitor* visitor, std::string_view commandName, const std::vect
 	auto power = static_cast<uint8_t>(std::clamp(visitor->getGameValueAs<double>(*arguments[5]), 0.0, 5.0) * 44);
 	auto gani = visitor->getGameValueAs<std::string>(*arguments[6]);
 
-	auto* server = BabyDI::Get<Server>();
+	auto server = BabyDI::Get<Server>();
 	auto gravity = static_cast<float>(server->Scripting.variables.getValue<double>("gravity").value_or(2.0));
 	level->addShoot(inform_client, { x, y, z }, angle, zangle, power, gravity, gani, visitor->getOriginalSource());
 }
@@ -2658,7 +2664,7 @@ void fn_show(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags | (uint8_t)NPCVisFlags::VISIBLE));
 	}
@@ -2673,7 +2679,7 @@ void fn_showani(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -2696,7 +2702,7 @@ void fn_showani2(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -2717,7 +2723,7 @@ void fn_showcharacter(GS1Visitor* visitor, std::string_view commandName, const s
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			npc->setPropWith<NPCProp::IMAGE>(SetBy::SERVER, "#c#"s);
@@ -2735,7 +2741,7 @@ void fn_showimg(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -2757,7 +2763,7 @@ void fn_showimg2(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -2780,7 +2786,7 @@ void fn_showpoly(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -2803,7 +2809,7 @@ void fn_showpoly2(GS1Visitor* visitor, std::string_view commandName, const std::
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -2832,7 +2838,7 @@ void fn_showtext(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -2856,7 +2862,7 @@ void fn_showtext2(GS1Visitor* visitor, std::string_view commandName, const std::
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto index = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
@@ -2881,7 +2887,7 @@ void fn_sleep(GS1Visitor* visitor, std::string_view commandName, const std::vect
 
 	if (auto source = visitor->getOriginalSource(); source.second == ScriptObjectType::NPC)
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.first); npc != nullptr)
 		{
 			auto duration = visitor->getGameValueAs<double>(*arguments[0]);
@@ -2904,7 +2910,7 @@ void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		auto power = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1])) & 0b111;
 		uint8_t length_power = (length << 3) | power;
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 		{
 			if (auto level = player->getLevel(); level != nullptr)
@@ -2925,7 +2931,7 @@ void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			if (auto level = npc->getLevel(); level != nullptr)
@@ -2982,7 +2988,7 @@ void fn_take2(GS1Visitor* visitor, std::string_view commandName, const std::vect
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			if (auto level = npc->getLevel(); level != nullptr)
@@ -3019,7 +3025,7 @@ void fn_takehorse(GS1Visitor* visitor, std::string_view commandName, const std::
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			if (auto level = npc->getLevel(); level != nullptr)
@@ -3041,7 +3047,7 @@ void fn_takeplayercarry(GS1Visitor* visitor, std::string_view commandName, const
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			player->sendPacket(CString() >> (char)PLO_THROWCARRIED >> (short)player->getId());
@@ -3056,7 +3062,7 @@ void fn_takeplayerhorse(GS1Visitor* visitor, std::string_view commandName, const
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::HORSEGIF>(SetBy::SERVER, std::string{});
 	}
@@ -3068,7 +3074,7 @@ void fn_throwcarry(GS1Visitor* visitor, std::string_view commandName, const std:
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr && npc->isCharacter() && npc->character.gani.starts_with("carry"))
 			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, "idle"sv);
 	}
@@ -3080,7 +3086,7 @@ void fn_timershow(GS1Visitor* visitor, std::string_view commandName, const std::
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags | PROPID(NPCVisFlags::TIMERSHOW)));
 	}
@@ -3166,7 +3172,7 @@ void fn_triggeraction(GS1Visitor* visitor, std::string_view commandName, const s
 	auto action = visitor->getGameValueAs<std::string>(*arguments[2]);
 	auto params = string::toCSV(arguments | std::views::drop(3) | std::views::transform([&visitor](GS1ScriptValue* value) { return visitor->getGameValueAs<std::string>(*value); }));
 
-	auto* server = BabyDI::Get<Server>();
+	auto server = BabyDI::Get<Server>();
 	if (action == "clientside")
 	{
 		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
@@ -3190,7 +3196,7 @@ void fn_unfreezeplayer(GS1Visitor* visitor, std::string_view commandName, const 
 {
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->unfreezePlayer();
 	}
@@ -3205,7 +3211,7 @@ void fn_unset(GS1Visitor* visitor, std::string_view commandName, const std::vect
 
 	if (auto* flag = visitor->getGameValueFromGS1ScriptValue(*arguments[0]); flag != nullptr)
 	{
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (flag->identifier.starts_with("client.") || flag->identifier.starts_with("clientr."))
 		{
 			if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
@@ -3278,12 +3284,38 @@ void fn_warpto(GS1Visitor* visitor, std::string_view commandName, const std::vec
 		auto x = visitor->getGameValueAs<double>(*arguments[1]);
 		auto y = visitor->getGameValueAs<double>(*arguments[2]);
 
-		auto* server = BabyDI::Get<Server>();
+		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			if (auto level = server->getLoadedLevel(filename, npc->getLevel()); level != nullptr)
 				npc->warp(level, { static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16) });
 		}
+	}
+}
+
+//----------------------------
+
+// enabledamagereactions;
+// Enables damage reactions for the NPC, allowing it to react to damage with animations and invincibility frames.
+void fn_enabledamagereactions(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	{
+		auto server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+			npc->allowServerDamageReactions = true;
+	}
+}
+
+// disabledamagereactions;
+// Disables damage reactions for the NPC, going back to the default behavior of not automatically reacting to damage.
+void fn_disabledamagereactions(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	{
+		auto server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+			npc->allowServerDamageReactions = false;
 	}
 }
 
