@@ -2,6 +2,7 @@
 #define EXTENTS_H
 
 #include <array>
+#include <cmath>
 #include <concepts>
 #include <cstdint>
 #include <format>
