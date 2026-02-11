@@ -32,6 +32,9 @@ The following languages are supported:
         [Clientside] Clients version 4 and later.
         [Serverside] N/A
 
+- [GS1 reference](npcserver-gs1.md)
+- GS2 reference
+
 ## Client behavior changes
 
 When the NPC-Server is enabled, the client will no longer send NPC property updates.
