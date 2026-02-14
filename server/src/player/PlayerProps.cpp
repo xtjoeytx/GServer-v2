@@ -1215,10 +1215,10 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 	while (chestCount > 0)
 	{
 		unsigned char len = pPacket.readGUChar();
-		char loc[2] = { pPacket.readGChar(), pPacket.readGChar() };
+		uint8_t loc[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
 		std::string level = pPacket.readChars(len - 2).toString();
 
-		account.savedChests.insert(std::make_pair(level, std::make_pair(loc[0], loc[1])));
+		account.savedChests.insert(std::make_pair(level, LocalWholeTilePosition{ loc[0], loc[1] }));
 		--chestCount;
 	}
 
@@ -1308,7 +1308,7 @@ CString Player::getPropsForRCPacket()
 	ret >> (short)account.savedChests.size();
 	for (const auto& [level, loc] : account.savedChests)
 	{
-		ret >> (char)(level.length() + 2) >> (char)loc.first >> (char)loc.second << level;
+		ret >> (char)(level.length() + 2) >> (char)loc.x() >> (char)loc.y() << level;
 	}
 
 	// Add the player's weapons.

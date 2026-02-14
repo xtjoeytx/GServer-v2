@@ -9,6 +9,7 @@
 
 #include <Account.h>
 #include <loader/IAccountLoader.h>
+#include <utilities/Extents.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -16,7 +17,7 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 using flagPair = std::pair<std::string, std::string>;
-using chestPair = std::pair<std::string, std::pair<int8_t, int8_t>>;
+using chestPair = std::pair<std::string, LocalWholeTilePosition>;
 
 class FlatFileAccountLoader : public IAccountLoader
 {

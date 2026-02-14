@@ -104,7 +104,7 @@ std::optional<std::string> StaticLevelData::getChestFormattedForSave(LevelChest*
 	if (chest == nullptr)
 		return std::nullopt;
 
-	return std::format("{}:{}:{}", chest->getTileX(), chest->getTileY(), levelName);
+	return std::format("{}:{}:{}", chest->position.x(), chest->position.y(), levelName);
 }
 
 void StaticLevelData::sendBoardToPlayer(std::shared_ptr<Player> player) const
@@ -146,10 +146,10 @@ void StaticLevelData::sendChestsToPlayer(std::shared_ptr<Player> player) const
 	CString packet;
 	for (auto& chest : chests)
 	{
-		bool hasChest = player->account.hasChest(levelName, chest.getTileX(), chest.getTileY());
+		bool hasChest = player->account.hasChest(levelName, chest.position);
 
 		packet.clear();
-		packet >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest.getTileX() >> (char)chest.getTileY();
+		packet >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest.position.x() >> (char)chest.position.y();
 		if (!hasChest) packet >> (char)chest.item >> (char)chest.sign;
 		player->sendPacket(packet);
 	}
@@ -874,7 +874,7 @@ bool Level::saveLevel(const MapPosition& mapPosition, std::string_view filename)
 
 	for (const auto& chest : staticData->chests)
 	{
-		fileStream << std::format("CHEST {} {} {} {}", chest.getTileX(), chest.getTileY(), LevelItem::getItemName(chest.item), chest.sign) << std::endl;
+		fileStream << std::format("CHEST {} {} {} {}", chest.position.x(), chest.position.y(), LevelItem::getItemName(chest.item), chest.sign) << std::endl;
 	}
 
 	for (const auto& baddy : staticData->baddies)

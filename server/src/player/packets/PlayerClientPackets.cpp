@@ -202,12 +202,11 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 	//for (int i = 0; i < pPacket.length(); ++i) printf( "%02x ", (unsigned char)pPacket[i] );
 	//printf( "\n" );
 
-	auto level = getLevel();
 	auto npc = m_server->getNPC(npcId);
 	if (!npc)
 		return HandlePacketResult::Handled;
 
-	if (npc->getLevel() != level)
+	if (auto level = getLevel(); npc->getLevel() != level)
 		return HandlePacketResult::Handled;
 
 	npc->setPropsFromPacket(npcProps, shared_from_this());
@@ -727,14 +726,16 @@ HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 
 	if (auto level = getLevel(); level)
 	{
-		if (auto chest = level->getChest(getMapPosition(), LocalWholeTilePosition{ cX, cY }); chest.has_value())
+		LocalWholeTilePosition chestPos{ cX, cY };
+		if (auto chest = level->getChest(getMapPosition(), chestPos); chest.has_value())
 		{
-			if (!account.hasChest(level->levelName, cX, cY))
+			auto levelName = level->getLevelNameAtPosition(getGlobalPosition());
+			if (!account.hasChest(levelName, chestPos))
 			{
 				LevelItemType chestItem = chest.value()->item;
 				setPropsFromPacket(CString() << LevelItem::getItemPlayerProp(chestItem, this), props::SetBy::SERVER);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
-				account.savedChests.insert(std::make_pair(level->levelName, std::make_pair(cX, cY)));
+				account.savedChests.insert(std::make_pair(level->levelName, chestPos));
 			}
 		}
 	}

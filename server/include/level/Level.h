@@ -164,6 +164,7 @@ public:
 	[[inline]] Dimension<uint32_t> sizeInPixels() const noexcept;
 	[[inline]] Rectangle<uint32_t, uint32_t> getBoundingBox() const noexcept;
 	uint16_t* getMapTileForEditing(const TilePosition& position) noexcept;
+	[[inline]] std::string_view getLevelNameAtPosition(const PixelPosition& position) const noexcept;
 
 public:
 	[[inline]] std::optional<size_t> getSubLevelIndex(std::string_view levelPart) const noexcept;
@@ -452,6 +453,20 @@ inline Rectangle<uint32_t, uint32_t> Level::getBoundingBox() const noexcept
 {
 	//return { getMapPixelOffset(), { 1024_ui16, 1024_ui16 } };
 	return { { 0_ui32, 0_ui32 }, sizeInPixels() };
+}
+
+inline std::string_view Level::getLevelNameAtPosition(const PixelPosition& position) const noexcept
+{
+	if (!isGmap())
+		return levelName;
+
+	if (auto subLevel = getSubLevelAtPosition(position); subLevel != nullptr)
+	{
+		if (auto staticData = subLevel->staticData.lock(); staticData != nullptr)
+			return staticData->levelName;
+	}
+
+	return levelName;
 }
 
 //----------------------------

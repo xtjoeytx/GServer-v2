@@ -81,9 +81,9 @@ chestPair FlatFileAccountLoader::decomposeChest(const std::string& chest) const
 	auto tokens = string::splitToVector(chest, ":"sv);
 	if (tokens.size() == 3)
 	{
-		result.second.first = string::toNumber<int8_t>(tokens[0]);
-		result.second.second = string::toNumber<int8_t>(tokens[1]);
-		result.first = tokens[2];
+		result.second.x() = string::toNumber<uint8_t>(tokens[0]);
+		result.second.y() = string::toNumber<uint8_t>(tokens[1]);
+		result.first = string::trim(tokens[2]);
 	}
 	return result;
 }
@@ -364,7 +364,7 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 
 	// Chests
 	for (const auto& [level, pos] : account.savedChests)
-		writeLine(newFile, "CHEST", std::format("{}:{}:{}", pos.first, pos.second, level));
+		writeLine(newFile, "CHEST", std::format("{}:{}:{}", pos.x(), pos.y(), level));
 
 	// Weapons
 	for (const auto& weapon : account.weapons)

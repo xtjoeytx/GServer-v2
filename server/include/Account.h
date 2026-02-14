@@ -14,8 +14,9 @@
 
 #include <object/Character.h>
 #include <scripting/ScriptContainers.h>
+#include <utilities/Extents.h>
 #include <utilities/FilePermissions.h>
-#include "utilities/StringUtils.h"
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -77,7 +78,7 @@ struct Account
 	std::chrono::system_clock::time_point lastSparTime;
 	std::array<std::string, 30> ganiAttributes;
 	std::vector<std::string> weapons;
-	std::unordered_multimap<std::string, std::pair<int8_t, int8_t>> savedChests;
+	std::unordered_multimap<std::string, LocalWholeTilePosition> savedChests;
 	GameVariableStore variables;
 	bool banned = false;
 	std::string banReason;
@@ -92,7 +93,7 @@ struct Account
 	std::string lastFolderAccessed;
 
 	[[inline]] bool hasRight(uint32_t right) const;
-	[[inline]] bool hasChest(std::string_view level, int8_t x, int8_t y) const;
+	[[inline]] bool hasChest(std::string_view level, const LocalWholeTilePosition& position) const;
 	[[inline]] bool hasWeapon(std::string_view weapon) const;
 };
 
@@ -101,12 +102,12 @@ inline bool Account::hasRight(uint32_t right) const
 	return (adminRights & right);
 }
 
-inline bool Account::hasChest(std::string_view level, int8_t x, int8_t y) const
+inline bool Account::hasChest(std::string_view level, const LocalWholeTilePosition& position) const
 {
 	auto range = savedChests.equal_range(level.data());
 	for (auto& i = range.first; i != range.second; ++i)
 	{
-		if (i->second.first == x && i->second.second == y)
+		if (i->second == position)
 			return true;
 	}
 	return false;
