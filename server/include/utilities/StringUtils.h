@@ -1352,7 +1352,7 @@ inline std::vector<uint8_t> fromBase64(StringViewIshVariant auto const& str)
 	if (str[in_len - 2] == '=') out_len--;
 
 	// Prepare the output buffer.
-	std::vector<uint8_t> out{ out_len, 0 };
+	std::vector<uint8_t> out(out_len, static_cast<uint8_t>(0));
 
 	// Decode.
 	for (size_t i = 0, j = 0; i < in_len;)

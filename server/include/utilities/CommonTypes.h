@@ -6,6 +6,7 @@
 #include <concepts>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -16,7 +17,9 @@
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <variant>
+#include <version>
 
 #include <utilities/StringUtils.h>
 
@@ -206,6 +209,26 @@ inline T timeDifference(const clock::time_point& start, const clock::time_point&
 	if (start == clock::time_point::min() || end == clock::time_point::min())
 		return T::max();
 	return std::chrono::duration_cast<T>(end - start);
+}
+
+inline clock::time_point toSystemClock(const std::filesystem::file_time_type& fileTime)
+{
+#if __cpp_lib_chrono < 201907L
+	// Clang doesn't support clock_cast, so convert to UTC, then the system clock.
+	return std::chrono::file_clock::to_sys(fileTime));
+#else
+	return std::chrono::clock_cast<clock>(fileTime);
+#endif
+}
+
+inline std::filesystem::file_time_type toFileClock(const clock::time_point& systemTime)
+{
+#if __cpp_lib_chrono < 201907L
+	// Clang doesn't support clock_cast, so convert to UTC, then the system clock.
+	return std::chrono::file_clock::from_sys(systemTime);
+#else
+	return std::chrono::clock_cast<std::filesystem::file_time_type::clock>(systemTime);
+#endif
 }
 
 //----------------------------

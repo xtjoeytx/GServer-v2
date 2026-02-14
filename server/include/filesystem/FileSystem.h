@@ -55,14 +55,14 @@ struct FileData
 	/// @return A time_point representing the last write time of the file.
 	clock::time_point getModTime() const
 	{
-		return std::chrono::clock_cast<clock>(std::filesystem::last_write_time(file));
+		return getFileModTime(file);
 	}
 
 	/// @brief Sets the last modification time of a file.
 	/// @param modTime The new modification time to set.
 	void setModTime(clock::time_point modTime) const
 	{
-		std::filesystem::last_write_time(file, std::chrono::clock_cast<std::filesystem::file_time_type::clock>(modTime));
+		std::filesystem::last_write_time(file, toFileClock(modTime));
 	}
 
 	/// @brief Updates the modified time with the last modification time of the file.

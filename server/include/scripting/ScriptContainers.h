@@ -345,8 +345,7 @@ inline const std::optional<T> GameValue::get(std::optional<int64_t> index) const
 		}
 		return m_source;
 	}
-	else [[unlikely]]
-		throw std::bad_variant_access();
+	else throw std::bad_variant_access();
 }
 
 template<ValidGameValue T>
@@ -400,8 +399,7 @@ inline const T* GameValue::get_unsafe(std::optional<int64_t> index) const
 		if (!m_source.has_value()) return nullptr;
 		return &m_source.value();
 	}
-	else [[unlikely]]
-		throw std::bad_variant_access();
+	else throw std::bad_variant_access();
 }
 
 inline GameValue& GameValue::set(ValidGameValue auto&& value, std::optional<int64_t> index)
@@ -472,8 +470,7 @@ inline GameValue& GameValue::insert(const ValidGameValue auto& value, std::optio
 		m_source = value;
 		if (m_setter) m_setter(&m_source, index);
 	}
-	else [[unlikely]]
-		throw std::bad_variant_access();
+	else throw std::bad_variant_access();
 
 	return *this;
 }
@@ -531,8 +528,7 @@ inline GameValue& GameValue::insert(ValidGameValue auto&& value, std::optional<i
 		m_source = std::move(value);
 		if (m_setter) m_setter(&m_source, index);
 	}
-	else [[unlikely]]
-		throw std::bad_variant_access();
+	else throw std::bad_variant_access();
 
 	return *this;
 }
@@ -570,17 +566,17 @@ template<ValidGameValue T>
 GameValue GameValue::deserialize(std::string identifier, const std::string_view data)
 {
 	if constexpr (std::same_as<T, bool>)
-		return GameValue{ std::move(identifier), true };
+		return GameValue{ identifier, true };
 	if constexpr (std::same_as<T, double>)
-		return GameValue{ std::move(identifier), string::toNumber(std::string{ data }) };
+		return GameValue{ identifier, string::toDouble(data) };
 	if constexpr (std::same_as<T, std::string>)
-		return GameValue{ std::move(identifier), std::string{ data } };
+		return GameValue{ identifier, std::string{ data } };
 	if constexpr (std::same_as<T, std::vector<double>>)
 	{
 		std::vector<double> array;
 		for (auto number : string::split(data, ","sv))
-			array.emplace_back(string::toDouble(std::string{ number }));
-		return GameValue{ std::move(identifier), std::move(array) };
+			array.emplace_back(string::toDouble(number));
+		return GameValue{ identifier, std::move(array) };
 	}
 	return GameValue{};
 }

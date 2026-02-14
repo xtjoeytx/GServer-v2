@@ -510,9 +510,7 @@ bool Player::sendFile(const std::filesystem::path& file)
 	{
 		fs::File openedFile{ file };
 		fileData = std::move(openedFile.read());
-
-		auto writeTime = std::filesystem::last_write_time(file);
-		modTime = clock::to_time_t(std::chrono::clock_cast<std::chrono::system_clock>(writeTime));
+		modTime = clock::to_time_t(toSystemClock(std::filesystem::last_write_time(file)));
 	}
 	else
 	{

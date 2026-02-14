@@ -10,6 +10,7 @@
 #include <string_view>
 #include <string>
 #include <utility>
+#include <version>
 
 #include <CString.h>
 
@@ -161,8 +162,13 @@ void print(Log& log, std::string_view fmt, const Args&... args)
 	if (s.size() <= spaces)
 		return;
 
+#if __cpp_lib_chrono < 201907L
+	// Clang doesn't support timezones, so just use system_clock time (UTC) floored to seconds.
+	auto localtime = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
+#else
 	// Get the current time, floored to seconds.
-	auto localtime = std::chrono::floor<std::chrono::seconds>(std::chrono::zoned_time{ std::chrono::current_zone(), std::chrono::system_clock::now() }.get_local_time());
+	auto localtime = std::chrono::floor<std::chrono::seconds>(std::chrono::current_zone()->to_local(std::chrono::system_clock::now()));
+#endif
 
 	// Output to file.
 	if (auto* logFile = log.getFile(); logFile && logFile->is_open())

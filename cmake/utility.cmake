@@ -41,6 +41,15 @@ function(set_default_compiler_options target ISTESTTARGET)
 		)
 	endif()
 
+	# Clang ignore attribute warnings.
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		target_compile_options(${target} PRIVATE
+			-Wno-unknown-attributes
+			-Wno-narrowing
+			-Wno-switch
+		)
+	endif()
+
 	# GCC static compile.
 	if(STATIC AND CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		target_compile_options(${target} PUBLIC -static-libstdc++)

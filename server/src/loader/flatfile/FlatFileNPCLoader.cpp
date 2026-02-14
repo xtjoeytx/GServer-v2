@@ -616,7 +616,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	file->close();
 
 	// Update the NPC's last save time.
-	npc->lastSaveTime = fs::toModTime(file->modifiedTime());
+	npc->lastSaveTime = toSystemClock(file->modifiedTime());
 
 	// If the NPC exists on the filesystem, refresh its mod time to avoid any modification events.
 	if (auto info = server->getFileSystemServer().info(fs::FileCategory::NPC, file->filePath().filename()); info != nullptr)

@@ -138,7 +138,7 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 	auto weapon = std::make_shared<Weapon>(weaponName, weaponImage, weaponScript);
 
 	// Set the mod time to the file mod time.
-	weapon->modTime = std::chrono::clock_cast<clock>(std::filesystem::last_write_time(fileName));
+	weapon->modTime = fs::getFileModTime(fileName);
 
 	// Check if we need to rename the file.
 	auto expectedFileName = fs::getHTMLEscapedFileName(std::format("weapon{}.txt", weapon->name)).string();

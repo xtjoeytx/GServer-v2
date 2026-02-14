@@ -76,6 +76,9 @@ std::string getANSIFileName(const std::filesystem::path& file)
 		throw std::runtime_error("Failed to convert file name to CP-1252.");
 
 	return result;
+#elifdef __clang__
+	// Clang doesn't support std::codecvt_utf8, so just use the filename as-is.
+	return file.filename().string();
 #else
 	// Hacky version for Linux using deprecated C++.
 	// TODO: Link to ICU.

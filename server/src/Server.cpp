@@ -1782,7 +1782,13 @@ void Server::logToFile(std::filesystem::path fileName, std::string_view message,
 		}
 		else
 		{
-			auto localtime = std::chrono::floor<std::chrono::seconds>(std::chrono::zoned_time{ std::chrono::current_zone(), std::chrono::system_clock::now() }.get_local_time());
+#if __cpp_lib_chrono < 201907L
+			// Clang doesn't support timezones, so just use system_clock time (UTC) floored to seconds.
+			auto localtime = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
+#else
+			// Get the current time, floored to seconds.
+			auto localtime = std::chrono::floor<std::chrono::seconds>(std::chrono::current_zone()->to_local(std::chrono::system_clock::now()));
+#endif
 			file.write(std::format(log::TimestampLong, localtime));
 			file.write(" "sv);
 		}

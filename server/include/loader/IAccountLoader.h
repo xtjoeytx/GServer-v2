@@ -15,6 +15,9 @@ namespace preagonal
 class IAccountLoader
 {
 public:
+	virtual ~IAccountLoader() = default;
+
+public:
 	virtual bool loadAccount(std::string_view accountName, Account& account) = 0;
 	virtual bool saveAccount(const Account& account) = 0;
 

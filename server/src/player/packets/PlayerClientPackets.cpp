@@ -954,7 +954,7 @@ HandlePacketResult PlayerClient::msgPLI_UPDATEFILE(CString& pPacket)
 	time_t fModTime = 0;
 
 	if (auto info = fileSystem.infoi(fs::FileCategory::ALL, file.toStringView()); info != nullptr)
-		fModTime = clock::to_time_t(fs::toModTime(info->modifiedTime));
+		fModTime = clock::to_time_t(toSystemClock(info->modifiedTime));
 
 	//printf("UPDATEFILE: %s\n", file.text());
 

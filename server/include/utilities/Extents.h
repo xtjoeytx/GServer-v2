@@ -349,7 +349,7 @@ inline constexpr LocalPixelPosition toLocalPixelPosition(std::floating_point aut
 	// Enforce half tile increments.  We will never have a float position that isn't a half tile.
 	int16_t halfTileX = static_cast<int16_t>(x * 2);
 	int16_t halfTileY = static_cast<int16_t>(y * 2);
-	return LocalPixelPosition{ static_cast<int16_t>(halfTileX * 8) % 1024, static_cast<int16_t>(halfTileY * 8) % 1024 };
+	return LocalPixelPosition{ static_cast<int16_t>((halfTileX * 8) % 1024), static_cast<int16_t>((halfTileY * 8) % 1024) };
 }
 
 template<typename Type>
@@ -368,7 +368,7 @@ inline constexpr LocalPixelPosition toLocalPixelPosition(const Position<Type>& p
 	// Tiles to local pixels.
 	else if constexpr (std::same_as<Type, uint8_t> || std::same_as<Type, float>)
 	{
-		return LocalPixelPosition{ static_cast<int16_t>(position.x() * 16) % 1024, static_cast<int16_t>(position.y() * 16) % 1024, static_cast<int16_t>(position.z() * 16) };
+		return LocalPixelPosition{ static_cast<int16_t>(static_cast<int16_t>(position.x() * 16) % 1024), static_cast<int16_t>(static_cast<int16_t>(position.y() * 16) % 1024), static_cast<int16_t>(position.z() * 16) };
 	}
 	// Just convert the units.
 	else

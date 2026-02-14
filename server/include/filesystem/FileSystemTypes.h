@@ -5,9 +5,6 @@
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
-#include <locale>
-#include <string>
-#include <vector>
 
 #include <utilities/CommonTypes.h>
 
@@ -16,20 +13,12 @@ namespace preagonal::fs
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-/// @brief Converts a std::filesystem::file_time_type to a clock::time_point using clock_cast.
-/// @param fileTime The file time to convert, represented as a std::filesystem::file_time_type.
-/// @return A clock::time_point representing the converted file time.
-inline clock::time_point toModTime(const std::filesystem::file_time_type& fileTime)
-{
-	return std::chrono::clock_cast<clock>(fileTime);
-}
-
 /// @brief Retrieves the last modification time of a file as a clock::time_point.
 /// @param file The path to the file whose modification time is to be retrieved.
 /// @return The time point representing the last modification time of the specified file, using the clock type 'clock'.
 inline clock::time_point getFileModTime(const std::filesystem::path& file)
 {
-	return std::chrono::clock_cast<clock>(std::filesystem::last_write_time(file));
+	return toSystemClock(std::filesystem::last_write_time(file));
 }
 
 //----------------------------

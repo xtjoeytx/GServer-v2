@@ -1434,7 +1434,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 				continue;
 
 			// Add the file now.
-			auto modTime = clock::to_time_t(fs::toModTime(dirEntry.last_write_time()));
+			auto modTime = clock::to_time_t(toSystemClock(dirEntry.last_write_time()));
 			CString dir = CString() >> (char)fileName.length() << fileName >> (char)rights.length() << rights >> (long long)dirEntry.file_size() >> (long long)modTime;
 			files << " " >> (char)dir.length() << dir;
 		}
@@ -1515,7 +1515,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 
 			// Add the file now.
 			auto size = dirEntry.file_size();
-			auto modTime = clock::to_time_t(fs::toModTime(dirEntry.last_write_time()));
+			auto modTime = clock::to_time_t(toSystemClock(dirEntry.last_write_time()));
 			CString dir = CString() >> (char)fileName.length() << fileName >> (char)rights.length() << rights >> (long long)size >> (long long)modTime;
 			files << " " >> (char)dir.length() << dir;
 		}
