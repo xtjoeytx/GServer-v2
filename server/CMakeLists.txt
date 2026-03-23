@@ -265,7 +265,7 @@ endif()
 # Dependency: gs2lib.
 FetchContent_Declare(gs2lib
 	GIT_REPOSITORY https://xtjoeytx@bitbucket.org/xtjoeytx/gs2lib.git
-	GIT_TAG        fetchcontent
+	GIT_TAG        30a9af52a3ffbd0df5d8d0d6afb248e303ff8024
 	#URL "${PROJECT_SOURCE_DIR}/../gs2lib"
 )
 FetchContent_MakeAvailable(gs2lib)
