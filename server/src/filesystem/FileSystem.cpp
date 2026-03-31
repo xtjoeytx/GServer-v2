@@ -138,6 +138,12 @@ void FileSystem::bind(const std::filesystem::path& directory)
 						return;
 
 					iter->second->modifiedTime = fileModTime;
+
+					// If we got a rename event and overwrote an existing file,
+					// we want to make sure we also have a modify event since the file got changed.
+					if (!e.test(FileEvent::Modified))
+						e.set(FileEvent::Modified);
+
 					DEBUGPRINT("[FS] Existing file modified: {}", file.string());
 				}
 
@@ -168,6 +174,10 @@ void FileSystem::bind(const std::filesystem::path& directory)
 						iter = m_files.find(file.filename());
 						DEBUGPRINT("[FS] Old file deleted due to rename: {}", oldFile.string());
 					}
+
+					// If the old file was the same name as the new file, but with a .partial extension, then we ignore the renamed event.
+					if (oldFile.extension() == ".partial" && oldFile.stem() == file)
+						e.reset(FileEvent::Renamed);
 				}
 			}
 			else
