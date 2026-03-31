@@ -246,7 +246,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 					if (canRespawn())
 					{
 						timeout.callbackIterations = respawnBaddy;
-						timeout.runOnceFor(std::chrono::seconds(m_server->getSettings().getInt("baddyrespawntime", 60)));
+						timeout.runOnceFor(std::chrono::seconds(m_server->getSettings().get<uint32_t>("baddyrespawntime").value_or(60)));
 					}
 
 					if (auto level = m_level.lock(); level != nullptr)
@@ -268,7 +268,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 				else if (mode == BaddyMode::DIE)
 				{
 					// Drop items when dead.
-					if (m_server->getSettings().getBool("baddyitems", false) == true)
+					if (m_server->getSettings().get<bool>("baddyitems").value_or(false) == true)
 						dropItem();
 
 					// Set the baddy to dead after 2 seconds.
@@ -278,7 +278,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 				else if (mode == BaddyMode::DEAD && m_canRespawn)
 				{
 					timeout.callbackIterations = respawnBaddy;
-					timeout.runOnceFor(std::chrono::seconds(m_server->getSettings().getInt("baddyrespawntime", 60)));
+					timeout.runOnceFor(std::chrono::seconds(m_server->getSettings().get<uint32_t>("baddyrespawntime").value_or(60)));
 				}
 				break;
 			}

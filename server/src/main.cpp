@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <filesystem>
+#include <format>
 #include <iostream>
 #include <string_view>
 #include <string>
@@ -163,7 +164,7 @@ int main(int argc, char* argv[])
 		{
 			std::vector<std::filesystem::path> servers;
 
-			for (const auto& p: std::filesystem::directory_iterator{ "servers" })
+			for (const auto& p : std::filesystem::directory_iterator{ "servers" })
 			{
 				if (p.is_directory())
 					servers.push_back(p.path().filename());
@@ -211,8 +212,8 @@ int main(int argc, char* argv[])
 			{
 				if (!server->isStaff(overrideStaff))
 				{
-					auto staff = settings.getStr("staff");
-					settings.addKey("staff", staff << "," << overrideStaff);
+					auto staff = settings.get<std::string>("staff").value_or("");
+					settings.set("staff", std::format("{},{}", staff, overrideStaff.toStringView()));
 				}
 
 				Account accfs;
@@ -229,8 +230,9 @@ int main(int argc, char* argv[])
 		// Announce that the program is now running.
 		log::print(log::server, "Started server {}", server->getName());
 		if (server->getSettings().exists("name"))
-			log::printLine(log::server, " ({})", server->getSettings().getStr("name"));
-		else log::printLine(log::server, "");
+			log::printLine(log::server, " ({})", server->getSettings().get<std::string>("name").value_or(""));
+		else
+			log::printLine(log::server, "");
 
 	#if defined(WIN32) || defined(WIN64)
 		log::printLine(log::server, "Press CTRL+C to close the program.  DO NOT CLICK THE X, you will LOSE data!");

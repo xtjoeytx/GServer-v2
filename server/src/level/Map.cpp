@@ -92,7 +92,13 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	m_server = BabyDI::Get<Server>();
 	assert(m_server != nullptr);
 	auto& fileSystem = m_server->getFileSystem();
-	auto fileInfo = fileSystem.infoi(fs::FileCategory::LEVEL, fileName);
+
+	// Some settings and commands don't append the extension, so add it if it's not present.
+	std::filesystem::path correctedFileName = fileName;
+	if (!correctedFileName.has_extension())
+		correctedFileName.replace_extension(".gmap");
+
+	auto fileInfo = fileSystem.infoi(fs::FileCategory::LEVEL, correctedFileName);
 
 	// Make sure the file exists.
 	if (fileInfo == nullptr)
@@ -104,7 +110,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 		return;
 
 	// Save for later.
-	std::string mapName{ fs::getANSIFileName(fileName.stem()) };
+	std::string mapName{ fs::getANSIFileName(correctedFileName.stem()) };
 
 	// Stupid.
 	auto& constructSize = const_cast<Dimension<uint8_t>&>(size);
@@ -294,9 +300,9 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 		std::string_view rowSeparator = "-"sv;
 
 		// Generated level starts with the map name.
-		if (genLevel.starts_with(fileName.stem().string()))
+		if (genLevel.starts_with(correctedFileName.stem().string()))
 		{
-			levelPrefix = genLevel.substr(0, fileName.stem().string().size());
+			levelPrefix = genLevel.substr(0, correctedFileName.stem().string().size());
 			genLevel = genLevel.substr(levelPrefix.length());
 		}
 		// Search for a - or _ separator.

@@ -10,16 +10,14 @@
 #include <memory>
 #include <optional>
 #include <span>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 #include <CSocket.h>
 
 #include <BabyDI.h>
-#include <CSettings.h>
-#include <CString.h>
 #include <IEnums.h>
 #include <IUtil.h>
 
@@ -255,7 +253,7 @@ CString ShootPacketWrapper::constructShootV2() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using PacketHandleFunc = HandlePacketResult(Player::*)(CString&);
+using PacketHandleFunc = HandlePacketResult (Player::*)(CString&);
 using PacketHandleArray = std::array<PacketHandleFunc, 256>;
 
 static PacketHandleArray GeneratePacketHandlers()
@@ -436,7 +434,7 @@ bool Player::doTimedEvents()
 		m_fileQueue.clearBuffers();
 		return false;
 	}
-	
+
 	m_fileQueue.sendCompress();
 	return true;
 }
@@ -632,7 +630,7 @@ bool Player::sendLogin()
 	if (isClient())
 	{
 		// Staff only.
-		if (m_server->getSettings().getBool("onlystaff", false) && !isStaff())
+		if (m_server->getSettings().get<bool>("onlystaff").value_or(false) && !isStaff())
 		{
 			log::printLine(log::rc, "** [Disconnect] '{}': Server is staff only.", account.name);
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server is currently restricted to staff only.");
@@ -724,11 +722,7 @@ void Player::exchangeMyPropsWithOthers()
 {
 	// RC props are sent differently.
 	CString myRCProps;
-	myRCProps >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name
-		>> (char)PlayerProp::CURLEVEL << getProp<PlayerProp::CURLEVEL>().serialize()
-		>> (char)PlayerProp::PLAYERLISTSTATUS << getProp<PlayerProp::PLAYERLISTSTATUS>().serialize()
-		>> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize()
-		>> (char)PlayerProp::COMMUNITYNAME << getProp<PlayerProp::COMMUNITYNAME>().serialize();
+	myRCProps >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name >> (char)PlayerProp::CURLEVEL << getProp<PlayerProp::CURLEVEL>().serialize() >> (char)PlayerProp::PLAYERLISTSTATUS << getProp<PlayerProp::PLAYERLISTSTATUS>().serialize() >> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize() >> (char)PlayerProp::COMMUNITYNAME << getProp<PlayerProp::COMMUNITYNAME>().serialize();
 
 	CString toOthers = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id;
 	CString joinLevel = CString() >> (char)PlayerProp::JOINLEAVELVL >> (char)1;
@@ -747,8 +741,9 @@ void Player::exchangeMyPropsWithOthers()
 		bool sameLevel = (player->account.level == account.level);
 		if (player->isClient())
 			player->sendPacket(CString() << toOthers << (sameLevel ? joinLevel : "") << myClientProps);
-		else player->sendPacket(myRCProps);
-		
+		else
+			player->sendPacket(myRCProps);
+
 		// Add Player / RC.
 		if (isClient())
 		{
@@ -787,6 +782,22 @@ bool Player::isStaff()
 	return m_server->isStaff(account.name);
 }
 
+bool Player::isJailed()
+{
+	auto& settings = m_server->getSettings();
+	auto jailLevels = settings.get("jaillevels");
+	if (!jailLevels.has_value())
+		return false;
+
+	auto levels = string::split(jailLevels.value(), ","sv);
+	auto jailed = std::ranges::find_if(levels, [this](std::string_view level)
+	{
+		return string::equalsi(account.level, string::trim(level));
+	});
+
+	return jailed != levels.end();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 double Player::getCalculatedTileZ() const noexcept
@@ -808,7 +819,8 @@ void Player::setNick(CString pNickName, bool force)
 		auto guildEnd = desiredNickname.find(')', guildStart);
 		if (guildEnd == std::string_view::npos)
 			guildName = desiredNickname.substr(guildStart + 1);
-		else guildName = desiredNickname.substr(guildStart + 1, guildEnd - guildStart - 1);
+		else
+			guildName = desiredNickname.substr(guildStart + 1, guildEnd - guildStart - 1);
 	}
 
 	// If we are forcing a nickname change, do it now and return early.
@@ -853,13 +865,11 @@ void Player::setNick(CString pNickName, bool force)
 		}
 
 		// Not in a local guild, so see if we can ask the listserver if they are in a global guild.
-		bool askGlobal = m_server->getSettings().getBool("globalguilds", true);
+		bool askGlobal = m_server->getSettings().get<bool>("globalguilds").value_or(true);
 		if (!askGlobal)
 		{
 			// Check for whitelisted global guilds.
-			std::vector<CString> allowed = m_server->getSettings().getStr("allowedglobalguilds").tokenize(",");
-			if (std::find(allowed.begin(), allowed.end(), guildName) != allowed.end())
-				askGlobal = true;
+			askGlobal = std::ranges::contains(string::split(m_server->getSettings().get<std::string>("allowedglobalguilds").value_or(""), ","sv), guildName);
 		}
 
 		// See if it is a global guild.
@@ -927,8 +937,8 @@ bool Player::setFlag(std::string_view flagName, std::optional<std::string> flagV
 bool Player::addWeapon(LevelItemType defaultWeapon)
 {
 	// Allow Default Weapons..?
-	CSettings& settings = m_server->getSettings();
-	if (!settings.getBool("defaultweapons", true))
+	auto& settings = m_server->getSettings();
+	if (!settings.get<bool>("defaultweapons").value_or(true))
 		return false;
 
 	auto weapon = m_server->getWeapon(LevelItem::getItemName(defaultWeapon));
@@ -997,7 +1007,7 @@ bool Player::deleteWeapon(std::shared_ptr<Weapon> weapon)
 std::string Player::translate(std::string_view key) const
 {
 	auto translationManager = BabyDI::Get<ITranslationManager>();
-	return std::string{ translationManager->getText(getLanguage(), key)};
+	return std::string{ translationManager->getText(getLanguage(), key) };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1202,7 +1212,7 @@ void Player::constructScriptParameters()
 		gameValueSetter(this, PROPOPT(PlayerProp::KILLSCOUNT),
 		[this](const GameValue& value, std::optional<int64_t>)
 		{
-			if (!m_server->getSettings().getBool("dontchangekills", false))
+			if (!m_server->getSettings().get<bool>("dontchangekills").value_or(false))
 				account.kills = static_cast<uint32_t>(std::max(0.0, value.get<double>().value_or(0.0)));
 		})
 	);
@@ -1211,7 +1221,7 @@ void Player::constructScriptParameters()
 		gameValueSetter(this, PROPOPT(PlayerProp::DEATHSCOUNT),
 		[this](const GameValue& value, std::optional<int64_t>)
 		{
-			if (!m_server->getSettings().getBool("dontchangekills", false))
+			if (!m_server->getSettings().get<bool>("dontchangekills").value_or(false))
 				account.deaths = static_cast<uint32_t>(std::max(0.0, value.get<double>().value_or(0.0)));
 		})
 	);
@@ -1228,7 +1238,7 @@ void Player::constructScriptParameters()
 		gameValueSetter(this, PROPOPT(PlayerProp::RATING),
 		[this](const GameValue& value, std::optional<int64_t>)
 		{
-			if (!m_server->getSettings().getBool("dontupdateratingd", false))
+			if (!m_server->getSettings().get<bool>("dontupdateratingd").value_or(false))
 				account.eloDeviation = static_cast<float>(std::clamp(value.get<double>().value_or(0.0), 0.0, 350.0));
 		})
 	);
@@ -1338,11 +1348,7 @@ HandlePacketResult Player::msgPLI_PLAYERPROPS(CString& pPacket)
 HandlePacketResult Player::msgPLI_TOALL(CString& pPacket)
 {
 	// Check if the player is in a jailed level.
-	std::vector<CString> jailList = m_server->getSettings().getStr("jaillevels").tokenize(",");
-	if (std::find_if(jailList.begin(), jailList.end(), [&levelName = account.level](CString& level)
-					 {
-						 return level.trim() == levelName;
-					 }) != jailList.end())
+	if (isJailed())
 		return HandlePacketResult::Handled;
 
 	CString message = pPacket.readString(pPacket.readGUChar());
@@ -1355,7 +1361,7 @@ HandlePacketResult Player::msgPLI_TOALL(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	for (auto& [pid, player]: m_server->getPlayerList())
+	for (auto& [pid, player] : m_server->getPlayerList())
 	{
 		if (pid == m_id) continue;
 
@@ -1371,16 +1377,7 @@ HandlePacketResult Player::msgPLI_TOALL(CString& pPacket)
 HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 {
 	// Check if the player is in a jailed level.
-	std::vector<CString> jailList = m_server->getSettings().getStr("jaillevels").tokenize(",");
-	bool jailed = false;
-	for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
-	{
-		if (i->trim() == account.level)
-		{
-			jailed = true;
-			break;
-		}
-	}
+	bool jailed = isJailed();
 
 	// Get the players this message was addressed to.
 	std::vector<PlayerID> pmPlayers;

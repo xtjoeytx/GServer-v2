@@ -65,7 +65,7 @@ flagPair FlatFileAccountLoader::decomposeFlag(const std::string& flag) const
 	flagPair result;
 	auto sep = flag.find('=');
 	result = (sep == std::string::npos) ? std::make_pair(flag, "") : std::make_pair(flag.substr(0, sep), flag.substr(sep + 1));
-	if (server->getSettings().getBool("cropflags", true))
+	if (server->getSettings().get<bool>("cropflags").value_or(true))
 	{
 		// If cropflags is enabled, crop the flag to 223 characters.
 		// Subtract the length of the flag name and the = character from 223 to determine the space left for the flag value.
@@ -280,13 +280,13 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 
 		// Check to see if we are overriding our start level and position.
 		if (settings.exists("startlevel"))
-			account.level = settings.getStr("startlevel", "onlinestartlocal.nw").toString();
+			account.level = settings.get<std::string>("startlevel").value_or("onlinestartlocal.nw");
 
 		if (settings.exists("startx"))
-			account.character.localPixelX = static_cast<int16_t>(settings.getFloat("startx", 30.0f) * 16);
+			account.character.localPixelX = static_cast<int16_t>(settings.get<float>("startx").value_or(30.0f) * 16);
 
 		if (settings.exists("starty"))
-			account.character.localPixelY = static_cast<int16_t>(settings.getFloat("starty", 30.5f) * 16);
+			account.character.localPixelY = static_cast<int16_t>(settings.get<float>("starty").value_or(30.5f) * 16);
 
 		// Save our account now and add it to the file system.
 		if (!account.loadOnly)

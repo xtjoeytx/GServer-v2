@@ -52,9 +52,14 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSGET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	auto& settings = m_server->getSettings();
+	auto settings = m_server->getFileSystemServer().openi(fs::FileCategory::CONFIG, "serveroptions.txt");
+	auto options = string::toCSV(settings->readAllLines());
 
-	sendPacket(CString() >> (char)PLO_RC_SERVEROPTIONSGET << settings.getSettings().gtokenize());
+	// RC will automatically add a newline after the last line, so remove the newline if it exists to prevent an extra blank line from showing up in RC.
+	if (options.back() == ',')
+		options.pop_back();
+
+	sendPacket(CString() >> (char)PLO_RC_SERVEROPTIONSGET << options);
 	return HandlePacketResult::Handled;
 }
 
@@ -73,6 +78,11 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 
 	auto& settings = m_server->getSettings();
 	CString options = pPacket.readString("");
+
+	// RC will trim the end of the string, so if the last character is not a comma, add it back in.
+	if (options[options.length() - 1] != ',')
+		options << ",";
+
 	options.guntokenizeI();
 
 	// If they don't have the modify staff account right, prevent them from changing admin-only options.
@@ -92,7 +102,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 
 			// If it is an admin command, replace it with the current value.
 			if (isAdmin)
-				newOption = CString() << name << " = " << settings.getStr(name);
+				newOption = CString() << name << " = " << settings.get(name).value_or("");
 
 			// Add this line back into options.
 			options << newOption << "\n";
@@ -100,11 +110,13 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 	}
 
 	// Save settings.
-	settings.loadSettings(options, true, true);
+	if (auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::CONFIG, "serveroptions.txt"); file != nullptr)
+	{
+		file->clear();
+		file->write(options.toStringView());
+	}
 
 	// Reload settings.
-	//m_server->loadSettings();
-	//m_server->loadMaps();
 	log::printLine(log::rc, "{} has updated the server options.", account.name);
 
 	// Send RC Information

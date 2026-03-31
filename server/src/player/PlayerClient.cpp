@@ -224,10 +224,10 @@ bool PlayerClient::doTimedEvents()
 	}
 
 	// Disconnect if players are inactive.
-	CSettings& settings = m_server->getSettings();
-	if (settings.getBool("disconnectifnotmoved"))
+	auto& settings = m_server->getSettings();
+	if (settings.get<bool>("disconnectifnotmoved").value_or(true))
 	{
-		int maxnomovement = settings.getInt("maxnomovement", 1200);
+		int maxnomovement = settings.get<int>("maxnomovement").value_or(1200);
 		if (timeDifference(currTime, m_lastMovement) > std::chrono::seconds{ maxnomovement } && timeDifference(currTime, m_lastChat) > std::chrono::seconds{ maxnomovement })
 		{
 			log::printLine(log::server, "** [Disconnect] {}: Client has been disconnected due to inactivity.", account.name);
@@ -237,7 +237,7 @@ bool PlayerClient::doTimedEvents()
 	}
 
 	// Increase player AP.
-	if (settings.getBool("apsystem") && !m_currentLevel.expired())
+	if (settings.get<bool>("apsystem").value_or(true) && !m_currentLevel.expired())
 	{
 		if (auto subLevel = getSubLevel(); subLevel != nullptr)
 		{
@@ -251,15 +251,15 @@ bool PlayerClient::doTimedEvents()
 						sendPropsFromResults(setPropWith<PlayerProp::ALIGNMENT>(props::SetBy::SERVER, static_cast<uint8_t>(account.character.ap + 1)));
 
 					if (account.character.ap < 20)
-						account.apCounter = settings.getInt("aptime0", 30);
+						account.apCounter = settings.get<uint16_t>("aptime0").value_or(30);
 					else if (account.character.ap < 40)
-						account.apCounter = settings.getInt("aptime1", 90);
+						account.apCounter = settings.get<uint16_t>("aptime1").value_or(90);
 					else if (account.character.ap < 60)
-						account.apCounter = settings.getInt("aptime2", 300);
+						account.apCounter = settings.get<uint16_t>("aptime2").value_or(300);
 					else if (account.character.ap < 80)
-						account.apCounter = settings.getInt("aptime3", 600);
+						account.apCounter = settings.get<uint16_t>("aptime3").value_or(600);
 					else
-						account.apCounter = settings.getInt("aptime4", 1200);
+						account.apCounter = settings.get<uint16_t>("aptime4").value_or(1200);
 				}
 			}
 		}
@@ -422,7 +422,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 	}
 
 	// Check for available slots on the server.
-	if (m_server->getPlayerList().size() >= (unsigned int)m_server->getSettings().getInt("maxplayers", 128))
+	if (m_server->getPlayerList().size() >= m_server->getSettings().get<uint32_t>("maxplayers").value_or(128))
 	{
 		log::printLine(log::rc, "** [Disconnect] '{}': Server is full.", account.name);
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server has reached its player limit.");
@@ -487,7 +487,7 @@ bool PlayerClient::sendLogin()
 	sendPacket(CString() >> (char)PLO_CLEARWEAPONS);
 
 	// If the gr.ip hack is enabled, add it to the player's flag list.
-	if (settings.getBool("flaghack_ip", false) == true)
+	if (settings.get<bool>("flaghack_ip").value_or(false) == true)
 		this->setFlag("gr.ip", account.ipAddress, true);
 
 	// Send the player's flags.
@@ -530,14 +530,16 @@ bool PlayerClient::sendLogin()
 	}
 
 	// Send any protected weapons we do not have.
-	auto protectedWeapons = m_server->getSettings().getStr("protectedweapons").gCommaStrTokens();
-	std::erase_if(protectedWeapons,
-		[this](CString& val)
+	if (auto protectedWeapons = m_server->getSettings().get("protectedweapons"); protectedWeapons.has_value())
+	{
+		auto protectedWeaponsList = string::splitToVector(protectedWeapons.value(), ","sv);
+		std::erase_if(protectedWeaponsList, [this](std::string& val)
 		{
 			return std::find(account.weapons.begin(), account.weapons.end(), val) != account.weapons.end();
 		});
-	for (auto& weaponName : protectedWeapons)
-		this->addWeapon(weaponName.toString());
+		for (auto& weaponName : protectedWeaponsList)
+			this->addWeapon(weaponName);
+	}
 
 	// Send the zlib fixing NPC to client versions 2.21 - 2.31.
 	if (m_versionId >= CLVER_2_21 && m_versionId <= CLVER_2_31)
@@ -552,7 +554,7 @@ bool PlayerClient::sendLogin()
 	// Send the bigmap if it was set.
 	if (m_versionId >= CLVER_2_1)
 	{
-		CString bigmap = settings.getStr("bigmap");
+		CString bigmap = settings.get("bigmap").value_or("");
 		if (!bigmap.isEmpty())
 		{
 			std::vector<CString> vbigmap = bigmap.tokenize(",");
@@ -564,7 +566,7 @@ bool PlayerClient::sendLogin()
 	// Send the minimap if it was set.
 	if (m_versionId >= CLVER_2_1)
 	{
-		CString minimap = settings.getStr("minimap");
+		CString minimap = settings.get("minimap").value_or("");
 		if (!minimap.isEmpty())
 		{
 			std::vector<CString> vminimap = minimap.tokenize(",");
@@ -575,7 +577,7 @@ bool PlayerClient::sendLogin()
 
 	// Send out RPG Window greeting.
 	if (m_versionId >= CLVER_2_1)
-		sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings.getStr("name") << ".\",\"" << CString(APP_VENDOR) << " " << CString(APP_NAME) << " programmed by " << CString(APP_CREDITS) << ".\"");
+		sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings.get("name").value_or("") << ".\",\"" << CString(APP_VENDOR) << " " << CString(APP_NAME) << " programmed by " << CString(APP_CREDITS) << ".\"");
 
 	// Send the start message to the player.
 	sendPacket(CString() >> (char)PLO_STARTMESSAGE << m_server->getServerMessage());
@@ -584,10 +586,9 @@ bool PlayerClient::sendLogin()
 	sendPacket(CString() >> (char)PLO_SERVERTEXT);
 
 	// Send out what guilds should be placed in the Staff section of the playerlist.
-	std::vector<CString> guilds = settings.getStr("staffguilds").tokenize(",");
 	CString guildPacket = CString() >> (char)PLO_STAFFGUILDS;
-	for (std::vector<CString>::iterator i = guilds.begin(); i != guilds.end(); ++i)
-		guildPacket << "\"" << ((CString)(*i)).trim() << "\",";
+	for (const auto& guild : string::split(settings.get("staffguilds").value_or(""), ","sv))
+		guildPacket << "\"" << string::trim(guild) << "\",";
 	sendPacket(guildPacket.remove(guildPacket.length() - 1, 1));
 
 	// Send out the server's available status list options.
@@ -595,8 +596,8 @@ bool PlayerClient::sendLogin()
 	{
 		// graal doesn't quote these
 		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-		for (const auto& status : m_server->getStatusList())
-			pliconPacket << status.trim() << ",";
+		for (const auto& status : m_server->getStatusList().getUnsafe())
+			pliconPacket << string::trim(status) << ",";
 
 		sendPacket(pliconPacket.remove(pliconPacket.length() - 1, 1));
 	}
@@ -645,7 +646,7 @@ bool PlayerClient::processChat(const CString& pChat)
 	std::vector<CString> chatParse = pChat.tokenizeConsole();
 	if (chatParse.size() == 0) return false;
 	bool processed = false;
-	bool setcolorsallowed = m_server->getSettings().getBool("setcolorsallowed", true);
+	bool setcolorsallowed = m_server->getSettings().get<bool>("setcolorsallowed").value_or(true);
 
 	if (chatParse[0] == "setnick")
 	{
@@ -673,7 +674,7 @@ bool PlayerClient::processChat(const CString& pChat)
 	}
 	else if (chatParse[0] == "sethead" && chatParse.size() == 2)
 	{
-		if (!m_server->getSettings().getBool("setheadallowed", true)) return false;
+		if (!m_server->getSettings().get<bool>("setheadallowed").value_or(true)) return false;
 		processed = true;
 
 		// Try to find the file.
@@ -703,7 +704,7 @@ bool PlayerClient::processChat(const CString& pChat)
 	}
 	else if (chatParse[0] == "setbody" && chatParse.size() == 2)
 	{
-		if (m_server->getSettings().getBool("setbodyallowed", true) == false) return false;
+		if (m_server->getSettings().get<bool>("setbodyallowed").value_or(true) == false) return false;
 		processed = true;
 
 		// Check to see if it is a default body.
@@ -746,7 +747,7 @@ bool PlayerClient::processChat(const CString& pChat)
 	}
 	else if (chatParse[0] == "setsword" && chatParse.size() == 2)
 	{
-		if (!m_server->getSettings().getBool("setswordallowed", true)) return false;
+		if (!m_server->getSettings().get<bool>("setswordallowed").value_or(true)) return false;
 		processed = true;
 
 		// Check to see if it is a default sword.
@@ -789,7 +790,7 @@ bool PlayerClient::processChat(const CString& pChat)
 	}
 	else if (chatParse[0] == "setshield" && chatParse.size() == 2)
 	{
-		if (!m_server->getSettings().getBool("setshieldallowed", true)) return false;
+		if (!m_server->getSettings().get<bool>("setshieldallowed").value_or(true)) return false;
 		processed = true;
 
 		// Check to see if it is a default shield.
@@ -903,7 +904,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (chatParse.size() == 2)
 		{
 			// Permission check.
-			if (!account.hasRight(PLPERM_WARPTOPLAYER) && !m_server->getSettings().getBool("warptoforall", false))
+			if (!account.hasRight(PLPERM_WARPTOPLAYER) && !m_server->getSettings().get<bool>("warptoforall").value_or(false))
 			{
 				setChat("(not authorized to warp)");
 				return true;
@@ -917,7 +918,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		else if (chatParse.size() == 3)
 		{
 			// Permission check.
-			if (!account.hasRight(PLPERM_WARPTO) && !m_server->getSettings().getBool("warptoforall", false))
+			if (!account.hasRight(PLPERM_WARPTO) && !m_server->getSettings().get<bool>("warptoforall").value_or(false))
 			{
 				setChat("(not authorized to warp)");
 				return true;
@@ -929,7 +930,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		else if (chatParse.size() == 4)
 		{
 			// Permission check.
-			if (!account.hasRight(PLPERM_WARPTO) && !m_server->getSettings().getBool("warptoforall", false))
+			if (!account.hasRight(PLPERM_WARPTO) && !m_server->getSettings().get<bool>("warptoforall").value_or(false))
 			{
 				setChat("(not authorized to warp)");
 				return true;
@@ -959,17 +960,16 @@ bool PlayerClient::processChat(const CString& pChat)
 			processed = true;
 
 			// Check if the player is in a jailed level.
-			std::vector<CString> jailList = m_server->getSettings().getStr("jaillevels").tokenize(",");
-			for (std::vector<CString>::iterator i = jailList.begin(); i != jailList.end(); ++i)
-				if (i->trim() == account.level) return false;
+			if (isJailed())
+				return false;
 
-			int unstickTime = m_server->getSettings().getInt("unstickmetime", 30);
+			int unstickTime = m_server->getSettings().get<int>("unstickmetime").value_or(30);
 			if (timeDifference(m_server->getFrameStartTime(), m_lastMovement) >= std::chrono::seconds{ unstickTime })
 			{
 				m_lastMovement = m_server->getFrameStartTime();
-				CString unstickLevel = m_server->getSettings().getStr("unstickmelevel", "onlinestartlocal.nw");
-				float unstickX = m_server->getSettings().getFloat("unstickmex", 30.0f);
-				float unstickY = m_server->getSettings().getFloat("unstickmey", 30.5f);
+				CString unstickLevel = m_server->getSettings().get("unstickmelevel").value_or("onlinestartlocal.nw");
+				float unstickX = m_server->getSettings().get<float>("unstickmex").value_or(30.0f);
+				float unstickY = m_server->getSettings().get<float>("unstickmey").value_or(30.5f);
 				warp(unstickLevel, { static_cast<int16_t>(unstickX * 16.0f), static_cast<int16_t>(unstickY * 16.0f) });
 				setChat("Warped!");
 			}
@@ -983,7 +983,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (auto level = getLevel(); level)
 			level->reload(getMapPosition());
 	}
-	else if (pChat == "showadmins" && m_server->getSettings().getBool("disableshowadmins", false) == false)
+	else if (pChat == "showadmins" && m_server->getSettings().get<bool>("disableshowadmins").value_or(false) == false)
 	{
 		processed = true;
 
@@ -1417,7 +1417,7 @@ bool PlayerClient::sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLe
 		return false;
 
 	PlayerPtr self = shared_from_this();
-	CSettings& settings = m_server->getSettings();
+	auto& settings = m_server->getSettings();
 	auto levelModTime = staticLevelData->modTime;
 	auto cachedModTime = getLevelLastEnteredTime(staticLevelData.get());
 	if (!clientCachedTime.has_value()) clientCachedTime = levelModTime;
@@ -1455,11 +1455,11 @@ bool PlayerClient::sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLe
 		// Send links (if applicable).
 		// We need to always send map links for bigmaps due to overflow issues that easily occur while waiting for the warp.
 		// (The client may start to go beyond the edge of the level and cause an integer overflow in their position).
-		if (!m_server->hasNPCServer() || settings.getBool("clientsidelinks", false) || (subLevel && subLevel->isOnBigMap))
+		if (!m_server->hasNPCServer() || settings.get<bool>("clientsidelinks").value_or(false) || (subLevel && subLevel->isOnBigMap))
 			staticLevelData->sendLinksToPlayer(self, false);
 
 		// Send signs (if applicable).
-		if (!m_server->hasNPCServer() || settings.getBool("clientsidesigns", false))
+		if (!m_server->hasNPCServer() || settings.get<bool>("clientsidesigns").value_or(false))
 			staticLevelData->sendSignsToPlayer(self);
 	}
 
@@ -1665,7 +1665,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 
 	// Get the bounding box to test with.
 	PixelRectangleArea testBox{ getGlobalPosition().translate(touchTest[movementDirection].x(), touchTest[movementDirection].y()), { 0, 0, 48 } };
-	if (m_server->getSettings().getBool("playertouchsmenoz", false))
+	if (m_server->getSettings().get<bool>("playertouchsmenoz").value_or(false))
 	{
 		// If the server is set to ignore Z axis for touch, do so by providing a box of max length in the Z axis.
 		testBox.position.z() = std::numeric_limits<int16_t>::min();
@@ -1686,7 +1686,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 		}
 		if (touchedNPC)
 		{
-			uint32_t eventDistance = static_cast<uint32_t>(m_server->getSettings().getInt("eventdistance", 64));
+			auto eventDistance = m_server->getSettings().get<uint32_t>("eventdistance").value_or(64);
 			for (const auto& npcId : level->findInRangeNPCsByDistance(testBox.position, eventDistance))
 			{
 				auto intersectingNPCs = level->findIntersectingNPCsForCollision(testBox);
@@ -1702,7 +1702,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 
 bool PlayerClient::testForSigns(SetResults& result, uint8_t movementDirection)
 {
-	if (!m_server->hasNPCServer() || m_server->getSettings().getBool("clientsidesigns", false))
+	if (!m_server->hasNPCServer() || m_server->getSettings().get<bool>("clientsidesigns").value_or(false))
 		return false;
 
 	// Test for signs.
@@ -1728,7 +1728,7 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 {
 	static Position<int16_t> touchTest[] = { { 24, 16 }, { 0, 32 }, { 24, 56 }, { 48, 32 } };
 
-	if (!m_server->hasNPCServer() || m_server->getSettings().getBool("clientsidelinks", false))
+	if (!m_server->hasNPCServer() || m_server->getSettings().get<bool>("clientsidelinks").value_or(false))
 		return false;
 
 	// If we have no level, we can't test anything!
@@ -1772,15 +1772,15 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 
 void PlayerClient::dropItemsOnDeath()
 {
-	if (!m_server->getSettings().getBool("dropitemsdead", true))
+	if (!m_server->getSettings().get<bool>("dropitemsdead").value_or(true))
 		return;
 
 	auto level = getLevel();
 	if (level == nullptr)
 		return;
 
-	uint32_t mindeathgralats = static_cast<uint32_t>(m_server->getSettings().getInt("mindeathgralats", 1));
-	uint32_t maxdeathgralats = static_cast<uint32_t>(m_server->getSettings().getInt("maxdeathgralats", 50));
+	auto mindeathgralats = m_server->getSettings().get<uint32_t>("mindeathgralats").value_or(1);
+	auto maxdeathgralats = m_server->getSettings().get<uint32_t>("maxdeathgralats").value_or(50);
 	const auto& allowedDeathDrops = m_server->getAllowedDeathDrops();
 
 	std::random_device rd;
@@ -2011,7 +2011,7 @@ props::SetResults PlayerClient::addItem(LevelItemType itemType, props::SetBy set
 
 		case LevelItemType::HEART:
 		{
-			uint8_t maxHearts = static_cast<uint8_t>(std::min(account.maxHitpoints, static_cast<uint8_t>(m_server->getSettings().getInt("heartlimit", 3))) * 2);
+			uint8_t maxHearts = static_cast<uint8_t>(std::min(account.maxHitpoints, static_cast<uint8_t>(m_server->getSettings().get<uint8_t>("heartlimit").value_or(3))) * 2);
 			return setPropWith<PlayerProp::BOMBSCOUNT>(setBy, std::min(maxHearts, static_cast<uint8_t>(account.character.hitpointsInHalves + 2)));
 		}
 

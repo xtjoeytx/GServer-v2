@@ -7,8 +7,8 @@
 #include <iterator>
 #include <memory>
 #include <optional>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -29,17 +29,18 @@
 #include <object/ShowImg.h>
 #include <object/Weapon.h>
 #include <player/PlayerClient.h>
-#include <scripting/gs1/ScriptEngineGS1.h>
-#include <scripting/gs2/ScriptEngineGS2.h>
 #include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
+#include <scripting/gs2/ScriptEngineGS2.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
-#include <utilities/generator/TimeoutGenerator.h>
 #include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
+#include <utilities/StringUtils.h>
+#include <utilities/generator/TimeoutGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -52,8 +53,8 @@ void NPCServer::initialize()
 	scripting.defaultScriptEngine = "GS1";
 
 	// NC options.
-	m_ncHost = m_server->getAdminSettings().getStr("ns_ip", "auto").toLower().toString();
-	m_ncPort = m_server->getSettings().getInt("serverport", 14900);
+	m_ncHost = string::toLower(m_server->getAdminSettings().get<std::string>("ns_ip").value_or("auto"));
+	m_ncPort = m_server->getSettings().get<uint16_t>("serverport").value_or(14900);
 	if (m_ncHost == "auto")
 		m_ncHost = m_server->getServerList().getServerIP();
 
@@ -65,13 +66,13 @@ void NPCServer::initialize()
 	auto& account = m_npcServerPlayer->account;
 
 	// TODO(Nalin): The settings manager sees `NICK ` nodes as valid, so it doesn't get a default!  We need to redo settings.
-	auto nickname = settings.getStr("nickname", "NPC-Server");
-	if (nickname.isEmpty())
+	auto nickname = settings.get<std::string>("nickname").value_or("NPC-Server");
+	if (nickname.empty())
 		nickname = "NPC-Server";
 
 	// Load the npc-server account.
 	m_server->getAccountLoader().loadAccount("(npcserver)", account);
-	account.character.headImage = settings.getStr("staffhead", "head25.png").toString();
+	account.character.headImage = settings.get<std::string>("staffhead").value_or("head25.png");
 	account.character.nickName = std::format("{} (Server)", nickname);
 	account.level = "";
 	m_npcServerPlayer->setLoaded(true);
@@ -99,14 +100,14 @@ void NPCServer::initialize()
 
 	// If we don't sleep, unset the first NPC save flag.
 	// We won't run into the problem where we immediately save on server start.
-	bool sleepwhennoplayers = m_server->getSettings().getBool("sleepwhennoplayers", true);
+	bool sleepwhennoplayers = m_server->getSettings().get<bool>("sleepwhennoplayers").value_or(true);
 	if (!sleepwhennoplayers)
 		m_firstNPCSave = false;
 }
 
 void NPCServer::setRemoteIp(std::string_view host)
 {
-	if (m_server->getAdminSettings().getStr("ns_ip", "auto").toLower() == "auto")
+	if (string::equalsi(m_server->getAdminSettings().get<std::string>("ns_ip").value_or("auto"), "auto"sv))
 		m_ncHost = host;
 }
 
@@ -157,7 +158,8 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 			{
 				if (delta < npc->timeout)
 					npc->timeout -= delta;
-				else npc->timeout = -1ms;
+				else
+					npc->timeout = -1ms;
 
 				if (npc->timeout < std::chrono::milliseconds::zero())
 				{
@@ -236,7 +238,7 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 
 	// If we have no players, enter sleep mode.
 	// We do it this way to give the server time to process logouts, and to force an NPC save (since saves will be disabled while sleeping).
-	bool sleepwhennoplayers = m_server->getSettings().getBool("sleepwhennoplayers", true);
+	bool sleepwhennoplayers = m_server->getSettings().get<bool>("sleepwhennoplayers").value_or(true);
 	if (sleepwhennoplayers && m_playerList.empty())
 	{
 		m_sleeping = true;
@@ -348,7 +350,8 @@ std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::str
 
 	if (type == NPCTYPE_LOCAL)
 		npc = std::make_shared<NPC>(id, NPCStorageType::LEVEL);
-	else npc = std::make_shared<NPC>(id, NPCStorageType::DATABASE);
+	else
+		npc = std::make_shared<NPC>(id, NPCStorageType::DATABASE);
 
 	auto pixelPosition = toPixelPosition(location);
 	auto localPixelPosition = toLocalPixelPosition(pixelPosition);

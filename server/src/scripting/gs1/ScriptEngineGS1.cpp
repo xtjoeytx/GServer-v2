@@ -302,7 +302,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 	if (event.type != ScriptEventType::CREATED && event.type != ScriptEventType::INITIALIZED)
 	{
 		const auto& eventName = determineEventName(event);
-		if (!wrapper->parser->identifiers.contains(eventName) && !server->getSettings().getBool("runallscriptevents", false))
+		if (!wrapper->parser->identifiers.contains(eventName) && !server->getSettings().get<bool>("runallscriptevents").value_or(false))
 			return false;
 	}
 #endif
@@ -315,7 +315,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 	if (event.type != ScriptEventType::CREATED && event.type != ScriptEventType::INITIALIZED)
 	{
 		const auto& eventName = determineEventName(event);
-		if (!wrapper->parser->identifiers.contains(eventName) && !server->getSettings().getBool("runallscriptevents", false))
+		if (!wrapper->parser->identifiers.contains(eventName) && !server->getSettings().get<bool>("runallscriptevents").value_or(false))
 		{
 			log::printLine(log::script, "GS1 script for event '{}' not found in script '{}'.", eventName, wrapper->visitor->who);
 			return false;

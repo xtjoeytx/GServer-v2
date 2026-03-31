@@ -1003,7 +1003,7 @@ void fn_destroy(GS1Visitor* visitor, std::string_view commandName, const std::ve
 	if (auto source = visitor->getOriginalSource(); source.second == ScriptObjectType::NPC)
 	{
 		auto server = BabyDI::Get<Server>();
-		if (server->getSettings().getBool("protectdbnpcs", true))
+		if (server->getSettings().get<bool>("protectdbnpcs").value_or(true))
 		{
 			if (auto npc = server->getNPC(source.first); npc != nullptr && npc->storageType == NPCStorageType::DATABASE && npc->scriptType != NPCTYPE_LOCAL && npc->scriptType != NPCTYPE_ITEM)
 			{
@@ -1556,7 +1556,7 @@ void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::v
 		throw std::invalid_argument("invalid arguments: puthorse imagefile,x,y");
 
 	auto server = BabyDI::Get<Server>();
-	if (server->getSettings().getBool("puthorseenabled", true) == false)
+	if (server->getSettings().get<bool>("puthorseenabled").value_or(true) == false)
 	{
 		log::printLine(log::npc, "puthorse command is disabled on this server.");
 		return;

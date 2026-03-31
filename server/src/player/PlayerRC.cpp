@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <format>
 #include <optional>
+#include <string_view>
+#include <string>
 #include <vector>
 
 #include <CEncryption.h>
@@ -15,13 +17,14 @@
 #include <object/Player.h>
 #include <player/PlayerRC.h>
 #include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-using PacketHandleFunc = HandlePacketResult(PlayerRC::*)(CString&);
+using PacketHandleFunc = HandlePacketResult (PlayerRC::*)(CString&);
 using PacketHandleArray = std::array<PacketHandleFunc, 256>;
 
 static PacketHandleArray GeneratePacketHandlers()
@@ -180,7 +183,7 @@ bool PlayerRC::handleLogin(CString& pPacket)
 	}
 
 	// Check for available slots on the server.
-	if (m_server->getPlayerList().size() >= (unsigned int)m_server->getSettings().getInt("maxplayers", 128))
+	if (m_server->getPlayerList().size() >= (unsigned int)m_server->getSettings().get<uint32_t>("maxplayers").value_or(128))
 	{
 		log::printLine(log::rc, "** [Disconnect] '{}': Server is full.", account.name);
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server has reached its player limit.");
@@ -216,7 +219,7 @@ bool PlayerRC::sendLogin()
 	account.level = " ";
 
 	// Set the head to the server's set staff head.
-	account.character.headImage = m_server->getSettings().getStr("staffhead", "head25.png").toStringView();
+	account.character.headImage = m_server->getSettings().get<std::string>("staffhead").value_or("head25.png");
 
 	// Send the RC join message to the RC.
 	std::vector<CString> rcmessage = CString::loadToken("config/rcmessage.txt", "\n", true);
@@ -230,18 +233,17 @@ bool PlayerRC::sendLogin()
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "New RC: " << account.name);
 
 	// Send out what guilds should be placed in the Staff section of the playerlist.
-	std::vector<CString> guilds = settings.getStr("staffguilds").tokenize(",");
 	CString guildPacket = CString() >> (char)PLO_STAFFGUILDS;
-	for (std::vector<CString>::iterator i = guilds.begin(); i != guilds.end(); ++i)
-		guildPacket << "\"" << ((CString)(*i)).trim() << "\",";
+	for (const auto& guild : string::split(settings.get<std::string>("staffguilds").value_or(""), ","sv))
+		guildPacket << "\"" << string::trim(guild) << "\",";
 	sendPacket(guildPacket.remove(guildPacket.length() - 1, 1));
 
 	// Send out the server's available status list options.
 	{
 		// graal doesn't quote these
 		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-		for (const auto& status : m_server->getStatusList())
-			pliconPacket << status.trim() << ",";
+		for (const auto& status : m_server->getStatusList().getUnsafe())
+			pliconPacket << string::trim(status) << ",";
 
 		sendPacket(pliconPacket.remove(pliconPacket.length() - 1, 1));
 	}

@@ -1433,7 +1433,7 @@ bool Level::alterBoard(CString& tileData, const WholeTileRectangleArea& area, Pl
 	auto& settings = m_server->getSettings();
 
 	// Do the check for the push-pull block.
-	if (area.position.z() == 0 && area.size.width() == 4 && area.size.height() == 4 && settings.getBool("clientsidepushpull", true))
+	if (area.position.z() == 0 && area.size.width() == 4 && area.size.height() == 4 && settings.get<bool>("clientsidepushpull").value_or(true))
 	{
 		// Try to find the top-left corner tile.
 		int i;
@@ -1490,14 +1490,14 @@ bool Level::alterBoard(CString& tileData, const WholeTileRectangleArea& area, Pl
 	// Any 2x2 tile change can respawn.
 	// The list of tiles is mostly for security checks and should be a list of allowed replacements.
 	// TODO: Develop a way to specify valid tile replacements.
-	int respawnTime = settings.getInt("respawntime", 15);
+	int respawnTime = settings.get<int>("respawntime").value_or(15);
 	bool doRespawn = allowRespawn && (forceRespawn || (area.size.width() == 2 && area.size.height() == 2));
 
 	/*
 	// Check if the tiles should be respawned.
 	// Only tiles in the respawningTiles array are allowed to respawn.
 	// These are things like signs, bushes, pots, etc.
-	int respawnTime = settings.getInt("respawntime", 15);
+	int respawnTime = settings.get<int>("respawntime").value_or(15);
 	bool doRespawn = false;
 	short testTile = m_tiles[0][area.position.x() + (static_cast<size_t>(area.position.y()) * 64)];
 	int tileCount = sizeof(respawningTiles) / sizeof(short);
@@ -1674,7 +1674,7 @@ void Level::updateBoard(const TileRectangleArea& area) noexcept
 void Level::updateBoard2(const TileRectangleArea& area) noexcept
 {
 	// If we don't allow permanent tile modifications, just call updateBoard().
-	if (m_server->getSettings().getBool("savelevels", false) == false)
+	if (m_server->getSettings().get<bool>("savelevels").value_or(false) == false)
 	{
 		updateBoard(area);
 		return;
@@ -1683,7 +1683,7 @@ void Level::updateBoard2(const TileRectangleArea& area) noexcept
 	auto wholeTileArea = toWholeTileRectangleArea(area);
 	applyBoardChangeFromScriptTiles(wholeTileArea, false, false);
 
-	bool levelsAutoSave = m_server->getSettings().getBool("levelsautosave", true);
+	bool levelsAutoSave = m_server->getSettings().get<bool>("levelsautosave").value_or(true);
 	if (levelsAutoSave)
 	{
 		auto mapPosition = toMapPosition(area.position);
@@ -2179,7 +2179,7 @@ LevelHorse* Level::addHorse(inform_client_t, std::string_view image, const Pixel
 
 LevelHorse* Level::addHorse(std::string_view image, const PixelPosition& position, uint8_t direction, uint8_t bushes)
 {
-	auto horseLife = m_server->getSettings().getInt("horselifetime", 30);
+	auto horseLife = m_server->getSettings().get<uint32_t>("horselifetime").value_or(30);
 
 	LevelHorse newHorse{ .position = position, .image = std::string{ image }, .direction = direction, .bushes = bushes, .timeout = TimeoutGenerator(std::chrono::seconds(horseLife)) };
 	if (isOnWater(position.translate(16, 32)))
@@ -2499,7 +2499,7 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 				constructEventParams();
 
 			// Check for wall collisions.
-			bool onWallDetection = m_server->getSettings().getBool("projectilesstoponwall", true) && groundDiff < 48;
+			bool onWallDetection = m_server->getSettings().get<bool>("projectilesstoponwall").value_or(true) && groundDiff < 48;
 			if (!collided && onWallDetection && isOnWall2(WholeTileRectangleArea{ toWholeTilePosition(pixelPosition), {1_ui8, 1_ui8} }))
 				constructEventParams();
 		}
@@ -2793,7 +2793,7 @@ std::generator<SubLevelPtr> Level::getNearbySubLevels(const PixelPosition& posit
 
 std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& position, std::optional<std::pair<uint32_t, uint32_t>> range) const noexcept
 {
-	bool syncInside = m_server->getSettings().getBool("syncbydistanceinside", false);
+	bool syncInside = m_server->getSettings().get<bool>("syncbydistanceinside").value_or(false);
 	bool isInsideLevel = !isGmap();
 
 	// If this is not a gmap, and we aren't syncing by distance inside, return all level players.
@@ -2803,8 +2803,8 @@ std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& p
 		co_return;
 	}
 
-	uint32_t syncx = (uint32_t)m_server->getSettings().getInt("syncdistancex", 192);
-	uint32_t syncy = (uint32_t)m_server->getSettings().getInt("syncdistancey", 192);
+	uint32_t syncx = (uint32_t)m_server->getSettings().get<uint32_t>("syncdistancex").value_or(192);
+	uint32_t syncy = (uint32_t)m_server->getSettings().get<uint32_t>("syncdistancey").value_or(192);
 	auto mapSize = sizeInTiles();
 	auto tilePosition = toTilePosition(position);
 
@@ -2897,7 +2897,7 @@ std::generator<const PlayerID&> Level::findPlayersInLevelPart(const MapPosition&
 
 std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& position) const noexcept
 {
-	bool syncInside = m_server->getSettings().getBool("syncbydistanceinside", false);
+	bool syncInside = m_server->getSettings().get<bool>("syncbydistanceinside").value_or(false);
 	bool isInsideLevel = !isGmap();
 
 	// If this is an inside level and we aren't going to sync by distance inside, return all level NPCs.
@@ -2907,8 +2907,8 @@ std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& positio
 		co_return;
 	}
 
-	unsigned int syncx = (unsigned int)m_server->getSettings().getInt("syncdistancex", 192);
-	unsigned int syncy = (unsigned int)m_server->getSettings().getInt("syncdistancey", 192);
+	unsigned int syncx = (unsigned int)m_server->getSettings().get<uint32_t>("syncdistancex").value_or(192);
+	unsigned int syncy = (unsigned int)m_server->getSettings().get<uint32_t>("syncdistancey").value_or(192);
 	auto mapSize = sizeInTiles();
 	auto tilePosition = toTilePosition(position);
 

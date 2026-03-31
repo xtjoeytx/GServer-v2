@@ -4,8 +4,10 @@
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
+#include <filesystem>
 #include <format>
 #include <memory>
+#include <string_view>
 #include <string>
 #include <vector>
 
@@ -19,15 +21,17 @@
 #include <IConfig.h>
 
 #include <Server.h>
+#include <ServerList.h>
 #include <filesystem/FileSystem.h>
+#include <filesystem/FileSystemTypes.h>
 #include <npcserver/NPCServer.h>
-#include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerProps.h>
-#include <ServerList.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -38,7 +42,7 @@ namespace preagonal
 	Pointer-Functions for Packets
 */
 bool ServerList::created = false;
-typedef void (ServerList::* TSLSock)(CString&);
+typedef void (ServerList::*TSLSock)(CString&);
 std::vector<TSLSock> TSLFunc(256, &ServerList::msgSVI_NULL);
 
 void ServerList::createFunctions()
@@ -209,7 +213,7 @@ bool ServerList::connectServer()
 	log::printLine(log::server, "Initializing {} socket.", m_socket.getDescription());
 
 	// Initialize the socket
-	if (m_socket.init(settings.getStr("listip").text(), settings.getStr("listport").text()) != 0)
+	if (m_socket.init(settings.get<std::string>("listip").value_or(""s).c_str(), settings.get<std::string>("listport").value_or(""s).c_str()) != 0)
 	{
 		log::printLine(log::server, "[Error] Could not initialize {} socket.", m_socket.getDescription());
 		return false;
@@ -226,14 +230,14 @@ bool ServerList::connectServer()
 	log::printLine(log::server, "{} - Connected to {}:{}.", m_socket.getDescription(), m_socket.getRemoteIp(), m_socket.getRemotePort());
 
 	// Get Some Stuff
-	CString name(settings.getStr("name"));
-	CString desc(settings.getStr("description"));
-	CString language(settings.getStr("language", "English"));
+	CString name(settings.get<std::string>("name").value_or(""s));
+	CString desc(settings.get<std::string>("description").value_or(""s));
+	CString language(settings.get<std::string>("language").value_or("English"s));
 	CString version(APP_VERSION);
-	CString url(settings.getStr("url", "http://www.graal.in/"));
-	CString ip(settings.getStr("serverip", "AUTO"));
-	CString port(settings.getStr("serverport", "14900"));
-	CString localip(settings.getStr("localip"));
+	CString url(settings.get<std::string>("url").value_or("http://www.graal.in/"s));
+	CString ip(settings.get<std::string>("serverip").value_or("AUTO"s));
+	CString port(settings.get<std::string>("serverport").value_or("14900"s));
+	CString localip(settings.get<std::string>("localip").value_or(""s));
 
 	// Grab the local ip.
 	if (localip.isEmpty() || localip == "AUTO")
@@ -255,16 +259,16 @@ bool ServerList::connectServer()
 
 	// Send before SVO_NEWSERVER or else we will get an incorrect name.
 	auto& adminsettings = m_server->getAdminSettings();
-	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings.getStr("hq_password"));
+	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings.get<std::string>("hq_password").value_or(""s));
 
 	// Send server info.
 	sendPacket(CString() >> (char)SVO_NEWSERVER >> (char)name.length() << name >> (char)desc.length() << desc >> (char)language.length() << language >> (char)version.length() << version >> (char)url.length() << url >> (char)ip.length() << ip >> (char)port.length() << port >> (char)localip.length() << localip);
 
 	// Set the level now.
-	if (m_server->getSettings().getBool("onlystaff", false))
+	if (m_server->getSettings().get<bool>("onlystaff").value_or(false))
 		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
 	else
-		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings.getInt("hq_level", 1));
+		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings.get<int>("hq_level").value_or(1));
 
 	sendVersionConfig();
 
@@ -463,11 +467,11 @@ void ServerList::sendLoginPacketForPlayer(std::shared_ptr<Player> player, const 
 void ServerList::sendServerHQ()
 {
 	auto& adminsettings = m_server->getAdminSettings();
-	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings.getStr("hq_password"));
-	if (m_server->getSettings().getBool("onlystaff", false))
+	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings.get<std::string>("hq_password").value_or(""s));
+	if (m_server->getSettings().get<bool>("onlystaff").value_or(false))
 		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
 	else
-		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings.getInt("hq_level", 1));
+		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)adminsettings.get<int>("hq_level").value_or(1));
 }
 
 /*
@@ -573,8 +577,8 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 	// Add the time to the profile string.
 	auto time = p2->account.onlineSeconds;
 	CString line = CString() << CString((uint32_t)time / 3600) << " hrs "
-		<< CString((uint32_t)(time / 60) % 60) << " mins "
-		<< CString((uint32_t)time % 60) << " secs";
+							 << CString((uint32_t)(time / 60) % 60) << " mins "
+							 << CString((uint32_t)time % 60) << " secs";
 	profile >> (char)line.length() << line;
 
 	// Do the old profile method for the old clients.
@@ -611,77 +615,76 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 	else if (!p2->isNPCServer())
 	{
 		// Add all the specified variables to the profile string.
-		CString profileVars = m_server->getSettings().getStr("profilevars");
-		if (profileVars.length() != 0)
+		for (auto profilevar : string::split(m_server->getSettings().get<std::string>("profilevars").value_or(""), ","sv))
 		{
-			std::vector<CString> vars = profileVars.tokenize(",");
-			for (std::vector<CString>::iterator i = vars.begin(); i != vars.end(); ++i)
+			auto tokens = string::splitToVectorByString(profilevar, ":="sv);
+			if (tokens.size() != 2)
+				continue;
+
+			CString name = string::trim(tokens[0]);
+			CString val = string::trim(tokens[1]);
+
+			// Built-in values.
+			if (val == "playerkills")
+				val = CString(p2->account.kills);
+			else if (val == "playerdeaths")
+				val = CString(p2->account.deaths);
+			else if (val == "playerfullhearts")
+				val = CString(p2->getProp<PlayerProp::MAXPOWER>().value);
+			else if (val == "playerrating")
 			{
-				CString name = i->readString(":=").trim();
-				CString val = i->readString("").trim();
-
-				// Built-in values.
-				if (val == "playerkills")
-					val = CString(p2->account.kills);
-				else if (val == "playerdeaths")
-					val = CString(p2->account.deaths);
-				else if (val == "playerfullhearts")
-					val = CString(p2->getProp<PlayerProp::MAXPOWER>().value);
-				else if (val == "playerrating")
-				{
-					auto rating = p2->getProp<PlayerProp::RATING>();
-					val = CString(rating.rating) << "/" << CString(rating.deviation);
-				}
-				else if (val == "playerap")
-					val = CString(p2->getProp<PlayerProp::ALIGNMENT>().value);
-				else if (val == "playerrupees")
-					val = CString(p2->getProp<PlayerProp::RUPEESCOUNT>().value);
-				else if (val == "playerswordpower")
-					val = CString(p2->getProp<PlayerProp::SWORDPOWER>().power.value_or(1));
-				else if (val == "canspin")
-					val = ((p2->getProp<PlayerProp::STATUS>().value & PLSTATUS_HASSPIN) ? "true" : "false");
-				else if (val == "playerhearts")
-				{
-					auto power = p2->getProp<PlayerProp::CURPOWER>().value;
-					val = CString(power / 2);
-					if (power % 2 == 1) val << ".5";
-				}
-				else if (val == "playerdarts")
-					val = CString(p2->getProp<PlayerProp::ARROWSCOUNT>().value);
-				else if (val == "playerbombs")
-					val = CString(p2->getProp<PlayerProp::BOMBSCOUNT>().value);
-				else if (val == "playermp")
-					val = CString(p2->getProp<PlayerProp::MAGICPOINTS>().value);
-				else if (val == "playershieldpower")
-					val = CString(p2->getProp<PlayerProp::SHIELDPOWER>().power.value_or(1));
-				else if (val == "playerglovepower")
-					val = CString(p2->getProp<PlayerProp::GLOVEPOWER>().value);
-				else
-				{
-					// Find if String-Array
-					int pos[3] = { 0, 0, 0 };
-					pos[0] = val.findl('{');
-					pos[1] = val.find('}', pos[0]);
-					pos[2] = (pos[0] >= 0 && pos[1] > 0 ? strtoint(val.subString(pos[0] + 1, pos[1] - 1)) : -1);
-
-					// Find Flag Name / Value
-					CString flagName = val.subString(0, pos[0]);
-					auto flagMaybe = p2->account.variables.get(flagName.toStringView());
-					if (auto flag = flagMaybe.lock(); flag != nullptr)
-						val = flag->get<std::string>().value_or(std::string{});
-
-					// If String-Array, Get Index
-					if (pos[2] >= 0)
-					{
-						std::vector<CString> temp = val.guntokenize().tokenize("\n");
-						if ((int)temp.size() > pos[2])
-							val = temp[pos[2]];
-					}
-				}
-
-				// Add it to the profile now.
-				profile >> (char)(name.length() + val.length() + 2) << name << ":=" << val;
+				auto rating = p2->getProp<PlayerProp::RATING>();
+				val = CString(rating.rating) << "/" << CString(rating.deviation);
 			}
+			else if (val == "playerap")
+				val = CString(p2->getProp<PlayerProp::ALIGNMENT>().value);
+			else if (val == "playerrupees")
+				val = CString(p2->getProp<PlayerProp::RUPEESCOUNT>().value);
+			else if (val == "playerswordpower")
+				val = CString(p2->getProp<PlayerProp::SWORDPOWER>().power.value_or(1));
+			else if (val == "canspin")
+				val = ((p2->getProp<PlayerProp::STATUS>().value & PLSTATUS_HASSPIN) ? "true" : "false");
+			else if (val == "playerhearts")
+			{
+				auto power = p2->getProp<PlayerProp::CURPOWER>().value;
+				val = CString(power / 2);
+				if (power % 2 == 1) val << ".5";
+			}
+			else if (val == "playerdarts")
+				val = CString(p2->getProp<PlayerProp::ARROWSCOUNT>().value);
+			else if (val == "playerbombs")
+				val = CString(p2->getProp<PlayerProp::BOMBSCOUNT>().value);
+			else if (val == "playermp")
+				val = CString(p2->getProp<PlayerProp::MAGICPOINTS>().value);
+			else if (val == "playershieldpower")
+				val = CString(p2->getProp<PlayerProp::SHIELDPOWER>().power.value_or(1));
+			else if (val == "playerglovepower")
+				val = CString(p2->getProp<PlayerProp::GLOVEPOWER>().value);
+			else
+			{
+				// Find if String-Array
+				int pos[3] = { 0, 0, 0 };
+				pos[0] = val.findl('{');
+				pos[1] = val.find('}', pos[0]);
+				pos[2] = (pos[0] >= 0 && pos[1] > 0 ? strtoint(val.subString(pos[0] + 1, pos[1] - 1)) : -1);
+
+				// Find Flag Name / Value
+				CString flagName = val.subString(0, pos[0]);
+				auto flagMaybe = p2->account.variables.get(flagName.toStringView());
+				if (auto flag = flagMaybe.lock(); flag != nullptr)
+					val = flag->get<std::string>().value_or(std::string{});
+
+				// If String-Array, Get Index
+				if (pos[2] >= 0)
+				{
+					std::vector<CString> temp = val.guntokenize().tokenize("\n");
+					if ((int)temp.size() > pos[2])
+						val = temp[pos[2]];
+				}
+			}
+
+			// Add it to the profile now.
+			profile >> (char)(name.length() + val.length() + 2) << name << ":=" << val;
 		}
 	}
 
@@ -712,7 +715,7 @@ void ServerList::msgSVI_VERIACC2(CString& pPacket)
 	if (message != "SUCCESS")
 	{
 		player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << message);
-		player->account.loadOnly = true;	// Prevent saving of the account.
+		player->account.loadOnly = true; // Prevent saving of the account.
 		player->disconnect();
 		return;
 	}
@@ -721,7 +724,7 @@ void ServerList::msgSVI_VERIACC2(CString& pPacket)
 	if (player->sendLogin() == false)
 	{
 		//player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Failed to send login information.");
-		player->account.loadOnly = true;	// Prevent saving of the account.
+		player->account.loadOnly = true; // Prevent saving of the account.
 		player->disconnect();
 	}
 }
@@ -884,7 +887,7 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 		if (result.resultFlags.test(props::SetResults::sendToAll))
 			m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop);
 		if (auto player = std::dynamic_pointer_cast<PlayerClient>(p); p && result.resultFlags.test(props::SetResults::sendToLevel))
-			m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop, player->account.character.getGlobalPosition(), player->getLevel(), {pid});
+			m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop, player->account.character.getGlobalPosition(), player->getLevel(), { pid });
 		if (result.resultFlags.test(props::SetResults::sendToSource))
 			p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)propId << prop);
 	}
@@ -1008,10 +1011,7 @@ void ServerList::msgSVI_PMPLAYER(CString& pPacket)
 	CString message2 = data.readString("");
 	CString message3 = message2.gtokenizeI();
 
-	CString player = CString(CString() << account << "\n"
-		<< nick << "\n")
-		.gtokenizeI()
-		<< "\n";
+	CString player = CString(CString() << account << "\n" << nick << "\n").gtokenizeI() << "\n";
 	CString pmMessageType("\"\",");
 	pmMessageType << "\"Private message:\",";
 

@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -65,6 +66,12 @@ concept AllSameAs = sizeof...(Ts) < 2 ||
 template<typename T>
 concept IsEnum = std::is_enum_v<T>;
 
+template<typename T>
+concept ContainerLike = std::ranges::range<T> && std::ranges::sized_range<T>;
+
+template<typename T>
+concept ContainerLikeNotString = std::ranges::range<T> && std::ranges::sized_range<T> && !string::StringViewIshVariant<T> && !string::PointerToConstCharString<T>;
+
 //----------------------------
 // Aliases
 
@@ -73,6 +80,9 @@ using string_map = std::unordered_map<std::string, T, string::string_hash, strin
 
 template<class T>
 using string_multimap = std::unordered_multimap<std::string, T, string::string_hash, string::string_hash_equal>;
+
+template<class T>
+using string_ordered_multimap = std::multimap<std::string, T, std::less<>>;
 
 template<class T>
 using hash_map = std::unordered_map<size_t, T, string::string_hash, string::hash_string_equal>;

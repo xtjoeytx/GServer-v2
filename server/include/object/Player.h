@@ -344,6 +344,7 @@ public:
 	// Type of player
 	bool isAdminIp();
 	bool isStaff();
+	bool isJailed();
 	bool isNC() const { return (m_type & PLTYPE_ANYNC) != 0; }
 	bool isRC() const { return (m_type & PLTYPE_ANYRC) != 0; }
 	bool isClient() const { return (m_type & PLTYPE_ANYCLIENT) != 0; }

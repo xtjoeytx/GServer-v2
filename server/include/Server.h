@@ -22,7 +22,6 @@
 
 #include <CSocket.h>
 
-#include <CSettings.h>
 #include <CString.h>
 #include <IEnums.h>
 
@@ -50,6 +49,7 @@
 #include <utilities/generator/IdGenerator.h>
 #include <utilities/generator/TimeoutGenerator.h>
 #include <utilities/manager/ResourceManager.h>
+#include <utilities/Settings.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -130,15 +130,17 @@ public:
 	void restart();
 	bool running = false;
 
-	int init(const CString& serverip = "", const CString& serverport = "", const CString& localip = "", const CString& serverinterface = "");
+	int init(std::string_view serverip, std::string_view serverport, std::string_view localip, std::string_view serverinterface);
 	bool doMain();
 
 	// Server Configuration
 	int loadConfigFiles();
+	void prepareSettings();
 	void loadSettings();
 	void loadAdminSettings();
 	void loadAllowedVersions();
-	void loadFileSystem();
+	void loadServerFileSystem();
+	void loadWorldFileSystem();
 	void loadServerMessage();
 	void loadIPBans();
 	void loadTranslations() const;
@@ -346,7 +348,7 @@ public:
 	{
 		if (!hasNPCServer()) return;
 		if (level == nullptr) return;
-		uint32_t eventDistance = static_cast<uint32_t>(m_settings.getInt("eventdistance", 64));
+		auto eventDistance = m_settings.get<uint32_t>("eventdistance").value_or(64);
 		for (auto& npcid : level->findInRangeNPCsByDistance(position, eventDistance))
 		{
 			if (auto npc = getNPC(npcid); npc)
@@ -383,18 +385,36 @@ private:
 	bool m_doRestart = false;
 
 	fs::FileSystem m_fsWorld, m_fsServer;
-	CSettings m_adminSettings, m_settings;
 	CSocket m_playerSock;
 	CSocketManager m_sockManager;
 	WordFilter m_wordFilter;
 	AnimationManager m_animationManager;
 	PackageManager m_packageManager;
 	CString m_allowedVersionString, m_name, m_serverMessage;
-	CString m_overrideIp, m_overrideLocalIp, m_overridePort, m_overrideInterface;
-	std::vector<CString> m_allowedVersions, m_foldersConfig, m_ipBans, m_statusList, m_staffList;
+	std::string m_overrideIp, m_overrideLocalIp, m_overridePort, m_overrideInterface;
+	std::vector<CString> m_allowedVersions, m_foldersConfig, m_ipBans;
 	std::vector<std::pair<LevelItemType, int>> m_bushDrops;
 	std::vector<LevelItemType> m_deathDrops;
 	bool m_newWorldMode = false;
+
+	Settings m_adminSettings;
+	Settings m_settings;
+	SettingCache<std::string> m_generationString{ "generation", "classic" };
+	SettingCache<bool> m_classicStyleLogs{ "classicstylelogs", false };
+	SettingCache<std::string> m_unstickMeLevel{ "unstickmelevel", "onlinestartlocal.nw" };
+	SettingCache<float> m_unstickMeX{ "unstickmex", 30.0f };
+	SettingCache<float> m_unstickMeY{ "unstickmey", 30.5f };
+	SettingCache<bool> m_dontAddServerFlags{ "dontaddserverflags", false };
+	SettingCache<bool> m_cropFlags{ "cropflags", true };
+	SettingCache<bool> m_newTilesets{ "newtilesets", false };
+	SettingCache<std::vector<std::string>> m_newTilesetLevels{ "newtilesetlevels", {} };
+	SettingCache<std::vector<std::string>> m_statusList{ "playerlisticons", { "Online", "Away", "DND", "Eating", "Hiding", "No PMs", "RPing", "Sparring", "PKing" } };
+	SettingCache<std::vector<std::string>> m_staffList{ "staff" };
+	SettingCache<std::vector<std::string>> m_bushItemTypes{ "bushitemtypes", { "greenrupee", "bluerupee", "heart", "bombs" } };
+	SettingCache<std::vector<std::string>> m_deathItemTypes{ "deathitemtypes", { "greenrupee", "bluerupee", "redrupee", "goldrupee", "bombs", "darts" } };
+	SettingCache<std::vector<std::string>> m_gmaps{ "gmaps", {} };
+	SettingCache<std::vector<std::string>> m_bigmaps{ "maps", {} };
+	SettingCache<std::vector<std::string>> m_groupmaps{ "groupmaps", {} };
 
 	std::unique_ptr<IAccountLoader> m_accountLoader;
 	std::unique_ptr<INPCLoader> m_npcLoader;

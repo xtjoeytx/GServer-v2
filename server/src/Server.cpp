@@ -167,7 +167,7 @@ Server::Server(const CString& pName)
 			else if (fileName == "allowedversions.txt")
 				loadAllowedVersions();
 			else if (fileName == "foldersconfig.txt")
-				loadFileSystem();
+				loadWorldFileSystem();
 			else if (fileName == "serverflags.txt")
 				loadServerFlags();
 			else if (fileName == "servermessage.html")
@@ -394,7 +394,7 @@ Server::~Server()
 #endif
 }
 
-int Server::init(const CString& serverip, const CString& serverport, const CString& localip, const CString& serverinterface)
+int Server::init(std::string_view serverip, std::string_view serverport, std::string_view localip, std::string_view serverinterface)
 {
 	// Register the server start time.
 	m_serverStartTime = std::chrono::system_clock::now();
@@ -411,14 +411,14 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	if (ret) return ret;
 
 	// If an override serverip and serverport were specified, fix the options now.
-	if (!serverip.isEmpty())
-		m_settings.addKey("serverip", serverip);
-	if (!serverport.isEmpty())
-		m_settings.addKey("serverport", serverport);
-	if (!localip.isEmpty())
-		m_settings.addKey("localip", localip);
-	if (!serverinterface.isEmpty())
-		m_settings.addKey("serverinterface", serverinterface);
+	if (!serverip.empty())
+		m_settings.set("serverip", serverip);
+	if (!serverport.empty())
+		m_settings.set("serverport", serverport);
+	if (!localip.empty())
+		m_settings.set("localip", localip);
+	if (!serverinterface.empty())
+		m_settings.set("serverinterface", serverinterface);
 
 	m_overrideIp = serverip;
 	m_overridePort = serverport;
@@ -426,11 +426,12 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 	m_overrideInterface = serverinterface;
 
 	// Fix up the interface to work properly with CSocket.
-	CString oInter = m_overrideInterface;
-	if (m_overrideInterface.isEmpty())
-		oInter = m_settings.getStr("serverinterface");
+	std::string_view oInter = m_overrideInterface;
+	auto sinter = m_settings.get<std::string>("serverinterface");
+	if (m_overrideInterface.empty() && sinter.has_value())
+		oInter = sinter.value();
 	if (oInter == "AUTO")
-		oInter.clear();
+		oInter = std::string_view{};
 
 	// Initialize the player socket.
 	m_playerSock.setType(SOCKET_TYPE_SERVER);
@@ -439,7 +440,7 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 
 	// Start listening on the player socket.
 	log::printLine(log::server, "Initializing player listen socket.");
-	if (m_playerSock.init((oInter.isEmpty() ? 0 : oInter.text()), m_settings.getStr("serverport").text()))
+	if (m_playerSock.init((oInter.empty() ? 0 : oInter.data()), m_settings.get<std::string>("serverport").value_or(""s).c_str()))
 	{
 		log::printLine(log::server, "** [Error] Could not initialize listening socket.");
 		return ERR_LISTEN;
@@ -458,11 +459,11 @@ int Server::init(const CString& serverip, const CString& serverport, const CStri
 
 	// Start a UPNP thread.  It will try to set a UPNP port forward in the background.
 #ifdef ENABLE_UPNP
-	if (m_settings.getBool("upnp", true) && m_upnp == nullptr)
+	if (m_settings.get<bool>("upnp").value_or(true) && m_upnp == nullptr)
 	{
 		log::printLine(log::server, "Starting UPnP discovery thread.");
 		m_upnp = std::make_unique<UPNP>();
-		m_upnp->initialize((oInter.isEmpty() ? m_playerSock.getLocalIp() : oInter.text()), m_settings.getStr("serverport").text());
+		m_upnp->initialize((oInter.empty() ? m_playerSock.getLocalIp() : oInter.data()), m_settings.get<std::string>("serverport").value_or(""s).c_str());
 		m_upnpThread = std::thread(std::ref(*m_upnp.get()));
 	}
 #endif
@@ -685,11 +686,10 @@ void Server::loadAllFolders()
 {
 	m_fsWorld.reset();
 	m_fsWorld.bind("world");
-	if (m_settings.getStr("sharefolder").length() > 0)
+	if (auto sharefolder = m_settings.get<std::string>("sharefolder"); sharefolder.has_value() && !sharefolder->empty())
 	{
-		std::vector<CString> folders = m_settings.getStr("sharefolder").tokenize(",");
-		for (auto& folder: folders)
-			m_fsWorld.bind(folder.trimI().toStringView());
+		auto folders = string::split(sharefolder.value(), ","sv);
+		m_fsWorld.bind(folders);
 	}
 }
 
@@ -742,11 +742,13 @@ int Server::loadConfigFiles()
 
 	{
 		auto indent = log::server.indent();
+		loadServerFileSystem();
 
 		// Load Settings
 		log::printLine(log::server, "Loading settings...");
 		{
 			auto indentsettings = log::server.indent();
+			prepareSettings();
 			loadSettings();
 			log::printLine(log::server, "Server generation: {}", ServerGenerationNames[(size_t)Generation]);
 		}
@@ -761,13 +763,13 @@ int Server::loadConfigFiles()
 
 		// Load folders config and file system.
 		log::print(log::server, "Folder config: ");
-		if (!m_settings.getBool("nofoldersconfig", false))
+		if (!m_settings.get<bool>("nofoldersconfig").value_or(false))
 			log::printLine(log::server, "ENABLED");
 		else
 			log::printLine(log::server, "disabled");
 
 		log::printLine(log::server, "Loading file system...");
-		loadFileSystem();
+		loadWorldFileSystem();
 
 		// Load server message.
 		log::printLine(log::server, "Loading config/servermessage.html.");
@@ -800,71 +802,87 @@ int Server::loadConfigFiles()
 	return 0;
 }
 
-void Server::loadSettings()
+void Server::prepareSettings()
 {
-	if (!m_settings.isOpened())
+	// Generation.
+	m_generationString.onUpdate = [this](const std::optional<std::string>& newValue, const std::optional<std::string>& oldValue)
 	{
-		m_settings.setSeparator("=");
-		m_settings.loadFile(CString() << "config/serveroptions.txt");
-		if (!m_settings.isOpened())
-			log::printLine(log::server, "** [Error] Could not open config/serveroptions.txt.  Will use default config.");
-	}
+		auto generation = string::toLower(newValue.value());
+		if (auto it = std::ranges::find(ServerGenerationNames, generation); it != std::ranges::end(ServerGenerationNames))
+			Generation = static_cast<ServerGeneration>(std::distance(ServerGenerationNames.begin(), it));
+		else
+			log::printLine(log::server, "** [Error] Invalid generation specified in settings: '{}'.", newValue.value_or("(blank)"));
+	};
 
-	// Load status list.
-	m_statusList = m_settings.getStr("playerlisticons", "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing").tokenize(",");
-
-	// Load staff list
-	m_staffList = m_settings.getStr("staff").tokenize(",");
-
-	// Load the generation.
-	auto generation = m_settings.getStr("generation", "classic").toLower();
-	if (auto it = std::ranges::find(ServerGenerationNames, generation.toStringView()); it != std::ranges::end(ServerGenerationNames))
-		Generation = static_cast<ServerGeneration>(std::distance(ServerGenerationNames.begin(), it));
-
-	// Send our ServerHQ info in case we got changed the staffonly setting.
-	getServerList().sendServerHQ();
-
-	// Bush item drops.
-	auto bushitemtypes = m_settings.getStr("bushitemtypes", "greenrupee,bluerupee,heart,bombs").tokenize(",");
+	// Bush drops.
+	m_bushItemTypes.onUpdate = [this](const std::optional<std::vector<std::string>>& newValue, const std::optional<std::vector<std::string>>& oldValue)
 	{
 		// greenrupee 10, bluerupee 5, bombs 5, heart 5
 		static const std::array<int, 25> defaults = { 10, 5, 0, 5, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 		m_bushDrops.clear();
-		for (auto& itemtype : bushitemtypes)
+		for (const auto& curItem : newValue.value())
 		{
-			itemtype.trimI().toLowerI();
-			LevelItemType item = LevelItem::getItemId(itemtype.toString());
+			std::string itemType = string::toLower(curItem);
+			string::trimMutate(itemType);
+
+			LevelItemType item = LevelItem::getItemId(itemType);
 			if (item == LevelItemType::INVALID)
 				continue;
 
-			auto spawnRate = m_settings.getInt(std::format("spawnrate{}", itemtype.toStringView()), defaults[static_cast<size_t>(item)]);
+			auto spawnRate = m_settings.get<uint32_t>(std::format("spawnrate{}", itemType)).value_or(defaults[static_cast<size_t>(item)]);
 			m_bushDrops.emplace_back(item, spawnRate);
 		}
-	}
+	};
 
-	// Death item drops.
-	auto deathitemtypes = m_settings.getStr("deathitemtypes", "greenrupee,bluerupee,redrupee,goldrupee,bombs,darts").tokenize(",");
+	// Death drops.
+	m_deathItemTypes.onUpdate = [this](const std::optional<std::vector<std::string>>& newValue, const std::optional<std::vector<std::string>>& oldValue)
 	{
 		m_deathDrops.clear();
-		for (auto& itemtype : deathitemtypes)
+		for (const auto& curItem : newValue.value())
 		{
-			itemtype.trimI().toLowerI();
-			LevelItemType item = LevelItem::getItemId(itemtype.toString());
+			std::string itemType = string::toLower(curItem);
+			string::trimMutate(itemType);
+
+			LevelItemType item = LevelItem::getItemId(itemType);
 			if (item != LevelItemType::INVALID)
 				m_deathDrops.push_back(item);
 		}
-	}
+	};
+
+	// Gmaps.
+	m_gmaps.onUpdate = [this](const std::optional<std::vector<std::string>>& newValue, const std::optional<std::vector<std::string>>& oldValue)
+	{
+		loadMaps();
+	};
+
+	// Bigmaps.
+	m_bigmaps.onUpdate = [this](const std::optional<std::vector<std::string>>& newValue, const std::optional<std::vector<std::string>>& oldValue)
+	{
+		loadMaps();
+	};
+
+	// Set the cache bindings before we load so our settings will get cached.
+	m_settings.track(m_generationString, m_classicStyleLogs);
+	m_settings.track(m_unstickMeLevel, m_unstickMeX, m_unstickMeY);
+	m_settings.track(m_dontAddServerFlags, m_cropFlags);
+	m_settings.track(m_newTilesets, m_newTilesetLevels);
+	m_settings.track(m_statusList, m_staffList, m_bushItemTypes, m_deathItemTypes);
+	m_settings.track(m_gmaps, m_bigmaps, m_groupmaps);
+}
+
+void Server::loadSettings()
+{
+	m_settings.load("serveroptions.txt");
+
+	// Send our ServerHQ info in case we got changed the staffonly setting.
+	getServerList().sendServerHQ();
 }
 
 void Server::loadAdminSettings()
 {
-	m_adminSettings.setSeparator("=");
-	m_adminSettings.loadFile(CString() << "config/adminconfig.txt");
-	if (!m_adminSettings.isOpened())
-		log::printLine(log::server, "** [Error] Could not open config/adminconfig.txt.  Will use default config.");
-	else
-		getServerList().sendServerHQ();
+	m_adminSettings.load("adminconfig.txt");
+	getServerList().sendServerHQ();
 }
 
 void Server::loadAllowedVersions()
@@ -938,7 +956,7 @@ void Server::loadAllowedVersions()
 	}
 }
 
-void Server::loadFileSystem()
+void Server::loadServerFileSystem()
 {
 	if (m_fsServer.empty())
 	{
@@ -950,8 +968,11 @@ void Server::loadFileSystem()
 		m_fsServer.addFoldersConfigEntry(fs::FileCategory::WEAPON, "weapons/weapon*.txt");
 		m_fsServer.bind("accounts"s, "config"s, "npcs"s, "scripts"s, "translations"s, "weapons"s);
 	}
+}
 
-	if (m_settings.getBool("nofoldersconfig", false))
+void Server::loadWorldFileSystem()
+{
+	if (m_settings.get<bool>("nofoldersconfig").value_or(false))
 		loadAllFolders();
 	else
 		loadFolderConfig();
@@ -1032,50 +1053,36 @@ void Server::loadMaps(bool print)
 	m_mapList.clear();
 
 	// Load gmaps.
-	std::vector<CString> gmaps = m_settings.getStr("gmaps").guntokenize().tokenize("\n");
-	for (CString& gmapName: gmaps)
+	for (const auto& gmapName : m_gmaps.getUnsafe())
 	{
-		// Check for blank lines.
-		if (gmapName == "\r") continue;
-
-		// Gmaps in server options don't need the .gmap suffix, so we will add the suffix
-		if (gmapName.right(5) != ".gmap")
-		{
-			gmapName << ".gmap";
-		}
-
 		// Load the gmap.
 		try
 		{
-			auto gmap = std::make_unique<Map>(is_gmap, gmapName.toString());
+			auto gmap = std::make_unique<Map>(is_gmap, gmapName);
 			if (print) log::printLine(log::server, "[gmap] {}", gmapName);
 			m_mapList.push_back(std::move(gmap));
 		}
 		catch (...)
 		{
 			auto inerr = log::server.indent_absolute(0);
-			if (print) log::printLine(log::server, "** [Error] Could not load {}.", gmapName);
+			if (print) log::printLine(log::server, "** [Error] Could not load {} (gmap).", gmapName);
 		}
 	}
 
 	// Load bigmaps.
-	std::vector<CString> bigmaps = m_settings.getStr("maps").guntokenize().tokenize("\n");
-	for (auto& i: bigmaps)
+	for (const auto& mapName : m_bigmaps.getUnsafe())
 	{
-		// Check for blank lines.
-		if (i == "\r") continue;
-
 		// Load the bigmap.
 		try
 		{
-			auto bigmap = std::make_unique<Map>(is_bigmap, i.trim().toString());
-			if (print) log::printLine(log::server, "[bigmap] {}", i);
+			auto bigmap = std::make_unique<Map>(is_bigmap, mapName);
+			if (print) log::printLine(log::server, "[bigmap] {}", mapName);
 			m_mapList.push_back(std::move(bigmap));
 		}
 		catch (...)
 		{
 			auto inerr = log::server.indent_absolute(0);
-			if (print) log::printLine(log::server, "** [Error] Could not load {}.", i);
+			if (print) log::printLine(log::server, "** [Error] Could not load {} (bigmap).", mapName);
 		}
 	}
 
@@ -1116,7 +1123,7 @@ void Server::loadMaps(bool print)
 
 void Server::loadNPCServer()
 {
-	if (m_settings.getBool("serverside", true))
+	if (m_settings.get<bool>("serverside").value_or(true))
 	{
 		log::printLine(log::server, "Loading NPC server.");
 		{
@@ -1397,18 +1404,14 @@ tileset::TilesetType Server::getTilesetTypeForLevel(std::shared_ptr<Level> level
 		return tileset::TilesetType::TERRAIN;
 
 	// Check for tileset type 1 (new tilesets).
-	if (auto key = m_settings.getKey("newtilesetlevels"); key != nullptr)
+	for (const auto& newlevel : m_newTilesetLevels.getUnsafe())
 	{
-		auto newlevels = string::split(key->value.toStringView(), ","sv);
-		for (const auto& newlevel : newlevels)
-		{
-			if (string::match(level->levelName, newlevel) || level->levelName.starts_with(newlevel))
-				return tileset::TilesetType::NEWFORMAT;
-		}
+		if (string::match(level->levelName, newlevel) || level->levelName.starts_with(newlevel))
+			return tileset::TilesetType::NEWFORMAT;
 	}
 
 	// If all levels are the new tileset, return that.
-	if (m_settings.getBool("newtilesets", false))
+	if (m_newTilesets.getUnsafe())
 		return tileset::TilesetType::NEWFORMAT;
 
 	// Otherwise, return classic.
@@ -1446,10 +1449,10 @@ tileset::TileType Server::getTileTypeForTile(tileset::TilesetType tileset, uint1
 
 LevelItemType Server::rollBushItemDrop() const
 {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(1, 100);
-    int roll = dist(gen);
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> dist(1, 100);
+	int roll = dist(gen);
 
 	for (const auto& [itemType, rate] : m_bushDrops)
 	{
@@ -1718,10 +1721,7 @@ bool Server::warpPlayerToSafePlace(PlayerID playerId)
 	if (player == nullptr) return false;
 
 	// Try unstick me level.
-	CString unstickLevel = m_settings.getStr("unstickmelevel", "onlinestartlocal.nw");
-	float unstickX = m_settings.getFloat("unstickmex", 30.0f);
-	float unstickY = m_settings.getFloat("unstickmey", 30.5f);
-	return player->warp(unstickLevel, { static_cast<int16_t>(unstickX * 16.0f), static_cast<int16_t>(unstickY * 16.0f) });
+	return player->warp(m_unstickMeLevel.getUnsafe(), { static_cast<int16_t>(m_unstickMeX.getUnsafe() * 16.0f), static_cast<int16_t>(m_unstickMeY.getUnsafe() * 16.0f) });
 
 	// TODO: Maybe try the default account level?
 }
@@ -1748,9 +1748,13 @@ bool Server::isIpBanned(const CString& ip)
 
 bool Server::isStaff(const CString& accountName)
 {
-	for (const auto& account: m_staffList)
+	const auto& staffList = m_staffList.get();
+	if (!staffList.has_value())
+		return false;
+
+	for (const auto& account : staffList.value())
 	{
-		if (accountName.toLower() == account.trim().toLower())
+		if (string::equalsi(accountName.toStringView(), account))
 			return true;
 	}
 
@@ -1767,7 +1771,7 @@ void Server::logToFile(std::filesystem::path fileName, std::string_view message,
 
 	if (writeTimestamp)
 	{
-		if (m_settings.getBool("classicstylelogs", false))
+		if (m_classicStyleLogs.getUnsafe())
 		{
 			// Non-standard, but make it at least a LITTLE easier to read these dumb logs.
 			file.writeLine();
@@ -1811,7 +1815,7 @@ std::optional<std::string> Server::getFlag(std::string_view flagName) const
 
 bool Server::deleteFlag(std::string_view flagName, bool sendToPlayers)
 {
-	if (m_settings.getBool("dontaddserverflags", false))
+	if (m_dontAddServerFlags.getUnsafe())
 		return false;
 
 	if (Scripting.variables.remove(flagName))
@@ -1837,13 +1841,13 @@ bool Server::setFlag(std::string_view flagPair, bool sendToPlayers)
 
 bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool pSendToPlayers)
 {
-	if (m_settings.getBool("dontaddserverflags", false))
+	if (m_dontAddServerFlags.getUnsafe())
 		return false;
 
 	// Function to crop flags.
 	auto cropFlag = [this, &flagName](std::string& value)
 	{
-		if (m_settings.getBool("cropflags", true))
+		if (m_cropFlags.getUnsafe())
 			value.erase(std::min(value.length(), static_cast<size_t>(223 - 1) - flagName.length()));
 		return value;
 	};

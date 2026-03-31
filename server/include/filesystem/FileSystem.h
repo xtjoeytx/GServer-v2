@@ -11,15 +11,17 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <ranges>
 #include <unordered_map>
 #include <unordered_set>
 
+#include <concepts>
 #include <filesystem/File.h>
 #include <filesystem/FileSystemTypes.h>
 #include <filesystem/watch/FileWatch.h>
 #include <utilities/CommonTypes.h>
-#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
+#include <utilities/std/generator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::fs
@@ -125,6 +127,24 @@ public:
 	void bind(string::StringVariant auto... directories)
 	{
 		(..., bind(std::filesystem::path{ directories }));
+	}
+
+	/// @brief Binds to multiple directories.
+	/// @param directories A range of directories of type std::filesystem::path.
+	void bind(std::ranges::input_range auto&& directories)
+		requires std::same_as<std::ranges::range_value_t<decltype(directories)>, std::filesystem::path>
+	{
+		for (const auto& path : directories)
+			bind(path);
+	}
+
+	/// @brief Binds to multiple directories.
+	/// @param directories A range of directories of type string::StringViewIshVariant.
+	void bind(std::ranges::input_range auto&& directories)
+		requires string::StringViewIshVariant<std::ranges::range_value_t<decltype(directories)>>
+	{
+		for (const auto& path : directories)
+			bind(std::filesystem::path{ path });
 	}
 
 	/// @brief Checks for changes to the underlying OS filesystem.  Call this every so often.
@@ -289,7 +309,10 @@ inline bool FileSystem::empty() const noexcept
 
 inline bool FileSystem::hasFoldersConfig() const noexcept
 {
-	return std::ranges::any_of(m_foldersConfig, [](const auto& cfg) { return !cfg.empty(); });
+	return std::ranges::any_of(m_foldersConfig, [](const auto& cfg)
+	{
+		return !cfg.empty();
+	});
 }
 
 inline bool FileSystem::isSearchingForFiles() const

@@ -838,12 +838,12 @@ auto splitToVectorByString(StringViewIshVariant auto const& str, StringViewIshVa
 /// @param delims A string containing delimiter characters used to split the input.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
 /// @return A generator yielding each token as a std::string_view.
-inline std::generator<std::string_view> split(std::string& str, std::string_view delims, bool ignoreEmpty = true)
+inline std::generator<std::string_view> split(const std::string& str, std::string_view delims, bool ignoreEmpty = true)
 {
 	for (const auto& item : split(std::string_view{ str }, delims, ignoreEmpty))
 		co_yield item;
 }
-inline std::generator<std::wstring_view> split(std::wstring& str, std::wstring_view delims, bool ignoreEmpty = true)
+inline std::generator<std::wstring_view> split(const std::wstring& str, std::wstring_view delims, bool ignoreEmpty = true)
 {
 	for (const auto& item : split(std::wstring_view{ str }, delims, ignoreEmpty))
 		co_yield item;
@@ -854,7 +854,7 @@ inline std::generator<std::wstring_view> split(std::wstring& str, std::wstring_v
 /// @param delim A string used to split the input.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
 /// @return A generator yielding each token as a std::string_view.
-inline std::generator<std::string_view> splitByString(std::string& str, std::string_view delim, bool ignoreEmpty = true)
+inline std::generator<std::string_view> splitByString(const std::string& str, std::string_view delim, bool ignoreEmpty = true)
 {
 	for (const auto& item : splitByString(std::string_view{ str }, delim, ignoreEmpty))
 		co_yield item;
@@ -926,6 +926,15 @@ auto toCSV(InputRangeNotString auto&& range, bool force_quoted = false)
 		result.pop_back();
 
 	return result;
+}
+
+/// @brief Converts a range of strings to a single CSV-formatted string, quoting fields as needed.
+/// @param range An input range of string-like elements to be converted to CSV format.
+/// @param force_quoted If true, all fields will be quoted regardless of content. Defaults to false.
+/// @return A std::string containing the CSV-formatted representation of the input range, with fields separated by commas and quoted as necessary.
+auto toCSV(const InputRangeNotString auto& range, bool force_quoted = false)
+{
+	return toCSV(std::move(range), force_quoted);
 }
 
 /// @brief Converts a string or string-like object into CSV format, splitting it by a specified delimiter.
@@ -1431,6 +1440,11 @@ inline std::pair<std::string_view, std::string_view> extractConfigParts(StringVi
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/// @brief Performs wildcard pattern matching on a string against a mask pattern.
+/// @tparam ignoreCase If true, performs case-insensitive matching; if false, performs case-sensitive matching. Defaults to false.
+/// @param str The string to match against the pattern.
+/// @param mask The pattern mask containing wildcards ('*' for zero or more characters, '?' for exactly one character).
+/// @return True if the string matches the mask pattern; otherwise, false.
 template<bool ignoreCase = false>
 inline bool match(StringViewIshVariant auto const& str, StringViewIshVariant auto const& mask)
 {

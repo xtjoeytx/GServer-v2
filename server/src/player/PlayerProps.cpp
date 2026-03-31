@@ -441,7 +441,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// If Z is disabled, don't allow changing it.
-			if (m_server->getSettings().getBool("lockplayerz", false))
+			if (m_server->getSettings().get<bool>("lockplayerz").value_or(false))
 			{
 				result.resultFlags.reset();
 				result.resultFlags.set(SetResults::sendToSource);
@@ -625,7 +625,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				}
 
 				// TODO: Remove when an npcserver is created.
-				if (m_server->getSettings().getBool("duplicatecanbecarried", false) == false)
+				if (m_server->getSettings().get<bool>("duplicatecanbecarried").value_or(false) == false)
 				{
 					[[maybe_unused]] bool isOwner = true;
 					{
@@ -1021,7 +1021,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// If Z is disabled, don't allow changing it.
-			if (m_server->getSettings().getBool("lockplayerz", false))
+			if (m_server->getSettings().get<bool>("lockplayerz").value_or(false))
 			{
 				result.resultFlags.reset();
 				result.resultFlags.set(SetResults::sendToSource);
@@ -1114,7 +1114,7 @@ bool Player::checkPropSetAccess(PlayerProp prop, SetBy setBy, Player* originator
 	// Admin check on changing gralats.
 	if (prop == PlayerProp::RUPEESCOUNT && originator != nullptr)
 	{
-		bool canSet = m_server->getSettings().getBool("normaladminscanchangegralats", true);
+		bool canSet = m_server->getSettings().get<bool>("normaladminscanchangegralats").value_or(true);
 		canSet = canSet || (originator->isStaff() && originator->account.hasRight(PLPERM_SETRIGHTS));
 		return canSet;
 	}

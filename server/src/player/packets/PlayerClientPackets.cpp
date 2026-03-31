@@ -98,9 +98,9 @@ HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 	}
 	if (!success)
 	{
-		CString unstickLevel = m_server->getSettings().getStr("unstickmelevel", "onlinestartlocal.nw");
-		float unstickX = m_server->getSettings().getFloat("unstickmex", 30.0f);
-		float unstickY = m_server->getSettings().getFloat("unstickmey", 30.5f);
+		auto unstickLevel = m_server->getSettings().get("unstickmelevel").value_or("onlinestartlocal.nw");
+		auto unstickX = m_server->getSettings().get<float>("unstickmex").value_or(30.0f);
+		auto unstickY = m_server->getSettings().get<float>("unstickmey").value_or(30.5f);
 		warp(unstickLevel, { static_cast<int16_t>(unstickX * 16.0f), static_cast<int16_t>(unstickY * 16.0f) });
 	}
 
@@ -112,7 +112,7 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 	// Bushes, grasses, swamp, snow grass, desert grass.
 	constexpr std::array<uint16_t, 7> dropTiles = { 0x002, 0x1a4, 0x1ff, 0x7ff, 0x3ff, 0x5d9, 0x34f };
 
-	CSettings& settings = m_server->getSettings();
+	auto& settings = m_server->getSettings();
 	uint8_t loc[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
 	uint8_t dim[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
 	CString tiles = pPacket.readString("");
@@ -148,8 +148,8 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 		return HandlePacketResult::Handled;
 
 	auto oldTile = levelTiles.value()->at(loc[0] + static_cast<size_t>(loc[1] * 64));
-	bool bushitems = settings.getBool("bushitems", true);
-	bool vasesdrop = settings.getBool("vasesdrop", true);
+	bool bushitems = settings.get<bool>("bushitems").value_or(true);
+	bool vasesdrop = settings.get<bool>("vasesdrop").value_or(true);
 	LevelItemType dropItem = LevelItemType::INVALID;
 
 	// If we support item drops and the tile is in the allowed list, drop the item.
@@ -344,7 +344,7 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 	LevelItemType itemType = LevelItem::getItemId(item);
 
 	// If item drops are disabled, tell the client to delete the item and roll back the changes.
-	if (m_server->getSettings().getBool("disableitemdropping", false))
+	if (m_server->getSettings().get<bool>("disableitemdropping").value_or(false))
 	{
 		sendPacket(CString() >> (char)PLO_ITEMDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
 		if (m_server->hasNPCServer())
@@ -355,8 +355,8 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 	m_server->queueNPCEvent(m_currentLevel.lock(), getGlobalPosition(), ScriptEventType::PLAYERLAYSITEM, source::FromPlayer(m_id));
 
 	// Check if we should send item drop events to the Control-NPC.
-	bool itemDropEvents = m_server->getSettings().getBool("itemdropevents", false);
-	if (itemDropEvents && m_server->getSettings().getBool("itemdropeventsonlyforgralats", false) && !LevelItem::isRupeeType(itemType))
+	bool itemDropEvents = m_server->getSettings().get<bool>("itemdropevents").value_or(false);
+	if (itemDropEvents && m_server->getSettings().get<bool>("itemdropeventsonlyforgralats").value_or(false) && !LevelItem::isRupeeType(itemType))
 		itemDropEvents = false;
 
 	// If item drop events are enabled, send the item drop event to the Control-NPC.
@@ -421,7 +421,7 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 	if (level == nullptr) return HandlePacketResult::Handled;
 	if (level->isSparringZone(getMapPosition()))
 	{
-		if (m_server->getSettings().getBool("dontupdateratingd", false) == false)
+		if (m_server->getSettings().get<bool>("dontupdateratingd").value_or(false) == false)
 		{
 			// Get some stats we are going to use.
 			// Need to parse the other player's PlayerProp::RATING.
@@ -465,22 +465,22 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 	}
 	else
 	{
-		CSettings& settings = m_server->getSettings();
+		auto& settings = m_server->getSettings();
 
 		// Give a kill to the player who killed me.
 		++killer->account.kills;
 
 		// Now, adjust their AP if allowed.
-		if (settings.getBool("apsystem", true))
+		if (settings.get<bool>("apsystem").value_or(true))
 		{
 			auto oAp = killer->getProp<PlayerProp::ALIGNMENT>().value;
 
 			// If I have 20 or more AP, they lose AP.
 			if (oAp > 0 && account.character.ap > 19)
 			{
-				int aptime[] = { settings.getInt("aptime0", 30), settings.getInt("aptime1", 90),
-								 settings.getInt("aptime2", 300), settings.getInt("aptime3", 600),
-								 settings.getInt("aptime4", 1200) };
+				int aptime[] = { settings.get<int>("aptime0").value_or(30), settings.get<int>("aptime1").value_or(90),
+								 settings.get<int>("aptime2").value_or(300), settings.get<int>("aptime3").value_or(600),
+								 settings.get<int>("aptime4").value_or(1200) };
 				oAp -= (((oAp / 20) + 1) * (account.character.ap / 20));
 				if (oAp < 0) oAp = 0;
 				killer->account.apCounter = (oAp < 20 ? aptime[0] : (oAp < 40 ? aptime[1] : (oAp < 60 ? aptime[2] : (oAp < 80 ? aptime[3] : aptime[4]))));
@@ -571,7 +571,7 @@ HandlePacketResult PlayerClient::msgPLI_BADDYADD(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 {
-	CSettings& settings = m_server->getSettings();
+	auto& settings = m_server->getSettings();
 	CString flagPacket = pPacket.readString("");
 	CString flagName, flagValue;
 
@@ -596,7 +596,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 		if (flagName == "gr.fileerror" || flagName == "gr.filedata")
 			return HandlePacketResult::Handled;
 
-		if (settings.getBool("flaghack_movement", true))
+		if (settings.get<bool>("flaghack_movement").value_or(true))
 		{
 			// gr.x and gr.y are used by the -gr_movement NPC to help facilitate smoother
 			// movement amongst pre-2.3 clients.
@@ -749,14 +749,14 @@ HandlePacketResult PlayerClient::msgPLI_PUTNPC(CString& pPacket)
 	if (m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
-	CSettings& settings = m_server->getSettings();
+	auto& settings = m_server->getSettings();
 
 	CString nimage = pPacket.readChars(pPacket.readGUChar());
 	CString ncode = pPacket.readChars(pPacket.readGUChar());
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
 
 	// See if putnpc is allowed.
-	if (!settings.getBool("putnpcenabled"))
+	if (!settings.get<bool>("putnpcenabled").value_or(false))
 		return HandlePacketResult::Handled;
 
 	// Get the file.
@@ -834,8 +834,8 @@ HandlePacketResult PlayerClient::msgPLI_HURTPLAYER(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_EXPLOSION(CString& pPacket)
 {
-	CSettings& settings = m_server->getSettings();
-	if (settings.getBool("noexplosions", false)) return HandlePacketResult::Handled;
+	auto& settings = m_server->getSettings();
+	if (settings.get<bool>("noexplosions").value_or(false)) return HandlePacketResult::Handled;
 
 	unsigned char eradius = pPacket.readGUChar();
 	float loc[2] = { (float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f };
@@ -872,9 +872,12 @@ HandlePacketResult PlayerClient::msgPLI_NPCWEAPONDEL(CString& pPacket)
 	std::string weapon = pPacket.readString("").toString();
 
 	// If it is a protected weapon, don't delete it.
-	auto protectedWeapons = m_server->getSettings().getStr("protectedweapons").gCommaStrTokens();
-	if (std::find(protectedWeapons.begin(), protectedWeapons.end(), weapon) != protectedWeapons.end())
-		return HandlePacketResult::Handled;
+	if (auto protectedWeapons = m_server->getSettings().get("protectedweapons"); protectedWeapons.has_value())
+	{
+		auto protectedWeaponsList = string::splitToVector(protectedWeapons.value(), ","sv);
+		if (std::ranges::contains(protectedWeaponsList, weapon))
+			return HandlePacketResult::Handled;
+	}
 
 	std::erase(account.weapons, weapon);
 	return HandlePacketResult::Handled;
@@ -1067,8 +1070,8 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 
 	// TODO(joey): move into trigger command dispatcher, some use private player vars.
 	{
-		CSettings& settings = m_server->getSettings();
-		if (settings.getBool("triggerhack_execscript", false))
+		auto& settings = m_server->getSettings();
+		if (settings.get<bool>("triggerhack_execscript").value_or(false))
 		{
 			if (actualActionName == "gr.es_clear")
 			{
@@ -1153,7 +1156,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if (settings.getBool("triggerhack_files", false))
+		if (settings.get<bool>("triggerhack_files").value_or(false))
 		{
 			if (actualActionName == "gr.appendfile")
 			{
@@ -1237,7 +1240,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if (settings.getBool("triggerhack_props", false))
+		if (settings.get<bool>("triggerhack_props").value_or(false))
 		{
 			if (actualActionName == "gr.attr")
 			{
@@ -1265,7 +1268,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 		}
 
-		if (settings.getBool("triggerhack_levels", false))
+		if (settings.get<bool>("triggerhack_levels").value_or(false))
 		{
 			if (actualActionName == "gr.updatelevel")
 			{
@@ -1307,7 +1310,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 		if (auto level = getLevel(); level)
 		{
 			// Send to the level.
-			if (m_server->getSettings().getBool("sendplayertriggers", true))
+			if (m_server->getSettings().get<bool>("sendplayertriggers").value_or(true))
 				m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_TRIGGERACTION >> (short)m_id << (pPacket.text() + 1), getGlobalPosition(), level, { m_id });
 
 			// Trigger on level NPCs.
