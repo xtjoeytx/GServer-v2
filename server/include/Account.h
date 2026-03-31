@@ -66,7 +66,7 @@ struct Account
 	Character character;
 	uint8_t maxHitpoints = 3;
 	uint8_t status = 20;
-	uint8_t apCounter = 0;			// GR only?
+	uint16_t apCounter = 0;			// GR only?
 	uint32_t onlineSeconds = 0;		// GR only?
 	std::string ipAddress;
 	std::string language{ "English" };

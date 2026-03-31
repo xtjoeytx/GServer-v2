@@ -242,23 +242,25 @@ bool PlayerClient::doTimedEvents()
 		if (auto subLevel = getSubLevel(); subLevel != nullptr)
 		{
 			if (!(account.status & PLSTATUS_PAUSED) && !subLevel->isSparringZone)
-				--account.apCounter;
-
-			if (account.apCounter <= 0)
 			{
-				if (account.character.ap < 100)
-					sendPropsFromResults(setPropWith<PlayerProp::ALIGNMENT>(props::SetBy::SERVER, static_cast<uint8_t>(account.character.ap + 1)));
-
-				if (account.character.ap < 20)
-					account.apCounter = settings.getInt("aptime0", 30);
-				else if (account.character.ap < 40)
-					account.apCounter = settings.getInt("aptime1", 90);
-				else if (account.character.ap < 60)
-					account.apCounter = settings.getInt("aptime2", 300);
-				else if (account.character.ap < 80)
-					account.apCounter = settings.getInt("aptime3", 600);
+				if (account.apCounter > 0)
+					--account.apCounter;
 				else
-					account.apCounter = settings.getInt("aptime4", 1200);
+				{
+					if (account.character.ap < 100)
+						sendPropsFromResults(setPropWith<PlayerProp::ALIGNMENT>(props::SetBy::SERVER, static_cast<uint8_t>(account.character.ap + 1)));
+
+					if (account.character.ap < 20)
+						account.apCounter = settings.getInt("aptime0", 30);
+					else if (account.character.ap < 40)
+						account.apCounter = settings.getInt("aptime1", 90);
+					else if (account.character.ap < 60)
+						account.apCounter = settings.getInt("aptime2", 300);
+					else if (account.character.ap < 80)
+						account.apCounter = settings.getInt("aptime3", 600);
+					else
+						account.apCounter = settings.getInt("aptime4", 1200);
+				}
 			}
 		}
 	}
