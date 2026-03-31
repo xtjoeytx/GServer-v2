@@ -138,7 +138,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.removeguild", [&](Player* player, std::vector<std::string>& triggerData)
 	{
-		if (getSettings().getBool("triggerhack_guilds", false))
+		if (!getSettings().getBool("triggerhack_guilds", false))
 			return false;
 
 		CString guild;
@@ -166,7 +166,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.setguild", [&](Player* player, std::vector<std::string>& triggerData)
 	{
-		if (getSettings().getBool("triggerhack_guilds", false))
+		if (!getSettings().getBool("triggerhack_guilds", false))
 			return false;
 
 		CString guild, account;
@@ -227,7 +227,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 	// RC triggers
 	builder.registerCommand("gr.rcchat", [&](Player* player, std::vector<std::string>& triggerData)
 	{
-		if (getSettings().getBool("triggerhack_rc", false))
+		if (!getSettings().getBool("triggerhack_rc", false))
 			return false;
 
 		auto p = getPlayer(player->getId());
@@ -242,7 +242,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 	// Level triggers
 	builder.registerCommand("gr.npc.move", [&](Player* player, std::vector<std::string>& triggerData)
 	{
-		if (getSettings().getBool("triggerhack_levels", false) && triggerData.size() == 6)
+		if (!getSettings().getBool("triggerhack_levels", false) || triggerData.size() != 6)
 			return false;
 
 		unsigned int id = string::toNumber(triggerData[1]);
@@ -270,7 +270,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.npc.setpos", [&](Player* player, std::vector<std::string>& triggerData)
 	{
-		if (getSettings().getBool("triggerhack_levels", false) && triggerData.size() == 4)
+		if (!getSettings().getBool("triggerhack_levels", false) || triggerData.size() != 4)
 			return false;
 
 		unsigned int id = string::toNumber(triggerData[1]);
