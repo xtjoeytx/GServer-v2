@@ -441,7 +441,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// If Z is disabled, don't allow changing it.
-			if (m_server->getSettings().get<bool>("lockplayerz").value_or(false))
+			if (m_server->cached.lockPlayerZ.getValue())
 			{
 				result.resultFlags.reset();
 				result.resultFlags.set(SetResults::sendToSource);
@@ -1021,7 +1021,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// If Z is disabled, don't allow changing it.
-			if (m_server->getSettings().get<bool>("lockplayerz").value_or(false))
+			if (m_server->cached.lockPlayerZ.getValue())
 			{
 				result.resultFlags.reset();
 				result.resultFlags.set(SetResults::sendToSource);
@@ -1114,7 +1114,7 @@ bool Player::checkPropSetAccess(PlayerProp prop, SetBy setBy, Player* originator
 	// Admin check on changing gralats.
 	if (prop == PlayerProp::RUPEESCOUNT && originator != nullptr)
 	{
-		bool canSet = m_server->getSettings().get<bool>("normaladminscanchangegralats").value_or(true);
+		bool canSet = m_server->cached.normalAdminsCanChangeGralats.getValue();
 		canSet = canSet || (originator->isStaff() && originator->account.hasRight(PLPERM_SETRIGHTS));
 		return canSet;
 	}

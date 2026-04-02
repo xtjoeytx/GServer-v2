@@ -183,7 +183,7 @@ bool PlayerRC::handleLogin(CString& pPacket)
 	}
 
 	// Check for available slots on the server.
-	if (m_server->getPlayerList().size() >= (unsigned int)m_server->getSettings().get<uint32_t>("maxplayers").value_or(128))
+	if (m_server->getPlayerList().size() >= m_server->cached.maxPlayers.getValue())
 	{
 		log::printLine(log::rc, "** [Disconnect] '{}': Server is full.", account.name);
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server has reached its player limit.");
@@ -242,7 +242,7 @@ bool PlayerRC::sendLogin()
 	{
 		// graal doesn't quote these
 		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-		for (const auto& status : m_server->getStatusList().getUnsafe())
+		for (const auto& status : m_server->cached.playerStatusList.getValue())
 			pliconPacket << string::trim(status) << ",";
 
 		sendPacket(pliconPacket.remove(pliconPacket.length() - 1, 1));

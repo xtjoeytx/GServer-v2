@@ -715,7 +715,7 @@ size_t PropertyColors::getMaxColorValue() const noexcept
 {
 	auto server = BabyDI::Get<Server>();
 	size_t colorCount = CLASSICCOLORS_COUNT;
-	if (server->Generation == ServerGeneration::MODERN && server->getSettings().get<bool>("enableexbodycolors").value_or(false))
+	if (server->Generation == ServerGeneration::MODERN && server->cached.enableExBodyColors.getValue())
 		colorCount += HTMLCOLORS_COUNT;
 	return colorCount;
 }
@@ -725,23 +725,22 @@ size_t PropertyColors::getMaxColorValue() const noexcept
 uint8_t Limits::applyMaxHitpoints(uint8_t maxHitpoints)
 {
 	auto server = BabyDI::Get<Server>();
-	auto heartLimit = std::min(server->getSettings().get<int>("heartlimit").value_or(3), 20);
-	return std::clamp(maxHitpoints, 0_ui8, static_cast<uint8_t>(heartLimit));
+	auto heartLimit = std::min(server->cached.maxHeartLimit.getValue(), 20_ui8);
+	return std::clamp(maxHitpoints, 0_ui8, heartLimit);
 }
 
 int8_t Limits::applySwordPower(int8_t swordPower)
 {
 	auto server = BabyDI::Get<Server>();
-	auto& settings = server->getSettings();
-	int8_t minimum = (settings.get<bool>("healswords").value_or(false) ? -(settings.get<int8_t>("swordlimit").value_or(3)) : 0);
-	int8_t maximum = settings.get<int8_t>("swordlimit").value_or(3);
+	int8_t minimum = (server->cached.enableHealingSwords.getValue() ? -(server->cached.swordPowerLimit.getValue()) : 0);
+	int8_t maximum = server->cached.swordPowerLimit.getValue();
 	return std::clamp(swordPower, minimum, maximum);
 }
 
 uint8_t Limits::applyShieldPower(uint8_t shieldPower)
 {
 	auto server = BabyDI::Get<Server>();
-	return std::clamp(shieldPower, 0_ui8, server->getSettings().get<uint8_t>("shieldlimit").value_or(3));
+	return std::clamp(shieldPower, 0_ui8, server->cached.shieldPowerLimit.getValue());
 }
 
 ////////////////////////////////////////////////////////////////////////////////

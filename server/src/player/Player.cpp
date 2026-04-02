@@ -784,13 +784,11 @@ bool Player::isStaff()
 
 bool Player::isJailed()
 {
-	auto& settings = m_server->getSettings();
-	auto jailLevels = settings.get("jaillevels");
-	if (!jailLevels.has_value())
+	if (!m_server->cached.jailLevels)
 		return false;
 
-	auto levels = string::split(jailLevels.value(), ","sv);
-	auto jailed = std::ranges::find_if(levels, [this](std::string_view level)
+	const auto& levels = m_server->cached.jailLevels.getValue();
+	auto jailed = std::ranges::find_if(levels, [this](const std::string& level)
 	{
 		return string::equalsi(account.level, string::trim(level));
 	});
@@ -937,8 +935,7 @@ bool Player::setFlag(std::string_view flagName, std::optional<std::string> flagV
 bool Player::addWeapon(LevelItemType defaultWeapon)
 {
 	// Allow Default Weapons..?
-	auto& settings = m_server->getSettings();
-	if (!settings.get<bool>("defaultweapons").value_or(true))
+	if (!m_server->cached.enableDefaultWeapons.getValue())
 		return false;
 
 	auto weapon = m_server->getWeapon(LevelItem::getItemName(defaultWeapon));
@@ -1295,7 +1292,7 @@ HandlePacketResult Player::msgWebSocketInit(CString& pPacket)
 	CString webSocketKeyHeader = "Sec-WebSocket-Key:";
 	if (pPacket.findi(webSocketKeyHeader) < 0)
 	{
-		CString simpleHtml = CString() << "<html><head><title>" APP_VENDOR " " APP_NAME " v" APP_VERSION "</title></head><body><h1>Welcome to " << m_server->getSettings().getStr("name") << "!</h1>" << m_server->getServerMessage().replaceAll("my server", m_server->getSettings().getStr("name")).text() << "<p style=\"font-style: italic;font-weight: bold;\">Powered by " APP_VENDOR " " APP_NAME "<br/>Programmed by " << CString(APP_CREDITS) << "</p></body></html>";
+		CString simpleHtml = CString() << "<html><head><title>" APP_VENDOR " " APP_NAME " v" APP_VERSION "</title></head><body><h1>Welcome to " << m_server->getSettings().get("name").value_or("") << "!</h1>" << m_server->getServerMessage().replaceAll("my server", m_server->getSettings().get("name").value_or("")).text() << "<p style=\"font-style: italic;font-weight: bold;\">Powered by " APP_VENDOR " " APP_NAME "<br/>Programmed by " << CString(APP_CREDITS) << "</p></body></html>";
 		CString webResponse = CString() << "HTTP/1.1 200 OK\r\nServer: " APP_VENDOR " " APP_NAME " v" APP_VERSION "\r\nContent-Length: " << CString(simpleHtml.length()) << "\r\nContent-Type: text/html\r\n\r\n"
 			<< simpleHtml << "\r\n";
 		unsigned int dsize = webResponse.length();

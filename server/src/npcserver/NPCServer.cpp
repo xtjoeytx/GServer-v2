@@ -100,8 +100,7 @@ void NPCServer::initialize()
 
 	// If we don't sleep, unset the first NPC save flag.
 	// We won't run into the problem where we immediately save on server start.
-	bool sleepwhennoplayers = m_server->getSettings().get<bool>("sleepwhennoplayers").value_or(true);
-	if (!sleepwhennoplayers)
+	if (!m_server->cached.sleepWhenNoPlayers.getValue())
 		m_firstNPCSave = false;
 }
 
@@ -238,8 +237,7 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 
 	// If we have no players, enter sleep mode.
 	// We do it this way to give the server time to process logouts, and to force an NPC save (since saves will be disabled while sleeping).
-	bool sleepwhennoplayers = m_server->getSettings().get<bool>("sleepwhennoplayers").value_or(true);
-	if (sleepwhennoplayers && m_playerList.empty())
+	if (m_server->cached.sleepWhenNoPlayers.getValue() && m_playerList.empty())
 	{
 		m_sleeping = true;
 		saveNPCs();

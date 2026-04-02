@@ -5,7 +5,6 @@
 
 #include <CSocket.h>
 
-#include <CSettings.h>
 #include <CString.h>
 #include <IEnums.h>
 

@@ -615,7 +615,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 	else if (!p2->isNPCServer())
 	{
 		// Add all the specified variables to the profile string.
-		for (auto profilevar : string::split(m_server->getSettings().get<std::string>("profilevars").value_or(""), ","sv))
+		for (const auto& profilevar : m_server->cached.playerProfileVariables.value.value())
 		{
 			auto tokens = string::splitToVectorByString(profilevar, ":="sv);
 			if (tokens.size() != 2)

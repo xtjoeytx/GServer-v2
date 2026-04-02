@@ -13,8 +13,8 @@
 #include <optional>
 #include <ranges>
 #include <set>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <unordered_map>
 #include <utility>
@@ -46,11 +46,11 @@
 #include <utilities/CommandDispatcher.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
+#include <utilities/Settings.h>
+#include <utilities/StringUtils.h>
 #include <utilities/generator/IdGenerator.h>
 #include <utilities/generator/TimeoutGenerator.h>
 #include <utilities/manager/ResourceManager.h>
-#include <utilities/Settings.h>
-#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -96,12 +96,73 @@ enum class ServerGeneration
 	MODERN
 };
 
-inline constexpr std::array<std::string_view, 4> ServerGenerationNames =
-{
+inline constexpr std::array<std::string_view, 4> ServerGenerationNames{
 	"original",
 	"classic",
 	"newmain",
 	"modern"
+};
+
+/// @brief Cached settings directly queried from the server by other classes.
+struct ExternalServerCachedSettings
+{
+	SettingCache<uint32_t> maxPlayers{"maxplayers", 128};
+	SettingCache<bool> sleepWhenNoPlayers{"sleepwhennoplayers", true};
+	SettingCache<std::string> unstickMeLevel{"unstickmelevel", "onlinestartlocal.nw"};
+	std::array<SettingCache<float>, 2> unstickMeTile{{{"unstickmex", 30.0f}, {"unstickmey", 30.5f}}};
+	SettingCache<int> unstickMeSeconds{"unstickmetime", 30};
+	SettingCache<bool> enableBushItemDrops{"bushitems", true};
+	SettingCache<bool> enableVaseItemDrops{"vasesdrop", true};
+	SettingCache<bool> disableItemDropping{"disableitemdropping", false};
+	SettingCache<bool> enableInsideSyncDistance{"syncbydistanceinside", false};
+	std::array<SettingCache<uint32_t>, 2> syncDistance{{{"syncdistancex", 192}, {"syncdistancey", 192}}};
+	SettingCache<uint32_t> eventDistance{"eventdistance", 64};
+	SettingCache<uint32_t> triggerDistance{"triggerdistance", 10};
+	SettingCache<bool> sendTriggerActionsToPlayers{"sendplayertriggers", true};
+	SettingCache<bool> enableFlagCropping{"cropflags", true};
+	SettingCache<bool> disableExplosions{"noexplosions", false};
+	SettingCache<bool> enableClientsidePushPull{"clientsidepushpull", true};
+	SettingCache<uint16_t> tileRespawnTime{"respawntime", 15};
+	SettingCache<bool> enableIdleDisconnect{"disconnectifnotmoved", true};
+	SettingCache<int> idleTimeoutSeconds{"maxnomovement", 1200};
+	SettingCache<bool> enablePermanentTileChanges{"savelevels", false};
+	SettingCache<bool> saveTileChangesToLevelFile{"levelsautosave", false};
+	// flag/triggerhacks
+	SettingCache<bool> enableFlaghackMovement{"flaghack_movement", true};
+	SettingCache<bool> enableTriggerhackExecscript{"triggerhack_execscript", false};
+	SettingCache<bool> enableTriggerhackFiles{"triggerhack_files", false};
+	SettingCache<bool> enableTriggerhackGroups{"triggerhack_groups", true};
+	SettingCache<bool> enableTriggerhackGuilds{"triggerhack_guilds", false};
+	SettingCache<bool> enableTriggerhackLevels{"triggerhack_levels", false};
+	SettingCache<bool> enableTriggerhackProps{"triggerhack_props", false};
+	SettingCache<bool> enableTriggerhackRC{"triggerhack_rc", false};
+	SettingCache<bool> enableTriggerhackWeapons{"triggerhack_weapons", false};
+	// npc-server
+	SettingCache<bool> forceClientsideLinks{"clientsidelinks", false};
+	SettingCache<bool> forceClientsideSigns{"clientsidesigns", false};
+	SettingCache<bool> enableItemDropEvents{"itemdropevents", false};
+	SettingCache<bool> itemDropEventsOnlyForGralats{"itemdropeventsonlyforgralats", false};
+	SettingCache<bool> projectilesStopOnWall{"projectilesstoponwall", true};
+	SettingCache<bool> runAllScriptEvents{"runallscriptevents", false};
+	// security
+	SettingCache<bool> normalAdminsCanChangeGralats{"normaladminscanchangegralats", true};
+	SettingCache<std::vector<std::string>> protectedWeapons{"protectedweapons", {}};
+	SettingCache<std::vector<std::string>> jailLevels{"jaillevels", {"police2.graal", "police4.graal"}};
+	// player
+	SettingCache<bool> enableDefaultWeapons{"defaultweapons", true};
+	SettingCache<uint8_t> maxHeartLimit{"heartlimit", 3};
+	SettingCache<int8_t> swordPowerLimit{"swordlimit", 3};
+	SettingCache<uint8_t> shieldPowerLimit{"shieldlimit", 3};
+	SettingCache<bool> enableHealingSwords{"healswords", false};
+	SettingCache<bool> enableExBodyColors{"enableexbodycolors", false};
+	SettingCache<bool> playerTouchesMeNoZ{"playertouchsmenoz", false};
+	SettingCache<bool> lockPlayerZ{"lockplayerz", false};
+	SettingCache<bool> enableAPSystem{"apsystem", true};
+	std::array<SettingCache<uint16_t>, 5> apSystemThresholdSeconds{{{"aptime0", 30}, {"aptime1", 90}, {"aptime2", 300}, {"aptime3", 600}, {"aptime4", 1200}}};
+	SettingCache<std::vector<std::string>> playerProfileVariables{"profilevars", {"Kills:=playerkills", "Deaths:=playerdeaths", "Maxpower:=playerfullhearts", "Rating:=playerrating", "Alignment:=playerap", "Gralat:=playerrupees", "Swordpower:=playerswordpower", "Spin Attack:=canspin"}};
+	SettingCache<std::vector<std::string>> playerStatusList{"playerlisticons", {"Online", "Away", "DND", "Eating", "Hiding", "No PMs", "RPing", "Sparring", "PKing"}};
+
+	void bind(Server* server);
 };
 
 using AnimationManager = ResourceManager<GameAni, Server*>;
@@ -195,7 +256,6 @@ public:
 	const auto& getFrameStartTimeHighPrecision() const { return m_frameStartTimeHighPrecision; }
 	const auto& getMapList() const { return m_mapList; }
 	const auto& getServerStartTime() const { return m_serverStartTime; }
-	const auto& getStatusList() const { return m_statusList; }
 
 public:
 	/// @brief Gets a stubbed level with the given name (a stubbed level is not yet loaded).
@@ -278,7 +338,7 @@ public:
 	bool deletePlayer(PlayerPtr player);
 	bool swapPlayer(PlayerPtr old_player, PlayerPtr new_player);
 	void recordPlayerLoggedIn(PlayerPtr player);
-	bool warpPlayerToSafePlace(PlayerID playerId);
+	bool warpPlayerToSafePlace(PlayerID playerId) const;
 
 public:
 	std::optional<std::string> getFlag(std::string_view flagName) const;
@@ -348,7 +408,7 @@ public:
 	{
 		if (!hasNPCServer()) return;
 		if (level == nullptr) return;
-		auto eventDistance = m_settings.get<uint32_t>("eventdistance").value_or(64);
+		auto eventDistance = cached.eventDistance.getValue();
 		for (auto& npcid : level->findInRangeNPCsByDistance(position, eventDistance))
 		{
 			if (auto npc = getNPC(npcid); npc)
@@ -374,10 +434,14 @@ public:
 	void scheduleTask(precise_clock::duration delay, std::function<void()> task);
 
 public:
-	ServerGeneration Generation{ ServerGeneration::CLASSIC };
+	ServerGeneration Generation{ServerGeneration::CLASSIC};
 	ScriptContainer Scripting;
 
-	std::array<double, 7> groundHeights = { 0.0, 3.0, 4.0, 5.0, 25.0, 55.0, 65.0 };
+	std::array<double, 7> groundHeights = {0.0, 3.0, 4.0, 5.0, 25.0, 55.0, 65.0};
+
+public:
+	// Publicly visible settings.
+	ExternalServerCachedSettings cached;
 
 private:
 	bool doTimedEvents(int iterations);
@@ -399,22 +463,18 @@ private:
 
 	Settings m_adminSettings;
 	Settings m_settings;
-	SettingCache<std::string> m_generationString{ "generation", "classic" };
-	SettingCache<bool> m_classicStyleLogs{ "classicstylelogs", false };
-	SettingCache<std::string> m_unstickMeLevel{ "unstickmelevel", "onlinestartlocal.nw" };
-	SettingCache<float> m_unstickMeX{ "unstickmex", 30.0f };
-	SettingCache<float> m_unstickMeY{ "unstickmey", 30.5f };
-	SettingCache<bool> m_dontAddServerFlags{ "dontaddserverflags", false };
-	SettingCache<bool> m_cropFlags{ "cropflags", true };
-	SettingCache<bool> m_newTilesets{ "newtilesets", false };
-	SettingCache<std::vector<std::string>> m_newTilesetLevels{ "newtilesetlevels", {} };
-	SettingCache<std::vector<std::string>> m_statusList{ "playerlisticons", { "Online", "Away", "DND", "Eating", "Hiding", "No PMs", "RPing", "Sparring", "PKing" } };
-	SettingCache<std::vector<std::string>> m_staffList{ "staff" };
-	SettingCache<std::vector<std::string>> m_bushItemTypes{ "bushitemtypes", { "greenrupee", "bluerupee", "heart", "bombs" } };
-	SettingCache<std::vector<std::string>> m_deathItemTypes{ "deathitemtypes", { "greenrupee", "bluerupee", "redrupee", "goldrupee", "bombs", "darts" } };
-	SettingCache<std::vector<std::string>> m_gmaps{ "gmaps", {} };
-	SettingCache<std::vector<std::string>> m_bigmaps{ "maps", {} };
-	SettingCache<std::vector<std::string>> m_groupmaps{ "groupmaps", {} };
+
+	SettingCache<std::string> m_generationString{"generation", "classic"};
+	SettingCache<bool> m_classicStyleLogs{"classicstylelogs", false};
+	SettingCache<bool> m_dontAddServerFlags{"dontaddserverflags", false};
+	SettingCache<bool> m_newTilesets{"newtilesets", false};
+	SettingCache<std::vector<std::string>> m_newTilesetLevels{"newtilesetlevels", {}};
+	SettingCache<std::vector<std::string>> m_staffList{"staff"};
+	SettingCache<std::vector<std::string>> m_bushItemTypes{"bushitemtypes", {"greenrupee", "bluerupee", "heart", "bombs"}};
+	SettingCache<std::vector<std::string>> m_deathItemTypes{"deathitemtypes", {"greenrupee", "bluerupee", "redrupee", "goldrupee", "bombs", "darts"}};
+	SettingCache<std::vector<std::string>> m_gmaps{"gmaps", {}};
+	SettingCache<std::vector<std::string>> m_bigmaps{"maps", {}};
+	SettingCache<std::vector<std::string>> m_groupmaps{"groupmaps", {}};
 
 	std::unique_ptr<IAccountLoader> m_accountLoader;
 	std::unique_ptr<INPCLoader> m_npcLoader;
@@ -427,15 +487,15 @@ private:
 
 	string_map<std::shared_ptr<Weapon>> m_weaponList;
 	std::unordered_map<NPCID, std::shared_ptr<NPC>> m_npcList;
-	IdGenerator<NPCID> m_npcIdGenerator{ NPCID_GEN_DATABASE_LOCALN };
+	IdGenerator<NPCID> m_npcIdGenerator{NPCID_GEN_DATABASE_LOCALN};
 
 	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_playerList;
-	IdGenerator<PlayerID> m_playerIdGenerator{ PLAYERID_GEN };
+	IdGenerator<PlayerID> m_playerIdGenerator{PLAYERID_GEN};
 
-	TimeoutGenerator m_timedEvents{ 1s, true };
-	TimeoutGenerator m_timedNWTime{ 5s, true };
-	TimeoutGenerator m_timedSave{ 1min, true };
-	TimeoutGenerator m_timedMaintenance{ 5min, true };
+	TimeoutGenerator m_timedEvents{1s, true};
+	TimeoutGenerator m_timedNWTime{5s, true};
+	TimeoutGenerator m_timedSave{1min, true};
+	TimeoutGenerator m_timedMaintenance{5min, true};
 	std::vector<std::pair<precise_clock::duration, std::function<void()>>> m_scheduledTasks;
 	clock::time_point m_serverStartTime;
 	clock::time_point m_frameStartTime;

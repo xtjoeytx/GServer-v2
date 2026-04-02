@@ -89,6 +89,37 @@ auto methodstub(T* t, R (T::*m)(Args...))
 	return result << second;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+void ExternalServerCachedSettings::bind(Server* server)
+{
+	auto& settings = server->getSettings();
+
+	settings.track(maxPlayers, sleepWhenNoPlayers);
+	settings.track(unstickMeLevel, unstickMeTile[0], unstickMeTile[1], unstickMeSeconds);
+	settings.track(enableBushItemDrops, enableVaseItemDrops, disableItemDropping);
+	settings.track(enableInsideSyncDistance, syncDistance[0], syncDistance[1]);
+	settings.track(eventDistance, triggerDistance, sendTriggerActionsToPlayers);
+	settings.track(enableFlagCropping, disableExplosions, enableClientsidePushPull, tileRespawnTime, enableIdleDisconnect, idleTimeoutSeconds);
+	settings.track(enablePermanentTileChanges, saveTileChangesToLevelFile);
+
+	// triggerhacks
+	settings.track(enableFlaghackMovement, enableTriggerhackExecscript, enableTriggerhackFiles, enableTriggerhackGroups, enableTriggerhackGuilds, enableTriggerhackLevels, enableTriggerhackProps, enableTriggerhackRC, enableTriggerhackWeapons);
+
+	// npc-server
+	settings.track(forceClientsideLinks, forceClientsideSigns, enableItemDropEvents, itemDropEventsOnlyForGralats, projectilesStopOnWall, runAllScriptEvents);
+
+	// security
+	settings.track(normalAdminsCanChangeGralats, protectedWeapons, jailLevels);
+
+	// player
+	settings.track(enableDefaultWeapons, maxHeartLimit, enableExBodyColors, playerTouchesMeNoZ, lockPlayerZ);
+	settings.track(enableAPSystem, apSystemThresholdSeconds[0], apSystemThresholdSeconds[1], apSystemThresholdSeconds[2], apSystemThresholdSeconds[3], apSystemThresholdSeconds[4]);
+	settings.track(playerProfileVariables, playerStatusList);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 Server::Server(const CString& pName)
 	: m_animationManager(this), m_packageManager(this), m_name(pName),
 	  m_triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
@@ -863,11 +894,11 @@ void Server::prepareSettings()
 	};
 
 	// Set the cache bindings before we load so our settings will get cached.
+	cached.bind(this);
 	m_settings.track(m_generationString, m_classicStyleLogs);
-	m_settings.track(m_unstickMeLevel, m_unstickMeX, m_unstickMeY);
-	m_settings.track(m_dontAddServerFlags, m_cropFlags);
+	m_settings.track(m_dontAddServerFlags);
 	m_settings.track(m_newTilesets, m_newTilesetLevels);
-	m_settings.track(m_statusList, m_staffList, m_bushItemTypes, m_deathItemTypes);
+	m_settings.track(m_staffList, m_bushItemTypes, m_deathItemTypes);
 	m_settings.track(m_gmaps, m_bigmaps, m_groupmaps);
 }
 
@@ -1053,7 +1084,7 @@ void Server::loadMaps(bool print)
 	m_mapList.clear();
 
 	// Load gmaps.
-	for (const auto& gmapName : m_gmaps.getUnsafe())
+	for (const auto& gmapName : m_gmaps.getValue())
 	{
 		// Load the gmap.
 		try
@@ -1070,7 +1101,7 @@ void Server::loadMaps(bool print)
 	}
 
 	// Load bigmaps.
-	for (const auto& mapName : m_bigmaps.getUnsafe())
+	for (const auto& mapName : m_bigmaps.getValue())
 	{
 		// Load the bigmap.
 		try
@@ -1404,14 +1435,14 @@ tileset::TilesetType Server::getTilesetTypeForLevel(std::shared_ptr<Level> level
 		return tileset::TilesetType::TERRAIN;
 
 	// Check for tileset type 1 (new tilesets).
-	for (const auto& newlevel : m_newTilesetLevels.getUnsafe())
+	for (const auto& newlevel : m_newTilesetLevels.getValue())
 	{
 		if (string::match(level->levelName, newlevel) || level->levelName.starts_with(newlevel))
 			return tileset::TilesetType::NEWFORMAT;
 	}
 
 	// If all levels are the new tileset, return that.
-	if (m_newTilesets.getUnsafe())
+	if (m_newTilesets.getValue())
 		return tileset::TilesetType::NEWFORMAT;
 
 	// Otherwise, return classic.
@@ -1715,13 +1746,13 @@ void Server::recordPlayerLoggedIn(PlayerPtr player)
 	getServerList().addPlayer(player);
 }
 
-bool Server::warpPlayerToSafePlace(PlayerID playerId)
+bool Server::warpPlayerToSafePlace(PlayerID playerId) const
 {
 	auto player = getPlayer<PlayerClient>(playerId);
 	if (player == nullptr) return false;
 
 	// Try unstick me level.
-	return player->warp(m_unstickMeLevel.getUnsafe(), { static_cast<int16_t>(m_unstickMeX.getUnsafe() * 16.0f), static_cast<int16_t>(m_unstickMeY.getUnsafe() * 16.0f) });
+	return player->warp(cached.unstickMeLevel.getValue(), {static_cast<int16_t>(cached.unstickMeTile[0].getValue() * 16.0f), static_cast<int16_t>(cached.unstickMeTile[1].getValue() * 16.0f)});
 
 	// TODO: Maybe try the default account level?
 }
@@ -1771,7 +1802,7 @@ void Server::logToFile(std::filesystem::path fileName, std::string_view message,
 
 	if (writeTimestamp)
 	{
-		if (m_classicStyleLogs.getUnsafe())
+		if (m_classicStyleLogs.getValue())
 		{
 			// Non-standard, but make it at least a LITTLE easier to read these dumb logs.
 			file.writeLine();
@@ -1815,7 +1846,7 @@ std::optional<std::string> Server::getFlag(std::string_view flagName) const
 
 bool Server::deleteFlag(std::string_view flagName, bool sendToPlayers)
 {
-	if (m_dontAddServerFlags.getUnsafe())
+	if (m_dontAddServerFlags.getValue())
 		return false;
 
 	if (Scripting.variables.remove(flagName))
@@ -1841,13 +1872,13 @@ bool Server::setFlag(std::string_view flagPair, bool sendToPlayers)
 
 bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool pSendToPlayers)
 {
-	if (m_dontAddServerFlags.getUnsafe())
+	if (m_dontAddServerFlags.getValue())
 		return false;
 
 	// Function to crop flags.
 	auto cropFlag = [this, &flagName](std::string& value)
 	{
-		if (m_cropFlags.getUnsafe())
+		if (cached.enableFlagCropping.getValue())
 			value.erase(std::min(value.length(), static_cast<size_t>(223 - 1) - flagName.length()));
 		return value;
 	};

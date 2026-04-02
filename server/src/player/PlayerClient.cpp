@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <ctime>
 #include <format>
 #include <limits>
 #include <memory>
@@ -18,7 +17,6 @@
 #include <CSocket.h>
 
 #include <CEncryption.h>
-#include <CSettings.h>
 #include <CString.h>
 #include <IConfig.h>
 #include <IEnums.h>
@@ -224,10 +222,9 @@ bool PlayerClient::doTimedEvents()
 	}
 
 	// Disconnect if players are inactive.
-	auto& settings = m_server->getSettings();
-	if (settings.get<bool>("disconnectifnotmoved").value_or(true))
+	if (m_server->cached.enableIdleDisconnect.getValue())
 	{
-		int maxnomovement = settings.get<int>("maxnomovement").value_or(1200);
+		int maxnomovement = m_server->cached.idleTimeoutSeconds.getValue();
 		if (timeDifference(currTime, m_lastMovement) > std::chrono::seconds{ maxnomovement } && timeDifference(currTime, m_lastChat) > std::chrono::seconds{ maxnomovement })
 		{
 			log::printLine(log::server, "** [Disconnect] {}: Client has been disconnected due to inactivity.", account.name);
@@ -237,7 +234,7 @@ bool PlayerClient::doTimedEvents()
 	}
 
 	// Increase player AP.
-	if (settings.get<bool>("apsystem").value_or(true) && !m_currentLevel.expired())
+	if (m_server->cached.enableAPSystem.getValue() && !m_currentLevel.expired())
 	{
 		if (auto subLevel = getSubLevel(); subLevel != nullptr)
 		{
@@ -251,15 +248,15 @@ bool PlayerClient::doTimedEvents()
 						sendPropsFromResults(setPropWith<PlayerProp::ALIGNMENT>(props::SetBy::SERVER, static_cast<uint8_t>(account.character.ap + 1)));
 
 					if (account.character.ap < 20)
-						account.apCounter = settings.get<uint16_t>("aptime0").value_or(30);
+						account.apCounter = m_server->cached.apSystemThresholdSeconds[0].getValue();
 					else if (account.character.ap < 40)
-						account.apCounter = settings.get<uint16_t>("aptime1").value_or(90);
+						account.apCounter = m_server->cached.apSystemThresholdSeconds[1].getValue();
 					else if (account.character.ap < 60)
-						account.apCounter = settings.get<uint16_t>("aptime2").value_or(300);
+						account.apCounter = m_server->cached.apSystemThresholdSeconds[2].getValue();
 					else if (account.character.ap < 80)
-						account.apCounter = settings.get<uint16_t>("aptime3").value_or(600);
+						account.apCounter = m_server->cached.apSystemThresholdSeconds[3].getValue();
 					else
-						account.apCounter = settings.get<uint16_t>("aptime4").value_or(1200);
+						account.apCounter = m_server->cached.apSystemThresholdSeconds[4].getValue();
 				}
 			}
 		}
@@ -422,7 +419,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 	}
 
 	// Check for available slots on the server.
-	if (m_server->getPlayerList().size() >= m_server->getSettings().get<uint32_t>("maxplayers").value_or(128))
+	if (m_server->getPlayerList().size() >= m_server->cached.maxPlayers.getValue())
 	{
 		log::printLine(log::rc, "** [Disconnect] '{}': Server is full.", account.name);
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "This server has reached its player limit.");
@@ -530,15 +527,10 @@ bool PlayerClient::sendLogin()
 	}
 
 	// Send any protected weapons we do not have.
-	if (auto protectedWeapons = m_server->getSettings().get("protectedweapons"); protectedWeapons.has_value())
+	for (const auto& weapon : m_server->cached.protectedWeapons.getValue())
 	{
-		auto protectedWeaponsList = string::splitToVector(protectedWeapons.value(), ","sv);
-		std::erase_if(protectedWeaponsList, [this](std::string& val)
-		{
-			return std::find(account.weapons.begin(), account.weapons.end(), val) != account.weapons.end();
-		});
-		for (auto& weaponName : protectedWeaponsList)
-			this->addWeapon(weaponName);
+		if (!account.hasWeapon(weapon))
+			this->addWeapon(weapon);
 	}
 
 	// Send the zlib fixing NPC to client versions 2.21 - 2.31.
@@ -596,7 +588,7 @@ bool PlayerClient::sendLogin()
 	{
 		// graal doesn't quote these
 		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-		for (const auto& status : m_server->getStatusList().getUnsafe())
+		for (const auto& status : m_server->cached.playerStatusList.getValue())
 			pliconPacket << string::trim(status) << ",";
 
 		sendPacket(pliconPacket.remove(pliconPacket.length() - 1, 1));
@@ -963,18 +955,18 @@ bool PlayerClient::processChat(const CString& pChat)
 			if (isJailed())
 				return false;
 
-			int unstickTime = m_server->getSettings().get<int>("unstickmetime").value_or(30);
-			if (timeDifference(m_server->getFrameStartTime(), m_lastMovement) >= std::chrono::seconds{ unstickTime })
+			int unstickTime = m_server->cached.unstickMeSeconds.getValue();
+			if (timeDifference(m_server->getFrameStartTime(), m_lastMovement) < std::chrono::seconds{ unstickTime })
+				setChat(CString() << "Don't move for " << CString(unstickTime) << " seconds before doing '" << pChat << "'!");
+			else
 			{
 				m_lastMovement = m_server->getFrameStartTime();
-				CString unstickLevel = m_server->getSettings().get("unstickmelevel").value_or("onlinestartlocal.nw");
-				float unstickX = m_server->getSettings().get<float>("unstickmex").value_or(30.0f);
-				float unstickY = m_server->getSettings().get<float>("unstickmey").value_or(30.5f);
+				const auto& unstickLevel = m_server->cached.unstickMeLevel.getValue();
+				const auto& unstickX = m_server->cached.unstickMeTile[0].getValue();
+				const auto& unstickY = m_server->cached.unstickMeTile[1].getValue();
 				warp(unstickLevel, { static_cast<int16_t>(unstickX * 16.0f), static_cast<int16_t>(unstickY * 16.0f) });
 				setChat("Warped!");
 			}
-			else
-				setChat(CString() << "Don't move for " << CString(unstickTime) << " seconds before doing '" << pChat << "'!");
 		}
 	}
 	else if (pChat == "update level" && account.hasRight(PLPERM_UPDATELEVEL))
@@ -1455,11 +1447,11 @@ bool PlayerClient::sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLe
 		// Send links (if applicable).
 		// We need to always send map links for bigmaps due to overflow issues that easily occur while waiting for the warp.
 		// (The client may start to go beyond the edge of the level and cause an integer overflow in their position).
-		if (!m_server->hasNPCServer() || settings.get<bool>("clientsidelinks").value_or(false) || (subLevel && subLevel->isOnBigMap))
+		if (!m_server->hasNPCServer() || m_server->cached.forceClientsideLinks.getValue() || (subLevel && subLevel->isOnBigMap))
 			staticLevelData->sendLinksToPlayer(self, false);
 
 		// Send signs (if applicable).
-		if (!m_server->hasNPCServer() || settings.get<bool>("clientsidesigns").value_or(false))
+		if (!m_server->hasNPCServer() || m_server->cached.forceClientsideSigns.getValue())
 			staticLevelData->sendSignsToPlayer(self);
 	}
 
@@ -1665,7 +1657,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 
 	// Get the bounding box to test with.
 	PixelRectangleArea testBox{ getGlobalPosition().translate(touchTest[movementDirection].x(), touchTest[movementDirection].y()), { 0, 0, 48 } };
-	if (m_server->getSettings().get<bool>("playertouchsmenoz").value_or(false))
+	if (m_server->cached.playerTouchesMeNoZ.getValue())
 	{
 		// If the server is set to ignore Z axis for touch, do so by providing a box of max length in the Z axis.
 		testBox.position.z() = std::numeric_limits<int16_t>::min();
@@ -1686,7 +1678,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 		}
 		if (touchedNPC)
 		{
-			auto eventDistance = m_server->getSettings().get<uint32_t>("eventdistance").value_or(64);
+			auto eventDistance = m_server->cached.eventDistance.getValue();
 			for (const auto& npcId : level->findInRangeNPCsByDistance(testBox.position, eventDistance))
 			{
 				auto intersectingNPCs = level->findIntersectingNPCsForCollision(testBox);
@@ -1702,7 +1694,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 
 bool PlayerClient::testForSigns(SetResults& result, uint8_t movementDirection)
 {
-	if (!m_server->hasNPCServer() || m_server->getSettings().get<bool>("clientsidesigns").value_or(false))
+	if (!m_server->hasNPCServer() || m_server->cached.forceClientsideSigns.getValue())
 		return false;
 
 	// Test for signs.
@@ -1728,7 +1720,7 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 {
 	static Position<int16_t> touchTest[] = { { 24, 16 }, { 0, 32 }, { 24, 56 }, { 48, 32 } };
 
-	if (!m_server->hasNPCServer() || m_server->getSettings().get<bool>("clientsidelinks").value_or(false))
+	if (!m_server->hasNPCServer() || m_server->cached.forceClientsideLinks.getValue())
 		return false;
 
 	// If we have no level, we can't test anything!
@@ -2011,7 +2003,7 @@ props::SetResults PlayerClient::addItem(LevelItemType itemType, props::SetBy set
 
 		case LevelItemType::HEART:
 		{
-			uint8_t maxHearts = static_cast<uint8_t>(std::min(account.maxHitpoints, static_cast<uint8_t>(m_server->getSettings().get<uint8_t>("heartlimit").value_or(3))) * 2);
+			uint8_t maxHearts = static_cast<uint8_t>(std::min(account.maxHitpoints, static_cast<uint8_t>(m_server->cached.maxHeartLimit.getValue())) * 2);
 			return setPropWith<PlayerProp::BOMBSCOUNT>(setBy, std::min(maxHearts, static_cast<uint8_t>(account.character.hitpointsInHalves + 2)));
 		}
 

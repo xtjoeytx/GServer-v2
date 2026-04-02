@@ -9,10 +9,11 @@
 #include <iterator>
 #include <memory>
 #include <optional>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 
+#include <cassert>
 #include <utilities/CommonTypes.h>
 #include <utilities/Events.h>
 #include <utilities/StringUtils.h>
@@ -251,6 +252,13 @@ public:
 		};
 	}
 
+	/// @brief Returns whether the setting cache has a value.
+	/// @return True if the setting cache has a value, false otherwise.
+	operator bool() const
+	{
+		return value.has_value();
+	}
+
 public:
 	/// @brief Binds the setting cache to a settings instance. The setting cache will be updated when the setting is updated and the onUpdate handler will be called.
 	/// @param settings The settings instance to bind to.
@@ -267,10 +275,11 @@ public:
 		return value;
 	}
 
-	/// @brief Gets the unwrapped value of the setting cache. If the value is std::nullopt, the behavior is undefined.
+	/// @brief Gets the unwrapped value of the setting cache. If the value is std::nullopt, the behavior is undefined. Will throw if a default value was not given.
 	/// @return The unwrapped value of the setting cache.
-	const T& getUnsafe() const
+	const T& getValue() const
 	{
+		assert(onRequireDefaultValue);
 		return value.value();
 	}
 
