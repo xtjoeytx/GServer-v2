@@ -6,8 +6,8 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -15,6 +15,7 @@
 
 #include <BabyDI.h>
 #include <Server.h>
+#include <filesystem/File.h>
 #include <filesystem/FileSystem.h>
 #include <filesystem/FileSystemTypes.h>
 #include <level/Level.h>
@@ -24,8 +25,8 @@
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
 #include <utilities/Random.h>
-#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
+#include <utilities/std/generator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -64,8 +65,8 @@ Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
 		{
 			if (!lvl.empty())
 			{
-				constructLevels.insert({ string::toLower(lvl), currentPosition });
-				levelDataByName.insert({ string::toLower(lvl), std::weak_ptr<StaticLevelData>() });
+				constructLevels.insert({string::toLower(lvl), currentPosition});
+				levelDataByName.insert({string::toLower(lvl), std::weak_ptr<StaticLevelData>()});
 			}
 			else ++empty;
 
@@ -86,23 +87,13 @@ Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
 }
 
 Map::Map(is_gmap_t, const std::filesystem::path& fileName)
-	: mapType(MapType::GMAP)
+	: mapType(MapType::GMAP), fileName(fileName)
 {
 	// Get the appropriate filesystem.
 	m_server = BabyDI::Get<Server>();
 	assert(m_server != nullptr);
 	auto& fileSystem = m_server->getFileSystem();
-
-	// Some settings and commands don't append the extension, so add it if it's not present.
-	std::filesystem::path correctedFileName = fileName;
-	if (!correctedFileName.has_extension())
-		correctedFileName.replace_extension(".gmap");
-
-	// Set the proper file name.
-	auto& thisFileName = const_cast<std::filesystem::path&>(this->fileName);
-	thisFileName = correctedFileName;
-
-	auto fileInfo = fileSystem.infoi(fs::FileCategory::LEVEL, correctedFileName);
+	auto fileInfo = fileSystem.infoi(fs::FileCategory::LEVEL, fileName);
 
 	// Make sure the file exists.
 	if (fileInfo == nullptr)
@@ -114,7 +105,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 		return;
 
 	// Save for later.
-	std::string mapName{ fs::getANSIFileName(correctedFileName.stem()) };
+	std::string mapName{fs::getANSIFileName(fileName.stem())};
 
 	// Stupid.
 	auto& constructSize = const_cast<Dimension<uint8_t>&>(size);
@@ -140,11 +131,11 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 
 		if (key == "WIDTH")
 		{
-			constructSize.width() = string::toNumber(std::string{ value });
+			constructSize.width() = string::toNumber(std::string{value});
 		}
 		else if (key == "HEIGHT")
 		{
-			constructSize.height() = string::toNumber(std::string{ value });
+			constructSize.height() = string::toNumber(std::string{value});
 		}
 		else if (key == "LEVELNAMES")
 		{
@@ -162,7 +153,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 						if (currentPosition.x() < constructSize.width())
 						{
 							if (!levelName.empty())
-								constructLevels.insert({ string::toLower(levelName), currentPosition });
+								constructLevels.insert({string::toLower(levelName), currentPosition});
 
 							++currentPosition.x();
 						}
@@ -214,11 +205,11 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 		}
 		else if (key == "GENSEED")
 		{
-			constructTerrain.mapSeed = string::toNumber<uint32_t>(std::string{ value });
+			constructTerrain.mapSeed = string::toNumber<uint32_t>(std::string{value});
 		}
 		else if (key == "GENBASE")
 		{
-			constructTerrain.heightBase = string::toDouble(std::string{ value });
+			constructTerrain.heightBase = string::toDouble(std::string{value});
 		}
 		else if (key == "GENEVENBORDERS")
 		{
@@ -226,19 +217,19 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 		}
 		else if (key == "GENHEIGHT")
 		{
-			constructTerrain.heightDeviation = string::toDouble(std::string{ value });
+			constructTerrain.heightDeviation = string::toDouble(std::string{value});
 		}
 		else if (key == "GENCHAOS")
 		{
-			constructTerrain.mapChaos = string::toDouble(std::string{ value });
+			constructTerrain.mapChaos = string::toDouble(std::string{value});
 		}
 		else if (key == "LEVHEIGHT")
 		{
-			constructTerrain.levelHeightDeviation = string::toDouble(std::string{ value });
+			constructTerrain.levelHeightDeviation = string::toDouble(std::string{value});
 		}
 		else if (key == "LEVCHAOS")
 		{
-			constructTerrain.levelChaos = string::toDouble(std::string{ value });
+			constructTerrain.levelChaos = string::toDouble(std::string{value});
 		}
 		else if (key == "HEIGHTMAP")
 		{
@@ -298,15 +289,15 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 		// Example: mymap_a-1.nw or mymap_a1.nw
 
 		// First, determine the separator between the prefix and the columns.
-		std::string_view genLevel{ generatedLastLevel };
+		std::string_view genLevel{generatedLastLevel};
 		std::string_view levelPrefix;
 		std::string_view columnSeparator = "_"sv;
 		std::string_view rowSeparator = "-"sv;
 
 		// Generated level starts with the map name.
-		if (genLevel.starts_with(correctedFileName.stem().string()))
+		if (genLevel.starts_with(fileName.stem().string()))
 		{
-			levelPrefix = genLevel.substr(0, correctedFileName.stem().string().size());
+			levelPrefix = genLevel.substr(0, fileName.stem().string().size());
 			genLevel = genLevel.substr(levelPrefix.length());
 		}
 		// Search for a - or _ separator.
@@ -348,7 +339,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 			for (size_t x = 0; x < constructSize.width(); ++x)
 			{
 				auto levelName = std::format("{}{}{}{}{}.nw", levelPrefix, columnSeparator, toColumnName(columnDigits, x), rowSeparator, row);
-				constructLevels.insert({ string::toLower(levelName), Position<uint8_t>{ static_cast<uint8_t>(x), static_cast<uint8_t>(y) } });
+				constructLevels.insert({string::toLower(levelName), Position<uint8_t>{static_cast<uint8_t>(x), static_cast<uint8_t>(y)}});
 			}
 		}
 	}
@@ -358,8 +349,8 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	{
 		size_t gridWidth = constructSize.width();
 		size_t gridHeight = constructSize.height();
-		constructTerrain.gridBorderTileHeightsXAxis.resize((gridWidth * 64 + 1)* (gridHeight + 1));
-		constructTerrain.gridBorderTileHeightsYAxis.resize((gridHeight * 64 + 1)* (gridWidth + 1));
+		constructTerrain.gridBorderTileHeightsXAxis.resize((gridWidth * 64 + 1) * (gridHeight + 1));
+		constructTerrain.gridBorderTileHeightsYAxis.resize((gridHeight * 64 + 1) * (gridWidth + 1));
 
 		// Get the corner heights for the map grid.
 		for (size_t column = 0; column <= gridWidth; ++column)
@@ -410,11 +401,11 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	}
 
 	// Register all of our levels as being part of a gmap so we can fix any links or warps.
-	if (auto stub = m_server->getStubbedLevel(correctedFileName.string()); stub != nullptr)
+	if (auto stub = m_server->getStubbedLevel(fileName.string()); stub != nullptr)
 	{
 		auto& gmapLevels = m_server->getGmapLevelList();
 		for (const auto& [levelName, levelPos] : levels)
-			gmapLevels.insert({ levelName, stub });
+			gmapLevels.insert({levelName, stub});
 	}
 }
 
@@ -502,9 +493,9 @@ std::shared_ptr<StaticLevelData> Map::getLevelDataAt(const PixelPosition& global
 
 std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> Map::getLevelDataInRange(const TilePosition& position, int syncTilesX, int syncTilesY) const noexcept
 {
-	Position<int16_t> searchPos{ static_cast<int16_t>(position.x() / 64), static_cast<int16_t>(position.y() / 64) };
-	Dimension<uint8_t> levelSyncDistance{ static_cast<uint8_t>(std::ceilf(syncTilesX / 64)), static_cast<uint8_t>(std::ceilf(syncTilesY / 64)) };
-	Rectangle<int16_t, uint8_t> area{ searchPos.translate(-levelSyncDistance.width(), -levelSyncDistance.height()), levelSyncDistance * 2 };
+	Position<int16_t> searchPos{static_cast<int16_t>(position.x() / 64), static_cast<int16_t>(position.y() / 64)};
+	Dimension<uint8_t> levelSyncDistance{static_cast<uint8_t>(std::ceilf(syncTilesX / 64)), static_cast<uint8_t>(std::ceilf(syncTilesY / 64))};
+	Rectangle<int16_t, uint8_t> area{searchPos.translate(-levelSyncDistance.width(), -levelSyncDistance.height()), levelSyncDistance * 2};
 
 	for (const auto& [levelName, levelPos] : levels)
 	{
@@ -521,7 +512,7 @@ std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> Map::ge
 {
 	for (const auto& [levelName, levelPos] : levels)
 	{
-		PixelPosition levelOrigin{ levelPos.x() * 1024, levelPos.y() * 1024 };
+		PixelPosition levelOrigin{levelPos.x() * 1024, levelPos.y() * 1024};
 		if (positionInRectangle(levelOrigin, area))
 		{
 			auto index = (levelPos.y() * size.width()) + levelPos.x();

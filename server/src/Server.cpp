@@ -1091,23 +1091,33 @@ void Server::loadMaps(bool print)
 		// Load the gmap.
 		try
 		{
-			auto gmap = std::make_unique<Map>(is_gmap, gmapName);
-			if (print) log::printLine(log::server, "[gmap] {}", gmapName);
-			m_mapList.push_back(std::move(gmap));
+			auto mapName = string::trim(gmapName);
+			if (bool hasExtension = mapName.ends_with(".gmap"); hasExtension)
+			{
+				auto gmap = std::make_unique<Map>(is_gmap, mapName);
+				m_mapList.push_back(std::move(gmap));
+			}
+			else
+			{
+				auto gmap = std::make_unique<Map>(is_gmap, std::format("{}.gmap", mapName));
+				m_mapList.push_back(std::move(gmap));
+			}
+			if (print) log::printLine(log::server, "[gmap] {}", mapName);
 		}
 		catch (...)
 		{
 			auto inerr = log::server.indent_absolute(0);
-			if (print) log::printLine(log::server, "** [Error] Could not load {} (gmap).", gmapName);
+			if (print) log::printLine(log::server, "** [Error] Could not load {} (gmap).", string::trim(gmapName));
 		}
 	}
 
 	// Load bigmaps.
-	for (const auto& mapName : m_bigmaps.getValue())
+	for (const auto& bigmapName : m_bigmaps.getValue())
 	{
 		// Load the bigmap.
 		try
 		{
+			auto mapName = string::trim(bigmapName);
 			auto bigmap = std::make_unique<Map>(is_bigmap, mapName);
 			if (print) log::printLine(log::server, "[bigmap] {}", mapName);
 			m_mapList.push_back(std::move(bigmap));
@@ -1115,7 +1125,7 @@ void Server::loadMaps(bool print)
 		catch (...)
 		{
 			auto inerr = log::server.indent_absolute(0);
-			if (print) log::printLine(log::server, "** [Error] Could not load {} (bigmap).", mapName);
+			if (print) log::printLine(log::server, "** [Error] Could not load {} (bigmap).", string::trim(bigmapName));
 		}
 	}
 
