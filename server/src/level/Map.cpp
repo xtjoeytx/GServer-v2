@@ -86,7 +86,7 @@ Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
 }
 
 Map::Map(is_gmap_t, const std::filesystem::path& fileName)
-	: mapType(MapType::GMAP), fileName(fileName)
+	: mapType(MapType::GMAP)
 {
 	// Get the appropriate filesystem.
 	m_server = BabyDI::Get<Server>();
@@ -97,6 +97,10 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	std::filesystem::path correctedFileName = fileName;
 	if (!correctedFileName.has_extension())
 		correctedFileName.replace_extension(".gmap");
+
+	// Set the proper file name.
+	auto& thisFileName = const_cast<std::filesystem::path&>(this->fileName);
+	thisFileName = correctedFileName;
 
 	auto fileInfo = fileSystem.infoi(fs::FileCategory::LEVEL, correctedFileName);
 
@@ -406,7 +410,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	}
 
 	// Register all of our levels as being part of a gmap so we can fix any links or warps.
-	if (auto stub = m_server->getStubbedLevel(fileName.string()); stub != nullptr)
+	if (auto stub = m_server->getStubbedLevel(correctedFileName.string()); stub != nullptr)
 	{
 		auto& gmapLevels = m_server->getGmapLevelList();
 		for (const auto& [levelName, levelPos] : levels)

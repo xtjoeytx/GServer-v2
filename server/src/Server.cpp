@@ -884,13 +884,15 @@ void Server::prepareSettings()
 	// Gmaps.
 	m_gmaps.onUpdate = [this](const std::optional<std::vector<std::string>>& newValue, const std::optional<std::vector<std::string>>& oldValue)
 	{
-		loadMaps();
+		if (running)
+			loadMaps();
 	};
 
 	// Bigmaps.
 	m_bigmaps.onUpdate = [this](const std::optional<std::vector<std::string>>& newValue, const std::optional<std::vector<std::string>>& oldValue)
 	{
-		loadMaps();
+		if (running)
+			loadMaps();
 	};
 
 	// Set the cache bindings before we load so our settings will get cached.

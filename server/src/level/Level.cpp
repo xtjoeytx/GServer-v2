@@ -2694,10 +2694,8 @@ bool Level::isGmap() const noexcept
 	// The server might try to save an NPC on a stubbed level that doesn't have its map set, so it won't write the map position to the file.
 	// TODO: Find a better way to handle this.
 	if (m_map == nullptr && levelName.ends_with(".gmap"sv))
-	{
 		m_map = m_server->findMap(levelName);
-		return true;
-	}
+
 	return m_map != nullptr && m_map->isGmap();
 }
 
