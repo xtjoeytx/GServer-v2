@@ -213,12 +213,17 @@ inline clock::time_point convertFromTimeT(time_t time)
 	return clock::from_time_t(time);
 }
 
+/// @brief Calculates the absolute time difference between two time points.
+/// @tparam T The duration type for the result. Defaults to std::chrono::seconds.
+/// @param time1 The first time point.
+/// @param time2 The second time point.
+/// @return The absolute duration between the two time points, or the maximum duration value if either time point is uninitialized (minimum value).
 template <typename T = std::chrono::seconds>
-inline T timeDifference(const clock::time_point& start, const clock::time_point& end)
+inline T timeDifference(const clock::time_point& time1, const clock::time_point& time2)
 {
-	if (start == clock::time_point::min() || end == clock::time_point::min())
+	if (time1 == clock::time_point::min() || time2 == clock::time_point::min())
 		return T::max();
-	return std::chrono::duration_cast<T>(end - start);
+	return std::chrono::duration_cast<T>(time2 >= time1 ? time2 - time1 : time1 - time2);
 }
 
 inline clock::time_point toSystemClock(const std::filesystem::file_time_type& fileTime)
