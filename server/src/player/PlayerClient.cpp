@@ -9,8 +9,8 @@
 #include <memory>
 #include <optional>
 #include <random>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -44,6 +44,7 @@
 #include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
+#include <utilities/std/inplace_vector.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -64,14 +65,15 @@ CString _zlibFix(
 	"    if(this.chr[3]>=11 && this.chr[4]>1) break; //[A>=11][B>1]\xa7"
 	"  }\xa7"
 	"  if(this.c>0 && this.c == strlen(#c)) setplayerprop #c,\xa0#c\xa0; //Pad\xa7"
-	"}\xa7");
+	"}\xa7"
+);
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-using PacketHandleFunc = HandlePacketResult(PlayerClient::*)(CString&);
+using PacketHandleFunc = HandlePacketResult (PlayerClient::*)(CString&);
 using PacketHandleArray = std::array<PacketHandleFunc, 256>;
 
 static PacketHandleArray GeneratePacketHandlers()
@@ -106,8 +108,8 @@ static PacketHandleArray GeneratePacketHandlers()
 	handlers[PLI_EXPLOSION] = &PlayerClient::msgPLI_EXPLOSION;
 	handlers[PLI_PRIVATEMESSAGE] = &PlayerClient::msgPLI_PRIVATEMESSAGE;
 	handlers[PLI_NPCWEAPONDEL] = &PlayerClient::msgPLI_NPCWEAPONDEL;
-	handlers[PLI_LEVELWARPMOD] = &PlayerClient::msgPLI_LEVELWARP;	// Shared with PLI_LEVELWARP
-	handlers[PLI_ITEMTAKE] = &PlayerClient::msgPLI_ITEMDEL;			// Shared with PLI_ITEMDEL
+	handlers[PLI_LEVELWARPMOD] = &PlayerClient::msgPLI_LEVELWARP; // Shared with PLI_LEVELWARP
+	handlers[PLI_ITEMTAKE] = &PlayerClient::msgPLI_ITEMDEL;       // Shared with PLI_ITEMDEL
 	handlers[PLI_WEAPONADD] = &PlayerClient::msgPLI_WEAPONADD;
 	handlers[PLI_UPDATEFILE] = &PlayerClient::msgPLI_UPDATEFILE;
 	handlers[PLI_ADJACENTLEVEL] = &PlayerClient::msgPLI_ADJACENTLEVEL;
@@ -225,7 +227,7 @@ bool PlayerClient::doTimedEvents()
 	if (m_server->cached.enableIdleDisconnect.getValue())
 	{
 		int maxnomovement = m_server->cached.idleTimeoutSeconds.getValue();
-		if (timeDifference(currTime, m_lastMovement) > std::chrono::seconds{ maxnomovement } && timeDifference(currTime, m_lastChat) > std::chrono::seconds{ maxnomovement })
+		if (timeDifference(currTime, m_lastMovement) > std::chrono::seconds{maxnomovement} && timeDifference(currTime, m_lastChat) > std::chrono::seconds{maxnomovement})
 		{
 			log::printLine(log::server, "** [Disconnect] {}: Client has been disconnected due to inactivity.", account.name);
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "You have been disconnected due to inactivity.");
@@ -309,27 +311,27 @@ bool PlayerClient::handleLogin(CString& pPacket)
 	log::print(log::server, "New login:   ");
 	switch (m_type)
 	{
-	case PLTYPE_CLIENT:
-		log::printLine(log::server, "Client");
-		Encryption.setGen(ENCRYPT_GEN_2);
-		break;
-	case PLTYPE_CLIENT2:
-		log::printLine(log::server, "New Client (2.19 - 2.21, 3 - 3.01)");
-		Encryption.setGen(ENCRYPT_GEN_4);
-		break;
-	case PLTYPE_CLIENT3:
-		log::printLine(log::server, "New Client (2.22+)");
-		Encryption.setGen(ENCRYPT_GEN_5);
-		break;
-	case PLTYPE_WEB:
-		log::printLine(log::server, "Web");
-		Encryption.setGen(ENCRYPT_GEN_1);
-		m_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
-		break;
-	default:
-		log::printLine(log::server, "Unknown ({})", m_type);
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the " << APP_VENDOR << " Team.  Type: " << CString((int)m_type) << ".");
-		return false;
+		case PLTYPE_CLIENT:
+			log::printLine(log::server, "Client");
+			Encryption.setGen(ENCRYPT_GEN_2);
+			break;
+		case PLTYPE_CLIENT2:
+			log::printLine(log::server, "New Client (2.19 - 2.21, 3 - 3.01)");
+			Encryption.setGen(ENCRYPT_GEN_4);
+			break;
+		case PLTYPE_CLIENT3:
+			log::printLine(log::server, "New Client (2.22+)");
+			Encryption.setGen(ENCRYPT_GEN_5);
+			break;
+		case PLTYPE_WEB:
+			log::printLine(log::server, "Web");
+			Encryption.setGen(ENCRYPT_GEN_1);
+			m_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
+			break;
+		default:
+			log::printLine(log::server, "Unknown ({})", m_type);
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the " << APP_VENDOR << " Team.  Type: " << CString((int)m_type) << ".");
+			return false;
 	}
 
 	// Handle old clients.
@@ -393,7 +395,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 			{
 				CString ver1 = ver.readString(":").trim();
 				CString ver2 = ver.readString("").trim();
-				int aVersion[2] = { getVersionID(ver1), getVersionID(ver2) };
+				int aVersion[2] = {getVersionID(ver1), getVersionID(ver2)};
 				if (m_versionId >= aVersion[0] && m_versionId <= aVersion[1])
 				{
 					allowed = true;
@@ -615,7 +617,10 @@ bool PlayerClient::sendLogin()
 
 	// Record prop mod time.
 	auto curTime = currentTime();
-	std::ranges::for_each(modTime, [&curTime](auto& modTime) { modTime = curTime; });
+	std::ranges::for_each(modTime, [&curTime](auto& modTime)
+	{
+		modTime = curTime;
+	});
 
 	m_fileQueue.sendCompress(true);
 
@@ -675,7 +680,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (file.empty())
 		{
 			int i = 0;
-			const char* ext[] = { ".png", ".mng", ".gif" };
+			const char* ext[] = {".png", ".mng", ".gif"};
 			while (i < 3)
 			{
 				file = filesystem.findi(fs::FileCategory::HEAD, std::format("{}{}", chatParse[1].toStringView(), ext[i]));
@@ -718,7 +723,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (file.empty())
 		{
 			int i = 0;
-			const char* ext[] = { ".png", ".mng", ".gif" };
+			const char* ext[] = {".png", ".mng", ".gif"};
 			while (i < 3)
 			{
 				file = filesystem.findi(fs::FileCategory::BODY, std::format("{}{}", chatParse[1].toStringView(), ext[i]));
@@ -761,7 +766,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (file.empty())
 		{
 			int i = 0;
-			const char* ext[] = { ".png", ".mng", ".gif" };
+			const char* ext[] = {".png", ".mng", ".gif"};
 			while (i < 3)
 			{
 				file = filesystem.findi(fs::FileCategory::SWORD, std::format("{}{}", chatParse[1].toStringView(), ext[i]));
@@ -804,7 +809,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		if (file.empty())
 		{
 			int i = 0;
-			const char* ext[] = { ".png", ".mng", ".gif" };
+			const char* ext[] = {".png", ".mng", ".gif"};
 			while (i < 3)
 			{
 				file = filesystem.findi(fs::FileCategory::SHIELD, std::format("{}{}", chatParse[1].toStringView(), ext[i]));
@@ -928,7 +933,7 @@ bool PlayerClient::processChat(const CString& pChat)
 				return true;
 			}
 
-			warp(chatParse[3], { static_cast<int16_t>(string::toFloat(chatParse[1].toString()) * 16.0f), static_cast<int16_t>(string::toFloat(chatParse[2].toString()) * 16.0f) });
+			warp(chatParse[3], {static_cast<int16_t>(string::toFloat(chatParse[1].toString()) * 16.0f), static_cast<int16_t>(string::toFloat(chatParse[2].toString()) * 16.0f)});
 		}
 	}
 	else if (chatParse[0] == "summon" && chatParse.size() == 2)
@@ -956,7 +961,7 @@ bool PlayerClient::processChat(const CString& pChat)
 				return false;
 
 			int unstickTime = m_server->cached.unstickMeSeconds.getValue();
-			if (timeDifference(m_server->getFrameStartTime(), m_lastMovement) < std::chrono::seconds{ unstickTime })
+			if (timeDifference(m_server->getFrameStartTime(), m_lastMovement) < std::chrono::seconds{unstickTime})
 				setChat(CString() << "Don't move for " << CString(unstickTime) << " seconds before doing '" << pChat << "'!");
 			else
 			{
@@ -964,7 +969,7 @@ bool PlayerClient::processChat(const CString& pChat)
 				const auto& unstickLevel = m_server->cached.unstickMeLevel.getValue();
 				const auto& unstickX = m_server->cached.unstickMeTile[0].getValue();
 				const auto& unstickY = m_server->cached.unstickMeTile[1].getValue();
-				warp(unstickLevel, { static_cast<int16_t>(unstickX * 16.0f), static_cast<int16_t>(unstickY * 16.0f) });
+				warp(unstickLevel, {static_cast<int16_t>(unstickX * 16.0f), static_cast<int16_t>(unstickY * 16.0f)});
 				setChat("Warped!");
 			}
 		}
@@ -1149,10 +1154,19 @@ bool PlayerClient::warp(std::shared_ptr<Level> level, const PixelPosition& posit
 	auto localPosition = toLocalPixelPosition(position);
 	if (!m_currentLevel.expired() && account.level == level->levelName)
 	{
-		sendPropsFromResults(
+		std::inplace_vector<props::SetResults, 4> propResults{
 			setPropWith<PlayerProp::X2>(props::SetBy::SERVER, localPosition.x()),
 			setPropWith<PlayerProp::Y2>(props::SetBy::SERVER, localPosition.y())
-		);
+		};
+
+		if (level->isGmap())
+		{
+			auto destMapPosition = toMapPosition(position);
+			propResults.push_back(setPropWith<PlayerProp::GMAPLEVELX>(props::SetBy::SERVER, destMapPosition.x()));
+			propResults.push_back(setPropWith<PlayerProp::GMAPLEVELY>(props::SetBy::SERVER, destMapPosition.y()));
+		}
+
+		sendPropsFromResults(propResults);
 		return true;
 	}
 
@@ -1360,7 +1374,7 @@ bool PlayerClient::leaveLevel()
 
 	// Tell everyone I left.
 	{
-		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)0, getGlobalPosition(), getLevel(), { m_id });
+		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)0, getGlobalPosition(), getLevel(), {m_id});
 
 		for (const auto& [pid, player] : players_of_type<PlayerClient>(m_server->getPlayerList()))
 		{
@@ -1398,7 +1412,7 @@ bool PlayerClient::leaveSubLevel(std::shared_ptr<SubLevel> subLevel)
 	}
 
 	if (!found)
-		m_cachedLevels.push_back(std::make_unique<CachedLevel>(CachedLevel{ .level = staticData, .lastEnteredTime = curTime }));
+		m_cachedLevels.push_back(std::make_unique<CachedLevel>(CachedLevel{.level = staticData, .lastEnteredTime = curTime}));
 
 	return true;
 }
@@ -1533,7 +1547,7 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 			// if (!level->isSingleplayer)
 			{
 				CString carryNPCProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNPC << npc->getAllPropsPacket();
-				m_server->sendPacketToNearby(carryNPCProps, getGlobalPosition(), level, { m_id });
+				m_server->sendPacketToNearby(carryNPCProps, getGlobalPosition(), level, {m_id});
 			}
 		}
 	}
@@ -1653,10 +1667,10 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 	// Subtract an extra 1 pixel from the top touch test since the 2.31 client was rendering the location of the NPC weirdly.
 	// When a pixel coordinate of 223 was sent (tile 13.9375), the client would render the NPC at y=14 and break the collision detection.
 	// Oddly enough, it renders in the correct spot on a reconnect.  By allowing a single extra pixel on the touch test, this problem is resolved.
-	static Position<int16_t> touchTest[] = { { 24, 16 - 1 }, { 0, 32 }, { 24, 56 }, { 48, 32 } };
+	static Position<int16_t> touchTest[] = {{24, 16 - 1}, {0, 32}, {24, 56}, {48, 32}};
 
 	// Get the bounding box to test with.
-	PixelRectangleArea testBox{ getGlobalPosition().translate(touchTest[movementDirection].x(), touchTest[movementDirection].y()), { 0, 0, 48 } };
+	PixelRectangleArea testBox{getGlobalPosition().translate(touchTest[movementDirection].x(), touchTest[movementDirection].y()), {0, 0, 48}};
 	if (m_server->cached.playerTouchesMeNoZ.getValue())
 	{
 		// If the server is set to ignore Z axis for touch, do so by providing a box of max length in the Z axis.
@@ -1718,7 +1732,7 @@ bool PlayerClient::testForSigns(SetResults& result, uint8_t movementDirection)
 
 bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 {
-	static Position<int16_t> touchTest[] = { { 24, 16 }, { 0, 32 }, { 24, 56 }, { 48, 32 } };
+	static Position<int16_t> touchTest[] = {{24, 16}, {0, 32}, {24, 56}, {48, 32}};
 
 	if (!m_server->hasNPCServer() || m_server->cached.forceClientsideLinks.getValue())
 		return false;
@@ -1746,13 +1760,13 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 		{
 			auto pos = linkTouched.value()->getDestinationForCharacter(account.character);
 			auto levelData = destSubLevel->staticData.lock();
-			warp(level->levelName, level->convertToMapPosition(destSubLevel->mapPosition.value_or(MapPosition{ 0, 0 }), pos), getLevelLastEnteredTime(levelData.get()));
+			warp(level->levelName, level->convertToMapPosition(destSubLevel->mapPosition.value_or(MapPosition{0, 0}), pos), getLevelLastEnteredTime(levelData.get()));
 			return true;
 		}
 		// Level is outside of the map, so search normally.
 		else if (auto newLevel = m_server->getLoadedLevel(destLevelName, shared_from_this()); newLevel != nullptr)
 		{
-			auto pos = toPixelPosition({ 0, 0 }, linkTouched.value()->getDestinationForCharacter(account.character));
+			auto pos = toPixelPosition({0, 0}, linkTouched.value()->getDestinationForCharacter(account.character));
 			auto levelData = newLevel->getStaticLevelDataByName(destLevelName);
 			warp(newLevel->levelName, pos, getLevelLastEnteredTime(levelData.get()));
 			return true;
