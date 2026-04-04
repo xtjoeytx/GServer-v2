@@ -1766,7 +1766,14 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 		// Level is outside of the map, so search normally.
 		else if (auto newLevel = m_server->getLoadedLevel(destLevelName, shared_from_this()); newLevel != nullptr)
 		{
-			auto pos = toPixelPosition({0, 0}, linkTouched.value()->getDestinationForCharacter(account.character));
+			PixelPosition origin{};
+			if (newLevel->isGmap())
+			{
+				if (auto subLevel = newLevel->getSubLevelByName(destLevelName); subLevel != nullptr)
+					origin = newLevel->getSubLevelOrigin(subLevel).value_or(PixelPosition{});
+			}
+
+			auto pos = toPixelPosition(origin, linkTouched.value()->getDestinationForCharacter(account.character));
 			auto levelData = newLevel->getStaticLevelDataByName(destLevelName);
 			warp(newLevel->levelName, pos, getLevelLastEnteredTime(levelData.get()));
 			return true;
