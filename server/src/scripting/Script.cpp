@@ -363,7 +363,10 @@ void Script::split(std::string& source) noexcept
 			endOfLine = clientSep + clientSideTerminator.size();
 
 		m_serverside = string::trim(std::string_view{ source }.substr(0, clientSep));
-		m_clientside = string::trim(std::string_view{ source }.substr(endOfLine + 1));
+		m_clientside = {};
+
+		if (endOfLine + 1 < source.size())
+			m_clientside = string::trim(std::string_view{ source }.substr(endOfLine + 1));
 	}
 	else
 	{
