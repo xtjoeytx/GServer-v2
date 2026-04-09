@@ -588,8 +588,8 @@ void PropertyImagePart::deserialize(CString& data)
 	width = data.readGUChar();
 	height = data.readGUChar();
 
-	imagePart.position = { std::clamp(x, 0_ui16, 16000_ui16), std::clamp(y, 0_ui16, 16000_ui16) };
-	imagePart.size = { std::clamp(width, 0_ui8, 220_ui8), std::clamp(height, 0_ui8, 220_ui8) };
+	imagePart.position = {std::clamp(x, 0_ui16, 16000_ui16), std::clamp(y, 0_ui16, 16000_ui16)};
+	imagePart.size = {std::clamp(width, 0_ui8, 220_ui8), std::clamp(height, 0_ui8, 220_ui8)};
 }
 
 void PropertyImagePart::apply(const GameValue& gameValue)
@@ -599,8 +599,8 @@ void PropertyImagePart::apply(const GameValue& gameValue)
 		return;
 
 	auto& values = array.value();
-	imagePart.position = { static_cast<uint16_t>(values[0]), static_cast<uint16_t>(values[1]) };
-	imagePart.size = { static_cast<uint8_t>(values[2]), static_cast<uint8_t>(values[3]) };
+	imagePart.position = {static_cast<uint16_t>(values[0]), static_cast<uint16_t>(values[1])};
+	imagePart.size = {static_cast<uint8_t>(values[2]), static_cast<uint8_t>(values[3])};
 }
 
 std::format_context::iterator PropertyImagePart::format(std::format_context& ctx) const
@@ -784,4 +784,4 @@ void collectPacketsFromResults(const PropertySendResults& results, CString& outA
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-} // end namespace preagonal
+} // end namespace preagonal::props

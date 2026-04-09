@@ -17,6 +17,8 @@
 
 #include <CSocket.h>
 
+#include <CString.h>
+
 #include <BabyDI.h>
 #include <IEnums.h>
 #include <IUtil.h>
@@ -332,11 +334,11 @@ void Player::cleanup()
 
 		// Log.
 		if (isClient())
-			log::printLine(log::server, "Client disconnected: {}", account.name);
+			log::printLine(log::server, "Client disconnected: [{}] {}", m_id, account.name);
 		else if (isRC())
-			log::printLine(log::server, "RC disconnected: {}", account.name);
+			log::printLine(log::server, "RC disconnected: [{}] {}", m_id, account.name);
 		else if (isNC())
-			log::printLine(log::server, "NC disconnected: {}", account.name);
+			log::printLine(log::server, "NC disconnected: [{}] {}", m_id, account.name);
 
 		// Get rid of the player now.
 		m_server->getPlayerIdGenerator().freeId(m_id);

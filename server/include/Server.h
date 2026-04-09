@@ -8,13 +8,14 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <initializer_list>
 #include <iterator>
 #include <memory>
 #include <optional>
 #include <ranges>
 #include <set>
-#include <string>
 #include <string_view>
+#include <string>
 #include <thread>
 #include <unordered_map>
 #include <utility>

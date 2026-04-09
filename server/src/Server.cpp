@@ -25,6 +25,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <version>
 
 #include <CSocket.h>
 
@@ -42,9 +43,9 @@
 #include <level/LevelShoot.h>
 #include <level/LevelTileTypes.h>
 #include <level/Map.h>
+#include <loader/LevelLoader.h>
 #include <loader/flatfile/FlatFileAccountLoader.h>
 #include <loader/flatfile/FlatFileNPCLoader.h>
-#include <loader/LevelLoader.h>
 #include <misc/UPNP.h>
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
@@ -58,11 +59,11 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 #include <utilities/manager/GuildManager.h>
 #include <utilities/manager/ITranslationManager.h>
 #include <utilities/manager/TranslationManagerClassic.h>
 #include <utilities/manager/TranslationManagerModern.h>
-#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -85,7 +86,7 @@ auto methodstub(T* t, R (T::*m)(Args...))
 // I don't want to deal with adding this to the gs2lib.
 [[maybe_unused]] static CString operator<<(const CString& first, const CString& second)
 {
-	CString result{ first };
+	CString result{first};
 	return result << second;
 }
 
@@ -240,7 +241,7 @@ Server::Server(const CString& pName)
 		}
 		if (events.test(fs::FileEvent::Modified))
 		{
-			fs::File npcFile{ file.file };
+			fs::File npcFile{file.file};
 			auto id = string::toNumber<NPCID>(npcFile.readConfigLine("ID", " ").value_or("0"));
 			if (id == 0)
 				return;
@@ -301,7 +302,7 @@ Server::Server(const CString& pName)
 			if (auto existingClass = m_npcServer->getClass(className).lock(); existingClass && existingClass->modTime == fileModTime)
 				return;
 
-			fs::File script{ file.file };
+			fs::File script{file.file};
 			m_npcServer->updateClass(className, script.readAsString());
 			logMsg = std::format("Class updated on filesystem: {}", className);
 		}
@@ -556,8 +557,8 @@ void Server::cleanup()
 	m_shootParams.clear();
 
 	auto players = m_playerList | std::views::transform([](const auto& pair) { return pair.second; });
-	std::vector<PlayerPtr> deletePlayers{ std::ranges::begin(players), std::ranges::end(players) };
-	for (auto& player: deletePlayers)
+	std::vector<PlayerPtr> deletePlayers{std::ranges::begin(players), std::ranges::end(players)};
+	for (auto& player : deletePlayers)
 		player->cleanup();
 
 	m_npcServer.reset();
@@ -609,7 +610,7 @@ bool Server::doMain()
 	m_timedMaintenance.update(m_frameStartTimeHighPrecision);
 
 	// Do level frame events.
-	for (auto& [name, level]: m_levelList)
+	for (auto& [name, level] : m_levelList)
 	{
 		if (level != nullptr)
 			level->doFrameEvents(m_frameStartTimeHighPrecision);
@@ -659,7 +660,7 @@ bool Server::doTimedEvents(int)
 	// Do player events.
 	{
 		std::vector<PlayerPtr> deletePlayers;
-		for (auto& [id, player]: m_playerList)
+		for (auto& [id, player] : m_playerList)
 		{
 			assert(player);
 			if (!player->isNPCServer())
@@ -668,20 +669,23 @@ bool Server::doTimedEvents(int)
 					deletePlayers.push_back(player);
 			}
 		}
-		std::ranges::for_each(deletePlayers, [this](PlayerPtr& player) { deletePlayer(player); });
+		std::ranges::for_each(deletePlayers, [this](PlayerPtr& player)
+		{
+			deletePlayer(player);
+		});
 		deletePlayers.clear();
 	}
 
 	// Do level events.
 	{
-		for (auto& [name, level]: m_levelList)
+		for (auto& [name, level] : m_levelList)
 		{
 			assert(level);
 			level->doTimedEvents();
 		}
 
 		// Group levels.
-		for (auto& [group, levelPtr]: m_groupLevels)
+		for (auto& [group, levelPtr] : m_groupLevels)
 		{
 			if (auto level = levelPtr.lock(); level)
 				level->doTimedEvents();
@@ -730,7 +734,7 @@ void Server::loadFolderConfig()
 	m_fsWorld.reset();
 
 	m_foldersConfig = CString::loadToken(CString() << "config/foldersconfig.txt", "\n", true);
-	for (auto& configLine: m_foldersConfig)
+	for (auto& configLine : m_foldersConfig)
 	{
 		// No comments.
 		int cLoc = -1;
@@ -741,8 +745,8 @@ void Server::loadFolderConfig()
 
 		// Parse the line.
 		std::string type = configLine.readString(" ").trimI().toString();
-		auto world = std::filesystem::path{ "world" };
-		auto config = std::filesystem::path{ configLine.readString("").trimI().toStringView() };
+		auto world = std::filesystem::path{"world"};
+		auto config = std::filesystem::path{configLine.readString("").trimI().toStringView()};
 
 		fs::FileCategory typeEnum = fs::FileCategory::ALL;
 		if (string::equalsi(type, "file"sv))
@@ -849,7 +853,7 @@ void Server::prepareSettings()
 	m_bushItemTypes.onUpdate = [this](const std::optional<std::vector<std::string>>& newValue, const std::optional<std::vector<std::string>>& oldValue)
 	{
 		// greenrupee 10, bluerupee 5, bombs 5, heart 5
-		static const std::array<int, 25> defaults = { 10, 5, 0, 5, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		static const std::array<int, 25> defaults = {10, 5, 0, 5, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 		m_bushDrops.clear();
 		for (const auto& curItem : newValue.value())
@@ -1021,7 +1025,7 @@ void Server::loadWorldFileSystem()
 void Server::loadServerFlags()
 {
 	std::vector<CString> lines = CString::loadToken(CString() << "serverflags.txt", "\n", true);
-	for (auto& line: lines)
+	for (auto& line : lines)
 		this->setFlag(line, false);
 }
 
@@ -1050,7 +1054,7 @@ void Server::loadTranslations() const
 	// If our translation manager already exists, save the translations first.
 	if (auto translationManager = BabyDI::Get<ITranslationManager>(); translationManager != nullptr)
 		translationManager->saveTranslations();
-	
+
 	BabyDI_RELEASE(ITranslationManager);
 
 	// Create our translation manager.
@@ -1278,13 +1282,13 @@ void Server::saveServerFlags()
 
 void Server::saveWeapons()
 {
-	for (auto& [weaponName, weapon]: m_weaponList)
+	for (auto& [weaponName, weapon] : m_weaponList)
 	{
 		if (weapon->isDefault())
 			continue;
 
-		std::filesystem::path weaponFile{ std::format("weapon{}.txt", weaponName) };
-		clock::time_point mod{ clock::time_point::min() };
+		std::filesystem::path weaponFile{std::format("weapon{}.txt", weaponName)};
+		clock::time_point mod{clock::time_point::min()};
 
 		auto fileData = m_fsServer.info(fs::FileCategory::WEAPON, weaponFile);
 		if (fileData != nullptr)
@@ -1389,7 +1393,10 @@ std::shared_ptr<StaticLevelData> Server::getCachedLevelData(std::string_view lev
 
 std::shared_ptr<Map> Server::findMap(std::string_view mapName) const noexcept
 {
-	auto foundMap = std::ranges::find_if(m_mapList, [&mapName](const auto& map) { return map->getMapName() == mapName; });
+	auto foundMap = std::ranges::find_if(m_mapList, [&mapName](const auto& map)
+	{
+		return map->getMapName() == mapName;
+	});
 	if (foundMap != std::ranges::end(m_mapList))
 		return *foundMap;
 	return nullptr;
@@ -1397,7 +1404,10 @@ std::shared_ptr<Map> Server::findMap(std::string_view mapName) const noexcept
 
 std::shared_ptr<Map> Server::findMapForLevel(std::string_view levelName) const noexcept
 {
-	auto foundMap = std::ranges::find_if(m_mapList, [&levelName](const auto& map) { return map->hasLevel(levelName); });
+	auto foundMap = std::ranges::find_if(m_mapList, [&levelName](const auto& map)
+	{
+		return map->hasLevel(levelName);
+	});
 	if (foundMap != std::ranges::end(m_mapList))
 		return *foundMap;
 	return nullptr;
@@ -1405,7 +1415,10 @@ std::shared_ptr<Map> Server::findMapForLevel(std::string_view levelName) const n
 
 std::shared_ptr<Map> Server::findMapForLevel(MapType mapType, std::string_view levelName) const noexcept
 {
-	auto foundMap = std::ranges::find_if(m_mapList, [&mapType, &levelName](const auto& map) { return map->mapType == mapType && map->hasLevel(levelName); });
+	auto foundMap = std::ranges::find_if(m_mapList, [&mapType, &levelName](const auto& map)
+	{
+		return map->mapType == mapType && map->hasLevel(levelName);
+	});
 	if (foundMap != std::ranges::end(m_mapList))
 		return *foundMap;
 	return nullptr;
@@ -1550,7 +1563,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 		// If the level is a gmap, set the modTime on the map position props.
 		if (auto map = levelPtr->getMap(); map && map->isGmap())
 		{
-			auto mapPosition = toMapPosition(TilePosition{ x, y });
+			auto mapPosition = toMapPosition(TilePosition{x, y});
 			newNPC->character.mapX = mapPosition.x();
 			newNPC->character.mapY = mapPosition.y();
 			newNPC->modTime[PROPID(NPCProp::GMAPLEVELX)] = m_frameStartTime;
@@ -1645,7 +1658,7 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 	if (auto level = npc->getLevel(); level)
 	{
 		// Get the sub-level the NPC is on.
-		auto [subLevel, levelData] = level->getSubLevelAndStaticDataAtPosition(MapPosition{ npc->character.mapX, npc->character.mapY });
+		auto [subLevel, levelData] = level->getSubLevelAndStaticDataAtPosition(MapPosition{npc->character.mapX, npc->character.mapY});
 
 		// Remove the NPC from the level
 		if (eraseFromLevel)
@@ -1655,7 +1668,7 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 		std::string levelName = npc->getLevelName();
 
 		auto lastLevelChange = npc->modTime[PROPID(NPCProp::CURLEVEL)];
-		for (auto& [pid, p]: m_playerList)
+		for (auto& [pid, p] : m_playerList)
 		{
 			std::optional<clock::time_point> lastEntered = std::nullopt;
 			auto playerClient = std::dynamic_pointer_cast<PlayerClient>(p);
@@ -1780,7 +1793,7 @@ void Server::calculateNWTime()
 
 bool Server::isIpBanned(const CString& ip)
 {
-	for (const auto& ipBan: m_ipBans)
+	for (const auto& ipBan : m_ipBans)
 	{
 		if (ip.match(ipBan))
 			return true;
@@ -1806,9 +1819,9 @@ bool Server::isStaff(const CString& accountName)
 
 void Server::logToFile(std::filesystem::path fileName, std::string_view message, bool writeTimestamp) const
 {
-	std::filesystem::path logPath{ "logs" };
+	std::filesystem::path logPath{"logs"};
 
-	fs::FileIO file{ logPath / fileName };
+	fs::FileIO file{logPath / fileName};
 	if (!file.opened())
 		return;
 
@@ -1825,7 +1838,7 @@ void Server::logToFile(std::filesystem::path fileName, std::string_view message,
 			std::strncpy(buffer, std::ctime(&curTime), 31);
 			buffer[31] = '\0';
 
-			file.write(std::string_view{ buffer });
+			file.write(std::string_view{buffer});
 		}
 		else
 		{
@@ -1879,7 +1892,7 @@ bool Server::setFlag(std::string_view flagPair, bool sendToPlayers)
 	auto separator = flagPair.find('=');
 	auto flagName = string::trim(flagPair.substr(0, separator));
 	auto flagValue = string::trim(flagPair.substr(separator + 1));
-	return setFlag(flagName, std::string{ flagValue }, sendToPlayers);
+	return setFlag(flagName, std::string{flagValue}, sendToPlayers);
 }
 
 bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool pSendToPlayers)
@@ -1917,8 +1930,8 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	else
 	{
 		if (!flagValue.has_value())
-			Scripting.variables.add(flagName, GameValue{ true });
-		else Scripting.variables.add(flagName, GameValue{ cropFlag(flagValue.value()) });
+			Scripting.variables.add(flagName, GameValue{true});
+		else Scripting.variables.add(flagName, GameValue{cropFlag(flagValue.value())});
 	}
 
 	// And share it.
@@ -2002,7 +2015,7 @@ void Server::sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, const PixelPos
 
 void Server::sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {
-	for (auto& [id, player]: m_playerList)
+	for (auto& [id, player] : m_playerList)
 	{
 		if (exclude.contains(id))
 			continue;
@@ -2120,11 +2133,11 @@ bool Server::NC_DelWeapon(std::string_view pWeaponName)
 	name.replaceAllI("*", "@");
 	name.replaceAllI(":", ";");
 	name.replaceAllI("?", "!");
-	std::filesystem::path weaponFile{ "weapons" };
+	std::filesystem::path weaponFile{"weapons"};
 	std::filesystem::remove(weaponFile / std::format("weapon{}.txt", name));
 
 	// Delete from Memory
-	m_weaponList.erase(std::string{ pWeaponName });
+	m_weaponList.erase(std::string{pWeaponName});
 
 	// Delete from Players
 	sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCWEAPONDEL << pWeaponName);
@@ -2137,7 +2150,7 @@ void Server::updateWeaponForPlayers(Weapon* weapon)
 		return;
 
 	// Update Weapons
-	for (auto& [id, player]: m_playerList)
+	for (auto& [id, player] : m_playerList)
 	{
 		if (!player->isClient())
 			continue;
@@ -2198,8 +2211,14 @@ void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level
 	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)0 << newPacket.constructShootV1();
 	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)0 << newPacket.constructShootV2();
 
-	sendPacketToNearby(oldPacketBuf, newPacket.position, level, { 0 }, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
-	sendPacketToNearby(newPacketBuf, newPacket.position, level, { 0 }, [](const auto pl) { return pl->getVersion() >= CLVER_5_07; });
+	sendPacketToNearby(oldPacketBuf, newPacket.position, level, {0}, [](const auto pl)
+	{
+		return pl->getVersion() < CLVER_5_07;
+	});
+	sendPacketToNearby(newPacketBuf, newPacket.position, level, {0}, [](const auto pl)
+	{
+		return pl->getVersion() >= CLVER_5_07;
+	});
 }
 
 //----------------------------
