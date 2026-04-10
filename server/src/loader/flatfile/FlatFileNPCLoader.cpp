@@ -619,8 +619,14 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	npc->lastSaveTime = toSystemClock(file->modifiedTime());
 
 	// If the NPC exists on the filesystem, refresh its mod time to avoid any modification events.
-	if (auto info = server->getFileSystemServer().info(fs::FileCategory::NPC, file->filePath().filename()); info != nullptr)
+	auto& fs = server->getFileSystemServer();
+	if (auto info = fs.info(fs::FileCategory::NPC, file->filePath().filename()); info != nullptr)
 		info->refreshModTime();
+	// Else if the NPC doesn't exist, we want to add it to the file system so the file watcher doesn't cause a reload.
+	else
+	{
+		fs.addExisting(fs::FileCategory::NPC, file->filePath());
+	}
 
 	return true;
 }

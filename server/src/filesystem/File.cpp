@@ -143,6 +143,72 @@ std::filesystem::path getHTMLEscapedFileName(const std::filesystem::path& file)
 	return result;
 }
 
+std::filesystem::path getHTMLUnescapedFileName(const std::filesystem::path& file)
+{
+	using ST = std::filesystem::path::string_type;
+	using Elem = std::remove_cvref_t<ST>::value_type;
+	using Traits = std::remove_cvref_t<ST>::traits_type;
+	using SVT = std::basic_string_view<Elem, Traits>;
+
+	std::function<size_t(const ST&, size_t)> findFirstEscaped;
+	std::function<void(ST&, SVT)> writeDecoded;
+
+#ifdef PLATFORM_WINDOWS
+	auto singleByte = [](const SVT& native)
+	{
+		// Calculate the required buffer size for the conversion.
+		int bufferSize = WideCharToMultiByte(1252, 0, native.data(), static_cast<int>(native.size()), nullptr, 0, nullptr, nullptr);
+		if (bufferSize == 0)
+			throw std::runtime_error("Failed to calculate buffer size for CP-1252 conversion.");
+
+		// Allocate the string.
+		std::string result(bufferSize - 1, '\0');
+
+		// Convert to CP-1252.
+		int bytesWritten = WideCharToMultiByte(1252, 0, native.data(), static_cast<int>(native.size()), &result[0], bufferSize, nullptr, nullptr);
+		if (bytesWritten == 0)
+			throw std::runtime_error("Failed to convert file name to CP-1252.");
+
+		return result;
+	};
+	findFirstEscaped = [](const ST& native, size_t pos) -> size_t
+	{
+		return native.find_first_of(L"%", pos);
+	};
+	writeDecoded = [&](ST& result, SVT code)
+	{
+		auto codeStr = singleByte(code);
+		result += string::toNumber(codeStr);
+	};
+#else
+	findFirstEscaped = [](const ST& native, size_t pos) -> size_t
+	{
+		return native.find_first_of("%", pos);
+	};
+	writeDecoded = [](ST& result, SVT code)
+	{
+		result += string::toNumber(code);
+	};
+#endif
+
+	auto& native = file.native();
+	SVT code{native};
+
+	ST result;
+	size_t oldpos = 0, pos = 0;
+	while ((pos = findFirstEscaped(native, pos)) != ST::npos)
+	{
+		result.append(native.c_str() + oldpos, pos - oldpos);
+		writeDecoded(result, code.substr(pos + 1, 3));
+		oldpos = pos + 4;
+		pos = oldpos;
+	}
+	if (oldpos < native.length())
+		result.append(native.c_str() + oldpos);
+
+	return result;
+}
+
 //----------------------------
 
 bool File::open()

@@ -52,6 +52,11 @@ std::string getANSIFileName(const std::filesystem::path& file);
 /// @return The escaped file name.
 std::filesystem::path getHTMLEscapedFileName(const std::filesystem::path& file);
 
+/// @brief Returns an HTML unescaped version of the specified file name.
+/// @param file The file to unescape.
+/// @return The unescaped file name.
+std::filesystem::path getHTMLUnescapedFileName(const std::filesystem::path& file);
+
 //----------------------------
 
 class File

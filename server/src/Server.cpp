@@ -217,7 +217,7 @@ Server::Server(const CString& pName)
 
 		if (events.test(fs::FileEvent::Deleted))
 		{
-			auto npcName = fs::getANSIFileName(file.file);
+			auto npcName = fs::getANSIFileName(fs::getHTMLUnescapedFileName(file.file));
 			if (npcName.starts_with("npc") && npcName.ends_with(".txt"))
 				npcName = npcName.substr(3, npcName.size() - 7); // Remove npc and .txt
 
@@ -325,7 +325,7 @@ Server::Server(const CString& pName)
 	{
 		if (events.test(fs::FileEvent::Deleted))
 		{
-			auto weaponName = fs::getANSIFileName(file.file.stem()).substr(6);
+			auto weaponName = fs::getANSIFileName(fs::getHTMLEscapedFileName(file.file.stem())).substr(6);
 			if (NC_DelWeapon(weaponName))
 			{
 				auto logMsg = std::format("Weapon deleted from filesystem: {}", weaponName);

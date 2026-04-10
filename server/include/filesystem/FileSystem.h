@@ -261,6 +261,12 @@ public:
 	std::shared_ptr<FileIO> openiForWriting(FileCategory category, const std::filesystem::path& file, bool createNew = false) const;
 
 public:
+	/// @brief Creates an entry for a file in the specified category.  This is used to create an entry for a file we are creating, but don't want the file watcher to process an add event.
+	/// @param category The category the file must belong to.
+	/// @param file The file name to create a stub for.
+	void addExisting(FileCategory category, const std::filesystem::path& fullFilePath);
+
+public:
 	/// @brief Renames a file to a new file path.
 	/// @param fileData The data structure containing information about the file to be renamed.
 	/// @param newFilePath The new path for the file.

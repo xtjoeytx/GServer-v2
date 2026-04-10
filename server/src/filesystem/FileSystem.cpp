@@ -177,7 +177,10 @@ void FileSystem::bind(const std::filesystem::path& directory)
 
 					// If the old file was the same name as the new file, but with a .partial extension, then we ignore the renamed event.
 					if (oldFile.extension() == ".partial" && oldFile.stem() == file)
+					{
 						e.reset(FileEvent::Renamed);
+						DEBUGPRINT("[FS] Ignored renamed event for partial file: {} -> {}", oldFile.string(), file.string());
+					}
 				}
 			}
 			else
@@ -594,6 +597,29 @@ std::shared_ptr<FileIO> FileSystem::openiForWriting(FileCategory category, const
 		return nullptr;
 
 	return std::make_shared<FileIO>((*first) / file);
+}
+
+//----------------------------
+
+void FileSystem::addExisting(FileCategory category, const std::filesystem::path& fullFilePath)
+{
+	if (!std::filesystem::exists(fullFilePath))
+		return;
+
+	std::scoped_lock guard{m_file_mutex};
+
+	auto files = m_files.find(fullFilePath.filename());
+	if (files != m_files.end())
+		return;
+
+	auto entry = std::make_unique<FileData>();
+	entry->file = fullFilePath;
+	entry->file.make_preferred();
+	entry->fileSize = std::filesystem::file_size(entry->file);
+	entry->modifiedTime = std::filesystem::last_write_time(entry->file);
+	assignCategoriesToFileData(*entry);
+
+	m_files.insert(std::make_pair(fullFilePath.filename(), std::move(entry)));
 }
 
 //----------------------------
