@@ -262,7 +262,7 @@ public:
 	/// @brief Gets a stubbed level with the given name (a stubbed level is not yet loaded).
 	/// @param levelName The name of the level.
 	/// @return A shared pointer to a Level.
-	std::shared_ptr<Level> getStubbedLevel(std::string_view levelName);
+	std::shared_ptr<Level> getStubbedLevel(std::string_view levelName, std::string_view groupName = ""sv);
 
 	/// @brief Gets a fully loaded level with the given name using no hinting.
 	/// @param levelName The name of the level.

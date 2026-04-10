@@ -131,6 +131,8 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 			account.communityName = val;
 		else if (section == "LEVEL")
 			account.level = val;
+		else if (section == "GROUPNAME")
+			account.groupName = val;
 		else if (section == "X")
 			account.character.localPixelX = static_cast<int16_t>(string::toFloat(val) * 16);
 		else if (section == "Y")
@@ -318,6 +320,10 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "NICK", account.character.nickName);
 	writeLine(newFile, "COMMUNITYNAME", account.communityName, account.name);
 	writeLine(newFile, "LEVEL", account.level);
+
+	if (!account.groupName.empty())
+		writeLine(newFile, "GROUPNAME", account.groupName);
+
 	writeLine(newFile, "X", account.character.localPixelX / 16.0f);
 	writeLine(newFile, "Y", account.character.localPixelY / 16.0f);
 	writeLine(newFile, "Z", account.character.localPixelZ / 16.0f, 0.0f);

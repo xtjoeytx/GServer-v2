@@ -1272,16 +1272,26 @@ void Server::saveWeapons()
 
 /////////////////////////////////////////////////////
 
-std::shared_ptr<Level> Server::getStubbedLevel(std::string_view levelName)
+std::shared_ptr<Level> Server::getStubbedLevel(std::string_view levelName, std::string_view groupName)
 {
 	if (levelName.empty())
 		return nullptr;
 
-	std::string lowerCaseLevel = string::toLower(levelName);
+	std::string lowerCaseLevel;
+	if (!groupName.empty())
+	{
+		lowerCaseLevel = groupName;
+		lowerCaseLevel += ".";
+	}
+	lowerCaseLevel += string::toLower(levelName);
+
 	if (auto it = m_levelList.find(lowerCaseLevel); it != m_levelList.end())
 		return it->second;
 
 	auto level = Level::createLevel(levelName);
+	if (!groupName.empty())
+		level->groupMapName = groupName;
+
 	m_levelList.insert(std::make_pair(lowerCaseLevel, level));
 	return level;
 }
@@ -1612,9 +1622,13 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 	}
 	else if (!npc->level.empty())
 	{
-		if (level = getStubbedLevel(npc->level); level != nullptr)
+		if (level = getStubbedLevel(npc->level, npc->groupName); level != nullptr)
 			level->addNPC(npc);
 	}
+
+	// Synchronize the group name of the NPC.
+	if (level != nullptr && level->isGroupMap && npc->groupName != level->groupMapName)
+		npc->groupName = level->groupMapName;
 
 	// Set the NPC's name.
 	if (npc->name.empty())

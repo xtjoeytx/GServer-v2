@@ -132,21 +132,23 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			auto parts = string::splitToVectorView(lineView, " "sv);
 			if (parts.size() >= 4)
 			{
-				npc->imagePart.position = { string::toNumber<uint16_t>(parts[0]), string::toNumber<uint16_t>(parts[1]) };
-				npc->imagePart.size = { string::toNumber<uint8_t>(parts[2]), string::toNumber<uint8_t>(parts[3]) };
+				npc->imagePart.position = {string::toNumber<uint16_t>(parts[0]), string::toNumber<uint16_t>(parts[1])};
+				npc->imagePart.size = {string::toNumber<uint8_t>(parts[2]), string::toNumber<uint8_t>(parts[3])};
 				npc->modTime[PROPID(NPCProp::IMAGEPART)] = updateTime;
 			}
 		}
 		else if (command == "STARTLEVEL")
 			npc->m_initialLevel = lineView;
 		else if (command == "STARTX")
-			npc->m_initialCharacter.localPixelX = static_cast<int16_t>(string::toFloat(std::string{ lineView }) * 16);
+			npc->m_initialCharacter.localPixelX = static_cast<int16_t>(string::toFloat(std::string{lineView}) * 16);
 		else if (command == "STARTY")
-			npc->m_initialCharacter.localPixelY = static_cast<int16_t>(string::toFloat(std::string{ lineView }) * 16);
+			npc->m_initialCharacter.localPixelY = static_cast<int16_t>(string::toFloat(std::string{lineView}) * 16);
 		else if (command == "STARTZ")
-			npc->m_initialCharacter.localPixelZ = static_cast<int16_t>(string::toFloat(std::string{ lineView }) * 16);
+			npc->m_initialCharacter.localPixelZ = static_cast<int16_t>(string::toFloat(std::string{lineView}) * 16);
 		else if (command == "LEVEL")
 			npc->level = lineView;
+		else if (command == "GROUPNAME")
+			npc->groupName = lineView;
 		else if (command == "X")
 		{
 			npc->character.localPixelX = static_cast<int16_t>(string::toFloat(std::string{ lineView }) * 16);
@@ -498,6 +500,9 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	if (level)
 	{
 		file->writeConfigLine("LEVEL", npc->getLevelName());
+		if (level->isGroupMap)
+			file->writeConfigLine("GROUPNAME", npc->groupName);
+
 		file->writeConfigLine("X", string::to_string(npc->character.localPixelX / 16.0, 2));
 		file->writeConfigLine("Y", string::to_string(npc->character.localPixelY / 16.0, 2));
 		file->writeConfigLine("Z", string::to_string(npc->character.localPixelZ / 16.0, 2));

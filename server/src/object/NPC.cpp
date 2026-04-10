@@ -99,6 +99,7 @@ NPC::~NPC()
 
 void NPC::resetToInitialState()
 {
+	groupName.clear();
 	image = m_initialImage;
 	shape = {};
 	imagePart = {};

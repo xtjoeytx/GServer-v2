@@ -412,6 +412,7 @@ public:
 	const NPCID id;
 	const NPCStorageType storageType;
 	std::string level;
+	std::string groupName;
 	std::string name;
 	std::string scripter;
 	std::string scriptType;
