@@ -1385,7 +1385,6 @@ bool PlayerClient::sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLe
 		return false;
 
 	PlayerPtr self = shared_from_this();
-	auto& settings = m_server->getSettings();
 	auto levelModTime = staticLevelData->modTime;
 	auto cachedModTime = getLevelLastEnteredTime(staticLevelData.get());
 	if (!clientCachedTime.has_value()) clientCachedTime = levelModTime;
@@ -1637,7 +1636,7 @@ void PlayerClient::resetLevelCache(std::string_view group)
 		sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npcId);
 
 	// Finally, clear the cache for the group.
-	m_cachedDynamicLevels.erase(group);
+	m_cachedDynamicLevels.erase(std::string{group});
 }
 
 ///////////////////////////////////////////////////////////////////////////////
