@@ -1,5 +1,7 @@
 # GS2Emu Level Singleplayer
 
+NOTE: Currently disabled.  You can simulate it by using a group map with only one player in the group.
+
 ## What are they?
 
 Singleplayer levels are levels where each player has their own private copy of the level.

@@ -1132,40 +1132,6 @@ void Server::loadMaps(bool print)
 			if (print) log::printLine(log::server, "** [Error] Could not load {} (bigmap).", string::trim(bigmapName));
 		}
 	}
-
-	// Load group maps.
-	/*
-	std::vector<CString> groupmaps = m_settings.getStr("groupmaps").guntokenize().tokenize("\n");
-	for (auto& groupmap: groupmaps)
-	{
-		// Check for blank lines.
-		if (groupmap == "\r") continue;
-
-		// Determine the type of map we are loading.
-		CString ext(getExtension(groupmap));
-		ext.toLowerI();
-
-		// Create the new map based on the file extension.
-		std::unique_ptr<Map> gmap;
-		if (ext == ".txt")
-			gmap = std::make_unique<Map>(MapType::BIGMAP, true);
-		else if (ext == ".gmap")
-			gmap = std::make_unique<Map>(MapType::GMAP, true);
-		else
-			continue;
-
-		// Load the map.
-		if (!gmap->load(CString() << groupmap))
-		{
-			auto inerr = log::server.indent_absolute(0);
-			if (print) log::printLine(log::server, "** [Error] Could not load {}.", groupmap);
-			continue;
-		}
-
-		if (print) log::printLine(log::server, "[group map] {}", groupmap);
-		m_mapList.push_back(std::move(gmap));
-	}
-	*/
 }
 
 void Server::loadNPCServer()
@@ -1349,9 +1315,43 @@ std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, std::s
 	if (levelName.empty())
 		return nullptr;
 
+	LevelPtr level = nullptr;
+
+	// Check if this level matches the list of group maps.
+	// If it does, and the player's group matches, try to load the group version of the level (or create it).
+	if (!player->account.groupName.empty())
+	{
+		for (const auto& groupmap : m_groupmaps.getValue())
+		{
+			auto mask = string::trim(groupmap);
+			if (string::match<true>(levelName, mask))
+			{
+				// Check if this level already exists.
+				std::string groupMapName = string::toLower(std::format("{}.{}", player->account.groupName, levelName));
+				if (level = findGmapForLevel(groupMapName, player); level != nullptr && level->loaded)
+					return level;
+
+				// Level doesn't exist or isn't loaded, create it.
+				if (level == nullptr)
+					level = std::make_shared<Level>();
+
+				// Record that the level is going to be a group map, with the name of the group it belongs to.
+				// We do this now so level NPCs get added with the correct name.
+				level->isGroupMap = true;
+				level->groupMapName = player->account.groupName;
+
+				// Load the level.
+				if (LevelLoader::loadLevelInto(levelName, level))
+				{
+					m_levelList.insert(std::make_pair(groupMapName, level));
+					return level;
+				}
+			}
+		}
+	}
+
 	// See if this level belongs to a gmap.
-	LevelPtr level = findGmapForLevel(levelName, player);
-	if (level != nullptr)
+	if (level = findGmapForLevel(levelName, player); level != nullptr)
 	{
 		if (!level->loaded && LevelLoader::loadLevelInto(level->levelName, level))
 			m_levelList.insert(std::make_pair(string::toLower(level->levelName), level));
@@ -1428,6 +1428,14 @@ std::shared_ptr<Level> Server::findGmapForLevel(std::string_view levelName, std:
 {
 	LevelPtr returnLevel = nullptr;
 
+	// If this is the gmap itself, find it directly.
+	if (levelName.ends_with(".gmap"sv))
+	{
+		if (auto it = m_levelList.find(levelName); it != m_levelList.end())
+			return it->second;
+	}
+
+	// Check if this level belongs to a gmap.
 	auto [iter, end] = m_gmapLevels.equal_range(levelName);
 	while (iter != end)
 	{
@@ -1441,8 +1449,9 @@ std::shared_ptr<Level> Server::findGmapForLevel(std::string_view levelName, std:
 			if (level->isSinglePlayer && player->account.name == level->groupMapName)
 				return level;
 
-			// Otherwise, record this the level we will return if we don't find anything.
-			returnLevel = level;
+			// Otherwise, record this as the level we will return if we don't find anything.
+			if (!level->isGroupMap && !level->isSinglePlayer)
+				returnLevel = level;
 		}
 		++iter;
 	}
@@ -1558,7 +1567,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	// Set the level details.
 	if (levelPtr != nullptr)
 	{
-		newNPC->level = levelPtr->levelName;
+		newNPC->setLevel(levelPtr);
 
 		// If the level is a gmap, set the modTime on the map position props.
 		if (auto map = levelPtr->getMap(); map && map->isGmap())
@@ -1595,23 +1604,33 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 		else npc->scriptType = NPCTYPE_OBJECT;
 	}
 
+	// Add the NPC to the level.
+	auto level = npc->getLevel();
+	if (level != nullptr)
+	{
+		level->addNPC(npc);
+	}
+	else if (!npc->level.empty())
+	{
+		if (level = getStubbedLevel(npc->level); level != nullptr)
+			level->addNPC(npc);
+	}
+
 	// Set the NPC's name.
 	if (npc->name.empty())
 	{
-		std::string npcNamePrefix = std::format("{}_{}_{}_", string::toLower(npc->scriptType), string::removeExtension(npc->level), m_serverTime);
+		std::string npcNamePrefix = std::format("{}_{}{}{}_{}_",
+			string::toLower(npc->scriptType),
+			level != nullptr && level->isGroupMap ? level->groupMapName : "",
+			level != nullptr && level->isGroupMap ? "." : "",
+			string::removeExtension(npc->level), m_serverTime
+		);
 		auto count = std::ranges::count_if(m_npcList, [&npcNamePrefix](const auto& pair)
 		{
 			return pair.second->name.starts_with(npcNamePrefix);
 		});
 
 		npc->name = std::format("{}{}", npcNamePrefix, (count + 1));
-	}
-
-	// Add the NPC to the level.
-	if (!npc->level.empty())
-	{
-		if (auto level = getStubbedLevel(npc->level); level != nullptr)
-			level->addNPC(npc);
 	}
 
 	// Created event.

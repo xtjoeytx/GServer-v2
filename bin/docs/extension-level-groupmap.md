@@ -1,7 +1,5 @@
 # GS2Emu Level Group Maps
 
-NOTE: Currently disabled.
-
 ## What are they?
 
 Group maps provides a way for a group of players to play on their own private copy of a level.
@@ -13,9 +11,9 @@ Enable the triggeraction extension in the `serveroptions.txt` file:
 
     triggerhack_groups = true
 
-Then, list all the maps that are group maps in the `serveroptions.txt` file:
+Then, list all the gmaps and levels that are group maps in the `serveroptions.txt` file:
 
-    groupmaps = groupbigmap.txt,groupgmap.gmap
+    groupmaps = grouplevels_*.nw,groupgmap.gmap
 
 Finally, assign each player the same group name.
 
@@ -31,3 +29,7 @@ Use the following triggeractions to manage groups:
         Assigns the group name to all current players in the level.
     gr.setplayergroup,account,group
         Assigns a group name to a specific player.
+
+Setting the group name to an empty string will remove the player from any group map and put them back in the main level.
+
+    triggeraction 0,0,gr.setgroup,;

@@ -159,12 +159,6 @@ struct ShootPacketWrapper
 	CString constructShootV2() const;
 };
 
-struct CachedLevel
-{
-	std::weak_ptr<StaticLevelData> level;
-	clock::time_point lastEnteredTime;
-};
-
 //----------------------------
 
 class Server;

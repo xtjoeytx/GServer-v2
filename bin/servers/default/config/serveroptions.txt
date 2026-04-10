@@ -199,8 +199,8 @@ minimap =
 clientsidepushpull = true
 
 # List of group instanced maps used by the server.
-# Use full filenames, even for gmaps.
-# NOTE: Temporarily disabled.
+# Comma-delimited list of level names in glob format.
+# Make sure your glob doesn't match both the gmap and its level files.
 # groupmaps = 
 
 # The head used by RCs on the server.

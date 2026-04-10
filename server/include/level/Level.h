@@ -91,6 +91,7 @@ using StaticLevelDataPtr = std::shared_ptr<StaticLevelData>;
 /// @brief Stores the data for a specific level tile on a map.
 struct SubLevel
 {
+	std::weak_ptr<Level> parentLevel;
 	std::weak_ptr<StaticLevelData> staticData;
 	std::optional<MapPosition> mapPosition;
 	std::optional<LevelTiles> instancedTileUpdates;

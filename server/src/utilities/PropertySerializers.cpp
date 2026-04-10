@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -765,21 +766,51 @@ void collectPacketsFromResults(const PropertySendResults& results, CString& outA
 	}
 
 	// Loop through all the sorted results and add them to the buffers.
-	for (const auto& [propId, resultTuple] : sendOrder)
+	for (auto& [propId, resultTuple] : sendOrder)
 	{
 		auto& setResults = std::get<0>(resultTuple);
-
-		// If the prop is not set, just get the prop from the player.
 		std::shared_ptr<PropertyBase> base = std::get<1>(resultTuple);
-		if (base == nullptr || setResults.resultFlags.test(SetResults::getLatestOnSend))
-			base = getProp(propId);
+		if (base == nullptr && !getProp)
+			continue;
 
-		if (setResults.resultFlags.test(SetResults::sendToAll))
-			outAll >> (char)propId << base->serialize();
-		if (setResults.resultFlags.test(SetResults::sendToLevel))
-			outLevel >> (char)propId << base->serialize();
-		if (setResults.resultFlags.test(SetResults::sendToSource))
-			outSource >> (char)propId << base->serialize();
+		// We want to support sending different props for different destinations.
+		// As long as we have destinations to send to, we will keep sending the prop.  By default, it will send to every destination.
+		// If we have SetResults::getLatestOnSend set, then the callback will return which destinations the prop is for.
+		// We can then mark those destinations off and keep looping.
+
+		auto& destinationFlags = setResults.resultFlags;
+		SetResults::ResultFlagType sendFlags{setResults.resultFlags};
+		int loopCount = 0;
+		while (destinationFlags.test(SetResults::sendToAll) || destinationFlags.test(SetResults::sendToLevel) || destinationFlags.test(SetResults::sendToSource))
+		{
+			// If the base prop is null, or if we need to get the latest value on send, execute the callback to get the latest prop value.
+			if (base == nullptr || setResults.resultFlags.test(SetResults::getLatestOnSend))
+			{
+				sendFlags = destinationFlags;
+				base = getProp(propId, sendFlags);
+			}
+
+			// Send to each destination and mark that it got sent.
+			if (sendFlags.test(SetResults::sendToAll))
+			{
+				outAll >> (char)propId << base->serialize();
+				destinationFlags.reset(SetResults::sendToAll);
+			}
+			if (sendFlags.test(SetResults::sendToLevel))
+			{
+				outLevel >> (char)propId << base->serialize();
+				destinationFlags.reset(SetResults::sendToLevel);
+			}
+			if (sendFlags.test(SetResults::sendToSource))
+			{
+				outSource >> (char)propId << base->serialize();
+				destinationFlags.reset(SetResults::sendToSource);
+			}
+
+			// Sanity check to prevent infinite loops.  If we loop more times than there are possible destinations, something went wrong.
+			if (++loopCount > setResults.resultFlags.size())
+				break;
+		}
 	}
 }
 

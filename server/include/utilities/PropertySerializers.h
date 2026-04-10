@@ -69,6 +69,8 @@ enum class SetBy
 /// @brief Contains the results of setting a property.
 struct SetResults
 {
+	using ResultFlagType = std::bitset<5>;
+
 	/// @brief The ID of the property that was set.
 	uint8_t propId = 0;
 
@@ -76,7 +78,7 @@ struct SetResults
 	std::inplace_vector<uint8_t, 10> resultPropIds{};
 
 	/// @brief The results of the prop set.
-	std::bitset<5> resultFlags{};
+	ResultFlagType resultFlags{};
 
 	/// @brief Result Flag - Pass the prop changes to everybody.
 	static const size_t sendToAll = 0;
@@ -660,7 +662,7 @@ concept PropertyContainer = requires(T t, CString& c)
 //////////////////////////////////////////////////
 
 using PropertySendResults = std::vector<std::pair<SetResults, std::shared_ptr<PropertyBase>>>;
-using PropertyContainerGetter = std::function<std::shared_ptr<PropertyBase>(uint8_t)>;
+using PropertyContainerGetter = std::function<std::shared_ptr<PropertyBase>(uint8_t, SetResults::ResultFlagType&)>;
 
 void collectPacketsFromResults(const PropertySendResults& results, CString& outAll, CString& outLevel, CString& outSource, PropertyContainerGetter getProp);
 

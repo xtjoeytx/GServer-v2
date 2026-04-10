@@ -7,8 +7,8 @@
 #include <map>
 #include <memory>
 #include <optional>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_set>
 #include <vector>
@@ -35,7 +35,10 @@ namespace preagonal
 template<class... Arrays>
 consteval auto join_arrays(Arrays... arrays)
 {
-	return std::apply([](auto... args) { return std::array{ args... }; }, std::tuple_cat(arrays...));
+	return std::apply([](auto... args)
+	{
+		return std::array{args...};
+	}, std::tuple_cat(arrays...));
 }
 
 constexpr std::array<std::string_view, 39> DefaultGanis = {
@@ -44,16 +47,25 @@ constexpr std::array<std::string_view, 39> DefaultGanis = {
 	"maps3.gani", "pull.gani", "push.gani", "ride.gani", "rideeat.gani", "ridefire.gani", "ridehurt.gani", "ridejump.gani", "ridestill.gani", "ridesword.gani",
 	"shoot.gani", "sit.gani", "skip.gani", "sleep.gani", "spin.gani", "swim.gani", "sword.gani", "walk.gani", "walkslow.gani"
 };
-constexpr std::array<std::string_view, 3> DefaultBodies = { "body.png", "body2.png", "body3.png" };
-constexpr std::array<std::string_view, 2> DefaultSwords = { "sword?.png", "sword?.gif" };
-constexpr std::array<std::string_view, 2> DefaultShields = { "shield?.png", "shield?.gif" };
+constexpr std::array<std::string_view, 3> DefaultBodies = {"body.png", "body2.png", "body3.png"};
+constexpr std::array<std::string_view, 2> DefaultSwords = {"sword?.png", "sword?.gif"};
+constexpr std::array<std::string_view, 2> DefaultShields = {"shield?.png", "shield?.gif"};
 constexpr std::array<std::string_view, 30> DefaultWavs = {
 	"arrow.wav", "arrowon.wav", "axe.wav", "bomb.wav", "chest.wav", "compudead.wav", "crush.wav", "dead.wav", "extra.wav", "fire.wav",
 	"frog.wav", "frog2.wav", "goal.wav", "horse.wav", "horse2.wav", "item.wav", "item2.wav", "jump.wav", "lift.wav", "lift2.wav",
 	"nextpage.wav", "put.wav", "sign.wav", "steps.wav", "steps2.wav", "stonemove.wav", "sword.wav", "swordon.wav", "thunder.wav", "water.wav"
 };
-constexpr std::array<std::string_view, 1> DefaultPngs = { "pics1.png" };
+constexpr std::array<std::string_view, 1> DefaultPngs = {"pics1.png"};
 constexpr std::array DefaultFiles = join_arrays(DefaultGanis, DefaultBodies, DefaultSwords, DefaultShields, DefaultWavs, DefaultPngs);
+
+//----------------------------
+
+template<typename T = StaticLevelData>
+struct CachedLevel
+{
+	std::weak_ptr<T> level;
+	clock::time_point lastEnteredTime;
+};
 
 //----------------------------
 
@@ -79,8 +91,8 @@ public:
 
 	bool processChat(const CString& pChat);
 
-	[[inline]] const CString& getGroup() const;
-	[[inline]] void setGroup(const CString& group);
+	[[inline]] const std::string& getGroup() const;
+	void setGroup(std::string_view group);
 
 	virtual double getCalculatedTileZ() const noexcept override;
 
@@ -103,14 +115,13 @@ public:
 
 	virtual bool sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
 	virtual bool sendDynamicLevelData(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
-	//virtual bool sendNearbyObjects(std::shared_ptr<Level> level) override;
 
 public:
-	//bool sendLevel(std::shared_ptr<Level> level, time_t modTime, bool fromAdjacent = false);
-	//bool sendLevel141(std::shared_ptr<Level> level, time_t modTime, bool fromAdjacent = false);
-
 	std::optional<clock::time_point> getLevelLastEnteredTime(const StaticLevelData* level) const;
+	std::optional<clock::time_point> getLevelLastEnteredTime(const SubLevel* level, std::string_view group = ""sv) const;
 	void resetLevelCache(const StaticLevelData* level);
+	void resetLevelCache(const SubLevel* level, std::string_view group = ""sv);
+	void resetLevelCache(std::string_view group);
 
 public:
 	[[inline]] bool hasSeenFile(const std::string& file) const;
@@ -191,7 +202,8 @@ protected:
 	clock::time_point m_lastChat;
 	clock::time_point m_lastMessage;
 	clock::time_point m_lastNick;
-	std::vector<std::unique_ptr<CachedLevel>> m_cachedLevels;
+	std::vector<std::unique_ptr<CachedLevel<StaticLevelData>>> m_cachedStaticLevels;
+	string_map<std::vector<std::unique_ptr<CachedLevel<SubLevel>>>> m_cachedDynamicLevels;
 	std::map<CString, std::shared_ptr<Level>> m_singleplayerLevels;
 	std::weak_ptr<Level> m_currentLevel;
 
@@ -199,7 +211,6 @@ protected:
 
 	bool m_grMovementUpdated = false;
 	CString m_grMovementPackets;
-	CString m_levelGroup;
 	CString m_grExecParameterList;
 };
 
@@ -207,14 +218,9 @@ using PlayerClientPtr = std::shared_ptr<PlayerClient>;
 
 //----------------------------
 
-inline const CString& PlayerClient::getGroup() const
+inline const std::string& PlayerClient::getGroup() const
 {
-	return m_levelGroup;
-}
-
-inline void PlayerClient::setGroup(const CString& group)
-{
-	m_levelGroup = group;
+	return account.groupName;
 }
 
 inline bool PlayerClient::hasSeenFile(const std::string& file) const

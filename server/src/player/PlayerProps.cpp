@@ -837,6 +837,9 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (numProp == nullptr || level == nullptr || !level->isGmap())
 				SETPROP_RETURN_ERROR;
 
+			if (account.character.mapX == numProp->value)
+				break;
+
 			if (auto subLevel = level->getSubLevelAtPosition(getMapPosition()); subLevel != nullptr)
 				leaveSubLevel(subLevel);
 
@@ -855,6 +858,9 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr || level == nullptr || !level->isGmap())
 				SETPROP_RETURN_ERROR;
+
+			if (account.character.mapY == numProp->value)
+				break;
 
 			if (auto subLevel = level->getSubLevelAtPosition(getMapPosition()); subLevel != nullptr)
 				leaveSubLevel(subLevel);
@@ -1131,7 +1137,7 @@ void Player::sendPropsFromResults(PropertySendResults& results)
 		return !canSendProp((PlayerProp)res.first.propId);
 	});
 
-	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId)
+	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId, SetResults::ResultFlagType& destinations)
 	{
 		return this->getProp((PlayerProp)propId);
 	});

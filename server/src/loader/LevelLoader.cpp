@@ -259,6 +259,7 @@ bool LevelLoader::loadStaticDataInto(StaticLevelDataPtr staticLevelData)
 SubLevelPtr LevelLoader::attachStaticDataToLevel(LevelPtr level, std::optional<MapPosition> mapPosition, StaticLevelDataPtr staticData)
 {
 	auto subLevel = std::make_shared<SubLevel>();
+	subLevel->parentLevel = level;
 	subLevel->staticData = staticData;
 	subLevel->mapPosition = mapPosition;
 
@@ -346,7 +347,7 @@ void LevelLoader::loadStaticDataNPCs(LevelPtr level, std::optional<MapPosition> 
 		npc->character.localPixelX = npcData.position.x();
 		npc->character.localPixelY = npcData.position.y();
 		npc->image = npcData.image;
-		npc->level = level->levelName;
+		npc->setLevel(level);
 
 		// Map position.
 		if (mapPosition.has_value())

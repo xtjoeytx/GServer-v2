@@ -768,7 +768,7 @@ void NPC::joinClass(std::string_view className)
 	}
 	else
 	{
-		log::printLine(log::npc, "Error: NPC '{}' tried to join class '{}', but it does not exist.", name, className);
+		log::printLine(log::npc, "Error: NPC [{}] '{}' tried to join class '{}', but it does not exist.", id, name, className);
 	}
 }
 
@@ -1486,7 +1486,7 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 		return !canSendProp((NPCProp)res.first.propId);
 	});
 	
-	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId)
+	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId, SetResults::ResultFlagType& destinations)
 	{
 		return this->getProp((NPCProp)propId);
 	});

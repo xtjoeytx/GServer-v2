@@ -191,9 +191,9 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 	// Group levels
 	builder.registerCommand("gr.setgroup", [&](Player* player, std::vector<std::string>& triggerData)
 	{
-		if (auto client = dynamic_cast<PlayerClient*>(player); cached.enableTriggerhackGroups.getValue() && triggerData.size() == 2 && client != nullptr)
+		if (auto client = dynamic_cast<PlayerClient*>(player); cached.enableTriggerhackGroups.getValue() && client != nullptr)
 		{
-			client->setGroup(triggerData[1]);
+			client->setGroup(triggerData.size() >= 2 ? triggerData[1] : ""s);
 			return true;
 		}
 		return false;
@@ -201,12 +201,12 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.setlevelgroup", [&](Player* player, std::vector<std::string>& triggerData)
 	{
-		if (auto client = dynamic_cast<PlayerClient*>(player); cached.enableTriggerhackGroups.getValue() && triggerData.size() == 2 && client != nullptr)
+		if (auto client = dynamic_cast<PlayerClient*>(player); cached.enableTriggerhackGroups.getValue() && client != nullptr)
 		{
 			for (const auto& id : client->getLevel()->getPlayers())
 			{
-				auto pl = getPlayer(id);
-				client->setGroup(triggerData[1]);
+				if (auto pl = getPlayer<PlayerClient>(id); pl != nullptr)
+					pl->setGroup(triggerData.size() >= 2 ? triggerData[1] : ""s);
 			}
 			return true;
 		}
@@ -215,10 +215,10 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 	builder.registerCommand("gr.setplayergroup", [&](Player* player, std::vector<std::string>& triggerData)
 	{
-		if (cached.enableTriggerhackGroups.getValue() && triggerData.size() == 3)
+		if (cached.enableTriggerhackGroups.getValue() && triggerData.size() >= 2)
 		{
 			if (auto client = getPlayer<PlayerClient>(triggerData[1], PLTYPE_ANYCLIENT); client != nullptr)
-				client->setGroup(triggerData[2]);
+				client->setGroup(triggerData.size() >= 3 ? triggerData[2] : ""s);
 			return true;
 		}
 		return false;

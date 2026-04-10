@@ -635,6 +635,7 @@ void Level::reload(StaticLevelDataPtr staticData)
 
 	auto mapPosition = getSubLevelPositionInMap(staticData->levelName);
 	auto subLevelIndex = getMapIndexAtPosition(mapPosition.value_or(MapPosition{}));
+	auto oldSubLevel = m_levelParts.size() > subLevelIndex ? m_levelParts[subLevelIndex] : nullptr;
 
 	// Delete arrows.
 	for (auto it = m_arrows.begin(); it != m_arrows.end();)
@@ -737,6 +738,8 @@ void Level::reload(StaticLevelDataPtr staticData)
 	for (const auto& [id, p] : players_of_type<PlayerClient>(playerList))
 	{
 		p->resetLevelCache(staticData.get());
+		if (oldSubLevel != nullptr)
+			p->resetLevelCache(oldSubLevel.get());
 	}
 
 	// Attach the static data to the level part.

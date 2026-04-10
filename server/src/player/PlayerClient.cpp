@@ -9,8 +9,9 @@
 #include <memory>
 #include <optional>
 #include <random>
-#include <string>
 #include <string_view>
+#include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -180,7 +181,8 @@ void PlayerClient::cleanup()
 	}
 
 	// Clean up.
-	m_cachedLevels.clear();
+	m_cachedStaticLevels.clear();
+	m_cachedDynamicLevels.clear();
 	m_singleplayerLevels.clear();
 
 	Player::cleanup();
@@ -1075,8 +1077,28 @@ bool PlayerClient::processChat(const CString& pChat)
 		// Tell the player how many guild members received his message.
 		setChat(CString() << "(" << CString(num) << " guild member" << (num != 0 ? "s" : "") << " received your message)");
 	}
+#ifdef DEBUG
+	else if (pChat == "savenpcs" && m_server->hasNPCServer())
+	{
+		processed = true;
+		m_server->getNPCServer()->saveNPCs();
+		setChat(CString() << "(saved npcs)");
+	}
+#endif
 
 	return processed;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PlayerClient::setGroup(std::string_view group)
+{
+	// Clear any cached level data from the client that belongs to the old group.
+	if (!account.groupName.empty())
+		resetLevelCache(account.groupName);
+
+	// Finally, set the new group.
+	account.groupName = std::format("gr.{}", string::toLower(group));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1206,81 +1228,12 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, std::optional<clock:
 	auto currentLevel = getLevel();
 	bool sameLevel = currentLevel == level;
 
-	// Leave the current level if we are changing levels.
+	// Leave the current level if we are changing levels and add ourself to the new one.
 	if (!sameLevel)
 	{
 		leaveLevel();
+
 		m_currentLevel = level;
-	}
-
-	// Check if the level is a singleplayer level.
-	// If so, see if we have been there before.  If not, duplicate it.
-	/*
-	* TODO(Nalin): Singleplayer levels
-	if (level->isSingleplayer)
-	{
-		auto nl = (m_singleplayerLevels.find(level->levelName) != m_singleplayerLevels.end() ? m_singleplayerLevels[level->levelName] : nullptr);
-		if (nl != nullptr)
-		{
-			auto newName = std::format("{}.{}.nw", level->levelName, account.name);
-			level = Level::clone(level, newName);
-			m_currentLevel = level;
-			m_singleplayerLevels[level->levelName] = level;
-		}
-		else
-		{
-			m_currentLevel = nl;
-		}
-	}
-	*/
-
-	// Check if the map is a group map.
-	/* TODO(Nalin): Group maps.
-	if (auto map = m_pmap.lock(); map && map->isGroupMap())
-	{
-		if (!m_levelGroup.isEmpty())
-		{
-			// If any players are in this level, they might have been cached on the client.  Solve this by manually removing them.
-			auto& plist = level->getPlayers();
-			for (auto id : plist)
-			{
-				auto p = m_server->getPlayer(id);
-				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)p->getId()
-					>> (char)PlayerProp::CURLEVEL >> (char)(level->levelName.length() + 1 + 7) << level->levelName << ".unknown"
-					>> (char)PlayerProp::X << p->getProp<PlayerProp::X>().serialize()
-					>> (char)PlayerProp::Y << p->getProp<PlayerProp::Y>().serialize());
-			}
-
-			// Set the correct level now.
-			const auto& levelName = level->levelName;
-			auto& groupLevels = m_server->getGroupLevels();
-			auto [start, end] = groupLevels.equal_range(levelName);
-			while (start != end)
-			{
-				if (auto nl = start->second.lock(); nl)
-				{
-					if (nl->levelName == levelName)
-					{
-						m_currentLevel = nl;
-						break;
-					}
-				}
-				++start;
-			}
-			if (start == end)
-			{
-				level = Level::clone(level);
-				m_currentLevel = level;
-				level->levelName = levelName;
-				groupLevels.insert(std::make_pair(levelName, level));
-			}
-		}
-	}
-	*/
-
-	// Add myself to the level playerlist.
-	if (!sameLevel)
-	{
 		level->addPlayer(m_id);
 		account.level = level->levelName;
 	}
@@ -1316,11 +1269,6 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, std::optional<clock:
 	{
 		if (pid == this->getId())
 			continue;
-
-		/* TODO(Nalin): Group maps.
-		if (auto map = m_pmap.lock(); map && map->isGroupMap() && m_levelGroup != player->getGroup())
-			continue;
-		*/
 
 		player->sendPacket(minimap);
 	}
@@ -1397,22 +1345,36 @@ bool PlayerClient::leaveSubLevel(std::shared_ptr<SubLevel> subLevel)
 	if (staticData == nullptr) return false;
 
 	auto curTime = m_server->getFrameStartTime();
-
-	// Save the time we left the level for the client-side caching.
-	bool found = false;
-	for (auto& cl : m_cachedLevels)
+	auto cacheLevel = [this, &curTime]<typename T>(std::vector<std::unique_ptr<CachedLevel<T>>>& cache, std::shared_ptr<T> level)
 	{
-		auto cllevel = cl->level.lock();
-		if (cllevel == staticData)
+		// Save the time we left the level for the client-side caching.
+		bool found = false;
+		for (auto& cl : cache)
 		{
-			cl->lastEnteredTime = curTime;
-			found = true;
-			break;
+			auto cllevel = cl->level.lock();
+			if (cllevel == level)
+			{
+				cl->lastEnteredTime = curTime;
+				found = true;
+				break;
+			}
 		}
-	}
 
-	if (!found)
-		m_cachedLevels.push_back(std::make_unique<CachedLevel>(CachedLevel{.level = staticData, .lastEnteredTime = curTime}));
+		if (!found)
+			cache.push_back(std::make_unique<CachedLevel<T>>(CachedLevel<T>{.level = level, .lastEnteredTime = curTime}));
+	};
+
+	// Static levels.
+	cacheLevel(m_cachedStaticLevels, staticData);
+
+	// Dynamic levels.
+	std::string groupName = account.groupName;
+	if (!groupName.empty())
+	{
+		if (auto level = subLevel->parentLevel.lock(); level != nullptr && !level->isGroupMap)
+			groupName.clear();
+	}
+	cacheLevel(m_cachedDynamicLevels[groupName], subLevel);
 
 	return true;
 }
@@ -1498,13 +1460,12 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 		return false;
 
 	PlayerPtr self = shared_from_this();
-	auto cachedModTime = getLevelLastEnteredTime(staticLevelData.get());
+	auto cachedModTime = getLevelLastEnteredTime(subLevel.get());
 
 	// Send board changes, horses, and baddies.
 	subLevel->sendBoardChangesToPlayer(self, cachedModTime);
 	if (!level->isGmap())
 	{
-		// TODO: Maybe bind horses to sub-level and send in sendStaticLevelData.
 		level->sendHorsesToPlayer(self);
 		level->sendBaddiesToPlayer(self);
 	}
@@ -1544,7 +1505,7 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 			}
 
 			// Send the carry NPC props to other players.
-			// if (!level->isSingleplayer)
+			if (!level->isSinglePlayer)
 			{
 				CString carryNPCProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNPC << npc->getAllPropsPacket();
 				m_server->sendPacketToNearby(carryNPCProps, getGlobalPosition(), level, {m_id});
@@ -1553,7 +1514,7 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 	}
 
 	// Send connecting player props to players in nearby levels.
-	// if (!level->isSingleplayer)
+	if (!level->isSinglePlayer)
 	{
 		CString myProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)1 << getPropsPacketFromList(loginPropsClientOthers);
 		for (const auto& playerId : level->findInRangePlayersForCommunication(getGlobalPosition()))
@@ -1562,7 +1523,6 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 			if (auto other = m_server->getPlayer(playerId); other != nullptr)
 			{
 				if (!other->isClient()) continue;
-				// TODO: Group map.
 
 				// Exchange props.
 				other->sendPacket(myProps);
@@ -1581,7 +1541,30 @@ std::optional<clock::time_point> PlayerClient::getLevelLastEnteredTime(const Sta
 	if (level == nullptr)
 		return std::nullopt;
 
-	for (auto& cl : m_cachedLevels)
+	for (auto& cl : m_cachedStaticLevels)
+	{
+		auto cllevel = cl->level.lock();
+		if (cllevel && cllevel.get() == level)
+		{
+			if (cl->lastEnteredTime == clock::time_point::min())
+				return std::nullopt;
+			return cl->lastEnteredTime;
+		}
+	}
+
+	return std::nullopt;
+}
+
+std::optional<clock::time_point> PlayerClient::getLevelLastEnteredTime(const SubLevel* level, std::string_view group) const
+{
+	if (level == nullptr)
+		return std::nullopt;
+
+	auto groupLevels = m_cachedDynamicLevels.find(group);
+	if (groupLevels == m_cachedDynamicLevels.end())
+		return std::nullopt;
+
+	for (auto& cl : groupLevels->second)
 	{
 		auto cllevel = cl->level.lock();
 		if (cllevel && cllevel.get() == level)
@@ -1598,7 +1581,7 @@ std::optional<clock::time_point> PlayerClient::getLevelLastEnteredTime(const Sta
 void PlayerClient::resetLevelCache(const StaticLevelData* level)
 {
 	if (level == nullptr) return;
-	for (auto& cl : m_cachedLevels)
+	for (auto& cl : m_cachedStaticLevels)
 	{
 		auto cllevel = cl->level.lock();
 		if (cllevel && cllevel.get() == level)
@@ -1607,6 +1590,54 @@ void PlayerClient::resetLevelCache(const StaticLevelData* level)
 			return;
 		}
 	}
+}
+
+void PlayerClient::resetLevelCache(const SubLevel* level, std::string_view group)
+{
+	if (level == nullptr)
+		return;
+
+	auto groupLevels = m_cachedDynamicLevels.find(group);
+	if (groupLevels == m_cachedDynamicLevels.end())
+		return;
+
+	for (auto& cl : groupLevels->second)
+	{
+		auto cllevel = cl->level.lock();
+		if (cllevel && cllevel.get() == level)
+		{
+			cl->lastEnteredTime = clock::time_point::min();
+			return;
+		}
+	}
+}
+
+void PlayerClient::resetLevelCache(std::string_view group)
+{
+	auto groupLevels = m_cachedDynamicLevels.find(group);
+	if (groupLevels == m_cachedDynamicLevels.end())
+		return;
+
+	// Collect a list of all the NPCs in the group that need to be deleted.
+	std::unordered_set<NPCID> npcsToReset;
+	for (auto& cl : groupLevels->second)
+	{
+		if (auto subLevel = cl->level.lock(); subLevel != nullptr)
+		{
+			if (auto level = subLevel->parentLevel.lock(); level != nullptr)
+			{
+				auto& npcs = level->getNPCs();
+				npcsToReset.insert(npcs.begin(), npcs.end());
+			}
+		}
+	}
+
+	// Send the delete packet so the client forgets about them.
+	for (auto npcId : npcsToReset)
+		sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npcId);
+
+	// Finally, clear the cache for the group.
+	m_cachedDynamicLevels.erase(group);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
