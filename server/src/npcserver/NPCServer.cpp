@@ -134,6 +134,9 @@ void NPCServer::update(TimeoutGenerator::time_point currentTime)
 		// Update the timeouts so they don't have huge deltas when we wake up.
 		m_runTimeout.setLastTimeout(currentTime);
 		m_timedSave.setLastTimeout(currentTime);
+
+		processDeletedNPCs();
+		processUnloadedNPCs();
 		return;
 	}
 
@@ -233,6 +236,7 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 
 	// Process deleted NPCs and players.
 	processDeletedNPCs();
+	processUnloadedNPCs();
 	processDeletedPlayers();
 
 	// If we have no players, enter sleep mode.
@@ -406,8 +410,16 @@ void NPCServer::deleteNPC(NPCID id)
 	m_deletedNPCs.insert(id);
 }
 
+void NPCServer::unloadNPC(NPCID id)
+{
+	m_unloadedNPCs.insert(id);
+}
+
 void NPCServer::processDeletedNPCs()
 {
+	if (m_deletedNPCs.empty())
+		return;
+
 	for (const auto& npcId : m_deletedNPCs)
 	{
 		auto npc = m_server->getNPC(npcId);
@@ -423,6 +435,40 @@ void NPCServer::processDeletedNPCs()
 			std::filesystem::remove(std::filesystem::path{ "npcs" } / fs::getHTMLEscapedFileName(std::format("npc{}.txt", npc->name)));
 	}
 	m_deletedNPCs.clear();
+}
+
+void NPCServer::processUnloadedNPCs()
+{
+	if (m_unloadedNPCs.empty())
+		return;
+
+	auto& npcLoader = m_server->getNPCLoader();
+	for (const auto& npcId : m_unloadedNPCs)
+	{
+		auto npc = m_server->getNPC(npcId);
+
+		// Don't remove database NPCs.
+		// TODO: Make it so database NPCs can be loaded/unloaded on demand.
+		if (npc != nullptr && npc->storageType == NPCStorageType::DATABASE)
+		{
+			npcLoader.saveNPC(npc);
+
+			// If the level no longer exists, stub the level so this NPC works again once it comes back.
+			if (npc->getLevel() == nullptr)
+			{
+				if (auto level = m_server->getStubbedLevel(npc->level, npc->groupName); level != nullptr)
+					level->addNPC(npc);
+			}
+			continue;
+		}
+
+		// Remove from the global list.
+		m_globalNPCList.erase(npcId);
+
+		// Remove from the server's NPC list.
+		m_server->deleteNPC(npcId, true);
+	}
+	m_unloadedNPCs.clear();
 }
 
 //----------------------------

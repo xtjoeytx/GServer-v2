@@ -497,16 +497,16 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	file->writeConfigLine("STARTY", string::to_string(npc->m_initialCharacter.localPixelY / 16.0, 2));
 	file->writeConfigLine("STARTZ", string::to_string(npc->m_initialCharacter.localPixelZ / 16.0, 2));
 
-	if (level)
+	if (!npc->level.empty())
 	{
 		file->writeConfigLine("LEVEL", npc->getLevelName());
-		if (level->isGroupMap)
+		if (!npc->groupName.empty())
 			file->writeConfigLine("GROUPNAME", npc->groupName);
 
 		file->writeConfigLine("X", string::to_string(npc->character.localPixelX / 16.0, 2));
 		file->writeConfigLine("Y", string::to_string(npc->character.localPixelY / 16.0, 2));
 		file->writeConfigLine("Z", string::to_string(npc->character.localPixelZ / 16.0, 2));
-		if (level->isGmap())
+		if (npc->character.mapX != 0 || npc->character.mapY != 0)
 		{
 			file->writeConfigLine("MAPX", string::to_string(npc->character.mapX));
 			file->writeConfigLine("MAPY", string::to_string(npc->character.mapY));
@@ -518,7 +518,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	if (server->Generation != ServerGeneration::ORIGINAL)
 		writeProp(NPCProp::GANI, "ANI", npc->character.gani);
 
-	writeProp(NPCProp::POWER, "HP", std::format("{:2f}", npc->character.hitpointsInHalves / 2.0f));
+	writeProp(NPCProp::POWER, "HP", std::format("{:.2f}", npc->character.hitpointsInHalves / 2.0f));
 	writeProp(NPCProp::RUPEES, "GRALATS", string::to_string(npc->character.gralats));
 	writeProp(NPCProp::ARROWS, "ARROWS", string::to_string(npc->character.arrows));
 	writeProp(NPCProp::BOMBS, "BOMBS", string::to_string(npc->character.bombs));

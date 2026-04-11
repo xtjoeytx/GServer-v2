@@ -154,31 +154,53 @@ Server::Server(const CString& pName)
 		loadServerMessage();
 		loadIPBans();
 
-		// Check all of the instanced maps to see if the players have left.
-		if (!m_groupLevels.empty())
+		// Check if we need to unload any levels.
+		for (auto& [levelName, level] : m_levelList)
 		{
-			std::unordered_set<std::string> groupKeys;
-			std::for_each(std::begin(m_groupLevels), std::end(m_groupLevels), [&groupKeys](auto& pair)
-			{
-				groupKeys.insert(pair.first);
-			});
+			// Skip if the level is currently active with players in it.
+			// We always do this so we can abort early.
+			if (!level->timeSinceLastPlayerLeft.has_value())
+				continue;
+			
+			// Register that we will skip if we have the unload time set to 0 (which means never unload).
+			bool skip = (m_unloadInactiveLevelTime.getValue() == 0);
 
-			for (auto& groupName : groupKeys)
-			{
-				bool playersFound = false;
-				auto range = m_groupLevels.equal_range(groupName);
-				std::for_each(range.first, range.second, [&playersFound](decltype(m_groupLevels)::value_type& pair)
-				{
-					if (auto level = pair.second.lock(); level && !level->getPlayers().empty())
-						playersFound = true;
-				});
+			// Give a 10 minute grace period after the last player leaves.
+			auto inactiveDuration = timeDifference(m_frameStartTime, level->timeSinceLastPlayerLeft.value());
+			skip = skip || inactiveDuration < std::chrono::seconds(m_unloadInactiveLevelTime.getValue());
 
-				if (!playersFound)
+			// Group maps will always unload after 10 minutes if the inactive time is not set.
+			if (level->isGroupMap && inactiveDuration > std::chrono::seconds(m_unloadInactiveLevelTime.get().value_or(600)))
+				skip = false;
+
+			// Do the skip now.
+			if (skip)
+				continue;
+
+			DEBUGPRINT("Unloading level '{}' due to inactivity.", levelName);
+
+			// If we have an NPC-server, unload (or delete) our serverside NPCs.
+			if (hasNPCServer())
+			{
+				if (level->isGroupMap)
 				{
-					m_groupLevels.erase(groupName);
+					for (const auto& id : level->getNPCs())
+						m_npcServer->deleteNPC(id);
+				}
+				else
+				{
+					for (const auto& id : level->getNPCs())
+						m_npcServer->unloadNPC(id);
 				}
 			}
+
+			level = nullptr;
 		}
+
+		std::erase_if(m_levelList, [](const auto& entry)
+		{
+			return entry.second == nullptr;
+		});
 	};
 
 	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::CONFIG)] = [this](fs::FileEventCollection events, fs::FileData& file)
@@ -566,7 +588,6 @@ void Server::cleanup()
 
 	m_levelList.clear();
 	m_mapList.clear();
-	m_groupLevels.clear();
 
 	saveWeapons();
 	m_weaponList.clear();
@@ -682,13 +703,6 @@ bool Server::doTimedEvents(int)
 		{
 			assert(level);
 			level->doTimedEvents();
-		}
-
-		// Group levels.
-		for (auto& [group, levelPtr] : m_groupLevels)
-		{
-			if (auto level = levelPtr.lock(); level)
-				level->doTimedEvents();
 		}
 	}
 
@@ -904,6 +918,7 @@ void Server::prepareSettings()
 	m_settings.track(m_generationString, m_classicStyleLogs);
 	m_settings.track(m_dontAddServerFlags);
 	m_settings.track(m_newTilesets, m_newTilesetLevels);
+	m_settings.track(m_unloadInactiveLevelTime);
 	m_settings.track(m_staffList, m_bushItemTypes, m_deathItemTypes);
 	m_settings.track(m_gmaps, m_bigmaps, m_groupmaps);
 }
@@ -1277,6 +1292,7 @@ std::shared_ptr<Level> Server::getStubbedLevel(std::string_view levelName, std::
 	if (levelName.empty())
 		return nullptr;
 
+	// Get the computed level name, which includes the group name (if applicable).
 	std::string lowerCaseLevel;
 	if (!groupName.empty())
 	{
@@ -1285,14 +1301,22 @@ std::shared_ptr<Level> Server::getStubbedLevel(std::string_view levelName, std::
 	}
 	lowerCaseLevel += string::toLower(levelName);
 
-	if (auto it = m_levelList.find(lowerCaseLevel); it != m_levelList.end())
-		return it->second;
+	// Check to see if the level exists and has a value.
+	auto existing = m_levelList.find(lowerCaseLevel);
+	if (existing != m_levelList.end() && existing->second != nullptr)
+		return existing->second;
 
+	// Create a new stub level.
 	auto level = Level::createLevel(levelName);
 	if (!groupName.empty())
 		level->groupMapName = groupName;
 
-	m_levelList.insert(std::make_pair(lowerCaseLevel, level));
+	// Add it to the list, or update the existing entry if it exists.
+	if (existing == m_levelList.end())
+		m_levelList.insert(std::make_pair(lowerCaseLevel, level));
+	else
+		existing->second = level;
+
 	return level;
 }
 
@@ -1434,7 +1458,7 @@ std::shared_ptr<Map> Server::findMapForLevel(MapType mapType, std::string_view l
 	return nullptr;
 }
 
-std::shared_ptr<Level> Server::findGmapForLevel(std::string_view levelName, std::shared_ptr<Player> player) const noexcept
+std::shared_ptr<Level> Server::findGmapForLevel(std::string_view levelName, std::shared_ptr<Player> player) noexcept
 {
 	LevelPtr returnLevel = nullptr;
 
@@ -1677,6 +1701,9 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 bool Server::deleteNPC(int id, bool eraseFromLevel)
 {
 	auto npc = getNPC(id);
+	if (npc == nullptr)
+		return false;
+
 	return deleteNPC(npc, eraseFromLevel);
 }
 

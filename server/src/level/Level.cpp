@@ -18,6 +18,7 @@
 #include <span>
 #include <string_view>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -41,8 +42,8 @@
 #include <level/LevelLink.h>
 #include <level/LevelShoot.h>
 #include <level/LevelSign.h>
-#include <level/LevelTiles.h>
 #include <level/LevelTileTypes.h>
+#include <level/LevelTiles.h>
 #include <level/Map.h>
 #include <loader/LevelLoader.h>
 #include <npcserver/NPCServer.h>
@@ -53,11 +54,11 @@
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
-#include <utilities/generator/TimeoutGenerator.h>
 #include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
-#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
+#include <utilities/generator/TimeoutGenerator.h>
+#include <utilities/std/generator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -184,8 +185,8 @@ void StaticLevelData::sendSignsToPlayer(std::shared_ptr<Player> player) const
 
 PixelRectangleArea SubLevel::clipRectangleToPart(const PixelRectangleArea& area) const noexcept
 {
-	PixelRectangleArea result{ area };
-	PixelRectangleArea localRect{ { 0, 0 }, { 1024, 1024 } };
+	PixelRectangleArea result{area};
+	PixelRectangleArea localRect{{0, 0}, {1024, 1024}};
 	if (mapPosition.has_value())
 		localRect.position.translate(mapPosition.value().x() * 1024, mapPosition.value().y() * 1024);
 
@@ -236,8 +237,8 @@ PixelRectangleArea SubLevel::clipRectangleToPart(const PixelRectangleArea& area)
 
 WholeTileRectangleArea SubLevel::clipRectangleToPart(const WholeTileRectangleArea& area) const noexcept
 {
-	WholeTileRectangleArea result{ area };
-	WholeTileRectangleArea localRect{ { 0, 0 }, { 64, 64 } };
+	WholeTileRectangleArea result{area};
+	WholeTileRectangleArea localRect{{0, 0}, {64, 64}};
 	if (mapPosition.has_value())
 		localRect.position.translate(mapPosition.value().x() * 64, mapPosition.value().y() * 64);
 
@@ -379,7 +380,7 @@ double SubLevel::getHeightAt(const LocalPixelPosition& position) const noexcept
 	Position<float> vecV = bottomLeft - topLeft;
 
 	// Determine our tile offset.
-	TilePosition offset{ tilePosition.x() - topLeft.x(), tilePosition.y() - topLeft.y() };
+	TilePosition offset{tilePosition.x() - topLeft.x(), tilePosition.y() - topLeft.y()};
 
 	// Calculate our point using the offset along the direction vectors.
 	TilePosition point = topLeft + (vecU * offset.x()) + (vecV * offset.y());
@@ -543,9 +544,25 @@ Level::~Level()
 			if (!npc) continue;
 			if (npc->storageType == NPCStorageType::LEVEL)
 				m_server->deleteNPC(npc, false);
-			else npc->level.clear();
 		}
 		m_npcs.clear();
+	}
+
+	// Erase our levels from the gmap level list.
+	if (isGmap())
+	{
+		auto& gmapLevels = m_server->getGmapLevelList();
+		using GT = std::remove_cvref_t<decltype(gmapLevels)>::value_type;
+		std::erase_if(gmapLevels, [this](const GT& pair)
+		{
+			return getSubLevelIndex(pair.first).has_value() && pair.second.expired();
+		});
+
+		// Create stubs for our levels so they can be reloaded later if needed.
+		// We need to do this for map levels because we many things refer to the sublevels by name, so we need to link them to a gmap.
+		auto stub = m_server->getStubbedLevel(levelName, groupMapName);
+		for (const auto& [levelName, position] : m_map->levels)
+			gmapLevels.insert({levelName, stub});
 	}
 
 	// Delete shoots.
@@ -790,7 +807,7 @@ bool Level::saveLevel(const MapPosition& mapPosition, std::string_view filename)
 			return false;
 		}
 
-		path = std::filesystem::path{ *iter } / actualFilename.toStringView();
+		path = std::filesystem::path{*iter} / actualFilename.toStringView();
 	}
 
 	std::ofstream fileStream(path);
@@ -841,7 +858,7 @@ bool Level::saveLevel(const MapPosition& mapPosition, std::string_view filename)
 					}
 
 					// Append the base64 encoded tile data.
-					std::span<uint8_t> tileData{ reinterpret_cast<uint8_t*>(&tile), sizeof(decltype(tile)) };
+					std::span<uint8_t> tileData{reinterpret_cast<uint8_t*>(&tile), sizeof(decltype(tile))};
 					data += string::toBase64(tileData).substr(0, 2);
 				}
 
@@ -862,10 +879,7 @@ bool Level::saveLevel(const MapPosition& mapPosition, std::string_view filename)
 	for (const auto& link : staticData->links)
 	{
 		auto& bbox = link.getBoundingBox();
-		fileStream << std::format("LINK {} {} {} {} {} {} {}",
-			link.getDestinationLevel(),
-			bbox.position.x(), bbox.position.y(), bbox.size.width(), bbox.size.height(),
-			link.getDestinationX(), link.getDestinationY()) << std::endl;
+		fileStream << std::format("LINK {} {} {} {} {} {} {}", link.getDestinationLevel(), bbox.position.x(), bbox.position.y(), bbox.size.width(), bbox.size.height(), link.getDestinationX(), link.getDestinationY()) << std::endl;
 	}
 
 	for (const auto& sign : staticData->signs)
@@ -951,15 +965,24 @@ void Level::doTimedEvents()
 
 	// Run explosion events.
 	for (auto& explosion : m_explosions) explosion.timeout.update(now);
-	std::erase_if(m_explosions, [](const LevelExplosion& explosion) { return !explosion.timeout.isRunning(); });
+	std::erase_if(m_explosions, [](const LevelExplosion& explosion)
+	{
+		return !explosion.timeout.isRunning();
+	});
 
 	// Run item events.
 	for (auto& item : m_items) item.timeout.update(now);
-	std::erase_if(m_items, [](const LevelItem& item) { return !item.timeout.isRunning(); });
+	std::erase_if(m_items, [](const LevelItem& item)
+	{
+		return !item.timeout.isRunning();
+	});
 
 	// Run horse events.
 	for (auto& horse : m_horses) horse.timeout.update(now);
-	std::erase_if(m_horses, [](const LevelHorse& horse) { return !horse.timeout.isRunning(); });
+	std::erase_if(m_horses, [](const LevelHorse& horse)
+	{
+		return !horse.timeout.isRunning();
+	});
 
 	// Run baddy events.
 	if (auto subLevel = getSubLevelAtPosition(MapPosition{}); subLevel != nullptr && !isGmap())
@@ -1090,7 +1113,7 @@ std::generator<std::pair<const LevelSign*, WholeTilePosition>> Level::getSignPos
 		if (auto sdata = m_levelParts.at(0)->staticData.lock(); sdata != nullptr)
 		{
 			for (const auto& sign : sdata->signs)
-				co_yield std::make_pair(&sign, WholeTilePosition{ (uint16_t)sign.getTileX(), (uint16_t)sign.getTileY() });
+				co_yield std::make_pair(&sign, WholeTilePosition{(uint16_t)sign.getTileX(), (uint16_t)sign.getTileY()});
 		}
 	}
 	else
@@ -1365,6 +1388,7 @@ bool Level::hasLivingBaddies() const
 int Level::addPlayer(PlayerID id)
 {
 	m_players.push_back(id);
+	timeSinceLastPlayerLeft.reset();
 
 	// Set the player enters event on all the NPCs.
 	if (auto player = m_server->getPlayer(id); player != nullptr)
@@ -1380,6 +1404,10 @@ void Level::removePlayer(PlayerID id)
 	// Set the player leaves event on all the NPCs.
 	if (auto player = m_server->getPlayer(id); player != nullptr)
 		m_server->queueNPCEvent(shared_from_this(), player->getGlobalPosition(), ScriptEventType::PLAYERLEAVES, source::FromPlayer(id));
+
+	// If there are no more players in the level, record the time so we can do level cleanup after a delay.
+	if (m_players.empty())
+		timeSinceLastPlayerLeft = m_server->getFrameStartTime();
 }
 
 //----------------------------
@@ -1507,13 +1535,13 @@ bool Level::alterBoard(CString& tileData, const WholeTileRectangleArea& area, Pl
 	*/
 
 	// Split up the board change into level parts.
-	std::pair<uint8_t, uint8_t> mapPartsX{ area.left() / tilesPerSubLevel().width(), area.right() / tilesPerSubLevel().width() };
-	std::pair<uint8_t, uint8_t> mapPartsY{ area.top() / tilesPerSubLevel().height(), area.bottom() / tilesPerSubLevel().height() };
+	std::pair<uint8_t, uint8_t> mapPartsX{area.left() / tilesPerSubLevel().width(), area.right() / tilesPerSubLevel().width()};
+	std::pair<uint8_t, uint8_t> mapPartsY{area.top() / tilesPerSubLevel().height(), area.bottom() / tilesPerSubLevel().height()};
 	for (auto partY = mapPartsY.first; partY <= mapPartsY.second; ++partY)
 	{
 		for (auto partX = mapPartsX.first; partX <= mapPartsX.second; ++partX)
 		{
-			MapPosition mapPosition{ partX, partY };
+			MapPosition mapPosition{partX, partY};
 
 			// Get the level part.
 			auto sourcePart = getSubLevelAtPosition(mapPosition);
@@ -1563,7 +1591,7 @@ bool Level::alterBoard(CString& tileData, const WholeTileRectangleArea& area, Pl
 			}
 
 			// Apply the board update to this part.
-			sourcePart->boardChanges.push_back(LevelBoardChange{ shared_from_this(), MapPosition{ partX, partY }, localRect, partTileData, oldTiles, (doRespawn ? std::chrono::seconds(respawnTime) : 0s) });
+			sourcePart->boardChanges.push_back(LevelBoardChange{shared_from_this(), MapPosition{partX, partY}, localRect, partTileData, oldTiles, (doRespawn ? std::chrono::seconds(respawnTime) : 0s)});
 			if (sendToPlayers) sourcePart->boardChanges.back().sendToPlayersOnLevel();
 		}
 	}
@@ -1574,7 +1602,7 @@ bool Level::alterBoard(CString& tileData, const WholeTileRectangleArea& area, Pl
 void Level::applyBoardChangeFromScriptTiles(const WholeTileRectangleArea& area, bool forceRespawn, bool allowRespawn)
 {
 	// Prepare a tile array for the area.
-	std::vector<uint16_t> tiles{ 0 };
+	std::vector<uint16_t> tiles{0};
 	tiles.resize(static_cast<size_t>(area.size.width()) * area.size.height());
 
 	// Fill in the tile array with script updated tiles.
@@ -1726,7 +1754,7 @@ LevelArrow* Level::addArrow(const PixelPosition& position, const PixelPosition& 
 	if (!m_server->hasNPCServer())
 		return nullptr;
 
-	LevelArrow newArrow{ .startPosition = position, .position = position, .speed = speed, .direction = direction, .type = type, .from = from };
+	LevelArrow newArrow{.startPosition = position, .position = position, .speed = speed, .direction = direction, .type = type, .from = from};
 	m_arrows.emplace_back(std::move(newArrow));
 	return &m_arrows.back();
 }
@@ -1771,7 +1799,7 @@ LevelBaddy* Level::addBaddy(const LocalPixelPosition& position, BaddyType type)
 	nextIndex = std::clamp(nextIndex, static_cast<size_t>(0), subLevel->baddies.size());
 
 	// New Baddy
-	LevelBaddy newBaddy{ position, type, this->shared_from_this() };
+	LevelBaddy newBaddy{position, type, this->shared_from_this()};
 	newBaddy.id = nextIndex + 1;
 
 	if (nextIndex == subLevel->baddies.size())
@@ -1929,7 +1957,7 @@ LevelBomb* Level::addBomb(const PixelPosition& position, uint8_t power)
 	if (!m_server->hasNPCServer())
 		return nullptr;
 
-	LevelBomb newBomb{ .position = position, .power = power };
+	LevelBomb newBomb{.position = position, .power = power};
 	newBomb.timeout.runOnceFor(3s);
 	m_bombs.emplace_back(std::move(newBomb));
 	return &m_bombs.back();
@@ -1946,7 +1974,7 @@ LevelBomb* Level::addBombFromClient(const PixelPosition& position, uint8_t power
 		return nullptr;
 
 	// Add the bomb to the level otherwise.
-	LevelBomb newBomb{ .position = position, .power = power, .owner = source::FromPlayer(owner) };
+	LevelBomb newBomb{.position = position, .power = power, .owner = source::FromPlayer(owner)};
 	newBomb.timeout.runOnceFor(timeToExplode);
 	m_bombs.emplace_back(std::move(newBomb));
 	return &m_bombs.back();
@@ -2060,15 +2088,16 @@ void Level::addExplosion(const PixelPosition& position, ScriptObject from, uint8
 		int16_t step = (((i % radius) + 1) * 2) * 16;
 		PixelPosition partPosition = position.translate(
 			(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -step : step),
-			(dir == 1 || dir == 3) ? 0 : (dir == 0 ? -step : step));
+			(dir == 1 || dir == 3) ? 0 : (dir == 0 ? -step : step)
+		);
 		addExplosionPart(partPosition, dir, power);
 	}
 
 	// Add exploded events to NPCs in the level.
 	if (m_server->hasNPCServer())
 	{
-		PixelRectangleArea vertTest = { position.translate(0, -(radius * 32)), { static_cast<uint16_t>(32), static_cast<uint16_t>((1 + (radius * 2)) * 32) } };
-		PixelRectangleArea horzTest = { position.translate(-(radius * 32), 0), { static_cast<uint16_t>((1 + (radius * 2)) * 32), static_cast<uint16_t>(32) } };
+		PixelRectangleArea vertTest = {position.translate(0, -(radius * 32)), {static_cast<uint16_t>(32), static_cast<uint16_t>((1 + (radius * 2)) * 32)}};
+		PixelRectangleArea horzTest = {position.translate(-(radius * 32), 0), {static_cast<uint16_t>((1 + (radius * 2)) * 32), static_cast<uint16_t>(32)}};
 		auto center = vertTest.center();
 		for (const NPCID& npcId : findIntersectingNPCsForCollision(vertTest))
 		{
@@ -2099,7 +2128,8 @@ void Level::addSpyFire(const PixelPosition& position, ScriptObject from, uint8_t
 
 	const PixelPosition startingPosition = position.translate(
 		(direction == 0 || direction == 2) ? 8 : (direction == 1 ? -32 : 48),
-		(direction == 1 || direction == 3) ? 3 : (direction == 0 ? -24 : 35));
+		(direction == 1 || direction == 3) ? 3 : (direction == 0 ? -24 : 35)
+	);
 
 	for (size_t i = 0; i < static_cast<size_t>(length + 1); ++i)
 	{
@@ -2116,13 +2146,15 @@ void Level::addSpyFire(const PixelPosition& position, ScriptObject from, uint8_t
 		int16_t lengthInPixels = (length + 1) * 32;
 		PixelPosition testPosition = startingPosition.translate(
 			static_cast<int16_t>((direction == 1) ? -lengthInPixels : 0),
-			static_cast<int16_t>((direction == 0) ? -lengthInPixels : 0));
+			static_cast<int16_t>((direction == 0) ? -lengthInPixels : 0)
+		);
 		Dimension<uint16_t> testDimension{
 			static_cast<uint16_t>((direction == 0 || direction == 2) ? 32 : lengthInPixels),
-			static_cast<uint16_t>((direction == 1 || direction == 3) ? 32 : lengthInPixels) };
+			static_cast<uint16_t>((direction == 1 || direction == 3) ? 32 : lengthInPixels)
+		};
 
 		auto center = translatePosition(startingPosition, 16, 16);
-		for (const NPCID& npcId : findIntersectingNPCsForCollision({ testPosition, testDimension }))
+		for (const NPCID& npcId : findIntersectingNPCsForCollision({testPosition, testDimension}))
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 				npc->hurtAndPush(power, center, ScriptEventType::EXPLODED, from);
@@ -2135,7 +2167,7 @@ LevelExplosion* Level::addExplosionPart(const PixelPosition& position, uint8_t d
 	if (!m_server->hasNPCServer())
 		return nullptr;
 
-	LevelExplosion explo{ .position = position, .power = power, .direction = direction };
+	LevelExplosion explo{.position = position, .power = power, .direction = direction};
 	explo.timeout.runOnceFor(ExplosionDuration);
 	m_explosions.emplace_back(std::move(explo));
 	return &m_explosions.back();
@@ -2182,7 +2214,7 @@ LevelHorse* Level::addHorse(std::string_view image, const PixelPosition& positio
 {
 	auto horseLife = m_server->getSettings().get<uint32_t>("horselifetime").value_or(30);
 
-	LevelHorse newHorse{ .position = position, .image = std::string{ image }, .direction = direction, .bushes = bushes, .timeout = TimeoutGenerator(std::chrono::seconds(horseLife)) };
+	LevelHorse newHorse{.position = position, .image = std::string{image}, .direction = direction, .bushes = bushes, .timeout = TimeoutGenerator(std::chrono::seconds(horseLife))};
 	if (isOnWater(position.translate(16, 32)))
 		newHorse.type = HORSETYPE_BOAT;
 
@@ -2238,9 +2270,7 @@ LevelItem* Level::addItem(inform_client_t, const PixelPosition& position, LevelI
 	if (result != nullptr)
 	{
 		auto localPosition = toLocalPixelPosition(result->position);
-		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_ITEMADD
-			>> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) >> (char)LevelItem::getItemTypeId(result->item),
-			result->position, shared_from_this());
+		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_ITEMADD >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) >> (char)LevelItem::getItemTypeId(result->item), result->position, shared_from_this());
 	}
 	return result;
 }
@@ -2254,7 +2284,7 @@ LevelItem* Level::addItem(const PixelPosition& position, LevelItemType item)
 			return nullptr;
 	}
 
-	LevelItem newItem{ .position = position, .item = item, .modTime = m_server->getFrameStartTime() };
+	LevelItem newItem{.position = position, .item = item, .modTime = m_server->getFrameStartTime()};
 	newItem.timeout.runOnceFor(LevelItemTimeout);
 	m_items.emplace_back(std::move(newItem));
 	return &m_items.back();
@@ -2328,8 +2358,7 @@ std::optional<const LevelLink*> Level::getLink(std::string_view levelPart, const
 			continue;
 
 		auto& bbox = link.getBoundingBox();
-		if ((position.x() >= bbox.position.x() && position.x() <= bbox.position.x() + bbox.size.width())
-			&& (position.y() >= bbox.position.y() && position.y() <= bbox.position.y() + bbox.size.height()))
+		if ((position.x() >= bbox.position.x() && position.x() <= bbox.position.x() + bbox.size.width()) && (position.y() >= bbox.position.y() && position.y() <= bbox.position.y() + bbox.size.height()))
 		{
 			return std::make_optional(&link);
 		}
@@ -2354,8 +2383,7 @@ std::optional<const LevelLink*> Level::getLink(const TilePosition& position, boo
 
 		auto localPosition = toLocalWholeTilePosition(position);
 		auto& bbox = link.getBoundingBox();
-		if ((localPosition.x() >= bbox.position.x() && localPosition.x() <= bbox.position.x() + bbox.size.width())
-			&& (localPosition.y() >= bbox.position.y() && localPosition.y() <= bbox.position.y() + bbox.size.height()))
+		if ((localPosition.x() >= bbox.position.x() && localPosition.x() <= bbox.position.x() + bbox.size.width()) && (localPosition.y() >= bbox.position.y() && localPosition.y() <= bbox.position.y() + bbox.size.height()))
 		{
 			return std::make_optional(&link);
 		}
@@ -2396,7 +2424,7 @@ LevelShoot* Level::addShoot(const PixelPosition& position, float angle, float za
 	double ground = getHeightAt(position.translate(8, 16));
 	tilePosition.translate(0, 0, ground);
 
-	LevelShoot newShoot{ .position = tilePosition, .angle = angle, .zangle = zangle, .powerIn44Pixels = power, .gani = gani, .gravity = gravity, .from = from };
+	LevelShoot newShoot{.position = tilePosition, .angle = angle, .zangle = zangle, .powerIn44Pixels = power, .gani = gani, .gravity = gravity, .from = from};
 	if (newShoot.gani.back() == ',')
 		newShoot.gani.pop_back();
 	newShoot.calculateSpeeds();
@@ -2479,7 +2507,7 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 		// Check for NPC collisions.
 		//log::printLine(log::server, "Collision search pos: ({}), ground: {}", searchPosition / 16.0f, currentGroundLevel / 16.0f);
 		bool fromPlayer = (shoot->from.second == ScriptObjectType::PLAYER);
-		for (const auto& npc : findIntersectingNPCsForCollision({ pixelPosition, { 24_ui16, 24_ui16, 48_ui16 } }))
+		for (const auto& npc : findIntersectingNPCsForCollision({pixelPosition, {24_ui16, 24_ui16, 48_ui16}}))
 		{
 			if (shoot->from.second == ScriptObjectType::NPC && shoot->from.first == npc)
 				continue;
@@ -2501,7 +2529,7 @@ bool Level::moveShoot(LevelShoot* shoot, int iterations)
 
 			// Check for wall collisions.
 			bool onWallDetection = m_server->cached.projectilesStopOnWall.getValue() && groundDiff < 48;
-			if (!collided && onWallDetection && isOnWall2(WholeTileRectangleArea{ toWholeTilePosition(pixelPosition), {1_ui8, 1_ui8} }))
+			if (!collided && onWallDetection && isOnWall2(WholeTileRectangleArea{toWholeTilePosition(pixelPosition), {1_ui8, 1_ui8}}))
 				constructEventParams();
 		}
 
@@ -2535,7 +2563,7 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 		bool hitWall = false;
 
 		// Check for NPC collision.
-		PixelRectangleArea searchBox = { translatePosition(arrow->position, 16_i32, -8_i32), { 32_ui16, 32_ui16  } };
+		PixelRectangleArea searchBox = {translatePosition(arrow->position, 16_i32, -8_i32), {32_ui16, 32_ui16}};
 		auto center = searchBox.center();
 		int8_t arrowPower = arrow->type == arrowTypeFireball ? 2 : 1;
 		for (const auto& npc : findIntersectingNPCsForCollision(searchBox))
@@ -2596,7 +2624,7 @@ bool Level::isOnWall2(const WholeTileRectangleArea& tileArea) const noexcept
 	{
 		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + tileArea.size.width(); ++cx)
 		{
-			if (isOnWall(WholeTilePosition{ cx, cy }))
+			if (isOnWall(WholeTilePosition{cx, cy}))
 				return true;
 		}
 	}
@@ -2626,7 +2654,7 @@ bool Level::isOnWater2(const WholeTileRectangleArea& tileArea) const noexcept
 	{
 		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + tileArea.size.width(); ++cx)
 		{
-			if (isOnWater(WholeTilePosition{ cx, cy }))
+			if (isOnWater(WholeTilePosition{cx, cy}))
 				return true;
 		}
 	}
@@ -2721,13 +2749,13 @@ uint16_t* Level::getMapTileForEditing(const TilePosition& position) noexcept
 
 std::generator<SubLevelPtr> Level::getSubLevelsInRectangle(const PixelRectangleArea& area) const noexcept
 {
-	std::pair<uint8_t, uint8_t> mapPartsX{ area.left() / pixelsPerSubLevel().width(), area.right() / pixelsPerSubLevel().width() };
-	std::pair<uint8_t, uint8_t> mapPartsY{ area.top() / pixelsPerSubLevel().height(), area.bottom() / pixelsPerSubLevel().height() };
+	std::pair<uint8_t, uint8_t> mapPartsX{area.left() / pixelsPerSubLevel().width(), area.right() / pixelsPerSubLevel().width()};
+	std::pair<uint8_t, uint8_t> mapPartsY{area.top() / pixelsPerSubLevel().height(), area.bottom() / pixelsPerSubLevel().height()};
 	for (auto partY = mapPartsY.first; partY <= mapPartsY.second; ++partY)
 	{
 		for (auto partX = mapPartsX.first; partX <= mapPartsX.second; ++partX)
 		{
-			if (auto sourcePart = getSubLevelAtPosition(MapPosition{ partX, partY }); sourcePart != nullptr)
+			if (auto sourcePart = getSubLevelAtPosition(MapPosition{partX, partY}); sourcePart != nullptr)
 				co_yield sourcePart;
 		}
 	}
@@ -2735,13 +2763,13 @@ std::generator<SubLevelPtr> Level::getSubLevelsInRectangle(const PixelRectangleA
 
 std::generator<SubLevelPtr> Level::getSubLevelsInRectangle(const WholeTileRectangleArea& area) const noexcept
 {
-	std::pair<uint8_t, uint8_t> mapPartsX{ area.left() / tilesPerSubLevel().width(), area.right() / tilesPerSubLevel().width() };
-	std::pair<uint8_t, uint8_t> mapPartsY{ area.top() / tilesPerSubLevel().height(), area.bottom() / tilesPerSubLevel().height() };
+	std::pair<uint8_t, uint8_t> mapPartsX{area.left() / tilesPerSubLevel().width(), area.right() / tilesPerSubLevel().width()};
+	std::pair<uint8_t, uint8_t> mapPartsY{area.top() / tilesPerSubLevel().height(), area.bottom() / tilesPerSubLevel().height()};
 	for (auto partY = mapPartsY.first; partY <= mapPartsY.second; ++partY)
 	{
 		for (auto partX = mapPartsX.first; partX <= mapPartsX.second; ++partX)
 		{
-			if (auto sourcePart = getSubLevelAtPosition(MapPosition{ partX, partY }); sourcePart != nullptr)
+			if (auto sourcePart = getSubLevelAtPosition(MapPosition{partX, partY}); sourcePart != nullptr)
 				co_yield sourcePart;
 		}
 	}
@@ -2765,16 +2793,16 @@ std::generator<SubLevelPtr> Level::getNearbySubLevels(const PixelPosition& posit
 		int32_t negDistance = -static_cast<int32_t>(distance);
 		std::pair<int32_t, int32_t> offsets[] = {
 			// top
-			{ negDistance, negDistance },
-			{ 0, negDistance },
-			{ distance, negDistance },
+			{negDistance, negDistance},
+			{0, negDistance},
+			{distance, negDistance},
 			// middle
-			{ negDistance, 0 },
-			{ distance, 0 },
+			{negDistance, 0},
+			{distance, 0},
 			// bottom
-			{ negDistance, distance },
-			{ 0, distance },
-			{ distance, distance },
+			{negDistance, distance},
+			{0, distance},
+			{distance, distance},
 		};
 
 		for (const auto& offset : offsets)
@@ -2980,7 +3008,7 @@ std::generator<const NPCID&> Level::findInRangeNPCsByDistance(const PixelPositio
 
 std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelPosition& position, bool includeInvisible) const noexcept
 {
-	for (const auto& id : findIntersectingNPCs({ position, { 0, 0, 48 } }, includeInvisible))
+	for (const auto& id : findIntersectingNPCs({position, {0, 0, 48}}, includeInvisible))
 		co_yield id;
 }
 
@@ -3003,7 +3031,7 @@ std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelRectangleAre
 
 std::generator<const NPCID&> Level::findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept
 {
-	for (const auto& id : findIntersectingNPCsForCollision({ position, { 0, 0, 48 } }))
+	for (const auto& id : findIntersectingNPCsForCollision({position, {0, 0, 48}}))
 		co_yield id;
 }
 
@@ -3040,25 +3068,25 @@ std::shared_ptr<NPC> Level::generateItemNPC(const PixelPosition& position, Level
 		return nullptr;
 
 	static std::unordered_map<LevelItemType, NPCProp> stackableItems =
-	{
-		{ LevelItemType::GREENRUPEE, NPCProp::RUPEES },
-		{ LevelItemType::BLUERUPEE, NPCProp::RUPEES },
-		{ LevelItemType::REDRUPEE, NPCProp::RUPEES },
-		{ LevelItemType::GOLDRUPEE, NPCProp::RUPEES },
-		{ LevelItemType::BOMBS, NPCProp::BOMBS },
-		{ LevelItemType::DARTS, NPCProp::ARROWS },
-		{ LevelItemType::HEART, NPCProp::POWER },
-	};
+		{
+			{LevelItemType::GREENRUPEE, NPCProp::RUPEES},
+			{LevelItemType::BLUERUPEE, NPCProp::RUPEES},
+			{LevelItemType::REDRUPEE, NPCProp::RUPEES},
+			{LevelItemType::GOLDRUPEE, NPCProp::RUPEES},
+			{LevelItemType::BOMBS, NPCProp::BOMBS},
+			{LevelItemType::DARTS, NPCProp::ARROWS},
+			{LevelItemType::HEART, NPCProp::POWER},
+		};
 	static std::unordered_map<LevelItemType, uint32_t> stackableCount =
-	{
-		{ LevelItemType::GREENRUPEE, 1 },
-		{ LevelItemType::BLUERUPEE, 5 },
-		{ LevelItemType::REDRUPEE, 30 },
-		{ LevelItemType::GOLDRUPEE, 100 },
-		{ LevelItemType::BOMBS, 5 },
-		{ LevelItemType::DARTS, 5 },
-		{ LevelItemType::HEART, 2 },
-	};
+		{
+			{LevelItemType::GREENRUPEE, 1},
+			{LevelItemType::BLUERUPEE, 5},
+			{LevelItemType::REDRUPEE, 30},
+			{LevelItemType::GOLDRUPEE, 100},
+			{LevelItemType::BOMBS, 5},
+			{LevelItemType::DARTS, 5},
+			{LevelItemType::HEART, 2},
+		};
 
 	std::shared_ptr<NPC> itemNPC = nullptr;
 
@@ -3069,7 +3097,7 @@ std::shared_ptr<NPC> Level::generateItemNPC(const PixelPosition& position, Level
 	if (stackable != stackableItems.end())
 	{
 		// Find existing items, and stack with the existing.
-		PixelRectangleArea searchArea{ toPixelPosition(loc).translate(-2 * 16, -2 * 16), { 6 * 16, 6 * 16 } };
+		PixelRectangleArea searchArea{toPixelPosition(loc).translate(-2 * 16, -2 * 16), {6 * 16, 6 * 16}};
 		auto npcList = findIntersectingNPCs(searchArea);
 		for (const auto& npcId : npcList)
 		{
@@ -3082,7 +3110,7 @@ std::shared_ptr<NPC> Level::generateItemNPC(const PixelPosition& position, Level
 	bool isNew = !itemNPC;
 	if (isNew)
 	{
-		itemNPC = m_server->getNPCServer()->addNPC("", std::format("if (created) join {};", itemName), shared_from_this(), { loc[0], loc[1] }, NPCTYPE_ITEM);
+		itemNPC = m_server->getNPCServer()->addNPC("", std::format("if (created) join {};", itemName), shared_from_this(), {loc[0], loc[1]}, NPCTYPE_ITEM);
 		itemNPC->character.gralats = itemNPC->character.arrows = itemNPC->character.bombs = itemNPC->character.hitpointsInHalves = 0;
 	}
 

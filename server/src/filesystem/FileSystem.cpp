@@ -131,20 +131,23 @@ void FileSystem::bind(const std::filesystem::path& directory)
 				// The file got changed.
 				if (e.test(FileEvent::Modified) || e.test(FileEvent::Renamed))
 				{
-					// Check for no change in mod time.
-					// Sometimes a modify event can get spawned multiple times.
-					auto fileModTime = std::filesystem::last_write_time(dir / file);
-					if (iter->second->modifiedTime == fileModTime)
-						return;
+					if (std::filesystem::exists(dir / file))
+					{
+						// Check for no change in mod time.
+						// Sometimes a modify event can get spawned multiple times.
+						auto fileModTime = std::filesystem::last_write_time(dir / file);
+						if (iter->second->modifiedTime == fileModTime)
+							return;
 
-					iter->second->modifiedTime = fileModTime;
+						iter->second->modifiedTime = fileModTime;
 
-					// If we got a rename event and overwrote an existing file,
-					// we want to make sure we also have a modify event since the file got changed.
-					if (!e.test(FileEvent::Modified))
-						e.set(FileEvent::Modified);
+						// If we got a rename event and overwrote an existing file,
+						// we want to make sure we also have a modify event since the file got changed.
+						if (!e.test(FileEvent::Modified))
+							e.set(FileEvent::Modified);
 
-					DEBUGPRINT("[FS] Existing file modified: {}", file.string());
+						DEBUGPRINT("[FS] Existing file modified: {}", file.string());
+					}
 				}
 
 				// The file got deleted.

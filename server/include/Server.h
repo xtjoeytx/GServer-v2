@@ -237,7 +237,6 @@ public:
 	auto& getAccountLoader() { return *m_accountLoader; }
 	auto& getAdminSettings() { return m_adminSettings; }
 	auto& getAnimationManager() { return m_animationManager; }
-	auto& getGroupLevels() { return m_groupLevels; }
 	auto& getLevelList() { return m_levelList; }
 	auto& getGmapLevelList() { return m_gmapLevels; }
 	auto& getNPCList() { return m_npcList; }
@@ -305,7 +304,7 @@ public:
 	/// @brief Finds the appropriate gmap that contains the given level, given the level's name and taking into account singleplayer or group maps.
 	/// @param levelName The name of the level.
 	/// @return A shared pointer to a Level.
-	std::shared_ptr<Level> findGmapForLevel(std::string_view levelName, std::shared_ptr<Player> player) const noexcept;
+	std::shared_ptr<Level> findGmapForLevel(std::string_view levelName, std::shared_ptr<Player> player) noexcept;
 
 	/// @brief Gets the tileset type for the given level.
 	/// @param levelName The name of the level.
@@ -469,6 +468,7 @@ private:
 	SettingCache<bool> m_classicStyleLogs{"classicstylelogs", false};
 	SettingCache<bool> m_dontAddServerFlags{"dontaddserverflags", false};
 	SettingCache<bool> m_newTilesets{"newtilesets", false};
+	SettingCache<uint32_t> m_unloadInactiveLevelTime{"unloadinactiveleveltime", 600};
 	SettingCache<std::vector<std::string>> m_newTilesetLevels{"newtilesetlevels", {}};
 	SettingCache<std::vector<std::string>> m_staffList{"staff"};
 	SettingCache<std::vector<std::string>> m_bushItemTypes{"bushitemtypes", {"greenrupee", "bluerupee", "heart", "bombs"}};
@@ -484,7 +484,6 @@ private:
 	string_map<std::shared_ptr<StaticLevelData>> m_cachedLevelDataList;
 	string_map<std::shared_ptr<Level>> m_levelList;
 	string_multimap<std::weak_ptr<Level>> m_gmapLevels;
-	std::unordered_multimap<std::string, std::weak_ptr<Level>> m_groupLevels;
 
 	string_map<std::shared_ptr<Weapon>> m_weaponList;
 	std::unordered_map<NPCID, std::shared_ptr<NPC>> m_npcList;

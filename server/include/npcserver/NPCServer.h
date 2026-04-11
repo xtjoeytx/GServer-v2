@@ -81,6 +81,7 @@ public:
 	std::shared_ptr<NPC> addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, const TilePosition& location);
 	std::shared_ptr<NPC> addNPCFromFile(const std::filesystem::path& filePath);
 	void deleteNPC(NPCID id);
+	void unloadNPC(NPCID id);
 	void saveNPCs();
 	//std::vector<std::pair<double, std::string>> calculateNPCStats();
 
@@ -113,6 +114,7 @@ public:
 private:
 	void run(TimeoutGenerator::time_delta delta);
 	void processDeletedNPCs();
+	void processUnloadedNPCs();
 	void processDeletedPlayers();
 
 private:
@@ -136,6 +138,7 @@ private:
 
 	std::unordered_map<NPCID, std::weak_ptr<NPC>> m_globalNPCList;
 	std::unordered_set<NPCID> m_deletedNPCs;
+	std::unordered_set<NPCID> m_unloadedNPCs;
 	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_playerList;
 	std::unordered_set<std::shared_ptr<Player>> m_deletedPlayers;
 	string_map<std::shared_ptr<ScriptClass>> m_classList;

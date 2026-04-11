@@ -501,7 +501,7 @@ std::string NPC::getLevelName() const
 	if (auto levelPtr = getLevel(); levelPtr != nullptr)
 		return levelPtr->levelName;
 
-	return {};
+	return level;
 }
 
 std::shared_ptr<Level> NPC::getLevel() const

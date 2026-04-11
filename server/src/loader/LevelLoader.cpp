@@ -181,7 +181,6 @@ bool LevelLoader::loadLevelInto(const std::filesystem::path& levelName, LevelPtr
 	level->m_levelParts.resize(static_cast<size_t>(map->size.width()) * map->size.height());
 
 	// Load all the sub-levels for the gmap.
-	auto& gmapLevelList = server->getGmapLevelList();
 	for (const auto& [levelData, levelPos] : map->getAllLevelData())
 	{
 		if (levelData == nullptr)
@@ -190,9 +189,6 @@ bool LevelLoader::loadLevelInto(const std::filesystem::path& levelName, LevelPtr
 		auto index = static_cast<size_t>(levelPos.y()) * map->size.width() + levelPos.x();
 		level->m_levelParts[index] = attachStaticDataToLevel(level, levelPos, levelData);
 		loadStaticDataNPCs(level, levelPos, levelData);
-
-		// Register the level in the gmap level list for faster access.
-		gmapLevelList.insert({ levelData->levelName, level });
 
 		// Bind listeners for level data changes.
 		auto handle = levelData->onDataRefreshed.subscribe([weakSelf = std::weak_ptr<Level>(level)](StaticLevelDataPtr staticData)
@@ -833,7 +829,7 @@ bool LevelLoader::loadNW(StaticLevelDataPtr levelData, std::string_view fileVers
 			std::string image = string::join(splitData, " "sv);
 
 			// If the image is just a hyphen, clear it.
-			if (image == "-")
+			if (string::trim(image) == "-")
 				image.clear();
 
 			std::string code;

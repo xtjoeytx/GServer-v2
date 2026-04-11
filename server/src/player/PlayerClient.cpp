@@ -540,7 +540,7 @@ bool PlayerClient::sendLogin()
 	// Send the zlib fixing NPC to client versions 2.21 - 2.31.
 	if (m_versionId >= CLVER_2_21 && m_versionId <= CLVER_2_31)
 	{
-		sendPacket(CString() >> (char)PLO_NPCWEAPONADD >> (char)12 << "-gr_zlib_fix" >> (char)0 >> (char)1 << "-" >> (char)1 >> (short)_zlibFix.length() << _zlibFix);
+		sendPacket(CString() >> (char)PLO_NPCWEAPONADD >> (char)12 << "-gr_zlib_fix" >> (char)0 >> (char)0 >> (char)1 >> (short)_zlibFix.length() << _zlibFix);
 	}
 
 	// Tell the client if the server is connected to the listserver.
@@ -1098,7 +1098,10 @@ void PlayerClient::setGroup(std::string_view group)
 		resetLevelCache(account.groupName);
 
 	// Finally, set the new group.
-	account.groupName = std::format("gr.{}", string::toLower(group));
+	if (group.empty())
+		account.groupName.clear();
+	else
+		account.groupName = std::format("gr.{}", string::toLower(group));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

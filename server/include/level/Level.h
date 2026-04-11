@@ -365,6 +365,7 @@ public:
 public:
 	std::string levelName;
 	clock::time_point modTime;
+	std::optional<clock::time_point> timeSinceLastPlayerLeft;
 	ScriptContainer scripting;
 
 public:

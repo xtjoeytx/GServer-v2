@@ -219,6 +219,10 @@ cropflags = true
 # If true, serverside scripted log commands will use the classic format.
 classicstylelogs = false
 
+# Time in seconds after which inactive levels (levels without players) are unloaded from the server.
+# If 0, inactive levels are not unloaded.  Levels are unloaded during maintenance cycles (every 5 minutes), so this may not be exact.
+unloadinactiveleveltime = 600
+
 # --------------------------------------------------------------------------------------
 # --- Private server options.  The changestaffacct right is required to alter these. ---
 # --------------------------------------------------------------------------------------
