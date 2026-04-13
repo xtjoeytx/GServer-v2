@@ -7,8 +7,6 @@
 #include <exception>
 #include <filesystem>
 #include <format>
-#include <fstream>
-#include <ios>
 #include <iterator>
 #include <memory>
 #include <numbers>
@@ -17,6 +15,7 @@
 #include <stdexcept>
 #include <string_view>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -43,24 +42,23 @@
 #include <object/Weapon.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerProps.h>
-#include <scripting/gs1/GS1Visitor.h>
-#include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
-#include <tuple>
+#include <scripting/gs1/GS1Visitor.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
-#include <utilities/manager/GuildManager.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
+#include <utilities/manager/GuildManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-using BuiltInCommandHandleFunc = void(*)(GS1Visitor*, std::string_view, const std::vector<GS1ScriptValue*>&);
+using BuiltInCommandHandleFunc = void (*)(GS1Visitor*, std::string_view, const std::vector<GS1ScriptValue*>&);
 using BuiltInCommandHandleMap = std::unordered_map<size_t, BuiltInCommandHandleFunc>;
 
 #if DEBUG
@@ -221,157 +219,157 @@ static BuiltInCommandHandleMap GenerateMap()
 	BuiltInCommandHandleMap map =
 	{
 #if DEBUG
-		{ hash("gr-debugger"), &fn_debugger },
+		{hash("gr-debugger"), &fn_debugger},
 #endif
-		{ hash("addguildmember"), &fn_addguildmember },
-		{ hash("addstring"), &fn_addstring },
-		{ hash("addweapon"), &fn_addweapon },
-		{ hash("attachplayertoobj"), &fn_attachplayertoobj },
-		{ hash("blockagain"), &fn_blockagain },
-		{ hash("callnpc"), &fn_callnpc },
-		{ hash("canbecarried"), &fn_canbecarried },
-		{ hash("canbepulled"), &fn_canbepulled },
-		{ hash("canbepushed"), &fn_canbepushed },
-		{ hash("cannotbecarried"), &fn_cannotbecarried },
-		{ hash("cannotbepulled"), &fn_cannotbepulled },
-		{ hash("cannotbepushed"), &fn_cannotbepushed },
-		{ hash("cannotwarp"), &fn_cannotwarp },
-		{ hash("canwarp"), &fn_canwarp },
-		{ hash("canwarp2"), &fn_canwarp2 },
-		{ hash("carryobject"), &fn_carryobject },
-		{ hash("changeimgcolors"), &fn_changeimgcolors },
-		{ hash("changeimgmode"), &fn_changeimgmode },
-		{ hash("changeimgpart"), &fn_changeimgpart },
-		{ hash("changeimgvis"), &fn_changeimgvis },
-		{ hash("changeimgzoom"), &fn_changeimgzoom },
-		{ hash("copylevel"), &fn_copylevel },
-		{ hash("copystrings"), &fn_copystrings },
-		{ hash("deletelevel"), &fn_deletelevel },
-		{ hash("deletestring"), &fn_deletestring },
-		{ hash("destroy"), &fn_destroy },
-		{ hash("detachplayer"), &fn_detachplayer },
-		{ hash("disableweapons"), &fn_disableweapons },
-		{ hash("dontblock"), &fn_dontblock },
-		{ hash("drawoverplayer"), &fn_drawoverplayer },
-		{ hash("drawovertrees"), &fn_drawovertrees },
-		{ hash("drawunderplayer"), &fn_drawunderplayer },
-		{ hash("enableweapons"), &fn_enableweapons },
-		{ hash("explodebomb"), &fn_explodebomb },
-		{ hash("freezeplayer2"), &fn_freezeplayer2 },
-		{ hash("hide"), &fn_hide },
-		{ hash("hideimg"), &fn_hideimg },
-		{ hash("hideimgs"), &fn_hideimgs },
-		{ hash("hitcompu"), &fn_hitcompu },
-		{ hash("hitnpc"), &fn_hitnpc },
-		{ hash("hitobjects"), &fn_hitobjects },
-		{ hash("hitplayer"), &fn_hitplayer },
-		{ hash("hurt"), &fn_hurt },
-		{ hash("insertstring"), &fn_insertstring },
-		{ hash("join"), &fn_join },
-		{ hash("lay"), &fn_lay },
-		{ hash("lay2"), &fn_lay2 },
-		{ hash("message"), &fn_message },
-		{ hash("move"), &fn_move },
-		{ hash("noplayeronwall"), &fn_noplayeronwall },
-		{ hash("putbomb"), &fn_putbomb },
-		{ hash("putcomp"), &fn_putcomp },
-		{ hash("putexplosion"), &fn_putexplosion },
-		{ hash("putexplosion2"), &fn_putexplosion2 },
-		{ hash("puthorse"), &fn_puthorse },
-		{ hash("putnewcomp"), &fn_putnewcomp },
-		{ hash("putnpc"), &fn_putnpc },
-		{ hash("putnpc2"), &fn_putnpc2 },
-		{ hash("removearrow"), &fn_removearrow },
-		{ hash("removebomb"), &fn_removebomb },
-		{ hash("removecompus"), &fn_removecompus },
-		{ hash("removeexplo"), &fn_removeexplo },
-		{ hash("removeguild"), &fn_removeguild },
-		{ hash("removeguildmember"), &fn_removeguildmember },
-		{ hash("removehorse"), &fn_removehorse },
-		{ hash("removeitem"), &fn_removeitem },
-		{ hash("removestring"), &fn_removestring },
-		{ hash("removeweapon"), &fn_removeweapon },
-		{ hash("replacestring"), &fn_replacestring },
-		{ hash("saveinfo"), &fn_saveinfo },
-		{ hash("savelog"), &fn_savelog },
-		{ hash("savelog2"), &fn_savelog2 },
-		{ hash("say"), &fn_say },
-		{ hash("say2"), &fn_say2 },
-		{ hash("sendpm"), &fn_sendpm },
-		{ hash("sendrpgmessage"), &fn_sendrpgmessage },
-		{ hash("sendtonc"), &fn_sendtonc },
-		{ hash("sendtorc"), &fn_sendtorc },
-		{ hash("serverwarp"), &fn_serverwarp },
-		{ hash("set"), &fn_set },
-		{ hash("setani"), &fn_setani },
-		{ hash("setarray"), &fn_setarray },
-		{ hash("setbeltcolor"), &fn_setbeltcolor },
-		{ hash("setbody"), &fn_setbody },
-		{ hash("setcharani"), &fn_setcharani },
-		{ hash("setchargender"), &fn_setchargender },
-		{ hash("setcharprop"), &fn_setcharprop },
-		{ hash("setcoatcolor"), &fn_setcoatcolor },
-		{ hash("setgender"), &fn_setgender },
-		{ hash("setgif"), &fn_setimg },
-		{ hash("setgifpart"), &fn_setimgpart },
-		{ hash("sethead"), &fn_sethead },
-		{ hash("setimg"), &fn_setimg },
-		{ hash("setimgpart"), &fn_setimgpart },
-		{ hash("setlevel"), &fn_setlevel },
-		{ hash("setlevel2"), &fn_setlevel2 },
-		{ hash("setmap"), &fn_setmap },
-		{ hash("setminimap"), &fn_setminimap },
-		{ hash("setplayerdir"), &fn_setplayerdir },
-		{ hash("setplayerprop"), &fn_setplayerprop },
-		{ hash("setpm"), &fn_setpm },
-		{ hash("setshape"), &fn_setshape },
-		{ hash("setshield"), &fn_setshield },
-		{ hash("setshoecolor"), &fn_setshoecolor },
-		{ hash("setshootparams"), &fn_setshootparams },
-		{ hash("setskincolor"), &fn_setskincolor },
-		{ hash("setsleevecolor"), &fn_setsleevecolor },
-		{ hash("setstring"), &fn_setstring },
-		{ hash("setsword"), &fn_setsword },
-		{ hash("setz"), &fn_setz },
-		{ hash("shoot"), &fn_shoot },
-		{ hash("shootarrow"), &fn_shootarrow },
-		{ hash("shootball"), &fn_shootball },
-		{ hash("shootfireball"), &fn_shootfireball },
-		{ hash("shootfireblast"), &fn_shootfireblast },
-		{ hash("shootnuke"), &fn_shootnuke },
-		{ hash("show"), &fn_show },
-		{ hash("showani"), &fn_showani },
-		{ hash("showani2"), &fn_showani2 },
-		{ hash("showcharacter"), &fn_showcharacter },
-		{ hash("showimg"), &fn_showimg },
-		{ hash("showimg2"), &fn_showimg2 },
-		{ hash("showpoly"), &fn_showpoly },
-		{ hash("showpoly2"), &fn_showpoly2 },
-		{ hash("showstats"), &fn_showstats },
-		{ hash("showtext"), &fn_showtext },
-		{ hash("showtext2"), & fn_showtext2 },
-		{ hash("sleep"), &fn_sleep },
-		{ hash("spyfire"), &fn_spyfire },
-		{ hash("take"), &fn_take },
-		{ hash("take2"), &fn_take2 },
-		{ hash("takehorse"), &fn_takehorse },
-		{ hash("takeplayercarry"), &fn_takeplayercarry },
-		{ hash("takeplayerhorse"), &fn_takeplayerhorse },
-		{ hash("throwcarry"), &fn_throwcarry },
-		{ hash("timershow"), &fn_timershow },
-		{ hash("tokenize"), &fn_tokenize },
-		{ hash("tokenize2"), &fn_tokenize2 },
-		{ hash("toweapons"), &fn_toweapons },
-		{ hash("triggeraction"), &fn_triggeraction },
-		{ hash("unfreezeplayer"), &fn_unfreezeplayer },
-		{ hash("unset"), &fn_unset },
-		{ hash("updateboard"), &fn_updateboard },
-		{ hash("updateboard2"), &fn_updateboard2 },
-		{ hash("updateterrain"), &fn_updateterrain },
-		{ hash("warpto"), &fn_warpto },
+		{hash("addguildmember"), &fn_addguildmember},
+		{hash("addstring"), &fn_addstring},
+		{hash("addweapon"), &fn_addweapon},
+		{hash("attachplayertoobj"), &fn_attachplayertoobj},
+		{hash("blockagain"), &fn_blockagain},
+		{hash("callnpc"), &fn_callnpc},
+		{hash("canbecarried"), &fn_canbecarried},
+		{hash("canbepulled"), &fn_canbepulled},
+		{hash("canbepushed"), &fn_canbepushed},
+		{hash("cannotbecarried"), &fn_cannotbecarried},
+		{hash("cannotbepulled"), &fn_cannotbepulled},
+		{hash("cannotbepushed"), &fn_cannotbepushed},
+		{hash("cannotwarp"), &fn_cannotwarp},
+		{hash("canwarp"), &fn_canwarp},
+		{hash("canwarp2"), &fn_canwarp2},
+		{hash("carryobject"), &fn_carryobject},
+		{hash("changeimgcolors"), &fn_changeimgcolors},
+		{hash("changeimgmode"), &fn_changeimgmode},
+		{hash("changeimgpart"), &fn_changeimgpart},
+		{hash("changeimgvis"), &fn_changeimgvis},
+		{hash("changeimgzoom"), &fn_changeimgzoom},
+		{hash("copylevel"), &fn_copylevel},
+		{hash("copystrings"), &fn_copystrings},
+		{hash("deletelevel"), &fn_deletelevel},
+		{hash("deletestring"), &fn_deletestring},
+		{hash("destroy"), &fn_destroy},
+		{hash("detachplayer"), &fn_detachplayer},
+		{hash("disableweapons"), &fn_disableweapons},
+		{hash("dontblock"), &fn_dontblock},
+		{hash("drawoverplayer"), &fn_drawoverplayer},
+		{hash("drawovertrees"), &fn_drawovertrees},
+		{hash("drawunderplayer"), &fn_drawunderplayer},
+		{hash("enableweapons"), &fn_enableweapons},
+		{hash("explodebomb"), &fn_explodebomb},
+		{hash("freezeplayer2"), &fn_freezeplayer2},
+		{hash("hide"), &fn_hide},
+		{hash("hideimg"), &fn_hideimg},
+		{hash("hideimgs"), &fn_hideimgs},
+		{hash("hitcompu"), &fn_hitcompu},
+		{hash("hitnpc"), &fn_hitnpc},
+		{hash("hitobjects"), &fn_hitobjects},
+		{hash("hitplayer"), &fn_hitplayer},
+		{hash("hurt"), &fn_hurt},
+		{hash("insertstring"), &fn_insertstring},
+		{hash("join"), &fn_join},
+		{hash("lay"), &fn_lay},
+		{hash("lay2"), &fn_lay2},
+		{hash("message"), &fn_message},
+		{hash("move"), &fn_move},
+		{hash("noplayeronwall"), &fn_noplayeronwall},
+		{hash("putbomb"), &fn_putbomb},
+		{hash("putcomp"), &fn_putcomp},
+		{hash("putexplosion"), &fn_putexplosion},
+		{hash("putexplosion2"), &fn_putexplosion2},
+		{hash("puthorse"), &fn_puthorse},
+		{hash("putnewcomp"), &fn_putnewcomp},
+		{hash("putnpc"), &fn_putnpc},
+		{hash("putnpc2"), &fn_putnpc2},
+		{hash("removearrow"), &fn_removearrow},
+		{hash("removebomb"), &fn_removebomb},
+		{hash("removecompus"), &fn_removecompus},
+		{hash("removeexplo"), &fn_removeexplo},
+		{hash("removeguild"), &fn_removeguild},
+		{hash("removeguildmember"), &fn_removeguildmember},
+		{hash("removehorse"), &fn_removehorse},
+		{hash("removeitem"), &fn_removeitem},
+		{hash("removestring"), &fn_removestring},
+		{hash("removeweapon"), &fn_removeweapon},
+		{hash("replacestring"), &fn_replacestring},
+		{hash("saveinfo"), &fn_saveinfo},
+		{hash("savelog"), &fn_savelog},
+		{hash("savelog2"), &fn_savelog2},
+		{hash("say"), &fn_say},
+		{hash("say2"), &fn_say2},
+		{hash("sendpm"), &fn_sendpm},
+		{hash("sendrpgmessage"), &fn_sendrpgmessage},
+		{hash("sendtonc"), &fn_sendtonc},
+		{hash("sendtorc"), &fn_sendtorc},
+		{hash("serverwarp"), &fn_serverwarp},
+		{hash("set"), &fn_set},
+		{hash("setani"), &fn_setani},
+		{hash("setarray"), &fn_setarray},
+		{hash("setbeltcolor"), &fn_setbeltcolor},
+		{hash("setbody"), &fn_setbody},
+		{hash("setcharani"), &fn_setcharani},
+		{hash("setchargender"), &fn_setchargender},
+		{hash("setcharprop"), &fn_setcharprop},
+		{hash("setcoatcolor"), &fn_setcoatcolor},
+		{hash("setgender"), &fn_setgender},
+		{hash("setgif"), &fn_setimg},
+		{hash("setgifpart"), &fn_setimgpart},
+		{hash("sethead"), &fn_sethead},
+		{hash("setimg"), &fn_setimg},
+		{hash("setimgpart"), &fn_setimgpart},
+		{hash("setlevel"), &fn_setlevel},
+		{hash("setlevel2"), &fn_setlevel2},
+		{hash("setmap"), &fn_setmap},
+		{hash("setminimap"), &fn_setminimap},
+		{hash("setplayerdir"), &fn_setplayerdir},
+		{hash("setplayerprop"), &fn_setplayerprop},
+		{hash("setpm"), &fn_setpm},
+		{hash("setshape"), &fn_setshape},
+		{hash("setshield"), &fn_setshield},
+		{hash("setshoecolor"), &fn_setshoecolor},
+		{hash("setshootparams"), &fn_setshootparams},
+		{hash("setskincolor"), &fn_setskincolor},
+		{hash("setsleevecolor"), &fn_setsleevecolor},
+		{hash("setstring"), &fn_setstring},
+		{hash("setsword"), &fn_setsword},
+		{hash("setz"), &fn_setz},
+		{hash("shoot"), &fn_shoot},
+		{hash("shootarrow"), &fn_shootarrow},
+		{hash("shootball"), &fn_shootball},
+		{hash("shootfireball"), &fn_shootfireball},
+		{hash("shootfireblast"), &fn_shootfireblast},
+		{hash("shootnuke"), &fn_shootnuke},
+		{hash("show"), &fn_show},
+		{hash("showani"), &fn_showani},
+		{hash("showani2"), &fn_showani2},
+		{hash("showcharacter"), &fn_showcharacter},
+		{hash("showimg"), &fn_showimg},
+		{hash("showimg2"), &fn_showimg2},
+		{hash("showpoly"), &fn_showpoly},
+		{hash("showpoly2"), &fn_showpoly2},
+		{hash("showstats"), &fn_showstats},
+		{hash("showtext"), &fn_showtext},
+		{hash("showtext2"), &fn_showtext2},
+		{hash("sleep"), &fn_sleep},
+		{hash("spyfire"), &fn_spyfire},
+		{hash("take"), &fn_take},
+		{hash("take2"), &fn_take2},
+		{hash("takehorse"), &fn_takehorse},
+		{hash("takeplayercarry"), &fn_takeplayercarry},
+		{hash("takeplayerhorse"), &fn_takeplayerhorse},
+		{hash("throwcarry"), &fn_throwcarry},
+		{hash("timershow"), &fn_timershow},
+		{hash("tokenize"), &fn_tokenize},
+		{hash("tokenize2"), &fn_tokenize2},
+		{hash("toweapons"), &fn_toweapons},
+		{hash("triggeraction"), &fn_triggeraction},
+		{hash("unfreezeplayer"), &fn_unfreezeplayer},
+		{hash("unset"), &fn_unset},
+		{hash("updateboard"), &fn_updateboard},
+		{hash("updateboard2"), &fn_updateboard2},
+		{hash("updateterrain"), &fn_updateterrain},
+		{hash("warpto"), &fn_warpto},
 		// GR extensions
-		{ hash("enabledamagereactions"), &fn_enabledamagereactions },
-		{ hash("disabledamagereactions"), &fn_disabledamagereactions },
+		{hash("enabledamagereactions"), &fn_enabledamagereactions},
+		{hash("disabledamagereactions"), &fn_disabledamagereactions},
 	};
 	return map;
 }
@@ -404,7 +402,7 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 	auto it = map.find(hash);
 	if (it == map.end())
 	{
-		log::printLine(log::script, "Unknown command in NPC '{}': {}", visitor->who, commandName);
+		log::printLine(log::script, "Unknown command in NPC [{}] '{}': {}", visitor->getOriginalSource().first, visitor->who, commandName);
 		return;
 	}
 
@@ -468,14 +466,14 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 	catch (const std::logic_error& ex)
 	{
 		auto server = BabyDI::Get<Server>();
-		log::printLine(log::npc, "[WARNING] NPC '{}', error: {}", visitor->who, ex.what());
-		server->sendToNC(std::format("Script problem: NPC '{}', issue: {}", visitor->who, ex.what()));
+		log::printLine(log::npc, "[WARNING] NPC [{}] '{}', error: {}", visitor->getOriginalSource().first, visitor->who, ex.what());
+		server->sendToNC(std::format("Script problem: NPC [{}] '{}', issue: {}", visitor->getOriginalSource().first, visitor->who, ex.what()));
 	}
 	catch (const std::exception& ex)
 	{
 		auto server = BabyDI::Get<Server>();
-		log::printLine(log::npc, "[ERROR] NPC '{}', error: {}", visitor->who, ex.what());
-		server->sendToNC(std::format("Script error: NPC '{}', error: {}", visitor->who, ex.what()));
+		log::printLine(log::npc, "[ERROR] NPC [{}] '{}', error: {}", visitor->getOriginalSource().first, visitor->who, ex.what());
+		server->sendToNC(std::format("Script error: NPC [{}] '{}', error: {}", visitor->getOriginalSource().first, visitor->who, ex.what()));
 
 		if (popContext)
 			visitor->popSource();
@@ -850,7 +848,7 @@ void fn_changeimgpart(GS1Visitor* visitor, std::string_view commandName, const s
 			auto width = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
 			auto height = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[4]));
 
-			server->getNPCServer()->changeShowImgPart(npc, index, ImagePartRectangle{ { x, y }, { width, height } });
+			server->getNPCServer()->changeShowImgPart(npc, index, ImagePartRectangle{{x, y}, {width, height}});
 		}
 	}
 }
@@ -921,18 +919,10 @@ void fn_copystrings(GS1Visitor* visitor, std::string_view commandName, const std
 	auto fromPrefix = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto toPrefix = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	size_t fromStorageType = GS1Parser::STORAGE_CLIENT;
-	size_t toStorageType = GS1Parser::STORAGE_CLIENT;
-	if (auto separator = fromPrefix.find('.'); separator != std::string::npos)
-	{
-		fromStorageType = visitor->getStorageFromTypeString(fromPrefix.substr(0, separator));
-		fromPrefix = fromPrefix.substr(separator + 1);
-	}
-	if (auto separator = toPrefix.find('.'); separator != std::string::npos)
-	{
-		toStorageType = visitor->getStorageFromTypeString(toPrefix.substr(0, separator));
-		toPrefix = toPrefix.substr(separator + 1);
-	}
+	size_t fromStorageType = GS1Visitor::getStorageTypeFromIdentifier(fromPrefix).value_or(ENUM(StorageType::CLIENT));
+	size_t toStorageType = GS1Visitor::getStorageTypeFromIdentifier(toPrefix).value_or(ENUM(StorageType::CLIENT));
+	GS1Visitor::stripStorageNameFromIdentifier(fromPrefix);
+	GS1Visitor::stripStorageNameFromIdentifier(toPrefix);
 
 	auto fromStore = visitor->getGameVariableStoreForStorageType(fromStorageType);
 	auto toStore = visitor->getGameVariableStoreForStorageType(toStorageType);
@@ -944,7 +934,7 @@ void fn_copystrings(GS1Visitor* visitor, std::string_view commandName, const std
 		if (key.starts_with(fromPrefix))
 		{
 			auto toKey = std::format("{}{}", toPrefix, key.substr(fromPrefix.size()));
-			toStore->add(toKey, GameValue{ *value });
+			toStore->add(toKey, GameValue{*value});
 		}
 	}
 }
@@ -1139,9 +1129,9 @@ void fn_explodebomb(GS1Visitor* visitor, std::string_view commandName, const std
 				// The center explosion is a size of 4.  The others are a size of 2.
 				level->addExplosion(inform_client, position, source::FromServer(), 4, power);
 				level->addExplosion(inform_client, translatePosition(position, -32, -32), source::FromServer(), 2, power);
-				level->addExplosion(inform_client, translatePosition(position,  32, -32), source::FromServer(), 2, power);
-				level->addExplosion(inform_client, translatePosition(position, -32,  32), source::FromServer(), 2, power);
-				level->addExplosion(inform_client, translatePosition(position,  32,  32), source::FromServer(), 2, power);
+				level->addExplosion(inform_client, translatePosition(position, 32, -32), source::FromServer(), 2, power);
+				level->addExplosion(inform_client, translatePosition(position, -32, 32), source::FromServer(), 2, power);
+				level->addExplosion(inform_client, translatePosition(position, 32, 32), source::FromServer(), 2, power);
 			}
 		}
 	}
@@ -1277,7 +1267,7 @@ void fn_hitobjects(GS1Visitor* visitor, std::string_view commandName, const std:
 				auto power = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0]) * 2);
 				auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
 				auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
-				server->hitObjectsAtPoint({ x, y }, power, level, npc);
+				server->hitObjectsAtPoint({x, y}, power, level, npc);
 			}
 		}
 	}
@@ -1378,7 +1368,7 @@ void fn_join(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 
 	auto class_ = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto server = BabyDI::Get<Server>();
-	visitor->scriptContext->joinedClasses.insert({ class_, server->getNPCServer()->getClass(class_) });
+	visitor->scriptContext->joinedClasses.insert({class_, server->getNPCServer()->getClass(class_)});
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
@@ -1431,7 +1421,7 @@ void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 		auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 0_ui8, 24_ui8);
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
-		level->addItem(inform_client, toPixelPosition({ x, y }), static_cast<LevelItemType>(itemname));
+		level->addItem(inform_client, toPixelPosition({x, y}), static_cast<LevelItemType>(itemname));
 	}
 }
 
@@ -1495,7 +1485,7 @@ void fn_putbomb(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		auto power = std::clamp(DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0])), 1_ui8, 3_ui8);
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
-		level->addBomb(inform_client, toPixelPosition({ x, y }), power);
+		level->addBomb(inform_client, toPixelPosition({x, y}), power);
 	}
 }
 
@@ -1527,7 +1517,7 @@ void fn_putexplosion(GS1Visitor* visitor, std::string_view commandName, const st
 		auto radius = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
-		level->addExplosion(inform_client, toPixelPosition({ x, y }), visitor->getCurrentSource(), radius, 1);
+		level->addExplosion(inform_client, toPixelPosition({x, y}), visitor->getCurrentSource(), radius, 1);
 	}
 }
 
@@ -1544,7 +1534,7 @@ void fn_putexplosion2(GS1Visitor* visitor, std::string_view commandName, const s
 		auto radius = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[3]));
-		level->addExplosion(inform_client, toPixelPosition({ x, y }), visitor->getCurrentSource(), radius, power);
+		level->addExplosion(inform_client, toPixelPosition({x, y}), visitor->getCurrentSource(), radius, power);
 	}
 }
 
@@ -1567,7 +1557,7 @@ void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::v
 		auto imagefile = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[2]));
-		level->addHorse(inform_client, imagefile, toPixelPosition({ x, y }), 2, 0);
+		level->addHorse(inform_client, imagefile, toPixelPosition({x, y}), 2, 0);
 	}
 }
 
@@ -1628,7 +1618,7 @@ void fn_putnpc2(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		string::trimMutate(script);
 
 		auto server = BabyDI::Get<Server>();
-		server->getNPCServer()->addNPC({}, script, level, { (float)x, (float)y });
+		server->getNPCServer()->addNPC({}, script, level, {(float)x, (float)y});
 	}
 }
 
@@ -1788,7 +1778,10 @@ void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const s
 		if (index != 0)
 		{
 			size_t loc = 0;
-			start = std::ranges::find_if(list, [&loc, &index](const char& c) { return (c == ',' && ++loc == index); });
+			start = std::ranges::find_if(list, [&loc, &index](const char& c)
+			{
+				return (c == ',' && ++loc == index);
+			});
 		}
 		if (start == std::ranges::end(list))
 			return;
@@ -2011,7 +2004,7 @@ void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::v
 		std::vector<double> arrayValues;
 		arrayValues.assign(size, 0.0);
 
-		var->assign<std::vector<double>>(GameValue{ std::move(arrayValues) });
+		var->assign<std::vector<double>>(GameValue{std::move(arrayValues)});
 	}
 }
 
@@ -2244,7 +2237,7 @@ void fn_setlevel2(GS1Visitor* visitor, std::string_view commandName, const std::
 
 		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
-			player->warp(filename, { static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16) });
+			player->warp(filename, {static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16)});
 	}
 }
 
@@ -2362,7 +2355,7 @@ void fn_setshape(GS1Visitor* visitor, std::string_view commandName, const std::v
 		auto height = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]));
 		auto server = BabyDI::Get<Server>();
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
-			npc->shape = { width, height };
+			npc->shape = {width, height};
 	}
 }
 
@@ -2543,7 +2536,7 @@ void fn_shoot(GS1Visitor* visitor, std::string_view commandName, const std::vect
 
 	auto server = BabyDI::Get<Server>();
 	auto gravity = static_cast<float>(server->Scripting.variables.getValue<double>("gravity").value_or(2.0));
-	level->addShoot(inform_client, { x, y, z }, angle, zangle, power, gravity, gani, visitor->getOriginalSource());
+	level->addShoot(inform_client, {x, y, z}, angle, zangle, power, gravity, gani, visitor->getOriginalSource());
 }
 
 // shootarrow dir;
@@ -2558,7 +2551,7 @@ void fn_shootarrow(GS1Visitor* visitor, std::string_view commandName, const std:
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 		const auto& source = visitor->getOriginalSource();
-		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
+		PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
 
 		auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
@@ -2582,7 +2575,7 @@ void fn_shootball(GS1Visitor* visitor, std::string_view commandName, const std::
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 		const auto& source = visitor->getOriginalSource();
-		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
+		PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
 
 		auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
@@ -2604,7 +2597,7 @@ void fn_shootfireball(GS1Visitor* visitor, std::string_view commandName, const s
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 		const auto& source = visitor->getOriginalSource();
-		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
+		PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
 
 		auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
@@ -2626,7 +2619,7 @@ void fn_shootfireblast(GS1Visitor* visitor, std::string_view commandName, const 
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 		const auto& source = visitor->getOriginalSource();
-		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
+		PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
 
 		auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
@@ -2648,7 +2641,7 @@ void fn_shootnuke(GS1Visitor* visitor, std::string_view commandName, const std::
 		auto dir = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[0]));
 
 		const auto& source = visitor->getOriginalSource();
-		PixelPosition speed = { (dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16) };
+		PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
 
 		auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
@@ -2688,7 +2681,7 @@ void fn_showani(GS1Visitor* visitor, std::string_view commandName, const std::ve
 			auto direction = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[3]));
 			auto gani = visitor->getGameValueAs<std::string>(*arguments[4]);
 
-			server->getNPCServer()->showGani(npc, index, { x, y }, gani, direction);
+			server->getNPCServer()->showGani(npc, index, {x, y}, gani, direction);
 		}
 	}
 }
@@ -2712,7 +2705,7 @@ void fn_showani2(GS1Visitor* visitor, std::string_view commandName, const std::v
 			auto direction = DoubleAsIntegralFloor<uint8_t>(visitor->getGameValueAs<double>(*arguments[4]));
 			auto gani = visitor->getGameValueAs<std::string>(*arguments[5]);
 
-			server->getNPCServer()->showGani(npc, index, { x, y, z }, gani, direction);
+			server->getNPCServer()->showGani(npc, index, {x, y, z}, gani, direction);
 		}
 	}
 }
@@ -2727,7 +2720,7 @@ void fn_showcharacter(GS1Visitor* visitor, std::string_view commandName, const s
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			npc->setPropWith<NPCProp::IMAGE>(SetBy::SERVER, "#c#"s);
-			npc->shape = { 0, 0 };
+			npc->shape = {0, 0};
 		}
 	}
 }
@@ -2749,7 +2742,7 @@ void fn_showimg(GS1Visitor* visitor, std::string_view commandName, const std::ve
 			auto x = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[2]) * 16);
 			auto y = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[3]) * 16);
 
-			server->getNPCServer()->showImage(npc, index, { x, y }, filename);
+			server->getNPCServer()->showImage(npc, index, {x, y}, filename);
 		}
 	}
 }
@@ -2772,7 +2765,7 @@ void fn_showimg2(GS1Visitor* visitor, std::string_view commandName, const std::v
 			auto y = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[3]) * 16);
 			auto z = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[4]) * 16);
 
-			server->getNPCServer()->showImage(npc, index, { x, y, z }, filename);
+			server->getNPCServer()->showImage(npc, index, {x, y, z}, filename);
 		}
 	}
 }
@@ -2848,7 +2841,7 @@ void fn_showtext(GS1Visitor* visitor, std::string_view commandName, const std::v
 			auto style = visitor->getGameValueAs<std::string>(*arguments[4]);
 			auto text = visitor->getGameValueAs<std::string>(*arguments[5]);
 
-			server->getNPCServer()->showText(npc, index, { x, y }, text, font, style);
+			server->getNPCServer()->showText(npc, index, {x, y}, text, font, style);
 		}
 	}
 }
@@ -2873,7 +2866,7 @@ void fn_showtext2(GS1Visitor* visitor, std::string_view commandName, const std::
 			auto style = visitor->getGameValueAs<std::string>(*arguments[5]);
 			auto text = visitor->getGameValueAs<std::string>(*arguments[6]);
 
-			server->getNPCServer()->showText(npc, index, { x, y, z }, text, font, style);
+			server->getNPCServer()->showText(npc, index, {x, y, z}, text, font, style);
 		}
 	}
 }
@@ -3101,7 +3094,7 @@ void fn_tokenize(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 	auto text = visitor->getGameValueAs<std::string>(*arguments[0]);
 	visitor->tokenizeTokens = string::splitToVector(text, " "sv);
-	visitor->builtInStore->add(GameValue{ set_temporary, "tokenscount", static_cast<double>(visitor->tokenizeTokens.size()) });
+	visitor->builtInStore->add(GameValue{set_temporary, "tokenscount", static_cast<double>(visitor->tokenizeTokens.size())});
 }
 
 // tokenize2 delims,text;
@@ -3114,7 +3107,7 @@ void fn_tokenize2(GS1Visitor* visitor, std::string_view commandName, const std::
 	auto delims = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto text = visitor->getGameValueAs<std::string>(*arguments[1]);
 	visitor->tokenizeTokens = string::splitToVector(text, delims);
-	visitor->builtInStore->add(GameValue{ set_temporary, "tokenscount", static_cast<double>(visitor->tokenizeTokens.size()) });
+	visitor->builtInStore->add(GameValue{set_temporary, "tokenscount", static_cast<double>(visitor->tokenizeTokens.size())});
 }
 
 // toweapons name;
@@ -3144,14 +3137,14 @@ void fn_toweapons(GS1Visitor* visitor, std::string_view commandName, const std::
 		auto weapon = server->getWeapon(name);
 		if (weapon == nullptr)
 		{
-			weapon = std::make_shared<Weapon>(name, npc->image, std::string{ npc->getScript().getOriginalSource() });
+			weapon = std::make_shared<Weapon>(name, npc->image, std::string{npc->getScript().getOriginalSource()});
 			weapon->saveWeapon();
 			server->NC_AddWeapon(weapon);
 		}
 		// Script differs, update the weapon.
 		else if (weapon->getScript().getOriginalSource() != npc->getScript().getOriginalSource())
 		{
-			weapon->updateWeapon(npc->image, std::string{ npc->getScript().getOriginalSource() }).saveWeapon();
+			weapon->updateWeapon(npc->image, std::string{npc->getScript().getOriginalSource()}).saveWeapon();
 			server->updateWeaponForPlayers(weapon);
 		}
 
@@ -3170,13 +3163,16 @@ void fn_triggeraction(GS1Visitor* visitor, std::string_view commandName, const s
 	auto x = visitor->getGameValueAs<double>(*arguments[0]);
 	auto y = visitor->getGameValueAs<double>(*arguments[1]);
 	auto action = visitor->getGameValueAs<std::string>(*arguments[2]);
-	auto params = string::toCSV(arguments | std::views::drop(3) | std::views::transform([&visitor](GS1ScriptValue* value) { return visitor->getGameValueAs<std::string>(*value); }));
+	auto params = string::toCSV(arguments | std::views::drop(3) | std::views::transform([&visitor](GS1ScriptValue* value)
+	{
+		return visitor->getGameValueAs<std::string>(*value);
+	}));
 
 	auto server = BabyDI::Get<Server>();
 	if (action == "clientside")
 	{
 		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
-			server->sendTriggerAction(source.value().first, 0, { 0, 0 }, action, params);
+			server->sendTriggerAction(source.value().first, 0, {0, 0}, action, params);
 	}
 	else
 	{
@@ -3186,7 +3182,7 @@ void fn_triggeraction(GS1Visitor* visitor, std::string_view commandName, const s
 		if (currentSource.second == ScriptObjectType::NPC)
 			npcId = currentSource.first;
 		if (targetLevel != nullptr)
-			server->sendTriggerAction(targetLevel, npcId, { static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16) }, action, params);
+			server->sendTriggerAction(targetLevel, npcId, {static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16)}, action, params);
 	}
 }
 
@@ -3244,7 +3240,7 @@ void fn_updateboard(GS1Visitor* visitor, std::string_view commandName, const std
 		auto y = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 		auto width = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[2])));
 		auto height = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[3])));
-		level->updateBoard({ { x, y }, { width, height } });
+		level->updateBoard({{x, y}, {width, height}});
 	}
 }
 
@@ -3261,7 +3257,7 @@ void fn_updateboard2(GS1Visitor* visitor, std::string_view commandName, const st
 		auto y = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[1])));
 		auto width = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[2])));
 		auto height = static_cast<float>(std::max(0.0, visitor->getGameValueAs<double>(*arguments[3])));
-		level->updateBoard2({ { x, y }, { width, height } });
+		level->updateBoard2({{x, y}, {width, height}});
 	}
 }
 
@@ -3288,7 +3284,7 @@ void fn_warpto(GS1Visitor* visitor, std::string_view commandName, const std::vec
 		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			if (auto level = server->getLoadedLevel(filename, npc->getLevel()); level != nullptr)
-				npc->warp(level, { static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16) });
+				npc->warp(level, {static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16)});
 		}
 	}
 }

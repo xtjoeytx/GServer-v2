@@ -149,11 +149,7 @@ assignmentStatement
 //----------------------------------------------------------
 
 expression
-	: conditionalExpression
-	;
-
-conditionalExpression
-	: logicalOrExpression (TOKEN_QUESTION expression TOKEN_COLON conditionalExpression)*	# ExpressionTernary
+	: logicalOrExpression (TOKEN_QUESTION expression TOKEN_COLON expression)*				# ExpressionTernary
 	;
 
 logicalOrExpression
@@ -203,6 +199,7 @@ postfixExpression
 
 primaryExpression
 	: TOKEN_PAREN_LEFT expression TOKEN_PAREN_RIGHT
+	| RAWMESSAGECODE messagecode_string
 	| builtin_function
 	| array_literal
 	| literal_literal
@@ -223,18 +220,15 @@ identifier_access
 	;
 
 identifier_value
-	: (storage_token | IDENTIFIER storage_token) compound_identifier
-		(TOKEN_BRACKET_LEFT conditionalExpression TOKEN_BRACKET_RIGHT)?
-		{ add_identifier($compound_identifier.ctx->getText()); }							# IdentifierValue
-	| compound_identifier TOKEN_BRACKET_LEFT conditionalExpression
-		(TOKEN_COMMA conditionalExpression)? TOKEN_BRACKET_RIGHT
-		{ add_identifier($compound_identifier.ctx->getText()); }							# IdentifierValue
-	| compound_identifier
+	: compound_identifier
+		(TOKEN_BRACKET_LEFT
+			expression (TOKEN_COMMA expression)?
+		TOKEN_BRACKET_RIGHT)?
 		{ add_identifier($compound_identifier.ctx->getText()); }							# IdentifierValue
 	;
 
 compound_identifier
-	: IDENTIFIER (IDENTIFIER | messagecode_string | REAL)*									# CompoundIdentifier
+	: (IDENTIFIER | messagecode_string | REAL | TOKEN_PERIOD)+								# CompoundIdentifier
 	;
 
 compound_string
@@ -280,16 +274,4 @@ special_literal
 	| GENDER																				# GenderLiteral
 	| COLOR																					# ColorLiteral
 	| BADDY																					# BaddyLiteral
-	;
-
-storage_token
-	: (	STORAGE_THIS
-		| STORAGE_THISO
-		| STORAGE_CLIENT
-		| STORAGE_CLIENTR
-		| STORAGE_SERVER
-		| STORAGE_SERVERR
-		| STORAGE_LEVEL
-		| STORAGE_LOCAL
-		| STORAGE_TEMP )																	# StorageToken
 	;

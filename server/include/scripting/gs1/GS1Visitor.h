@@ -2,24 +2,28 @@
 #define GS1VISITOR_H
 
 #include <any>
+#include <cstdint>
 #include <deque>
+#include <format>
 #include <memory>
 #include <optional>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <GS1Parser.h>
 #include <GS1ParserBaseVisitor.h>
 #include <tree/ParseTree.h>
 
-#include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/StringUtils.h>
 
 namespace preagonal
@@ -28,12 +32,27 @@ class Level;
 class SubLevel;
 class StaticLevelData;
 class Character;
-}
+} // namespace preagonal
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
+
+enum class StorageType : uint8_t
+{
+	THIS,
+	THISO,
+	CLIENT,
+	CLIENTR,
+	CLIENTO,
+	CLIENTRO,
+	SERVER,
+	SERVERR,
+	LEVEL,
+	LOCAL,
+	TEMP,
+};
 
 class GS1Visitor : public GS1ParserBaseVisitor
 {
@@ -74,10 +93,11 @@ public:
 	GameValue getGameValueFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
 
 public:
-	static void applyStorageToIdentifier(std::optional<size_t> storage, std::string& identifier) noexcept;
+	[[inline]] static std::optional<size_t> getStorageTypeFromIdentifier(std::string_view identifier, std::optional<size_t> defaultValue = {}) noexcept;
+	[[inline]] static void applyStorageNameToIdentifier(std::optional<size_t> storage, std::string& identifier) noexcept;
+	[[inline]] static void stripStorageNameFromIdentifier(std::string& identifier) noexcept;
 
 public:
-	[[inline]] size_t getStorageFromTypeString(std::string_view storageType) const;
 	GameVariableStore* getGameVariableStoreForStorageType(size_t type);
 	double getColorValueFromString(std::string_view colorString);
 
@@ -152,7 +172,6 @@ public:
 	virtual std::any visitGenderLiteral(GS1Parser::GenderLiteralContext* context) override;
 	virtual std::any visitColorLiteral(GS1Parser::ColorLiteralContext* context) override;
 	virtual std::any visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context) override;
-	virtual std::any visitStorageToken(GS1Parser::StorageTokenContext* context) override;
 	//
 	virtual std::any visitPrimaryExpression(GS1Parser::PrimaryExpressionContext* context) override;
 };
@@ -203,7 +222,7 @@ inline const void GS1Visitor::pushSource(ScriptObject source)
 inline auto GS1Visitor::sourceStack() const
 {
 	// Save me C++26...
-	std::vector<ScriptObject> sources{ m_currentSource.rbegin(), m_currentSource.rend() };
+	std::vector<ScriptObject> sources{m_currentSource.rbegin(), m_currentSource.rend()};
 	if (m_event->initiator.second != ScriptObjectType::NPC)
 		sources.push_back(m_event->initiator);
 	sources.push_back(m_originalSource);
@@ -236,32 +255,81 @@ inline T GS1Visitor::getReadOnlyGameValueFromAnyAs(const std::any& value)
 
 //----------------------------
 
-inline size_t GS1Visitor::getStorageFromTypeString(std::string_view storageType) const
+inline std::optional<size_t> GS1Visitor::getStorageTypeFromIdentifier(std::string_view identifier, std::optional<size_t> defaultValue) noexcept
 {
-	if (storageType.empty())
-		return GS1Parser::STORAGE_CLIENT;
-	if (string::equalsi(storageType, "this"sv))
-		return GS1Parser::STORAGE_THIS;
-	if (string::equalsi(storageType, "thiso"sv))
-		return GS1Parser::STORAGE_THISO;
-	if (string::equalsi(storageType, "client"sv))
-		return GS1Parser::STORAGE_CLIENT;
-	if (string::equalsi(storageType, "clientr"sv))
-		return GS1Parser::STORAGE_CLIENTR;
-	if (string::equalsi(storageType, "cliento"sv))
-		return GS1Parser::STORAGE_CLIENTO;
-	if (string::equalsi(storageType, "clientro"sv))
-		return GS1Parser::STORAGE_CLIENTRO;
-	if (string::equalsi(storageType, "server"sv))
-		return GS1Parser::STORAGE_SERVER;
-	if (string::equalsi(storageType, "serverr"sv))
-		return GS1Parser::STORAGE_SERVERR;
-	if (string::equalsi(storageType, "local"sv))
-		return GS1Parser::STORAGE_LOCAL;
-	if (string::equalsi(storageType, "temp"sv))
-		return GS1Parser::STORAGE_TEMP;
+	if (identifier.empty() || !identifier.contains('.'))
+		return defaultValue;
+	if (string::starts_withi(identifier, "this."sv))
+		return ENUM(StorageType::THIS);
+	if (string::starts_withi(identifier, "thiso."sv))
+		return ENUM(StorageType::THISO);
+	if (string::starts_withi(identifier, "client."sv))
+		return ENUM(StorageType::CLIENT);
+	if (string::starts_withi(identifier, "clientr."sv))
+		return ENUM(StorageType::CLIENTR);
+	if (string::starts_withi(identifier, "cliento."sv))
+		return ENUM(StorageType::CLIENTO);
+	if (string::starts_withi(identifier, "clientro."sv))
+		return ENUM(StorageType::CLIENTRO);
+	if (string::starts_withi(identifier, "server."sv))
+		return ENUM(StorageType::SERVER);
+	if (string::starts_withi(identifier, "serverr."sv))
+		return ENUM(StorageType::SERVERR);
+	if (string::starts_withi(identifier, "local."sv))
+		return ENUM(StorageType::LOCAL);
+	if (string::starts_withi(identifier, "temp."sv))
+		return ENUM(StorageType::TEMP);
 
-	return GS1Parser::STORAGE_CLIENT;
+	return defaultValue;
+}
+
+inline void GS1Visitor::applyStorageNameToIdentifier(std::optional<size_t> storage, std::string& identifier) noexcept
+{
+	if (!storage.has_value())
+		return;
+
+	switch (storage.value())
+	{
+		case ENUM(StorageType::CLIENT):
+		case ENUM(StorageType::CLIENTO):
+			identifier = std::format("client.{}", identifier);
+			break;
+		case ENUM(StorageType::CLIENTR):
+		case ENUM(StorageType::CLIENTRO):
+			identifier = std::format("clientr.{}", identifier);
+			break;
+		case ENUM(StorageType::SERVER):
+			identifier = std::format("server.{}", identifier);
+			break;
+		case ENUM(StorageType::SERVERR):
+			identifier = std::format("serverr.{}", identifier);
+			break;
+	}
+}
+
+inline void GS1Visitor::stripStorageNameFromIdentifier(std::string& identifier) noexcept
+{
+	auto storage = GS1Visitor::getStorageTypeFromIdentifier(identifier);
+	if (!storage.has_value()) return;
+	auto period = identifier.find('.');
+	if (period == std::string::npos) return;
+
+	switch (storage.value())
+	{
+		// Erase the storage prefix from the identifier, leaving only the actual variable name.
+		case ENUM(StorageType::THIS):
+		case ENUM(StorageType::THISO):
+		case ENUM(StorageType::LOCAL):
+		case ENUM(StorageType::TEMP):
+			identifier.erase(0, period + 1);
+			break;
+		// Strip the "o" before the period for object storage types, leaving the "client." or "clientr." prefix.
+		case ENUM(StorageType::CLIENTO):
+		case ENUM(StorageType::CLIENTRO):
+			if (period > 1 && identifier[period - 1] == 'o')
+				identifier.erase(period - 1, 1);
+			break;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

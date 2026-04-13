@@ -37,6 +37,7 @@ BraceWrapping:
   SplitEmptyFunction: false
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
+BracedInitializerIndentWidth: 4
 BreakBeforeBinaryOperators: None
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeColon
@@ -44,7 +45,7 @@ BreakInheritanceList: BeforeColon
 Cpp11BracedListStyle: true
 ColumnLimit: 0
 CompactNamespaces: false
-ContinuationIndentWidth: 4
+ContinuationIndentWidth: 0
 IndentAccessModifiers: false
 IndentCaseLabels: true
 IndentPPDirectives: BeforeHash

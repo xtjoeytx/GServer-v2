@@ -420,7 +420,7 @@ void popNextMode(bool terminateEarly = false)
 			case 'P': setMode(IN_PARAM_E); currentState.commaPop = false; break;
 			case 'S': setMode(IN_PARAM_S); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
 			case 'L': setMode(IN_PARAM_L); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
-			case 'M': setMode(IN_PARAM_M); break;
+			case 'M': setMode(IN_PARAM_M); emitIdentifierAfter(GS1Lexer::RAWMESSAGECODE, getText()); break;
 			case 'B': setMode(IN_PARAM_B); break;
 			case 'I': setMode(IN_PARAM_I); break;
 			case 'C': setMode(IN_PARAM_C); break;
@@ -445,7 +445,7 @@ std::deque<std::unique_ptr<antlr4::Token>> m_pendingTokensAfter{};
 // --------------------------------------------------------
 }
 
-tokens { COMMAND, FUNCTION, MESSAGECODE, STRING, BADDY, ITEM, COLOR, GENDER, CARRY, DIRECTION }
+tokens { COMMAND, FUNCTION, MESSAGECODE, RAWMESSAGECODE, STRING, BADDY, ITEM, COLOR, GENDER, CARRY, DIRECTION }
 
 /*
 	Mode parameter argument guide:
@@ -768,20 +768,6 @@ MC_i			: '#i'          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 MC_R			: '#R'          { pushCommand("(L)"); }   -> type(MESSAGECODE);
 MC_Q            : '#Q'          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
 
-// TODO: Some string lists are CSV.
-
-STORAGE_THIS    : 'this.'     { pushCommand("X"); };
-STORAGE_THISO   : 'thiso.'    { pushCommand("X"); };
-STORAGE_CLIENT  : 'client.'   { pushCommand("X"); };
-STORAGE_CLIENTR : 'clientr.'  { pushCommand("X"); };
-STORAGE_CLIENTO : 'cliento.'  { pushCommand("X"); };
-STORAGE_CLIENTRO: 'clientro.' { pushCommand("X"); };
-STORAGE_SERVER  : 'server.'   { pushCommand("X"); };
-STORAGE_SERVERR : 'serverr.'  { pushCommand("X"); };
-STORAGE_LEVEL   : 'level.'    { pushCommand("X"); };
-STORAGE_LOCAL   : 'local.'    { pushCommand("X"); };
-STORAGE_TEMP    : 'temp.'     { pushCommand("X"); };
-
 // Keep above KW_TRUE/KW_FALSE.
 LITERAL
 	: REAL
@@ -1012,15 +998,6 @@ PARAM_V_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAG
 PARAM_V_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_V_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
 PARAM_V_MC_Q            : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
-PARAM_V_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
-PARAM_V_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
-PARAM_V_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
-PARAM_V_STORAGE_CLIENTR : STORAGE_CLIENTR -> type(STORAGE_CLIENTR);
-PARAM_V_STORAGE_SERVER  : STORAGE_SERVER -> type(STORAGE_SERVER);
-PARAM_V_STORAGE_SERVERR : STORAGE_SERVERR -> type(STORAGE_SERVERR);
-PARAM_V_STORAGE_LEVEL   : STORAGE_LEVEL -> type(STORAGE_LEVEL);
-PARAM_V_STORAGE_LOCAL   : STORAGE_LOCAL -> type(STORAGE_LOCAL);
-PARAM_V_STORAGE_TEMP    : STORAGE_TEMP -> type(STORAGE_TEMP);
 PARAM_V_LITERAL         : LITERAL -> type(LITERAL);
 PARAM_V_IDENTIFIER      : IDENTIFIER -> type(IDENTIFIER);
 PARAM_V_TOKEN_BRACKET_LEFT  : TOKEN_BRACKET_LEFT { pushArrayAccess(); } -> type(TOKEN_BRACKET_LEFT);
@@ -1045,15 +1022,6 @@ PARAM_E_FUNC_GROUP_4    : FUNC_GROUP_4 { pushCommand("(ESSS)"); } -> type(FUNCTI
 PARAM_E_FUNC_GROUP_5    : FUNC_GROUP_5 { pushCommand("(SV)"); }   -> type(FUNCTION);
 PARAM_E_FUNC_GROUP_6    : FUNC_GROUP_6 { pushCommand("(V)"); }    -> type(FUNCTION);
 PARAM_E_FUNC_GROUP_7    : FUNC_GROUP_7 { pushCommand("<ES)"); }   -> type(FUNCTION);
-PARAM_E_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
-PARAM_E_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
-PARAM_E_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
-PARAM_E_STORAGE_CLIENTR : STORAGE_CLIENTR -> type(STORAGE_CLIENTR);
-PARAM_E_STORAGE_SERVER  : STORAGE_SERVER -> type(STORAGE_SERVER);
-PARAM_E_STORAGE_SERVERR : STORAGE_SERVERR -> type(STORAGE_SERVERR);
-PARAM_E_STORAGE_LEVEL   : STORAGE_LEVEL -> type(STORAGE_LEVEL);
-PARAM_E_STORAGE_LOCAL   : STORAGE_LOCAL -> type(STORAGE_LOCAL);
-PARAM_E_STORAGE_TEMP    : STORAGE_TEMP -> type(STORAGE_TEMP);
 PARAM_E_LITERAL         : LITERAL -> type(LITERAL);
 PARAM_E_IDENTIFIER      : IDENTIFIER -> type(IDENTIFIER);
 PARAM_E_OP_ASSIGN         : OP_ASSIGN -> type(OP_ASSIGN);
@@ -1154,15 +1122,6 @@ PARAM_M_FUNC_GROUP_4    : FUNC_GROUP_4 { pushCommand("(ESSS)"); } -> type(FUNCTI
 PARAM_M_FUNC_GROUP_5    : FUNC_GROUP_5 { pushCommand("(SV)"); }   -> type(FUNCTION);
 PARAM_M_FUNC_GROUP_6    : FUNC_GROUP_6 { pushCommand("(V)"); }    -> type(FUNCTION);
 PARAM_M_FUNC_GROUP_7    : FUNC_GROUP_7 { pushCommand("<ES)"); }   -> type(FUNCTION);
-PARAM_M_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
-PARAM_M_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
-PARAM_M_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
-PARAM_M_STORAGE_CLIENTR : STORAGE_CLIENTR -> type(STORAGE_CLIENTR);
-PARAM_M_STORAGE_SERVER  : STORAGE_SERVER -> type(STORAGE_SERVER);
-PARAM_M_STORAGE_SERVERR : STORAGE_SERVERR -> type(STORAGE_SERVERR);
-PARAM_M_STORAGE_LEVEL   : STORAGE_LEVEL -> type(STORAGE_LEVEL);
-PARAM_M_STORAGE_LOCAL   : STORAGE_LOCAL -> type(STORAGE_LOCAL);
-PARAM_M_STORAGE_TEMP    : STORAGE_TEMP -> type(STORAGE_TEMP);
 PARAM_M_LITERAL       : LITERAL -> type(LITERAL);
 PARAM_M_IDENTIFIER    : IDENTIFIER -> type(IDENTIFIER);
 PARAM_M_OP_ADD        : OP_ADD -> type(OP_ADD);
@@ -1241,15 +1200,6 @@ PARAM_D_FUNC_GROUP_4    : FUNC_GROUP_4 { pushCommand("(ESSS)"); } -> type(FUNCTI
 PARAM_D_FUNC_GROUP_5    : FUNC_GROUP_5 { pushCommand("(SV)"); }   -> type(FUNCTION);
 PARAM_D_FUNC_GROUP_6    : FUNC_GROUP_6 { pushCommand("(V)"); }    -> type(FUNCTION);
 PARAM_D_FUNC_GROUP_7    : FUNC_GROUP_7 { pushCommand("<ES)"); }   -> type(FUNCTION);
-PARAM_D_STORAGE_THIS    : STORAGE_THIS -> type(STORAGE_THIS);
-PARAM_D_STORAGE_THISO   : STORAGE_THISO -> type(STORAGE_THISO);
-PARAM_D_STORAGE_CLIENT  : STORAGE_CLIENT -> type(STORAGE_CLIENT);
-PARAM_D_STORAGE_CLIENTR : STORAGE_CLIENTR -> type(STORAGE_CLIENTR);
-PARAM_D_STORAGE_SERVER  : STORAGE_SERVER -> type(STORAGE_SERVER);
-PARAM_D_STORAGE_SERVERR : STORAGE_SERVERR -> type(STORAGE_SERVERR);
-PARAM_D_STORAGE_LEVEL   : STORAGE_LEVEL -> type(STORAGE_LEVEL);
-PARAM_D_STORAGE_LOCAL   : STORAGE_LOCAL -> type(STORAGE_LOCAL);
-PARAM_D_STORAGE_TEMP    : STORAGE_TEMP -> type(STORAGE_TEMP);
 PARAM_D_LITERAL         : LITERAL -> type(LITERAL);
 PARAM_D_IDENTIFIER      : IDENTIFIER -> type(IDENTIFIER);
 PARAM_D_OP_ASSIGN         : OP_ASSIGN -> type(OP_ASSIGN);

@@ -9,8 +9,8 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <variant>
@@ -31,25 +31,31 @@
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <object/Weapon.h>
-#include <scripting/gs1/GS1Commands.h>
-#include <scripting/gs1/GS1Functions.h>
-#include <scripting/gs1/GS1MessageCodes.h>
-#include <scripting/gs1/GS1Visitor.h>
-#include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
+#include <scripting/gs1/GS1Commands.h>
+#include <scripting/gs1/GS1Functions.h>
+#include <scripting/gs1/GS1MessageCodes.h>
+#include <scripting/gs1/GS1Visitor.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
-#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
+#include <utilities/manager/ITranslationManager.h>
+#include <utilities/std/generator.h>
 
 #ifdef DEBUG
-#define RECOVERABLE_PARSE_ERROR(MESSAGE, RETVAL) throw std::runtime_error(std::format("GS1 Parse Error: {}", MESSAGE))
+	#define RECOVERABLE_PARSE_ERROR(MESSAGE, RETVAL) throw std::runtime_error(std::format("GS1 Parse Error: {}", MESSAGE))
 #else
-#define RECOVERABLE_PARSE_ERROR(MESSAGE, RETVAL) do { reportError(MESSAGE, context, false); return RETVAL; } while(false)
+	#define RECOVERABLE_PARSE_ERROR(MESSAGE, RETVAL) \
+		do {                                         \
+			reportError(MESSAGE, context, false);    \
+			return RETVAL;                           \
+		}                                            \
+		while (false)
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -148,30 +154,6 @@ static GS1ScriptValue getGS1ScriptValueFromAny(std::any& value)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Static member functions.
-
-void GS1Visitor::applyStorageToIdentifier(std::optional<size_t> storage, std::string& identifier) noexcept
-{
-	if (!storage.has_value())
-		return;
-
-	switch (storage.value())
-	{
-		case GS1Parser::STORAGE_CLIENT:
-		case GS1Parser::STORAGE_CLIENTO:
-			identifier = std::format("client.{}", identifier);
-			break;
-		case GS1Parser::STORAGE_CLIENTR:
-		case GS1Parser::STORAGE_CLIENTRO:
-			identifier = std::format("clientr.{}", identifier);
-			break;
-		case GS1Parser::STORAGE_SERVER:
-			identifier = std::format("server.{}", identifier);
-			break;
-		case GS1Parser::STORAGE_SERVERR:
-			identifier = std::format("serverr.{}", identifier);
-			break;
-	}
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Public member functions.
@@ -418,7 +400,7 @@ std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<St
 		if (auto level = testSource(source); std::get<0>(level) != nullptr)
 			return level;
 	}
-	return std::make_tuple(nullptr, nullptr, nullptr);;
+	return std::make_tuple(nullptr, nullptr, nullptr);
 }
 
 GameVariableStore* GS1Visitor::findGameVariableStoreFromSourceStack(ScriptObjectType type, int skip) const
@@ -447,40 +429,45 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 {
 	GameVariableStore* store = nullptr;
 	int skip = 0;
-	if (inList(type, GS1Parser::STORAGE_THISO, GS1Parser::STORAGE_CLIENTO, GS1Parser::STORAGE_CLIENTRO))
+	if (inList(type, ENUM(StorageType::THISO), ENUM(StorageType::CLIENTO), ENUM(StorageType::CLIENTRO)))
 		skip = 1;
 
 	switch (type)
 	{
-		case GS1Parser::STORAGE_THIS:
-		case GS1Parser::STORAGE_LOCAL:
-		case GS1Parser::STORAGE_TEMP:
-		case GS1Parser::STORAGE_THISO:
+		case ENUM(StorageType::THIS):
+		case ENUM(StorageType::LOCAL):
+		case ENUM(StorageType::TEMP):
+		case ENUM(StorageType::THISO):
 			store = findGameVariableStoreFromSourceStack(ScriptObjectType::NPC, skip);
 			if (store == nullptr)
 				store = findGameVariableStoreFromSourceStack(ScriptObjectType::WEAPON, skip);
 			break;
-		case GS1Parser::STORAGE_CLIENT:
-		case GS1Parser::STORAGE_CLIENTR:
-		case GS1Parser::STORAGE_CLIENTO:
-		case GS1Parser::STORAGE_CLIENTRO:
+		case ENUM(StorageType::CLIENT):
+		case ENUM(StorageType::CLIENTR):
+		case ENUM(StorageType::CLIENTO):
+		case ENUM(StorageType::CLIENTRO):
 			store = findGameVariableStoreFromSourceStack(ScriptObjectType::PLAYER, skip);
 			break;
-		case GS1Parser::STORAGE_SERVER:
-		case GS1Parser::STORAGE_SERVERR:
+		case ENUM(StorageType::SERVER):
+		case ENUM(StorageType::SERVERR):
 			store = m_serverStore;
 			break;
-		case GS1Parser::STORAGE_LEVEL:
+		case ENUM(StorageType::LEVEL):
 		{
 			auto* server = BabyDI::Get<Server>();
 			auto pair = getPlayerOrNPCFromSource(m_originalSource);
 			if (!pair.has_value())
 				return nullptr;
 
-			const auto picker = visit_functions
-			{
-				[&server](PlayerPtr& player) -> LevelPtr { return server->getLoadedLevel(player->account.level, player); },
-				[&server](NPCPtr& npc) -> LevelPtr { return npc->getLevel(); }
+			const auto picker = visit_functions{
+				[&server](PlayerPtr& player) -> LevelPtr
+				{
+					return server->getLoadedLevel(player->account.level, player);
+				},
+				[&server](NPCPtr& npc) -> LevelPtr
+				{
+					return npc->getLevel();
+				}
 			};
 
 			auto level = std::visit(picker, pair.value());
@@ -557,7 +544,7 @@ void GS1Visitor::setCurrentPlayerVariables(std::optional<ScriptObject> source)
 	// all the player property shortcuts
 	player->constructScriptParameters();
 	for (const auto& [name, variable] : player->scriptParameters)
-		builtInStore->add(GameValue{ set_temporary, std::format("player{}", name), variable.getGetter(), variable.getSetter() });
+		builtInStore->add(GameValue{set_temporary, std::format("player{}", name), variable.getGetter(), variable.getSetter()});
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -630,7 +617,10 @@ void GS1Visitor::reportError(std::string_view message, antlr4::tree::ParseTree* 
 
 	// Send the log messages to the server.
 	auto server = BabyDI::Get<Server>();
-	std::ranges::for_each(logbatch, [&server](const auto& kvp) { server->sendToNC(kvp.second); });
+	std::ranges::for_each(logbatch, [&server](const auto& kvp)
+	{
+		server->sendToNC(kvp.second);
+	});
 
 	if (abort) throw std::runtime_error("Terminating GS1 script.");
 }
@@ -646,9 +636,12 @@ std::any GS1Visitor::visitProgram(GS1Parser::ProgramContext* ctx)
 			node->accept(this);
 		}
 		// If we get the following exceptions in the block, just continue on to the next statement.
-		catch (const break_exception&) {}
-		catch (const continue_exception&) {}
-		catch (const return_exception&) {}
+		catch (const break_exception&)
+		{}
+		catch (const continue_exception&)
+		{}
+		catch (const return_exception&)
+		{}
 		// Sleeps stop execution.
 		catch (const sleep_exception&)
 		{
@@ -766,8 +759,14 @@ std::any GS1Visitor::visitStatementFor(GS1Parser::StatementForContext* context)
 		{
 			visit(context->block());
 		}
-		catch (const break_exception&) { break; }
-		catch (const continue_exception&) { continue; }
+		catch (const break_exception&)
+		{
+			break;
+		}
+		catch (const continue_exception&)
+		{
+			continue;
+		}
 		catch (const sleep_exception&)
 		{
 			m_callStack.emplace_back(context, 0);
@@ -805,8 +804,14 @@ std::any GS1Visitor::visitStatementWhile(GS1Parser::StatementWhileContext* conte
 		{
 			visit(context->block());
 		}
-		catch (const break_exception&) { break; }
-		catch (const continue_exception&) { continue; }
+		catch (const break_exception&)
+		{
+			break;
+		}
+		catch (const continue_exception&)
+		{
+			continue;
+		}
 		catch (const sleep_exception&)
 		{
 			m_callStack.emplace_back(context, 0);
@@ -908,7 +913,7 @@ std::any GS1Visitor::visitStatementBuiltInCommand(GS1Parser::StatementBuiltInCom
 std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentContext* context)
 {
 	// We need this to fix problems with timeout being both a flag and an NPC property.
-	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	auto results = visitChildrenAndCollect(context);
 	if (results.size() != 2 || context->children.size() != 3)
@@ -980,7 +985,7 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	std::vector<double> values;
 	for (auto& be : context->exponentiationExpression())
@@ -1098,7 +1103,7 @@ std::any GS1Visitor::visitExpressionEquality(GS1Parser::ExpressionEqualityContex
 	if (!op.has_value())
 		throw std::runtime_error("ExpressionEquality does not have an operator");
 
-	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	auto left = getReadOnlyGameValueFromAny(visit(context->children[0]));
 	auto right = getReadOnlyGameValueFromAny(visit(context->children[2]));
@@ -1141,7 +1146,7 @@ std::any GS1Visitor::visitExpressionRelational(GS1Parser::ExpressionRelationalCo
 	if (context->children.size() < 3)
 		return visitChildren(context);
 
-	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	auto op = getSymbolType(context->children[1]);
 	if (!op.has_value())
@@ -1171,7 +1176,7 @@ std::any GS1Visitor::visitExpressionAdditive(GS1Parser::ExpressionAdditiveContex
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	double result = getReadOnlyGameValueFromAnyAs<double>(visit(context->children[0]));
 	for (size_t i = 1; i < context->children.size(); i += 2)
@@ -1195,7 +1200,7 @@ std::any GS1Visitor::visitExpressionMultiplicative(GS1Parser::ExpressionMultipli
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	double result = getReadOnlyGameValueFromAnyAs<double>(visit(context->children[0]));
 	for (size_t i = 1; i < context->children.size(); i += 2)
@@ -1221,7 +1226,7 @@ std::any GS1Visitor::visitExpressionExponentiation(GS1Parser::ExpressionExponent
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	double result = getReadOnlyGameValueFromAnyAs<double>(visit(context->children[0]));
 	for (size_t i = 1; i < context->children.size(); i += 2)
@@ -1248,7 +1253,7 @@ std::any GS1Visitor::visitExpressionUnary(GS1Parser::ExpressionUnaryContext* con
 
 	if (op.value() == GS1Parser::OP_SUB)
 	{
-		SetAndRestore sar{ expectingTimeoutAsVariable, true };
+		SetAndRestore sar{expectingTimeoutAsVariable, true};
 		return std::make_any<GS1ScriptValue>(-getReadOnlyGameValueFromAnyAs<double>(visit(context->unaryExpression())));
 	}
 
@@ -1261,7 +1266,7 @@ std::any GS1Visitor::visitExpressionPostfix(GS1Parser::ExpressionPostfixContext*
 	if (!op.has_value())
 		throw std::runtime_error("ExpressionPostfix has no operation");
 
-	SetAndRestore sar{ expectingTimeoutAsVariable, true };
+	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	auto anyval = visit(context->children[0]);
 	auto left = getGameVariableFromAny(anyval);
@@ -1352,35 +1357,31 @@ std::any GS1Visitor::visitIdentifierAccess(GS1Parser::IdentifierAccessContext* c
 
 std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* context)
 {
-	std::optional<size_t> storage = std::nullopt;
-	if (context->storage_token() != nullptr)
-	{
-		visit(context->storage_token());
-		storage = getSymbolType(context->storage_token());
-	}
-
 	auto identifier_any = visit(context->compound_identifier());
 	auto* identifier = std::any_cast<std::string>(&identifier_any);
 	if (identifier == nullptr)
 		throw std::runtime_error("IdentifierValue has no valid compound_identifier");
 
-	auto conditionalExpressions = context->conditionalExpression();
+	auto expressions = context->expression();
 	std::optional<int64_t> index = std::nullopt;
+
+	// Identify the storage type based on the identifier name.
+	auto storage = getStorageTypeFromIdentifier(*identifier);
 
 	// Test for tiles[x,y].
 	// Since tiles[x,y] is a unique case, we encode the index with the X/Y.
-	if (*identifier == "tiles" && conditionalExpressions.size() == 2)
+	if (*identifier == "tiles" && expressions.size() == 2)
 	{
-		auto param1 = visit(conditionalExpressions[0]);
-		auto param2 = visit(conditionalExpressions[1]);
+		auto param1 = visit(expressions[0]);
+		auto param2 = visit(expressions[1]);
 		auto x = static_cast<uint32_t>(std::max(0.0, getReadOnlyGameValueFromAnyAs<double>(param1)));
 		auto y = static_cast<uint32_t>(std::max(0.0, getReadOnlyGameValueFromAnyAs<double>(param2)));
 		index = (static_cast<size_t>(x) << 32) | y;
 	}
-	else if (conditionalExpressions.size() == 1)
+	else if (expressions.size() == 1)
 	{
 		// Get the array index.
-		auto expression_any = visit(conditionalExpressions[0]);
+		auto expression_any = visit(expressions[0]);
 		index = static_cast<int64_t>(getReadOnlyGameValueFromAnyAs<double>(expression_any));
 	}
 
@@ -1391,32 +1392,30 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 		if (*identifier != "timeout" || !expectingTimeoutAsVariable)
 		{
 			if (auto flag = flagStore.get(*identifier).lock(); flag != nullptr)
-				return std::make_any<GS1ScriptValue>(GameValue{ flag->get<bool>().value_or(false) });
+				return std::make_any<GS1ScriptValue>(GameValue{flag->get<bool>().value_or(false)});
 		}
 	}
 
-	// Append the storage modifier to certain variable names.
-	// This is because they have special considerations.
-	if (storage.has_value())
-		applyStorageToIdentifier(storage.value(), *identifier);
+	// Strip the storage type from the identifier, if needed.
+	stripStorageNameFromIdentifier(*identifier);
 
 	// If we have no storage value, and we are expecting a flag, force client storage.
 	if (!storage.has_value() && expectingFlag)
-		storage = GS1Parser::STORAGE_CLIENT;
+		storage = ENUM(StorageType::CLIENT);
 
 	// Get the game variable store for the identifier.
 	// If there is no storage type, it pulls from the built-in variable store (saved on the script context).
 	auto variable = getGameValueFromStorage(*identifier, storage);
 	{
 		// If it is temp storage, make sure the variable is marked as temporary so it isn't saved.
-		if (storage.value_or(GS1Parser::STORAGE_THIS) == GS1Parser::STORAGE_TEMP)
+		if (storage.value_or(ENUM(StorageType::THIS)) == ENUM(StorageType::TEMP))
 			variable.temporary = true;
 
 		return std::make_any<GS1ScriptValue>(std::make_pair(variable, index));
 	}
 
 	// Return a default value if the identifier is not found.
-	return std::make_any<GS1ScriptValue>(GameValue{ 0.0 });
+	return std::make_any<GS1ScriptValue>(GameValue{0.0});
 }
 
 std::any GS1Visitor::visitCompoundIdentifier(GS1Parser::CompoundIdentifierContext* context)
@@ -1478,7 +1477,7 @@ std::any GS1Visitor::visitMessageCode(GS1Parser::MessageCodeContext* context)
 		RECOVERABLE_PARSE_ERROR(std::format("Message code '{}' is not a valid message code.", messageCode), ""s);
 
 	// Trim out the message code.
-	std::string_view messageCodeView{ messageCode };
+	std::string_view messageCodeView{messageCode};
 	if (messageCodeView.ends_with('('))
 		messageCodeView.remove_suffix(1);
 	if (messageCodeView.starts_with('#'))
@@ -1492,12 +1491,12 @@ std::any GS1Visitor::visitMessageCode(GS1Parser::MessageCodeContext* context)
 	catch (const unimplemented_error& e)
 	{
 		reportError(e.what(), context, false);
-		return GS1ScriptValue{ ""s };
+		return GS1ScriptValue{""s};
 	}
 	catch (const std::logic_error& e)
 	{
 		reportError(e.what(), context, false);
-		return GS1ScriptValue{ ""s };
+		return GS1ScriptValue{""s};
 	}
 	catch (const std::exception& e)
 	{
@@ -1640,16 +1639,18 @@ std::any GS1Visitor::visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context)
 	return std::make_any<GS1ScriptValue>(static_cast<double>(std::distance(BaddyNames.begin(), it)));
 }
 
-std::any GS1Visitor::visitStorageToken(GS1Parser::StorageTokenContext* context)
-{
-	return visitChildren(context);
-}
-
 std::any GS1Visitor::visitPrimaryExpression(GS1Parser::PrimaryExpressionContext* context)
 {
 	if (context->children.size() == 1)
 		return visitChildren(context);
-	return visit(context->expression());
+
+	if (auto expression = context->expression(); expression != nullptr)
+		return visit(expression);
+
+	if (auto messageCode = context->messagecode_string(); messageCode != nullptr)
+		return visit(messageCode);
+
+	throw std::runtime_error("primaryExpression was unhandled");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

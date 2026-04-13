@@ -12,15 +12,17 @@
 #include <numbers>
 #include <optional>
 #include <random>
+#include <ranges>
 #include <stdexcept>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include <tomcrypt.h>
+//#include <tomcrypt_misc.h>
 #include <tree/ParseTree.h>
 
 #include <BabyDI.h>
@@ -32,11 +34,11 @@
 #include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <scripting/gs1/GS1Functions.h>
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
-#include <scripting/ScriptContainers.h>
-#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
@@ -47,7 +49,7 @@ namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-using BuiltInFunctionHandleFunc = GS1ScriptValue(*)(GS1Visitor*, std::string_view, const std::vector<GS1ScriptValue*>&);
+using BuiltInFunctionHandleFunc = GS1ScriptValue (*)(GS1Visitor*, std::string_view, const std::vector<GS1ScriptValue*>&);
 using BuiltInFunctionHandleMap = std::unordered_map<size_t, BuiltInFunctionHandleFunc>;
 
 static GS1ScriptValue fn_abs(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
@@ -121,71 +123,71 @@ static BuiltInFunctionHandleMap GenerateMap()
 	string::string_hash hash{};
 	BuiltInFunctionHandleMap map =
 	{
-		{ hash("abs"), &fn_abs },
-		{ hash("aindexof"), &fn_aindexof },
-		{ hash("arctan"), &fn_arctan },
-		{ hash("arraylen"), &fn_arraylen },
-		{ hash("ascii"), &fn_ascii },
-		{ hash("base64decode"), &fn_base64decode },
-		{ hash("base64encode"), &fn_base64encode },
-		{ hash("cos"), &fn_cos },
-		{ hash("exp"), &fn_exp },
-		{ hash("findnearestplayer"), &fn_findnearestplayer },
-		{ hash("findnearestplayers"), &fn_findnearestplayers },
-		{ hash("getangle"), &fn_getangle },
-		{ hash("getareanpcs"), &fn_getareanpcs },
-		{ hash("getdir"), &fn_getdir },
-		{ hash("getflagkeys"), &fn_getflagkeys },
-		{ hash("getnearestplayer"), &fn_getnearestplayer },
-		{ hash("getnearestplayers"), &fn_getnearestplayers },
-		{ hash("getnpc"), &fn_getnpc },
-		{ hash("getplayer"), &fn_getplayer },
-		{ hash("getz"), &fn_getz },
-		{ hash("hasweapon"), &fn_hasweapon },
-		{ hash("imgheight"), &fn_imgheight },
-		{ hash("imgwidth"), &fn_imgwidth },
-		{ hash("indexof"), &fn_indexof },
-		{ hash("int"), &fn_int },
-		{ hash("keycode"), &fn_keycode },
-		{ hash("keydown"), &fn_keydown },
-		{ hash("keydown2"), &fn_keydown2 },
-		{ hash("lindexof"), &fn_lindexof },
-		{ hash("log"), &fn_log },
-		{ hash("max"), &fn_max },
-		{ hash("min"), &fn_min },
-		{ hash("onmapx"), &fn_onmapx },
-		{ hash("onmapy"), &fn_onmapy },
-		{ hash("onwall"), &fn_onwall },
-		{ hash("onwall2"), &fn_onwall2 },
-		{ hash("onwater"), &fn_onwater },
-		{ hash("onwater2"), &fn_onwater2 },
-		{ hash("playersays"), &fn_playersays },
-		{ hash("playersays2"), &fn_playersays2 },
-		{ hash("random"), &fn_random },
-		{ hash("sarraylen"), &fn_sarraylen },
-		{ hash("screenx"), &fn_screenx },
-		{ hash("screeny"), &fn_screeny },
-		{ hash("sin"), &fn_sin },
-		{ hash("startswith"), &fn_startswith },
-		{ hash("strcontains"), &fn_strcontains },
-		{ hash("strequals"), &fn_strequals },
-		{ hash("strlen"), &fn_strlen },
-		{ hash("strtofloat"), &fn_strtofloat },
-		{ hash("testbomb"), &fn_testbomb },
-		{ hash("testcompu"), &fn_testcompu },
-		{ hash("testexplo"), &fn_testexplo },
-		{ hash("testhorse"), &fn_testhorse },
-		{ hash("testitem"), &fn_testitem },
-		{ hash("testnpc"), &fn_testnpc },
-		{ hash("testplayer"), &fn_testplayer },
-		{ hash("testsign"), &fn_testsign },
-		{ hash("textheight"), &fn_textheight },
-		{ hash("textwidth"), &fn_textwidth },
-		{ hash("tiletype"), &fn_tiletype },
-		{ hash("vecx"), &fn_vecx },
-		{ hash("vecy"), &fn_vecy },
-		{ hash("worldx"), &fn_worldx },
-		{ hash("worldy"), &fn_worldy },
+		{hash("abs"), &fn_abs},
+		{hash("aindexof"), &fn_aindexof},
+		{hash("arctan"), &fn_arctan},
+		{hash("arraylen"), &fn_arraylen},
+		{hash("ascii"), &fn_ascii},
+		{hash("base64decode"), &fn_base64decode},
+		{hash("base64encode"), &fn_base64encode},
+		{hash("cos"), &fn_cos},
+		{hash("exp"), &fn_exp},
+		{hash("findnearestplayer"), &fn_findnearestplayer},
+		{hash("findnearestplayers"), &fn_findnearestplayers},
+		{hash("getangle"), &fn_getangle},
+		{hash("getareanpcs"), &fn_getareanpcs},
+		{hash("getdir"), &fn_getdir},
+		{hash("getflagkeys"), &fn_getflagkeys},
+		{hash("getnearestplayer"), &fn_getnearestplayer},
+		{hash("getnearestplayers"), &fn_getnearestplayers},
+		{hash("getnpc"), &fn_getnpc},
+		{hash("getplayer"), &fn_getplayer},
+		{hash("getz"), &fn_getz},
+		{hash("hasweapon"), &fn_hasweapon},
+		{hash("imgheight"), &fn_imgheight},
+		{hash("imgwidth"), &fn_imgwidth},
+		{hash("indexof"), &fn_indexof},
+		{hash("int"), &fn_int},
+		{hash("keycode"), &fn_keycode},
+		{hash("keydown"), &fn_keydown},
+		{hash("keydown2"), &fn_keydown2},
+		{hash("lindexof"), &fn_lindexof},
+		{hash("log"), &fn_log},
+		{hash("max"), &fn_max},
+		{hash("min"), &fn_min},
+		{hash("onmapx"), &fn_onmapx},
+		{hash("onmapy"), &fn_onmapy},
+		{hash("onwall"), &fn_onwall},
+		{hash("onwall2"), &fn_onwall2},
+		{hash("onwater"), &fn_onwater},
+		{hash("onwater2"), &fn_onwater2},
+		{hash("playersays"), &fn_playersays},
+		{hash("playersays2"), &fn_playersays2},
+		{hash("random"), &fn_random},
+		{hash("sarraylen"), &fn_sarraylen},
+		{hash("screenx"), &fn_screenx},
+		{hash("screeny"), &fn_screeny},
+		{hash("sin"), &fn_sin},
+		{hash("startswith"), &fn_startswith},
+		{hash("strcontains"), &fn_strcontains},
+		{hash("strequals"), &fn_strequals},
+		{hash("strlen"), &fn_strlen},
+		{hash("strtofloat"), &fn_strtofloat},
+		{hash("testbomb"), &fn_testbomb},
+		{hash("testcompu"), &fn_testcompu},
+		{hash("testexplo"), &fn_testexplo},
+		{hash("testhorse"), &fn_testhorse},
+		{hash("testitem"), &fn_testitem},
+		{hash("testnpc"), &fn_testnpc},
+		{hash("testplayer"), &fn_testplayer},
+		{hash("testsign"), &fn_testsign},
+		{hash("textheight"), &fn_textheight},
+		{hash("textwidth"), &fn_textwidth},
+		{hash("tiletype"), &fn_tiletype},
+		{hash("vecx"), &fn_vecx},
+		{hash("vecy"), &fn_vecy},
+		{hash("worldx"), &fn_worldx},
+		{hash("worldy"), &fn_worldy},
 	};
 	return map;
 }
@@ -327,7 +329,7 @@ GS1ScriptValue fn_base64decode(GS1Visitor* visitor, std::string_view messageCode
 	unsigned long outputLength = input.length();
 	base64_decode(input.c_str(), input.length(), output.get(), &outputLength);
 
-	return std::string{ reinterpret_cast<const char*>(output.get()), outputLength };
+	return std::string{reinterpret_cast<const char*>(output.get()), outputLength};
 }
 
 // base64encode(string)
@@ -346,7 +348,7 @@ GS1ScriptValue fn_base64encode(GS1Visitor* visitor, std::string_view messageCode
 	auto output = std::make_unique<char[]>(outputLength);
 	base64_encode(reinterpret_cast<const unsigned char*>(input.c_str()), static_cast<unsigned long>(input.length()), output.get(), &outputLength);
 
-	return std::string{ output.get(), outputLength };
+	return std::string{output.get(), outputLength};
 }
 
 // cos(value)
@@ -382,10 +384,10 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messag
 	{
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
-		auto position = toPixelPosition({ x, y });
+		auto position = toPixelPosition({x, y});
 
 		// Find the nearest player.
-		std::tuple<PlayerID, double> nearestPlayer{ 0, std::numeric_limits<double>::max() };
+		std::tuple<PlayerID, double> nearestPlayer{0, std::numeric_limits<double>::max()};
 		auto* server = BabyDI::Get<Server>();
 		for (const auto& id : level->findInRangePlayers(position))
 		{
@@ -394,13 +396,13 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messag
 				TilePosition playerPos = toTilePosition(player->account.character.getGlobalPosition());
 				auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
 				if (distance < std::get<1>(nearestPlayer))
-					nearestPlayer = { id, distance };
+					nearestPlayer = {id, distance};
 			}
 		}
 
 		// Return the closest player.
 		if (std::get<0>(nearestPlayer) != 0)
-			return ScriptObject{ std::get<0>(nearestPlayer), ScriptObjectType::PLAYER };
+			return ScriptObject{std::get<0>(nearestPlayer), ScriptObjectType::PLAYER};
 	}
 
 	return 0.0;
@@ -462,7 +464,7 @@ GS1ScriptValue fn_getareanpcs(GS1Visitor* visitor, std::string_view messageCode,
 		auto width = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]) * 16);
 		auto height = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[3]) * 16);
 
-		auto npcs = level->findIntersectingNPCs({ { x, y }, { width, height } }, true);
+		auto npcs = level->findIntersectingNPCs({{x, y}, {width, height}}, true);
 		for (auto id : npcs)
 			result.emplace_back(static_cast<double>(id));
 	}
@@ -512,13 +514,8 @@ GS1ScriptValue fn_getflagkeys(GS1Visitor* visitor, std::string_view functionName
 	auto prefix = visitor->getGameValueAs<std::string>(*arguments[0]);
 
 	std::vector<double> results;
-	size_t storageType = GS1Parser::STORAGE_CLIENT;
-	if (auto separator = prefix.find('.'); separator != std::string::npos)
-	{
-		storageType = visitor->getStorageFromTypeString(prefix.substr(0, separator));
-		prefix = prefix.substr(separator + 1);
-		visitor->applyStorageToIdentifier(storageType, prefix);
-	}
+	auto storageType = GS1Visitor::getStorageTypeFromIdentifier(prefix).value_or(ENUM(StorageType::CLIENT));
+	GS1Visitor::stripStorageNameFromIdentifier(prefix);
 
 	auto variableStore = visitor->getGameVariableStoreForStorageType(storageType);
 	if (variableStore == nullptr)
@@ -528,7 +525,7 @@ GS1ScriptValue fn_getflagkeys(GS1Visitor* visitor, std::string_view functionName
 	{
 		if (key.starts_with(prefix))
 		{
-			auto index = string::toNumber(std::string_view{ key.c_str() + prefix.length(), key.length() - prefix.length() });
+			auto index = string::toNumber(std::string_view{key.c_str() + prefix.length(), key.length() - prefix.length()});
 			results.push_back(index);
 		}
 	}
@@ -547,10 +544,10 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view message
 	{
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
-		auto position = toPixelPosition({ x, y });
+		auto position = toPixelPosition({x, y});
 
 		// Find the nearest player.
-		std::tuple<PlayerID, double> nearestPlayer{ 0, std::numeric_limits<double>::max() };
+		std::tuple<PlayerID, double> nearestPlayer{0, std::numeric_limits<double>::max()};
 		auto* server = BabyDI::Get<Server>();
 		for (const auto& id : level->findInRangePlayers(position))
 		{
@@ -559,7 +556,7 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view message
 				TilePosition playerPos = toTilePosition(player->account.character.getGlobalPosition());
 				auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
 				if (distance < std::get<1>(nearestPlayer))
-					nearestPlayer = { id, distance };
+					nearestPlayer = {id, distance};
 			}
 		}
 
@@ -582,7 +579,7 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messag
 	{
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
-		auto position = toPixelPosition({ x, y });
+		auto position = toPixelPosition({x, y});
 
 		std::string flag;
 		if (arguments.size() > 2)
@@ -629,7 +626,7 @@ GS1ScriptValue fn_getnpc(GS1Visitor* visitor, std::string_view messageCode, cons
 	for (auto& [id, npc] : npcList)
 	{
 		if (npc->name == npcName)
-			return ScriptObject{ id, ScriptObjectType::NPC };
+			return ScriptObject{id, ScriptObjectType::NPC};
 	}
 
 	return 0.0;
@@ -647,7 +644,7 @@ GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view messageCode, c
 	auto* server = BabyDI::Get<Server>();
 	if (auto player = server->getNPCServer()->getPlayer(playerName, PLTYPE_ANYCLIENT); player != nullptr)
 	{
-		return ScriptObject{ player->getId(), ScriptObjectType::PLAYER };
+		return ScriptObject{player->getId(), ScriptObjectType::PLAYER};
 	}
 
 	return 0.0;
@@ -664,7 +661,7 @@ GS1ScriptValue fn_getz(GS1Visitor* visitor, std::string_view messageCode, const 
 	{
 		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
 		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
-		return level->getHeightAt(toPixelPosition({ x, y }));
+		return level->getHeightAt(toPixelPosition({x, y}));
 	}
 
 	return 0.0;
@@ -683,10 +680,10 @@ GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view messageCode, c
 	{
 		auto* server = BabyDI::Get<Server>();
 		if (auto playerObject = server->getNPCServer()->getPlayer(player.value().first); playerObject != nullptr)
-			return GameValue{ playerObject->account.hasWeapon(weaponName) };
+			return GameValue{playerObject->account.hasWeapon(weaponName)};
 	}
 
-	return GameValue{ false };
+	return GameValue{false};
 }
 
 // imgheight(image)
@@ -840,7 +837,7 @@ GS1ScriptValue fn_onmapx(GS1Visitor* visitor, std::string_view messageCode, cons
 	{
 		auto level = visitor->getGameValueAs<std::string>(*arguments[0]);
 		if (auto map = curLevel->getMap(); map != nullptr)
-			return static_cast<double>(map->getLevelPosition(level).value_or(MapPosition{ 0, 0 }).x());
+			return static_cast<double>(map->getLevelPosition(level).value_or(MapPosition{0, 0}).x());
 	}
 
 	return 0.0;
@@ -857,7 +854,7 @@ GS1ScriptValue fn_onmapy(GS1Visitor* visitor, std::string_view messageCode, cons
 	{
 		auto level = visitor->getGameValueAs<std::string>(*arguments[0]);
 		if (auto map = curLevel->getMap(); map != nullptr)
-			return static_cast<double>(map->getLevelPosition(level).value_or(MapPosition{ 0, 0 }).y());
+			return static_cast<double>(map->getLevelPosition(level).value_or(MapPosition{0, 0}).y());
 	}
 
 	return 0.0;
@@ -875,19 +872,19 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (!level->isOnWall(toPixelPosition({ x, y })))
-			return GameValue{ false };
+		if (!level->isOnWall(toPixelPosition({x, y})))
+			return GameValue{false};
 
 		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 		{
 			auto server = BabyDI::Get<Server>();
 			if (auto npc = server->getNPC(source.value().first); npc != nullptr && !npc->noPlayerOnWall)
-				return GameValue{ level->isOnPlayer(toPixelPosition({ x, y })) };
+				return GameValue{level->isOnPlayer(toPixelPosition({x, y}))};
 		}
-		return GameValue{ true };
+		return GameValue{true};
 	}
 
-	return GameValue{ false };
+	return GameValue{false};
 }
 
 // onwall2(x, y, width, height)
@@ -904,19 +901,19 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, con
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (!level->isOnWall2(PixelRectangleArea{ toPixelPosition({ x, y }), { width, height } }))
-			return GameValue{ false };
+		if (!level->isOnWall2(PixelRectangleArea{toPixelPosition({x, y}), {width, height}}))
+			return GameValue{false};
 
 		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 		{
 			auto server = BabyDI::Get<Server>();
 			if (auto npc = server->getNPC(source.value().first); npc != nullptr && !npc->noPlayerOnWall)
-				return GameValue{ level->isOnPlayer({ toPixelPosition({ x, y }), { width, height } }) };
+				return GameValue{level->isOnPlayer({toPixelPosition({x, y}), {width, height}})};
 		}
-		return GameValue{ true };
+		return GameValue{true};
 	}
 
-	return GameValue{ false };
+	return GameValue{false};
 }
 
 // onwater(x, y)
@@ -931,11 +928,11 @@ GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, con
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (level->isOnWater(toPixelPosition({ x, y })))
-			return GameValue{ true };
+		if (level->isOnWater(toPixelPosition({x, y})))
+			return GameValue{true};
 	}
 
-	return GameValue{ false };
+	return GameValue{false};
 }
 
 // onwater2(x, y, width, height)
@@ -952,11 +949,11 @@ GS1ScriptValue fn_onwater2(GS1Visitor* visitor, std::string_view messageCode, co
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (level->isOnWater2(PixelRectangleArea{ toPixelPosition({ x, y }), { width, height } }))
-			return GameValue{ true };
+		if (level->isOnWater2(PixelRectangleArea{toPixelPosition({x, y}), {width, height}}))
+			return GameValue{true};
 	}
 
-	return GameValue{ false };
+	return GameValue{false};
 }
 
 // playersays(text)
@@ -984,11 +981,11 @@ GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view messageCode, 
 		if (auto player = getPlayerFromSource(*source, index); player != nullptr)
 		{
 			if (string::equalsi(player->account.character.chatMessage, text))
-				return GameValue{ true };
+				return GameValue{true};
 		}
 	}
 
-	return GameValue{ false };
+	return GameValue{false};
 }
 
 // playersays2(text)
@@ -1016,11 +1013,11 @@ GS1ScriptValue fn_playersays2(GS1Visitor* visitor, std::string_view messageCode,
 		if (auto player = getPlayerFromSource(*source, index); player != nullptr)
 		{
 			if (string::findi(player->account.character.chatMessage, text) != std::string::npos)
-				return GameValue{ true };
+				return GameValue{true};
 		}
 	}
 
-	return GameValue{ false };
+	return GameValue{false};
 }
 
 // random(min, max)
@@ -1090,7 +1087,7 @@ GS1ScriptValue fn_startswith(GS1Visitor* visitor, std::string_view messageCode, 
 	auto prefix = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto str = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	return GameValue{ string::findi(str, prefix) == 0 };
+	return GameValue{string::findi(str, prefix) == 0};
 }
 
 // strcontains(string, substring)
@@ -1103,7 +1100,7 @@ GS1ScriptValue fn_strcontains(GS1Visitor* visitor, std::string_view messageCode,
 	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto substring = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	return GameValue{ string::findi(str, substring) != std::string::npos };
+	return GameValue{string::findi(str, substring) != std::string::npos};
 }
 
 // strequals(string1, string2)
@@ -1116,7 +1113,7 @@ GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view messageCode, c
 	auto str1 = visitor->getGameValueAs<std::string>(*arguments[0]);
 	auto str2 = visitor->getGameValueAs<std::string>(*arguments[1]);
 
-	return GameValue{ string::equalsi(str1, str2) };
+	return GameValue{string::equalsi(str1, str2)};
 }
 
 // strlen(string)
@@ -1274,7 +1271,7 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, con
 
 	auto x = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
 	auto y = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
-	auto position = PixelPosition{ x, y };
+	auto position = PixelPosition{x, y};
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1312,7 +1309,7 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, 
 
 	auto x = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
 	auto y = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
-	auto position = PixelPosition{ x, y };
+	auto position = PixelPosition{x, y};
 	auto* server = BabyDI::Get<Server>();
 
 	if (auto source = visitor->getOriginalSource(); source.second == ScriptObjectType::NPC)
@@ -1398,11 +1395,11 @@ GS1ScriptValue fn_tiletype(GS1Visitor* visitor, std::string_view messageCode, co
 		auto x = visitor->getGameValueAs<double>(*arguments[0]);
 		auto y = visitor->getGameValueAs<double>(*arguments[1]);
 
-		auto tilePosition = toTilePosition(Position<double>{ x, y });
+		auto tilePosition = toTilePosition(Position<double>{x, y});
 		auto mapPosition = toMapPosition(tilePosition);
 
 		if (!level->isGmap())
-			mapPosition = { 0 ,0 };
+			mapPosition = {0, 0};
 
 		if (auto tiles = level->getTiles(mapPosition); tiles.has_value())
 		{
@@ -1427,7 +1424,7 @@ GS1ScriptValue fn_vecx(GS1Visitor* visitor, std::string_view messageCode, const 
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function vecx requires exactly one argument");
 
-	static double vecValues[] = { 0.0, -1.0, 0.0, 1.0 };
+	static double vecValues[] = {0.0, -1.0, 0.0, 1.0};
 	auto dir = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0])) % 4;
 	return vecValues[dir];
 }
@@ -1439,7 +1436,7 @@ GS1ScriptValue fn_vecy(GS1Visitor* visitor, std::string_view messageCode, const 
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function vecy requires exactly one argument");
 
-	static double vecValues[] = { -1.0, 0.0, 1.0, 0.0 };
+	static double vecValues[] = {-1.0, 0.0, 1.0, 0.0};
 	auto dir = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0])) % 4;
 	return vecValues[dir];
 }
