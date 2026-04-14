@@ -1791,7 +1791,7 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 		// Check if the destination level is on the level's map.
 		if (auto destSubLevel = level->getSubLevelByName(destLevelName); destSubLevel != nullptr)
 		{
-			auto pos = linkTouched.value()->getDestinationForCharacter(account.character);
+			auto pos = linkTouched.value()->getDestinationForCharacter(account.character, source::FromPlayer(m_id));
 			auto levelData = destSubLevel->staticData.lock();
 			warp(level->levelName, level->convertToMapPosition(destSubLevel->mapPosition.value_or(MapPosition{0, 0}), pos), getLevelLastEnteredTime(levelData.get()));
 			return true;
@@ -1806,7 +1806,7 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 					origin = newLevel->getSubLevelOrigin(subLevel).value_or(PixelPosition{});
 			}
 
-			auto pos = toPixelPosition(origin, linkTouched.value()->getDestinationForCharacter(account.character));
+			auto pos = toPixelPosition(origin, linkTouched.value()->getDestinationForCharacter(account.character, source::FromPlayer(m_id)));
 			auto levelData = newLevel->getStaticLevelDataByName(destLevelName);
 			warp(newLevel->levelName, pos, getLevelLastEnteredTime(levelData.get()));
 			return true;

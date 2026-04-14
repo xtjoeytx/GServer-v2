@@ -1885,7 +1885,7 @@ void NPC::testForLinks(SetResults& result)
 				result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
 				result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
 
-				auto pos = linkTouched.value()->getDestinationForCharacter(character);
+				auto pos = linkTouched.value()->getDestinationForCharacter(character, source::FromNPC(id));
 				character.localPixelX = pos.x();
 				character.localPixelY = pos.y();
 

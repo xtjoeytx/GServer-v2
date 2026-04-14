@@ -1,20 +1,24 @@
 #ifndef LEVELLINK_H
 #define LEVELLINK_H
 
+#include <array>
 #include <cstdint>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <CString.h>
 
 #include <object/Character.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/Extents.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
+
+class Server;
 
 class LevelLink
 {
@@ -36,7 +40,7 @@ public:
 	[[inline]] void setHeight(uint8_t height = 0);
 
 public:
-	LocalPixelPosition getDestinationForCharacter(Character& character) const;
+	LocalPixelPosition getDestinationForCharacter(Character& character, ScriptObject source) const;
 	[[inline]] const std::string& getDestinationLevel() const;
 	[[inline]] const std::string& getDestinationX() const;
 	[[inline]] const std::string& getDestinationY() const;
@@ -48,10 +52,12 @@ public:
 	bool isProbableMapLink() const;
 
 private:
+	Server* m_server = nullptr;
 	std::string m_destinationLevel, m_destinationX, m_destinationY;
 	Rectangle<uint8_t, uint8_t> m_boundingBox;
 	bool m_constantX = false;
 	bool m_constantY = false;
+	std::array<bool, 2> m_complex{false, false};
 };
 
 //----------------------------
