@@ -821,7 +821,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 		if (words[0] == "/help" && words.size() == 1)
 		{
 			if (auto file = m_server->getFileSystemServer().open(fs::FileCategory::CONFIG, "rchelp.txt"); file != nullptr)
-				sendPacket(CString() >> (char)PLO_RC_CHAT << string::toCSV(file->readAllLines()));
+			{
+				for (const auto& line : file->readAllLines())
+					sendPacket(CString() >> (char)PLO_RC_CHAT << line);
+			}
 		}
 		else if (words[0] == "/version" && words.size() == 1)
 		{
