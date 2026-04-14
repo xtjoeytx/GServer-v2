@@ -66,6 +66,15 @@ CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(std::string_view w
 	return nullptr;
 }
 
+std::shared_ptr<IScriptEngine> ScriptSystem::getScriptEngine(std::string_view name) const
+{
+	auto engine = m_script_engines.find(name);
+	if (engine == m_script_engines.end())
+		return nullptr;
+
+	return engine->second;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 CompiledScriptResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, std::string_view who, std::string_view source)

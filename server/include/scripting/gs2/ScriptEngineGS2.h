@@ -1,8 +1,8 @@
 #ifndef SCRIPTENGINEGS2_H
 #define SCRIPTENGINEGS2_H
 
-#include <string_view>
 #include <string>
+#include <string_view>
 
 #include <exceptions/GS2CompilerError.h>
 
@@ -37,7 +37,11 @@ public:
 
 public:
 	virtual bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override { return false; }
-	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) { return false; }
+	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override { return false; }
+
+public:
+	virtual double processMathExpression(std::string_view expression, ScriptObject source) override { return 0.0; }
+	virtual std::string processStringExpression(std::string_view expression, ScriptObject source) override { return {}; }
 
 protected:
 	BabyDI_INJECT(Server, m_server);

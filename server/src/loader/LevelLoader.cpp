@@ -36,26 +36,26 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
-Z3-V1.03
+Z3-V1.03	(Zelda Online?)
 	12 bit tiles
 	links
 	baddies (no verses)
 	signs
 
-Z3-V1.04
+Z3-V1.04	(Alpha 1)
 	12 bit tiles
 	links
 	baddies
 	signs
 
-GR-V1.00
+GR-V1.00	(Alpha 1 online?)
 	12 bit tiles
 	links
 	baddies
 	npcs
 	signs
 
-GR-V1.01
+GR-V1.01	(Alpha 2)
 	12 bit tiles
 	links
 	baddies
@@ -63,7 +63,7 @@ GR-V1.01
 	chests
 	signs
 
-GR-V1.02
+GR-V1.02	(Alpha 5)
 	13 bit tiles
 	links
 	baddies
@@ -71,7 +71,7 @@ GR-V1.02
 	chests
 	signs
 
-GR-V1.03
+GR-V1.03	(Alpha 7)
 	13 bit tiles
 	links (using variables)
 	baddies

@@ -1,6 +1,7 @@
 #ifndef ISCRIPTENGINE_H
 #define ISCRIPTENGINE_H
 
+#include <string>
 #include <string_view>
 
 #include <scripting/ScriptSystem.h>
@@ -39,6 +40,10 @@ public:
 public:
 	virtual bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) = 0;
 	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) = 0;
+
+public:
+	virtual double processMathExpression(std::string_view expression, ScriptObject source) = 0;
+	virtual std::string processStringExpression(std::string_view expression, ScriptObject source) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

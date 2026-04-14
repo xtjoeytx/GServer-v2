@@ -2,10 +2,12 @@
 #define SCRIPTENGINEGS1_H
 
 #include <array>
+#include <cstdint>
 #include <exception>
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
@@ -19,11 +21,11 @@
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
-#include <scripting/gs1/GS1ErrorListener.h>
 #include <scripting/IScriptEngine.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
+#include <scripting/gs1/GS1ErrorListener.h>
 
 // Forward declare.
 namespace preagonal::gs1::grammar
@@ -70,30 +72,30 @@ inline constexpr std::array<CarryObjectSprite, 11> carrySprites =
 
 inline static const std::unordered_map<ScriptEventType, std::string_view> eventFlagMap =
 {
-	{ ScriptEventType::CREATED, "created" },
-	{ ScriptEventType::INITIALIZED, "initialized" },
-	{ ScriptEventType::PLAYERLOGIN, "playerlogin" },
-	{ ScriptEventType::PLAYERLOGOUT, "playerlogout" },
-	{ ScriptEventType::PLAYERENTERS, "playerenters" },
-	{ ScriptEventType::PLAYERLEAVES, "playerleaves" },
-	{ ScriptEventType::PLAYERTOUCHSME, "playertouchsme" },
-	{ ScriptEventType::PLAYERTOUCHSOTHER, "playertouchsother" },
-	{ ScriptEventType::PLAYERLAYSITEM, "playerlaysitem" },
-	{ ScriptEventType::PLAYERCHATS, "playerchats" },
-	{ ScriptEventType::PLAYERHURT, "playerhurt" },
-	{ ScriptEventType::PLAYERDIES, "playerdies" },
-	{ ScriptEventType::COMPUSDIED, "compusdied" },
-	{ ScriptEventType::NPCWARPED, "npcwarped" },
-	{ ScriptEventType::EXPLODED, "exploded" },
-	{ ScriptEventType::WASHIT, "washit" },
-	{ ScriptEventType::WASSHOT, "wasshot" },
-	{ ScriptEventType::WASPELT, "waspelt" },
-	{ ScriptEventType::WASTHROWN, "wasthrown" },
-	{ ScriptEventType::TIMEOUT, "timeout" },
-	{ ScriptEventType::PRIVATEMESSAGE, "pm" },
-	{ ScriptEventType::MOVEMENTFINISHED, "movementfinished" },
+	{ScriptEventType::CREATED, "created"},
+	{ScriptEventType::INITIALIZED, "initialized"},
+	{ScriptEventType::PLAYERLOGIN, "playerlogin"},
+	{ScriptEventType::PLAYERLOGOUT, "playerlogout"},
+	{ScriptEventType::PLAYERENTERS, "playerenters"},
+	{ScriptEventType::PLAYERLEAVES, "playerleaves"},
+	{ScriptEventType::PLAYERTOUCHSME, "playertouchsme"},
+	{ScriptEventType::PLAYERTOUCHSOTHER, "playertouchsother"},
+	{ScriptEventType::PLAYERLAYSITEM, "playerlaysitem"},
+	{ScriptEventType::PLAYERCHATS, "playerchats"},
+	{ScriptEventType::PLAYERHURT, "playerhurt"},
+	{ScriptEventType::PLAYERDIES, "playerdies"},
+	{ScriptEventType::COMPUSDIED, "compusdied"},
+	{ScriptEventType::NPCWARPED, "npcwarped"},
+	{ScriptEventType::EXPLODED, "exploded"},
+	{ScriptEventType::WASHIT, "washit"},
+	{ScriptEventType::WASSHOT, "wasshot"},
+	{ScriptEventType::WASPELT, "waspelt"},
+	{ScriptEventType::WASTHROWN, "wasthrown"},
+	{ScriptEventType::TIMEOUT, "timeout"},
+	{ScriptEventType::PRIVATEMESSAGE, "pm"},
+	{ScriptEventType::MOVEMENTFINISHED, "movementfinished"},
 	//
-	{ ScriptEventType::SERVERLISTCONNECT, "serverlistconnect" }
+	{ScriptEventType::SERVERLISTCONNECT, "serverlistconnect"}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,10 +105,18 @@ struct unimplemented_error : public std::runtime_error
 	using std::runtime_error::runtime_error;
 };
 
-struct sleep_exception : public std::exception {};
-struct break_exception : public std::exception {};
-struct continue_exception : public std::exception {};
-struct return_exception : public std::exception {};
+struct sleep_exception : public std::exception
+{
+};
+struct break_exception : public std::exception
+{
+};
+struct continue_exception : public std::exception
+{
+};
+struct return_exception : public std::exception
+{
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -165,6 +175,10 @@ public:
 public:
 	virtual bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
 	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
+
+public:
+	virtual double processMathExpression(std::string_view expression, ScriptObject source) override;
+	virtual std::string processStringExpression(std::string_view expression, ScriptObject source) override;
 
 protected:
 	bool prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context, NPCPtr& npc, LevelPtr& level);

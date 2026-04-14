@@ -1130,6 +1130,14 @@ bool ends_withi(StringViewIshVariant auto const& str, StringViewIshVariant auto 
 	return equalsi(strview, suffix);
 }
 
+/// @brief Returns true if the input string is empty or consists solely of whitespace characters, using the current C locale (not locale-aware).
+/// @param str The input string or string view to check.
+/// @return true if the string is empty or consists solely of whitespace characters; otherwise false.
+bool empty_or_whitespace(StringViewIshVariant auto const& str)
+{
+	return str.empty() || std::ranges::all_of(str, [](char c) { return std::isspace(static_cast<unsigned char>(c)); });
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 /// @brief Converts all characters in the input string to uppercase, using the current C locale (not locale-aware).
@@ -1165,6 +1173,54 @@ auto toLower(StringViewIshVariant auto const& str)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+/// @brief Checks if a string represents a valid integral number, allowing for an optional leading sign.
+/// @param str The input string to check.
+/// @return true if the string represents a valid integral number; otherwise, false.
+bool isIntegral(StringViewIshVariant auto const& str)
+{
+	if (str.empty())
+		return false;
+
+	// Allow a leading + or - sign.
+	auto startPos = 0;
+	if (str[0] == '+' || str[0] == '-')
+		startPos = 1;
+
+	// Check that all remaining characters are digits.
+	return str.find_first_not_of("0123456789"sv, startPos) == std::string_view::npos;
+}
+
+/// @brief Checks if a string represents a valid floating-point number, allowing for an optional leading sign and at most one decimal point.
+/// @param str The input string to check.
+/// @return true if the string represents a valid floating-point number; otherwise, false.
+bool isFloat(StringViewIshVariant auto const& str)
+{
+	if (str.empty())
+		return false;
+
+	// Allow a leading + or - sign.
+	auto startPos = 0;
+	if (str[0] == '+' || str[0] == '-')
+		startPos = 1;
+
+	// Check each character to ensure it's a digit or a decimal point, and that there is at most one decimal point.
+	bool decimalPointSeen = false;
+	for (size_t i = startPos; i < str.size(); ++i)
+	{
+		const char c = str[i];
+		if (c == '.')
+		{
+			if (decimalPointSeen)
+				return false;
+
+			decimalPointSeen = true;
+		}
+		else if (!std::isdigit(static_cast<unsigned char>(c)))
+			return false;
+	}
+	return true;
+}
 
 /// @brief Attempts to convert a string to a number of the specified integral type.
 /// @tparam T The integral type to convert the string to. Defaults to int32_t.

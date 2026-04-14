@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <deque>
 #include <format>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -102,6 +103,16 @@ public:
 	double getColorValueFromString(std::string_view colorString);
 
 public:
+	GS1ScriptValue processStringExpression(std::string_view expression);
+	GS1ScriptValue processMathExpression(std::string_view expression);
+
+	template<class T = GS1Parser::CompoundStringContext>
+	[[inline]] T* walkToContext(antlr4::tree::ParseTree* node);
+
+protected:
+	std::any reparseExpression(std::string_view expression, std::string_view lexerMode, std::function<antlr4::tree::ParseTree*(GS1Parser&)> node);
+
+public:
 	std::vector<std::any> visitChildrenAndCollect(antlr4::tree::ParseTree* node);
 
 protected:
@@ -113,6 +124,8 @@ protected:
 	std::deque<ScriptObject> m_sleepCurrentSource;
 	std::vector<std::pair<antlr4::tree::ParseTree*, size_t>> m_callStack;
 	std::vector<std::pair<antlr4::tree::ParseTree*, size_t>> m_sleepCallStack;
+	bool m_reparsingStringExpression = false;
+	bool m_reparsingMathExpression = false;
 
 protected:
 	std::any safeVisit(antlr4::tree::ParseTree* node);
@@ -203,9 +216,9 @@ inline const ScriptObject& GS1Visitor::getInitiatingSource() const
 
 inline const ScriptObject& GS1Visitor::getCurrentSource(bool defaultToInitiator) const
 {
-	if (m_event->initiator.second == ScriptObjectType::NPC)
+	if (m_event && m_event->initiator.second == ScriptObjectType::NPC)
 		defaultToInitiator = false;
-	return m_currentSource.empty() ? (defaultToInitiator ? m_event->initiator : m_originalSource) : m_currentSource.back();
+	return m_currentSource.empty() ? (defaultToInitiator && m_event ? m_event->initiator : m_originalSource) : m_currentSource.back();
 }
 
 inline const ScriptObject& GS1Visitor::popSource()
@@ -330,6 +343,29 @@ inline void GS1Visitor::stripStorageNameFromIdentifier(std::string& identifier) 
 				identifier.erase(period - 1, 1);
 			break;
 	}
+}
+
+//----------------------------
+
+template<class T>
+T* GS1Visitor::walkToContext(antlr4::tree::ParseTree* node)
+{
+	if (node == nullptr) return nullptr;
+
+	int depthLimit = 50; // Arbitrary depth limit to prevent infinite recursion in malformed trees.
+	antlr4::tree::ParseTree* current = node;
+	while (depthLimit-- > 0)
+	{
+		if (auto* context = dynamic_cast<T*>(current); context != nullptr)
+			return context;
+
+		if (current->children.size() != 1)
+			return nullptr;
+
+		current = current->children[0];
+	}
+
+	return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

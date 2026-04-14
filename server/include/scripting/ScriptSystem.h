@@ -45,6 +45,11 @@ public:
 	// Gets the compiled server script.
 	CompiledScriptResultPtr getCompiledServerScript(std::string_view who, std::string_view source);
 
+	/// @brief Gets a script engine by name.
+	/// @param name The name of the script engine to retrieve.
+	/// @return The script engine associated with the given name, or nullptr if no such engine is registered.
+	std::shared_ptr<IScriptEngine> getScriptEngine(std::string_view name) const;
+
 public:
 	std::string defaultScriptEngine = "GS2";
 

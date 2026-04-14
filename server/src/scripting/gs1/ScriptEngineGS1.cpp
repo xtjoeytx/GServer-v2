@@ -406,6 +406,95 @@ bool ScriptEngineGS1::executeFunction(std::string_view function, ScriptEvent& ev
 
 //----------------------------
 
+double ScriptEngineGS1::processMathExpression(std::string_view expression, ScriptObject source)
+{
+	static GS1Visitor visitor{};
+	static GameVariableStore variableStore{};
+	visitor.builtInStore = &variableStore;
+
+	visitor.pushSource(source);
+	visitor.flagStore.store.clear();
+	variableStore.store.clear();
+
+	ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source};
+
+	auto server = BabyDI::Get<Server>();
+	if (source.second == ScriptObjectType::NPC)
+	{
+		if (auto npc = server->getNPC(source.first); npc != nullptr)
+		{
+			setNPCFlags(created, visitor.flagStore, npc);
+			setNPCVariables(variableStore, npc);
+		}
+	}
+	else if (source.second == ScriptObjectType::PLAYER)
+	{
+		if (auto player = server->getPlayer<PlayerClient>(source.first); player != nullptr)
+		{
+			setPlayerFlags(visitor.flagStore, nullptr, player);
+			setPlayerVariables(variableStore, player);
+		}
+	}
+
+	try
+	{
+		auto result = visitor.processMathExpression(expression);
+		visitor.popSource();
+		return visitor.getGameValueAs<double>(result);
+	}
+	catch (std::exception& e)
+	{
+		visitor.popSource();
+	}
+
+	return 0.0;
+}
+
+std::string ScriptEngineGS1::processStringExpression(std::string_view expression, ScriptObject source)
+{
+	static GS1Visitor visitor{};
+	static GameVariableStore variableStore{};
+	visitor.builtInStore = &variableStore;
+
+	visitor.pushSource(source);
+	visitor.flagStore.store.clear();
+
+	ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source};
+
+	auto server = BabyDI::Get<Server>();
+	if (source.second == ScriptObjectType::NPC)
+	{
+		if (auto npc = server->getNPC(source.first); npc != nullptr)
+		{
+			setNPCFlags(created, visitor.flagStore, npc);
+			setNPCVariables(variableStore, npc);
+		}
+	}
+	else if (source.second == ScriptObjectType::PLAYER)
+	{
+		if (auto player = server->getPlayer<PlayerClient>(source.first); player != nullptr)
+		{
+			setPlayerFlags(visitor.flagStore, nullptr, player);
+			setPlayerVariables(variableStore, player);
+		}
+	}
+
+	try
+	{
+		auto result = visitor.processStringExpression(expression);
+		visitor.popSource();
+		return visitor.getGameValueAs<std::string>(result);
+	}
+	catch (std::exception& e)
+	{
+		visitor.popSource();
+	}
+
+	return std::string{};
+}
+
+//----------------------------
+
 void ScriptEngineGS1::cleanup(GS1ScriptWrapper& wrapper)
 {
 	// Clear the variables (to clear reference counted pointers, just in case).

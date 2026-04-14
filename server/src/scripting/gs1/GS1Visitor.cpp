@@ -16,13 +16,16 @@
 #include <variant>
 #include <vector>
 
-#include <BabyDI.h>
+#include <ANTLRInputStream.h>
+#include <CommonTokenStream.h>
+#include <GS1Lexer.h>
 #include <GS1Parser.h>
 #include <tree/ErrorNode.h>
 #include <tree/ParseTree.h>
 #include <tree/ParseTreeType.h>
 #include <tree/TerminalNode.h>
 
+#include <BabyDI.h>
 #include <Server.h>
 #include <level/Level.h>
 #include <level/LevelBaddy.h>
@@ -292,6 +295,58 @@ double GS1Visitor::getColorValueFromString(std::string_view colorString)
 		it = colorNames.begin();
 
 	return static_cast<double>(std::distance(colorNames.begin(), it));
+}
+
+GS1ScriptValue GS1Visitor::processStringExpression(std::string_view expression)
+{
+	// If we are already reparsing string content, do not recurse.
+	if (m_reparsingStringExpression)
+		return std::string{expression};
+
+	// Reparse the string expression and get the result.
+	SetAndRestore sar{m_reparsingStringExpression, true};
+	auto result = reparseExpression(expression, "S", [](GS1Parser& parser) { return parser.compound_string(); });
+	return getReadOnlyGameValueFromAny(result);
+}
+
+GS1ScriptValue GS1Visitor::processMathExpression(std::string_view expression)
+{
+	// If we are already reparsing math content, do not recurse.
+	if (m_reparsingMathExpression)
+		return 0.0;
+
+	// Reparse the math expression and get the result.
+	SetAndRestore sar{m_reparsingMathExpression, true};
+	auto result = reparseExpression(expression, "E", [](GS1Parser& parser) { return parser.expression(); });
+	return getReadOnlyGameValueFromAny(result);
+}
+
+std::any GS1Visitor::reparseExpression(std::string_view expression, std::string_view lexerMode, std::function<antlr4::tree::ParseTree*(GS1Parser&)> node)
+{
+	// Create an input stream for the expression.
+	antlr4::ANTLRInputStream inputStream{expression};
+	GS1Lexer lexer(&inputStream);
+
+	// Put the lexer into the chosen mode.
+	// E = expression, S = string.
+	lexer.pushCommand(lexerMode);
+
+	// Fill up our token stream with the lexer.
+	antlr4::CommonTokenStream tokens(&lexer);
+	tokens.fill();
+
+	// Construct a parser to handle our tokens.
+	GS1Parser parser(&tokens);
+
+	// Get our AST on the fragment.
+	auto* tree = node(parser);
+
+	// Sanity check the errors.
+	if (parser.getNumberOfSyntaxErrors() != 0)
+		throw std::runtime_error(std::format("failed to reparse expression: {}", expression));
+
+	// Return the result of processing the tree.
+	return tree->accept(this);
 }
 
 std::vector<std::any> GS1Visitor::visitChildrenAndCollect(antlr4::tree::ParseTree* node)
