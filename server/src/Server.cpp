@@ -359,7 +359,7 @@ Server::Server(const CString& pName)
 		{
 			auto fileName = fs::getANSIFileName(file.file);
 			auto newWeapon = Weapon::loadWeapon(fileName);
-			if (auto weapon = getWeapon(fileName); weapon)
+			if (auto weapon = getWeapon(newWeapon->name); weapon)
 			{
 				if (weapon->name != newWeapon->name)
 				{
