@@ -157,6 +157,8 @@ Server::Server(const CString& pName)
 		// Check if we need to unload any levels.
 		for (auto& [levelName, level] : m_levelList)
 		{
+			// TODO: Gmap sub-level (and maybe static level) unloading.  Needs to follow Map::keepAllLevelsLoaded and levelsToKeepInMemory settings.
+
 			// Skip if the level is currently active with players in it.
 			// We always do this so we can abort early.
 			if (!level->timeSinceLastPlayerLeft.has_value())

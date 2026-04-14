@@ -170,11 +170,11 @@ relationalExpression
 	;
 
 additiveExpression
-	: multiplicativeExpression ((OP_ADD | OP_SUB) multiplicativeExpression)*				# ExpressionAdditive
+	: multiplicativeExpression ((OP_ADD | OP_SUB) (LITERAL | multiplicativeExpression))*	# ExpressionAdditive
 	;
 
 multiplicativeExpression
-	: inExpression ((OP_MUL | OP_DIV | OP_MOD) inExpression)*								# ExpressionMultiplicative
+	: inExpression ((OP_MUL | OP_DIV | OP_MOD) (LITERAL | inExpression))*					# ExpressionMultiplicative
 	;
 
 inExpression

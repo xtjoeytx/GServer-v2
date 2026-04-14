@@ -1278,13 +1278,28 @@ std::any GS1Visitor::visitExpressionAdditive(GS1Parser::ExpressionAdditiveContex
 	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	double result = getReadOnlyGameValueFromAnyAs<double>(visit(context->children[0]));
+	std::string literal;
 	for (size_t i = 1; i < context->children.size(); i += 2)
 	{
 		auto op = getSymbolType(context->children[i]);
 		if (!op.has_value())
 			continue;
 
-		auto right = getReadOnlyGameValueFromAnyAs<double>(visit(context->children[i + 1]));
+		// Check if the right side is a literal for a small optimization.
+		double right = 0.0;
+		auto child = context->children[i + 1];
+		if (child->getTreeType() == antlr4::tree::ParseTreeType::TERMINAL)
+		{
+			literal = child->getText();
+			if (literal == "true") right = 1.0;
+			else if (literal == "false") right = 0.0;
+			else right = string::toDouble(literal);
+		}
+		else
+		{
+			right = getReadOnlyGameValueFromAnyAs<double>(visit(child));
+		}
+
 		if (op.value() == GS1Parser::OP_ADD)
 			result += right;
 		else if (op.value() == GS1Parser::OP_SUB)
@@ -1302,13 +1317,28 @@ std::any GS1Visitor::visitExpressionMultiplicative(GS1Parser::ExpressionMultipli
 	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	double result = getReadOnlyGameValueFromAnyAs<double>(visit(context->children[0]));
+	std::string literal;
 	for (size_t i = 1; i < context->children.size(); i += 2)
 	{
 		auto op = getSymbolType(context->children[i]);
 		if (!op.has_value())
 			continue;
 
-		auto right = getReadOnlyGameValueFromAnyAs<double>(visit(context->children[i + 1]));
+		// Check if the right side is a literal for a small optimization.
+		double right = 0.0;
+		auto child = context->children[i + 1];
+		if (child->getTreeType() == antlr4::tree::ParseTreeType::TERMINAL)
+		{
+			literal = child->getText();
+			if (literal == "true") right = 1.0;
+			else if (literal == "false") right = 0.0;
+			else right = string::toDouble(literal);
+		}
+		else
+		{
+			right = getReadOnlyGameValueFromAnyAs<double>(visit(child));
+		}
+
 		if (op.value() == GS1Parser::OP_MUL)
 			result *= right;
 		else if (op.value() == GS1Parser::OP_DIV)
