@@ -5,20 +5,20 @@
 #include <cstdint>
 #include <format>
 #include <functional>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <random>
 #include <ranges>
 #include <stdexcept>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
 
 #include <tree/ParseTree.h>
+#include <tree/ParseTreeType.h>
 
 #include <BabyDI.h>
 #include <Server.h>
@@ -29,16 +29,15 @@
 #include <object/Weapon.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerProps.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <scripting/gs1/GS1MessageCodes.h>
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
-#include <scripting/ScriptContainers.h>
-#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
 #include <utilities/manager/GuildManager.h>
-#include <utilities/manager/ITranslationManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1::grammar
@@ -113,7 +112,7 @@ static constexpr NPCProp GetNPCPropFromIndex(uint8_t index)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using MessageCodeHandleFunc = GS1ScriptValue(*)(GS1Visitor*, std::string_view, const std::vector<GS1ScriptValue*>&);
+using MessageCodeHandleFunc = GS1ScriptValue (*)(GS1Visitor*, std::string_view, const std::vector<GS1ScriptValue*>&);
 using MessageCodeHandleMap = std::unordered_map<size_t, MessageCodeHandleFunc>;
 
 static GS1ScriptValue mc_1(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
@@ -161,42 +160,42 @@ static MessageCodeHandleMap GenerateMap()
 	string::string_hash hash{};
 	MessageCodeHandleMap map =
 	{
-		{ hash("1"), &mc_1 },
-		{ hash("2"), &mc_2 },
-		{ hash("3"), &mc_3 },
-		{ hash("5"), &mc_5 },
-		{ hash("6"), &mc_6 },
-		{ hash("7"), &mc_7 },
-		{ hash("8"), &mc_8 },
-		{ hash("a"), &mc_a },
-		{ hash("b"), &mc_b },
-		{ hash("c"), &mc_c },
-		{ hash("D"), &mc_D },
-		{ hash("E"), &mc_E },
-		{ hash("e"), &mc_e },
-		{ hash("F"), &mc_F },
-		{ hash("f"), &mc_f },
-		{ hash("g"), &mc_g },
-		{ hash("G"), &mc_G },
-		{ hash("I"), &mc_I },
-		{ hash("i"), &mc_i },
-		{ hash("K"), &mc_K },
-		{ hash("k"), &mc_k },
-		{ hash("L"), &mc_L },
-		{ hash("m"), &mc_m },
-		{ hash("n"), &mc_n },
-		{ hash("N"), &mc_N },
-		{ hash("p"), &mc_p },
-		{ hash("Q"), &mc_Q },
-		{ hash("R"), &mc_R },
-		{ hash("S"), &mc_S },
-		{ hash("s"), &mc_s },
-		{ hash("t"), &mc_t },
-		{ hash("T"), &mc_T },
-		{ hash("U"), &mc_U },
-		{ hash("v"), &mc_v },
-		{ hash("W"), &mc_W },
-		{ hash("w"), &mc_w },
+		{hash("1"), &mc_1},
+		{hash("2"), &mc_2},
+		{hash("3"), &mc_3},
+		{hash("5"), &mc_5},
+		{hash("6"), &mc_6},
+		{hash("7"), &mc_7},
+		{hash("8"), &mc_8},
+		{hash("a"), &mc_a},
+		{hash("b"), &mc_b},
+		{hash("c"), &mc_c},
+		{hash("D"), &mc_D},
+		{hash("E"), &mc_E},
+		{hash("e"), &mc_e},
+		{hash("F"), &mc_F},
+		{hash("f"), &mc_f},
+		{hash("g"), &mc_g},
+		{hash("G"), &mc_G},
+		{hash("I"), &mc_I},
+		{hash("i"), &mc_i},
+		{hash("K"), &mc_K},
+		{hash("k"), &mc_k},
+		{hash("L"), &mc_L},
+		{hash("m"), &mc_m},
+		{hash("n"), &mc_n},
+		{hash("N"), &mc_N},
+		{hash("p"), &mc_p},
+		{hash("Q"), &mc_Q},
+		{hash("R"), &mc_R},
+		{hash("S"), &mc_S},
+		{hash("s"), &mc_s},
+		{hash("t"), &mc_t},
+		{hash("T"), &mc_T},
+		{hash("U"), &mc_U},
+		{hash("v"), &mc_v},
+		{hash("W"), &mc_W},
+		{hash("w"), &mc_w},
 	};
 	return map;
 }
@@ -209,6 +208,11 @@ constexpr std::array<std::string_view, 8> flagProcessingMessageCodes =
 	"s"sv,
 };
 
+constexpr std::array<std::string_view, 1> translatableMessageCodes =
+{
+	"U"sv,
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 using pickerReturn = std::pair<GameValue, uint8_t>;
@@ -218,103 +222,126 @@ static GS1GameVariable bindPlayerSetter(GS1Visitor* visitor, PlayerID playerId, 
 {
 	PlayerProp propId = GetPlayerPropFromIndex(index);
 	if (propId == PlayerProp::ID)
-		return { std::move(value), std::nullopt };
+		return {std::move(value), std::nullopt};
 
-	GameValue result{ std::move(value) };
-	result.setSetter(
-		[visitor, playerId, propIndex = index, propId](GameValueVariant incoming, std::optional<size_t> index)
+	GameValue result{std::move(value)};
+	result.setSetter([visitor, playerId, propIndex = index, propId](GameValueVariant incoming, std::optional<size_t> index)
+	{
+		GameValue value;
+		const auto picker = visit_functions{
+			[&](std::optional<bool>* in)
+			{
+				if (in->has_value()) value.set(in->value(), index);
+			},
+			[&](std::optional<double>* in)
+			{
+				if (in->has_value()) value.set(in->value(), index);
+			},
+			[&](std::optional<std::string>* in)
+			{
+				if (in->has_value()) value.set(in->value(), index);
+			},
+			[&](std::optional<std::vector<double>>* in)
+			{
+				if (in->has_value()) value.set(in->value(), index);
+			},
+			[&](std::optional<std::vector<ScriptObject>>* in)
+			{
+				if (in->has_value()) value.set(in->value(), index);
+			}
+		};
+		std::visit(picker, incoming);
+
+		auto* server = BabyDI::Get<Server>();
+		if (auto player = server->getNPCServer()->getPlayer(playerId); player != nullptr)
 		{
-			GameValue value;
-			const auto picker = visit_functions
+			if (propId != PlayerProp::COLORS)
 			{
-				[&](std::optional<bool>* in) { if (in->has_value()) value.set(in->value(), index); },
-				[&](std::optional<double>* in) { if (in->has_value()) value.set(in->value(), index); },
-				[&](std::optional<std::string>* in) { if (in->has_value()) value.set(in->value(), index); },
-				[&](std::optional<std::vector<double>>* in) { if (in->has_value()) value.set(in->value(), index); },
-				[&](std::optional<std::vector<ScriptObject>>* in) { if (in->has_value()) value.set(in->value(), index); }
-			};
-			std::visit(picker, incoming);
-
-			auto* server = BabyDI::Get<Server>();
-			if (auto player = server->getNPCServer()->getPlayer(playerId); player != nullptr)
+				auto prop = player->getProp(propId);
+				prop->apply(value);
+				auto results = player->setProp(propId, SetBy::SERVER, prop);
+				if (results.resultFlags.test(results.sendToAll))
+					player->sendPropsFromResults(results);
+			}
+			else
 			{
-				if (propId != PlayerProp::COLORS)
-				{
-					auto prop = player->getProp(propId);
-					prop->apply(value);
-					auto results = player->setProp(propId, SetBy::SERVER, prop);
-					if (results.resultFlags.test(results.sendToAll))
-						player->sendPropsFromResults(results);
-				}
-				else
-				{
-					auto colors = player->getProp<PlayerProp::COLORS>();
-					uint8_t colorVal = 0;
+				auto colors = player->getProp<PlayerProp::COLORS>();
+				uint8_t colorVal = 0;
 
-					auto strVal = value.get<std::string>();
-					if (strVal.has_value())
-						colorVal = visitor->getColorValueFromString(strVal.value());
-					else colorVal = DoubleAsIntegralFloor<uint8_t>(value.get<double>().value_or(0));
+				auto strVal = value.get<std::string>();
+				if (strVal.has_value())
+					colorVal = visitor->getColorValueFromString(strVal.value());
+				else colorVal = DoubleAsIntegralFloor<uint8_t>(value.get<double>().value_or(0));
 
-					colors.values[std::max(0, propIndex - 20)] = colorVal;
-					player->setProp<PlayerProp::COLORS>(SetBy::SERVER, colors);
-				}
+				colors.values[std::max(0, propIndex - 20)] = colorVal;
+				player->setProp<PlayerProp::COLORS>(SetBy::SERVER, colors);
 			}
 		}
-	);
+	});
 
-	return { std::move(result), std::nullopt };
+	return {std::move(result), std::nullopt};
 }
 
 static GS1GameVariable bindNPCSetter(GS1Visitor* visitor, NPCID npcId, uint8_t index, GameValue& value)
 {
 	NPCProp propId = GetNPCPropFromIndex(index);
 	if (propId == NPCProp::ID)
-		return { std::move(value), std::nullopt };
+		return {std::move(value), std::nullopt};
 
-	GameValue result{ std::move(value) };
-	result.setSetter(
-		[visitor, npcId, propIndex = index, propId](GameValueVariant incoming, std::optional<size_t> index)
+	GameValue result{std::move(value)};
+	result.setSetter([visitor, npcId, propIndex = index, propId](GameValueVariant incoming, std::optional<size_t> index)
+	{
+		GameValue value;
+		const auto picker = visit_functions{
+			[&](std::optional<bool>* in)
+			{
+				if (in->has_value()) value.set(in->value(), index);
+			},
+			[&](std::optional<double>* in)
+			{
+				if (in->has_value()) value.set(in->value(), index);
+			},
+			[&](std::optional<std::string>* in)
+			{
+				if (in->has_value()) value.set(in->value(), index);
+			},
+			[&](std::optional<std::vector<double>>* in)
+			{
+				if (in->has_value()) value.set(in->value(), index);
+			},
+			[&](std::optional<std::vector<ScriptObject>>* in)
+			{
+				if (in->has_value()) value.set(in->value(), index);
+			}
+		};
+		std::visit(picker, incoming);
+
+		auto* server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPC(npcId); npc != nullptr)
 		{
-			GameValue value;
-			const auto picker = visit_functions
+			if (propId == NPCProp::COLORS)
 			{
-				[&](std::optional<bool>* in) { if (in->has_value()) value.set(in->value(), index); },
-				[&](std::optional<double>* in) { if (in->has_value()) value.set(in->value(), index); },
-				[&](std::optional<std::string>* in) { if (in->has_value()) value.set(in->value(), index); },
-				[&](std::optional<std::vector<double>>* in) { if (in->has_value()) value.set(in->value(), index); },
-				[&](std::optional<std::vector<ScriptObject>>* in) { if (in->has_value()) value.set(in->value(), index); }
-			};
-			std::visit(picker, incoming);
+				auto colors = npc->getProp<NPCProp::COLORS>();
+				uint8_t colorVal = 0;
 
-			auto* server = BabyDI::Get<Server>();
-			if (auto npc = server->getNPC(npcId); npc != nullptr)
+				auto strVal = value.get<std::string>();
+				if (strVal.has_value())
+					colorVal = visitor->getColorValueFromString(strVal.value());
+				else colorVal = DoubleAsIntegralFloor<uint8_t>(value.get<double>().value_or(0));
+
+				colors.values[std::max(0, propIndex - 20)] = colorVal;
+				npc->setProp<NPCProp::COLORS>(SetBy::SERVER, colors);
+			}
+			else
 			{
-				if (propId == NPCProp::COLORS)
-				{
-					auto colors = npc->getProp<NPCProp::COLORS>();
-					uint8_t colorVal = 0;
-
-					auto strVal = value.get<std::string>();
-					if (strVal.has_value())
-						colorVal = visitor->getColorValueFromString(strVal.value());
-					else colorVal = DoubleAsIntegralFloor<uint8_t>(value.get<double>().value_or(0));
-
-					colors.values[std::max(0, propIndex - 20)] = colorVal;
-					npc->setProp<NPCProp::COLORS>(SetBy::SERVER, colors);
-
-				}
-				else
-				{
-					auto prop = npc->getProp(propId);
-					prop->apply(value);
-					npc->setProp(propId, SetBy::SERVER, prop);
-				}
+				auto prop = npc->getProp(propId);
+				prop->apply(value);
+				npc->setProp(propId, SetBy::SERVER, prop);
 			}
 		}
-	);
+	});
 
-	return { std::move(result), std::nullopt };
+	return {std::move(result), std::nullopt};
 }
 
 static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments, pickerFunc picker)
@@ -374,6 +401,18 @@ static GS1ScriptValue handleCharacterBasedMessageCode(GS1Visitor* visitor, const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static std::any translateStringForPlayer(antlr4::tree::ParseTree* node, GS1Visitor* visitor, PlayerPtr player)
+{
+	if (node == nullptr)
+		return std::any{};
+	if (visitor == nullptr || player == nullptr || node->getTreeType() != antlr4::tree::ParseTreeType::RULE)
+		return node->accept(visitor);
+
+	return visitor->translateSourceText(node, player->account.language);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 GS1ScriptValue processMessageCode(GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view messageCode)
 {
 	static MessageCodeHandleMap map = GenerateMap();
@@ -383,25 +422,52 @@ GS1ScriptValue processMessageCode(GS1Visitor* visitor, antlr4::tree::ParseTree* 
 	if (messageCode.empty())
 		throw std::runtime_error("processMessageCode received an empty message code");
 
-	// Record if we are expecting a flag.
-	bool oldExpectingFlag = visitor->expectingFlag;
-	visitor->expectingFlag = (std::ranges::find(flagProcessingMessageCodes, messageCode) != std::ranges::end(flagProcessingMessageCodes));
-
-	// Collect the arguments from the node.
+	bool isTranslatable = std::ranges::contains(translatableMessageCodes, messageCode);
 	std::vector<GS1ScriptValue*> arguments;
-	auto children = visitor->visitChildrenAndCollect(node);
-	for (auto& result : children)
+	std::vector<std::any> keepAlive;
+
+	// Helper to package a value and keep it alive for the duration of the command execution.
+	auto makeValue = [&](std::any&& anyValue)
 	{
-		auto* container = std::any_cast<GS1ScriptValue>(&result);
+		if (!anyValue.has_value())
+			return;
+
+		keepAlive.emplace_back(std::move(anyValue));
+		auto* container = std::any_cast<GS1ScriptValue>(&keepAlive.back());
 		if (container == nullptr)
-			throw std::runtime_error("BuiltInFunction argument is not a valid GS1ScriptValue");
+			throw std::runtime_error("Message code argument is not a valid GS1ScriptValue");
 
-		// Add to the arguments.
-		arguments.push_back(container);
+		arguments.push_back(std::move(container));
+	};
+
+	{
+		// Record if we are expecting a flag.
+		SetAndRestore<bool> expectingFlagGuard(visitor->expectingFlag, (std::ranges::find(flagProcessingMessageCodes, messageCode) != std::ranges::end(flagProcessingMessageCodes)));
+
+		auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
+
+		// Save the player pointer so we don't keep searching for it.
+		PlayerPtr playerPtr = nullptr;
+		auto server = BabyDI::Get<Server>();
+		if (isTranslatable && player.has_value())
+			playerPtr = server->getPlayer(player.value().first);
+
+		// Collect the arguments from the node.
+		for (size_t i = 0; i < node->children.size(); ++i)
+		{
+			// If the command is translatable, run it through the translation process before packaging the value.
+			if (isTranslatable && visitor->expectingFlag == false && player.has_value())
+			{
+				if (auto stringContext = visitor->walkToContext(node->children[i]); stringContext != nullptr)
+				{
+					makeValue(translateStringForPlayer(stringContext, visitor, playerPtr));
+					continue;
+				}
+			}
+
+			makeValue(node->children[i]->accept(visitor));
+		}
 	}
-
-	// Reset the expectingFlag toggle back to normal.
-	visitor->expectingFlag = oldExpectingFlag;
 
 	// #C0 - #C4
 	if (messageCode.starts_with("C"))
@@ -431,7 +497,7 @@ GS1ScriptValue processMessageCode(GS1Visitor* visitor, antlr4::tree::ParseTree* 
 	}
 
 	// Not a known message code, so just return the string.
-	return GameValue{ node->getText() };
+	return GameValue{node->getText()};
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -490,8 +556,7 @@ GS1ScriptValue mc_6(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (!result.has_value())
 		return std::string{};
 
-	const auto picker = visit_functions
-	{
+	const auto picker = visit_functions{
 		[](PlayerPtr& player) -> std::string
 		{
 			if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr && client->getCarryNPC() != 0)
@@ -502,7 +567,10 @@ GS1ScriptValue mc_6(GS1Visitor* visitor, std::string_view messageCode, const std
 			}
 			return std::string{};
 		},
-		[](NPCPtr& npc) -> std::string { return std::string{}; },
+		[](NPCPtr& npc) -> std::string
+		{
+			return std::string{};
+		},
 	};
 
 	return std::visit(picker, result.value());
@@ -542,7 +610,7 @@ GS1ScriptValue mc_a(GS1Visitor* visitor, std::string_view messageCode, const std
 		if (auto player = server->getNPCServer()->getPlayer(source->first); player != nullptr)
 		{
 			// Explicitly place it in another string as the return will trigger move semantics.
-			return std::string{ player->account.name };
+			return std::string{player->account.name};
 		}
 	}
 
@@ -603,8 +671,7 @@ GS1ScriptValue mc_F(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (!result.has_value())
 		return std::string{};
 
-	const auto picker = visit_functions
-	{
+	const auto picker = visit_functions{
 		[](PlayerPtr& player) -> std::string
 		{
 			if (player != nullptr)
@@ -620,7 +687,7 @@ GS1ScriptValue mc_F(GS1Visitor* visitor, std::string_view messageCode, const std
 			if (npc != nullptr)
 			{
 				if (auto level = npc->getLevel(); level != nullptr)
-					return std::string{ level->levelName };
+					return std::string{level->levelName};
 				return npc->level;
 			}
 			return std::string{};
@@ -674,9 +741,9 @@ GS1ScriptValue mc_G(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (auto client = getPlayerClientFromSource(visitor->getCurrentSource(), index); client != nullptr)
 	{
 		if (client->isGuest())
-			return std::string{ "guest" };
+			return std::string{"guest"};
 
-		return std::string{ "classic" };
+		return std::string{"classic"};
 	}
 
 	return std::string{};
@@ -712,7 +779,7 @@ GS1ScriptValue mc_K(GS1Visitor* visitor, std::string_view messageCode, const std
 		throw std::invalid_argument("Message Code #K requires exactly 1 argument");
 
 	uint8_t ascii = std::min(static_cast<size_t>(255), DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0])));
-	return std::string{ static_cast<char>(ascii) };
+	return std::string{static_cast<char>(ascii)};
 }
 
 // #k(key_index)
@@ -730,8 +797,8 @@ GS1ScriptValue mc_L(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (npc != nullptr)
 	{
 		if (auto level = npc->getLevel(); level != nullptr)
-			return std::string{ level->levelName };
-		return std::string{ npc->level };
+			return std::string{level->levelName};
+		return std::string{npc->level};
 	}
 
 	return std::string{};
@@ -768,7 +835,7 @@ GS1ScriptValue mc_N(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (auto npc = getNPCFromSource(visitor->getCurrentSource(), index); npc != nullptr)
 	{
 		// Explicitly place it in another string as the return will trigger move semantics.
-		return std::string{ npc->name };
+		return std::string{npc->name};
 	}
 
 	return std::string{};
@@ -788,7 +855,7 @@ GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std
 		if (auto* arg = std::any_cast<std::string>(&visitor->getEvent().args.at(index)); arg != nullptr)
 		{
 			// Explicitly place it in another string as the return will trigger move semantics.
-			return std::string{ *arg };
+			return std::string{*arg};
 		}
 	}
 	return std::string{};
@@ -859,7 +926,7 @@ GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std
 		return std::string{};
 
 	// Explicitly place it in another string as the return will trigger move semantics.
-	return std::string{ visitor->tokenizeTokens[index] };
+	return std::string{visitor->tokenizeTokens[index]};
 }
 
 // #T(string)
@@ -881,21 +948,8 @@ GS1ScriptValue mc_U(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Message Code #U requires exactly 1 argument");
 
-	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
-
-	auto server = BabyDI::Get<Server>();
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value() && server)
-	{
-		if (auto player = server->getPlayer(source.value().first); player != nullptr)
-		{
-			auto translationManager = BabyDI::Get<ITranslationManager>();
-			auto result = translationManager->getText(player->getLanguage(), str);
-			if (result.data() != str.data())
-				return std::string{ result };
-		}
-	}
-
-	return str;
+	// Translation has already happened.
+	return visitor->getGameValueAs<std::string>(*arguments[0]);
 }
 
 // #v(identifier)
@@ -931,7 +985,7 @@ GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std
 				if (auto weapon = server->getWeapon(weaponList[(size_t)index]); weapon != nullptr)
 				{
 					// Explicitly place it in another string as the return will trigger move semantics.
-					return std::string{ weapon->image };
+					return std::string{weapon->image};
 				}
 			}
 		}
@@ -959,7 +1013,7 @@ GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std
 			if (index >= 0 && index < (int64_t)weaponList.size())
 			{
 				// Explicitly place it in another string as the return will trigger move semantics.
-				return std::string{ weaponList[(size_t)index] };
+				return std::string{weaponList[(size_t)index]};
 			}
 		}
 	}
@@ -980,7 +1034,7 @@ GS1ScriptValue mc_C(GS1Visitor* visitor, uint8_t index, std::string_view message
 {
 	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return std::make_pair(GameValue{ std::string{ getClassicColorName(static_cast<ClassicColors>(character.colors[index])) } }, static_cast<uint8_t>(20 + index));
+		return std::make_pair(GameValue{std::string{getClassicColorName(static_cast<ClassicColors>(character.colors[index]))}}, static_cast<uint8_t>(20 + index));
 	});
 }
 
@@ -990,7 +1044,7 @@ GS1ScriptValue mc_P(GS1Visitor* visitor, uint8_t index, std::string_view message
 {
 	return handleCharacterBasedMessageCode(visitor, arguments, [&index](Character& character, const auto& arguments) -> pickerReturn
 	{
-		return std::make_pair(GameValue{ character.ganiAttributes[index] }, static_cast<uint8_t>(30 + index - 1));
+		return std::make_pair(GameValue{character.ganiAttributes[index]}, static_cast<uint8_t>(30 + index - 1));
 	});
 }
 
