@@ -103,6 +103,8 @@ public:
 	double getColorValueFromString(std::string_view colorString);
 
 public:
+	GS1ScriptValue translateSourceText(antlr4::tree::ParseTree* node, std::string_view language);
+	GS1ScriptValue translateSourceText(std::string_view sourceText, std::string_view language);
 	GS1ScriptValue processStringExpression(std::string_view expression);
 	GS1ScriptValue processMathExpression(std::string_view expression);
 

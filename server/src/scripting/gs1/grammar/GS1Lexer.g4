@@ -410,7 +410,7 @@ void popNextMode(bool terminateEarly = false)
 		currentState.arguments.remove_prefix(1);
 
 		// Last string?  Commas are included!
-		if (mode == 'S' && (currentState.arguments.empty() || currentState.arguments.front() == ')'))
+		if ((mode == 'S' || mode == 'R') && (currentState.arguments.empty() || currentState.arguments.front() == ')'))
 			currentState.commaPop = false;
 
 		switch (mode)
@@ -419,6 +419,7 @@ void popNextMode(bool terminateEarly = false)
 			case 'E': setMode(IN_PARAM_E); break;
 			case 'P': setMode(IN_PARAM_E); currentState.commaPop = false; break;
 			case 'S': setMode(IN_PARAM_S); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
+			case 'R': setMode(IN_PARAM_R); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
 			case 'L': setMode(IN_PARAM_L); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
 			case 'M': setMode(IN_PARAM_M); emitIdentifierAfter(GS1Lexer::RAWMESSAGECODE, getText()); break;
 			case 'B': setMode(IN_PARAM_B); break;
@@ -453,6 +454,7 @@ tokens { COMMAND, FUNCTION, MESSAGECODE, RAWMESSAGECODE, STRING, BADDY, ITEM, CO
 	- E  expression (variable + math)
 	- P  parameters (multiple expressions)
 	- S  string
+	- R  raw string (string that doesn't process message codes)
 	- L  variable length comma-separated string list
 	- M  message code
 	- B  baddy name
@@ -500,7 +502,7 @@ CMD_CANBEPULLED          : 'canbepulled'          -> type(COMMAND);
 CMD_CANNOTBEPULLED       : 'cannotbepulled'       -> type(COMMAND);
 CMD_MOVE                 : 'move '                 { pushCommand("EEEE"); } -> type(COMMAND);
 CMD_SAY                  : 'say '                 { pushCommand("E"); } -> type(COMMAND);
-CMD_SAY2                 : 'say2'                 { pushCommand("S"); } -> type(COMMAND);
+CMD_SAY2                 : 'say2'                 { pushCommand("R"); } -> type(COMMAND);
 CMD_LAY                  : 'lay '                 { pushCommand("I"); } -> type(COMMAND);
 CMD_LAY2                 : 'lay2'                 { pushCommand("IEE"); } -> type(COMMAND);
 CMD_TAKE                 : 'take '                { pushCommand("I"); } -> type(COMMAND);
@@ -661,7 +663,7 @@ CMD_REMOVEGUILD          : 'removeguild'          { pushCommand("S"); } -> type(
 CMD_COPYSTRINGS          : 'copystrings'          { pushCommand("SS"); } -> type(COMMAND);
 CMD_SENDTORC             : 'sendtorc'             { pushCommand("S"); } -> type(COMMAND);
 CMD_SENDTONC             : 'sendtonc'             { pushCommand("S"); } -> type(COMMAND);
-CMD_SENDPM               : 'sendpm'               { pushCommand("S"); } -> type(COMMAND);
+CMD_SENDPM               : 'sendpm'               { pushCommand("R"); } -> type(COMMAND);
 CMD_SETPM                : 'setpm'                { pushCommand("S"); } -> type(COMMAND);
 CMD_SENDRPGMESSAGE       : 'sendrpgmessage'       { pushCommand("S"); } -> type(COMMAND);
 CMD_SERVERWARP           : 'serverwarp'           { pushCommand("S"); } -> type(COMMAND);
@@ -1075,6 +1077,15 @@ PARAM_S_STRING_LITERAL1 : ~[#),]+     { canFuncPop() && canCommaPop() }?  -> typ
 PARAM_S_STRING_LITERAL2 : ~[#};,]+    { canCmdPop()  && canCommaPop() }?  -> type(STRING);
 PARAM_S_STRING_LITERAL_END1 : ~[#)]+  { canFuncPop() && !canCommaPop() }? -> type(STRING);
 PARAM_S_STRING_LITERAL_END2 : ~[#};]+ { canCmdPop()  && !canCommaPop() }? -> type(STRING);
+
+// --------------------------------------------------------
+mode IN_PARAM_R;
+
+PARAM_R_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?   { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
+PARAM_R_POP_END         : END               { canCmdPop() }?   { popNextMode(true); } -> type(END);
+PARAM_R_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }? { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_R_STRING_LITERAL  : ~[};,]+   { canCmdPop() && canCommaPop() }?  -> type(STRING);
+PARAM_R_STRING_LITERAL_END : ~[};]+ { canCmdPop() && !canCommaPop() }? -> type(STRING);
 
 // --------------------------------------------------------
 mode IN_PARAM_L;

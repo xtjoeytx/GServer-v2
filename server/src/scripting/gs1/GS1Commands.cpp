@@ -13,15 +13,15 @@
 #include <optional>
 #include <ranges>
 #include <stdexcept>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include <GS1Parser.h>
 #include <tree/ParseTree.h>
+#include <tree/ParseTreeType.h>
 
 #include <CString.h>
 #include <IEnums.h>
@@ -386,6 +386,24 @@ constexpr std::array<std::string_view, 8> flagProcessingCommands =
 	"unset"sv,
 };
 
+constexpr std::array<std::string_view, 2> translatableCommands =
+{
+	"say2"sv,
+	"sendpm"sv,
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+static std::any translateStringForPlayer(antlr4::tree::ParseTree* node, GS1Visitor* visitor, PlayerPtr player)
+{
+	if (node == nullptr)
+		return std::any{};
+	if (visitor == nullptr || player == nullptr || node->getTreeType() != antlr4::tree::ParseTreeType::RULE)
+		return node->accept(visitor);
+
+	return visitor->translateSourceText(node, player->account.language);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view commandName)
@@ -406,6 +424,9 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 		return;
 	}
 
+	// Find the nearest player.  We use this for a couple calculations.
+	std::optional<ScriptObject> player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
+
 	// Special case for 'setplayerprop' and 'setcharprop', which need to push a unique context onto the stack.
 	// We need to bring the relevant context to the front so the message code links to the correct player or NPC, since it can touch both.
 	bool popContext = false;
@@ -420,7 +441,6 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 	}
 	else if (commandName == "setplayerprop")
 	{
-		auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
 		if (!player.has_value())
 		{
 			if (visitor->getEvent().initiator.second != ScriptObjectType::PLAYER)
@@ -434,25 +454,45 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 
 	// Record if we are expecting a flag for the next argument.
 	visitor->expectingFlag = (std::ranges::find(flagProcessingCommands, commandName) != std::ranges::end(flagProcessingCommands));
+	bool isTranslatable = std::ranges::contains(translatableCommands, commandName);
+
+	std::vector<GS1ScriptValue*> arguments;
+	std::vector<std::any> keepAlive;
+
+	// Helper to package a value and keep it alive for the duration of the command execution.
+	auto makeValue = [&](std::any&& anyValue)
+	{
+		if (!anyValue.has_value())
+			return;
+
+		keepAlive.emplace_back(std::move(anyValue));
+		auto* container = std::any_cast<GS1ScriptValue>(&keepAlive.back());
+		if (container == nullptr)
+			throw std::runtime_error("BuiltInCommand argument is not a valid GS1ScriptValue");
+
+		arguments.push_back(std::move(container));
+	};
+
+	// Save the player pointer so we don't keep searching for it.
+	PlayerPtr playerPtr = nullptr;
+	auto server = BabyDI::Get<Server>();
+	if (isTranslatable && player.has_value())
+		playerPtr = server->getPlayer(player.value().first);
 
 	// Collect the arguments from the node.
-	std::vector<GS1ScriptValue*> arguments;
-	std::vector<std::any> results;
 	for (size_t i = 0; i < node->children.size(); ++i)
 	{
-		auto ret = node->children[i]->accept(visitor);
-		if (ret.has_value())
+		// If the command is translatable, run it through the translation process before packaging the value.
+		if (isTranslatable && visitor->expectingFlag == false && player.has_value())
 		{
-			results.emplace_back(std::move(ret));
-			auto* container = std::any_cast<GS1ScriptValue>(&results.back());
-			if (container == nullptr)
-				throw std::runtime_error("BuiltInCommand argument is not a valid GS1ScriptValue");
-
-			arguments.push_back(std::move(container));
-
-			// Unset the expecting flag.
-			visitor->expectingFlag = false;
+			if (auto stringContext = visitor->walkToContext(node->children[i]); stringContext != nullptr)
+			{
+				makeValue(translateStringForPlayer(stringContext, visitor, playerPtr));
+				continue;
+			}
 		}
+
+		makeValue(node->children[i]->accept(visitor));
 	}
 
 	// Unset the expecting flag.
@@ -1840,15 +1880,13 @@ void fn_say(GS1Visitor* visitor, std::string_view commandName, const std::vector
 		if (levelData != nullptr)
 		{
 			auto signIndex = DoubleAsIntegralFloor<size_t>(visitor->getGameValueAs<double>(*arguments[0]));
-			if (signIndex < levelData->signs.size())
+			auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
+			if (source.has_value() && signIndex < levelData->signs.size())
 			{
 				auto& sign = levelData->signs[signIndex];
-				if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
-				{
-					auto server = BabyDI::Get<Server>();
-					if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
-						player->sendSignMessage(sign.text);
-				}
+				auto server = BabyDI::Get<Server>();
+				if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+					player->sendSignMessage(sign.text);
 			}
 		}
 	}
@@ -1885,7 +1923,7 @@ void fn_sendpm(GS1Visitor* visitor, std::string_view commandName, const std::vec
 		auto message = visitor->getGameValueAs<std::string>(*arguments[0]);
 		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-			player->sendPrivateMessage(NPCServerPlayerID, player->translate(message));
+			player->sendPrivateMessage(NPCServerPlayerID, message);
 	}
 }
 

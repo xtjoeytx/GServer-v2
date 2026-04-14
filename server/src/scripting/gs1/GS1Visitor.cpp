@@ -297,6 +297,50 @@ double GS1Visitor::getColorValueFromString(std::string_view colorString)
 	return static_cast<double>(std::distance(colorNames.begin(), it));
 }
 
+GS1ScriptValue GS1Visitor::translateSourceText(antlr4::tree::ParseTree* node, std::string_view language)
+{
+	// TODO: We should cache this somewhere.
+
+	if (node == nullptr)
+		return std::string{};
+	if (m_parser == nullptr)
+		return node->getText();
+
+	// Get the compound string context.
+	auto compoundStringContext = walkToContext<GS1Parser::CompoundStringContext>(node);
+	if (compoundStringContext == nullptr)
+		return node->getText();
+
+	// Get the raw text of the compound string.
+	std::string raw;
+	auto* tokenStream = m_parser->getTokenStream();
+	if (tokenStream != nullptr)
+		raw = std::move(tokenStream->getText(compoundStringContext->getSourceInterval()));
+
+	// If the text is empty or consists solely of whitespace, just evaluate the original string without translating.
+	if (string::empty_or_whitespace(raw))
+		return node->getText();
+
+	return translateSourceText(raw, language);
+}
+
+GS1ScriptValue GS1Visitor::translateSourceText(std::string_view sourceText, std::string_view language)
+{
+	// TODO: We should cache this somewhere.
+
+	// Get the translation manager.
+	// If we don't have one, just evaluate the original string.
+	auto translationManager = BabyDI::Get<ITranslationManager>();
+	if (translationManager == nullptr)
+		return std::string{sourceText};
+
+	// Translate the raw string.
+	auto translated = translationManager->getText(language, string::trim(sourceText));
+
+	// Reparse the translated string and get the result.
+	return processStringExpression(translated);
+}
+
 GS1ScriptValue GS1Visitor::processStringExpression(std::string_view expression)
 {
 	// If we are already reparsing string content, do not recurse.

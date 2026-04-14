@@ -1,12 +1,17 @@
 #include <cstdint>
 #include <format>
+#include <string_view>
 #include <vector>
 
 #include <CString.h>
 
+#include <BabyDI.h>
+#include <Server.h>
 #include <level/LevelLink.h>
+#include <npcserver/NPCServer.h>
 #include <object/Character.h>
-#include <utilities/CommonTypes.h>
+#include <scripting/IScriptEngine.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/StringUtils.h>
 
@@ -15,13 +20,35 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+static bool checkIfComplex(std::string_view destination)
+{
+	if (destination != "playerx" && destination != "playery" && !string::isFloat(destination))
+		return true;
+	return false;
+}
+
+static int16_t getPixelDestination(std::string_view destination, const Character& character)
+{
+	if (destination == "playerx")
+		return character.localPixelX;
+	if (destination == "playery")
+		return character.localPixelY;
+	return static_cast<int16_t>(string::toFloat(destination) * 16);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 LevelLink::LevelLink(const std::vector<CString>& pLink)
 {
 	parseLinkStr(pLink);
+
+	m_server = BabyDI::Get<Server>();
+	m_complex[0] = checkIfComplex(m_destinationX);
+	m_complex[1] = checkIfComplex(m_destinationY);
 }
 
 LevelLink::LevelLink(const Rectangle<uint8_t, uint8_t>& coordinates, std::string_view destinationX, std::string_view destinationY, std::string_view destinationLevel)
-	: m_destinationLevel{ destinationLevel }, m_destinationX{ destinationX }, m_destinationY{ destinationY }, m_boundingBox{ coordinates }
+	: m_destinationLevel{destinationLevel}, m_destinationX{destinationX}, m_destinationY{destinationY}, m_boundingBox{coordinates}
 {
 	if (m_destinationX == "-1")
 	{
@@ -34,15 +61,15 @@ LevelLink::LevelLink(const Rectangle<uint8_t, uint8_t>& coordinates, std::string
 		m_constantY = true;
 		m_destinationY = "playery";
 	}
+
+	m_server = BabyDI::Get<Server>();
+	m_complex[0] = checkIfComplex(m_destinationX);
+	m_complex[1] = checkIfComplex(m_destinationY);
 }
 
 CString LevelLink::getLinkStr() const
 {
-	return std::format("{} {} {} {} {} {} {}", m_destinationLevel,
-		m_boundingBox.position.x(), m_boundingBox.position.y(),
-		m_boundingBox.size.width(), m_boundingBox.size.height(),
-		m_destinationX, m_destinationY
-	);
+	return std::format("{} {} {} {} {} {} {}", m_destinationLevel, m_boundingBox.position.x(), m_boundingBox.position.y(), m_boundingBox.size.width(), m_boundingBox.size.height(), m_destinationX, m_destinationY);
 }
 
 void LevelLink::parseLinkStr(const std::vector<CString>& pLink)
@@ -63,8 +90,8 @@ void LevelLink::parseLinkStr(const std::vector<CString>& pLink)
 
 	m_boundingBox =
 	{
-		{ static_cast<uint8_t>(string::toNumber(pLink[1 + offset].toString())), static_cast<uint8_t>(string::toNumber(pLink[2 + offset].toString())) },
-		{ static_cast<uint8_t>(string::toNumber(pLink[3 + offset].toString())), static_cast<uint8_t>(string::toNumber(pLink[4 + offset].toString())) }
+		{static_cast<uint8_t>(string::toNumber(pLink[1 + offset].toString())), static_cast<uint8_t>(string::toNumber(pLink[2 + offset].toString()))},
+		{static_cast<uint8_t>(string::toNumber(pLink[3 + offset].toString())), static_cast<uint8_t>(string::toNumber(pLink[4 + offset].toString()))}
 	};
 	m_destinationX = pLink[5 + offset].toString();
 	m_destinationY = pLink[6 + offset].toString();
@@ -86,13 +113,25 @@ void LevelLink::parseLinkStr(const std::vector<CString>& pLink)
 
 //----------------------------
 
-LocalPixelPosition LevelLink::getDestinationForCharacter(Character& character) const
+LocalPixelPosition LevelLink::getDestinationForCharacter(Character& character, ScriptObject source) const
 {
-	// TODO: Level links can use math, so we need to eventually throw this into the script engine.  Yikes.
+	// If the link is complex and we have an NPC server, process the link via the scripting system.
+	if ((m_complex[0] || m_complex[1]) && m_server && m_server->hasNPCServer())
+	{
+		const auto& npcServer = m_server->getNPCServer();
+		if (auto gs1 = npcServer->scripting.getScriptEngine("GS1"); gs1 != nullptr)
+		{
+			auto x = m_complex[0] ? static_cast<int16_t>(gs1->processMathExpression(m_destinationX, source) * 16) : getPixelDestination(m_destinationX, character);
+			auto y = m_complex[1] ? static_cast<int16_t>(gs1->processMathExpression(m_destinationY, source) * 16) : getPixelDestination(m_destinationY, character);
+			return LocalPixelPosition{x, y};
+		}
+	}
+
+	// If not complex, or in classic mode, we can just return the result without doing any math or scripting.
 	LocalPixelPosition result =
 	{
-		(m_destinationX == "playerx" ? character.localPixelX : static_cast<int16_t>(string::toFloat(m_destinationX) * 16)),
-		(m_destinationY == "playery" ? character.localPixelY : static_cast<int16_t>(string::toFloat(m_destinationY) * 16))
+		getPixelDestination(m_destinationX, character),
+		getPixelDestination(m_destinationY, character)
 	};
 	return result;
 }
