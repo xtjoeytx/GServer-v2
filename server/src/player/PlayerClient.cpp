@@ -1307,8 +1307,8 @@ bool PlayerClient::leaveLevel()
 	{
 		if (auto& levelPlayerList = levelp->getPlayers(); !levelPlayerList.empty())
 		{
-			if (auto leader = m_server->getPlayer(levelPlayerList.front()); leader != nullptr)
-				leader->sendPacket(CString() >> (char)PLO_ISLEADER);
+			if (auto leader = m_server->getPlayer<PlayerClient>(levelPlayerList.front()); leader != nullptr)
+				leader->informPlayerIsLevelLeader();
 		}
 	}
 
@@ -1447,7 +1447,9 @@ bool PlayerClient::sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLe
 
 	// Fix the level name.
 	// If the player is on a gmap, we need to set the level back to the gmap.
+	// If the player is the leader on their level, also send the isleader packet.
 	sendPacket(CString() >> (char)PLO_LEVELNAME << getLevelName());
+	checkAndInformIfLevelLeader();
 
 	return true;
 }
@@ -1477,8 +1479,7 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 	sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)0);
 
 	// If we are the leader, send it now.
-	if (level->isSinglePlayer || level->isPlayerLeader(getId()) || level->isGmap())
-		sendPacket(CString() >> (char)PLO_ISLEADER);
+	checkAndInformIfLevelLeader();
 
 	// Send NPCs.
 	sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
@@ -1534,6 +1535,24 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 	}
 
 	return true;
+}
+
+void PlayerClient::checkAndInformIfLevelLeader()
+{
+	if (m_currentLevel.expired())
+		return;
+
+	auto level = getLevel();
+	if (level == nullptr)
+		return;
+
+	if (level->isSinglePlayer || level->isPlayerLeader(m_id) || level->isGmap())
+		sendPacket(CString() >> (char)PLO_ISLEADER);
+}
+
+void PlayerClient::informPlayerIsLevelLeader()
+{
+	sendPacket(CString() >> (char)PLO_ISLEADER);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

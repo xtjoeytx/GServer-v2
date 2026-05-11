@@ -116,6 +116,9 @@ public:
 	virtual bool sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
 	virtual bool sendDynamicLevelData(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
 
+	void checkAndInformIfLevelLeader();
+	void informPlayerIsLevelLeader();
+
 public:
 	std::optional<clock::time_point> getLevelLastEnteredTime(const StaticLevelData* level) const;
 	std::optional<clock::time_point> getLevelLastEnteredTime(const SubLevel* level, std::string_view group = ""sv) const;
