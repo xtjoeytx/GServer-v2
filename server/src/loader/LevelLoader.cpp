@@ -381,7 +381,7 @@ bool LevelLoader::loadZelda(StaticLevelDataPtr levelData, std::string_view fileV
 	loadBinaryLinks(levelData, fileData, fileSystem);
 
 	// Load the baddies.
-	loadBinaryBaddies(levelData, fileData, version);
+	loadBinaryBaddies(levelData, fileData, version > 3);
 
 	// Load signs.
 	loadBinarySigns(levelData, fileData);
@@ -420,7 +420,7 @@ bool LevelLoader::loadGraal(StaticLevelDataPtr levelData, std::string_view fileV
 	loadBinaryLinks(levelData, fileData, fileSystem);
 
 	// Load baddies.
-	loadBinaryBaddies(levelData, fileData, version);
+	loadBinaryBaddies(levelData, fileData, true);
 
 	// Load NPCs.
 	loadBinaryNPCs(levelData, fileData);
@@ -583,7 +583,7 @@ void LevelLoader::loadBinaryLinks(StaticLevelDataPtr levelData, fs::FilePtr& fil
 	}
 }
 
-void LevelLoader::loadBinaryBaddies(StaticLevelDataPtr levelData, fs::FilePtr& fileData, int version)
+void LevelLoader::loadBinaryBaddies(StaticLevelDataPtr levelData, fs::FilePtr& fileData, bool loadVerses)
 {
 	while (!fileData->finishedReading())
 	{
@@ -600,11 +600,11 @@ void LevelLoader::loadBinaryBaddies(StaticLevelDataPtr levelData, fs::FilePtr& f
 
 		// Add the baddy.
 		LevelBaddy baddy{ toLocalPixelPosition((float)x, (float)y), (BaddyType)type, {} };
+		baddy.id = static_cast<uint8_t>(levelData->baddies.size() + 1);
 
-		// Only v1.04+ baddies have verses.
-		if (version > 3)
+		// Load the verses.
+		if (loadVerses)
 		{
-			// Load the verses.
 			auto verseLine = fileData->readLine();
 			auto verseParts = string::splitToVectorView(verseLine, "\\"sv);
 			for (size_t j = 0; j < std::min((size_t)3, verseParts.size()); ++j)

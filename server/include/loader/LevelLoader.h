@@ -1,6 +1,7 @@
 #ifndef LEVELLOADER_H
 #define LEVELLOADER_H
 
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <string_view>
@@ -54,11 +55,9 @@ public:
 	static void loadStaticDataNPCs(LevelPtr level, std::optional<MapPosition> mapPosition, StaticLevelDataPtr staticData);
 
 private:
-
-private:
 	static void loadBinaryTiles(StaticLevelDataPtr levelData, fs::FilePtr& fileData, uint32_t bits, int layers);
 	static void loadBinaryLinks(StaticLevelDataPtr levelData, fs::FilePtr& fileData, fs::FileSystem& fileSystem);
-	static void loadBinaryBaddies(StaticLevelDataPtr levelData, fs::FilePtr& fileData, int version);
+	static void loadBinaryBaddies(StaticLevelDataPtr levelData, fs::FilePtr& fileData, bool loadVerses);
 	static void loadBinaryNPCs(StaticLevelDataPtr levelData, fs::FilePtr& fileData);
 	static void loadBinaryChests(StaticLevelDataPtr levelData, fs::FilePtr& fileData);
 	static void loadBinarySigns(StaticLevelDataPtr levelData, fs::FilePtr& fileData);
