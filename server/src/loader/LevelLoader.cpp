@@ -648,10 +648,10 @@ void LevelLoader::loadBinaryChests(StaticLevelDataPtr levelData, fs::FilePtr& fi
 		auto line = fileData->readLine();
 		if (line.length() == 0 || line == "#") break;
 
-		uint8_t x = line[0];
-		uint8_t y = line[1];
-		char item = line[2];
-		char signindex = line[3];
+		uint8_t x = line[0] - 32;
+		uint8_t y = line[1] - 32;
+		char item = line[2] - 32;
+		char signindex = line[3] - 32;
 
 		LevelChest chest{ .position = LocalWholeTilePosition{ x, y }, .item = LevelItemType(item), .sign = (uint8_t)signindex };
 		levelData->chests.emplace_back(std::move(chest));
@@ -665,8 +665,8 @@ void LevelLoader::loadBinarySigns(StaticLevelDataPtr levelData, fs::FilePtr& fil
 		auto line = fileData->readLine();
 		if (line.length() == 0) break;
 
-		uint8_t x = line[0];
-		uint8_t y = line[1];
+		uint8_t x = line[0] - 32;
+		uint8_t y = line[1] - 32;
 		std::string_view text{ line };
 		text.remove_prefix(2);
 
