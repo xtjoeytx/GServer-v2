@@ -1689,7 +1689,7 @@ void PlayerClient::sendRPGMessage(std::string message)
 {
 	string::replaceMutate(message, "\n", "#b");
 	auto translated = translate(message);
-	sendPacket(CString() >> (char)PLO_RPGWINDOW << string::toCSV(string::splitByString(translated, "#b"sv)));
+	sendPacket(CString() >> (char)PLO_RPGWINDOW << string::toCSV(string::splitByString(translated, "#b"sv, false)));
 }
 
 void PlayerClient::sendSignMessage(std::string message)

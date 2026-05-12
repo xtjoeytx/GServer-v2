@@ -1017,7 +1017,7 @@ void Player::sendPrivateMessage(PlayerID from, std::string_view message)
 		return;
 
 	auto convertedMessage = string::replace(message, "\n", "#b");
-	auto lines = string::splitByString(convertedMessage, "#b"sv);
+	auto lines = string::splitByString(convertedMessage, "#b"sv, false);
 	auto finalMessage = string::toCSV(lines, true);
 
 	sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)from << finalMessage);
@@ -1384,12 +1384,6 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	for (auto i = 0; i < pmPlayerCount; ++i)
 		pmPlayers.push_back(static_cast<PlayerID>(pPacket.readGUShort()));
 
-	// Start constructing the message based on if it is a mass message or a private message.
-	CString pmMessageType("\"\",");
-	if (pmPlayerCount > 1) pmMessageType << "\"Mass message:\",";
-	else
-		pmMessageType << "\"Private message:\",";
-
 	// Grab the message.
 	CString pmMessage = pPacket.readString("");
 	int messageLimit = 1024;
@@ -1411,8 +1405,8 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 		}
 	}
 
-	// Always retokenize string, I don't believe our behavior is inline with official. It was escaping "\", so this unescapes that.
-	pmMessage.gtokenizeI();
+	// Construct our message.
+	std::string constructedMessage = std::format("#b{}:#b{}", pmPlayerCount > 1 ? "Mass message" : "Private message", pmMessage.replaceAll("\n", "#b").toString());
 
 	// Send the message out.
 	for (auto pmPlayerId : pmPlayers)
@@ -1423,9 +1417,9 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			if (pmPlayer != nullptr)
 			{
 				log::printLine(log::server, "Sending PM to global player: {}.", pmPlayer->account.character.nickName);
-				pmMessage.guntokenizeI();
+
+				// Don't send the fully constructed message to external players, just keep it formatted as-is.
 				pmExternalPlayer(pmPlayer->getServerName(), pmPlayer->account.name, pmMessage);
-				pmMessage.gtokenizeI();
 			}
 		}
 		else
@@ -1445,7 +1439,7 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 			}
 
 			// Send the message.
-			pmPlayer->sendPrivateMessage(m_id, pmMessageType + pmMessage);
+			pmPlayer->sendPrivateMessage(m_id, constructedMessage);
 		}
 	}
 
