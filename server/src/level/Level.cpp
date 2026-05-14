@@ -1387,6 +1387,8 @@ bool Level::hasLivingBaddies() const
 
 int Level::addPlayer(PlayerID id)
 {
+	log::debug_assert(std::ranges::contains(m_players, id) == false, "Player already in level");
+
 	m_players.push_back(id);
 	timeSinceLastPlayerLeft.reset();
 
