@@ -1043,6 +1043,9 @@ void fn_destroy(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		}
 
 		server->getNPCServer()->deleteNPC(source.first);
+
+		// NPC execution stops after destroy is called.
+		throw return_exception{};
 	}
 }
 

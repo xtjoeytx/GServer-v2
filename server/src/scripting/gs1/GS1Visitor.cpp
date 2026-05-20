@@ -964,7 +964,7 @@ std::any GS1Visitor::visitStatementUserFunctionCall(GS1Parser::StatementUserFunc
 		{
 			visit(function->second);
 		}
-		catch (return_exception&)
+		catch (const return_exception&)
 		{
 		}
 		return {};
