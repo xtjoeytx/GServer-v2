@@ -131,7 +131,7 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 			account.communityName = val;
 		else if (section == "LEVEL")
 			account.level = val;
-		else if (section == "GROUPNAME")
+		else if (section == "GROUPNAME") // GR
 			account.groupName = val;
 		else if (section == "X")
 			account.character.localPixelX = static_cast<int16_t>(string::toFloat(val) * 16);
@@ -196,10 +196,6 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 			account.apCounter = toByte(val);
 		else if (section == "ONSECS")
 			account.onlineSeconds = string::toNumber<uint32_t>(val);
-		else if (section == "IP")
-			setIfEmpty(account.ipAddress, val);
-		else if (section == "LANGUAGE")
-			setIfEmpty(account.language, val, "English"sv);
 		else if (section == "KILLS")
 			account.kills = string::toNumber<uint32_t>(val);
 		else if (section == "DEATHS")
@@ -210,6 +206,12 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 			account.eloDeviation = string::toFloat(val);
 		else if (section == "LASTSPARTIME")
 			account.lastSparTime = clock::from_time_t(string::toNumber<time_t>(val));
+		else if (section == "IP")
+			setIfEmpty(account.ipAddress, val);
+		else if (section == "LANGUAGE")
+			setIfEmpty(account.language, val, "English"sv);
+		// PLATFORM - ignore
+		// CODEPAGE - ignore
 		else if (section == "FLAG")
 		{
 			auto variable = GameValue::deserialize(i.toString());
@@ -321,6 +323,7 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "COMMUNITYNAME", account.communityName, account.name);
 	writeLine(newFile, "LEVEL", account.level);
 
+	// GR extension
 	if (!account.groupName.empty())
 		writeLine(newFile, "GROUPNAME", account.groupName);
 
@@ -356,13 +359,15 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "AP", account.character.ap);
 	writeLine(newFile, "APCOUNTER", account.apCounter, 0_ui8);
 	writeLine(newFile, "ONSECS", account.onlineSeconds, (uint32_t)0);
-	writeLine(newFile, "IP", account.ipAddress);
-	writeLine(newFile, "LANGUAGE", account.language, "English"sv);
 	writeLine(newFile, "KILLS", account.kills, (uint32_t)0);
 	writeLine(newFile, "DEATHS", account.deaths, (uint32_t)0);
 	writeLine(newFile, "RATING", account.eloRating, 1500.0f);
 	writeLine(newFile, "DEVIATION", account.eloDeviation, 350.0f);
 	writeLine(newFile, "LASTSPARTIME", clock::to_time_t(account.lastSparTime), (time_t)0);
+	writeLine(newFile, "IP", account.ipAddress);
+	writeLine(newFile, "LANGUAGE", account.language, "English"sv);	// TODO: Also accept "en" and other two-character language codes.
+	writeLine(newFile, "PLATFORM", account.platform);
+	writeLine(newFile, "CODEPAGE", account.codePage);
 
 	// Attributes
 	for (size_t i = 0; i < 30; i++)

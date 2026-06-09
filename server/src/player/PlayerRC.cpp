@@ -178,7 +178,7 @@ bool PlayerRC::handleLogin(CString& pPacket)
 		{
 			log::printLine(log::server, "Identity:    {}", identity);
 			auto identityTokens = identity.tokenize(",", true);
-			m_os = identityTokens[0];
+			account.platform = identityTokens[0];
 		}
 	}
 

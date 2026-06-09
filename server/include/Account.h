@@ -66,9 +66,11 @@ struct Account
 	Character character;
 	uint8_t maxHitpoints = 3;
 	uint8_t status = 20;
-	uint16_t apCounter = 0;			// GR only?
-	uint32_t onlineSeconds = 0;		// GR only?
+	uint16_t apCounter = 0;
+	uint32_t onlineSeconds = 0;
 	std::string ipAddress;
+	std::string platform{ "win" };
+	uint16_t codePage = 1252;
 	std::string language{ "English" };
 	std::string groupName;
 	uint32_t kills = 0;

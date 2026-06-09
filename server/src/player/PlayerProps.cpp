@@ -953,7 +953,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			m_os = strProp->value;
+			account.platform = strProp->value;
 			break;
 		}
 
@@ -965,7 +965,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			m_envCodePage = numProp->value;
+			account.codePage = static_cast<uint16_t>(numProp->value);
 			break;
 		}
 

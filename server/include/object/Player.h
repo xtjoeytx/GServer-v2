@@ -196,7 +196,7 @@ public:
 	int getVersion() const { return m_versionId; }
 	const std::string& getVersionStr() const { return m_version; }
 	const std::string& getServerName() const { return m_serverName; }
-	const std::string& getPlatform() const { return m_os; }
+	const std::string& getPlatform() const { return account.platform; }
 	[[inline]] std::string_view getLanguage() const;
 	int64_t getDeviceId() const { return m_deviceId; }
 	NPCID getCarryNPC() const { return m_carryNPC; }
@@ -471,11 +471,9 @@ protected:
 	int m_type = PLTYPE_AWAIT;
 	int m_versionId = CLVER_UNKNOWN;
 	std::string m_version;
-	std::string m_os{ "wind" };
 	std::string m_serverName;
 	uint8_t m_statusMsg = 0;
 	uint8_t m_additionalFlags = 0;
-	uint32_t m_envCodePage = 1252;
 	std::set<std::string> m_channelList;
 	clock::time_point m_lastData;
 	uint8_t m_encryptionKey = 0;
@@ -687,8 +685,8 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::GATTRIB28,	PropertyString,				account.character.ganiAttributes[27]) \
 	DO(PlayerProp::GATTRIB29,	PropertyString,				account.character.ganiAttributes[28]) \
 	DO(PlayerProp::GATTRIB30,	PropertyString,				account.character.ganiAttributes[29]) \
-	DO(PlayerProp::OSTYPE,		PropertyString,				m_os) \
-	DO(PlayerProp::TEXTCODEPAGE,PropertyNumeric<GBYTE3>,	m_envCodePage) \
+	DO(PlayerProp::OSTYPE,		PropertyString,				account.platform) \
+	DO(PlayerProp::TEXTCODEPAGE,PropertyNumeric<GBYTE3>,	account.codePage) \
 	DO(PlayerProp::ONLINESECS2,	PropertyNumeric<GBYTE5>) \
 	DO(PlayerProp::X2,			PropertyPixelCoordinate,	account.character.localPixelX) \
 	DO(PlayerProp::Y2,			PropertyPixelCoordinate,	account.character.localPixelY) \
