@@ -306,10 +306,10 @@ protected:
 			if (onUpdate)
 				onUpdate(value, oldValue);
 		}
-		else if (newValue != oldValue)
+		else
 		{
 			value = std::move(newValue);
-			if (onUpdate)
+			if (value != oldValue && onUpdate)
 				onUpdate(value, oldValue);
 		}
 	}
