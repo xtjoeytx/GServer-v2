@@ -112,6 +112,10 @@ void FileSystem::bind(const std::filesystem::path& directory)
 	m_directories.insert(directory);
 	m_watcher.add(directory, [this](uint32_t id, const std::filesystem::path& dir, const std::filesystem::path& file, const std::filesystem::path& oldFile, preagonal::fs::FileEventCollection e)
 	{
+		// Suppress the warning about unheld locks.  The static analysis is incorrect.
+		#pragma warning(push)
+		#pragma warning(disable: 26117)
+
 		if (m_destructing || e.test(FileEvent::Invalid))
 			return;
 
@@ -257,6 +261,9 @@ void FileSystem::bind(const std::filesystem::path& directory)
 					categoryEventCallback[i](e, *eventFileData);
 			}
 		}
+
+		// Restore normal warnings
+		#pragma warning(pop)
 	});
 }
 

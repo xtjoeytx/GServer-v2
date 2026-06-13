@@ -558,11 +558,14 @@ Level::~Level()
 			return getSubLevelIndex(pair.first).has_value() && pair.second.expired();
 		});
 
-		// Create stubs for our levels so they can be reloaded later if needed.
-		// We need to do this for map levels because we many things refer to the sublevels by name, so we need to link them to a gmap.
-		auto stub = m_server->getStubbedLevel(levelName, groupMapName);
-		for (const auto& [levelName, position] : m_map->levels)
-			gmapLevels.insert({levelName, stub});
+		if (m_server != nullptr && m_server->running)
+		{
+			// Create stubs for our levels so they can be reloaded later if needed.
+			// We need to do this for map levels because we many things refer to the sublevels by name, so we need to link them to a gmap.
+			auto stub = m_server->getStubbedLevel(levelName, groupMapName);
+			for (const auto& [levelName, position] : m_map->levels)
+				gmapLevels.insert({ levelName, stub });
+		}
 	}
 
 	// Delete shoots.

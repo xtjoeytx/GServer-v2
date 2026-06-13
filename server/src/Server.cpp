@@ -552,11 +552,18 @@ void Server::operator()()
 		// Check if we should do a restart.
 		if (m_doRestart)
 		{
+			// Set running to false so we can properly clean up things during the cleanup.
+			// If we don't do this, we can encounter infinite recursion during level cleanup.
 			m_doRestart = false;
+			running = false;
+
 			cleanup();
 			int ret = init(m_overrideIp, m_overridePort, m_overrideLocalIp, m_overrideInterface);
 			if (ret != 0)
 				break;
+
+			// We are back up and running!
+			running = true;
 		}
 
 		if (shutdownProgram)
@@ -583,7 +590,10 @@ void Server::cleanup()
 	auto players = m_playerList | std::views::transform([](const auto& pair) { return pair.second; });
 	std::vector<PlayerPtr> deletePlayers{std::ranges::begin(players), std::ranges::end(players)};
 	for (auto& player : deletePlayers)
+	{
+		player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Server is shutting down.");
 		player->cleanup();
+	}
 
 	m_npcServer.reset();
 	m_playerList.clear();
