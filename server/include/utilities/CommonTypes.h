@@ -203,11 +203,16 @@ using duration_seconds_double = std::chrono::duration<double>;
 using duration_milli_double = std::chrono::duration<double, std::milli>;
 using duration_nano_double = std::chrono::duration<double, std::nano>;
 
+/// @brief Gets the current time as a std::chrono::system_clock::time_point.
+/// @return The current time.
 inline clock::time_point currentTime()
 {
 	return clock::now();
 }
 
+/// @brief Converts a time_t value to a std::chrono::system_clock::time_point.
+/// @param time The time_t value to convert.
+/// @return A time_point representing the same point in time as the time_t value.
 inline clock::time_point convertFromTimeT(time_t time)
 {
 	return clock::from_time_t(time);
@@ -218,14 +223,30 @@ inline clock::time_point convertFromTimeT(time_t time)
 /// @param time1 The first time point.
 /// @param time2 The second time point.
 /// @return The absolute duration between the two time points, or the maximum duration value if either time point is uninitialized (minimum value).
-template <typename T = std::chrono::seconds>
-inline T timeDifference(const clock::time_point& time1, const clock::time_point& time2)
+template <typename T = std::chrono::seconds, typename C = clock>
+inline T timeDifference(const typename C::time_point& time1, const typename C::time_point& time2)
 {
-	if (time1 == clock::time_point::min() || time2 == clock::time_point::min())
+	if (time1 == C::time_point::min() || time2 == C::time_point::min())
 		return T::max();
 	return std::chrono::duration_cast<T>(time2 >= time1 ? time2 - time1 : time1 - time2);
 }
 
+/// @brief Checks if the specified future time has passed relative to the current time.
+/// @tparam C The clock type. Defaults to std::chrono::system_clock.
+/// @param currentTime The current time point.
+/// @param futureTime The future time point to check.
+/// @return True if the future time has passed, false otherwise.
+template <typename C = clock>
+inline bool timePassed(const typename C::time_point& currentTime, const typename C::time_point& futureTime)
+{
+	if (currentTime == C::time_point::min() || futureTime == C::time_point::min())
+		return false;
+	return futureTime <= currentTime;
+}
+
+/// @brief Converts a std::filesystem::file_time_type to a std::chrono::system_clock::time_point.
+/// @param fileTime The file time to convert.
+/// @return A time_point representing the same point in time as the file time, but in the system clock's time domain.
 inline clock::time_point toSystemClock(const std::filesystem::file_time_type& fileTime)
 {
 #if __cpp_lib_chrono < 201907L
@@ -236,6 +257,9 @@ inline clock::time_point toSystemClock(const std::filesystem::file_time_type& fi
 #endif
 }
 
+/// @brief Converts a std::chrono::system_clock::time_point to a std::filesystem::file_time_type.
+/// @param systemTime The system clock time to convert.
+/// @return A file_time_type representing the same point in time as the system clock time, but in the file clock's time domain.
 inline std::filesystem::file_time_type toFileClock(const clock::time_point& systemTime)
 {
 #if __cpp_lib_chrono < 201907L

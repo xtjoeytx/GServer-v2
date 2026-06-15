@@ -688,7 +688,7 @@ bool Server::doTimedEvents(int)
 		guildManager->update();
 
 	// Do serverlist events.
-	m_serverlist.doTimedEvents();
+	m_serverlist.doTimedEvents(getFrameStartTimeHighPrecision());
 
 	// Do player events.
 	{

@@ -1,6 +1,7 @@
 #ifndef SERVERLIST_H
 #define SERVERLIST_H
 
+#include <chrono>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -9,9 +10,11 @@
 
 #include <CSocket.h>
 
-#include <BabyDI.h>
 #include <CFileQueue.h>
 #include <CString.h>
+
+#include <BabyDI.h>
+#include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -45,11 +48,11 @@ public:
 	ServerList();
 	~ServerList();
 
-	bool doTimedEvents();
+	bool doTimedEvents(precise_clock::time_point time);
 
 	// Socket-Control Functions
 	bool getConnected() const;
-	bool main();
+	bool main(precise_clock::time_point time = precise_clock::now());
 	bool connectServer();
 	CSocket& getSocket() { return m_socket; }
 	void sendPacket(CString& pPacket, bool sendNow = false);
@@ -116,13 +119,15 @@ protected:
 	CFileQueue m_fileQueue;
 	CString m_readBuffer;
 	CSocket m_socket;
-	time_t m_lastData, m_lastTimer;
-	time_t m_nextConnectionAttempt = 0;
+	precise_clock::time_point m_lastData;
+	precise_clock::time_point m_lastTimer;
+	precise_clock::time_point m_nextConnectionAttempt;
+	precise_clock::time_point m_lastPingTime;
 	uint8_t m_connectionAttempts = 0;
 
 	std::map<std::string, int> m_serverListCount;
 	std::string m_serverLocalIp;
-	std::string m_serverRemoteIp{ "127.0.0.1" };
+	std::string m_serverRemoteIp{"127.0.0.1"};
 };
 
 ///////////////////////////////////////////////////////////////////////////////

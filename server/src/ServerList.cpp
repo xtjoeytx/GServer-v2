@@ -1,9 +1,8 @@
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
-#include <ctime>
 #include <filesystem>
 #include <format>
 #include <memory>
@@ -89,7 +88,7 @@ ServerList::ServerList()
 	m_socket.setType(SOCKET_TYPE_CLIENT);
 	m_socket.setDescription("listserver");
 
-	m_lastData = m_lastTimer = time(0);
+	m_lastData = m_lastTimer = precise_clock::now();
 
 	// Create Functions
 	if (!ServerList::created)
@@ -140,21 +139,22 @@ void ServerList::onUnregister()
 	log::printLine(log::server, "{} - Disconnected.", m_socket.getDescription());
 }
 
-bool ServerList::main()
+bool ServerList::main(precise_clock::time_point time)
 {
 	if (!getConnected())
 		return false;
 
 	// definitions
 	CString unBuffer;
+	m_readBuffer.setRead(0);
+
+	// New data.
+	if (m_readBuffer.length() > 1)
+		m_lastData = time;
 
 	// parse data
-	m_readBuffer.setRead(0);
 	while (m_readBuffer.length() > 1)
 	{
-		// New data.
-		m_lastData = time(0);
-
 		// packet length
 		unsigned short len = (unsigned short)m_readBuffer.readShort();
 		if ((unsigned int)len > (unsigned int)m_readBuffer.length() - 2)
@@ -176,16 +176,28 @@ bool ServerList::main()
 }
 
 // Called every second by Server
-bool ServerList::doTimedEvents()
+bool ServerList::doTimedEvents(precise_clock::time_point time)
 {
-	m_lastTimer = time(0);
+	m_lastTimer = time;
 
 	bool isConnected = getConnected();
 
+	// Send a keep-alive packet every 60 seconds.
+	// We send SVO_SETIP rather than SVO_PING because SVO_PING is actually a PONG, and the listserver uses the time between SVI_PING and SVO_PING to determine latency.
+	// Sending the IP again is a safe keep-alive packet.
+	if (isConnected && timeDifference<std::chrono::seconds, precise_clock>(m_lastPingTime, time) >= 60s)
+	{
+		m_lastPingTime = time;
+
+		auto& settings = m_server->getSettings();
+		CString ip(settings.get<std::string>("serverip").value_or("AUTO"s));
+		sendPacket(CString() >> (char)SVO_SETIP >> (char)ip.length() << ip);
+	}
+
+	// Reconnect to the listserver, with connection backoff to prevent a flood of connections
 	if (!isConnected)
 	{
-		// Reconnect to the listserver, with connection backoff to prevent a flood of connections
-		if (difftime(m_lastTimer, m_nextConnectionAttempt) >= 0)
+		if (timePassed<precise_clock>(m_lastTimer, m_nextConnectionAttempt))
 		{
 			if (!connectServer())
 			{
@@ -193,7 +205,7 @@ bool ServerList::doTimedEvents()
 					m_connectionAttempts += 1;
 
 				auto waitTime = std::min(uint32_t(std::pow(2u, m_connectionAttempts)), 300u);
-				m_nextConnectionAttempt = m_lastTimer + waitTime + (rand() % 5);
+				m_nextConnectionAttempt = m_lastTimer + std::chrono::seconds(waitTime);
 			}
 			else
 				m_connectionAttempts = 0;
@@ -274,6 +286,9 @@ bool ServerList::connectServer()
 
 	// Send Players
 	sendPlayers();
+
+	// Set the ping time so we start pings 60 seconds from now.
+	m_lastPingTime = m_server->getFrameStartTimeHighPrecision();
 
 	// Return Connection-Status
 	return getConnected();
@@ -527,7 +542,7 @@ void ServerList::msgSVI_VERIGUILD(CString& pPacket)
 		p->sendPacket(CString() >> (char)PLO_PLAYERPROPS << prop);
 
 		// Tell everybody else the new nickname.
-		m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)playerID << prop, { p->getId() });
+		m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)playerID << prop, {p->getId()});
 	}
 }
 
@@ -663,7 +678,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 			else
 			{
 				// Find if String-Array
-				int pos[3] = { 0, 0, 0 };
+				int pos[3] = {0, 0, 0};
 				pos[0] = val.findl('{');
 				pos[1] = val.find('}', pos[0]);
 				pos[2] = (pos[0] >= 0 && pos[1] > 0 ? strtoint(val.subString(pos[0] + 1, pos[1] - 1)) : -1);
@@ -759,7 +774,7 @@ void ServerList::msgSVI_RAWDATA(CString& pPacket)
 void ServerList::msgSVI_FILESTART3(CString& pPacket)
 {
 	unsigned char pTy = pPacket.readGUChar();
-	std::filesystem::path filename{ "world/global/" };
+	std::filesystem::path filename{"world/global/"};
 	CString blank;
 	switch (pTy)
 	{
@@ -887,7 +902,7 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 		if (result.resultFlags.test(props::SetResults::sendToAll))
 			m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop);
 		if (auto player = std::dynamic_pointer_cast<PlayerClient>(p); p && result.resultFlags.test(props::SetResults::sendToLevel))
-			m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop, player->account.character.getGlobalPosition(), player->getLevel(), { pid });
+			m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop, player->account.character.getGlobalPosition(), player->getLevel(), {pid});
 		if (result.resultFlags.test(props::SetResults::sendToSource))
 			p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)propId << prop);
 	}
