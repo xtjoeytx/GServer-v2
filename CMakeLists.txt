@@ -23,7 +23,7 @@ cmake_minimum_required(VERSION 3.28)
 
 # Add custom CMake modules path for external dependencies.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/dependencies")
 
 # Includes.
 include(FetchContent)
@@ -103,13 +103,13 @@ set(CMAKE_DEBUG_POSTFIX _d)
 
 # Directories.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/lib")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build/lib")
-set(CPACK_PACKAGE_DIRECTORY ${PROJECT_SOURCE_DIR}/dist)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CPACK_PACKAGE_DIRECTORY "${PROJECT_SOURCE_DIR}/dist")
 
 # Dependency and FetchContent setup.
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
-set(DEPENDENCY_DIRECTORY "${PROJECT_SOURCE_DIR}/dependencies")
+set(DEPENDENCY_DIRECTORY "${CMAKE_BINARY_DIR}/dependencies")
 set(FETCHCONTENT_BASE_DIR "${DEPENDENCY_DIRECTORY}/fc")
 set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE ALWAYS)
 
@@ -127,6 +127,11 @@ message(STATUS "[${PROJECT_NAME}] Configuring version ${VER_FULL}")
 
 # Generate the IConfig.h file.
 generate_iconfig()
+
+# Global compile options.
+# Some dependencies require this to be set globally.
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Unit testing
 option(TESTS "Compile tests" OFF)

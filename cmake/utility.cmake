@@ -2,8 +2,6 @@ function(set_default_compiler_options target ISTESTTARGET)
 
 	# --- Configure compiler -----------------------------------------------------------
 
-	set(CMAKE_CXX_STANDARD 23)
-	set(CMAKE_CXX_STANDARD_REQUIRED True)
 	target_compile_features(${target} PUBLIC cxx_std_23)
 	set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
 

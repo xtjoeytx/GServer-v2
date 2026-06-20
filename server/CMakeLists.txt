@@ -218,6 +218,7 @@ endif()
 # Dependency: gs2parser.
 FetchContent_Declare(gs2parser
 	GIT_REPOSITORY https://github.com/xtjoeytx/gs2-parser.git
+	GIT_SHALLOW    ON
 	GIT_TAG        73e7ea8d6ed88112967547c5e6941bfa035fec6c		# main 2026-07-02
 )
 FetchContent_MakeAvailable(gs2parser)
@@ -225,7 +226,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC gs2parser::gs2compiler)
 
 # ----------------------------
 # Dependency: zlib.
-find_package(ZLIB REQUIRED)
+find_package(ZLIB MODULE REQUIRED)
 target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
 
 # ----------------------------
@@ -267,6 +268,7 @@ endif()
 # Dependency: gs2lib.
 FetchContent_Declare(gs2lib
 	GIT_REPOSITORY https://xtjoeytx@bitbucket.org/xtjoeytx/gs2lib.git
+	GIT_SHALLOW    ON
 	GIT_TAG        63b1ae96491c188905b50c6b61c8532c601a2122
 	#URL "${PROJECT_SOURCE_DIR}/../gs2lib"
 )
@@ -278,20 +280,16 @@ target_include_directories(${TARGET_NAME} PUBLIC "${gs2lib_SOURCE_DIR}/include")
 if(TESTS)
 	target_link_libraries(${APP_LIBRARY_NAME} PUBLIC gs2lib)
 	target_include_directories(${APP_LIBRARY_NAME} PUBLIC "${gs2lib_SOURCE_DIR}/include")
-endif ()
+endif()
 
 # ----------------------------
-# Dependency: libtommath
+# Dependency: libtommath.
 FetchContent_Declare(libtommath
 	GIT_REPOSITORY https://github.com/libtom/libtommath.git
+	GIT_SHALLOW    ON
 	GIT_TAG        develop
 	EXCLUDE_FROM_ALL
 )
-#FetchContent_GetProperties(libtommath)
-#if(NOT libtommath_POPULATED)
-#	FetchContent_Populate(libtommath)
-#	add_subdirectory(${libtommath_SOURCE_DIR} ${libtommath_BINARY_DIR} EXCLUDE_FROM_ALL)
-#endif()
 FetchContent_MakeAvailable(libtommath)
 target_include_directories(${TARGET_NAME} PUBLIC "${libtommath_SOURCE_DIR}")
 
@@ -299,15 +297,11 @@ target_include_directories(${TARGET_NAME} PUBLIC "${libtommath_SOURCE_DIR}")
 # Dependency: libtomcrypt-preagonal.
 FetchContent_Declare(tomcrypt
 	GIT_REPOSITORY https://github.com/Preagonal/libtomcrypt.git
+	GIT_SHALLOW    ON
 	GIT_TAG        cipher-desgr
 	EXCLUDE_FROM_ALL
 	FIND_PACKAGE_ARGS CONFIG
 )
-#FetchContent_GetProperties(tomcrypt)
-#if(NOT tomcrypt_POPULATED)
-#	FetchContent_Populate(tomcrypt)
-#	add_subdirectory(${tomcrypt_SOURCE_DIR} ${tomcrypt_BINARY_DIR} EXCLUDE_FROM_ALL)
-#endif()
 FetchContent_MakeAvailable(tomcrypt)
 target_compile_definitions(libtomcrypt PUBLIC LTC_NOTHING LTC_MD5 LTC_DES LTC_DESGR LTC_BASE64)
 target_compile_definitions(libtomcrypt PUBLIC LTC_ECB_MODE) # Need to define this to avoid a broken header.

@@ -1,23 +1,23 @@
 {
   "name": "gserver",
   "version": "4.0.0",
-  "builtin-baseline": "5a874b05fb981e2643fd0c1c9ad63e19dfe76b27",
+  "builtin-baseline": "8cdd1410ea4e2b65c7e5176e63237240460886a6",
   "dependencies": [
-    {
-      "name": "antlr4",
-      "version>=": "4.13.2#1"
-    },
-    "bzip2",
-    {
-      "name": "catch2",
-      "version>=": "3.4.0"
-    },
-    "miniupnpc",
-    "pkgconf",
-    {
-      "name": "wolfssl",
-      "version>=": "5.8.0"
-    },
-    "zlib"
+	{
+	  "name": "antlr4",
+	  "version>=": "4.13.2#1"
+	},
+	"bzip2",
+	{
+	  "name": "catch2",
+	  "version>=": "3.4.0"
+	},
+	"miniupnpc",
+	"pkgconf",
+	{
+	  "name": "wolfssl",
+	  "version>=": "5.8.0"
+	},
+	"zlib"
   ]
 }
