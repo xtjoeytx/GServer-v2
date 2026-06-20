@@ -1,10 +1,10 @@
 #ifndef UPNP_H
 #define UPNP_H
 
-#include <functional>
 #include <set>
 #include <string_view>
 #include <string>
+#include <type_traits>
 
 #ifdef ENABLE_UPNP
 #include <miniupnpc.h>
@@ -60,8 +60,8 @@ private:
 	std::string m_port;
 
 #ifdef ENABLE_UPNP
-	struct UPNPUrls m_urls;
-	struct IGDdatas m_data;
+	struct UPNPUrls m_urls{};
+	struct IGDdatas m_data{};
 #endif
 };
 

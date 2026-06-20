@@ -9,6 +9,7 @@
 #include <deque>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <ranges>
 #include <stdexcept>
 #include <string_view>
@@ -308,7 +309,7 @@ public:
 	const Script& getScript() const noexcept { return m_script; }
 	std::string getClientSideScript() const;
 	std::string getJoinedClassesList() const;
-	[[inline]] std::generator<std::shared_ptr<ScriptClass>> getJoinedClasses();
+	[[inline]] std::generator<std::shared_ptr<ScriptClass>> getJoinedClasses() const;
 	bool hasJoinedClass(std::string_view className) const;
 	void setJoinedClasses(std::string_view classes);
 	void joinClass(std::string_view className);
@@ -460,7 +461,7 @@ using NPCWeakPtr = std::weak_ptr<NPC>;
 
 //----------------------------
 
-inline std::generator<std::shared_ptr<ScriptClass>> NPC::getJoinedClasses()
+inline std::generator<std::shared_ptr<ScriptClass>> NPC::getJoinedClasses() const
 {
 	auto filter = m_joinedClasses
 		| std::views::transform([](const auto& pair) { return pair.second.lock(); })

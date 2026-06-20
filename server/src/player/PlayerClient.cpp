@@ -49,6 +49,10 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// There is a zlib bug where if you have 11 identical characters in a row, with 0 or 1 following characters, zlib will fail to decompress.
+// aaaaaaaaaaa = fail
+// aaaaaaaaaaaB = fail
+// aaaaaaaaaaaBB = success
 CString _zlibFix(
 	"//#CLIENTSIDE\xa7"
 	"if(playerchats) {\xa7"
