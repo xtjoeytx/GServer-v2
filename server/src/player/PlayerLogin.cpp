@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string_view>
 
 #include <CSocket.h>
 
@@ -39,6 +40,13 @@ bool PlayerLogin::onRecv()
 {
 	Player::onRecv();
 	return PacketCount == 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string_view PlayerLogin::whoAmI() const noexcept
+{
+	return m_playerSock != nullptr ? m_playerSock->getRemoteIp() : "(unknown)";
 }
 
 ///////////////////////////////////////////////////////////////////////////////

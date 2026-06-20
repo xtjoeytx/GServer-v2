@@ -366,8 +366,21 @@ inline void IPacketHandler::parseLoginPacket(CString& buffer)
 {
 	++PacketCount;
 
-	// Call the login packet handler function.
+	// Pull out the packet.
 	auto packet = buffer.readString("\n");
+
+#ifdef PACKETLOGGING
+	std::string_view who = whoAmI();
+	log::printLine(log::networkdump, "> Login Packet from {} ({} bytes)", who, packet.length());
+	log::print(log::networkdump, "{}", packet.text());
+	if (packet[packet.length() - 1] != '\n')
+		log::print(log::networkdump, "\n");
+	for (int i = 0; i < packet.length(); ++i)
+		log::print(log::networkdump, "{:02x} ", (unsigned char)((packet.text())[i]));
+	log::print(log::networkdump, "\n\n");
+#endif
+
+	// Call the login packet handler function.
 	handlePacket(std::nullopt, packet);
 }
 

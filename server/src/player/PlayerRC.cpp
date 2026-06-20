@@ -32,6 +32,7 @@ static PacketHandleArray GeneratePacketHandlers()
 	PacketHandleArray handlers{};
 	handlers.fill(nullptr);
 
+	handlers[PLI_PLAYERPROPS] = &Player::msgPLI_PLAYERPROPS;
 	handlers[PLI_RC_SERVEROPTIONSGET] = &PlayerRC::msgPLI_RC_SERVEROPTIONSGET;
 	handlers[PLI_RC_SERVEROPTIONSSET] = &PlayerRC::msgPLI_RC_SERVEROPTIONSSET;
 	handlers[PLI_RC_FOLDERCONFIGGET] = &PlayerRC::msgPLI_RC_FOLDERCONFIGGET;

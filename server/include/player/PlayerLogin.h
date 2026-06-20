@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string_view>
 
 #include <CSocket.h>
 
@@ -28,6 +29,7 @@ public:
 	virtual void onUnregister() override {}
 
 protected:
+	virtual std::string_view whoAmI() const noexcept override;
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
 
 public:

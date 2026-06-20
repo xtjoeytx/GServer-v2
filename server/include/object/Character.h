@@ -40,7 +40,7 @@ struct Character
 	clock::time_point lastHurtTime = clock::time_point::min();
 	std::array<int8_t, 2> hurtPushDeltaInHalfPixels{ 0, 0 };
 	std::array<uint8_t, 8> colors{ 2, 0, 10, 4, 18, 18, 18, 18 };  // 0-19 are ClassicColors, 20+ are HTMLColors
-	std::string nickName{ "default" };
+	std::string nickName{};
 	std::string gani{ "idle" };
 	std::string chatMessage;
 	std::string horseImage;

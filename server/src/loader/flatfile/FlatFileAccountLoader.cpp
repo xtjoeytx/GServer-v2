@@ -126,7 +126,12 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 		if (section == "NAME")
 			continue;
 		else if (section == "NICK")
-			account.character.nickName = val.substr(0, 223);
+		{
+			// Load the nickname only if it is not yet set.
+			// Some clients, like RC, will send the nickname props immediately and not wait until the go-ahead to login.
+			if (account.character.nickName.empty())
+				account.character.nickName = val.substr(0, 223);
+		}
 		else if (section == "COMMUNITYNAME")
 			account.communityName = val;
 		else if (section == "LEVEL")
