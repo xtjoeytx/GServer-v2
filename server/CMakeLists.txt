@@ -306,10 +306,48 @@ FetchContent_MakeAvailable(tomcrypt)
 target_compile_definitions(libtomcrypt PUBLIC LTC_NOTHING LTC_MD5 LTC_DES LTC_DESGR LTC_BASE64)
 target_compile_definitions(libtomcrypt PUBLIC LTC_ECB_MODE) # Need to define this to avoid a broken header.
 set_target_properties(libtomcrypt PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+
+# Map libtomcrypt configurations as it fails with MinSizeRel.
+if(TARGET tomcrypt)
+	set_target_properties(tomcrypt PROPERTIES
+		MAP_IMPORTED_CONFIG_DEBUG Release
+		MAP_IMPORTED_CONFIG_RELEASE Release
+		MAP_IMPORTED_CONFIG_MINSIZEREL Release
+		MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release
+	)
+endif()
+
 target_link_libraries(${TARGET_NAME} PUBLIC tomcrypt$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
 target_include_directories(${TARGET_NAME} PUBLIC "${libtomcrypt_SOURCE_DIR}/src/headers")
 add_dependencies(libtomcrypt libtommath)
 add_dependencies(${TARGET_NAME} libtomcrypt)
+
+# ----------------------------
+# Dependency: ztd.idk
+# : Patched to force ztd.blocks as STATIC.
+set(_ztd_idk_patch "${CMAKE_CURRENT_BINARY_DIR}/patch_ztd_idk.cmake")
+file(WRITE "${_ztd_idk_patch}"
+	"file(READ \"CMakeLists.txt\" _cmakeStatic)\n"
+	"string(REPLACE \"add_library(ztd.blocks SHARED\" \"add_library(ztd.blocks STATIC\" _cmakeStatic \"\${_cmakeStatic}\")\n"
+	"file(WRITE \"CMakeLists.txt\" \"\${_cmakeStatic}\")\n"
+	)
+FetchContent_Declare(ztd.idk
+	GIT_REPOSITORY https://github.com/soasis/idk.git
+	GIT_SHALLOW    ON
+	GIT_TAG        main
+	PATCH_COMMAND  ${CMAKE_COMMAND} -P "${_ztd_idk_patch}"
+)
+
+# ----------------------------
+# Dependency: ztd.text.
+FetchContent_Declare(ztd.text
+	GIT_REPOSITORY https://github.com/soasis/text.git
+	GIT_SHALLOW    ON
+	GIT_TAG        main
+)
+FetchContent_MakeAvailable(ztd.text)
+target_link_libraries(${TARGET_NAME} PRIVATE ztd::text)
+target_include_directories(ztd.blocks PUBLIC "${ztd.idk_SOURCE_DIR}/source/include/") # Fix broken cmake configuration in ztd.idk.
 
 # ----------------------------
 # Generate grammar.

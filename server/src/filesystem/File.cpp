@@ -14,35 +14,27 @@
 #include <optional>
 #include <span>
 #include <sstream>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <thread>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
+#include <ztd/text.hpp>
+
 #include <filesystem/File.h>
 #include <utilities/Log.h>
-#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
-
-#ifdef PLATFORM_WINDOWS
-#include <stdexcept>
-#include <windows.h>
-#endif
-
-#ifdef PLATFORM_UNIX
-#include <codecvt>
-#include <locale>
-#endif
+#include <utilities/std/generator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::fs
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-template <size_t C>
+template<size_t C>
 auto readGPacked(std::istream& stream) -> std::conditional_t<C <= 2, std::conditional_t<C == 1, uint8_t, uint16_t>, uint32_t>
 {
 	using ReturnType = std::conditional_t<C <= 2, std::conditional_t<C == 1, uint8_t, uint16_t>, uint32_t>;
@@ -59,42 +51,9 @@ auto readGPacked(std::istream& stream) -> std::conditional_t<C <= 2, std::condit
 std::string getANSIFileName(const std::filesystem::path& file)
 {
 #ifdef PLATFORM_WINDOWS
-	// Graal uses ANSI encoding for filenames, so convert so we don't mangle the filenames in Windows.
-	std::filesystem::path::string_type fileName = file.filename().native();
-
-	// Calculate the required buffer size for the conversion.
-	int bufferSize = WideCharToMultiByte(1252, 0, fileName.c_str(), -1, nullptr, 0, nullptr, nullptr);
-	if (bufferSize == 0)
-		throw std::runtime_error("Failed to calculate buffer size for CP-1252 conversion.");
-
-	// Allocate the string.
-	std::string result(bufferSize - 1, '\0');
-
-	// Convert to CP-1252.
-	int bytesWritten = WideCharToMultiByte(1252, 0, fileName.c_str(), -1, &result[0], bufferSize, nullptr, nullptr);
-	if (bytesWritten == 0)
-		throw std::runtime_error("Failed to convert file name to CP-1252.");
-
-	return result;
-#elifdef __clang__
-	// Clang doesn't support std::codecvt_utf8, so just use the filename as-is.
-	return file.filename().string();
+	return ztd::text::transcode(file.filename().native(), ztd::text::wide_utf16, ztd::text::windows_1252, ztd::text::replacement_handler);
 #else
-	// Hacky version for Linux using deprecated C++.
-	// TODO: Link to ICU.
-	try
-	{
-		std::locale loc{};
-		using wcvt = std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>;
-		auto wstr = wcvt{}.from_bytes(file.filename().string());
-		std::string result(wstr.size(), '\0');
-		std::use_facet<std::ctype<wchar_t>>(loc).narrow(wstr.data(), wstr.data() + wstr.size(), '?', &result[0]);
-		return result;
-	}
-	catch (...)
-	{
-		return file.filename().string();
-	}
+	return ztd::text::transcode(file.filename().native(), ztd::text::compat_utf8, ztd::text::windows_1252, ztd::text::replacement_handler);
 #endif
 }
 
@@ -106,25 +65,14 @@ std::filesystem::path getHTMLEscapedFileName(const std::filesystem::path& file)
 	std::function<size_t(const ST&, size_t)> findFirstNotOfAlphaNumeric;
 	std::function<void(ST&, VT)> writeEncoded;
 
-#ifdef PLATFORM_WINDOWS
 	findFirstNotOfAlphaNumeric = [](const ST& native, size_t pos) -> size_t
 	{
-		return native.find_first_not_of(L"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.", pos);
+		return native.find_first_not_of(TO_PLATFORM_STRING("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789."), pos);
 	};
 	writeEncoded = [](ST& result, VT ch)
 	{
-		result += std::format(L"{:03}", (uint32_t)ch);
+		result += std::format(TO_PLATFORM_STRING("{:03}"), (uint32_t)ch);
 	};
-#else
-	findFirstNotOfAlphaNumeric = [](const ST& native, size_t pos) -> size_t
-	{
-		return native.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.", pos);
-	};
-	writeEncoded = [](ST& result, VT ch)
-	{
-		result += std::format("{:03}", (uint32_t)ch);
-	};
-#endif
 
 	auto& native = file.native();
 
@@ -146,6 +94,7 @@ std::filesystem::path getHTMLEscapedFileName(const std::filesystem::path& file)
 std::filesystem::path getHTMLUnescapedFileName(const std::filesystem::path& file)
 {
 	using ST = std::filesystem::path::string_type;
+	using VT = std::filesystem::path::value_type;
 	using Elem = std::remove_cvref_t<ST>::value_type;
 	using Traits = std::remove_cvref_t<ST>::traits_type;
 	using SVT = std::basic_string_view<Elem, Traits>;
@@ -153,38 +102,18 @@ std::filesystem::path getHTMLUnescapedFileName(const std::filesystem::path& file
 	std::function<size_t(const ST&, size_t)> findFirstEscaped;
 	std::function<void(ST&, SVT)> writeDecoded;
 
-#ifdef PLATFORM_WINDOWS
-	auto singleByte = [](const SVT& native)
-	{
-		// Calculate the required buffer size for the conversion.
-		int bufferSize = WideCharToMultiByte(1252, 0, native.data(), static_cast<int>(native.size()), nullptr, 0, nullptr, nullptr);
-		if (bufferSize == 0)
-			throw std::runtime_error("Failed to calculate buffer size for CP-1252 conversion.");
-
-		// Allocate the string.
-		std::string result(bufferSize - 1, '\0');
-
-		// Convert to CP-1252.
-		int bytesWritten = WideCharToMultiByte(1252, 0, native.data(), static_cast<int>(native.size()), &result[0], bufferSize, nullptr, nullptr);
-		if (bytesWritten == 0)
-			throw std::runtime_error("Failed to convert file name to CP-1252.");
-
-		return result;
-	};
 	findFirstEscaped = [](const ST& native, size_t pos) -> size_t
 	{
-		return native.find_first_of(L"%", pos);
+		return native.find_first_of(TO_PLATFORM_STRING("%"), pos);
 	};
-	writeDecoded = [&](ST& result, SVT code)
+
+#ifdef PLATFORM_WINDOWS
+	writeDecoded = [](ST& result, SVT code)
 	{
-		auto codeStr = singleByte(code);
-		result += string::toNumber(codeStr);
+		// We are in a wchar_t system, so first convert to ANSI so we can use string::toNumber.
+		result += string::toNumber(ztd::text::transcode(code, ztd::text::wide_utf16, ztd::text::windows_1252, ztd::text::replacement_handler));
 	};
 #else
-	findFirstEscaped = [](const ST& native, size_t pos) -> size_t
-	{
-		return native.find_first_of("%", pos);
-	};
 	writeDecoded = [](ST& result, SVT code)
 	{
 		result += string::toNumber(code);
@@ -230,7 +159,7 @@ bool File::open()
 	// We failed to open the file.
 	if (!fstream->is_open())
 	{
-		std::string error{ strerror(errno) };
+		std::string error{strerror(errno)};
 		log::printLine(log::server, "** File '{}' read error: {}", m_file.string(), error);
 	}
 
@@ -392,7 +321,7 @@ std::optional<std::string> File::readConfigLine(std::string_view key, std::strin
 			if (sep == std::string::npos)
 				return std::string{};
 
-			std::string value{ string::trim(line.substr(sep + separator.length())) };
+			std::string value{string::trim(line.substr(sep + separator.length()))};
 			return value;
 		}
 	}
@@ -431,7 +360,7 @@ std::optional<std::string> File::readConfigSection(std::string_view startKey, st
 
 	if (section.empty())
 		return std::nullopt;
-	return std::string{ section };
+	return std::string{section};
 }
 
 std::generator<std::string> File::readAllLines()
@@ -543,7 +472,7 @@ bool FileIO::open(bool truncate)
 	// We failed to open the file.
 	if (!fstream->is_open())
 	{
-		std::string error{ strerror(errno) };
+		std::string error{strerror(errno)};
 		log::printLine(log::server, "** File '{}' read error: {}", m_tempFile.string(), error);
 	}
 

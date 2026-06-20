@@ -30,6 +30,12 @@ namespace preagonal::string
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+#if defined(PLATFORM_WINDOWS) && defined(UNICODE)
+	#define TO_PLATFORM_STRING(str) L##str
+#else
+	#define TO_PLATFORM_STRING(str) str
+#endif
+
 // A concept that checks if a type is a string.
 template<typename T>
 concept StringVariant = std::same_as<std::remove_cvref_t<T>, std::string> || std::same_as<std::remove_cvref_t<T>, std::wstring>;
