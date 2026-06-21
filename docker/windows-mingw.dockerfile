@@ -29,7 +29,8 @@ RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
 	&& rm ./powershell_7.5.2-1.deb_amd64.deb \
     && apt update \
     && apt install -y powershell libssl-dev libzstd-dev cmake git ninja-build openjdk-21-jre \
-    && ln -s /usr/x86_64-w64-mingw32/include/wincrypt.h /usr/x86_64-w64-mingw32/include/Wincrypt.h \
+    && ln -s /usr/x86_64-w64-mingw32ucrt/include/wincrypt.h /usr/x86_64-w64-mingw32ucrt/include/Wincrypt.h \
+    && ln -s /usr/x86_64-w64-mingw32ucrt/include/windows.h /usr/x86_64-w64-mingw32ucrt/include/Windows.h \
     && git clone https://github.com/microsoft/vcpkg $VCPKG_ROOT \
 	&& cd $VCPKG_ROOT \
 	&& sh bootstrap-vcpkg.sh -disableMetrics \
