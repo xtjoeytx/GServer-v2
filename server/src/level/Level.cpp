@@ -1047,7 +1047,10 @@ std::generator<const LevelBaddy&> Level::getBaddies() const noexcept
 		co_return;
 
 	if (auto subLevel = getSubLevelAtPosition(MapPosition{}); subLevel != nullptr)
-		co_yield std::ranges::elements_of(subLevel->baddies);
+	{
+		for (const auto& baddy : subLevel->baddies)
+			co_yield baddy;
+	}
 }
 
 std::generator<const LevelChest&> Level::getChests() const noexcept
@@ -1057,14 +1060,20 @@ std::generator<const LevelChest&> Level::getChests() const noexcept
 		if (m_levelParts.empty() || m_levelParts.at(0) == nullptr)
 			co_return;
 		if (auto sdata = m_levelParts.at(0)->staticData.lock(); sdata != nullptr)
-			co_yield std::ranges::elements_of(sdata->chests);
+		{
+			for (const auto& chest : sdata->chests)
+				co_yield chest;
+		}
 	}
 	else
 	{
 		for (const auto& levelPtr : m_levelParts | removeNulls)
 		{
 			if (auto sdata = levelPtr->staticData.lock(); sdata != nullptr)
-				co_yield std::ranges::elements_of(sdata->chests);
+			{
+				for (const auto& chest : sdata->chests)
+					co_yield chest;
+			}
 		}
 	}
 }
@@ -1076,14 +1085,20 @@ std::generator<const LevelLink&> Level::getLinks() const noexcept
 		if (m_levelParts.empty() || m_levelParts.at(0) == nullptr)
 			co_return;
 		if (auto sdata = m_levelParts.at(0)->staticData.lock(); sdata != nullptr)
-			co_yield std::ranges::elements_of(sdata->links);
+		{
+			for (const auto& link : sdata->links)
+				co_yield link;
+		}
 	}
 	else
 	{
 		for (const auto& levelPtr : m_levelParts | removeNulls)
 		{
 			if (auto sdata = levelPtr->staticData.lock(); sdata != nullptr)
-				co_yield std::ranges::elements_of(sdata->links);
+			{
+				for (const auto& link : sdata->links)
+					co_yield link;
+			}
 		}
 	}
 }
@@ -1095,14 +1110,20 @@ std::generator<const LevelSign&> Level::getSigns() const noexcept
 		if (m_levelParts.empty() || m_levelParts.at(0) == nullptr)
 			co_return;
 		if (auto sdata = m_levelParts.at(0)->staticData.lock(); sdata != nullptr)
-			co_yield std::ranges::elements_of(sdata->signs);
+		{
+			for (const auto& sign : sdata->signs)
+				co_yield sign;
+		}
 	}
 	else
 	{
 		for (const auto& levelPtr : m_levelParts | removeNulls)
 		{
 			if (auto sdata = levelPtr->staticData.lock(); sdata != nullptr)
-				co_yield std::ranges::elements_of(sdata->signs);
+			{
+				for (const auto& sign : sdata->signs)
+					co_yield sign;
+			}
 		}
 	}
 }
@@ -2831,7 +2852,8 @@ std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& p
 	// If this is not a gmap, and we aren't syncing by distance inside, return all level players.
 	if (isInsideLevel && !syncInside)
 	{
-		co_yield std::ranges::elements_of(m_players);
+		for (const auto& playerId : m_players)
+			co_yield playerId;
 		co_return;
 	}
 
@@ -2849,7 +2871,8 @@ std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& p
 	// If the sync distance is larger than the level, return all the level players.
 	if (syncx >= mapSize.width() && syncy >= mapSize.height())
 	{
-		co_yield std::ranges::elements_of(m_players);
+		for (const auto& playerId : m_players)
+			co_yield playerId;
 		co_return;
 	}
 
@@ -2876,7 +2899,8 @@ std::generator<const PlayerID&> Level::findInRangePlayersForCommunication(const 
 	// If this is not a bigmap, use the default search.
 	if (!isOnBigMap())
 	{
-		co_yield std::ranges::elements_of(findInRangePlayers(position));
+		for (const auto& playerId : findInRangePlayers(position))
+			co_yield playerId;
 		co_return;
 	}
 
@@ -2901,7 +2925,10 @@ std::generator<const PlayerID&> Level::findInRangePlayersForCommunication(const 
 		{
 			auto hintLevel = std::const_pointer_cast<Level>(shared_from_this());
 			if (auto level = m_server->getLoadedLevel(m_map->getLevelNameAt(x, y), hintLevel); level != nullptr)
-				co_yield std::ranges::elements_of(level->m_players);
+			{
+				for (const auto& playerId : level->m_players)
+					co_yield playerId;
+			}
 		}
 	}
 }
@@ -2935,7 +2962,8 @@ std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& positio
 	// If this is an inside level and we aren't going to sync by distance inside, return all level NPCs.
 	if (isInsideLevel && !syncInside)
 	{
-		co_yield std::ranges::elements_of(m_npcs);
+		for (const auto& npcId : m_npcs)
+			co_yield npcId;
 		co_return;
 	}
 
@@ -2960,7 +2988,8 @@ std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& positio
 		// Sync is greater than the level bounds so return all the NPCs.
 		if (syncx >= mapSize.width() && syncy >= mapSize.height())
 		{
-			co_yield std::ranges::elements_of(m_npcs);
+			for (const auto& npcId : m_npcs)
+				co_yield npcId;
 			co_return;
 		}
 
@@ -2986,7 +3015,8 @@ std::generator<const NPCID&> Level::findInRangeNPCsByDistance(const PixelPositio
 	// If this is not a map level, return all level NPCs.
 	if (!isGmap())
 	{
-		co_yield std::ranges::elements_of(m_npcs);
+		for (const auto& npcId : m_npcs)
+			co_yield npcId;
 		co_return;
 	}
 

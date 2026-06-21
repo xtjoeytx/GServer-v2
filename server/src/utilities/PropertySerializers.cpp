@@ -780,7 +780,7 @@ void collectPacketsFromResults(const PropertySendResults& results, CString& outA
 
 		auto& destinationFlags = setResults.resultFlags;
 		SetResults::ResultFlagType sendFlags{setResults.resultFlags};
-		int loopCount = 0;
+		size_t loopCount = 0;
 		while (destinationFlags.test(SetResults::sendToAll) || destinationFlags.test(SetResults::sendToLevel) || destinationFlags.test(SetResults::sendToSource))
 		{
 			// If the base prop is null, or if we need to get the latest value on send, execute the callback to get the latest prop value.

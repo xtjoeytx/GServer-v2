@@ -177,7 +177,10 @@ std::generator<decltype(ScriptExecutionContext::joinedClasses)::const_reference>
 
 		// Get child classes too.
 		if (auto class_ = kvp.second.lock(); class_ != nullptr)
-			co_yield std::ranges::elements_of(class_->getScript().getServerJoinedClasses());
+		{
+			for (const auto& child : class_->getScript().getServerJoinedClasses())
+				co_yield child;
+		}
 	}
 }
 

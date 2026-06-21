@@ -324,8 +324,8 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 
 		// Set the new position.
 		auto localPosition = toLocalPixelPosition(currentPosition);
-		auto sendX = setPropWith<NPCProp::X2>(SetBy::SERVER, localPosition.x());
-		auto sendY = setPropWith<NPCProp::Y2>(SetBy::SERVER, localPosition.y());
+		setPropWith<NPCProp::X2>(SetBy::SERVER, localPosition.x());
+		setPropWith<NPCProp::Y2>(SetBy::SERVER, localPosition.y());
 
 		// Adjust our saved mod times, just in case.
 		// We don't want the position to be accidentally sent.

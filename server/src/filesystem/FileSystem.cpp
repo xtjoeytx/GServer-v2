@@ -691,7 +691,10 @@ std::generator<const std::filesystem::path&> FileSystem::getManagedDirectories(F
 {
 	bool skipTest = !hasFoldersConfig();
 	if (skipTest || category == FileCategory::ALL)
-		co_yield std::ranges::elements_of(getManagedDirectories());
+	{
+		for (const auto& dir : getManagedDirectories())
+			co_yield dir;
+	}
 
 	for (const auto& dir : m_directories)
 	{
