@@ -139,20 +139,20 @@ public:
 		if (!exists(key))
 			return std::nullopt;
 
-		T result{};
+		std::optional<T> result = T{};
 
 		for (auto item : getList(key))
 		{
 			if constexpr (std::integral<value_type>)
-				result.emplace_back(string::toNumber<value_type>(item));
+				result.value().emplace_back(string::toNumber<value_type>(item));
 			else if constexpr (std::same_as<value_type, float>)
-				result.emplace_back(string::toFloat(item));
+				result.value().emplace_back(string::toFloat(item));
 			else if constexpr (std::same_as<value_type, double>)
-				result.emplace_back(string::toDouble(item));
+				result.value().emplace_back(string::toDouble(item));
 			else if constexpr (std::same_as<value_type, bool>)
-				result.emplace_back(string::equalsi(item, "true"sv) ? true : false);
+				result.value().emplace_back(string::equalsi(item, "true"sv) ? true : false);
 			else if constexpr (string::StringViewIshVariant<value_type>)
-				result.emplace_back(item);
+				result.value().emplace_back(item);
 			else
 				static_assert(false, "Settings::get<ContainerLike> called with a container that contains a data type that isn't handled.");
 		}
@@ -215,7 +215,10 @@ public:
 			co_return;
 
 		for (auto& it = range.first; it != range.second; ++it)
-			co_yield std::ranges::elements_of(string::split(it->second, ","sv, true));
+		{
+			for (auto sv : string::split(it->second, ","sv, true))
+				co_yield sv;
+		}
 	}
 
 private:
@@ -326,6 +329,7 @@ inline void Settings::trackOne(SettingCache<T>& cache)
 	auto updateFunction = [&cache, this]()
 	{
 		std::optional<T> oldValueT = std::move(cache.value);
+		cache.value.reset();
 		cache.update(get<T>(cache.key), oldValueT);
 	};
 
