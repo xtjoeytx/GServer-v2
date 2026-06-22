@@ -473,7 +473,7 @@ public:
 	FileIO& flush();
 
 protected:
-	bool open(bool truncate);
+	virtual bool open(bool truncate);
 
 protected:
 	std::filesystem::path m_tempFile;
@@ -481,6 +481,56 @@ protected:
 };
 
 using FileIOPtr = std::shared_ptr<FileIO>;
+
+//----------------------------
+
+class FileSimpleIO : public FileIO
+{
+public:
+	using FileIO::FileIO;
+
+	FileSimpleIO(const std::filesystem::path& file)
+	{
+		m_file = file;
+		open(false);
+	}
+
+	FileSimpleIO(const std::filesystem::path& file, bool truncate)
+	{
+		m_file = file;
+		open(truncate);
+	}
+
+public:
+	FileSimpleIO(const FileSimpleIO& other) = delete;
+	FileSimpleIO& operator=(const FileSimpleIO& other) = delete;
+	bool operator==(const FileSimpleIO& other) = delete;
+
+public:
+	FileSimpleIO& operator=(FileSimpleIO&& other) noexcept
+	{
+		std::swap(m_file, other.m_file);
+		std::swap(m_inputStream, other.m_inputStream);
+		std::swap(m_outputStreamHandle, other.m_outputStreamHandle);
+		return *this;
+	}
+
+public:
+	using File::operator std::istream&;
+	using File::operator std::istream*;
+	using File::operator bool;
+	using FileIO::operator std::fstream&;
+	using FileIO::operator std::fstream*;
+
+public:
+	/// @brief Closes the file.
+	virtual void close() override;
+
+protected:
+	virtual bool open(bool truncate) override;
+};
+
+using FileSimpleIOPtr = std::shared_ptr<FileSimpleIO>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::fs

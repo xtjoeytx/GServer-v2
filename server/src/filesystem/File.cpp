@@ -610,4 +610,52 @@ FileIO& FileIO::flush()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+bool FileSimpleIO::open(bool truncate)
+{
+	if (m_outputStreamHandle)
+		m_outputStreamHandle->close();
+
+	// Binary read/write mode.
+	// binary | in | out = open for read/write and create new if not exists.
+	// trunc = destroy contents.
+	// app | ate = append to end of file and seek to the end on open.
+	std::ios_base::openmode modeFlags = std::ios::binary | std::ios::in | std::ios::out;
+	modeFlags |= (truncate ? std::ios::trunc : (std::ios::app | std::ios::ate));
+
+	auto fstream = std::make_unique<std::fstream>();
+	fstream->open(m_file, modeFlags);
+
+	// Sometimes there can be very weird OS issues where the first attempt to open fails.
+	// No idea why (maybe virus scanners locking the file?)
+	// If the permission was denied, briefly sleep and try one more time.
+	if (!fstream->is_open() && errno == EACCES)
+	{
+		std::this_thread::sleep_for(1ms);
+		fstream->open(m_file, modeFlags);
+	}
+
+	// We failed to open the file.
+	if (!fstream->is_open())
+	{
+		std::string error{ strerror(errno) };
+		log::printLine(log::server, "** File '{}' read error: {}", m_file.string(), error);
+	}
+
+	m_outputStreamHandle = std::move(fstream);
+	auto outputStream = m_outputStreamHandle.get();
+	m_inputStream = dynamic_cast<std::istream*>(outputStream);
+
+	return true;
+}
+
+void FileSimpleIO::close()
+{
+	if (m_outputStreamHandle)
+		m_outputStreamHandle->close();
+
+	File::close();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::fs
