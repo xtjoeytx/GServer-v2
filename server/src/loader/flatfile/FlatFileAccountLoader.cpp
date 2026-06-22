@@ -9,8 +9,8 @@
 #include <format>
 #include <limits>
 #include <ranges>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -20,13 +20,14 @@
 #include <Account.h>
 #include <BabyDI.h>
 #include <Server.h>
+#include <filesystem/File.h>
 #include <filesystem/FileSystem.h>
 #include <filesystem/FileSystemTypes.h>
 #include <loader/flatfile/FlatFileAccountLoader.h>
 #include <scripting/ScriptContainers.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
-#include <utilities/CommonTypes.h>
 
 using namespace std::string_view_literals;
 
@@ -36,7 +37,7 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 // Helper to avoid having to write uint8_t everywhere.
-const auto& toByte = static_cast<uint8_t(*)(std::string_view)>(string::toNumber);
+const auto& toByte = static_cast<uint8_t (*)(std::string_view)>(string::toNumber);
 
 static bool setIfEmpty(std::string& str, std::string_view value, std::string_view defaultValue = {})
 {
@@ -182,7 +183,10 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 			account.character.shieldImage = val;
 		else if (section == "COLORS")
 		{
-			auto tokensAsNumbers = string::split(val, ","sv) | std::views::take(8) | std::views::transform([](const std::string_view& token) { return toByte(std::string{ token }); });
+			auto tokensAsNumbers = string::split(val, ","sv) | std::views::take(8) | std::views::transform([](const std::string_view& token)
+			{
+				return toByte(std::string{token});
+			});
 			std::ranges::copy(tokensAsNumbers, account.character.colors.begin());
 		}
 		else if (section == "SPRITE")
@@ -370,7 +374,7 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "DEVIATION", account.eloDeviation, 350.0f);
 	writeLine(newFile, "LASTSPARTIME", clock::to_time_t(account.lastSparTime), (time_t)0);
 	writeLine(newFile, "IP", account.ipAddress);
-	writeLine(newFile, "LANGUAGE", account.language, "English"sv);	// TODO: Also accept "en" and other two-character language codes.
+	writeLine(newFile, "LANGUAGE", account.language, "English"sv); // TODO: Also accept "en" and other two-character language codes.
 	writeLine(newFile, "PLATFORM", account.platform);
 	writeLine(newFile, "CODEPAGE", account.codePage);
 
@@ -415,18 +419,25 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	auto accountFileName = std::format("{}.txt", account.name);
 	auto accountPath = server->getFileSystemServer().findi(fs::FileCategory::ACCOUNT, accountFileName);
 	if (accountPath.empty())
-		accountPath = std::filesystem::path{ "accounts" } / accountFileName;
+		accountPath = std::filesystem::path{"accounts"} / accountFileName;
 
 	// Save the account now.
-	if (!CString(newFile).save(accountPath.string()))
+	fs::FileIO writer(accountPath, true);
+	if (writer.opened())
+	{
+		writer.write(newFile);
+	}
+	else
+	{
 		log::printLine(log::rc, "** Error saving account: {}", account.name);
+	}
 
 	return true;
 }
 
 bool FlatFileAccountLoader::checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const
 {
-	constexpr std::array<std::string_view, 6> conditions = { ">=", "<=", "!=", "=", ">", "<" };
+	constexpr std::array<std::string_view, 6> conditions = {">=", "<=", "!=", "=", ">", "<"};
 
 	// Load the account data.
 	std::string file;

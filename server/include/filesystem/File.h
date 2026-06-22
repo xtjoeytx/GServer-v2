@@ -10,6 +10,7 @@
 #include <optional>
 #include <ranges>
 #include <span>
+#include <stdexcept>
 #include <string_view>
 #include <string>
 #include <type_traits>
@@ -29,13 +30,13 @@ namespace preagonal
 /// @param chars Pointer to the character array representing the string literal.
 /// @param length The length of the string literal.
 /// @return A std::filesystem::path::string_type constructed from the given character array.
-constexpr std::filesystem::path::string_type operator ""_pv(const char* chars, size_t length)
+constexpr std::filesystem::path::string_type operator""_pv(const char* chars, size_t length)
 {
-	return std::filesystem::path::string_type{ chars, chars + length };
+	return std::filesystem::path::string_type{chars, chars + length};
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}
+} // namespace preagonal
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::fs
@@ -102,13 +103,13 @@ public:
 
 public:
 	/// @brief Converts directly into an istream.
-	virtual operator std::istream& ()
+	virtual operator std::istream&()
 	{
 		return *m_inputStream;
 	}
 
 	/// @brief Converts directly into a shared pointer to the istream.
-	virtual operator std::istream* ()
+	virtual operator std::istream*()
 	{
 		return m_inputStream;
 	}
@@ -255,7 +256,7 @@ public:
 
 protected:
 	std::filesystem::path m_file;
-	std::istream* m_inputStream{ nullptr };
+	std::istream* m_inputStream{nullptr};
 	std::unique_ptr<std::ifstream> m_inputStreamHandle;
 };
 
@@ -333,6 +334,11 @@ class FileIO : public File
 public:
 	FileIO() = default;
 
+	FileIO(const std::filesystem::path& file, std::unique_ptr<std::ifstream>&& stream)
+	{
+		throw std::logic_error("This constructor is not intended to be used. Use the File constructor instead.");
+	}
+
 	FileIO(const std::filesystem::path& file, std::unique_ptr<std::fstream>&& stream)
 		: m_outputStreamHandle(std::move(stream))
 	{
@@ -345,9 +351,16 @@ public:
 		open();
 	}
 
+	FileIO(const std::filesystem::path& file, bool truncate)
+	{
+		m_file = file;
+		open(truncate);
+	}
+
 	FileIO(FileIO&& other) noexcept
 	{
 		std::swap(m_file, other.m_file);
+		std::swap(m_tempFile, other.m_tempFile);
 		std::swap(m_inputStream, other.m_inputStream);
 		std::swap(m_outputStreamHandle, other.m_outputStreamHandle);
 	}
@@ -384,13 +397,13 @@ public:
 	using File::operator bool;
 
 	/// @brief Converts directly into an fstream.
-	operator std::fstream& () const
+	operator std::fstream&() const
 	{
 		return *(m_outputStreamHandle.get());
 	}
 
 	/// @brief Converts directly into a shared pointer to the istream.
-	operator std::fstream* () const
+	operator std::fstream*() const
 	{
 		return m_outputStreamHandle.get();
 	}
@@ -446,7 +459,7 @@ public:
 	/// @param value A span containing the value to write.
 	/// @param separator A span containing the separator to use between the key and value. Defaults to a single space.
 	/// @return A reference to the FileIO object after writing the configuration line.
-	FileIO& writeConfigLine(std::span<const char> key, std::span<const char> value, std::span<const char> separator = { " "sv });
+	FileIO& writeConfigLine(std::span<const char> key, std::span<const char> value, std::span<const char> separator = {" "sv});
 
 	/// @brief Writes a configuration section between specified start and end keys to a file.
 	/// @param startKey A span representing the starting key of the configuration section.

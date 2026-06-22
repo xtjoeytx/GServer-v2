@@ -445,7 +445,6 @@ bool FileIO::open(bool truncate)
 	// We want to write into a temp file and move it over the original when done, so record the file name of the temp file.
 	m_tempFile = m_file;
 	m_tempFile.concat(".partial");
-	//m_tempFile.replace_extension(m_tempFile.extension().concat(".partial"));
 
 	if (m_outputStreamHandle)
 		m_outputStreamHandle->close();
@@ -456,6 +455,10 @@ bool FileIO::open(bool truncate)
 	// app | ate = append to end of file and seek to the end on open.
 	std::ios_base::openmode modeFlags = std::ios::binary | std::ios::in | std::ios::out;
 	modeFlags |= (truncate ? std::ios::trunc : (std::ios::app | std::ios::ate));
+
+	// If we are appending, copy the file contents to the temp file so we can append to it.
+	if (!truncate)
+		std::filesystem::copy_file(m_file, m_tempFile, std::filesystem::copy_options::overwrite_existing);
 
 	auto fstream = std::make_unique<std::fstream>();
 	fstream->open(m_tempFile, modeFlags);
