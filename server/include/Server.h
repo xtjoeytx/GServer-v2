@@ -358,8 +358,11 @@ public:
 	void hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source) const;
 
 public:
+	std::string getLogDateTimeString() const;
 	void logToFile(std::filesystem::path fileName, std::string_view message, bool writeTimestamp = true) const;
 	[[inline]] void logToFile(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const;
+	void logToFileSafely(std::filesystem::path fileName, std::string_view message, bool writeTimestamp = true) const;
+	[[inline]] void logToFileSafely(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const;
 
 public:
 	void sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
@@ -540,6 +543,16 @@ inline void Server::logToFile(std::filesystem::path fileName, string::InputRange
 	for (const auto& message : messages)
 	{
 		logToFile(fileName, message, first);
+		first = false;
+	}
+}
+
+inline void Server::logToFileSafely(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const
+{
+	bool first = true;
+	for (const auto& message : messages)
+	{
+		logToFileSafely(fileName, message, first);
 		first = false;
 	}
 }

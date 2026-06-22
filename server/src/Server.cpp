@@ -1889,7 +1889,52 @@ bool Server::isStaff(const CString& accountName)
 	return false;
 }
 
+std::string Server::getLogDateTimeString() const
+{
+	if (m_classicStyleLogs.getValue())
+	{
+		char buffer[33]{};
+
+		// Non-standard, but make it at least a LITTLE easier to read these dumb logs.
+		buffer[0] = '\n';
+
+		std::time_t curTime = std::time(nullptr);
+		std::strncpy(buffer + 1, std::ctime(&curTime), 31);
+		buffer[32] = '\0';
+
+		return std::string{buffer};
+	}
+	else
+	{
+#if __cpp_lib_chrono < 201907L
+		// Clang doesn't support timezones, so just use system_clock time (UTC) floored to seconds.
+		auto localtime = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
+#else
+		// Get the current time, floored to seconds.
+		auto localtime = std::chrono::floor<std::chrono::seconds>(std::chrono::current_zone()->to_local(std::chrono::system_clock::now()));
+#endif
+
+		std::string result{ std::format(log::TimestampLong, localtime) };
+		result += " ";
+		return result;
+	}
+}
+
 void Server::logToFile(std::filesystem::path fileName, std::string_view message, bool writeTimestamp) const
+{
+	std::filesystem::path logPath{"logs"};
+
+	fs::FileSimpleIO file{logPath / fileName};
+	if (!file.opened())
+		return;
+
+	if (writeTimestamp)
+		file.write(getLogDateTimeString());
+
+	file.writeLine(message);
+}
+
+void Server::logToFileSafely(std::filesystem::path fileName, std::string_view message, bool writeTimestamp) const
 {
 	std::filesystem::path logPath{"logs"};
 
@@ -1898,33 +1943,7 @@ void Server::logToFile(std::filesystem::path fileName, std::string_view message,
 		return;
 
 	if (writeTimestamp)
-	{
-		if (m_classicStyleLogs.getValue())
-		{
-			// Non-standard, but make it at least a LITTLE easier to read these dumb logs.
-			file.writeLine();
-
-			// std::ctime appends a newline, so issue a normal write.
-			char buffer[32];
-			std::time_t curTime = std::time(nullptr);
-			std::strncpy(buffer, std::ctime(&curTime), 31);
-			buffer[31] = '\0';
-
-			file.write(std::string_view{buffer});
-		}
-		else
-		{
-#if __cpp_lib_chrono < 201907L
-			// Clang doesn't support timezones, so just use system_clock time (UTC) floored to seconds.
-			auto localtime = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
-#else
-			// Get the current time, floored to seconds.
-			auto localtime = std::chrono::floor<std::chrono::seconds>(std::chrono::current_zone()->to_local(std::chrono::system_clock::now()));
-#endif
-			file.write(std::format(log::TimestampLong, localtime));
-			file.write(" "sv);
-		}
-	}
+		file.write(getLogDateTimeString());
 
 	file.writeLine(message);
 }
