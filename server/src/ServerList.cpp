@@ -88,7 +88,7 @@ ServerList::ServerList()
 	m_socket.setType(SOCKET_TYPE_CLIENT);
 	m_socket.setDescription("listserver");
 
-	m_lastData = m_lastTimer = precise_clock::now();
+	m_lastData = m_lastTimer = m_nextConnectionAttempt = m_lastPingTime = precise_clock::now();
 
 	// Create Functions
 	if (!ServerList::created)
@@ -191,7 +191,7 @@ bool ServerList::doTimedEvents(precise_clock::time_point time)
 
 		auto& settings = m_server->getSettings();
 		CString ip(settings.get<std::string>("serverip").value_or("AUTO"s));
-		sendPacket(CString() >> (char)SVO_SETIP >> (char)ip.length() << ip);
+		sendPacket(CString() >> (char)SVO_SETIP >> (char)ip.length() << ip, true);
 	}
 
 	// Reconnect to the listserver, with connection backoff to prevent a flood of connections
