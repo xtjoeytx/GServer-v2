@@ -1849,9 +1849,7 @@ void fn_savelog(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		throw std::invalid_argument("invalid arguments: savelog text");
 
 	auto text = visitor->getGameValueAs<std::string>(*arguments[0]);
-
-	auto server = BabyDI::Get<Server>();
-	server->logToFile("npclog.txt", text);
+	log::printLine(log::npc, text);
 }
 
 // savelog2 filename,text;
