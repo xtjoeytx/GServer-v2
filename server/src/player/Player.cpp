@@ -1016,9 +1016,18 @@ void Player::sendPrivateMessage(PlayerID from, std::string_view message)
 	if (message.empty())
 		return;
 
+	// TODO: This is really hacky.  More effort into reverse engineering private messages is required.
+	bool isMultiLine = message.find('\n') != std::string_view::npos || message.find("#b") != std::string_view::npos;
+
 	auto convertedMessage = string::replace(message, "\n", "#b");
 	auto lines = string::splitByString(convertedMessage, "#b"sv, false);
 	auto finalMessage = string::toCSV(lines, true);
+
+	// For some reason, if there are multiple lines, the client strips out the first line.
+	// If we don't start with a blank line, add one to avoid message loss.
+	// TODO: Hacky!  Figure out why this happens.
+	if (isMultiLine && !finalMessage.starts_with(",") && !finalMessage.starts_with("\"\","))
+		finalMessage = "\"\"," + finalMessage;
 
 	sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)from << finalMessage);
 }

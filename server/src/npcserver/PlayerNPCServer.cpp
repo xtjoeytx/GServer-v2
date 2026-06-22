@@ -1,3 +1,4 @@
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -13,9 +14,8 @@
 #include <npcserver/NPCServer.h>
 #include <npcserver/PlayerNPCServer.h>
 #include <object/Player.h>
-#include <utilities/CommonTypes.h>
-#include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
+#include <utilities/CommonTypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -53,12 +53,27 @@ void PlayerNPCServer::onUnregister()
 
 void PlayerNPCServer::sendPrivateMessage(PlayerID from, std::string_view message)
 {
+	static const std::array<std::string_view, 2> privateMessageHeaders{
+		"#bPrivate message:#b"sv,
+		"#bMass message:#b"sv,
+	};
+
 	if (auto player = m_server->getPlayer(from); player != nullptr)
 	{
 		if (!privateMessage.empty())
 			player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)m_id << player->translate(privateMessage));
 
-		m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::PRIVATEMESSAGE, source::FromPlayer(from), "pm"s, player->account.name, std::string{ message });
+		// Strip out the header if one is there.
+		for (const auto& header : privateMessageHeaders)
+		{
+			if (message.starts_with(header))
+			{
+				message = message.substr(header.size());
+				break;
+			}
+		}
+
+		m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::PRIVATEMESSAGE, source::FromPlayer(from), "pm"s, player->account.name, std::string{message});
 	}
 }
 
