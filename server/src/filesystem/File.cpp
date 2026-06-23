@@ -457,7 +457,7 @@ bool FileIO::open(bool truncate)
 	modeFlags |= (truncate ? std::ios::trunc : (std::ios::app | std::ios::ate));
 
 	// If we are appending, copy the file contents to the temp file so we can append to it.
-	if (!truncate)
+	if (!truncate && std::filesystem::exists(m_file))
 		std::filesystem::copy_file(m_file, m_tempFile, std::filesystem::copy_options::overwrite_existing);
 
 	auto fstream = std::make_unique<std::fstream>();
