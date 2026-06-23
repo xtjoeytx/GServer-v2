@@ -997,6 +997,10 @@ std::any GS1Visitor::visitStatementBuiltInCommand(GS1Parser::StatementBuiltInCom
 	{
 		throw;
 	}
+	catch (const return_exception&)
+	{
+		throw;
+	}
 	catch (const unimplemented_error& e)
 	{
 		reportError(e.what(), context, false);

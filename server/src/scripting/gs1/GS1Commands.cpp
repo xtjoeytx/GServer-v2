@@ -509,14 +509,15 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 		log::printLine(log::npc, "[WARNING] NPC [{}] '{}', error: {}", visitor->getOriginalSource().first, visitor->who, ex.what());
 		server->sendToNC(std::format("Script problem: NPC [{}] '{}', issue: {}", visitor->getOriginalSource().first, visitor->who, ex.what()));
 	}
+	catch (const return_exception& ex)
+	{
+		throw;
+	}
 	catch (const std::exception& ex)
 	{
 		auto server = BabyDI::Get<Server>();
 		log::printLine(log::npc, "[ERROR] NPC [{}] '{}', error: {}", visitor->getOriginalSource().first, visitor->who, ex.what());
 		server->sendToNC(std::format("Script error: NPC [{}] '{}', error: {}", visitor->getOriginalSource().first, visitor->who, ex.what()));
-
-		if (popContext)
-			visitor->popSource();
 		throw;
 	}
 
