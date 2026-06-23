@@ -352,20 +352,6 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 
 	m_server->queueNPCEvent(m_currentLevel.lock(), getGlobalPosition(), ScriptEventType::PLAYERLAYSITEM, source::FromPlayer(m_id));
 
-	// Check if we should send item drop events to the Control-NPC.
-	bool itemDropEvents = m_server->cached.enableItemDropEvents.getValue();
-	if (itemDropEvents && m_server->cached.itemDropEventsOnlyForGralats.getValue() && !LevelItem::isRupeeType(itemType))
-		itemDropEvents = false;
-
-	// If item drop events are enabled, send the item drop event to the Control-NPC.
-	// This will prevent all client item drops, so beware.
-	if (itemDropEvents)
-	{
-		m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::CUSTOM, source::FromPlayer(m_id), "itemdrop", getLevelName(), std::format("{}", loc[0]), std::format("{}", loc[1]), LevelItem::getItemName(itemType));
-		sendPacket(CString() >> (char)PLO_ITEMDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
-		return HandlePacketResult::Handled;
-	}
-
 	if (auto level = getLevel(); level != nullptr)
 	{
 		if (m_server->hasNPCServer())

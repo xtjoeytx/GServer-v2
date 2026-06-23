@@ -309,8 +309,8 @@ public:
 	std::optional<LevelHorse*> getHorse(size_t index) noexcept;
 
 public:
-	LevelItem* addItem(inform_client_t, const PixelPosition& position, LevelItemType item);
-	LevelItem* addItem(const PixelPosition& position, LevelItemType item);
+	LevelItem* addItem(inform_client_t, const PixelPosition& position, LevelItemType item, std::optional<PlayerID> addedBy = std::nullopt);
+	LevelItem* addItem(const PixelPosition& position, LevelItemType item, std::optional<PlayerID> addedBy = std::nullopt);
 	bool removeItem(inform_client_t, size_t index);
 	bool removeItem(size_t index);
 	LevelItemType removeItem(const PixelPosition& position);

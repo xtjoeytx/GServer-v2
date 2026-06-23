@@ -2290,9 +2290,9 @@ std::optional<LevelHorse*> Level::getHorse(size_t index) noexcept
 
 //----------------------------
 
-LevelItem* Level::addItem(inform_client_t, const PixelPosition& position, LevelItemType item)
+LevelItem* Level::addItem(inform_client_t, const PixelPosition& position, LevelItemType item, std::optional<PlayerID> addedBy)
 {
-	auto result = addItem(position, item);
+	auto result = addItem(position, item, addedBy);
 	if (result != nullptr)
 	{
 		auto localPosition = toLocalPixelPosition(result->position);
@@ -2301,13 +2301,37 @@ LevelItem* Level::addItem(inform_client_t, const PixelPosition& position, LevelI
 	return result;
 }
 
-LevelItem* Level::addItem(const PixelPosition& position, LevelItemType item)
+LevelItem* Level::addItem(const PixelPosition& position, LevelItemType item, std::optional<PlayerID> addedBy)
 {
 	if (m_server->hasNPCServer())
 	{
 		// If we were able to generate the item NPC, don't add the item to the ground.
 		if (auto itemNPC = generateItemNPC(position, item); itemNPC != nullptr)
 			return nullptr;
+
+		// Check if we should send item drop events to the Control-NPC.
+		bool itemDropEvents = m_server->cached.enableItemDropEvents.getValue();
+		if (itemDropEvents && m_server->cached.itemDropEventsOnlyForGralats.getValue() && !LevelItem::isRupeeType(item))
+			itemDropEvents = false;
+
+		// If item drop events are enabled, send the item drop event to the Control-NPC.
+		// This will prevent all client item drops, so beware.
+		if (itemDropEvents)
+		{
+			ScriptObject source = (addedBy.has_value() ? source::FromPlayer(addedBy.value()) : source::FromLevel(shared_from_this()));
+			auto tilePosition = toTilePosition(position);
+
+			m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::CUSTOM, source, "itemdrop", levelName, std::format("{}", tilePosition.x()), std::format("{}", tilePosition.y()), LevelItem::getItemName(item));
+			if (addedBy.has_value())
+			{
+				if (auto player = m_server->getPlayer(addedBy.value()); player != nullptr)
+				{
+					auto localTilePosition = toLocalWholeTilePosition(tilePosition);
+					player->sendPacket(CString() >> (char)PLO_ITEMDEL >> (char)(localTilePosition.x() * 2) >> (char)(localTilePosition.y() * 2));
+				}
+			}
+			return nullptr;
+		}
 	}
 
 	LevelItem newItem{.position = position, .item = item, .modTime = m_server->getFrameStartTime()};
