@@ -4,6 +4,7 @@
 
   * bug fix, + new feature, o other
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ Improved documentation (see the new /docs folder)
 + GS1 NPC-server support with serverside scripting and events
 + Full, proper gmap support
 + Added support for heightmap-based gmap terrain
@@ -14,10 +15,13 @@
 + allowedversions.txt altered to support server generations
 + If the current working directory is set to a player world, that world will be loaded
 + Reintroduced UPNP support
-+ Added support for 'GR-V1.05' .graal levels.
++ Added support for 'GR-V1.05' .graal levels
 + Tons of new server options (too many to list, see serveroptions.txt)
 + Added the ability to adjust the item drop rates for various item types
-+ Classic translation system (old .po based system is not yet supported)
++ Classic translation system (old .po based system is not yet supported and has been removed)
++ Text code page handling and conversions
++ Support for v6 client HTML body colors (see serveroption: enableexbodycolors)
++ Baddy names and item numbers can be used in .nw files
 * Fixed bugs with carryable NPCs
 * Fixed "update level" so it won't reset the X/Y locations of players in the level
 * Fixed a bug that would cause players to momentarily become invisible when crossing level boundaries
@@ -25,6 +29,10 @@
 * Many bug fixes around NPC props
 * Many bug fixes around bigmaps and gmaps
 * Fixed a problem where updating scripts via NC wouldn't cause the client to reload the script
+* Fixed an integer overflow issue with the AP counter
+* Fixed some GR triggeractions not properly respecting the server option to turn them on/off
+* Fixed the 'gr.setgroup' triggeraction hack to let you remove a player from a group by passing an empty string
+* The current group name is properly saved to the player's account file and to database NPCs
 o Removed the v8 NPC-server
 o Removed multiple server support
 o Removed servers.txt and altered how the startup server is found
@@ -34,10 +42,9 @@ o Changed how files are named to avoid code page issues (we match official and u
 o Many NC functions have been improved to get more immediate feedback (like adding/removing weapons)
 o Refactored and rewrote a lot of the source code
 o Changed how IDs are assigned to players and NPCs
-o Added a lot of new documentation to the "docs" directory
 o Any 2x2 tile change is respawned
-o Baddy names and item numbers can be used in .nw files
 o Improved server stability
+o Improved serverlist connection stability
 
 > + NPCs in adjacent levels on bigmaps are loaded (maybe?)
 
