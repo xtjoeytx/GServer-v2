@@ -344,6 +344,7 @@ FetchContent_Declare(ztd.text
 	GIT_REPOSITORY https://github.com/soasis/text.git
 	GIT_SHALLOW    ON
 	GIT_TAG        main
+	EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(ztd.text)
 target_link_libraries(${TARGET_NAME} PRIVATE ztd::text)
