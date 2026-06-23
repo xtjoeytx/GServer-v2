@@ -495,10 +495,10 @@ private:
 	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_playerList;
 	IdGenerator<PlayerID> m_playerIdGenerator{PLAYERID_GEN};
 
-	TimeoutGenerator m_timedEvents{1s, true};
-	TimeoutGenerator m_timedNWTime{5s, true};
-	TimeoutGenerator m_timedSave{1min, true};
-	TimeoutGenerator m_timedMaintenance{5min, true};
+	TimeoutGenerator m_timedEvents1s{1s, true};
+	TimeoutGenerator m_timedNWTime5s{5s, true};
+	TimeoutGenerator m_timedSave1m{1min, true};
+	TimeoutGenerator m_timedMaintenance5m{5min, true};
 	std::vector<std::pair<precise_clock::duration, std::function<void()>>> m_scheduledTasks;
 	clock::time_point m_serverStartTime;
 	clock::time_point m_frameStartTime;

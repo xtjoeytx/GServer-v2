@@ -135,19 +135,19 @@ Server::Server(const CString& pName)
 	m_accountLoader = std::make_unique<FlatFileAccountLoader>();
 	m_npcLoader = std::make_unique<FlatFileNPCLoader>();
 
-	m_timedEvents.callbackIterations = std::bind(&Server::doTimedEvents, this, std::placeholders::_1);
-	m_timedSave.callbackIterations = [this](int)
+	m_timedEvents1s.callbackIterations = std::bind(&Server::doTimedEvents, this, std::placeholders::_1);
+	m_timedSave1m.callbackIterations = [this](int)
 	{
 		saveServerFlags();
-		auto guild = BabyDI::Get<GuildManager>();
-		guild->saveGuilds();
+		if (auto guild = BabyDI::Get<GuildManager>(); guild != nullptr)
+			guild->saveGuilds();
 	};
-	m_timedNWTime.callbackIterations = [this](int)
+	m_timedNWTime5s.callbackIterations = [this](int)
 	{
 		calculateNWTime();
 		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
 	};
-	m_timedMaintenance.callbackIterations = [this](int)
+	m_timedMaintenance5m.callbackIterations = [this](int)
 	{
 		// Reload some server settings.
 		loadAllowedVersions();
@@ -528,10 +528,10 @@ int Server::init(std::string_view serverip, std::string_view serverport, std::st
 	m_sockManager.registerSocket((CSocketStub*)this);
 
 	// Start the timers.
-	m_timedEvents.start();
-	m_timedNWTime.start();
-	m_timedSave.start();
-	m_timedMaintenance.start();
+	m_timedEvents1s.start();
+	m_timedNWTime5s.start();
+	m_timedSave1m.start();
+	m_timedMaintenance5m.start();
 
 #ifdef PACKETLOGGING
 	log::printLine(log::networkdump, "------------------------------ START ------------------------------");
@@ -637,10 +637,10 @@ bool Server::doMain()
 		m_npcServer->update(m_frameStartTimeHighPrecision);
 
 	// Update our events.
-	m_timedEvents.update(m_frameStartTimeHighPrecision);
-	m_timedSave.update(m_frameStartTimeHighPrecision);
-	m_timedNWTime.update(m_frameStartTimeHighPrecision);
-	m_timedMaintenance.update(m_frameStartTimeHighPrecision);
+	m_timedEvents1s.update(m_frameStartTimeHighPrecision);
+	m_timedSave1m.update(m_frameStartTimeHighPrecision);
+	m_timedNWTime5s.update(m_frameStartTimeHighPrecision);
+	m_timedMaintenance5m.update(m_frameStartTimeHighPrecision);
 
 	// Do level frame events.
 	for (auto& [name, level] : m_levelList)
