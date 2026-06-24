@@ -75,7 +75,11 @@ baddyrespawntime = 60
 
 # Controls who can use the warpto command.
 #   warptoforall - Lets everybody, including players, use warpto.
+#   warpto - Enables or disables warpto for all staff, including globals.
+#   ignorewarpto - If true, "warpto" chat text is ignored and not processed.
 warptoforall = false
+warpto = true
+ignorewarpto = false
 
 # Alters the possible status options in the player list.
 playerlisticons = Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing
@@ -325,11 +329,7 @@ gs2default = false
 
 # Controls who can use the warpto command.
 #   warptoforlowadmins - Allows Global Admin Level 1 to warp (not implemented).
-#   warpto - Enables or disables warpto for all staff, including globals (not implemented).
-#   ignorewarpto - If true, "warpto" chat text is ignored and not processed (not implemented).
 # warptoforlowadmins = true
-# warpto = true
-# ignorewarpto = false
 
 # Controls ghost mode (not implemented).
 # ghostmodeenabled = false

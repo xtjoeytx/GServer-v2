@@ -901,13 +901,26 @@ bool PlayerClient::processChat(const CString& pChat)
 	}
 	else if (chatParse[0] == "warpto")
 	{
+		if (m_server->getSettings().get<bool>("ignorewarpto").value_or(false))
+			return false;
+
 		processed = true;
+
+		bool warptoforall = m_server->getSettings().get<bool>("warptoforall").value_or(false);
+		bool warpto = m_server->getSettings().get<bool>("warpto").value_or(true);
+
+		// Check if warpto has been disabled for staff.
+		if (isStaff() && !warpto && !warptoforall)
+		{
+			setChat("(warping is disabled)");
+			return true;
+		}
 
 		// To player
 		if (chatParse.size() == 2)
 		{
 			// Permission check.
-			if (!account.hasRight(PLPERM_WARPTOPLAYER) && !m_server->getSettings().get<bool>("warptoforall").value_or(false))
+			if (!account.hasRight(PLPERM_WARPTOPLAYER) && !warptoforall)
 			{
 				setChat("(not authorized to warp)");
 				return true;
@@ -917,29 +930,22 @@ bool PlayerClient::processChat(const CString& pChat)
 			if (player && player->getLevel())
 				warp(player->getLevel()->levelName, player->getLocalPosition());
 		}
-		// To x/y location
-		else if (chatParse.size() == 3)
+		// To location
+		else
 		{
 			// Permission check.
-			if (!account.hasRight(PLPERM_WARPTO) && !m_server->getSettings().get<bool>("warptoforall").value_or(false))
+			if (!account.hasRight(PLPERM_WARPTO) && !warptoforall)
 			{
 				setChat("(not authorized to warp)");
 				return true;
 			}
 
-			setPropsFromPacket(CString() >> (char)PlayerProp::X >> (char)(strtofloat(chatParse[1]) * 2) >> (char)PlayerProp::Y >> (char)(strtofloat(chatParse[2]) * 2), props::SetBy::SERVER);
-		}
-		// To x/y level
-		else if (chatParse.size() == 4)
-		{
-			// Permission check.
-			if (!account.hasRight(PLPERM_WARPTO) && !m_server->getSettings().get<bool>("warptoforall").value_or(false))
-			{
-				setChat("(not authorized to warp)");
-				return true;
-			}
-
-			warp(chatParse[3], {static_cast<int16_t>(string::toFloat(chatParse[1].toString()) * 16.0f), static_cast<int16_t>(string::toFloat(chatParse[2].toString()) * 16.0f)});
+			// x y
+			if (chatParse.size() == 3)
+				setPropsFromPacket(CString() >> (char)PlayerProp::X >> (char)(strtofloat(chatParse[1]) * 2) >> (char)PlayerProp::Y >> (char)(strtofloat(chatParse[2]) * 2), props::SetBy::SERVER);
+			// x y level
+			else if (chatParse.size() == 4)
+				warp(chatParse[3], {static_cast<int16_t>(string::toFloat(chatParse[1].toString()) * 16.0f), static_cast<int16_t>(string::toFloat(chatParse[2].toString()) * 16.0f)});
 		}
 	}
 	else if (chatParse[0] == "summon" && chatParse.size() == 2)
