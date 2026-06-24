@@ -66,17 +66,24 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	if (auto sectionId = file->readConfigLine("ID", " "sv); sectionId.has_value())
 	{
 		id = string::toNumber<NPCID>(sectionId.value());
-		if (id < NPCID_GEN_DATABASE)
+
+		if (id < NPCID_GEN_MANUAL)
 		{
 			id = 0;
-			log::printLine(log::server, "** NPC [{}] ID is less than {}, getting next available.", name, NPCID_GEN_DATABASE);
+			log::printLine(log::server, "** NPC [{}] ID is less than {}, getting next available.", name, NPCID_GEN_MANUAL);
 		}
 		else if (server->m_npcIdGenerator.isIdUsed(id))
 		{
 			id = 0;
 			log::printLine(log::server, "** NPC [{}] ID is already in use, getting next available.", name);
 		}
-		else server->m_npcIdGenerator.markAsUsed(id);
+		else
+		{
+			if (id < NPCID_GEN_DELETEABLE)
+				log::printLine(log::server, "!! [WARNING] NPC [{}] ID is in the client non-deletable range, consider using an ID over {}.", name, NPCID_GEN_DELETEABLE);
+
+			server->m_npcIdGenerator.markAsUsed(id);
+		}
 	}
 
 	if (id == 0)
