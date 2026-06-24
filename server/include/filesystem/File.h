@@ -519,6 +519,7 @@ public:
 	using File::operator std::istream&;
 	using File::operator std::istream*;
 	using File::operator bool;
+	using FileIO::operator=;
 	using FileIO::operator std::fstream&;
 	using FileIO::operator std::fstream*;
 

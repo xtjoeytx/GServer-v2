@@ -94,7 +94,7 @@ std::filesystem::path getHTMLEscapedFileName(const std::filesystem::path& file)
 std::filesystem::path getHTMLUnescapedFileName(const std::filesystem::path& file)
 {
 	using ST = std::filesystem::path::string_type;
-	using VT = std::filesystem::path::value_type;
+	//using VT = std::filesystem::path::value_type;
 	using Elem = std::remove_cvref_t<ST>::value_type;
 	using Traits = std::remove_cvref_t<ST>::traits_type;
 	using SVT = std::basic_string_view<Elem, Traits>;
