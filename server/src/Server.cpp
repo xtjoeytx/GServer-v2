@@ -2070,9 +2070,6 @@ bool Server::setFlag(std::string_view flagPair, bool sendToPlayers)
 
 bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool pSendToPlayers)
 {
-	if (m_dontAddServerFlags.getValue())
-		return false;
-
 	// Function to crop flags.
 	auto cropFlag = [this, &flagName](std::string& value)
 	{
@@ -2102,6 +2099,9 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	// New flag.
 	else
 	{
+		if (m_dontAddServerFlags.getValue())
+			return false;
+
 		if (!flagValue.has_value())
 			Scripting.variables.add(flagName, GameValue{true});
 		else Scripting.variables.add(flagName, GameValue{cropFlag(flagValue.value())});
