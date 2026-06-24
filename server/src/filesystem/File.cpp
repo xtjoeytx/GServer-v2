@@ -591,9 +591,12 @@ FileIO& FileIO::writeConfigSection(std::span<const char> startKey, std::span<con
 	m_outputStreamHandle->write(startKey.data(), static_cast<std::streamsize>(startKey.size()));
 	m_outputStreamHandle->write("\n", 1);
 
-	m_outputStreamHandle->write(section.data(), static_cast<std::streamsize>(section.size()));
-	if (section.back() != '\n')
-		m_outputStreamHandle->write("\n", 1);
+	if (!section.empty())
+	{
+		m_outputStreamHandle->write(section.data(), static_cast<std::streamsize>(section.size()));
+		if (section.back() != '\n')
+			m_outputStreamHandle->write("\n", 1);
+	}
 
 	m_outputStreamHandle->write(endKey.data(), static_cast<std::streamsize>(endKey.size()));
 	m_outputStreamHandle->write("\n", 1);
