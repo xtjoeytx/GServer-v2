@@ -360,16 +360,19 @@ std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::str
 	auto mapPosition = toMapPosition(pixelPosition);
 
 	npc->name = name;
-	npc->level = level->levelName;
 	npc->setPropWith<NPCProp::TYPE>(SetBy::SERVER, type);
 	npc->setPropWith<NPCProp::SCRIPTER>(SetBy::SERVER, scripter);
 	npc->setPropWith<NPCProp::X2>(SetBy::SERVER, localPixelPosition.x());
 	npc->setPropWith<NPCProp::Y2>(SetBy::SERVER, localPixelPosition.y());
 
-	if (level && level->isGmap())
+	if (level)
 	{
-		npc->setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, mapPosition.x());
-		npc->setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, mapPosition.y());
+		npc->level = level->levelName;
+		if (level->isGmap())
+		{
+			npc->setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, mapPosition.x());
+			npc->setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, mapPosition.y());
+		}
 	}
 
 	m_server->addNPC(npc, true);

@@ -100,15 +100,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCRESET(CString& pPacket)
 	auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr && npc->storageType == NPCStorageType::DATABASE)
 	{
-		if (auto level = npc->getLevel(); level != nullptr)
-		{
-			auto& levelName = level->levelName;
-			if (auto levelData = level->getStaticLevelDataAtPosition(npc->character.getMapPosition()); levelData != nullptr)
-			{
-				CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)npc->id;
-				m_server->sendPacketToLevelAndPastVisitorsAfter(levelData.get(), npc->lastUpdateTime, packet);
-			}
-		}
+		m_server->sendPacketToAll(CString() >> (char)PLO_NPCDEL >> (int)npcId);
 		npc->resetToInitialState();
 		npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
 
@@ -368,6 +360,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 	if (newNPC != nullptr)
 	{
 		// Persist NPC
+		newNPC->recordInitialState();
 		m_server->getNPCLoader().saveNPC(newNPC);
 
 		// Logging

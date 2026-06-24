@@ -152,6 +152,10 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			npc->m_initialCharacter.localPixelY = static_cast<int16_t>(string::toFloat(std::string{lineView}) * 16);
 		else if (command == "STARTZ")
 			npc->m_initialCharacter.localPixelZ = static_cast<int16_t>(string::toFloat(std::string{lineView}) * 16);
+		else if (command == "STARTMAPX")
+			npc->m_initialCharacter.mapX = string::toNumber<uint8_t>(std::string{lineView});
+		else if (command == "STARTMAPY")
+			npc->m_initialCharacter.mapY = string::toNumber<uint8_t>(std::string{lineView});
 		else if (command == "LEVEL")
 			npc->level = lineView;
 		else if (command == "GROUPNAME")
@@ -503,6 +507,11 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	file->writeConfigLine("STARTX", string::to_string(npc->m_initialCharacter.localPixelX / 16.0, 2));
 	file->writeConfigLine("STARTY", string::to_string(npc->m_initialCharacter.localPixelY / 16.0, 2));
 	file->writeConfigLine("STARTZ", string::to_string(npc->m_initialCharacter.localPixelZ / 16.0, 2));
+	if (npc->m_initialCharacter.mapX != 0 || npc->m_initialCharacter.mapY != 0)
+	{
+		file->writeConfigLine("STARTMAPX", string::to_string(npc->m_initialCharacter.mapX));
+		file->writeConfigLine("STARTMAPY", string::to_string(npc->m_initialCharacter.mapY));
+	}
 
 	if (!npc->level.empty())
 	{

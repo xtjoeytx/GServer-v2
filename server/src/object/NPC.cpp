@@ -115,13 +115,21 @@ void NPC::resetToInitialState()
 
 	warpRestrictions = m_server->hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
 
+	auto now = m_server->getFrameStartTime();
+
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
 	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::Z, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::X2, NPCProp::Y2, NPCProp::Z2 });
-	std::ranges::for_each(props, [this, now = m_server->getFrameStartTime()](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
+	std::ranges::for_each(props, [this, now](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
+
+	if (character.mapX != 0 || character.mapY != 0)
+	{
+		modTime[PROPID(NPCProp::GMAPLEVELX)] = now;
+		modTime[PROPID(NPCProp::GMAPLEVELY)] = now;
+	}
 
 	m_savedModTime = modTime;
-	lastUpdateTime = m_server->getFrameStartTime();
+	lastUpdateTime = now;
 
 	// Clear the variables and queues.
 	scripting.variables.store.clear();
@@ -129,7 +137,7 @@ void NPC::resetToInitialState()
 
 	// Warp.
 	if (auto initialLevel = m_server->getStubbedLevel(m_initialLevel); initialLevel != nullptr)
-		warp(initialLevel, character.getLocalPosition());
+		warp(initialLevel, character.getGlobalPosition());
 }
 
 //----------------------------
@@ -163,6 +171,13 @@ bool NPC::warp(LevelPtr level, const PixelPosition& position)
 		warpResults.push_back(setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, level->levelName));
 
 	sendPropsFromResults(warpResults);
+
+	// If our initial level is not set, set it now.
+	if (m_initialLevel.empty())
+	{
+		m_initialLevel = level->levelName;
+		m_initialCharacter = character;
+	}
 
 	return true;
 }
