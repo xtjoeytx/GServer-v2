@@ -337,33 +337,32 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		// Official variables for these are unknown.
 		else if (command == "CANCARRY")
 		{
-			auto value = string::toNumber<uint8_t>(std::string{lineView});
-			if (value != 0)
-				npc->blockFlags |= PROPID(NPCBlockFlags::CANBECARRIED);
+			npc->blockFlags |= PROPID(NPCBlockFlags::CANBECARRIED);
+			npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
 		}
 		else if (command == "CANPULL")
 		{
-			auto value = string::toNumber<uint8_t>(std::string{lineView});
-			if (value != 0)
-				npc->blockFlags |= PROPID(NPCBlockFlags::CANBEPULLED);
+			npc->blockFlags |= PROPID(NPCBlockFlags::CANBEPULLED);
+			npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
 		}
 		else if (command == "CANPUSH")
 		{
-			auto value = string::toNumber<uint8_t>(std::string{lineView});
-			if (value != 0)
-				npc->blockFlags |= PROPID(NPCBlockFlags::CANBEPUSHED);
+			npc->blockFlags |= PROPID(NPCBlockFlags::CANBEPUSHED);
+			npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
 		}
 		else if (command == "VISIBLE")
 		{
 			auto value = string::toNumber<uint8_t>(std::string{lineView});
 			if (value == 0)
+			{
 				npc->visFlags &= ~PROPID(NPCVisFlags::VISIBLE);
+				npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
+			}
 		}
 		else if (command == "TIMERSHOW")
 		{
-			auto value = string::toNumber<uint8_t>(std::string{lineView});
-			if (value != 0)
-				npc->visFlags |= PROPID(NPCVisFlags::TIMERSHOW);
+			npc->visFlags |= PROPID(NPCVisFlags::TIMERSHOW);
+			npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
 		}
 		else if (command == "MALE")
 		{
@@ -416,12 +415,14 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	if (npc->isCharacter() && isMale)
 	{
 		npc->visFlags |= PROPID(NPCVisFlags::MALE);
+		npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
 	}
 
 	// If the NPC has no image, make it invisible.
 	if (!npc->hasImage() && !npc->hasShape())
 	{
 		npc->visFlags &= ~PROPID(NPCVisFlags::VISIBLE);
+		npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
 	}
 
 	// Set the script.
@@ -584,7 +585,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 
 	// Official variables for these are unknown.
 	if (npc->blockFlags & PROPID(NPCBlockFlags::CANBECARRIED))
-		file->writeLine("CANCARRY 1");
+		file->writeLine("CANCARRY");
 	if (npc->blockFlags & PROPID(NPCBlockFlags::CANBEPULLED))
 		file->writeLine("CANPULL");
 	if (npc->blockFlags & PROPID(NPCBlockFlags::CANBEPUSHED))
@@ -592,7 +593,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	if ((npc->visFlags & PROPID(NPCVisFlags::VISIBLE)) == 0)
 		file->writeLine("VISIBLE 0");
 	if ((npc->visFlags & PROPID(NPCVisFlags::TIMERSHOW)) != 0)
-		file->writeLine("TIMERSHOW 1");
+		file->writeLine("TIMERSHOW");
 	if (npc->isCharacter() && (npc->visFlags & PROPID(NPCVisFlags::MALE)) == 0)
 		file->writeLine("MALE 0");
 	// ---
