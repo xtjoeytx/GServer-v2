@@ -470,7 +470,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	// Function to check for prop modification before writing.
 	auto writeProp = [&](NPCProp prop, std::string_view key, std::string_view value)
 	{
-		if (npc->modTime[PROPID(prop)] != clock::time_point::min())
+		if (npc->modTime[PROPID(prop)].has_value())
 			file->writeConfigLine(key, value);
 	};
 
@@ -588,7 +588,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		file->writeLine("MALE 0");
 	// ---
 
-	if (!std::ranges::empty(NPCSaveProps | std::views::filter([&npc](NPCProp prop) { return npc->modTime[PROPID(prop)] != clock::time_point::min(); })))
+	if (!std::ranges::empty(NPCSaveProps | std::views::filter([&npc](NPCProp prop) { return npc->modTime[PROPID(prop)].has_value(); })))
 		file->writeConfigLine("SAVEARR", string::toCSV(npc->saves | std::views::transform([](uint8_t x) { return string::to_string(x); })));
 
 	for (int i = 0; i < 30; i++)

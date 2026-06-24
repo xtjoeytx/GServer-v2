@@ -100,7 +100,7 @@ NPC::~NPC()
 void NPC::resetToInitialState()
 {
 	groupName.clear();
-	image = m_initialImage;
+	image.clear();
 	shape = {};
 	imagePart = {};
 	visFlags = PROPID(NPCVisFlags::VISIBLE);
@@ -1284,7 +1284,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 		case NPCProp::GMAPLEVELX:
 		{
 			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr || numProp->value == character.mapX)
+			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
 			character.mapX = numProp->value;
@@ -1294,7 +1294,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 		case NPCProp::GMAPLEVELY:
 		{
 			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr || numProp->value == character.mapY)
+			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
 			character.mapY = numProp->value;
@@ -1309,9 +1309,9 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
-			break;
 
 			scripter = strProp->value;
+			break;
 		}
 
 		case NPCProp::NAME:
@@ -1604,7 +1604,7 @@ CString NPC::getAllPropsPacket(std::optional<clock::time_point> newTime) const
 		if (!canSendProp((NPCProp)i))
 			continue;
 
-		if (modTime[i].has_value() && modTime[i] >= newTime.value_or(clock::time_point::min()))
+		if (modTime[i].has_value() && modTime[i].value() >= newTime.value_or(clock::time_point::min()))
 		{
 			if (i == PROPID(NPCProp::GANI) && !isCharacter())
 			{

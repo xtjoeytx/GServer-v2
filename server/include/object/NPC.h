@@ -448,7 +448,6 @@ private:
 	Script m_script;
 	mutable std::vector<std::pair<EventHandle, std::weak_ptr<ScriptClass>>> m_joinedClasses;
 
-	std::string m_initialImage;
 	std::string m_initialLevel;
 	std::weak_ptr<Level> m_currentLevel;
 	Position<uint8_t> m_initialMapPosition;
@@ -477,7 +476,6 @@ inline void NPC::recordCurrentPropModTime()
 
 inline void NPC::recordInitialState()
 {
-	m_initialImage = image;
 	m_initialLevel = level;
 	m_initialCharacter = character;
 }
