@@ -350,7 +350,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 		{
 			if (auto map = level->getMap(); map != nullptr)
 			{
-				auto position = map->getLevelPosition(npcLevel).value_or({ 0, 0 });
+				auto position = map->getLevelPosition(npcLevel).value_or(MapPosition{0, 0});
 				npcX += static_cast<float>(position.x()) * Level::tilesPerSubLevel().width();
 				npcY += static_cast<float>(position.y()) * Level::tilesPerSubLevel().height();
 			}
