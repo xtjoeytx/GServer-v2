@@ -1836,7 +1836,9 @@ void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const s
 	}
 }
 
-// saveinfo text,text;
+// saveinfo key,value;
+// Saves information to the database.
+// Was only used for the Graal2001 server, and only for a limited time.
 void fn_saveinfo(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw unimplemented_error("saveinfo is not implemented.");

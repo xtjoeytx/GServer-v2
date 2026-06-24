@@ -541,11 +541,11 @@ Please review the lists below of implemented events, flags, functions, commands,
       cos(value)
       findnearestplayer(x, y)
       getangle(dx, dy)
-    * getareanpcs(x, y, width, height)
+      getareanpcs(x, y, width, height)
     * getdir(dx, dy)
       getflagkeys(prefix)
-    * getnearestplayer(x, y)
-    * getnearestplayers(x, y, flag)
+      getnearestplayer(x, y)
+      getnearestplayers(x, y, flag)
       getnpc(name)
       getplayer(account)
       getz(x, y)
@@ -590,7 +590,7 @@ Please review the lists below of implemented events, flags, functions, commands,
 #### Not implemented
 
     exp(r,r)
-    findnearestplayers(x, y)
+    passwordmatches(encrypted, test)
 
 #### Clientside only
 
@@ -644,6 +644,10 @@ Please review the lists below of implemented events, flags, functions, commands,
     #U(string)              - Replaces the string with a translated version of it
     #v(identifier)          - The value of an number variable as a string
     #b                      - Line break
+
+#### Not implemented
+
+    #E(string)              - Password hashes the given string
 
 #### Clientside only
 
