@@ -332,8 +332,11 @@ std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
 {
 	for (const auto& [_, npc] : m_globalNPCList)
 	{
-		if (npc.lock()->name == name)
-			return npc;
+		if (auto npcptr = npc.lock(); npcptr != nullptr)
+		{
+			if (string::equalsi(name, npcptr->name))
+				return npc;
+		}
 	}
 
 	return {};

@@ -19,6 +19,7 @@
 #include <BabyDI.h>
 #include <Server.h>
 #include <level/Level.h>
+#include <loader/INPCLoader.h>
 #include <object/Character.h>
 #include <object/NPC.h>
 #include <object/Weapon.h>
@@ -303,10 +304,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 	{
 		const auto& eventName = determineEventName(event);
 		if (!wrapper->parser->identifiers.contains(eventName) && !server->cached.runAllScriptEvents.getValue())
-		{
-			DEBUGPRINT("GS1 script for event '{}' not found.", eventName);
 			return false;
-		}
 	}
 #endif
 
@@ -361,7 +359,11 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 
 	// Special case to handle "created" events for the NPC.
 	if (npc != nullptr && event.type == ScriptEventType::CREATED)
+	{
 		npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags | PROPID(NPCVisFlags::CREATED)));
+		if (npc->storageType == NPCStorageType::DATABASE)
+			server->getNPCLoader().saveNPC(npc);
+	}
 
 	cleanup(*wrapper);
 	return true;

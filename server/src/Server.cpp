@@ -1568,13 +1568,16 @@ std::shared_ptr<Level> Server::findGmapForLevel(std::string_view levelName, std:
 	{
 		if (auto level = iter->second.lock(); level != nullptr)
 		{
-			// If this is a group map, and our group matches, use this one.
-			if (level->isGroupMap && player->account.groupName == level->groupMapName)
-				return level;
+			if (player != nullptr)
+			{
+				// If this is a group map, and our group matches, use this one.
+				if (level->isGroupMap && player->account.groupName == level->groupMapName)
+					return level;
 
-			// If this is a singleplayer map, and our account matches, use this one.
-			if (level->isSinglePlayer && player->account.name == level->groupMapName)
-				return level;
+				// If this is a singleplayer map, and our account matches, use this one.
+				if (level->isSinglePlayer && player->account.name == level->groupMapName)
+					return level;
+			}
 
 			// Otherwise, record this as the level we will return if we don't find anything.
 			if (!level->isGroupMap && !level->isSinglePlayer)

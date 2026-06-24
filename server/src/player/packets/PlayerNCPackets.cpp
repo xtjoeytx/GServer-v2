@@ -213,7 +213,6 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 		auto lastUpdateTime = npc->lastUpdateTime;
 
 		npc->setScript(npcScript.toStringView());
-		m_server->getNPCLoader().saveNPC(npc);
 		npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
 
 		std::string logMsg = std::format("NPC script of {} updated by {}", npc->name, account.name);
@@ -337,11 +336,28 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	auto level = m_server->getLoadedLevelNoHint(npcLevel);
-	if (level == nullptr)
+	if (!m_server->getNPCServer()->getNPCByName(npcName).expired())
 	{
-		m_server->sendToNC("Error adding database npc: Level does not exist");
+		m_server->sendToNC("Error adding database npc: NPC name already exists");
 		return HandlePacketResult::Handled;
+	}
+
+	// First check if the level belongs to a gmap, then just try to load it.
+	LevelPtr level = nullptr;
+	if (!npcLevel.empty())
+	{
+		if (level = m_server->findGmapForLevel(npcLevel, nullptr); level != nullptr)
+		{
+			if (auto map = level->getMap(); map != nullptr)
+			{
+				auto position = map->getLevelPosition(npcLevel).value_or({ 0, 0 });
+				npcX += static_cast<float>(position.x()) * Level::tilesPerSubLevel().width();
+				npcY += static_cast<float>(position.y()) * Level::tilesPerSubLevel().height();
+			}
+		}
+
+		if (level == nullptr)
+			level = m_server->getLoadedLevelNoHint(npcLevel);
 	}
 
 	if (npcId < NPCID_GEN_MANUAL)
