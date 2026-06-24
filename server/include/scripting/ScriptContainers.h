@@ -768,7 +768,13 @@ inline void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObject initia
 		"Don't use a const char* in the ranged variant of ScriptEventQueue::addEvent, pass in a std::string_view instead.");
 
 	ScriptEvent event{ .type = type, .initiator = initiator };
-	auto transformed = range | std::views::transform([](const auto& arg) -> std::any { return std::any{ arg }; });
+	auto transformed = range | std::views::transform([](const auto& arg) -> std::any
+	{
+		if constexpr (std::same_as<std::remove_cvref_t<decltype(arg)>, std::string_view>)
+			return std::any{ std::string{ arg } };
+		else
+			return std::any{ arg };
+	});
 	event.args.insert(event.args.end(), std::ranges::begin(transformed), std::ranges::end(transformed));
 	addEvent(std::move(event));
 }

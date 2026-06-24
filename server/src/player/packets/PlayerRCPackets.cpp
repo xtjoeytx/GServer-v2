@@ -999,10 +999,18 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 			else m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " tried to generate language stubs, but there was a failure.");
 		}
 		// Try to send to the control-NPC.
-		else if (m_server->hasNPCServer())
+		else if (m_server->hasNPCServer() && words[0].starts_with("/npc"))
 		{
-			words[0].remove_prefix(1); // Remove the slash.
-			words.insert(words.begin(), "rcchat"sv);
+			// Remove the /npc.
+			words[0].remove_prefix(4);
+
+			// Add "rcchat" to the front of the list (the first argument is the event name).
+			if (words[0].empty())
+				words[0] = "rcchat"sv;
+			else
+				words.insert(words.begin(), "rcchat"sv);
+
+			// Send the event to the control-NPC.
 			m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::CUSTOM, source::FromPlayer(m_id), words);
 		}
 	}

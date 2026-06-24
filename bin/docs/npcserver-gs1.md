@@ -40,6 +40,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       playertouchsme
       playertouchsother
       pm
+      rcchat
       timeout
       triggeraction events
       warped
