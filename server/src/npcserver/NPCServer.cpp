@@ -415,6 +415,18 @@ void NPCServer::unloadNPC(NPCID id)
 	m_unloadedNPCs.insert(id);
 }
 
+void NPCServer::processControlNPCs()
+{
+	for (auto& [id, npc] : m_server->getNPCList())
+	{
+		if (npc->scriptType != NPCTYPE_CONTROL)
+			continue;
+
+		// Process scripts.
+		npc->executeEvents(npc->scripting.events, source::FromNPC(id));
+	}
+}
+
 void NPCServer::processDeletedNPCs()
 {
 	if (m_deletedNPCs.empty())

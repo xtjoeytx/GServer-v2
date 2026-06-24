@@ -5,6 +5,7 @@
 #include <concepts>
 #include <cstdint>
 #include <filesystem>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -12,6 +13,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include <BabyDI.h>
@@ -25,8 +27,8 @@
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
-#include <utilities/generator/TimeoutGenerator.h>
 #include <utilities/StringUtils.h>
+#include <utilities/generator/TimeoutGenerator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -113,6 +115,7 @@ public:
 
 private:
 	void run(TimeoutGenerator::time_delta delta);
+	void processControlNPCs();
 	void processDeletedNPCs();
 	void processUnloadedNPCs();
 	void processDeletedPlayers();
@@ -130,8 +133,8 @@ private:
 
 	clock::time_point m_frameStartTime;
 
-	TimeoutGenerator m_runTimeout{ 100ms, true };
-	TimeoutGenerator m_timedSave{ 5min, true };
+	TimeoutGenerator m_runTimeout{100ms, true};
+	TimeoutGenerator m_timedSave{5min, true};
 
 	bool m_sleeping = false;
 	bool m_firstNPCSave = true;
@@ -242,7 +245,7 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, Scr
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{
-			LocalPixelRectangleArea npcRect = { npc->getLocalPosition(), npc->shape };
+			LocalPixelRectangleArea npcRect = {npc->getLocalPosition(), npc->shape};
 			if (positionInRectangle(pos, npcRect))
 			{
 				++count;
@@ -268,7 +271,7 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, Scr
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{
-			LocalPixelRectangleArea npcRect = { npc->getLocalPosition(), npc->shape };
+			LocalPixelRectangleArea npcRect = {npc->getLocalPosition(), npc->shape};
 			if (positionInRectangle(pos, npcRect))
 			{
 				++count;
