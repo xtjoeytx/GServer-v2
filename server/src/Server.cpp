@@ -22,7 +22,6 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 #include <version>
@@ -1869,7 +1868,7 @@ bool Server::deletePlayer(PlayerPtr player)
 	{
 		// If we have an NPC-Server, let it process the player first.
 		// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
-		if (hasNPCServer() && player->isClient())
+		if (hasNPCServer() && (player->isClient() || player->isRC()))
 			m_npcServer->playerLogout(player);
 
 		// Leave the level.

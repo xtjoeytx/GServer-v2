@@ -20,6 +20,7 @@
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
+#include <player/PlayerRC.h>
 #include <scripting/gs1/GS1Variables.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
@@ -35,24 +36,31 @@ void setGlobalVariables(GameVariableStore& variableStore)
 {
 	auto* server = BabyDI::Get<Server>();
 
+	auto playerFilter = std::views::filter([](auto& kvp)
+	{
+		bool isClient = dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr;
+		bool isRC = dynamic_cast<PlayerRC*>(kvp.second.get()) != nullptr;
+		return (isClient || isRC) && kvp.second->getId() != 0;
+	});
+
 	// timevar
 	variableStore.add(GameValue{ "timevar", gameValueGetter([server]() { return static_cast<double>(server->getNWTime()); }), GameValue::func_set{} });
 	variableStore.add(GameValue{ "timevar2", gameValueGetter([server]() { return static_cast<double>(server->getFrameStartTimeHighPrecision().time_since_epoch().count()); }), GameValue::func_set{} });
 
 	// allplayers
 	variableStore.add(GameValue{ "allplayerscount",
-		gameValueGetter([server]()
+		gameValueGetter([server, playerFilter]()
 		{
-			auto size = std::ranges::distance(server->getNPCServer()->getPlayerList() | std::views::filter([](auto& kvp) { return dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr && kvp.second->getId() != 0; }));
+			auto size = std::ranges::distance(server->getNPCServer()->getPlayerList() | playerFilter);
 			return static_cast<double>(size);
 		}), GameValue::func_set{}
 	});
 	variableStore.add(GameValue{ "allplayers",
-		gameValueGetter([server]()
+		gameValueGetter([server, playerFilter]()
 		{
 			auto playerObjects = server->getNPCServer()->getPlayerList()
-					| std::views::filter([](auto& kvp) { return dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr && kvp.second->getId() != 0; })
-					| std::views::transform([](auto& kvp) { return ScriptObject{ std::make_pair((size_t)kvp.first, ScriptObjectType::PLAYER)}; });
+				| playerFilter
+				| std::views::transform([](auto& kvp) { return ScriptObject{ std::make_pair((size_t)kvp.first, ScriptObjectType::PLAYER)}; });
 			std::vector<ScriptObject> players{ std::ranges::begin(playerObjects), std::ranges::end(playerObjects) };
 			return players;
 		}), GameValue::func_set{}

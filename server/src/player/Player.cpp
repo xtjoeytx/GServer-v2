@@ -1017,7 +1017,7 @@ void Player::sendPrivateMessage(PlayerID from, std::string_view message)
 		return;
 
 	// TODO: This is really hacky.  More effort into reverse engineering private messages is required.
-	bool isMultiLine = message.find('\n') != std::string_view::npos || message.find("#b") != std::string_view::npos;
+	bool isMultiLine = true; // message.find('\n') != std::string_view::npos || message.find("#b") != std::string_view::npos;
 
 	auto convertedMessage = string::replace(message, "\n", "#b");
 	auto lines = string::splitByString(convertedMessage, "#b"sv, false);

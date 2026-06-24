@@ -303,7 +303,10 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 	{
 		const auto& eventName = determineEventName(event);
 		if (!wrapper->parser->identifiers.contains(eventName) && !server->cached.runAllScriptEvents.getValue())
+		{
+			DEBUGPRINT("GS1 script for event '{}' not found.", eventName);
 			return false;
+		}
 	}
 #endif
 

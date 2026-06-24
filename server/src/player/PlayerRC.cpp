@@ -2,8 +2,8 @@
 #include <cstdint>
 #include <format>
 #include <optional>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <CEncryption.h>
@@ -14,8 +14,10 @@
 
 #include <Server.h>
 #include <network/IPacketHandler.h>
+#include <npcserver/NPCServer.h>
 #include <object/Player.h>
 #include <player/PlayerRC.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
@@ -264,6 +266,15 @@ bool PlayerRC::sendLogin()
 		rcsOnline << (rcsOnline.isEmpty() ? "" : ", ") << player->account.name;
 	if (!rcsOnline.isEmpty())
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Currently online: " << rcsOnline);
+
+	// Queue up the login event.
+	if (m_server->hasNPCServer())
+	{
+		auto npcServer = m_server->getNPCServer();
+		npcServer->playerLogin(shared_from_this());
+		npcServer->addEventToControlNPC(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), "playeronline");
+		npcServer->addEventToControlNPC(ScriptEventType::PLAYERLOGIN, source::FromPlayer(m_id));
+	}
 
 	return true;
 }
