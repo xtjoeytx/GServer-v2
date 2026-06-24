@@ -1026,11 +1026,13 @@ void Server::loadServerFileSystem()
 	{
 		m_fsServer.addFoldersConfigEntry(fs::FileCategory::ACCOUNT, "accounts/*.txt");
 		m_fsServer.addFoldersConfigEntry(fs::FileCategory::CONFIG, "config/*");
+		m_fsServer.addFoldersConfigEntry(fs::FileCategory::CONFIG, "serverflags.txt");
 		m_fsServer.addFoldersConfigEntry(fs::FileCategory::NPC, "npcs/npc*.txt");
 		m_fsServer.addFoldersConfigEntry(fs::FileCategory::SCRIPTCLASS, "scripts/*.txt");
 		m_fsServer.addFoldersConfigEntry(fs::FileCategory::TRANSLATION, "translations/*");
 		m_fsServer.addFoldersConfigEntry(fs::FileCategory::WEAPON, "weapons/weapon*.txt");
 		m_fsServer.bind("accounts"s, "config"s, "npcs"s, "scripts"s, "translations"s, "weapons"s);
+		m_fsServer.bindSingleFile("serverflags.txt");
 	}
 }
 
@@ -1051,15 +1053,93 @@ void Server::loadWorldFileSystem()
 
 void Server::loadServerFlags()
 {
-	std::vector<CString> lines = CString::loadToken(CString() << "serverflags.txt", "\n", true);
-	for (auto& line : lines)
-		this->setFlag(line, false);
+	if (auto file = m_fsServer.openi(fs::FileCategory::CONFIG, "serverflags.txt"); file && file->opened())
+	{
+		std::unordered_map<std::string, std::string, string::string_hash, std::equal_to<>> flagMap;
+		for (const auto& line : file->readAllLines())
+		{
+			std::string_view flagPair{string::trim(line)};
+			if (flagPair.empty())
+				continue;
+
+			if (!flagPair.contains('='))
+				flagMap.try_emplace(std::string{flagPair}, std::string{});
+			else
+			{
+				auto sep = flagPair.find('=');
+				std::string_view flagKey = string::trimRight(flagPair.substr(0, sep));
+				std::string_view flagValue = string::trimLeft(flagPair.substr(sep + 1));
+				flagMap.try_emplace(std::string{flagKey}, std::string{flagValue});
+			}
+		}
+
+		std::vector<std::string> removedFlags;
+		bool hasNS = hasNPCServer();
+
+		// Iterate through all the server flags finding deleted flags and sending changes.
+		for (auto& [flag, value] : Scripting.variables.store | variables::no_temporary)
+		{
+			auto search = flagMap.find(flag);
+
+			// The server variable is not in the map, so it was deleted.
+			if (search == flagMap.end())
+				removedFlags.emplace_back(flag);
+			else
+			// The server variable was changed.
+			{
+				if (search->second.empty() && !value->has<bool>())
+				{
+					value->unassign<std::string>();
+					value->assign<bool>(true);
+					if (!hasNS || flag.starts_with("serverr."))
+						sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first);
+				}
+				else if (!value->has<std::string>() || search->second != value->get<std::string>().value())
+				{
+					value->unassign<bool>();
+					value->assign<std::string>(search->second);
+					if (!hasNS || flag.starts_with("serverr."))
+						sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first << "=" << *value->get_unsafe<std::string>());
+				}
+				flagMap.erase(search);
+			}
+		}
+
+		// Delete all the removed flags.
+		for (const auto& flag : removedFlags)
+		{
+			auto& store = Scripting.variables.store;
+			if (auto search = store.find(flag); search != store.end() && search->second != nullptr)
+			{
+				if (!hasNS || flag.starts_with("serverr."))
+					sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGDEL << flag);
+				store.erase(search);
+			}
+		}
+
+		// Add the new flags.
+		for (auto& [flag, value] : flagMap)
+		{
+			if (value.empty())
+			{
+				Scripting.variables.add(flag, true);
+				if (!hasNS || flag.starts_with("serverr."))
+					sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << flag);
+			}
+			else
+			{
+				Scripting.variables.add(flag, value);
+				if (!hasNS || flag.starts_with("serverr."))
+					sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << flag << "=" << value);
+			}
+		}
+	}
 }
 
 void Server::loadGuilds()
 {
-	auto guild = BabyDI::Get<GuildManager>();
-	guild->loadGuilds("guilds");
+	if (auto guild = BabyDI::Get<GuildManager>(); guild != nullptr)
+		guild->loadGuilds("guilds");
 }
 
 void Server::loadServerMessage()
@@ -1264,13 +1344,15 @@ void Server::loadMapLevels()
 
 void Server::saveServerFlags()
 {
-	CString out;
-	for (auto& [flag, value] : Scripting.variables.store)
+	if (auto file = m_fsServer.openiForWriting(fs::FileCategory::CONFIG, "serverflags.txt"); file && file->opened())
 	{
-		if (auto serialized = value->serializeModern(flag); serialized.has_value())
-			out << serialized.value() << "\r\n";
+		file->clear();
+		for (auto& [flag, value] : Scripting.variables.store)
+		{
+			if (auto serialized = value->serializeModern(flag); serialized.has_value())
+				file->writeLine(serialized.value());
+		}
 	}
-	out.save(CString() << "serverflags.txt");
 }
 
 void Server::saveWeapons()

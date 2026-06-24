@@ -361,80 +361,17 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	// Collect the new flags.
-	std::unordered_map<std::string, std::string, string::string_hash, std::equal_to<>> flagMap;
-	uint16_t count = pPacket.readGUShort();
-	for (auto i = 0; i < count; ++i)
+	// Open the serverflags.txt file.
+	if (auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::CONFIG, "serverflags.txt", true); file && file->opened())
 	{
-		std::string flagPair = string::trimMutate(pPacket.readChars(pPacket.readGUChar()).toString());
-		if (!flagPair.contains('='))
-			flagMap.try_emplace(std::move(flagPair), std::string{});
-		else
-		{
-			std::string flagValue = string::trimLeftMutate(flagPair.substr(flagPair.find('=') + 1));
-			string::trimRightMutate(flagPair.erase(flagPair.find('=')));
-			flagMap.try_emplace(std::move(flagPair), std::move(flagValue));
-		}
-	}
+		file->clear();
 
-	std::vector<std::string> removedFlags;
-	bool hasNPCServer = m_server->hasNPCServer();
-
-	// Iterate through all the server flags finding deleted flags and sending changes.
-	for (auto& [flag, value] : m_server->Scripting.variables.store | variables::no_temporary)
-	{
-		auto search = flagMap.find(flag);
-
-		// The server variable is not in the map, so it was deleted.
-		if (search == flagMap.end())
-			removedFlags.emplace_back(flag);
-		else
-		// The server variable was changed.
+		// Read the flags and store them in the file.
+		uint16_t count = pPacket.readGUShort();
+		for (auto i = 0; i < count; ++i)
 		{
-			if (search->second.empty())
-			{
-				value->unassign<std::string>();
-				value->assign<bool>(true);
-				if (!hasNPCServer || flag.starts_with("serverr."))
-					m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first);
-			}
-			else
-			{
-				value->unassign<bool>();
-				value->assign<std::string>(search->second);
-				if (!hasNPCServer || flag.starts_with("serverr."))
-					m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first << "=" << search->second);
-			}
-			flagMap.erase(search);
-		}
-	}
-
-	// Delete all the removed flags.
-	for (const auto& flag : removedFlags)
-	{
-		auto& store = m_server->Scripting.variables.store;
-		if (auto search = store.find(flag); search != store.end() && search->second != nullptr)
-		{
-			if (!hasNPCServer || flag.starts_with("serverr."))
-				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGDEL << flag);
-			store.erase(search);
-		}
-	}
-
-	// Add the new flags.
-	for (auto& [flag, value] : flagMap)
-	{
-		if (value.empty())
-		{
-			m_server->Scripting.variables.add(flag, true);
-			if (!hasNPCServer || flag.starts_with("serverr."))
-				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << flag);
-		}
-		else
-		{
-			m_server->Scripting.variables.add(flag, value);
-			if (!hasNPCServer || flag.starts_with("serverr."))
-				m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << flag << "=" << value);
+			std::string flagPair = string::trimMutate(pPacket.readChars(pPacket.readGUChar()).toString());
+			file->writeLine(flagPair);
 		}
 	}
 
