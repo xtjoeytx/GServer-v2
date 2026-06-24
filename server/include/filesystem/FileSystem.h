@@ -147,6 +147,10 @@ public:
 			bind(std::filesystem::path{ path });
 	}
 
+	/// @brief Binds to a directory in a non-recursive manner.
+	/// @param directory The directory to bind to.
+	void bindSingleFile(const std::filesystem::path& file);
+
 	/// @brief Checks for changes to the underlying OS filesystem.  Call this every so often.
 	void update();
 
@@ -291,6 +295,7 @@ public:
 	std::array<FileEventCallback, FileCategoryTypeCount> categoryEventCallback;
 
 private:
+	void defaultWatchCallback(uint32_t id, const std::filesystem::path& dir, const std::filesystem::path& file, const std::filesystem::path& oldFile, fs::FileEventCollection e);
 	void assignCategoriesToFileData(FileData& fileData);
 	FileCategory categoryForDirectory(const std::filesystem::path& directory) const;
 
