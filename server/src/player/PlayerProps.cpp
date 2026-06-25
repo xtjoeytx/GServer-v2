@@ -1168,7 +1168,7 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 	setPropsFromPacket(props, props::SetBy::SERVER, rc);
 
 	// Clear flags
-	for (const auto& [flag, value] : account.variables.store)
+	for (const auto& [flag, value] : account.variables.store | variables::no_temporary)
 		outPacket >> (char)PLO_FLAGDEL << flag << "\n";
 	account.variables.store.clear();
 
@@ -1303,12 +1303,17 @@ CString Player::getPropsForRCPacket()
 	ret >> (char)props.length() << props;
 
 	// Add the player's flags.
-	ret >> (short)account.variables.store.size();
-	for (const auto& [flag, value] : account.variables.store)
+	CString flags;
+	size_t flagCount = 0;
+	for (const auto& [flag, value] : account.variables.store | variables::no_temporary)
 	{
 		if (auto computedFlag = account.variables.serializeModern(flag); computedFlag.has_value())
-			ret >> (char)(std::min((size_t)223, computedFlag.value().length())) << computedFlag.value().substr(0, 223);
+		{
+			++flagCount;
+			flags >> (char)(std::min((size_t)223, computedFlag.value().length())) << computedFlag.value().substr(0, 223);
+		}
 	}
+	ret >> (short)flagCount << flags;
 
 	// Add the player's chests.
 	ret >> (short)account.savedChests.size();

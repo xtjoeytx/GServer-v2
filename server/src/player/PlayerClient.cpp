@@ -496,7 +496,7 @@ bool PlayerClient::sendLogin()
 		this->setFlag("gr.ip", account.ipAddress, true);
 
 	// Send the player's flags.
-	for (const auto& [flag, value] : account.variables.store)
+	for (const auto& [flag, value] : account.variables.store | variables::no_temporary)
 	{
 		if (auto serialized = account.variables.serializeModern(flag); serialized.has_value())
 			sendPacket(CString() >> (char)PLO_FLAGSET << serialized.value());
