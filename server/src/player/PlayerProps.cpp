@@ -554,8 +554,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			if (restrictedPropAllowed)
-				account.level = strProp->value;
+			if (restrictedPropAllowed && account.level != strProp->value)
+				warp(strProp->value, getGlobalPosition());
 			break;
 		}
 
