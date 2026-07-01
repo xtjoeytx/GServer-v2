@@ -2868,7 +2868,7 @@ std::generator<SubLevelPtr> Level::getNearbySubLevels(const PixelPosition& posit
 
 //----------------------------
 
-std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& position, std::optional<std::pair<uint32_t, uint32_t>> range) const noexcept
+std::generator<PlayerID> Level::findInRangePlayers(const PixelPosition& position, std::optional<std::pair<uint32_t, uint32_t>> range) const noexcept
 {
 	bool syncInside = m_server->cached.enableInsideSyncDistance.getValue();
 	bool isInsideLevel = !isGmap();
@@ -2918,7 +2918,7 @@ std::generator<const PlayerID&> Level::findInRangePlayers(const PixelPosition& p
 	}
 }
 
-std::generator<const PlayerID&> Level::findInRangePlayersForCommunication(const PixelPosition& position) const noexcept
+std::generator<PlayerID> Level::findInRangePlayersForCommunication(const PixelPosition& position) const noexcept
 {
 	// If this is not a bigmap, use the default search.
 	if (!isOnBigMap())
@@ -2957,7 +2957,7 @@ std::generator<const PlayerID&> Level::findInRangePlayersForCommunication(const 
 	}
 }
 
-std::generator<const PlayerID&> Level::findPlayersInLevelPart(std::string_view levelPart) const noexcept
+std::generator<PlayerID> Level::findPlayersInLevelPart(std::string_view levelPart) const noexcept
 {
 	auto position = getSubLevelPositionInMap(levelPart);
 	if (!position.has_value())
@@ -2966,7 +2966,7 @@ std::generator<const PlayerID&> Level::findPlayersInLevelPart(std::string_view l
 		co_yield playerId;
 }
 
-std::generator<const PlayerID&> Level::findPlayersInLevelPart(const MapPosition& mapLevel) const noexcept
+std::generator<PlayerID> Level::findPlayersInLevelPart(const MapPosition& mapLevel) const noexcept
 {
 	for (const auto& playerId : m_players)
 	{
@@ -2978,7 +2978,7 @@ std::generator<const PlayerID&> Level::findPlayersInLevelPart(const MapPosition&
 	}
 }
 
-std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& position) const noexcept
+std::generator<NPCID> Level::findInRangeNPCs(const PixelPosition& position) const noexcept
 {
 	bool syncInside = m_server->cached.enableInsideSyncDistance.getValue();
 	bool isInsideLevel = !isGmap();
@@ -3034,7 +3034,7 @@ std::generator<const NPCID&> Level::findInRangeNPCs(const PixelPosition& positio
 	}
 }
 
-std::generator<const NPCID&> Level::findInRangeNPCsByDistance(const PixelPosition& position, uint32_t tileDistance) const noexcept
+std::generator<NPCID> Level::findInRangeNPCsByDistance(const PixelPosition& position, uint32_t tileDistance) const noexcept
 {
 	// If this is not a map level, return all level NPCs.
 	if (!isGmap())
@@ -3065,13 +3065,13 @@ std::generator<const NPCID&> Level::findInRangeNPCsByDistance(const PixelPositio
 	}
 }
 
-std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelPosition& position, bool includeInvisible) const noexcept
+std::generator<NPCID> Level::findIntersectingNPCs(const PixelPosition& position, bool includeInvisible) const noexcept
 {
 	for (const auto& id : findIntersectingNPCs({position, {0, 0, 48}}, includeInvisible))
 		co_yield id;
 }
 
-std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible) const noexcept
+std::generator<NPCID> Level::findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible) const noexcept
 {
 	for (const auto& npcId : findInRangeNPCs(area.position))
 	{
@@ -3088,13 +3088,13 @@ std::generator<const NPCID&> Level::findIntersectingNPCs(const PixelRectangleAre
 	}
 }
 
-std::generator<const NPCID&> Level::findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept
+std::generator<NPCID> Level::findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept
 {
 	for (const auto& id : findIntersectingNPCsForCollision({position, {0, 0, 48}}))
 		co_yield id;
 }
 
-std::generator<const NPCID&> Level::findIntersectingNPCsForCollision(const PixelRectangleArea& area) const noexcept
+std::generator<NPCID> Level::findIntersectingNPCsForCollision(const PixelRectangleArea& area) const noexcept
 {
 	for (const auto& npcId : findInRangeNPCs(area.position))
 	{

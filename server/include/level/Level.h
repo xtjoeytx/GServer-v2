@@ -351,16 +351,16 @@ public:
 	tileset::TileType getTileTypeAt(const PixelPosition& position) const noexcept;
 
 public:
-	std::generator<const PlayerID&> findInRangePlayers(const PixelPosition& position, std::optional<std::pair<uint32_t, uint32_t>> range = std::nullopt) const noexcept;
-	std::generator<const PlayerID&> findInRangePlayersForCommunication(const PixelPosition& position) const noexcept;
-	std::generator<const PlayerID&> findPlayersInLevelPart(std::string_view levelPart) const noexcept;
-	std::generator<const PlayerID&> findPlayersInLevelPart(const MapPosition& mapLevel) const noexcept;
-	std::generator<const NPCID&> findInRangeNPCs(const PixelPosition& position) const noexcept;
-	std::generator<const NPCID&> findInRangeNPCsByDistance(const PixelPosition& position, uint32_t tileDistance) const noexcept;
-	std::generator<const NPCID&> findIntersectingNPCs(const PixelPosition& position, bool includeInvisible = false) const noexcept;
-	std::generator<const NPCID&> findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible = false) const noexcept;
-	std::generator<const NPCID&> findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept;
-	std::generator<const NPCID&> findIntersectingNPCsForCollision(const PixelRectangleArea& area) const noexcept;
+	std::generator<PlayerID> findInRangePlayers(const PixelPosition& position, std::optional<std::pair<uint32_t, uint32_t>> range = std::nullopt) const noexcept;
+	std::generator<PlayerID> findInRangePlayersForCommunication(const PixelPosition& position) const noexcept;
+	std::generator<PlayerID> findPlayersInLevelPart(std::string_view levelPart) const noexcept;
+	std::generator<PlayerID> findPlayersInLevelPart(const MapPosition& mapLevel) const noexcept;
+	std::generator<NPCID> findInRangeNPCs(const PixelPosition& position) const noexcept;
+	std::generator<NPCID> findInRangeNPCsByDistance(const PixelPosition& position, uint32_t tileDistance) const noexcept;
+	std::generator<NPCID> findIntersectingNPCs(const PixelPosition& position, bool includeInvisible = false) const noexcept;
+	std::generator<NPCID> findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible = false) const noexcept;
+	std::generator<NPCID> findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept;
+	std::generator<NPCID> findIntersectingNPCsForCollision(const PixelRectangleArea& area) const noexcept;
 
 public:
 	std::string levelName;

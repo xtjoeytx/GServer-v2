@@ -411,7 +411,7 @@ public:
 		if (!hasNPCServer()) return;
 		if (level == nullptr) return;
 		auto eventDistance = cached.eventDistance.getValue();
-		for (auto& npcid : level->findInRangeNPCsByDistance(position, eventDistance))
+		for (auto npcid : level->findInRangeNPCsByDistance(position, eventDistance))
 		{
 			if (auto npc = getNPC(npcid); npc)
 				npc->scripting.events.addEvent(type, source, std::forward<decltype(args)>(args)...);
