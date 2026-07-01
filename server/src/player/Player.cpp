@@ -809,6 +809,11 @@ double Player::getCalculatedTileZ() const noexcept
 	return account.character.localPixelZ / 16.0;
 }
 
+std::shared_ptr<Level> Player::getLevel() const
+{
+	return m_server->getStubbedLevel(account.level, account.groupName);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Player::setNick(CString pNickName, bool force)
@@ -1104,7 +1109,7 @@ bool Player::enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_
 	return true;
 }
 
-bool Player::leaveLevel()
+bool Player::leaveLevel(bool keepLevelReference)
 {
 	auto now = m_server->getFrameStartTime();
 

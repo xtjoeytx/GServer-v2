@@ -98,7 +98,7 @@ public:
 
 	// Level manipulation
 	virtual std::string getLevelName() const override;
-	std::shared_ptr<Level> getLevel() const;
+	virtual std::shared_ptr<Level> getLevel() const override;
 	std::shared_ptr<SubLevel> getSubLevel() const;
 
 public:
@@ -110,7 +110,7 @@ public:
 	virtual bool enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
 	using Player::enterLevel;
 
-	virtual bool leaveLevel() override;
+	virtual bool leaveLevel(bool keepLevelReference = false) override;
 	virtual bool leaveSubLevel(std::shared_ptr<SubLevel> subLevel) override;
 
 	virtual bool sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;

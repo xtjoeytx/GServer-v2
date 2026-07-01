@@ -1875,8 +1875,9 @@ bool Server::deletePlayer(PlayerPtr player)
 			m_npcServer->playerLogout(player);
 
 		// Leave the level.
+		// If we have an NPC-Server, we want to keep the level reference around until the NPC-Server has processed the player logout.
 		if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr)
-			client->leaveLevel();
+			client->leaveLevel(hasNPCServer());
 
 		// Add the player to the set of players to delete.
 		getServerList().deletePlayer(player);

@@ -667,7 +667,7 @@ GS1ScriptValue mc_e(GS1Visitor* visitor, std::string_view messageCode, const std
 // The level filename of the current player. (#L will return the NPC level filename)
 GS1ScriptValue mc_F(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	auto result = getPlayerOrNPCFromSource(visitor->getCurrentSource());
+	auto result = getPlayerOrNPCFromSource(visitor->getCurrentSource(true));
 	if (!result.has_value())
 		return std::string{};
 
@@ -795,11 +795,7 @@ GS1ScriptValue mc_L(GS1Visitor* visitor, std::string_view messageCode, const std
 {
 	auto npc = getNPCFromSource(visitor->getOriginalSource());
 	if (npc != nullptr)
-	{
-		if (auto level = npc->getLevel(); level != nullptr)
-			return std::string{level->levelName};
-		return std::string{npc->level};
-	}
+		return npc->getLevelName();
 
 	return std::string{};
 }

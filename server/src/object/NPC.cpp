@@ -522,6 +522,10 @@ double NPC::getCalculatedTileZ() const noexcept
 
 std::string NPC::getLevelName() const
 {
+	// If we are a control-NPC, our level constantly changes, so don't rely on our pointer.
+	if (scriptType == NPCTYPE_CONTROL)
+		return level;
+
 	if (auto levelPtr = getLevel(); levelPtr != nullptr)
 		return levelPtr->levelName;
 

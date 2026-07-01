@@ -78,6 +78,7 @@ public:
 	void playerLogout(std::shared_ptr<Player> player);
 
 public:
+	std::shared_ptr<NPC> getNPC(const NPCID id) const;
 	std::weak_ptr<NPC> getNPCByName(const std::string& name);
 	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, std::shared_ptr<Level> level, const TilePosition& location, std::string_view type = NPCTYPE_LOCAL);
 	std::shared_ptr<NPC> addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, const TilePosition& location);

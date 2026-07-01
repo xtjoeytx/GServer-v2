@@ -1134,7 +1134,7 @@ std::string PlayerClient::getLevelName() const
 {
 	auto level = getLevel();
 	if (level == nullptr)
-		return {};
+		return account.level;
 
 	return level->levelName;
 }
@@ -1297,7 +1297,7 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, std::optional<clock:
 	return true;
 }
 
-bool PlayerClient::leaveLevel()
+bool PlayerClient::leaveLevel(bool keepLevelReference)
 {
 	// Make sure we are on a level first.
 	auto levelp = m_currentLevel.lock();
@@ -1346,7 +1346,8 @@ bool PlayerClient::leaveLevel()
 	}
 
 	// Clear the level.
-	m_currentLevel.reset();
+	if (!keepLevelReference)
+		m_currentLevel.reset();
 
 	return true;
 }

@@ -211,6 +211,7 @@ public:
 	[[inline]] MapPosition getMapPosition() const noexcept;
 	virtual double getCalculatedTileZ() const noexcept;
 	virtual std::string getLevelName() const { return account.level; }
+	virtual std::shared_ptr<Level> getLevel() const;
 
 	// Set Properties
 	void setNick(CString pNickName, bool force = false);
@@ -323,7 +324,7 @@ public:
 	virtual bool enterLevel(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
 	virtual bool enterLevel(std::shared_ptr<Level> level, const MapPosition& mapPosition, const LocalPixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
 	virtual bool enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt);
-	virtual bool leaveLevel();
+	virtual bool leaveLevel(bool keepLevelReference = false);
 	virtual bool leaveSubLevel(std::shared_ptr<SubLevel> subLevel);
 	virtual bool sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime = std::nullopt);
 	virtual bool sendDynamicLevelData(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt);

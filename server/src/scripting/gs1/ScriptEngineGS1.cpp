@@ -20,6 +20,7 @@
 #include <Server.h>
 #include <level/Level.h>
 #include <loader/INPCLoader.h>
+#include <npcserver/NPCServer.h>
 #include <object/Character.h>
 #include <object/NPC.h>
 #include <object/Weapon.h>
@@ -76,8 +77,9 @@ PlayerPtr getPlayerFromSource(const ScriptObject& source, std::optional<int64_t>
 	if (index.value_or(0) == -1)
 		return nullptr;
 
-	auto* server = BabyDI::Get<Server>();
-	if (auto player = server->getPlayer(source.first); player != nullptr)
+	auto server = BabyDI::Get<Server>();
+	auto npcserver = server->getNPCServer();
+	if (auto player = npcserver->getPlayer(source.first); player != nullptr)
 	{
 		if (index.has_value() && index.value() >= 0)
 		{
@@ -105,8 +107,10 @@ NPCPtr getNPCFromSource(const ScriptObject& source, std::optional<int64_t> index
 {
 	if (source.second != ScriptObjectType::NPC)
 		return nullptr;
-	auto* server = BabyDI::Get<Server>();
-	if (auto npc = server->getNPC(source.first); npc != nullptr)
+
+	auto server = BabyDI::Get<Server>();
+	auto npcserver = server->getNPCServer();
+	if (auto npc = npcserver->getNPC(source.first); npc != nullptr)
 	{
 		if (index.has_value() && index.value() >= 0)
 		{
@@ -116,7 +120,7 @@ NPCPtr getNPCFromSource(const ScriptObject& source, std::optional<int64_t> index
 				auto iter = mapNPCs.begin();
 				std::ranges::advance(iter, index.value(), mapNPCs.end());
 				if (iter != mapNPCs.end())
-					npc = server->getNPC(*iter);
+					npc = npcserver->getNPC(*iter);
 			}
 		}
 		return npc;
@@ -227,14 +231,15 @@ bool ScriptEngineGS1::prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, Scr
 		throw std::invalid_argument("GS1 scripts can only be executed from NPCs and weapons.");
 
 	auto server = BabyDI::Get<Server>();
+	auto npcserver = server->getNPCServer();
 	PlayerClientPtr player = nullptr;
 	WeaponPtr weapon = nullptr;
 
 	// Get whatever links we can.
 	if (source_type == ScriptObjectType::PLAYER)
-		player = server->getPlayer<PlayerClient>(source_id);
+		player = npcserver->getPlayer<PlayerClient>(source_id);
 	if (source_type == ScriptObjectType::NPC)
-		npc = server->getNPC(source_id);
+		npc = npcserver->getNPC(source_id);
 	if (source_type == ScriptObjectType::WEAPON)
 	{
 		if (auto it = server->getWeaponList().find(source_id); it != server->getWeaponList().end())
@@ -247,9 +252,9 @@ bool ScriptEngineGS1::prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, Scr
 
 	// Try to get variables from the initiator now.
 	if (player == nullptr && event.initiator.second == ScriptObjectType::PLAYER)
-		player = server->getPlayer<PlayerClient>(event.initiator.first);
+		player = npcserver->getPlayer<PlayerClient>(event.initiator.first);
 	if (npc == nullptr && event.initiator.second == ScriptObjectType::NPC)
-		npc = server->getNPC(event.initiator.first);
+		npc = npcserver->getNPC(event.initiator.first);
 	if (level == nullptr)
 		level = (player != nullptr ? player->getLevel() : (npc != nullptr ? npc->getLevel() : nullptr));
 
@@ -294,7 +299,8 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 	if (wrapper == nullptr)
 		return false;
 
-	auto* server = BabyDI::Get<Server>();
+	auto server = BabyDI::Get<Server>();
+	auto npcserver = server->getNPCServer();
 	NPCPtr npc = nullptr;
 	LevelPtr level = nullptr;
 
@@ -328,10 +334,18 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 	bool isControlNPC = npc && npc->scriptType == NPCTYPE_CONTROL;
 	if (isControlNPC)
 	{
-		if (level == nullptr && event.initiator.second == ScriptObjectType::NPC)
+		if (level == nullptr)
 		{
-			if (auto initiatingNPC = server->getNPC(event.initiator.first); initiatingNPC != nullptr)
-				level = initiatingNPC->getLevel();
+			if (event.initiator.second == ScriptObjectType::NPC)
+			{
+				if (auto initiatingNPC = npcserver->getNPC(event.initiator.first); initiatingNPC != nullptr)
+					level = initiatingNPC->getLevel();
+			}
+			else if (event.initiator.second == ScriptObjectType::PLAYER)
+			{
+				if (auto initiatingPlayer = npcserver->getPlayer<PlayerClient>(event.initiator.first); initiatingPlayer != nullptr)
+					level = initiatingPlayer->getLevel();
+			}
 		}
 		if (level != nullptr)
 			npc->level = level->levelName;
@@ -424,9 +438,10 @@ double ScriptEngineGS1::processMathExpression(std::string_view expression, Scrip
 	ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source};
 
 	auto server = BabyDI::Get<Server>();
+	auto npcserver = server->getNPCServer();
 	if (source.second == ScriptObjectType::NPC)
 	{
-		if (auto npc = server->getNPC(source.first); npc != nullptr)
+		if (auto npc = npcserver->getNPC(source.first); npc != nullptr)
 		{
 			setNPCFlags(created, visitor.flagStore, npc);
 			setNPCVariables(variableStore, npc);
@@ -434,7 +449,7 @@ double ScriptEngineGS1::processMathExpression(std::string_view expression, Scrip
 	}
 	else if (source.second == ScriptObjectType::PLAYER)
 	{
-		if (auto player = server->getPlayer<PlayerClient>(source.first); player != nullptr)
+		if (auto player = npcserver->getPlayer<PlayerClient>(source.first); player != nullptr)
 		{
 			setPlayerFlags(visitor.flagStore, nullptr, player);
 			setPlayerVariables(variableStore, player);
@@ -467,9 +482,10 @@ std::string ScriptEngineGS1::processStringExpression(std::string_view expression
 	ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source};
 
 	auto server = BabyDI::Get<Server>();
+	auto npcserver = server->getNPCServer();
 	if (source.second == ScriptObjectType::NPC)
 	{
-		if (auto npc = server->getNPC(source.first); npc != nullptr)
+		if (auto npc = npcserver->getNPC(source.first); npc != nullptr)
 		{
 			setNPCFlags(created, visitor.flagStore, npc);
 			setNPCVariables(variableStore, npc);
@@ -477,7 +493,7 @@ std::string ScriptEngineGS1::processStringExpression(std::string_view expression
 	}
 	else if (source.second == ScriptObjectType::PLAYER)
 	{
-		if (auto player = server->getPlayer<PlayerClient>(source.first); player != nullptr)
+		if (auto player = npcserver->getPlayer<PlayerClient>(source.first); player != nullptr)
 		{
 			setPlayerFlags(visitor.flagStore, nullptr, player);
 			setPlayerVariables(variableStore, player);
