@@ -588,7 +588,7 @@ auto unescapeQuotes(StringViewIshVariant auto const& str)
 	for (; i < str.size() - 1; ++i)
 	{
 		// If the current character is not an escape character, add it to the result and go to the next.
-		if (str[i] != '\\')
+		if (str[i] != '\\' && str[i] != '\"' && str[i] != '\'')
 		{
 			ret += str[i];
 			continue;
