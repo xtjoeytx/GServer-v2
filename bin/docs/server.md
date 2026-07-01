@@ -20,6 +20,9 @@ The generation is set in the `serveroptions.txt` file in your playerworld:
 
     generation = classic
 
+Classic, clientside only mode was removed in client version 2.30.
+If you want to host an older-style server, use the `original` or `classic` generation and edit your `allowedversions.txt` file to remove client versions 2.30 and above.
+
 ## Configuration
 
 ### accounts/(npcserver).txt

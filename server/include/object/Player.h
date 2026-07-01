@@ -313,9 +313,9 @@ public:
 	string_map<GameValue> scriptParameters;
 
 public:
-	bool deleteFlag(std::string_view flagName, bool sendToPlayer = false);
-	bool setFlag(std::string_view flagPair, bool sendToPlayers = false);
-	bool setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool sendToPlayer = false);
+	bool deleteFlag(std::string_view flagName);
+	bool setFlag(std::string_view flagPair);
+	bool setFlag(std::string_view flagName, std::optional<std::string> flagValue);
 
 public:
 	virtual bool warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
@@ -332,7 +332,7 @@ public:
 public:
 	// Socket-Functions
 	void sendPacket(CString pPacket, bool appendNL = true);
-	bool sendFile(const std::filesystem::path& file);
+	std::pair<bool, bool> sendFile(const std::filesystem::path& file);
 	void setReceivedBuffer(const CString& buffer) { m_recvBuffer = buffer; }
 
 	// Type of player

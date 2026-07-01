@@ -36,15 +36,15 @@
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
-#include <utilities/std/inplace_vector.h>
 #include <utilities/StringUtils.h>
+#include <utilities/std/inplace_vector.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ////////////////////////////////////////////////////////////////////////////////
 
-static constexpr std::array<uint8_t, 10> savePackets = { 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
+static constexpr std::array<uint8_t, 10> savePackets = {23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
 
 static std::string_view toWeaponName(std::string_view code);
 
@@ -67,12 +67,12 @@ static bool canSendProp(NPCProp prop)
 //----------------------------
 
 #ifdef PACKETLOGGING
-#define DO_PACKETLOG(LOG) LOG
+	#define DO_PACKETLOG(LOG) LOG
 #else
-#define DO_PACKETLOG(LOG)
+	#define DO_PACKETLOG(LOG)
 #endif
 
-#define PRINT_NPCPROP(prop, ...) #prop ##sv,
+#define PRINT_NPCPROP(prop, ...) #prop##sv,
 constexpr std::array<std::string_view, NPCPROP_COUNT> npcPropNames =
 {
 	FOR_LIST_OF_NPC_PROPS(PRINT_NPCPROP)
@@ -119,8 +119,11 @@ void NPC::resetToInitialState()
 
 	// We need to alter the modTime of the following props as they should be always sent.
 	// If we don't, they won't be sent until the prop gets modified.
-	auto props = std::to_array({ NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::Z, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::X2, NPCProp::Y2, NPCProp::Z2 });
-	std::ranges::for_each(props, [this, now](const NPCProp& prop) { modTime[PROPID(prop)] = now; });
+	auto props = std::to_array({NPCProp::IMAGE, NPCProp::SCRIPT, NPCProp::X, NPCProp::Y, NPCProp::Z, NPCProp::VISFLAGS, NPCProp::ID, NPCProp::SPRITE, NPCProp::MESSAGE, NPCProp::X2, NPCProp::Y2, NPCProp::Z2});
+	std::ranges::for_each(props, [this, now](const NPCProp& prop)
+	{
+		modTime[PROPID(prop)] = now;
+	});
 
 	if (character.mapX != 0 || character.mapY != 0)
 	{
@@ -234,7 +237,7 @@ void NPC::sendAllShowImagesToLevel(std::optional<clock::time_point> modTime) con
 
 void NPC::addMoveToQueue(const LocalPixelPosition& moveDelta, float durationInSeconds, uint8_t options)
 {
-	NPCMove move{ .duration = std::chrono::duration_cast<std::chrono::milliseconds>(duration_seconds_double{ durationInSeconds }), .modTime = m_server->getFrameStartTime() };
+	NPCMove move{.duration = std::chrono::duration_cast<std::chrono::milliseconds>(duration_seconds_double{durationInSeconds}), .modTime = m_server->getFrameStartTime()};
 
 	if (options & (1 << NPCMove::cacheNearbyMovement))
 		move.options.set(NPCMove::cacheNearbyMovement);
@@ -328,7 +331,7 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 		}
 
 		// Determine where we will end up this frame.
-		PixelPosition currentPosition{ move.getCurrentPosition() };
+		PixelPosition currentPosition{move.getCurrentPosition()};
 
 		// If the map position changed, set that now.
 		const auto& [mapX, mapY, _] = toMapPosition(currentPosition);
@@ -417,10 +420,10 @@ std::pair<CString, CString> NPC::getMoveQueuePacketData(std::optional<clock::tim
 
 		// Client versions 2.3+ support the new move packet.
 		{
-			PropertyPixelCoordinate posX{ localPosition.x() };
-			PropertyPixelCoordinate posY{ localPosition.y() };
-			PropertyPixelCoordinate moveDX{ dx };
-			PropertyPixelCoordinate moveDY{ dy };
+			PropertyPixelCoordinate posX{localPosition.x()};
+			PropertyPixelCoordinate posY{localPosition.y()};
+			PropertyPixelCoordinate moveDX{dx};
+			PropertyPixelCoordinate moveDY{dy};
 
 			result.second << posX.serialize() << posY.serialize();
 			result.second << moveDX.serialize() << moveDY.serialize();
@@ -472,8 +475,14 @@ void NPC::sendMoveQueueToLevel(LevelPtr level, const std::pair<CString, CString>
 		return;
 
 	// Send them out.
-	m_server->sendPacketToNearby(CString() >> (char)PLO_MOVE2 >> (int)id << queue.second, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() >= CLVER_2_3; });
-	m_server->sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)id << queue.first, character.getGlobalPosition(), level, {}, [](const Player* player) { return player->getVersion() < CLVER_2_3; });
+	m_server->sendPacketToNearby(CString() >> (char)PLO_MOVE2 >> (int)id << queue.second, character.getGlobalPosition(), level, {}, [](const Player* player)
+	{
+		return player->getVersion() >= CLVER_2_3;
+	});
+	m_server->sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)id << queue.first, character.getGlobalPosition(), level, {}, [](const Player* player)
+	{
+		return player->getVersion() < CLVER_2_3;
+	});
 }
 
 void NPC::sendMoveQueueUpdatesToLevel(LevelPtr level) noexcept
@@ -555,7 +564,7 @@ void NPC::hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, st
 
 		// Push the character away from the source of damage.
 		auto tileOrigin = toTilePosition(pushOrigin);
-		TilePosition pushVector{ character.getTilePosition().x() + 1.5f - tileOrigin.x(), character.getTilePosition().y() + 2.0f - tileOrigin.y() };
+		TilePosition pushVector{character.getTilePosition().x() + 1.5f - tileOrigin.x(), character.getTilePosition().y() + 2.0f - tileOrigin.y()};
 		pushVector.normalize2D(pushVector.length2D());
 		pushVector = pushVector * 5.0f;
 
@@ -613,7 +622,7 @@ void NPC::setScript(const Script& script)
 	m_script = script;
 
 	// TODO: Optimize this.  We need a better way to track joined classes and to assign them to the NPC.
-	auto classes = string::join(m_script.getServerJoinedClasses() | std::views::transform([](const auto& pair) { return pair.first; }));
+	auto classes = string::join(m_script.getServerJoinedClasses() | std::views::keys);
 	setJoinedClasses(classes);
 
 	auto clientside = m_script.getClientSide();
@@ -637,7 +646,7 @@ void NPC::setScript(std::string_view script)
 
 	// Set the script.
 	setJoinedClasses("");
-	m_script = std::move(Script{ name, script });
+	m_script = std::move(Script{name, script});
 	modTime[PROPID(NPCProp::SCRIPT)] = m_server->getFrameStartTime();
 
 	// Check if we have joined classes already (due to a cached script).
@@ -645,7 +654,10 @@ void NPC::setScript(std::string_view script)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
-			auto it = std::ranges::find_if(m_joinedClasses, [&scriptClass](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == scriptClass->name; });
+			auto it = std::ranges::find_if(m_joinedClasses, [&scriptClass](const decltype(m_joinedClasses)::value_type& kvp)
+			{
+				return kvp.second.lock()->name == scriptClass->name;
+			});
 			if (it != m_joinedClasses.end())
 				continue;
 
@@ -674,7 +686,7 @@ void NPC::setScript(std::string_view script)
 
 std::string NPC::getClientSideScript() const
 {
-	std::string result{ m_script.getClientSide() };
+	std::string result{m_script.getClientSide()};
 	for (const auto& [handle, classPtr] : m_joinedClasses)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
@@ -709,7 +721,10 @@ std::string NPC::getJoinedClassesList() const
 	// If we have expired, clear them out.
 	if (hasExpired)
 	{
-		std::erase_if(m_joinedClasses, [this](const decltype(m_joinedClasses)::value_type& pair) { return pair.second.expired(); });
+		std::erase_if(m_joinedClasses, [this](const decltype(m_joinedClasses)::value_type& pair)
+		{
+			return pair.second.expired();
+		});
 	}
 
 	return result;
@@ -764,7 +779,10 @@ void NPC::setJoinedClasses(std::string_view classes)
 
 void NPC::joinClass(std::string_view className)
 {
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp)
+	{
+		return kvp.second.lock()->name == className;
+	});
 	if (it != m_joinedClasses.end())
 		return;
 
@@ -790,7 +808,10 @@ void NPC::joinClass(std::string_view className)
 
 void NPC::leaveClass(std::string_view className)
 {
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
+	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp)
+	{
+		return kvp.second.lock()->name == className;
+	});
 	if (it == m_joinedClasses.end())
 		return;
 
@@ -848,7 +869,8 @@ std::shared_ptr<PropertyBase> NPC::constructPropFor(NPCProp prop) const
 {
 	switch (prop)
 	{
-#define GENERATE_CONSTRUCTPROPFOR_CASE(prop, type, ...) case prop: return std::make_shared<type>();
+#define GENERATE_CONSTRUCTPROPFOR_CASE(prop, type, ...) \
+	case prop: return std::make_shared<type>();
 		FOR_LIST_OF_NPC_PROPS(GENERATE_CONSTRUCTPROPFOR_CASE);
 	}
 	throw std::invalid_argument("Invalid NPCProp type in constructPropFor");
@@ -860,7 +882,8 @@ std::shared_ptr<PropertyBase> NPC::getProp(NPCProp prop) const
 {
 	switch (prop)
 	{
-#define GENERATE_GETPROP_CASE(prop, type, ...) case prop: return std::make_shared<type>( __VA_ARGS__ );
+#define GENERATE_GETPROP_CASE(prop, type, ...) \
+	case prop: return std::make_shared<type>(__VA_ARGS__);
 		FOR_LIST_OF_NPC_PROPS(GENERATE_GETPROP_CASE);
 	}
 
@@ -882,7 +905,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 	auto levelPtr = getLevel();
 	bool canUpdatePosition = !m_blockPositionUpdates || setBy == props::SetBy::SERVER;
 
-	props::SetResults result{ .propId = { PROPID(prop) } };
+	props::SetResults result{.propId = {PROPID(prop)}};
 	result.resultFlags.set(props::SetResults::sendToLevel, true);
 	result.resultFlags.set(props::SetResults::sendToSource, false);
 
@@ -893,7 +916,15 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 	modTime[PROPID(prop)] = curTime;
 	lastUpdateTime = curTime;
 
-#define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); modTime[PROPID(prop)] = oldTime; lastUpdateTime = oldLastUpdateTime; return result; } while(false)
+#define SETPROP_RETURN_ERROR                            \
+	do                                                  \
+	{                                                   \
+		result.resultFlags.set(SetResults::wasInvalid); \
+		modTime[PROPID(prop)] = oldTime;                \
+		lastUpdateTime = oldLastUpdateTime;             \
+		return result;                                  \
+	}                                                   \
+	while (false)
 
 	switch (prop)
 	{
@@ -1120,10 +1151,10 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				auto self = m_server->getNPC(id);
 				float tX = static_cast<float>(character.localPixelX / 16.0f) + 1.5f;
 				float tY = static_cast<float>(character.localPixelY / 16.0f) + 2.0f;
-				m_server->hitObjectsAtPoint({ tX, tY + 2.0f }, character.swordPower, m_currentLevel, self);
-				m_server->hitObjectsAtPoint({ tX, tY - 2.0f }, character.swordPower, m_currentLevel, self);
-				m_server->hitObjectsAtPoint({ tX + 2.0f, tY }, character.swordPower, m_currentLevel, self);
-				m_server->hitObjectsAtPoint({ tX - 2.0f, tY }, character.swordPower, m_currentLevel, self);
+				m_server->hitObjectsAtPoint({tX, tY + 2.0f}, character.swordPower, m_currentLevel, self);
+				m_server->hitObjectsAtPoint({tX, tY - 2.0f}, character.swordPower, m_currentLevel, self);
+				m_server->hitObjectsAtPoint({tX + 2.0f, tY}, character.swordPower, m_currentLevel, self);
+				m_server->hitObjectsAtPoint({tX - 2.0f, tY}, character.swordPower, m_currentLevel, self);
 			}
 			break;
 		}
@@ -1501,7 +1532,7 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 	{
 		return !canSendProp((NPCProp)res.first.propId);
 	});
-	
+
 	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId, SetResults::ResultFlagType& destinations)
 	{
 		return this->getProp((NPCProp)propId);
@@ -1516,7 +1547,7 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 		exclude = source->getId();
 
 	if (sendLevel.length() > 0 && !m_currentLevel.expired())
-		m_server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, character.getGlobalPosition(), getLevel(), { exclude });
+		m_server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << sendLevel, character.getGlobalPosition(), getLevel(), {exclude});
 
 	if (sendSource.length() > 0 && source != nullptr)
 		source->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)id << sendSource);
@@ -1873,7 +1904,7 @@ void NPC::testForLinks(SetResults& result)
 
 	if (warpRestrictions == NPCWarpRestrictions::ALLOWED)
 	{
-		static Position<int> touchTest[] = { { 2, 1 }, { 0, 2 }, { 2, 4 }, { 3, 2 } };
+		static Position<int> touchTest[] = {{2, 1}, {0, 2}, {2, 4}, {3, 2}};
 		TilePosition testPos = character.getTilePosition().translate(touchTest[character.direction].x(), touchTest[character.direction].y());
 		if (auto linkTouched = levelPtr->getLink(testPos, map != nullptr); linkTouched.has_value())
 		{
@@ -1894,7 +1925,7 @@ void NPC::testForLinks(SetResults& result)
 			// If we have a destination level, move us to it.
 			if (destSubLevel != nullptr)
 			{
-				auto mapPosition = destSubLevel->mapPosition.value_or(MapPosition{ 0, 0 });
+				auto mapPosition = destSubLevel->mapPosition.value_or(MapPosition{0, 0});
 				character.mapX = mapPosition.x();
 				character.mapY = mapPosition.y();
 				result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
@@ -1937,7 +1968,7 @@ std::string_view toWeaponName(std::string_view code)
 
 	name_start += 9; // 9 = strlen("toweapons")
 
-	size_t name_end[2] = { code.find(";", name_start), code.find("}", name_start) };
+	size_t name_end[2] = {code.find(";", name_start), code.find("}", name_start)};
 	if (name_end[0] == notFound && name_end[1] == notFound)
 		return {};
 
@@ -2064,7 +2095,7 @@ std::vector<std::string> NPC::getVariableDump() const
 
 			case NPCProp::VISFLAGS:
 			{
-				std::string activeVisFlags{ (visFlags & PROPID(NPCVisFlags::VISIBLE) ? "visible" : "hidden") };
+				std::string activeVisFlags{(visFlags & PROPID(NPCVisFlags::VISIBLE) ? "visible" : "hidden")};
 				if (visFlags & PROPID(NPCVisFlags::DRAWOVERPLAYER))
 					activeVisFlags += ", drawoverplayer";
 				if (visFlags & PROPID(NPCVisFlags::DRAWUNDERPLAYER))
@@ -2077,14 +2108,14 @@ std::vector<std::string> NPC::getVariableDump() const
 					activeVisFlags += ", unknownbit6";
 				if (isCharacter())
 					activeVisFlags += (visFlags & PROPID(NPCVisFlags::MALE) ? ", male" : ", female");
-				
+
 				result.emplace_back(std::format("{}: {}", nameprop, activeVisFlags));
 				break;
 			}
 
 			case NPCProp::BLOCKFLAGS:
 			{
-				std::string activeBlockFlags{ (blockFlags & PROPID(NPCBlockFlags::NOBLOCK) ? "noblock" : "block") };
+				std::string activeBlockFlags{(blockFlags & PROPID(NPCBlockFlags::NOBLOCK) ? "noblock" : "block")};
 				if (blockFlags & PROPID(NPCBlockFlags::CANBECARRIED))
 					activeBlockFlags += ", canbecarried";
 				if (blockFlags & PROPID(NPCBlockFlags::CANBEPULLED))

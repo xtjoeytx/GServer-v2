@@ -10,8 +10,8 @@
 #include <memory>
 #include <optional>
 #include <span>
-#include <string>
 #include <string_view>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -40,10 +40,10 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
-#include <utilities/manager/GuildManager.h>
-#include <utilities/manager/ITranslationManager.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
+#include <utilities/manager/GuildManager.h>
+#include <utilities/manager/ITranslationManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -51,158 +51,158 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifdef PACKETLOGGING
-#define FOR_OUTPUT_PACKETS(DO) \
-	DO(PLO_LEVELBOARD) \
-	DO(PLO_LEVELLINK) \
-	DO(PLO_BADDYPROPS) \
-	DO(PLO_NPCPROPS) \
-	DO(PLO_LEVELCHEST) \
-	DO(PLO_LEVELSIGN) \
-	DO(PLO_LEVELNAME) \
-	DO(PLO_BOARDMODIFY) \
-	DO(PLO_OTHERPLPROPS) \
-	DO(PLO_PLAYERPROPS) \
-	DO(PLO_ISLEADER) \
-	DO(PLO_BOMBADD) \
-	DO(PLO_BOMBDEL) \
-	DO(PLO_TOALL) \
-	DO(PLO_PLAYERWARP) \
-	DO(PLO_WARPFAILED) \
-	DO(PLO_DISCMESSAGE) \
-	DO(PLO_HORSEADD) \
-	DO(PLO_HORSEDEL) \
-	DO(PLO_ARROWADD) \
-	DO(PLO_FIRESPY) \
-	DO(PLO_THROWCARRIED) \
-	DO(PLO_ITEMADD) \
-	DO(PLO_ITEMDEL) \
-	DO(PLO_NPCMOVED) \
-	DO(PLO_SIGNATURE) \
-	DO(PLO_NPCACTION) \
-	DO(PLO_BADDYHURT) \
-	DO(PLO_FLAGSET) \
-	DO(PLO_NPCDEL) \
-	DO(PLO_FILESENDFAILED) \
-	DO(PLO_FLAGDEL) \
-	DO(PLO_SHOWIMGPLAYER) \
-	DO(PLO_NPCWEAPONADD) \
-	DO(PLO_NPCWEAPONDEL) \
-	DO(PLO_RC_ADMINMESSAGE) \
-	DO(PLO_EXPLOSION) \
-	DO(PLO_PRIVATEMESSAGE) \
-	DO(PLO_PUSHAWAY) \
-	DO(PLO_LEVELMODTIME) \
-	DO(PLO_HURTPLAYER) \
-	DO(PLO_STARTMESSAGE) \
-	DO(PLO_NEWWORLDTIME) \
-	DO(PLO_DEFAULTWEAPON) \
-	DO(PLO_HASNPCSERVER) \
-	DO(PLO_FILEUPTODATE) \
-	DO(PLO_HITOBJECTS) \
-	DO(PLO_STAFFGUILDS) \
-	DO(PLO_TRIGGERACTION) \
-	DO(PLO_PLAYERWARP2) \
-	DO(PLO_RC_ACCOUNTADD) \
-	DO(PLO_RC_ACCOUNTSTATUS) \
-	DO(PLO_RC_ACCOUNTNAME) \
-	DO(PLO_RC_ACCOUNTDEL) \
-	DO(PLO_RC_ACCOUNTPROPS) \
-	DO(PLO_ADDPLAYER) \
-	DO(PLO_DELPLAYER) \
-	DO(PLO_RC_ACCOUNTPROPSGET) \
-	DO(PLO_RC_ACCOUNTCHANGE) \
-	DO(PLO_RC_PLAYERPROPSCHANGE) \
-	DO(PLO_UNKNOWN60) \
-	DO(PLO_RC_SERVERFLAGSGET) \
-	DO(PLO_RC_PLAYERRIGHTSGET) \
-	DO(PLO_RC_PLAYERCOMMENTSGET) \
-	DO(PLO_RC_PLAYERBANGET) \
-	DO(PLO_RC_FILEBROWSER_DIRLIST) \
-	DO(PLO_RC_FILEBROWSER_DIR) \
-	DO(PLO_RC_FILEBROWSER_MESSAGE) \
-	DO(PLO_LARGEFILESTART) \
-	DO(PLO_LARGEFILEEND) \
-	DO(PLO_RC_ACCOUNTLISTGET) \
-	DO(PLO_RC_PLAYERPROPS) \
-	DO(PLO_RC_PLAYERPROPSGET) \
-	DO(PLO_RC_ACCOUNTGET) \
-	DO(PLO_RC_CHAT) \
-	DO(PLO_PROFILE) \
-	DO(PLO_RC_SERVEROPTIONSGET) \
-	DO(PLO_RC_FOLDERCONFIGGET) \
-	DO(PLO_NC_CONTROL) \
-	DO(PLO_NPCSERVERADDR) \
-	DO(PLO_NC_LEVELLIST) \
-	DO(PLO_UNKNOWN81) \
-	DO(PLO_SERVERTEXT) \
-	DO(PLO_UNKNOWN83) \
-	DO(PLO_LARGEFILESIZE) \
-	DO(PLO_RAWDATA) \
-	DO(PLO_BOARDPACKET) \
-	DO(PLO_FILE) \
-	DO(PLO_RC_MAXUPLOADFILESIZE) \
-	DO(PLO_UNKNOWN104) \
-	DO(PLO_UPDATEPACKAGESIZE) \
-	DO(PLO_UPDATEPACKAGEDONE) \
-	DO(PLO_BOARDLAYER) \
-	DO(PLO_UNKNOWN109) \
-	DO(PLO_SETNETCOOKIE) \
-	DO(PLO_UNKNOWN124) \
-	DO(PLO_NPCBYTECODE) \
-	DO(PLO_UNKNOWN132) \
-	DO(PLO_UNKNOWN133) \
-	DO(PLO_GANISCRIPT) \
-	DO(PLO_NPCWEAPONSCRIPT) \
-	DO(PLO_NPCDEL2) \
-	DO(PLO_HIDENPCS) \
-	DO(PLO_SAY2) \
-	DO(PLO_FREEZEPLAYER2) \
-	DO(PLO_UNFREEZEPLAYER) \
-	DO(PLO_SETACTIVELEVEL) \
-	DO(PLO_NC_NPCATTRIBUTES) \
-	DO(PLO_NC_NPCADD) \
-	DO(PLO_NC_NPCDELETE) \
-	DO(PLO_NC_NPCSCRIPT) \
-	DO(PLO_NC_NPCFLAGS) \
-	DO(PLO_NC_CLASSGET) \
-	DO(PLO_NC_CLASSADD) \
-	DO(PLO_NC_LEVELDUMP) \
-	DO(PLO_MOVE) \
-	DO(PLO_SHOWIMGNPC) \
-	DO(PLO_NC_WEAPONLISTGET) \
-	DO(PLO_UNKNOWN168) \
-	DO(PLO_UNKNOWN169) \
-	DO(PLO_GHOSTMODE) \
-	DO(PLO_BIGMAP) \
-	DO(PLO_MINIMAP) \
-	DO(PLO_GHOSTTEXT) \
-	DO(PLO_GHOSTICON) \
-	DO(PLO_SHOOT) \
-	DO(PLO_DISABLECLASSICMODE) \
-	DO(PLO_FULLSTOP2) \
-	DO(PLO_SERVERWARP) \
-	DO(PLO_RPGWINDOW) \
-	DO(PLO_STATUSLIST) \
-	DO(PLO_UNKNOWN181) \
-	DO(PLO_LISTPROCESSES) \
-	DO(PLO_HASPROCESSRUNNING) \
-	DO(PLO_TAKESCREENSHOT) \
-	DO(PLO_BOARDHEIGHTS) \
-	DO(PLO_BOARDMODIFY2) \
-	DO(PLO_UPDATEPACKAGEISUPDATED) \
-	DO(PLO_NC_CLASSDELETE) \
-	DO(PLO_MOVE2) \
-	DO(PLO_SERVERLISTCONNECTED) \
-	DO(PLO_SHOOT2) \
-	DO(PLO_NC_WEAPONGET) \
-	DO(PLO_UNKNOWN193) \
-	DO(PLO_CLEARWEAPONS) \
-	DO(PLO_LOADGANI) \
-	DO(PLO_LOADSCRIPT) \
-	DO(PLO_SERVEROPTIONS) \
-	DO(PLO_SET_ENC_KEY) \
-	DO(PLO_BUNDLE)
-#define FILL_OUTPUT_ARRAY(name) names[(uint8_t)name] = #name;
+	#define FOR_OUTPUT_PACKETS(DO)     \
+		DO(PLO_LEVELBOARD)             \
+		DO(PLO_LEVELLINK)              \
+		DO(PLO_BADDYPROPS)             \
+		DO(PLO_NPCPROPS)               \
+		DO(PLO_LEVELCHEST)             \
+		DO(PLO_LEVELSIGN)              \
+		DO(PLO_LEVELNAME)              \
+		DO(PLO_BOARDMODIFY)            \
+		DO(PLO_OTHERPLPROPS)           \
+		DO(PLO_PLAYERPROPS)            \
+		DO(PLO_ISLEADER)               \
+		DO(PLO_BOMBADD)                \
+		DO(PLO_BOMBDEL)                \
+		DO(PLO_TOALL)                  \
+		DO(PLO_PLAYERWARP)             \
+		DO(PLO_WARPFAILED)             \
+		DO(PLO_DISCMESSAGE)            \
+		DO(PLO_HORSEADD)               \
+		DO(PLO_HORSEDEL)               \
+		DO(PLO_ARROWADD)               \
+		DO(PLO_FIRESPY)                \
+		DO(PLO_THROWCARRIED)           \
+		DO(PLO_ITEMADD)                \
+		DO(PLO_ITEMDEL)                \
+		DO(PLO_NPCMOVED)               \
+		DO(PLO_SIGNATURE)              \
+		DO(PLO_NPCACTION)              \
+		DO(PLO_BADDYHURT)              \
+		DO(PLO_FLAGSET)                \
+		DO(PLO_NPCDEL)                 \
+		DO(PLO_FILESENDFAILED)         \
+		DO(PLO_FLAGDEL)                \
+		DO(PLO_SHOWIMGPLAYER)          \
+		DO(PLO_NPCWEAPONADD)           \
+		DO(PLO_NPCWEAPONDEL)           \
+		DO(PLO_RC_ADMINMESSAGE)        \
+		DO(PLO_EXPLOSION)              \
+		DO(PLO_PRIVATEMESSAGE)         \
+		DO(PLO_PUSHAWAY)               \
+		DO(PLO_LEVELMODTIME)           \
+		DO(PLO_HURTPLAYER)             \
+		DO(PLO_STARTMESSAGE)           \
+		DO(PLO_NEWWORLDTIME)           \
+		DO(PLO_DEFAULTWEAPON)          \
+		DO(PLO_HASNPCSERVER)           \
+		DO(PLO_FILEUPTODATE)           \
+		DO(PLO_HITOBJECTS)             \
+		DO(PLO_STAFFGUILDS)            \
+		DO(PLO_TRIGGERACTION)          \
+		DO(PLO_PLAYERWARP2)            \
+		DO(PLO_RC_ACCOUNTADD)          \
+		DO(PLO_RC_ACCOUNTSTATUS)       \
+		DO(PLO_RC_ACCOUNTNAME)         \
+		DO(PLO_RC_ACCOUNTDEL)          \
+		DO(PLO_RC_ACCOUNTPROPS)        \
+		DO(PLO_ADDPLAYER)              \
+		DO(PLO_DELPLAYER)              \
+		DO(PLO_RC_ACCOUNTPROPSGET)     \
+		DO(PLO_RC_ACCOUNTCHANGE)       \
+		DO(PLO_RC_PLAYERPROPSCHANGE)   \
+		DO(PLO_UNKNOWN60)              \
+		DO(PLO_RC_SERVERFLAGSGET)      \
+		DO(PLO_RC_PLAYERRIGHTSGET)     \
+		DO(PLO_RC_PLAYERCOMMENTSGET)   \
+		DO(PLO_RC_PLAYERBANGET)        \
+		DO(PLO_RC_FILEBROWSER_DIRLIST) \
+		DO(PLO_RC_FILEBROWSER_DIR)     \
+		DO(PLO_RC_FILEBROWSER_MESSAGE) \
+		DO(PLO_LARGEFILESTART)         \
+		DO(PLO_LARGEFILEEND)           \
+		DO(PLO_RC_ACCOUNTLISTGET)      \
+		DO(PLO_RC_PLAYERPROPS)         \
+		DO(PLO_RC_PLAYERPROPSGET)      \
+		DO(PLO_RC_ACCOUNTGET)          \
+		DO(PLO_RC_CHAT)                \
+		DO(PLO_PROFILE)                \
+		DO(PLO_RC_SERVEROPTIONSGET)    \
+		DO(PLO_RC_FOLDERCONFIGGET)     \
+		DO(PLO_NC_CONTROL)             \
+		DO(PLO_NPCSERVERADDR)          \
+		DO(PLO_NC_LEVELLIST)           \
+		DO(PLO_UNKNOWN81)              \
+		DO(PLO_SERVERTEXT)             \
+		DO(PLO_UNKNOWN83)              \
+		DO(PLO_LARGEFILESIZE)          \
+		DO(PLO_RAWDATA)                \
+		DO(PLO_BOARDPACKET)            \
+		DO(PLO_FILE)                   \
+		DO(PLO_RC_MAXUPLOADFILESIZE)   \
+		DO(PLO_UNKNOWN104)             \
+		DO(PLO_UPDATEPACKAGESIZE)      \
+		DO(PLO_UPDATEPACKAGEDONE)      \
+		DO(PLO_BOARDLAYER)             \
+		DO(PLO_UNKNOWN109)             \
+		DO(PLO_SETNETCOOKIE)           \
+		DO(PLO_UNKNOWN124)             \
+		DO(PLO_NPCBYTECODE)            \
+		DO(PLO_UNKNOWN132)             \
+		DO(PLO_UNKNOWN133)             \
+		DO(PLO_GANISCRIPT)             \
+		DO(PLO_NPCWEAPONSCRIPT)        \
+		DO(PLO_NPCDEL2)                \
+		DO(PLO_HIDENPCS)               \
+		DO(PLO_SAY2)                   \
+		DO(PLO_FREEZEPLAYER2)          \
+		DO(PLO_UNFREEZEPLAYER)         \
+		DO(PLO_SETACTIVELEVEL)         \
+		DO(PLO_NC_NPCATTRIBUTES)       \
+		DO(PLO_NC_NPCADD)              \
+		DO(PLO_NC_NPCDELETE)           \
+		DO(PLO_NC_NPCSCRIPT)           \
+		DO(PLO_NC_NPCFLAGS)            \
+		DO(PLO_NC_CLASSGET)            \
+		DO(PLO_NC_CLASSADD)            \
+		DO(PLO_NC_LEVELDUMP)           \
+		DO(PLO_MOVE)                   \
+		DO(PLO_SHOWIMGNPC)             \
+		DO(PLO_NC_WEAPONLISTGET)       \
+		DO(PLO_UNKNOWN168)             \
+		DO(PLO_UNKNOWN169)             \
+		DO(PLO_GHOSTMODE)              \
+		DO(PLO_BIGMAP)                 \
+		DO(PLO_MINIMAP)                \
+		DO(PLO_GHOSTTEXT)              \
+		DO(PLO_GHOSTICON)              \
+		DO(PLO_SHOOT)                  \
+		DO(PLO_DISABLECLASSICMODE)     \
+		DO(PLO_FULLSTOP2)              \
+		DO(PLO_SERVERWARP)             \
+		DO(PLO_RPGWINDOW)              \
+		DO(PLO_STATUSLIST)             \
+		DO(PLO_UNKNOWN181)             \
+		DO(PLO_LISTPROCESSES)          \
+		DO(PLO_HASPROCESSRUNNING)      \
+		DO(PLO_TAKESCREENSHOT)         \
+		DO(PLO_BOARDHEIGHTS)           \
+		DO(PLO_BOARDMODIFY2)           \
+		DO(PLO_UPDATEPACKAGEISUPDATED) \
+		DO(PLO_NC_CLASSDELETE)         \
+		DO(PLO_MOVE2)                  \
+		DO(PLO_SERVERLISTCONNECTED)    \
+		DO(PLO_SHOOT2)                 \
+		DO(PLO_NC_WEAPONGET)           \
+		DO(PLO_UNKNOWN193)             \
+		DO(PLO_CLEARWEAPONS)           \
+		DO(PLO_LOADGANI)               \
+		DO(PLO_LOADSCRIPT)             \
+		DO(PLO_SERVEROPTIONS)          \
+		DO(PLO_SET_ENC_KEY)            \
+		DO(PLO_BUNDLE)
+	#define FILL_OUTPUT_ARRAY(name) names[(uint8_t)name] = #name;
 
 static constexpr std::array<std::string, 255> FillOutputPacketNamesArray()
 {
@@ -480,7 +480,7 @@ void Player::sendPacket(CString pPacket, bool appendNL)
 	m_fileQueue.addPacket(pPacket);
 }
 
-bool Player::sendFile(const std::filesystem::path& file)
+std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 {
 	// Add the filename to the list of known files so we can resend the file
 	// to the client if it gets changed after it was originally sent
@@ -508,7 +508,7 @@ bool Player::sendFile(const std::filesystem::path& file)
 	// Find the file.
 	if (std::filesystem::exists(file))
 	{
-		fs::File openedFile{ file };
+		fs::File openedFile{file};
 		fileData = std::move(openedFile.read());
 		modTime = clock::to_time_t(toSystemClock(std::filesystem::last_write_time(file)));
 	}
@@ -516,13 +516,13 @@ bool Player::sendFile(const std::filesystem::path& file)
 	{
 		auto info = filesystem.infoi(fs::FileCategory::ALL, file.filename());
 		if (info == nullptr)
-			return sendFailure("File not found when trying to send to player");
+			return {sendFailure("File not found when trying to send to player"), false};
 
 		// Open the file and read the data.
 		{
 			auto openedFile = info->openFile();
 			if (openedFile == nullptr)
-				return sendFailure("File failed to load");
+				return {sendFailure("File failed to load"), false};
 
 			fileData = std::move(openedFile->read());
 		}
@@ -547,7 +547,7 @@ bool Player::sendFile(const std::filesystem::path& file)
 	{
 		if (m_versionId < CLVER_2_1) packetLength -= 5; // modTime isn't sent.
 		if (fileData.size() > 64000)
-			return sendFailure("File too large for client version");
+			return {sendFailure("File too large for client version"), isBigFile};
 
 		isBigFile = false;
 	}
@@ -560,7 +560,7 @@ bool Player::sendFile(const std::filesystem::path& file)
 	}
 
 	// Send the file now.
-	std::span<char> fileDataSpan{ fileData };
+	std::span<char> fileDataSpan{fileData};
 	while (!fileDataSpan.empty())
 	{
 		int sendSize = std::clamp((int)fileDataSpan.size(), 0, 32000);
@@ -571,12 +571,12 @@ bool Player::sendFile(const std::filesystem::path& file)
 		{
 			// We don't add a \n to the end of the packet, so subtract 1 from the packet length.
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength - 1 + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{ fileDataSpan.subspan(0, sendSize) }, false);
+			sendPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)}, false);
 		}
 		else
 		{
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)filename.length() << filename << std::string_view{ fileDataSpan.subspan(0, sendSize) } << "\n", false);
+			sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)} << "\n", false);
 		}
 
 		fileDataSpan = fileDataSpan.subspan(sendSize);
@@ -585,7 +585,7 @@ bool Player::sendFile(const std::filesystem::path& file)
 	// If we had sent a large file, let the client know we finished sending it.
 	if (isBigFile) sendPacket(CString() >> (char)PLO_LARGEFILEEND << filename);
 
-	return true;
+	return {true, isBigFile};
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -749,18 +749,22 @@ void Player::exchangeMyPropsWithOthers()
 		// Add Player / RC.
 		if (isClient())
 		{
+			// clang-format off
 			sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId()
 				<< (sameLevel ? joinLevel : "")
 				<< (player->isClient() ? player->getPropsPacketFromList(loginPropsClientOthers) : player->getPropsPacketFromList(loginPropsRC)));
+			// clang-format on
 		}
 		else
 		{
+			// clang-format off
 			// Get the other player's RC props.
 			sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)player->getId() >> (char)player->account.name.length() << player->account.name
 				>> (char)PlayerProp::CURLEVEL << player->getProp<PlayerProp::CURLEVEL>().serialize()
 				>> (char)PlayerProp::PLAYERLISTSTATUS << player->getProp<PlayerProp::PLAYERLISTSTATUS>().serialize()
 				>> (char)PlayerProp::NICKNAME << player->getProp<PlayerProp::NICKNAME>().serialize()
 				>> (char)PlayerProp::COMMUNITYNAME << player->getProp<PlayerProp::COMMUNITYNAME>().serialize());
+			// clang-format on
 		}
 	}
 }
@@ -875,11 +879,13 @@ void Player::setNick(CString pNickName, bool force)
 		// See if it is a global guild.
 		if (askGlobal)
 		{
+			// clang-format off
 			m_server->getServerList().sendPacket(
 				CString() >> (char)SVO_VERIGUILD >> (short)m_id
 				>> (char)account.name.length() << account.name
 				>> (char)nickNamePart.length() << nickNamePart
 				>> (char)guildName.length() << guildName);
+			// clang-format on
 		}
 	}
 
@@ -894,26 +900,24 @@ void Player::setChat(const CString& pChat)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Player::deleteFlag(std::string_view flagName, bool sendToPlayer)
+bool Player::deleteFlag(std::string_view flagName)
 {
-	if (sendToPlayer)
-		sendPacket(CString() >> (char)PLO_FLAGDEL << flagName);
-
+	sendPacket(CString() >> (char)PLO_FLAGDEL << flagName);
 	return account.variables.remove(flagName);
 }
 
-bool Player::setFlag(std::string_view flagPair, bool sendToPlayers)
+bool Player::setFlag(std::string_view flagPair)
 {
 	if (!flagPair.contains('='))
-		return setFlag(flagPair, std::nullopt, sendToPlayers);
+		return setFlag(flagPair, std::nullopt);
 
 	auto separator = flagPair.find('=');
 	auto flagName = string::trim(flagPair.substr(0, separator));
 	auto flagValue = string::trim(flagPair.substr(separator + 1));
-	return setFlag(flagName, std::string{ flagValue }, sendToPlayers);
+	return setFlag(flagName, std::string{flagValue});
 }
 
-bool Player::setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool sendToPlayer)
+bool Player::setFlag(std::string_view flagName, std::optional<std::string> flagValue)
 {
 	if (!flagValue.has_value())
 	{
@@ -924,9 +928,9 @@ bool Player::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	{
 		sendPacket(CString() >> (char)PLO_FLAGSET << flagName << "=" << flagValue.value());
 
-		std::string flag{ flagName };
+		std::string flag{flagName};
 		if (flagValue.value().empty())
-			return deleteFlag(flag, sendToPlayer);
+			return deleteFlag(flag);
 		account.variables.add(flag, flagValue.value());
 	}
 	return true;
@@ -1006,7 +1010,7 @@ bool Player::deleteWeapon(std::shared_ptr<Weapon> weapon)
 std::string Player::translate(std::string_view key) const
 {
 	auto translationManager = BabyDI::Get<ITranslationManager>();
-	return std::string{ translationManager->getText(getLanguage(), key) };
+	return std::string{translationManager->getText(getLanguage(), key)};
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1053,7 +1057,7 @@ bool Player::enterLevel(std::shared_ptr<Level> level, const PixelPosition& posit
 
 	// Sanity check.
 	if (!level->isGmap())
-		mapPosition = { 0, 0 };
+		mapPosition = {0, 0};
 
 	return enterLevel(level, mapPosition, localPosition, clientCachedTime);
 }
@@ -1065,12 +1069,14 @@ bool Player::enterLevel(std::shared_ptr<Level> level, const MapPosition& mapPosi
 	// If we are already on the level, set the position and abort.
 	if (account.level == level->levelName)
 	{
+		// clang-format off
 		sendPropsFromResults(
 			setPropWith<PlayerProp::X2>(props::SetBy::SERVER, position.x()),
 			setPropWith<PlayerProp::Y2>(props::SetBy::SERVER, position.y()),
 			setPropWith<PlayerProp::GMAPLEVELX>(props::SetBy::SERVER, mapPosition.x()),
 			setPropWith<PlayerProp::GMAPLEVELY>(props::SetBy::SERVER, mapPosition.y())
 		);
+		// clang-format on
 
 		return true;
 	}
@@ -1303,9 +1309,20 @@ HandlePacketResult Player::msgWebSocketInit(CString& pPacket)
 	CString webSocketKeyHeader = "Sec-WebSocket-Key:";
 	if (pPacket.findi(webSocketKeyHeader) < 0)
 	{
-		CString simpleHtml = CString() << "<html><head><title>" APP_VENDOR " " APP_NAME " v" APP_VERSION "</title></head><body><h1>Welcome to " << m_server->getSettings().get("name").value_or("") << "!</h1>" << m_server->getServerMessage().replaceAll("my server", m_server->getSettings().get("name").value_or("")).text() << "<p style=\"font-style: italic;font-weight: bold;\">Powered by " APP_VENDOR " " APP_NAME "<br/>Programmed by " << CString(APP_CREDITS) << "</p></body></html>";
-		CString webResponse = CString() << "HTTP/1.1 200 OK\r\nServer: " APP_VENDOR " " APP_NAME " v" APP_VERSION "\r\nContent-Length: " << CString(simpleHtml.length()) << "\r\nContent-Type: text/html\r\n\r\n"
+		// clang-format off
+		CString simpleHtml = CString()
+			<< "<html><head><title>" APP_VENDOR " " APP_NAME " v" APP_VERSION "</title></head><body><h1>Welcome to "
+			<< m_server->getSettings().get("name").value_or("")
+			<< "!</h1>"
+			<< m_server->getServerMessage().replaceAll("my server", m_server->getSettings().get("name").value_or("")).text()
+			<< "<p style=\"font-style: italic;font-weight: bold;\">Powered by " APP_VENDOR " " APP_NAME "<br/>Programmed by "
+			<< CString(APP_CREDITS) << "</p></body></html>";
+		CString webResponse = CString()
+			<< "HTTP/1.1 200 OK\r\nServer: " APP_VENDOR " " APP_NAME " v" APP_VERSION "\r\nContent-Length: "
+			<< CString(simpleHtml.length())
+			<< "\r\nContent-Type: text/html\r\n\r\n"
 			<< simpleHtml << "\r\n";
+		// clang-format on
 		unsigned int dsize = webResponse.length();
 		this->m_playerSock->sendData(webResponse.text(), &dsize);
 		return HandlePacketResult::Bubble;
@@ -1322,13 +1339,16 @@ HandlePacketResult Player::msgWebSocketInit(CString& pPacket)
 	webSocketKey.sha1I().base64encodeI();
 	webSocketKeyHeader.clear();
 
-	CString webSockHandshake = CString() << "HTTP/1.1 101 Switching Protocols\r\n"
+	// clang-format off
+	CString webSockHandshake = CString()
+		<< "HTTP/1.1 101 Switching Protocols\r\n"
 		<< "Upgrade: websocket\r\n"
 		<< "Connection: Upgrade\r\n"
 		<< "Sec-WebSocket-Protocol: binary\r\n"
 		<< "Sec-WebSocket-Accept: "
 		<< webSocketKey
 		<< "\r\n\r\n";
+	// clang-format on
 
 	unsigned int dsize = webSockHandshake.length();
 	this->m_playerSock->sendData(webSockHandshake.text(), &dsize);

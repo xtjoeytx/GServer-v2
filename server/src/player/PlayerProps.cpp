@@ -1211,8 +1211,8 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 		std::string val = flag.readString("").toString();
 
 		if (val.empty())
-			setFlag(name, std::nullopt, isLoaded());
-		else setFlag(name, val, isLoaded());
+			setFlag(name, std::nullopt);
+		else setFlag(name, val);
 	}
 
 	// Clear the chests and re-populate the chest list.

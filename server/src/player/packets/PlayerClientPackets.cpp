@@ -631,8 +631,11 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 	if (flagName.find("this.") != -1) return HandlePacketResult::Handled;
 
 	// Don't allow anybody to set read-only strings.
-	if (flagName.find("clientr.") != -1) return HandlePacketResult::Handled;
-	if (flagName.find("serverr.") != -1) return HandlePacketResult::Handled;
+	if (m_server->hasNPCServer())
+	{
+		if (flagName.find("clientr.") != -1) return HandlePacketResult::Handled;
+		if (flagName.find("serverr.") != -1) return HandlePacketResult::Handled;
+	}
 
 	// Server flags are handled differently than client flags.
 	// If we have an npc-server, clients can't set server flags.
@@ -647,8 +650,8 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 
 	// Set Flag
 	if (flagValue.isEmpty())
-		setFlag(flagName.toStringView(), std::nullopt, (m_versionId > CLVER_2_31));
-	else setFlag(flagName.toStringView(), flagValue.toString(), (m_versionId > CLVER_2_31));
+		setFlag(flagName.toStringView(), std::nullopt);
+	else setFlag(flagName.toStringView(), flagValue.toString());
 
 	return HandlePacketResult::Handled;
 }
@@ -784,7 +787,7 @@ HandlePacketResult PlayerClient::msgPLI_WANTFILE(CString& pPacket)
 	//printf("WANTFILE: %s\n", file.text());
 
 	// Send file.
-	this->sendFile(std::filesystem::path{ file.toString() });
+	sendFile(std::filesystem::path{file.toString()});
 	return HandlePacketResult::Handled;
 }
 
@@ -1437,7 +1440,7 @@ HandlePacketResult PlayerClient::msgPLI_VERIFYWANTSEND(CString& pPacket)
 	}
 
 	// Send the file to the client
-	this->sendFile(std::filesystem::path{ fileName.toString() });
+	sendFile(std::filesystem::path{ fileName.toString() });
 	return HandlePacketResult::Handled;
 }
 
@@ -1560,7 +1563,7 @@ HandlePacketResult PlayerClient::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacke
 	sendPacket(CString() >> (char)PLO_UPDATEPACKAGESIZE >> (char)packageName.length() << packageName >> (long long)totalDownloadSize);
 
 	for (const auto& wantFile : missingFiles)
-		this->sendFile(wantFile);
+		sendFile(wantFile);
 
 	sendPacket(CString() >> (char)PLO_UPDATEPACKAGEDONE << packageName);
 	return HandlePacketResult::Handled;

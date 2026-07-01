@@ -632,7 +632,7 @@ auto unescapeQuotes(StringViewIshVariant auto const& str)
 /// @param delims A string containing delimiter characters used to split the input.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
 /// @return A generator yielding each token as a std::string_view.
-auto split(StringViewVariant auto const& str, StringViewVariant auto delims, bool ignoreEmpty) -> std::generator<std::remove_cvref_t<decltype(str)>>
+auto split(StringViewVariant auto const str, StringViewVariant auto const delims, bool ignoreEmpty) -> std::generator<std::remove_cvref_t<decltype(str)>>
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -671,7 +671,7 @@ auto split(StringViewVariant auto const& str, StringViewVariant auto delims, boo
 /// @param delim A string used to split the input.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
 /// @return A generator yielding each token as a std::string_view.
-auto splitByString(StringViewVariant auto const& str, StringViewVariant auto delim, bool ignoreEmpty) -> std::generator<std::remove_cvref_t<decltype(str)>>
+auto splitByString(StringViewVariant auto const str, StringViewVariant auto const delim, bool ignoreEmpty) -> std::generator<std::remove_cvref_t<decltype(str)>>
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -768,7 +768,7 @@ auto splitToVectorByString(StringViewIshVariant auto const& str, StringViewIshVa
 /// @brief Splits a string into tokens based on whitespace and returns them as a generator of string views, ignoring empty tokens.
 /// @param str The input string to split. Can be any type compatible with string view.
 /// @return A generator yielding each token as a std::string_view.
-auto split(StringViewVariant auto str) -> std::generator<decltype(str)>
+auto split(StringViewVariant auto const str) -> std::generator<decltype(str)>
 {
 	for (const auto& item : split(str, " \t\n\r"sv, true))
 		co_yield item;
@@ -778,7 +778,7 @@ auto split(StringViewVariant auto str) -> std::generator<decltype(str)>
 /// @param str The input string to split. Can be any type compatible with string view.
 /// @param delims A string containing delimiter characters used to split the input. Defaults to whitespace characters.
 /// @return A generator yielding each token as a std::string_view.
-auto split(StringViewVariant auto str, StringViewVariant auto delims) -> std::generator<decltype(str)>
+auto split(StringViewVariant auto const str, StringViewVariant auto const delims) -> std::generator<decltype(str)>
 {
 	for (const auto& item : split(str, delims, true))
 		co_yield item;
@@ -788,7 +788,7 @@ auto split(StringViewVariant auto str, StringViewVariant auto delims) -> std::ge
 /// @param str The input string to split. Can be any type compatible with string view.
 /// @param delim A string used to split the input.
 /// @return A generator yielding each token as a std::string_view.
-auto splitByString(StringViewVariant auto str, StringViewVariant auto delim) -> std::generator<decltype(str)>
+auto splitByString(StringViewVariant auto const str, StringViewVariant auto const delim) -> std::generator<decltype(str)>
 {
 	for (const auto& item : splitByString(str, delim, true))
 		co_yield item;
@@ -844,12 +844,12 @@ auto splitToVectorByString(StringViewIshVariant auto const& str, StringViewIshVa
 /// @param delims A string containing delimiter characters used to split the input.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
 /// @return A generator yielding each token as a std::string_view.
-inline std::generator<std::string_view> split(const std::string& str, std::string_view delims, bool ignoreEmpty = true)
+inline std::generator<std::string_view> split(const std::string& str, const std::string_view delims, bool ignoreEmpty = true)
 {
 	for (const auto& item : split(std::string_view{ str }, delims, ignoreEmpty))
 		co_yield item;
 }
-inline std::generator<std::wstring_view> split(const std::wstring& str, std::wstring_view delims, bool ignoreEmpty = true)
+inline std::generator<std::wstring_view> split(const std::wstring& str, const std::wstring_view delims, bool ignoreEmpty = true)
 {
 	for (const auto& item : split(std::wstring_view{ str }, delims, ignoreEmpty))
 		co_yield item;
@@ -860,7 +860,7 @@ inline std::generator<std::wstring_view> split(const std::wstring& str, std::wst
 /// @param delim A string used to split the input.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
 /// @return A generator yielding each token as a std::string_view.
-inline std::generator<std::string_view> splitByString(const std::string& str, std::string_view delim, bool ignoreEmpty = true)
+inline std::generator<std::string_view> splitByString(const std::string& str, const std::string_view delim, bool ignoreEmpty = true)
 {
 	for (const auto& item : splitByString(std::string_view{ str }, delim, ignoreEmpty))
 		co_yield item;

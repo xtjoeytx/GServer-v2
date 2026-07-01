@@ -493,7 +493,7 @@ bool PlayerClient::sendLogin()
 
 	// If the gr.ip hack is enabled, add it to the player's flag list.
 	if (settings.get<bool>("flaghack_ip").value_or(false) == true)
-		this->setFlag("gr.ip", account.ipAddress, true);
+		this->setFlag("gr.ip", account.ipAddress);
 
 	// Send the player's flags.
 	for (const auto& [flag, value] : account.variables.store | variables::no_temporary)
