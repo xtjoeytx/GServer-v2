@@ -92,11 +92,7 @@ function(set_default_compiler_options target ISTESTTARGET)
 
 	# If windows, set the standard defines.
 	if(WIN32)
-		target_compile_definitions(${target} PUBLIC _WIN32 WIN32 _WINDOWS NOMINMAX WIN32_LEAN_AND_MEAN)
-
-		if(NOT MINGW)
-			target_compile_definitions(${target} PUBLIC _WIN32_WINNT=0x600)
-		endif()
+		target_compile_definitions(${target} PUBLIC _WIN32 WIN32 _WINDOWS NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x600)
 
 		# If 64-bit windows...
 		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
