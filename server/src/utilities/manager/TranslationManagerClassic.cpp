@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <iterator>
+#include <ranges>
 #include <string_view>
 #include <string>
 #include <tuple>
@@ -16,10 +16,10 @@
 
 #include <filesystem/File.h>
 #include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 #include <utilities/manager/ITranslationManager.h>
 #include <utilities/manager/TranslationManagerClassic.h>
 #include <utilities/std/generator.h>
-#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -29,8 +29,15 @@ namespace preagonal
 // https://r12a.github.io/app-conversion/
 constexpr std::array<std::string_view, 9> supportedLanguages =
 {
-	"Deutsch"sv, "English"sv, "Espa\u00F1ol"sv, "Fran\u00E7ais"sv, "Italiano"sv,
-	"Nederlands"sv, "Norsk"sv, "Portugu\u00EAs"sv, "Svenska"sv,
+	"Deutsch"sv,
+	"English"sv,
+	"Espa\u00F1ol"sv,
+	"Fran\u00E7ais"sv,
+	"Italiano"sv,
+	"Nederlands"sv,
+	"Norsk"sv,
+	"Portugu\u00EAs"sv,
+	"Svenska"sv,
 };
 
 constexpr std::string_view filePrefix = "slanguage"sv;
@@ -38,11 +45,26 @@ constexpr std::string_view originalLanguage = "Original"sv;
 
 //----------------------------
 
+static void saveTranslationFromMap(const TranslationManagerClassic::TranslationMap& map)
+{
+	if (map.filename.empty())
+		return;
+
+	std::ofstream file{map.filename};
+	if (!file.is_open())
+		return;
+
+	for (const auto& [key, value] : map.lines)
+		file << key << ": \"" << string::escapeQuotes(value) << "\"\n";
+}
+
+//----------------------------
+
 void TranslationManagerClassic::loadTranslations(const std::filesystem::path& directory)
 {
 	auto indent = log::server.indent();
 
-	std::filesystem::directory_iterator dirSearch{ directory, std::filesystem::directory_options::follow_directory_symlink | std::filesystem::directory_options::skip_permission_denied };
+	std::filesystem::directory_iterator dirSearch{directory, std::filesystem::directory_options::follow_directory_symlink | std::filesystem::directory_options::skip_permission_denied};
 	for (const auto& entry : dirSearch)
 	{
 		if (!entry.is_regular_file())
@@ -58,7 +80,7 @@ void TranslationManagerClassic::loadTranslations(const std::filesystem::path& di
 
 	// Always include the "Original" domain.
 	if (!m_domains.contains(originalLanguage))
-		m_domains.emplace(originalLanguage, TranslationMap{ .filename = directory / "slanguageOriginal.txt" });
+		m_domains.emplace(originalLanguage, TranslationMap{.filename = directory / "slanguageOriginal.txt"});
 }
 
 void TranslationManagerClassic::reloadTranslation(const std::filesystem::path& filePath)
@@ -77,7 +99,7 @@ void TranslationManagerClassic::loadDomain(const std::filesystem::path& filePath
 	if (domain.empty())
 		return;
 
-	TranslationMap translations{ .filename = filePath };
+	TranslationMap translations{.filename = filePath};
 
 	// Translation file format:
 	// md5: "text"
@@ -108,6 +130,15 @@ void TranslationManagerClassic::loadDomain(const std::filesystem::path& filePath
 	m_domains.emplace(std::move(domain), std::move(translations));
 }
 
+void TranslationManagerClassic::saveTranslation(std::string_view domain)
+{
+	auto iter = m_domains.find(domain);
+	if (iter == m_domains.end())
+		return;
+
+	saveTranslationFromMap(iter->second);
+}
+
 void TranslationManagerClassic::saveTranslations()
 {
 	for (const auto& [domain, map] : m_domains)
@@ -115,24 +146,24 @@ void TranslationManagerClassic::saveTranslations()
 		if (map.filename.empty())
 			continue;
 
-		std::ofstream file{ map.filename };
-		if (!file.is_open())
-			continue;
-
-		for (const auto& [key, value] : map.lines)
-			file << key << ": \"" << string::escapeQuotes(value) << "\"\n";
+		saveTranslationFromMap(map);
 	}
 }
 
 std::tuple<std::string_view, size_t, size_t> TranslationManagerClassic::syncLanguageWithOriginal(std::string_view language)
 {
-	std::tuple<std::string_view, size_t, size_t> result{ ""sv, 0, 0};
+	std::tuple<std::string_view, size_t, size_t> result{""sv, 0, 0};
 	constexpr size_t addIndex = 1;
 	constexpr size_t removeIndex = 2;
 
 	// Don't sync original with original.
+	// Instead, just save.
 	if (string::equalsi(language, originalLanguage))
+	{
+		saveTranslation(originalLanguage);
+		std::get<0>(result) = originalLanguage;
 		return result;
+	}
 
 	// Find the original domain.
 	auto original = m_domains.find(originalLanguage);
@@ -147,9 +178,9 @@ std::tuple<std::string_view, size_t, size_t> TranslationManagerClassic::syncLang
 		if (std::ranges::find(supportedLanguages, calculatedLanguage) == std::ranges::end(supportedLanguages))
 			return result;
 
-		std::string languageFile{ filePrefix };
+		std::string languageFile{filePrefix};
 		languageFile.append(calculatedLanguage).append(".txt");
-		domain = m_domains.emplace(calculatedLanguage, TranslationMap{ .filename = original->second.filename.parent_path() / languageFile }).first;
+		domain = m_domains.emplace(calculatedLanguage, TranslationMap{.filename = original->second.filename.parent_path() / languageFile}).first;
 	}
 
 	// Can't find a language, return failure.
@@ -196,7 +227,7 @@ std::tuple<std::string_view, size_t, size_t> TranslationManagerClassic::syncLang
 	}
 
 	// Save the translations.
-	std::ofstream file{ domain->second.filename };
+	std::ofstream file{domain->second.filename};
 	if (file.is_open())
 	{
 		for (const auto& [key, value] : domain->second.lines)
@@ -227,6 +258,21 @@ size_t TranslationManagerClassic::generateAllLanguageStubs()
 			++count;
 	}
 	return count;
+}
+
+void TranslationManagerClassic::registerOriginalText(std::string_view key)
+{
+	auto hash = generateHash(key);
+
+	auto domain = m_domains.find(originalLanguage);
+	if (domain == m_domains.end())
+		return;
+
+	if (auto line = domain->second.lines.find(key); line != domain->second.lines.end())
+		return;
+
+	// Not found, add to "Original" and return the key.
+	domain->second.lines.emplace(hash, key);
 }
 
 std::string_view TranslationManagerClassic::getText(std::string_view language, std::string_view key)

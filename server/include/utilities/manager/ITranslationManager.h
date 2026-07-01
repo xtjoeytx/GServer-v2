@@ -93,6 +93,9 @@ public:
 	/// @param fileName The path to the translation file to reload.
 	virtual void reloadTranslation(const std::filesystem::path& filePath) = 0;
 
+	/// @brief Saves a specified translation in memory to the disk.
+	virtual void saveTranslation(std::string_view domain) = 0;
+
 	/// @brief Saves all translations in memory to the disk.
 	virtual void saveTranslations() = 0;
 
@@ -108,6 +111,10 @@ public:
 	/// @brief Generates stubs for supported languages.
 	/// @return The number of language stubs generated.
 	virtual size_t generateAllLanguageStubs() = 0;
+
+	/// @brief Registers an original text string with a given key.
+	/// @param key The key identifying the original text string to register.
+	virtual void registerOriginalText(std::string_view key) = 0;
 
 public:
 	/// @brief Retrieves a localized text string for a given language and key.

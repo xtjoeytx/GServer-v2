@@ -18,6 +18,10 @@ void TranslationManagerModern::reloadTranslation(const std::filesystem::path& fi
 {
 }
 
+void TranslationManagerModern::saveTranslation(std::string_view domain)
+{
+}
+
 void TranslationManagerModern::saveTranslations()
 {
 }
@@ -35,6 +39,10 @@ std::generator<std::tuple<std::string_view, size_t, size_t>> TranslationManagerM
 size_t TranslationManagerModern::generateAllLanguageStubs()
 {
 	return 0;
+}
+
+void TranslationManagerModern::registerOriginalText(std::string_view key)
+{
 }
 
 std::string_view TranslationManagerModern::getText(std::string_view language, std::string_view key)

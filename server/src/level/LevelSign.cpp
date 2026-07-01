@@ -2,9 +2,12 @@
 
 #include <CString.h>
 
+#include <BabyDI.h>
 #include <level/LevelSign.h>
 #include <object/Player.h>
 #include <utilities/Extents.h>
+#include <utilities/StringUtils.h>
+#include <utilities/manager/ITranslationManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -16,11 +19,11 @@ static CString encodeSign(const CString& pSignText);
 static CString decodeSignCode(CString pText);
 
 const CString signText = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-"0123456789!?-.,#>()#####\"####':/~&### <####;\n";
+						 "0123456789!?-.,#>()#####\"####':/~&### <####;\n";
 const CString signSymbols = "ABXYudlrhxyz#4.";
-const int ctablen[] = { 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1 };
-const int ctabindex[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 17 };
-const int ctab[] = { 91, 92, 93, 94, 77, 78, 79, 80, 74, 75, 71, 72, 73, 86, 86, 87, 88, 67 };
+const int ctablen[] = {1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1};
+const int ctabindex[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 17};
+const int ctab[] = {91, 92, 93, 94, 77, 78, 79, 80, 74, 75, 71, 72, 73, 86, 86, 87, 88, 67};
 
 CString encodeSignCode(CString& pText)
 {
@@ -122,16 +125,7 @@ CString encodeSign(const CString& pSignText)
 LevelSign::LevelSign(const LocalWholeTilePosition& position, std::string_view signText, bool signTextIsEncoded)
 	: position(position)
 {
-	if (signTextIsEncoded)
-	{
-		encodedText = signText;
-		text = decodeSignCode(signText);
-	}
-	else
-	{
-		encodedText = encodeSign(signText);
-		text = signText;
-	}
+	setText(signText, signTextIsEncoded);
 }
 
 CString LevelSign::getSignPacket(Player* pPlayer) const
@@ -160,6 +154,9 @@ void LevelSign::setText(std::string_view signText, bool signTextIsEncoded)
 		encodedText = encodeSign(signText);
 		text = signText;
 	}
+
+	if (auto translations = BabyDI::Get<ITranslationManager>(); translations != nullptr)
+		translations->registerOriginalText(string::replace(text, "\n"sv, "#b"sv));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
