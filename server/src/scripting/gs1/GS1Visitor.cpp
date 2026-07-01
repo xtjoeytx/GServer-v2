@@ -681,7 +681,7 @@ void GS1Visitor::execute(const ScriptEvent& event, ScriptObject source, GS1Parse
 			if (!m_callStack.empty())
 				startNode = m_callStack.back().first;
 
-			assert(loops < 100);
+			assert(loops++ < 100);
 		}
 		while (!m_callStack.empty());
 	}

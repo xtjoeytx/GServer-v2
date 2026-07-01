@@ -53,6 +53,13 @@ function(set_default_compiler_options target ISTESTTARGET)
 		target_compile_options(${target} PUBLIC -static-libstdc++)
 	endif()
 
+	# MinGW ignore various warnings.
+	if(MINGW)
+		target_compile_options(${target} PRIVATE
+			-Wno-mismatched-new-delete
+		)
+	endif()
+
 	# MinGW links.
 	if(MINGW)
 		target_compile_options(${target} PUBLIC "-mthreads")
@@ -85,7 +92,11 @@ function(set_default_compiler_options target ISTESTTARGET)
 
 	# If windows, set the standard defines.
 	if(WIN32)
-		target_compile_definitions(${target} PUBLIC _WIN32 WIN32 _WINDOWS NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x600)
+		target_compile_definitions(${target} PUBLIC _WIN32 WIN32 _WINDOWS NOMINMAX WIN32_LEAN_AND_MEAN)
+
+		if(NOT MINGW)
+			target_compile_definitions(${target} PUBLIC _WIN32_WINNT=0x600)
+		endif()
 
 		# If 64-bit windows...
 		if(CMAKE_SIZEOF_VOID_P EQUAL 8)

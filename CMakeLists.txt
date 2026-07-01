@@ -116,7 +116,7 @@ set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE ALWAYS)
 # System defines.
 if(MINGW)
 	message(STATUS "Compiling with MinGW")
-	add_compile_definitions(__GXX_TYPEINFO_EQUALITY_INLINE=1)
+	# add_compile_definitions(__GXX_TYPEINFO_EQUALITY_INLINE=1)
 endif()
 
 # Set up version data
