@@ -357,7 +357,7 @@ void Player::cleanup()
 
 bool Player::onRecv()
 {
-	// If our socket is gone, delete ourself.
+	// If our socket is gone, delete ourselves.
 	if (m_playerSock == nullptr || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
 
@@ -375,7 +375,7 @@ bool Player::onRecv()
 	else if (m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
 
-	// Hold ourself just in case we are deleted.
+	// Hold ourselves just in case we are deleted.
 	auto self = shared_from_this();
 
 	// Do the main function.
@@ -383,12 +383,12 @@ bool Player::onRecv()
 	if (m_playerSock != nullptr)
 		m_server->getSocketManager().updateSingle(this, false, true);
 
-	return true;
+	return m_playerSock != nullptr;
 }
 
 bool Player::onSend()
 {
-	if (m_playerSock == 0 || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	if (m_playerSock == nullptr || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 	{
 		m_fileQueue.clearBuffers();
 		return false;

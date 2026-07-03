@@ -1898,7 +1898,7 @@ bool Server::swapPlayer(PlayerPtr old_player, PlayerPtr new_player)
 	if (old_player == nullptr || new_player == nullptr)
 		return false;
 
-	auto id = old_player->getId();
+	const auto id = old_player->getId();
 
 	// Swap the player in the player list.
 	m_playerList.erase(id);

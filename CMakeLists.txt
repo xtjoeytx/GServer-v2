@@ -83,7 +83,7 @@ endif()
 
 # vcpkg configuration.
 set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "vcpkg triplet")
-set(VCPKG_INSTALLED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/vcpkg_installed")
+set(VCPKG_INSTALLED_DIR "${CMAKE_BINARY_DIR}/vcpkg_installed")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 	set(CMAKE_EXECUTABLE_SUFFIX ".exe")

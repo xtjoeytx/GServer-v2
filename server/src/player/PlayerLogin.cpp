@@ -38,6 +38,7 @@ PlayerLogin::~PlayerLogin()
 
 bool PlayerLogin::onRecv()
 {
+	auto self = shared_from_this();
 	Player::onRecv();
 	return PacketCount == 0;
 }

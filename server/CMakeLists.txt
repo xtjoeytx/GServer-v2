@@ -269,7 +269,7 @@ endif()
 FetchContent_Declare(gs2lib
 	GIT_REPOSITORY https://xtjoeytx@bitbucket.org/xtjoeytx/gs2lib.git
 	GIT_SHALLOW    ON
-	GIT_TAG        63b1ae96491c188905b50c6b61c8532c601a2122
+	GIT_TAG        e0d4217b132bb3953372a2309214c3673af571aa
 	#URL "${PROJECT_SOURCE_DIR}/../gs2lib"
 )
 FetchContent_MakeAvailable(gs2lib)

@@ -27,6 +27,13 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+UPNP::~UPNP()
+{
+#ifdef ENABLE_UPNP
+	FreeUPNPUrls(&m_urls);
+#endif
+}
+
 void UPNP::discover()
 {
 #ifdef ENABLE_UPNP
@@ -69,7 +76,7 @@ void UPNP::discover()
 			// Parse the XML description.
 			parserootdesc(xmlDescription, xmlDescriptionSize, &m_data);
 			free(xmlDescription);
-			xmlDescription = 0;
+			xmlDescription = nullptr;
 
 			// Get the UPNP urls from the description.
 			GetUPNPUrls(&m_urls, &m_data, device->descURL, 0);

@@ -18,6 +18,8 @@ namespace preagonal
 class UPNP
 {
 public:
+	~UPNP();
+
 	// Allows std::thread to work.
 	void operator()()
 	{

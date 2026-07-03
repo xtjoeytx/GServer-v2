@@ -4,7 +4,7 @@
     {
       "name": "Release",
       "hidden": true,
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build/release",
       "architecture": {
         "value": "x64",
         "strategy": "external"
@@ -23,7 +23,7 @@
     {
       "name": "Debug",
       "hidden": true,
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build/debug",
       "architecture": {
         "value": "x64",
         "strategy": "external"

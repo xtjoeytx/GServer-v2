@@ -22,7 +22,7 @@ bin/servers/*
 bin/servers/default/logs/npclog.txt
 bin/servers/default/logs/serverlog.txt
 bin/servers/default/npcs/npcControl-NPC.txt
-build*/*
+build/**
 cmake-build-*/
 dependencies/.cipd/
 dependencies/.gclient*
