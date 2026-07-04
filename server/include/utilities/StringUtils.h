@@ -956,7 +956,7 @@ auto toCSV(StringViewIshVariant auto const& str, std::string_view delim = "\n"sv
 	using StringViewType = std::basic_string_view<Elem, Traits>;
 	StringViewType strview{ str };
 
-	auto s = splitByString(strview, delim);
+	auto s = splitByString(strview, delim, false);
 	return toCSV(s, force_quoted);
 }
 

@@ -649,8 +649,8 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 
 	// Set Flag
 	if (flagValue.isEmpty())
-		setFlag(flagName.toStringView(), std::nullopt);
-	else setFlag(flagName.toStringView(), flagValue.toString());
+		setFlag(flagName.toStringView(), std::nullopt, SetBy::CLIENT);
+	else setFlag(flagName.toStringView(), flagValue.toString(), SetBy::CLIENT);
 
 	return HandlePacketResult::Handled;
 }
