@@ -314,9 +314,9 @@ public:
 	string_map<GameValue> scriptParameters;
 
 public:
-	bool deleteFlag(std::string_view flagName);
-	bool setFlag(std::string_view flagPair);
-	bool setFlag(std::string_view flagName, std::optional<std::string> flagValue);
+	bool deleteFlag(std::string_view flagName, const SetBy setBy);
+	bool setFlag(std::string_view flagPair, const SetBy setBy);
+	bool setFlag(std::string_view flagName, std::optional<std::string> flagValue, const SetBy setBy);
 
 public:
 	virtual bool warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);

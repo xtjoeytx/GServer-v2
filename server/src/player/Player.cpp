@@ -905,37 +905,40 @@ void Player::setChat(const CString& pChat)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Player::deleteFlag(std::string_view flagName)
+bool Player::deleteFlag(std::string_view flagName, const SetBy setBy)
 {
-	sendPacket(CString() >> (char)PLO_FLAGDEL << flagName);
+	if (setBy == SetBy::SERVER)
+		sendPacket(CString() >> (char)PLO_FLAGDEL << flagName);
 	return account.variables.remove(flagName);
 }
 
-bool Player::setFlag(std::string_view flagPair)
+bool Player::setFlag(std::string_view flagPair, const SetBy setBy)
 {
 	if (!flagPair.contains('='))
-		return setFlag(flagPair, std::nullopt);
+		return setFlag(flagPair, std::nullopt, setBy);
 
 	auto separator = flagPair.find('=');
 	auto flagName = string::trim(flagPair.substr(0, separator));
 	auto flagValue = string::trim(flagPair.substr(separator + 1));
-	return setFlag(flagName, std::string{flagValue});
+	return setFlag(flagName, std::string{flagValue}, setBy);
 }
 
-bool Player::setFlag(std::string_view flagName, std::optional<std::string> flagValue)
+bool Player::setFlag(std::string_view flagName, std::optional<std::string> flagValue, const SetBy setBy)
 {
 	if (!flagValue.has_value())
 	{
-		sendPacket(CString() >> (char)PLO_FLAGSET << flagName);
+		if (setBy == SetBy::SERVER)
+			sendPacket(CString() >> (char)PLO_FLAGSET << flagName);
 		account.variables.add(flagName, true);
 	}
 	else
 	{
-		sendPacket(CString() >> (char)PLO_FLAGSET << flagName << "=" << flagValue.value());
+		if (setBy == SetBy::SERVER)
+			sendPacket(CString() >> (char)PLO_FLAGSET << flagName << "=" << flagValue.value());
 
 		std::string flag{flagName};
 		if (flagValue.value().empty())
-			return deleteFlag(flag);
+			return deleteFlag(flag, setBy);
 		account.variables.add(flag, flagValue.value());
 	}
 	return true;

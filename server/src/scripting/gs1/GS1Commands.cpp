@@ -2002,7 +2002,7 @@ void fn_set(GS1Visitor* visitor, std::string_view commandName, const std::vector
 			if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 			{
 				if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-					player->setFlag(flag->identifier, std::nullopt);
+					player->setFlag(flag->identifier, std::nullopt, SetBy::SERVER);
 			}
 		}
 		else if (flag->identifier.starts_with("server.") || flag->identifier.starts_with("serverr."))
@@ -2514,8 +2514,8 @@ void fn_setstring(GS1Visitor* visitor, std::string_view commandName, const std::
 				if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 				{
 					if (text.empty())
-						player->deleteFlag(var->identifier);
-					else player->setFlag(var->identifier, text);
+						player->deleteFlag(var->identifier, SetBy::SERVER);
+					else player->setFlag(var->identifier, text, SetBy::SERVER);
 				}
 			}
 		}
@@ -3255,7 +3255,7 @@ void fn_unset(GS1Visitor* visitor, std::string_view commandName, const std::vect
 			if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 			{
 				if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-					player->deleteFlag(flag->identifier);
+					player->deleteFlag(flag->identifier, SetBy::SERVER);
 			}
 		}
 		else if (flag->identifier.starts_with("server.") || flag->identifier.starts_with("serverr."))
