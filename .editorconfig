@@ -1049,10 +1049,10 @@ cpp_wrap_preserve_blocks = one_liners
 # Visual C++ Include Cleanup settings
 
 cpp_include_cleanup_add_missing_error_tag_type = suggestion
-cpp_include_cleanup_alternate_files = utilities/std/generator.h:generator,generator.h:generator,ztd/text.hpp:ztd/text/transcode.hpp:ztd/text/utf16.hpp:ztd/text/windows_1252.hpp:ztd/text/replacement_handler.hpp,tomcrypt.h:tomcrypt_hash.h
-cpp_include_cleanup_excluded_files = corecrt.h,Windows.h,tomcrypt.h
+cpp_include_cleanup_alternate_files = utilities/std/generator.h:generator,generator.h:generator,ztd/text.hpp:ztd/text/transcode.hpp:ztd/text/utf16.hpp:ztd/text/windows_1252.hpp:ztd/text/replacement_handler.hpp,tomcrypt.h:tomcrypt_hash.h:tomcrypt_misc.h
+cpp_include_cleanup_excluded_files = corecrt.h,Windows.h,tomcrypt.h,catch2/catch_all.hpp,catch2/catch_test_macros.hpp
 cpp_include_cleanup_remove_unused_error_tag_type = dimmed
-cpp_include_cleanup_replacement_files = generator:utilities/std/generator.h,ztd/text/transcode.hpp:ztd/text.hpp,ztd/text/utf16.hpp:ztd/text.hpp,ztd/text/windows_1252.hpp:ztd/text.hpp,ztd/text/replacement_handler.hpp:ztd/text.hpp,tomcrypt_hash.h:tomcrypt.h
+cpp_include_cleanup_replacement_files = generator:utilities/std/generator.h,ztd/text/transcode.hpp:ztd/text.hpp,ztd/text/utf16.hpp:ztd/text.hpp,ztd/text/windows_1252.hpp:ztd/text.hpp,ztd/text/replacement_handler.hpp:ztd/text.hpp,tomcrypt_hash.h:tomcrypt.h,tomcrypt_misc.h:tomcrypt.h
 cpp_include_cleanup_optimize_unused_error_tag_type = suggestion
 cpp_include_cleanup_sort_after_edits = false
 cpp_sort_includes_error_tag_type = none

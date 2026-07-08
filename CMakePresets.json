@@ -37,7 +37,8 @@
         "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true,
         "CMAKE_BUILD_WITH_INSTALL_RPATH": false,
         "CMAKE_VERBOSE_MAKEFILE": true,
-        "PACKET_LOGGING": false
+        "PACKET_LOGGING": false,
+        "TESTS": true
       }
     },
     {
@@ -48,45 +49,45 @@
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
     },
-	{
-	  "name": "MSVC SegmentHeap",
-	  "hidden": true,
-	  "condition": {
-		"type": "allOf",
-		"conditions": [
-		  {
-			"type": "equals",
-			"lhs": "${hostSystemName}",
-			"rhs": "Windows"
-		  },
-		  {
-			"type": "notEquals",
-			"lhs": "$env{VSINSTALLDIR}",
-			"rhs": ""
-		  }
-		]
-	  },
-	  "cacheVariables": {
-		"CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "$env{VSINSTALLDIR}Common7/IDE/CommonExtensions/Microsoft/CMake/cmake/Microsoft/SegmentHeap.cmake"
-	  }
-	},
-	{
-	  "name": "Target Windows",
-	  "hidden": true,
-	  "cacheVariables": {
-		"VCPKG_TARGET_TRIPLET": "x64-windows-static"
-	  }
-	},
-	{
-	  "name": "Target Linux",
-	  "hidden": true,
-	  "cacheVariables": {
-		"VCPKG_TARGET_TRIPLET": "x64-linux"
-	  }
-	},
+    {
+      "name": "MSVC SegmentHeap",
+      "hidden": true,
+      "condition": {
+        "type": "allOf",
+        "conditions": [
+          {
+            "type": "equals",
+            "lhs": "${hostSystemName}",
+            "rhs": "Windows"
+          },
+          {
+            "type": "notEquals",
+            "lhs": "$env{VSINSTALLDIR}",
+            "rhs": ""
+          }
+        ]
+      },
+      "cacheVariables": {
+        "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "$env{VSINSTALLDIR}Common7/IDE/CommonExtensions/Microsoft/CMake/cmake/Microsoft/SegmentHeap.cmake"
+      }
+    },
+    {
+      "name": "Target Windows",
+      "hidden": true,
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+      }
+    },
+    {
+      "name": "Target Linux",
+      "hidden": true,
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux"
+      }
+    },
     {
       "name": "Windows Release",
-	  "inherits": [ "Release", "Target Windows", "MSVC SegmentHeap" ]
+      "inherits": [ "Release", "Target Windows", "MSVC SegmentHeap" ]
     },
     {
       "name": "Windows Debug",

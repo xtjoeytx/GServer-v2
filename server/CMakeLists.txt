@@ -25,7 +25,6 @@ set(
 	"include/Account.h"
 	"include/BabyDI.h"
 	"include/IConfig.h.in"
-	"include/main.h"
 	"include/Server.h"
 	"include/ServerList.h"
 	"include/UpdatePackage.h"
@@ -108,7 +107,6 @@ set(
 	"include/utilities/std/generator.h"
 	"include/utilities/std/inplace_vector.h"
 	"include/utilities/std/views_concat.h"
-	"src/main.cpp"
 	"src/Server.cpp"
 	"src/ServerList.cpp"
 	"src/TriggerCommandHandlers.cpp"
@@ -176,14 +174,15 @@ set(
 )
 
 # ----------------------------
-# Create the executable target.
-set(TARGET_NAME "${PROJECT_NAME_LOWER}")
-add_executable(${TARGET_NAME})
+# Create the gserver target.
+set(EXE_NAME "${PROJECT_NAME_LOWER}")
+set(TARGET_NAME "lib${PROJECT_NAME_LOWER}")
+add_library(${TARGET_NAME} STATIC)
 set_target_properties(${TARGET_NAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
-target_link_directories(${TARGET_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+target_link_directories(${TARGET_NAME} PUBLIC ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
 # Add the sources.
-target_sources(${TARGET_NAME} PUBLIC ${SOURCES})
+target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
 target_sources(${TARGET_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS "include" "${PROJECT_BINARY_DIR}/server/include")
 
 # ----------------------------
@@ -191,21 +190,13 @@ target_sources(${TARGET_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS "include" "${PRO
 set_default_compiler_options(${TARGET_NAME} FALSE)
 
 # ----------------------------
-# Tests
-if (TESTS)
-	set(APP_LIBRARY_NAME "lib${TARGET_NAME}")
-	set(APP_LIBRARY_NAME_TESTREF "${APP_LIBRARY_NAME}" PARENT_SCOPE)
-	add_library(${APP_LIBRARY_NAME})
-	set_target_properties(${APP_LIBRARY_NAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
-	target_link_directories(${APP_LIBRARY_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-
-	# Add the sources.
-	target_sources(${APP_LIBRARY_NAME} PUBLIC ${SOURCES})
-	target_sources(${APP_LIBRARY_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS "include" "${PROJECT_BINARY_DIR}/server/include")
-
-	# Configure our compiler options.
-	set_default_compiler_options(${APP_LIBRARY_NAME} TRUE)
-endif()
+# Create the gserver executable target.
+add_executable(${EXE_NAME})
+set_target_properties(${EXE_NAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+target_sources(${EXE_NAME} PRIVATE "include/main.h" "src/main.cpp")
+target_sources(${EXE_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS "include" "${PROJECT_BINARY_DIR}/server/include")
+set_default_compiler_options(${EXE_NAME} FALSE)
+target_link_libraries(${EXE_NAME} PRIVATE ${TARGET_NAME})
 
 # ----------------------------
 # Packet logging.
@@ -227,25 +218,20 @@ target_link_libraries(${TARGET_NAME} PUBLIC gs2parser::gs2compiler)
 # ----------------------------
 # Dependency: zlib.
 find_package(ZLIB MODULE REQUIRED)
-target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
+target_link_libraries(${TARGET_NAME} PUBLIC ZLIB::ZLIB)
 
 # ----------------------------
-# Dependency: bzip2
+# Dependency: bzip2.
 find_package(BZip2 REQUIRED)
-target_link_libraries(${TARGET_NAME} PRIVATE BZip2::BZip2)
+target_link_libraries(${TARGET_NAME} PUBLIC BZip2::BZip2)
 
 # ----------------------------
 # Dependency: antlr4.
 find_package(antlr4-runtime CONFIG REQUIRED)
 find_package(antlr4-generator CONFIG REQUIRED)
-target_link_directories(${TARGET_NAME} PRIVATE ${ANTLR4_LIBRARY_DIR})
-target_include_directories(${TARGET_NAME} PRIVATE ${ANTLR4_INCLUDE_DIR})
-target_link_libraries(${TARGET_NAME} PRIVATE antlr4_static Threads::Threads)
-if(TESTS)
-	target_link_directories(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_LIBRARY_DIR})
-	target_include_directories(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_INCLUDE_DIR})
-	target_link_libraries(${APP_LIBRARY_NAME} PUBLIC antlr4_static)
-endif()
+target_include_directories(${TARGET_NAME} PUBLIC ${ANTLR4_INCLUDE_DIR})
+target_link_directories(${TARGET_NAME} PUBLIC ${ANTLR4_LIBRARY_DIR})
+target_link_libraries(${TARGET_NAME} PUBLIC antlr4_static Threads::Threads)
 FetchContent_Declare(AntlrJar
 	URL				https://www.antlr.org/download/antlr-4.13.2-complete.jar
 	DOWNLOAD_DIR	"${FETCHCONTENT_BASE_DIR}/antlr-jar"
@@ -261,7 +247,7 @@ option(UPNP "Enable UPNP support." ON)
 if(UPNP)
 	find_package(miniupnpc CONFIG REQUIRED)
 	target_compile_definitions(${TARGET_NAME} PUBLIC ENABLE_UPNP)
-	target_link_libraries(${TARGET_NAME} PRIVATE miniupnpc::miniupnpc miniupnpc::miniupnpc-private)
+	target_link_libraries(${TARGET_NAME} PUBLIC miniupnpc::miniupnpc miniupnpc::miniupnpc-private)
 endif()
 
 # ----------------------------
@@ -274,13 +260,8 @@ FetchContent_Declare(gs2lib
 )
 FetchContent_MakeAvailable(gs2lib)
 add_dependencies(${TARGET_NAME} gs2lib)
-target_link_libraries(${TARGET_NAME} PUBLIC gs2lib)
 target_include_directories(${TARGET_NAME} PUBLIC "${gs2lib_SOURCE_DIR}/include")
-
-if(TESTS)
-	target_link_libraries(${APP_LIBRARY_NAME} PUBLIC gs2lib)
-	target_include_directories(${APP_LIBRARY_NAME} PUBLIC "${gs2lib_SOURCE_DIR}/include")
-endif()
+target_link_libraries(${TARGET_NAME} PUBLIC gs2lib)
 
 # ----------------------------
 # Dependency: libtommath.
@@ -317,13 +298,13 @@ if(TARGET tomcrypt)
 	)
 endif()
 
-target_link_libraries(${TARGET_NAME} PUBLIC tomcrypt$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
 target_include_directories(${TARGET_NAME} PUBLIC "${libtomcrypt_SOURCE_DIR}/src/headers")
+target_link_libraries(${TARGET_NAME} PUBLIC tomcrypt$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
 add_dependencies(libtomcrypt libtommath)
 add_dependencies(${TARGET_NAME} libtomcrypt)
 
 # ----------------------------
-# Dependency: ztd.idk
+# Dependency: ztd.idk.
 # : Patched to force ztd.blocks as STATIC.
 set(_ztd_idk_patch "${CMAKE_CURRENT_BINARY_DIR}/patch_ztd_idk.cmake")
 file(WRITE "${_ztd_idk_patch}"
@@ -337,6 +318,7 @@ FetchContent_Declare(ztd.idk
 	GIT_TAG        main
 	PATCH_COMMAND  ${CMAKE_COMMAND} -P "${_ztd_idk_patch}"
 )
+FetchContent_MakeAvailable(ztd.idk)
 
 # ----------------------------
 # Dependency: ztd.text.
@@ -347,8 +329,8 @@ FetchContent_Declare(ztd.text
 	EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(ztd.text)
-target_link_libraries(${TARGET_NAME} PRIVATE ztd::text)
 target_include_directories(ztd.blocks PUBLIC "${ztd.idk_SOURCE_DIR}/source/include/") # Fix broken cmake configuration in ztd.idk.
+target_link_libraries(${TARGET_NAME} PUBLIC ztd::text)
 
 # ----------------------------
 # Generate grammar.
@@ -365,17 +347,13 @@ antlr4_generate(GS1Parser "${CMAKE_CURRENT_SOURCE_DIR}/src/scripting/gs1/grammar
 	"${ANTLR4_TOKEN_FILES_GS1Lexer}"		# 7: Dependency - Token files
 	"${ANTLR4_TOKEN_DIRECTORY_GS1Lexer}"	# 8: Location of grammars - Token directory
 )
-target_include_directories(${TARGET_NAME} PRIVATE ${ANTLR4_INCLUDE_DIR_GS1Lexer} ${ANTLR4_INCLUDE_DIR_GS1Parser})
+target_include_directories(${TARGET_NAME} PUBLIC ${ANTLR4_INCLUDE_DIR_GS1Lexer} ${ANTLR4_INCLUDE_DIR_GS1Parser})
 target_sources(${TARGET_NAME} PRIVATE ${ANTLR4_SRC_FILES_GS1Lexer} ${ANTLR4_SRC_FILES_GS1Parser})
-if(TESTS)
-	target_include_directories(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_INCLUDE_DIR_GS1Lexer} ${ANTLR4_INCLUDE_DIR_GS1Parser})
-	target_sources(${APP_LIBRARY_NAME} PUBLIC ${ANTLR4_SRC_FILES_GS1Lexer} ${ANTLR4_SRC_FILES_GS1Parser})
-endif()
 
 # ----------------------------
 # Windows libraries.
 if(WIN32)
-	target_link_libraries(${TARGET_NAME} PRIVATE ws2_32 wsock32 iphlpapi)
+	target_link_libraries(${TARGET_NAME} PUBLIC ws2_32 wsock32 iphlpapi)
 endif()
 
 # ----------------------------
@@ -405,8 +383,8 @@ if(WIN32)
 			DESTINATION
 			${PROJECT_BINARY_DIR}/
 		)
-		target_sources(${TARGET_NAME}
-			PUBLIC
+		target_sources(${EXE_NAME}
+			PRIVATE
 			${PROJECT_BINARY_DIR}/windresrc.h
 			${PROJECT_BINARY_DIR}/main.rc
 		)
@@ -418,13 +396,13 @@ if(WIN32)
 	endif()
 
 	if(MSVC)
-		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
-		set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS_DEBUG "_CONSOLE")
-		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELWITHDEBINFO "/SUBSYSTEM:CONSOLE")
-		set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_DEFINITIONS_RELWITHDEBINFO "_CONSOLE")
-		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
-		set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:CONSOLE")
-		set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
+		set_target_properties(${EXE_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
+		set_target_properties(${EXE_NAME} PROPERTIES COMPILE_DEFINITIONS_DEBUG "_CONSOLE")
+		set_target_properties(${EXE_NAME} PROPERTIES LINK_FLAGS_RELWITHDEBINFO "/SUBSYSTEM:CONSOLE")
+		set_target_properties(${EXE_NAME} PROPERTIES COMPILE_DEFINITIONS_RELWITHDEBINFO "_CONSOLE")
+		set_target_properties(${EXE_NAME} PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE")
+		set_target_properties(${EXE_NAME} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:CONSOLE")
+		set_target_properties(${EXE_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 	endif()
 endif()
 
@@ -439,8 +417,10 @@ if (MINGW)
 
 	target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
 	target_link_libraries(${TARGET_NAME} PRIVATE -static-libgcc)
+	target_link_options(${EXE_NAME} PRIVATE -static -fstack-protector)
+	target_link_libraries(${EXE_NAME} PRIVATE -static-libgcc)
 
-	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME}.exe\")")
+	install(CODE "set(MY_EXE \"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${EXE_NAME}.exe\")")
 
 	# Transfer the value of ${MY_DEPENDENCY_PATHS} into the install script
 	install(CODE "set(MY_DEPENDENCY_PATHS \"${CMAKE_FIND_DLL_PATH}\")")
@@ -493,6 +473,16 @@ if (MINGW)
 		endforeach()
 	]])
 endif()
+
+# ----------------------------
+# Tests
+
+if (TESTS)
+	set(APP_LIBRARY_NAME_TESTREF "${TARGET_NAME}" PARENT_SCOPE)
+endif()
+
+# ----------------------------
+# Install
 
 set(INSTALL_DEST .)
 install(TARGETS ${TARGET_NAME} RUNTIME DESTINATION ${INSTALL_DEST})

@@ -158,32 +158,26 @@ MACRO(subdir_list result curdir)
 	SET(${result} ${dirlist})
 ENDMACRO()
 
-function(add_test_og TARGET_NAME TARGET_PATH)
+function(add_test_og target target_path)
 	cmake_minimum_required(VERSION 3.22)
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
-	file(GLOB_RECURSE TESTS "${TARGET_PATH}/${TARGET_NAME}/*.cpp")
+	file(GLOB_RECURSE TESTS "${target_path}/${target}/*.cpp")
 
-	add_executable(${TARGET_NAME} ${TESTS})
-	target_compile_features(${TARGET_NAME} PUBLIC cxx_std_23)
-	set_target_properties(${TARGET_NAME} PROPERTIES CXX_EXTENSIONS OFF)
-	target_link_libraries(${TARGET_NAME} PRIVATE gs2lib ${APP_LIBRARY_NAME_TESTREF} Catch2::Catch2WithMain)
-	add_dependencies(${TARGET_NAME} gs2lib ${APP_LIBRARY_NAME_TESTREF})
-	target_include_directories(${TARGET_NAME} PRIVATE "${gs2lib_SOURCE_DIR}/include")
-	target_include_directories(${APP_LIBRARY_NAME_TESTREF} PRIVATE "${gs2lib_SOURCE_DIR}/include")
-	target_link_options(${TARGET_NAME} PRIVATE -static -fstack-protector)
+	add_executable(${target} ${TESTS})
+	target_compile_features(${target} PUBLIC cxx_std_23)
+	set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
 
-	target_include_directories(${TARGET_NAME} PUBLIC ${GS2LIB_INCLUDE_DIRECTORY})
-	target_include_directories(${TARGET_NAME} PUBLIC ${GS2COMPILER_INCLUDE_DIRECTORY})
-	target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/server/include)
+	target_link_libraries(${target} PRIVATE ${APP_LIBRARY_NAME_TESTREF} Catch2::Catch2WithMain)
 
-	add_dependencies(${TARGET_NAME} gs2lib ${APP_LIBRARY_NAME_TESTREF})
+	if(NOT MSVC)
+		target_link_options(${target} PRIVATE -static -fstack-protector)
+	endif()
 
 	list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 
 	include(CTest)
 	include(Catch)
-	catch_discover_tests(${TARGET_NAME})
+	catch_discover_tests(${target})
 
-	message(STATUS "Added test ${TARGET_NAME}")
+	message(STATUS "Added test ${target}")
 endfunction()

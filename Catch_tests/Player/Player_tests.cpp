@@ -1,6 +1,9 @@
 #define CATCH_CONFIG_MAIN
-#include "catch2/catch_all.hpp"
-#include "player/PlayerClient.h"
+#include <catch2/catch_all.hpp>
+
+#include <atomic>
+
+#include <CSocket.h>
 
 #include <BabyDI.h>
 #include <Server.h>
@@ -9,24 +12,32 @@
 using namespace preagonal;
 using preagonal::Player;
 
-SCENARIO( "Player", "[object]" ) {
+std::atomic_bool shutdownProgram{false};
 
-	GIVEN( "Player" ) {
+SCENARIO("Player", "[object]")
+{
+
+	GIVEN("Player")
+	{
 		int id = 123;
 		auto* server = BabyDI_PROVIDE(Server, new Server("test"));
 
 		auto* socket = new CSocket();
 		const auto* player = new Player(socket, id);
 
-		WHEN( "getting player id" ) {
-			THEN( "id should be " << id ) {
-				REQUIRE( player->getId() == id );
+		WHEN("getting player id")
+		{
+			THEN("id should be " << id)
+			{
+				REQUIRE(player->getId() == id);
 			}
 		}
 
-		WHEN( "getting player servername" ) {
-			THEN( "name should be test" ) {
-				REQUIRE( player->getServerName() == "test" );
+		WHEN("getting player servername")
+		{
+			THEN("name should be test")
+			{
+				REQUIRE(player->getServerName() == "test");
 			}
 		}
 	}

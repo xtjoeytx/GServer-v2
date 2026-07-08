@@ -1,8 +1,9 @@
 #define CATCH_CONFIG_MAIN
-#include "catch2/catch_all.hpp"
+#include <catch2/catch_all.hpp>
+
 #include <CString.h>
 
-std::ostream& operator << ( std::ostream& os, CString const& value ) {
+static std::ostream& operator << ( std::ostream& os, CString const& value ) {
 	os << value.toString();
 	return os;
 }

@@ -201,6 +201,7 @@ set(CPACK_INSTALL_EXECUTABLES "${PROJECT_NAME_LOWER}${CMAKE_EXECUTABLE_SUFFIX}")
 include(CPack)
 
 if (TESTS)
+	message("Including tests")
 	enable_testing()
 	add_subdirectory(${PROJECT_SOURCE_DIR}/Catch_tests)
 endif()
