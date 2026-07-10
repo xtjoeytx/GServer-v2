@@ -223,7 +223,7 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 		// CODEPAGE - ignore
 		else if (section == "FLAG")
 		{
-			auto variable = GameValue::deserialize(i.toString());
+			auto variable = GameVariable::deserialize(i.toString());
 			if (variable.has_value())
 				account.variables.add(std::move(variable.value()));
 		}
@@ -391,7 +391,7 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 		writeLine(newFile, "WEAPON", weapon);
 
 	// Flags
-	for (const auto& [variable, value] : account.variables.store | variables::no_temporary)
+	for (const auto& [variable, value] : account.variables.store | variables::only_flags | variables::serializable)
 	{
 		if (auto serialized = account.variables.serializeModern(variable); serialized.has_value())
 			writeLine(newFile, "FLAG", serialized.value());

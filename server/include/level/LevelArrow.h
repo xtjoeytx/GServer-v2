@@ -2,6 +2,9 @@
 #define LEVELARROW_H
 
 #include <cstdint>
+#include <functional>
+#include <optional>
+#include <string_view>
 
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
@@ -58,7 +61,7 @@ struct LevelArrow
 	[[inline]] uint8_t getPacketFrom() const;
 
 	[[inline]] void constructScriptParameters();
-	string_map<GameValue> scriptParameters;
+	string_map<GameVariable> scriptParameters;
 };
 
 //----------------------------
@@ -72,19 +75,18 @@ inline uint8_t LevelArrow::getPacketFrom() const
 
 inline void LevelArrow::constructScriptParameters()
 {
-	scriptParameters.try_emplace("x", set_temporary, "x", gameValueGetter([this]() { return position.x() / 16.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("y", set_temporary, "y", gameValueGetter([this]() { return position.y() / 16.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("dx", set_temporary, "dx", gameValueGetter([this]() { return speed.x() / 16.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("dy", set_temporary, "dy", gameValueGetter([this]() { return speed.y() / 16.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("dir", set_temporary, "dir", gameValueGetter(direction), GameValue::func_set{});
-	scriptParameters.try_emplace("type", set_temporary, "type", gameValueGetter(type), GameValue::func_set{});
-	scriptParameters.try_emplace("from", set_temporary, "from",
-		gameValueGetter([this]()
-		{
-			if (from.second == ScriptObjectType::PLAYER)
-				return 1.0;
-			return 0.0;
-		}), GameValue::func_set{});
+	// clang-format off
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"x"sv, std::nullopt, std::ref(position.x()), 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"y"sv, std::nullopt, std::ref(position.y()), 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"dx"sv, std::nullopt, std::ref(speed.x()), 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"dy"sv, std::nullopt, std::ref(speed.y()), 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"dir"sv, std::nullopt, std::ref(direction)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"type"sv, std::nullopt, std::ref(type)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"type"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return from.second == ScriptObjectType::PLAYER ? 1.0 : 0.0; }
+	});
+	// clang-format on
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -340,7 +340,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 
 	CString ret;
 	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)m_server->Scripting.variables.store.size();
-	for (const auto& [flag, value] : m_server->Scripting.variables.store | variables::no_temporary)
+	for (const auto& [flag, value] : m_server->Scripting.variables.store | variables::serializable)
 	{
 		if (auto serialized = m_server->Scripting.variables.serializeModern(flag); serialized.has_value())
 			ret >> (char)serialized.value().length() << serialized.value();

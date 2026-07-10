@@ -3,6 +3,9 @@
 
 #include <chrono>
 #include <cstdint>
+#include <functional>
+#include <optional>
+#include <string_view>
 
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
@@ -43,20 +46,18 @@ struct LevelExplosion
 	TimeoutGenerator timeout;
 
 	[[inline]] void constructScriptParameters();
-	string_map<GameValue> scriptParameters;
+	string_map<GameVariable> scriptParameters;
 };
 
 //----------------------------
 
 inline void LevelExplosion::constructScriptParameters()
 {
-	scriptParameters.try_emplace("x", set_temporary, "x", gameValueGetter([this]() { return position.x() / 16.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("y", set_temporary, "y", gameValueGetter([this]() { return position.y() / 16.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("power", set_temporary, "power", gameValueGetter(power), GameValue::func_set{});
-	scriptParameters.try_emplace("time", set_temporary, "time",
-		gameValueGetter([this]() { return std::chrono::duration_cast<duration_seconds_double>(timeout.getRemainingTime()).count(); }),
-		GameValue::func_set{});
-	scriptParameters.try_emplace("dir", set_temporary, "dir", gameValueGetter(direction), GameValue::func_set{});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"x"sv, std::nullopt, std::ref(position.x()), 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"y"sv, std::nullopt, std::ref(position.y()), 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::TimeoutProperty{"time"sv, std::ref(timeout)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"dir"sv, std::nullopt, std::ref(direction)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"power"sv, std::nullopt, std::ref(power)});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

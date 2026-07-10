@@ -258,7 +258,7 @@ GS1ScriptValue fn_abs(GS1Visitor* visitor, std::string_view messageCode, const s
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function abs requires exactly one argument");
 
-	auto value = visitor->getGameValueAs<double>(*arguments[0]);
+	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	return std::abs(value);
 }
 
@@ -269,8 +269,8 @@ GS1ScriptValue fn_aindexof(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function aindexof requires exactly two arguments");
 
-	auto value = visitor->getGameValueAs<double>(*arguments[0]);
-	auto array = visitor->getGameValueAs<std::vector<double>>(*arguments[1]);
+	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+	auto array = GS1Visitor::getScriptValueAsCopy<std::vector<double>>(*arguments[1]).value_or(std::vector<double>{});
 
 	auto result = std::ranges::find(array, value);
 	if (result == std::ranges::end(array))
@@ -287,7 +287,7 @@ GS1ScriptValue fn_arctan(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function arctan requires exactly one argument");
 
-	auto value = visitor->getGameValueAs<double>(*arguments[0]);
+	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	return std::atan(value);
 }
 
@@ -298,7 +298,7 @@ GS1ScriptValue fn_arraylen(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function arraylen requires exactly one argument");
 
-	auto array = visitor->getGameValueAs<std::vector<double>>(*arguments[0]);
+	auto array = GS1Visitor::getScriptValueAsCopy<std::vector<double>>(*arguments[0]).value_or(std::vector<double>{});
 
 	return static_cast<double>(array.size());
 }
@@ -310,7 +310,7 @@ GS1ScriptValue fn_ascii(GS1Visitor* visitor, std::string_view messageCode, const
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function ascii requires exactly one argument");
 
-	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	if (str.empty())
 		return 0.0;
 
@@ -324,7 +324,7 @@ GS1ScriptValue fn_base64decode(GS1Visitor* visitor, std::string_view messageCode
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function base64decode requires exactly one argument");
 
-	auto input = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto input = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	auto output = std::make_unique<unsigned char[]>(input.length());
 	unsigned long outputLength = input.length();
 	base64_decode(input.c_str(), input.length(), output.get(), &outputLength);
@@ -339,7 +339,7 @@ GS1ScriptValue fn_base64encode(GS1Visitor* visitor, std::string_view messageCode
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function base64encode requires exactly one argument");
 
-	auto input = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto input = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 
 	// Calculate the length of the resulting base64 string.
 	unsigned long outputLength = 4 * ((input.length() + 2) / 3);
@@ -358,7 +358,7 @@ GS1ScriptValue fn_cos(GS1Visitor* visitor, std::string_view messageCode, const s
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function cos requires exactly one argument");
 
-	auto value = visitor->getGameValueAs<double>(*arguments[0]);
+	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	return std::cos(value);
 }
 
@@ -367,9 +367,9 @@ GS1ScriptValue fn_cos(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_exp(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function cos requires exactly one argument");
+		throw std::invalid_argument("Built-in function exp requires exactly one argument");
 
-	auto value = visitor->getGameValueAs<double>(*arguments[0]);
+	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	return std::exp(value);
 }
 
@@ -382,8 +382,8 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messag
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto position = toPixelPosition({x, y});
 
 		// Find the nearest player.
@@ -429,8 +429,8 @@ GS1ScriptValue fn_getangle(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function getangle requires exactly two arguments");
 
-	auto dx = visitor->getGameValueAs<double>(*arguments[0]);
-	auto dy = visitor->getGameValueAs<double>(*arguments[1]);
+	auto dx = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+	auto dy = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 
 	// No angle if no direction is specified.
 	if (DoubleIsZero(dx) && DoubleIsZero(dy))
@@ -459,10 +459,10 @@ GS1ScriptValue fn_getareanpcs(GS1Visitor* visitor, std::string_view messageCode,
 	std::vector<double> result;
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-		auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
-		auto width = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]) * 16);
-		auto height = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[3]) * 16);
+		auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
+		auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
+		auto width = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+		auto height = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
 
 		auto npcs = level->findIntersectingNPCs({{x, y}, {width, height}}, true);
 		for (auto id : npcs)
@@ -480,8 +480,8 @@ GS1ScriptValue fn_getdir(GS1Visitor* visitor, std::string_view messageCode, cons
 		if (arguments.size() != 2)
 			throw std::invalid_argument("Built-in function getdir requires exactly two arguments");
 
-		auto dx = visitor->getGameValueAs<double>(*arguments[0]);
-		auto dy = visitor->getGameValueAs<double>(*arguments[1]);
+		auto dx = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+		auto dy = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 		auto ix = static_cast<int>(std::min(-1.0, std::max(1.0, std::round(dx))));
 		auto iy = static_cast<int>(std::min(-1.0, std::max(1.0, std::round(dy))));
 
@@ -511,7 +511,7 @@ GS1ScriptValue fn_getflagkeys(GS1Visitor* visitor, std::string_view functionName
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function getflagkeys requires exactly one argument");
 
-	auto prefix = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto prefix = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 
 	std::vector<double> results;
 	auto storageType = GS1Visitor::getStorageTypeFromIdentifier(prefix).value_or(ENUM(StorageType::CLIENT));
@@ -542,8 +542,8 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view message
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto position = toPixelPosition({x, y});
 
 		// Find the nearest player.
@@ -577,13 +577,13 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messag
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto position = toPixelPosition({x, y});
 
 		std::string flag;
 		if (arguments.size() > 2)
-			flag = visitor->getGameValueAs<std::string>(*arguments[2]);
+			flag = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or(""s);
 
 		std::map<double, PlayerID> playersByDistance;
 		auto* server = BabyDI::Get<Server>();
@@ -619,7 +619,7 @@ GS1ScriptValue fn_getnpc(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function getnpc requires exactly one argument");
 
-	auto npcName = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto npcName = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 
 	auto* server = BabyDI::Get<Server>();
 	auto& npcList = server->getNPCList();
@@ -639,7 +639,7 @@ GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view messageCode, c
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function getplayer requires exactly one argument");
 
-	auto playerName = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto playerName = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 
 	auto* server = BabyDI::Get<Server>();
 	if (auto player = server->getNPCServer()->getPlayer(playerName, PLTYPE_ANYCLIENT); player != nullptr)
@@ -659,8 +659,8 @@ GS1ScriptValue fn_getz(GS1Visitor* visitor, std::string_view messageCode, const 
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
-		auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		return level->getHeightAt(toPixelPosition({x, y}));
 	}
 
@@ -674,7 +674,7 @@ GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view messageCode, c
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function hasweapon requires exactly one argument");
 
-	auto weaponName = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto weaponName = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
 	if (player.has_value())
 	{
@@ -707,8 +707,8 @@ GS1ScriptValue fn_indexof(GS1Visitor* visitor, std::string_view messageCode, con
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function indexof requires exactly two arguments");
 
-	auto substring = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto str = visitor->getGameValueAs<std::string>(*arguments[1]);
+	auto substring = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
+	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
 
 	return str.find(substring) != std::string::npos ? static_cast<double>(str.find(substring)) : -1.0;
 }
@@ -720,7 +720,7 @@ GS1ScriptValue fn_int(GS1Visitor* visitor, std::string_view messageCode, const s
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function int requires exactly one argument");
 
-	auto value = visitor->getGameValueAs<double>(*arguments[0]);
+	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	return static_cast<double>(static_cast<int64_t>(value));
 	/*
 	if (value < 0.0)
@@ -737,7 +737,7 @@ GS1ScriptValue fn_keycode(GS1Visitor* visitor, std::string_view messageCode, con
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function keycode requires exactly one argument");
 
-	auto key = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto key = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	if (key.empty())
 		return 0.0;
 
@@ -767,8 +767,8 @@ GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function lindexof requires exactly two arguments");
 
-	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto list = visitor->getGameValueAs<std::string>(*arguments[1]);
+	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
+	auto list = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
 	auto listItems = string::splitToVectorView(list, ","sv);
 	for (size_t i = 0; i < listItems.size(); ++i)
 	{
@@ -786,8 +786,8 @@ GS1ScriptValue fn_log(GS1Visitor* visitor, std::string_view messageCode, const s
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function log requires exactly two arguments");
 
-	auto base = visitor->getGameValueAs<double>(*arguments[0]);
-	auto value = visitor->getGameValueAs<double>(*arguments[1]);
+	auto base = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 	if (value <= 0.0)
 		return 0.0;
 
@@ -801,8 +801,8 @@ GS1ScriptValue fn_max(GS1Visitor* visitor, std::string_view messageCode, const s
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function max requires exactly two arguments");
 
-	auto value1 = visitor->getGameValueAs<double>(*arguments[0]);
-	auto value2 = visitor->getGameValueAs<double>(*arguments[1]);
+	auto value1 = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+	auto value2 = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 
 	if (value1 > value2)
 		return value1;
@@ -815,10 +815,10 @@ GS1ScriptValue fn_max(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_min(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function max requires exactly two arguments");
+		throw std::invalid_argument("Built-in function min requires exactly two arguments");
 
-	auto value1 = visitor->getGameValueAs<double>(*arguments[0]);
-	auto value2 = visitor->getGameValueAs<double>(*arguments[1]);
+	auto value1 = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+	auto value2 = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 
 	if (value1 < value2)
 		return value1;
@@ -835,7 +835,7 @@ GS1ScriptValue fn_onmapx(GS1Visitor* visitor, std::string_view messageCode, cons
 
 	if (auto curLevel = visitor->findCurrentLevel(); curLevel != nullptr)
 	{
-		auto level = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto level = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 		if (auto map = curLevel->getMap(); map != nullptr)
 			return static_cast<double>(map->getLevelPosition(level).value_or(MapPosition{0, 0}).x());
 	}
@@ -852,7 +852,7 @@ GS1ScriptValue fn_onmapy(GS1Visitor* visitor, std::string_view messageCode, cons
 
 	if (auto curLevel = visitor->findCurrentLevel(); curLevel != nullptr)
 	{
-		auto level = visitor->getGameValueAs<std::string>(*arguments[0]);
+		auto level = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 		if (auto map = curLevel->getMap(); map != nullptr)
 			return static_cast<double>(map->getLevelPosition(level).value_or(MapPosition{0, 0}).y());
 	}
@@ -867,8 +867,8 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function onwall requires exactly two arguments");
 
-	auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+	auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -894,10 +894,10 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, con
 	if (arguments.size() != 4)
 		throw std::invalid_argument("Built-in function onwall2 requires exactly four arguments");
 
-	auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
-	auto width = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]) * 16);
-	auto height = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[3]) * 16);
+	auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+	auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+	auto width = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+	auto height = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -923,8 +923,8 @@ GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, con
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function onwater requires exactly two arguments");
 
-	auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+	auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -942,10 +942,10 @@ GS1ScriptValue fn_onwater2(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 4)
 		throw std::invalid_argument("Built-in function onwater2 requires exactly four arguments");
 
-	auto x = static_cast<float>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = static_cast<float>(visitor->getGameValueAs<double>(*arguments[1]));
-	auto width = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[2]) * 16);
-	auto height = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[3]) * 16);
+	auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+	auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+	auto width = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+	auto height = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -966,14 +966,14 @@ GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view messageCode, 
 	std::string text;
 	if (arguments.size() == 2)
 	{
-		auto specifiedIndex = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
-		text = visitor->getGameValueAs<std::string>(*arguments[1]);
+		auto specifiedIndex = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
 		if (specifiedIndex >= 0)
 			index = static_cast<size_t>(specifiedIndex);
 	}
 	else
 	{
-		text = visitor->getGameValueAs<std::string>(*arguments[0]);
+		text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	}
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
@@ -998,14 +998,14 @@ GS1ScriptValue fn_playersays2(GS1Visitor* visitor, std::string_view messageCode,
 	std::string text;
 	if (arguments.size() == 2)
 	{
-		auto specifiedIndex = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[0]));
-		text = visitor->getGameValueAs<std::string>(*arguments[1]);
+		auto specifiedIndex = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
 		if (specifiedIndex >= 0)
 			index = static_cast<size_t>(specifiedIndex);
 	}
 	else
 	{
-		text = visitor->getGameValueAs<std::string>(*arguments[0]);
+		text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	}
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
@@ -1030,8 +1030,8 @@ GS1ScriptValue fn_random(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function max requires exactly two arguments");
 
-	auto value1 = visitor->getGameValueAs<double>(*arguments[0]);
-	auto value2 = visitor->getGameValueAs<double>(*arguments[1]);
+	auto value1 = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+	auto value2 = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 
 	std::uniform_real_distribution dist(std::min(value1, value2), std::max(value1, value2));
 	return static_cast<double>(dist(rng));
@@ -1044,7 +1044,7 @@ GS1ScriptValue fn_sarraylen(GS1Visitor* visitor, std::string_view messageCode, c
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function sarraylen requires exactly one argument");
 
-	auto list = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto list = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	return static_cast<double>(std::ranges::count(list, ',') + 1);
 }
 
@@ -1069,7 +1069,7 @@ GS1ScriptValue fn_sin(GS1Visitor* visitor, std::string_view messageCode, const s
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function sin requires exactly one argument");
 
-	auto value = visitor->getGameValueAs<double>(*arguments[0]);
+	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 
 	if (value < 0 || value > std::numbers::pi)
 		return 0.0;
@@ -1084,8 +1084,8 @@ GS1ScriptValue fn_startswith(GS1Visitor* visitor, std::string_view messageCode, 
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function startswith requires exactly two arguments");
 
-	auto prefix = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto str = visitor->getGameValueAs<std::string>(*arguments[1]);
+	auto prefix = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
+	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
 
 	return GameValue{string::findi(str, prefix) == 0};
 }
@@ -1097,8 +1097,8 @@ GS1ScriptValue fn_strcontains(GS1Visitor* visitor, std::string_view messageCode,
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function strcontains requires exactly two arguments");
 
-	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto substring = visitor->getGameValueAs<std::string>(*arguments[1]);
+	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
+	auto substring = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
 
 	return GameValue{string::findi(str, substring) != std::string::npos};
 }
@@ -1110,8 +1110,8 @@ GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view messageCode, c
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function strequals requires exactly two arguments");
 
-	auto str1 = visitor->getGameValueAs<std::string>(*arguments[0]);
-	auto str2 = visitor->getGameValueAs<std::string>(*arguments[1]);
+	auto str1 = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
+	auto str2 = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
 
 	return GameValue{string::equalsi(str1, str2)};
 }
@@ -1123,7 +1123,7 @@ GS1ScriptValue fn_strlen(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function strlen requires exactly one argument");
 
-	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 
 	return static_cast<double>(str.length());
 }
@@ -1135,7 +1135,7 @@ GS1ScriptValue fn_strtofloat(GS1Visitor* visitor, std::string_view messageCode, 
 	if (arguments.size() != 1)
 		throw std::invalid_argument("Built-in function strtofloat requires exactly one argument");
 
-	auto str = visitor->getGameValueAs<std::string>(*arguments[0]);
+	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	if (str.empty())
 		return 0.0;
 
@@ -1149,8 +1149,8 @@ GS1ScriptValue fn_testbomb(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1173,8 +1173,8 @@ GS1ScriptValue fn_testcompu(GS1Visitor* visitor, std::string_view messageCode, c
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1197,8 +1197,8 @@ GS1ScriptValue fn_testexplo(GS1Visitor* visitor, std::string_view messageCode, c
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1221,8 +1221,8 @@ GS1ScriptValue fn_testhorse(GS1Visitor* visitor, std::string_view messageCode, c
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testhorse requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1245,8 +1245,8 @@ GS1ScriptValue fn_testitem(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = DoubleAsIntegralFloor<int16_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
+	auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1269,8 +1269,8 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, con
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testnpc requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
+	auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
 	auto position = PixelPosition{x, y};
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
@@ -1307,8 +1307,8 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, 
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testplayer requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[0]) * 16);
-	auto y = DoubleAsIntegralFloor<int32_t>(visitor->getGameValueAs<double>(*arguments[1]) * 16);
+	auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
+	auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
 	auto position = PixelPosition{x, y};
 	auto* server = BabyDI::Get<Server>();
 
@@ -1353,8 +1353,8 @@ GS1ScriptValue fn_testsign(GS1Visitor* visitor, std::string_view messageCode, co
 	if (arguments.size() != 2)
 		throw std::invalid_argument("Built-in function testsign requires exactly two arguments");
 
-	auto x = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[0]));
-	auto y = DoubleAsIntegralFloor<uint16_t>(visitor->getGameValueAs<double>(*arguments[1]));
+	auto x = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+	auto y = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1392,8 +1392,8 @@ GS1ScriptValue fn_tiletype(GS1Visitor* visitor, std::string_view messageCode, co
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = visitor->getGameValueAs<double>(*arguments[0]);
-		auto y = visitor->getGameValueAs<double>(*arguments[1]);
+		auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+		auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 
 		auto tilePosition = toTilePosition(Position<double>{x, y});
 		auto mapPosition = toMapPosition(tilePosition);
@@ -1425,7 +1425,7 @@ GS1ScriptValue fn_vecx(GS1Visitor* visitor, std::string_view messageCode, const 
 		throw std::invalid_argument("Built-in function vecx requires exactly one argument");
 
 	static double vecValues[] = {0.0, -1.0, 0.0, 1.0};
-	auto dir = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0])) % 4;
+	auto dir = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)) % 4;
 	return vecValues[dir];
 }
 
@@ -1437,7 +1437,7 @@ GS1ScriptValue fn_vecy(GS1Visitor* visitor, std::string_view messageCode, const 
 		throw std::invalid_argument("Built-in function vecy requires exactly one argument");
 
 	static double vecValues[] = {-1.0, 0.0, 1.0, 0.0};
-	auto dir = DoubleAsIntegralFloor<int8_t>(visitor->getGameValueAs<double>(*arguments[0])) % 4;
+	auto dir = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)) % 4;
 	return vecValues[dir];
 }
 

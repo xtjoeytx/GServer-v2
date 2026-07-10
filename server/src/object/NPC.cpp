@@ -11,8 +11,9 @@
 #include <optional>
 #include <ranges>
 #include <stdexcept>
-#include <string_view>
 #include <string>
+#include <string_view>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -26,6 +27,7 @@
 #include <level/Level.h>
 #include <level/Map.h>
 #include <npcserver/NPCServer.h>
+#include <object/Character.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <scripting/Script.h>
@@ -44,7 +46,15 @@ namespace preagonal
 {
 ////////////////////////////////////////////////////////////////////////////////
 
+// clang-format off
+static constexpr std::array<std::string_view, 8> colorPropertyNames = {"#C0"sv, "#C1"sv, "#C2"sv, "#C3"sv, "#C4"sv, "#C5"sv, "#C6"sv, "#C7"sv};
+static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
+	"#P1"sv, "#P2"sv, "#P3"sv, "#P4"sv, "#P5"sv, "#P6"sv, "#P7"sv, "#P8"sv, "#P9"sv, "#P10"sv,
+	"#P11"sv, "#P12"sv, "#P13"sv, "#P14"sv, "#P15"sv, "#P16"sv, "#P17"sv, "#P18"sv, "#P19"sv, "#P20"sv,
+	"#P21"sv, "#P22"sv, "#P23"sv, "#P24"sv, "#P25"sv, "#P26"sv, "#P27"sv, "#P28"sv, "#P29"sv, "#P30"sv,
+};
 static constexpr std::array<uint8_t, 10> savePackets = {23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
+// clang-format on
 
 static std::string_view toWeaponName(std::string_view code);
 
@@ -85,6 +95,9 @@ NPC::NPC(NPCID id, NPCStorageType storageType)
 {
 	m_server = BabyDI::Get<Server>();
 	assert(m_server != nullptr);
+
+	scripting.variables.defaultLifetime = variables::Lifetime::PERMANENT;
+
 	resetToInitialState();
 }
 
@@ -1692,20 +1705,64 @@ CString NPC::getAllPropsPacket(std::optional<clock::time_point> newTime) const
 
 void NPC::constructScriptParameters()
 {
-	scriptParameters.try_emplace("id", set_temporary, "id", gameValueGetter([this]() { return static_cast<double>(id); }), GameValue::func_set{});
-	scriptParameters.try_emplace("x", set_temporary, "x",
-		gameValueGetter([this]() { return character.getGlobalPosition().x() / 16.0; }),
-		gameValueSetter(this, PROPOPT(NPCProp::X2),
-			[this](const GameValue& value, std::optional<int64_t>)
+	// clang-format off
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"id"sv, std::ref(modTime[PROPID(NPCProp::ID)]), std::ref(id)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"hurtdpower"sv, std::nullopt, std::ref(character.hurtDeltaInHalves)});
+
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"width"sv, [this](std::optional<size_t>) -> GameValueVariantForGetter { return getComputedShape().width() / 16.0; }
+	});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"height"sv, [this](std::optional<size_t>) -> GameValueVariantForGetter { return getComputedShape().height() / 16.0; }
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"z"sv, std::ref(modTime[PROPID(NPCProp::Z2)]), std::ref(character.localPixelZ), 16});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hearts"sv, std::ref(modTime[PROPID(NPCProp::POWER)]), std::ref(character.hitpointsInHalves), 2});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hp"sv, std::ref(modTime[PROPID(NPCProp::POWER)]), std::ref(character.hitpointsInHalves), 2});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"ap"sv, std::ref(modTime[PROPID(NPCProp::ALIGNMENT)]), std::ref(character.ap)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"rupees"sv, std::ref(modTime[PROPID(NPCProp::RUPEES)]), std::ref(character.gralats)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"gralats"sv, std::ref(modTime[PROPID(NPCProp::RUPEES)]), std::ref(character.gralats)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"bombs"sv, std::ref(modTime[PROPID(NPCProp::BOMBS)]), std::ref(character.bombs)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"darts"sv, std::ref(modTime[PROPID(NPCProp::ARROWS)]), std::ref(character.arrows)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"glovepower"sv, std::ref(modTime[PROPID(NPCProp::GLOVEPOWER)]), std::ref(character.glovePower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"swordpower"sv, std::ref(modTime[PROPID(NPCProp::SWORDIMAGE)]), std::ref(character.swordPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"shieldpower"sv, std::ref(modTime[PROPID(NPCProp::SHIELDIMAGE)]), std::ref(character.shieldPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::TimeoutProperty{"timeout"sv, std::ref(timeout)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralArrayProperty{"save"sv, std::ref(modTime), PROPID(NPCProp::SAVE0), std::ref(saves)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#1"sv, std::ref(modTime[PROPID(NPCProp::SWORDIMAGE)]), std::ref(character.swordImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#2"sv, std::ref(modTime[PROPID(NPCProp::SHIELDIMAGE)]), std::ref(character.shieldImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#3"sv, std::ref(modTime[PROPID(NPCProp::HEADIMAGE)]), std::ref(character.headImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#5"sv, std::ref(modTime[PROPID(NPCProp::HORSEIMAGE)]), std::ref(character.horseImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#7"sv, std::ref(modTime[PROPID(NPCProp::GANI)]), std::ref(character.bowImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#8"sv, std::ref(modTime[PROPID(NPCProp::BODYIMAGE)]), std::ref(character.bodyImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#c"sv, std::ref(modTime[PROPID(NPCProp::MESSAGE)]), std::ref(character.chatMessage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#m"sv, std::ref(modTime[PROPID(NPCProp::GANI)]), std::ref(character.gani)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#n"sv, std::ref(modTime[PROPID(NPCProp::NICKNAME)]), std::ref(character.nickName)});
+
+	// colors
+	for (size_t i = 0; i < character.colors.size(); ++i)
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{colorPropertyNames[i], std::ref(modTime[PROPID(NPCProp::COLORS)]), std::ref(character.colors[i])});
+
+	// gani attributes
+	for (size_t i = 0; i < 30; ++i)
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{ganiAttributePropertyNames[i], std::ref(modTime[NPCGaniAttrPackets[i]]), std::ref(character.ganiAttributes[i])});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"x"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return (double)character.getTilePosition().x(); },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				auto globalPosition = character.getGlobalPosition();
-				globalPosition.x() = value.get<double>().value_or(0.0) * 16;
+				globalPosition.x() = value->get() * 16;
 				character.localPixelX = toLocalPixelPosition(globalPosition).x();
 				moveQueue.clear();
 
-				// Also update the X prop mod time so older clients can see the movement.
+				// Update the location props.
 				auto now = m_server->getFrameStartTime();
-				this->modTime[PROPID(NPCProp::X)] = now;
+				modTime[PROPID(NPCProp::X)] = now;
+				modTime[PROPID(NPCProp::X2)] = now;
 
 				// Fix the map position if applicable.
 				if (auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
@@ -1713,24 +1770,29 @@ void NPC::constructScriptParameters()
 					if (auto mapX = toMapPosition(globalPosition).x(); mapX != character.mapX)
 					{
 						character.mapX = mapX;
-						this->modTime[PROPID(NPCProp::GMAPLEVELX)] = now;
+						modTime[PROPID(NPCProp::GMAPLEVELX)] = now;
 					}
 				}
-			})
-		);
-	scriptParameters.try_emplace("y", set_temporary, "y",
-		gameValueGetter([this]() { return character.getGlobalPosition().y() / 16.0; }),
-		gameValueSetter(this, PROPOPT(NPCProp::Y2),
-			[this](const GameValue& value, std::optional<int64_t>)
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"y"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return character.getTilePosition().y(); },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				auto globalPosition = character.getGlobalPosition();
-				globalPosition.y() = value.get<double>().value_or(0.0) * 16;
+				globalPosition.y() = value->get() * 16;
 				character.localPixelY = toLocalPixelPosition(globalPosition).y();
 				moveQueue.clear();
 
-				// Also update the Y prop mod time so older clients can see the movement.
+				// Update the location props.
 				auto now = m_server->getFrameStartTime();
-				this->modTime[PROPID(NPCProp::Y)] = now;
+				modTime[PROPID(NPCProp::Y)] = now;
+				modTime[PROPID(NPCProp::Y2)] = now;
 
 				// Fix the map position if applicable.
 				if (auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
@@ -1738,97 +1800,98 @@ void NPC::constructScriptParameters()
 					if (auto mapY = toMapPosition(globalPosition).y(); mapY != character.mapY)
 					{
 						character.mapY = mapY;
-						this->modTime[PROPID(NPCProp::GMAPLEVELY)] = now;
+						modTime[PROPID(NPCProp::GMAPLEVELY)] = now;
 					}
 				}
-			})
-		);
-	scriptParameters.try_emplace("z", set_temporary, "z",
-		gameValueGetter([this]() { return getCalculatedTileZ(); }),
-		gameValueSetter(this, PROPOPT(NPCProp::Z2), [this](const GameValue& value, std::optional<int64_t>) { character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
-	scriptParameters.try_emplace("width", set_temporary, "width", gameValueGetter([this]() { return getComputedShape().width() / 16.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("height", set_temporary, "height", gameValueGetter([this]() { return getComputedShape().height() / 16.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("hearts", set_temporary, "hearts",
-		gameValueGetter([this]() { return character.hitpointsInHalves / 2.0; }),
-		gameValueSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<int64_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
-	scriptParameters.try_emplace("hp", set_temporary, "hp",
-		gameValueGetter([this]() { return character.hitpointsInHalves / 2.0; }),
-		gameValueSetter(this, PROPOPT(NPCProp::POWER), [this](const GameValue& value, std::optional<int64_t>) { character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
-	scriptParameters.try_emplace("ap", set_temporary, "ap", gameValueGetter(character.ap), gameValueSetter(this, PROPOPT(NPCProp::ALIGNMENT), character.ap));
-	scriptParameters.try_emplace("rupees", set_temporary, "rupees", gameValueGetter(character.gralats), gameValueSetter(this, PROPOPT(NPCProp::RUPEES), character.gralats));
-	scriptParameters.try_emplace("gralats", set_temporary, "gralats", gameValueGetter(character.gralats), gameValueSetter(this, PROPOPT(NPCProp::RUPEES), character.gralats));
-	scriptParameters.try_emplace("bombs", set_temporary, "bombs", gameValueGetter(character.bombs), gameValueSetter(this, PROPOPT(NPCProp::BOMBS), character.bombs));
-	scriptParameters.try_emplace("darts", set_temporary, "darts", gameValueGetter(character.arrows), gameValueSetter(this, PROPOPT(NPCProp::ARROWS), character.arrows));
-	scriptParameters.try_emplace("glovepower", set_temporary, "glovepower", gameValueGetter(character.glovePower), gameValueSetter(this, PROPOPT(NPCProp::GLOVEPOWER), character.glovePower));
-	scriptParameters.try_emplace("swordpower", set_temporary, "swordpower", gameValueGetter(character.swordPower), gameValueSetter(this, PROPOPT(NPCProp::SWORDIMAGE), character.swordPower));
-	scriptParameters.try_emplace("shieldpower", set_temporary, "shieldpower", gameValueGetter(character.shieldPower), gameValueSetter(this, PROPOPT(NPCProp::SHIELDIMAGE), character.shieldPower));
-	scriptParameters.try_emplace("headset", set_temporary, "headset",
-		gameValueGetter(
-			[this]()
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"headset"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter
+		{
+			int headSet = -1;
+			if (character.headImage.starts_with("head"))
+				string::toNumber(character.headImage.substr(4), headSet);
+			return static_cast<double>(headSet);
+		},
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			static double noHeadSet = -1.0;
+			static auto noHeadRef = std::ref(noHeadSet);
+			auto value = std::get_if<std::reference_wrapper<double>>(&incoming);
+			if (value == nullptr)
+				value = &noHeadRef;
+
+			auto headSet = std::clamp(static_cast<int>(value->get()), -1, 99);
+			if (headSet != -1)
 			{
-				int headSet = -1;
-				if (character.headImage.starts_with("head"))
-					string::toNumber(character.headImage.substr(4), headSet);
-				return static_cast<double>(headSet);
-			}),
-		gameValueSetter(this, PROPOPT(NPCProp::HEADIMAGE),
-			[this](const GameValue& value, std::optional<int64_t>)
-			{
-				auto headSet = std::clamp(static_cast<int>(value.get<double>().value_or(-1.0)), -1, 99);
-				if (headSet < 0) return;
 				character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::ORIGINAL ? "gif" : "png"));
-			})
-		);
-	scriptParameters.try_emplace("sprite", set_temporary, "sprite",
-		gameValueGetter(character.sprite),
-		gameValueSetter(this, PROPOPT(NPCProp::SPRITE),
-			[this](const GameValue& value, std::optional<int64_t>)
+				modTime[PROPID(NPCProp::HEADIMAGE)] = m_server->getFrameStartTime();
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"sprite"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter {
+			return static_cast<double>(character.sprite); },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
-				character.sprite = static_cast<uint8_t>(value.get<double>().value_or(0.0));
+				character.sprite = static_cast<uint8_t>(value->get());
 				if (character.sprite >= 4 && m_server->Generation != ServerGeneration::ORIGINAL)
 				{
 					character.gani = std::format("def[{}]", character.sprite);
-					this->modTime[PROPID(NPCProp::GANI)] = m_server->getFrameStartTime();
+					modTime[PROPID(NPCProp::GANI)] = m_server->getFrameStartTime();
 				}
-			})
-		);
-	scriptParameters.try_emplace("dir", set_temporary, "dir",
-		gameValueGetter([this]() { return static_cast<double>(character.direction); }),
-		gameValueSetter(this, PROPOPT(NPCProp::SPRITE),
-			[this](const GameValue& value, std::optional<int64_t>)
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"dir"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(character.direction); },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
-				character.direction = std::clamp(static_cast<uint8_t>(value.get<double>().value_or(0.0)), 0_ui8, 3_ui8);
-			})
-		);
-	scriptParameters.try_emplace("hurtdpower", set_temporary, "hurtdpower", gameValueGetter(character.hurtDeltaInHalves), GameValue::func_set{});
-	scriptParameters.try_emplace("hurtdx", set_temporary, "hurtdx",
-		gameValueGetter([this]() { return character.hurtPushDeltaInHalfPixels[0] / 32.0; }),
-		gameValueSetter(this, PROPOPT(NPCProp::HURTDXDY),
-			[this](const GameValue& value, std::optional<int64_t>)
+				character.direction = std::clamp(static_cast<uint8_t>(value->get()), 0_ui8, 3_ui8);
+				modTime[PROPID(NPCProp::SPRITE)] = m_server->getFrameStartTime();
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"hurtdx"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return character.hurtPushDeltaInHalfPixels[0] / 32.0; },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
-				auto clampedValue = std::clamp(value.get<double>().value_or(0.0), -1.0, 1.0);
+				auto clampedValue = std::clamp(value->get(), -1.0, 1.0);
 				character.hurtPushDeltaInHalfPixels[0] = static_cast<int8_t>(clampedValue * 32);
-			})
-		);
-	scriptParameters.try_emplace("hurtdy", set_temporary, "hurtdy",
-		gameValueGetter([this]() { return character.hurtPushDeltaInHalfPixels[1] / 32.0; }),
-		gameValueSetter(this, PROPOPT(NPCProp::HURTDXDY),
-			[this](const GameValue& value, std::optional<int64_t>)
+				modTime[PROPID(NPCProp::HURTDXDY)] = m_server->getFrameStartTime();
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"hurtdy"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return character.hurtPushDeltaInHalfPixels[1] / 32.0; },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
-				auto clampedValue = std::clamp(value.get<double>().value_or(0.0), -1.0, 1.0);
+				auto clampedValue = std::clamp(value->get(), -1.0, 1.0);
 				character.hurtPushDeltaInHalfPixels[1] = static_cast<int8_t>(clampedValue * 32);
-			})
-		);
-	scriptParameters.try_emplace("save", set_temporary, "save", gameValueGetter(saves), gameValueSetter(this, PROPOPT(NPCProp::SAVE0), saves));
-	scriptParameters.try_emplace("timeout", set_temporary, "timeout",
-		gameValueGetter([this]() { return timeout.count() / 1000.0; }),
-		gameValueSetter(this, PROPOPT<NPCProp>(std::nullopt),
-			[this](const GameValue& value, std::optional<int64_t>)
-			{
-				if (auto doubleValue = value.get<double>(); doubleValue.has_value())
-					timeout = std::chrono::milliseconds(static_cast<int>(*doubleValue * 1000));
-			})
-		);
+				modTime[PROPID(NPCProp::HURTDXDY)] = m_server->getFrameStartTime();
+			}
+		}
+	});
+	// clang-format on
 }
 
 //----------------------------
@@ -2145,26 +2208,29 @@ std::vector<std::string> NPC::getVariableDump() const
 	result.emplace_back();
 	result.emplace_back("npc.Flags:");
 
-	for (const auto& [flag, value] : scripting.variables.store | variables::only_flags)
+	for (const auto& [flag, variable] : scripting.variables.store | variables::only_flags)
 	{
-		if (value->has<bool>() && !value->has<std::string>() && value->get<bool>().value_or(false))
+		if (variable->value.has<bool>() && !variable->value.has<std::string>() && variable->getCopy<bool>().value_or(false))
 			result.emplace_back(std::format("{}.flags[{}]: true", npcname, flag));
-		else result.emplace_back(std::format("{}.flags[{}]: {}", npcname, flag, value->get<std::string>().value_or(std::string{})));
+		else result.emplace_back(std::format("{}.flags[{}]: {}", npcname, flag, variable->getCopy<std::string>().value_or(std::string{})));
 	}
 
 	result.emplace_back();
 	result.emplace_back("npc.Vars:");
 
-	for (const auto& [flag, value] : scripting.variables.store | variables::no_temporary)
+	for (const auto& [flag, variable] : scripting.variables.store | variables::serializable)
 	{
-		if (value->has<double>())
-			result.emplace_back(std::format("{}.vars[{}]: {}", npcname, flag, value->get<double>().value_or(0.0)));
-		if (value->has<std::vector<double>>())
+		if (variable->value.has<double>())
+			result.emplace_back(std::format("{}.vars[{}]: {}", npcname, flag, variable->getCopy<double>().value_or(0.0)));
+		if (variable->value.has<std::vector<double>>())
 		{
-			auto* values = value->get_unsafe<std::vector<double>>();
-			if (values != nullptr && !values->empty())
+			auto values = variable->get<std::vector<double>>();
+			if (values.has_value() && !values.value().get().empty())
 			{
-				auto valuesAsStrings = *values | std::views::transform([](const double& val) { return std::format("{}", val); });
+				auto valuesAsStrings = values.value().get() | std::views::transform([](const double& val)
+				{
+					return std::format("{}", val);
+				});
 				auto valueString = string::join(valuesAsStrings, ", ");
 				result.emplace_back(std::format("{}.vars[{}]: {{{}}}", npcname, flag, valueString));
 			}

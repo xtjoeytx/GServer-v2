@@ -311,7 +311,7 @@ public:
 
 public:
 	void constructScriptParameters();
-	string_map<GameValue> scriptParameters;
+	string_map<GameVariable> scriptParameters;
 
 public:
 	bool deleteFlag(std::string_view flagName, const SetBy setBy);

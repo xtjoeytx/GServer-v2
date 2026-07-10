@@ -6,8 +6,8 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -23,16 +23,17 @@
 #include <npcserver/NPCServer.h>
 #include <object/Character.h>
 #include <object/NPC.h>
+#include <object/Player.h>
 #include <object/Weapon.h>
 #include <player/PlayerClient.h>
+#include <scripting/ScriptContainers.h>
+#include <scripting/ScriptSystem.h>
+#include <scripting/ScriptTypes.h>
 #include <scripting/gs1/GS1ErrorListener.h>
 #include <scripting/gs1/GS1Flags.h>
 #include <scripting/gs1/GS1Variables.h>
 #include <scripting/gs1/GS1Visitor.h>
 #include <scripting/gs1/ScriptEngineGS1.h>
-#include <scripting/ScriptContainers.h>
-#include <scripting/ScriptSystem.h>
-#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
@@ -48,7 +49,7 @@ static std::string determineEventName(ScriptEvent& event)
 {
 	auto knownEventIter = eventFlagMap.find(event.type);
 	if (knownEventIter != eventFlagMap.end())
-		return std::string{ knownEventIter->second };
+		return std::string{knownEventIter->second};
 
 	if (event.type == ScriptEventType::CUSTOM || event.type == ScriptEventType::TRIGGERACTION)
 	{
@@ -173,7 +174,7 @@ GS1ScriptWrapper::GS1ScriptWrapper(std::string_view who, std::string_view script
 
 	// Create the lexer.
 	// We don't need to keep this around.
-	GS1Lexer lexer{ input.get() };
+	GS1Lexer lexer{input.get()};
 	lexer.removeErrorListeners();
 	lexer.addErrorListener(errorListenerLexer.get());
 
@@ -197,8 +198,6 @@ GS1ScriptWrapper::GS1ScriptWrapper(std::string_view who, std::string_view script
 		log::printLine(log::script, program->toStringTree(parser.get(), true));
 	}
 #endif
-
-	setGlobalVariables(variables);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -209,14 +208,15 @@ ScriptEngineGS1::ScriptEngineGS1()
 
 CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::string_view script)
 {
-	ScriptExecutionContext result{ .engine = this };
+	ScriptExecutionContext result{.engine = this};
 	try
 	{
 		result.script = std::make_shared<std::any>(std::in_place_type<GS1ScriptWrapper>, who, script);
 	}
 	catch (const std::exception& ex)
 	{
-		log::printLine(log::script, "GS1 script compilation SUPER failed: {}", ex.what());
+		//log::printLine(log::script, "GS1 script compilation SUPER failed: {}", ex.what());
+		return std::string(ex.what());
 	}
 
 	return result;
@@ -285,7 +285,7 @@ bool ScriptEngineGS1::prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, Scr
 	// Set variables.
 	setNPCVariables(wrapper.variables, npc);
 	setPlayerVariables(wrapper.variables, player);
-	setLevelVariables(wrapper.variables, level);
+	setLevelVariables(wrapper.variables, level, npc, player);
 	setOtherVariables(wrapper.variables, event);
 
 	return true;
@@ -304,31 +304,22 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledS
 	NPCPtr npc = nullptr;
 	LevelPtr level = nullptr;
 
-#if !defined(DEBUG) || 1
 	// If the event is not in the NPC script, don't bother executing it.
-	if (event.type != ScriptEventType::CREATED && event.type != ScriptEventType::INITIALIZED)
-	{
-		const auto& eventName = determineEventName(event);
-		if (!wrapper->parser->identifiers.contains(eventName) && !server->cached.runAllScriptEvents.getValue())
-			return false;
-	}
-#endif
-
-	if (!prepare(*wrapper, event, source, context, npc, level))
-		return false;
-
-#if defined(DEBUG) && 0
-	// Log some testing stuff.
-	if (event.type != ScriptEventType::CREATED && event.type != ScriptEventType::INITIALIZED)
+	if (event.type != ScriptEventType::CREATED && event.type != ScriptEventType::INITIALIZED && (event.type != ScriptEventType::TIMEOUT || !wrapper->visitor->hasSleepStack()))
 	{
 		const auto& eventName = determineEventName(event);
 		if (!wrapper->parser->identifiers.contains(eventName) && !server->cached.runAllScriptEvents.getValue())
 		{
+#if defined(DEBUG) && 0
+			prepare(*wrapper, event, source, context, npc, level);
 			log::printLine(log::script, "GS1 script for event '{}' not found in script '{}'.", eventName, wrapper->visitor->who);
+#endif
 			return false;
 		}
 	}
-#endif
+
+	if (!prepare(*wrapper, event, source, context, npc, level))
+		return false;
 
 	// If this is a control-NPC, temporarily adjust the level it lives in.
 	bool isControlNPC = npc && npc->scriptType == NPCTYPE_CONTROL;
@@ -393,7 +384,7 @@ bool ScriptEngineGS1::executeFunction(std::string_view function, ScriptEvent& ev
 		return false;
 
 	// Check if we have the function.
-	auto userFunction = wrapper->parser->userFunctions.find(std::string{ function });
+	auto userFunction = wrapper->parser->userFunctions.find(std::string{function});
 	if (userFunction == wrapper->parser->userFunctions.end())
 		return false;
 
@@ -425,7 +416,7 @@ bool ScriptEngineGS1::executeFunction(std::string_view function, ScriptEvent& ev
 
 //----------------------------
 
-double ScriptEngineGS1::processMathExpression(std::string_view expression, ScriptObject source)
+std::optional<double> ScriptEngineGS1::processMathExpression(std::string_view expression, ScriptObject source)
 {
 	static GS1Visitor visitor{};
 	static GameVariableStore variableStore{};
@@ -449,7 +440,7 @@ double ScriptEngineGS1::processMathExpression(std::string_view expression, Scrip
 	}
 	else if (source.second == ScriptObjectType::PLAYER)
 	{
-		if (auto player = npcserver->getPlayer<PlayerClient>(source.first); player != nullptr)
+		if (auto player = npcserver->getPlayer<Player>(source.first); player != nullptr)
 		{
 			setPlayerFlags(visitor.flagStore, nullptr, player);
 			setPlayerVariables(variableStore, player);
@@ -460,17 +451,17 @@ double ScriptEngineGS1::processMathExpression(std::string_view expression, Scrip
 	{
 		auto result = visitor.processMathExpression(expression);
 		visitor.popSource();
-		return visitor.getGameValueAs<double>(result);
+		return result.getCopy<double>().value_or(0.0);
 	}
 	catch (std::exception& e)
 	{
 		visitor.popSource();
 	}
 
-	return 0.0;
+	return std::nullopt;
 }
 
-std::string ScriptEngineGS1::processStringExpression(std::string_view expression, ScriptObject source)
+std::optional<std::string> ScriptEngineGS1::processStringExpression(std::string_view expression, ScriptObject source)
 {
 	static GS1Visitor visitor{};
 	static GameVariableStore variableStore{};
@@ -504,14 +495,14 @@ std::string ScriptEngineGS1::processStringExpression(std::string_view expression
 	{
 		auto result = visitor.processStringExpression(expression);
 		visitor.popSource();
-		return visitor.getGameValueAs<std::string>(result);
+		return result.getCopy<std::string>().value_or(std::string{});
 	}
 	catch (std::exception& e)
 	{
 		visitor.popSource();
 	}
 
-	return std::string{};
+	return std::nullopt;
 }
 
 //----------------------------

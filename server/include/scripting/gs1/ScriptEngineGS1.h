@@ -38,6 +38,9 @@ namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+inline constexpr size_t maximumArraySize = 10000;
+inline constexpr size_t maximumLoopCount = 10000;
+
 inline constexpr std::array<std::string_view, 20> colorNames =
 {
 	"white"sv, "yellow"sv, "orange"sv, "pink"sv, "red"sv,
@@ -130,11 +133,8 @@ Character* getCharacterFromSource(const ScriptObject& source, std::optional<int6
 
 //----------------------------
 
-/// @brief A GS1 variable pair of a GameValue and an index (for an array access).
-using GS1GameVariable = std::pair<GameValue, std::optional<int64_t>>;
-
 /// @brief A GS1 script value used in the GS1 visitor pattern.
-using GS1ScriptValue = std::variant<GS1GameVariable, GameValue, ScriptObject>;
+using GS1ScriptValue = std::variant<GameVariable*, GameVariable, GameValue, ScriptObject>;
 
 /// @brief A GS1 object source with an optional GameVariableStore.
 using GS1ObjectSourceWithStore = std::pair<ScriptObject, GameVariableStore*>;
@@ -165,6 +165,7 @@ public:
 	virtual ~ScriptEngineGS1() override {}
 
 public:
+	virtual std::string_view getEngineName() override { return "GS1"sv; }
 	virtual ScriptEngineMode getExecutionMode() override { return ScriptEngineMode::DIRECT; }
 	virtual ScriptExecutionType getExecutionType() override { return ScriptExecutionType::INTERPRETED; }
 
@@ -177,8 +178,8 @@ public:
 	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
 
 public:
-	virtual double processMathExpression(std::string_view expression, ScriptObject source) override;
-	virtual std::string processStringExpression(std::string_view expression, ScriptObject source) override;
+	virtual std::optional<double> processMathExpression(std::string_view expression, ScriptObject source) override;
+	virtual std::optional<std::string> processStringExpression(std::string_view expression, ScriptObject source) override;
 
 protected:
 	bool prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context, NPCPtr& npc, LevelPtr& level);

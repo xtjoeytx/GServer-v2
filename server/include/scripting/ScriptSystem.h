@@ -50,6 +50,10 @@ public:
 	/// @return The script engine associated with the given name, or nullptr if no such engine is registered.
 	std::shared_ptr<IScriptEngine> getScriptEngine(std::string_view name) const;
 
+	/// @brief Gets the default script engine.
+	/// @return The default script engine, or nullptr if no default engine is set or registered.
+	[[inline]] std::shared_ptr<IScriptEngine> getDefaultScriptEngine() const;
+
 public:
 	std::string defaultScriptEngine = "GS2";
 
@@ -60,6 +64,13 @@ private:
 	string_map<std::shared_ptr<IScriptEngine>> m_script_engines;
 	hash_map<CompiledScriptResultPtr> m_script_cache;
 };
+
+//----------------------------
+
+inline std::shared_ptr<IScriptEngine> ScriptSystem::getDefaultScriptEngine() const
+{
+	return getScriptEngine(defaultScriptEngine);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal

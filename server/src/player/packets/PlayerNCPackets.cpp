@@ -182,10 +182,10 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 		std::vector<std::string> flagList;
 		for (auto& [flag, value] : npc->scripting.variables.store | variables::only_flags)
 		{
-			if (value->has<bool>() && !value->has<std::string>() && value->get<bool>().value_or(false))
+			if (value->value.has<bool>() && !value->value.has<std::string>() && value->value.getCopy<bool>().value_or(false))
 				flagList.push_back(flag);
-			else if (value->has<std::string>())
-				flagList.push_back(std::format("{}={}", flag, value->get<std::string>().value_or(std::string{})));
+			else if (value->value.has<std::string>())
+				flagList.push_back(std::format("{}={}", flag, value->value.get<std::string>().value().get()));
 		}
 
 		sendPacket(CString() >> (char)PLO_NC_NPCFLAGS >> (int)npcId << string::toCSV(flagList));
@@ -250,20 +250,20 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 		while (it != npc->scripting.variables.store.end())
 		{
 			// Ignore temporary variables and non-flag variables.
-			if (auto var = it->second; var != nullptr && !var->temporary && var->testAsFlag())
+			if (auto var = it->second; var != nullptr && var->lifetime == variables::Lifetime::PERMANENT && var->value.testAsFlag())
 			{
 				auto flagBeingSet = std::ranges::find_if(npcFlags, [&it](std::string& flag) { return flag.starts_with(it->first); });
 
 				// Not in range, delete it.
 				if (flagBeingSet == std::ranges::end(npcFlags))
 				{
-					deletedFlags.emplace_back(std::format("flag deleted:\t{}={}", it->first, it->second->get<std::string>().value_or(std::string{})));
+					deletedFlags.emplace_back(std::format("flag deleted:\t{}={}", it->first, it->second->getCopy<std::string>().value_or(std::string{})));
 					it = npc->scripting.variables.store.erase(it);
 				}
 				// Is in range, check if updated.
-				else
+				else if (auto existingValueWrap = it->second->get<std::string>(); existingValueWrap.has_value())
 				{
-					auto existingValue = it->second->get<std::string>().value_or(std::string{});
+					auto& existingValue = existingValueWrap.value().get();
 					auto equalPos = flagBeingSet->find('=');
 					std::string flagValue{ string::trimMutate(flagBeingSet->substr(equalPos + 1)) };
 					if (existingValue != flagValue)

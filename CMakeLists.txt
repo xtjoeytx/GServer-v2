@@ -89,6 +89,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 	set(CMAKE_EXECUTABLE_SUFFIX ".exe")
 endif()
 
+# Don't scan for modules.
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+
 # GS2 project.
 project(GS2Emu VERSION 4.0.0 DESCRIPTION "Graal Online v1.380 to v6.037 compatible server" LANGUAGES C CXX)
 

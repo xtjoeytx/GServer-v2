@@ -316,7 +316,7 @@ public:
 	void leaveClass(std::string_view className);
 	void sendScriptUpdatesToLevel(clock::time_point when) const;
 	void constructScriptParameters();
-	string_map<GameValue> scriptParameters;
+	string_map<GameVariable> scriptParameters;
 
 protected:
 	void updateScriptClass(ScriptClass* scriptClass);

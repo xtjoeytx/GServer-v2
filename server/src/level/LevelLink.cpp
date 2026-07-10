@@ -121,8 +121,8 @@ LocalPixelPosition LevelLink::getDestinationForCharacter(Character& character, S
 		const auto& npcServer = m_server->getNPCServer();
 		if (auto gs1 = npcServer->scripting.getScriptEngine("GS1"); gs1 != nullptr)
 		{
-			auto x = m_complex[0] ? static_cast<int16_t>(gs1->processMathExpression(m_destinationX, source) * 16) : getPixelDestination(m_destinationX, character);
-			auto y = m_complex[1] ? static_cast<int16_t>(gs1->processMathExpression(m_destinationY, source) * 16) : getPixelDestination(m_destinationY, character);
+			auto x = m_complex[0] ? static_cast<int16_t>(gs1->processMathExpression(m_destinationX, source).value_or(0.0) * 16) : getPixelDestination(m_destinationX, character);
+			auto y = m_complex[1] ? static_cast<int16_t>(gs1->processMathExpression(m_destinationY, source).value_or(0.0) * 16) : getPixelDestination(m_destinationY, character);
 			return LocalPixelPosition{x, y};
 		}
 	}

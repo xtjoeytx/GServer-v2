@@ -28,10 +28,13 @@
 
 namespace preagonal
 {
-class Level;
-class SubLevel;
-class StaticLevelData;
 class Character;
+class GuildManager;
+class ITranslationManager;
+class Level;
+class Server;
+class StaticLevelData;
+class SubLevel;
 } // namespace preagonal
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -57,6 +60,9 @@ enum class StorageType : uint8_t
 class GS1Visitor : public GS1ParserBaseVisitor
 {
 public:
+	GS1Visitor();
+
+public:
 	void execute(const ScriptEvent& event, ScriptObject source, GS1Parser& parser, ScriptExecutionContext& context, antlr4::tree::ParseTree* startNode);
 	void reportError(std::string_view message, antlr4::tree::ParseTree* node = nullptr, bool abort = true);
 
@@ -70,48 +76,72 @@ public:
 	std::string who;
 
 public:
-	[[inline]] const ScriptObject& getOriginalSource() const;
-	[[inline]] const ScriptObject& getInitiatingSource() const;
-	[[inline]] const ScriptObject& getCurrentSource(bool defaultToInitiator = false) const;
-	[[inline]] const ScriptObject& popSource();
-	[[inline]] const void pushSource(ScriptObject source);
-	[[inline]] const ScriptEvent& getEvent() const;
-	[[inline]] auto sourceStack() const;
-	std::optional<ScriptObject> findNearestScriptObjectSourceFromStack(ScriptObjectType type) const;
-	std::shared_ptr<Level> findCurrentLevel() const;
-	std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<StaticLevelData>> findCurrentLevelData() const;
-
-public:
-	template<ValidGameValue T>
-	[[inline]] static T getGameValueAs(const GS1ScriptValue& value);
-
-	template<ValidGameValue T>
-	[[inline]] T getReadOnlyGameValueFromAnyAs(const std::any& value);
-
-	GameValue* getGameValueFromGS1ScriptValue(GS1ScriptValue& value);
-	std::optional<GameValue> getGameValueFromSource(const ScriptObject& source, std::string_view identifier);
-	GameValue getGameValueFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
+	Server* server = nullptr;
+	ITranslationManager* translationManager = nullptr;
+	GuildManager* guildManager = nullptr;
 
 public:
 	[[inline]] static std::optional<size_t> getStorageTypeFromIdentifier(std::string_view identifier, std::optional<size_t> defaultValue = {}) noexcept;
 	[[inline]] static void applyStorageNameToIdentifier(std::optional<size_t> storage, std::string& identifier) noexcept;
 	[[inline]] static void stripStorageNameFromIdentifier(std::string& identifier) noexcept;
+	static double getColorValueFromString(std::string_view colorString);
+	static GameVariable* getGameVariable(std::any& value);
+	static GameVariable* getGameVariable(GS1ScriptValue& value);
+	static const GameVariable* getGameVariable(const std::any& value);
+	static const GameVariable* getGameVariable(const GS1ScriptValue& value);
+	static std::optional<ScriptObject> getScriptObject(std::any& value);
+	static std::optional<ScriptObject> getScriptObject(GS1ScriptValue& value);
+	static std::optional<ScriptObject> getScriptObject(GameVariable& value);
+	static bool isGameValue(const GS1ScriptValue& value);
+	static bool isScriptObject(const GS1ScriptValue& value);
+
+	template<StoresInGameValue T>
+	[[inline]] static bool scriptValueContains(std::any& value);
+
+	template<StoresInGameValue T>
+	[[inline]] static bool scriptValueContains(GS1ScriptValue& value);
+
+	template<StoresInGameValue T>
+	[[inline]] static std::optional<std::reference_wrapper<T>> getScriptValueAs(std::any& value);
+
+	template<StoresInGameValue T>
+	[[inline]] static std::optional<std::reference_wrapper<T>> getScriptValueAs(GS1ScriptValue& value);
+
+	template<StoresInGameValue T>
+	[[inline]] static std::optional<T> getScriptValueAsCopy(const std::any& value);
+
+	template<StoresInGameValue T>
+	[[inline]] static std::optional<T> getScriptValueAsCopy(const GS1ScriptValue& value);
 
 public:
+	[[inline]] const ScriptEvent& getEvent() const;
+	[[inline]] const ScriptObject& getOriginalSource() const;
+	[[inline]] const ScriptObject& getInitiatingSource() const;
+	[[inline]] const ScriptObject& getCurrentSource(bool defaultToInitiator = false) const;
+	[[inline]] const ScriptObject& popSource();
+	[[inline]] const void pushSource(ScriptObject source);
+	[[inline]] auto sourceStack() const;
+	[[inline]] bool hasSleepStack() const;
+	std::optional<ScriptObject> findNearestScriptObjectSourceFromStack(ScriptObjectType type) const;
+	GameVariableStore* findGameVariableStoreFromStack(ScriptObjectType type, int skip = 0) const;
 	GameVariableStore* getGameVariableStoreForStorageType(size_t type);
-	double getColorValueFromString(std::string_view colorString);
 
 public:
-	GS1ScriptValue translateSourceText(antlr4::tree::ParseTree* node, std::string_view language);
-	GS1ScriptValue translateSourceText(std::string_view sourceText, std::string_view language);
-	GS1ScriptValue processStringExpression(std::string_view expression);
-	GS1ScriptValue processMathExpression(std::string_view expression);
+	std::shared_ptr<Level> findCurrentLevel() const;
+	std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<StaticLevelData>> findCurrentLevelData() const;
+
+public:
+	GameVariable* getGameVariableFromSource(const ScriptObject& source, std::string_view identifier) const;
+	GameVariable* getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
+
+public:
+	GameValue translateSourceText(antlr4::tree::ParseTree* node, std::string_view language);
+	GameValue translateSourceText(std::string_view sourceText, std::string_view language);
+	GameValue processStringExpression(std::string_view expression);
+	GameValue processMathExpression(std::string_view expression);
 
 	template<class T = GS1Parser::CompoundStringContext>
 	[[inline]] T* walkToContext(antlr4::tree::ParseTree* node);
-
-protected:
-	std::any reparseExpression(std::string_view expression, std::string_view lexerMode, std::function<antlr4::tree::ParseTree*(GS1Parser&)> node);
 
 public:
 	std::vector<std::any> visitChildrenAndCollect(antlr4::tree::ParseTree* node);
@@ -126,19 +156,11 @@ protected:
 	std::vector<std::pair<antlr4::tree::ParseTree*, size_t>> m_callStack;
 	std::vector<std::pair<antlr4::tree::ParseTree*, size_t>> m_sleepCallStack;
 	bool m_reparsingStringExpression = false;
-	bool m_reparsingMathExpression = false;
+	//bool m_reparsingMathExpression = false;
 
 protected:
 	std::any safeVisit(antlr4::tree::ParseTree* node);
-
-protected:
-	GameVariableStore* findGameVariableStoreFromSourceStack(ScriptObjectType type, int skip = 0) const;
-	GS1GameVariable getGameVariableFromAny(std::any& value);
-	GameValue getReadOnlyGameValueFromGS1ScriptValue(const GS1ScriptValue& value);
-	GameValue getReadOnlyGameValueFromAny(const std::any& value);
-	std::optional<ScriptObject> getSourceFromGS1ScriptValue(GS1ScriptValue& value);
-
-protected:
+	std::any reparseExpression(std::string_view expression, std::string_view lexerMode, std::function<antlr4::tree::ParseTree*(GS1Parser&)> node);
 	void setCurrentPlayerVariables(std::optional<ScriptObject> source);
 
 public:
@@ -192,7 +214,7 @@ public:
 
 //----------------------------
 
-template<ValidGameValue T>
+template<StoresInGameValue T>
 inline auto makeDefault() -> T
 {
 	if constexpr (std::is_same_v<T, double>)
@@ -203,71 +225,7 @@ inline auto makeDefault() -> T
 		return T{};
 }
 
-//----------------------------
-
-inline const ScriptObject& GS1Visitor::getOriginalSource() const
-{
-	return m_originalSource;
-}
-
-inline const ScriptObject& GS1Visitor::getInitiatingSource() const
-{
-	return m_event->initiator;
-}
-
-inline const ScriptObject& GS1Visitor::getCurrentSource(bool defaultToInitiator) const
-{
-	if (m_event && m_event->initiator.second == ScriptObjectType::NPC)
-		defaultToInitiator = false;
-	return m_currentSource.empty() ? (defaultToInitiator && m_event ? m_event->initiator : m_originalSource) : m_currentSource.back();
-}
-
-inline const ScriptObject& GS1Visitor::popSource()
-{
-	m_currentSource.pop_back();
-	return getCurrentSource();
-}
-
-inline const void GS1Visitor::pushSource(ScriptObject source)
-{
-	m_currentSource.emplace_back(std::move(source));
-}
-
-inline auto GS1Visitor::sourceStack() const
-{
-	// Save me C++26...
-	std::vector<ScriptObject> sources{m_currentSource.rbegin(), m_currentSource.rend()};
-	if (m_event->initiator.second != ScriptObjectType::NPC)
-		sources.push_back(m_event->initiator);
-	sources.push_back(m_originalSource);
-	return sources;
-}
-
-inline const ScriptEvent& GS1Visitor::getEvent() const
-{
-	return *m_event;
-}
-
-template<ValidGameValue T>
-inline T GS1Visitor::getGameValueAs(const GS1ScriptValue& value)
-{
-	if (const auto* gs1Pair = std::get_if<GS1GameVariable>(&value); gs1Pair != nullptr)
-		return gs1Pair->first.get<T>(gs1Pair->second).value_or(makeDefault<T>());
-	else if (auto* gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
-		return gameValue->get<T>().value_or(makeDefault<T>());
-	return makeDefault<T>();
-}
-
-//----------------------------
-
-template<ValidGameValue T>
-inline T GS1Visitor::getReadOnlyGameValueFromAnyAs(const std::any& value)
-{
-	auto gameval = getReadOnlyGameValueFromAny(value);
-	return gameval.get<T>().value_or(makeDefault<T>());
-}
-
-//----------------------------
+//---[ STATIC ]---------------
 
 inline std::optional<size_t> GS1Visitor::getStorageTypeFromIdentifier(std::string_view identifier, std::optional<size_t> defaultValue) noexcept
 {
@@ -337,6 +295,7 @@ inline void GS1Visitor::stripStorageNameFromIdentifier(std::string& identifier) 
 		case ENUM(StorageType::TEMP):
 			identifier.erase(0, period + 1);
 			break;
+
 		// Strip the "o" before the period for object storage types, leaving the "client." or "clientr." prefix.
 		case ENUM(StorageType::CLIENTO):
 		case ENUM(StorageType::CLIENTRO):
@@ -344,6 +303,134 @@ inline void GS1Visitor::stripStorageNameFromIdentifier(std::string& identifier) 
 				identifier.erase(period - 1, 1);
 			break;
 	}
+}
+
+template<StoresInGameValue T>
+inline bool GS1Visitor::scriptValueContains(std::any& value)
+{
+	if (auto gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
+		return scriptValueContains<T>(*gs1ScriptValue);
+	if (auto gameVariable = std::any_cast<GameVariable*>(&value); gameVariable != nullptr)
+		return (*gameVariable)->has<T>();
+	if (auto gameVariable = std::any_cast<GameVariable>(&value); gameVariable != nullptr)
+		return gameVariable->has<T>();
+	if (auto gameValue = std::any_cast<GameValue>(&value); gameValue != nullptr)
+		return gameValue->has<T>();
+	return false;
+}
+
+template<StoresInGameValue T>
+inline bool GS1Visitor::scriptValueContains(GS1ScriptValue& value)
+{
+	if (auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
+		return (*gameVariable)->has<T>();
+	if (auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
+		return gameVariable->has<T>();
+	if (auto gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
+		return gameValue->has<T>();
+	return false;
+}
+
+template<StoresInGameValue T>
+inline std::optional<std::reference_wrapper<T>> GS1Visitor::getScriptValueAs(std::any& value)
+{
+	if (auto gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
+		return getScriptValueAs<T>(*gs1ScriptValue);
+	if (auto gameVariable = std::any_cast<GameVariable*>(&value); gameVariable != nullptr)
+		return (*gameVariable)->get<T>();
+	if (auto gameVariable = std::any_cast<GameVariable>(&value); gameVariable != nullptr)
+		return gameVariable->get<T>();
+	if (auto gameValue = std::any_cast<GameValue>(&value); gameValue != nullptr)
+		return gameValue->get<T>();
+	return std::nullopt;
+}
+
+template<StoresInGameValue T>
+inline std::optional<std::reference_wrapper<T>> GS1Visitor::getScriptValueAs(GS1ScriptValue& value)
+{
+	if (auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
+		return (*gameVariable)->get<T>();
+	if (auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
+		return gameVariable->get<T>();
+	if (auto gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
+		return gameValue->get<T>();
+	return std::nullopt;
+}
+
+template<StoresInGameValue T>
+inline std::optional<T> GS1Visitor::getScriptValueAsCopy(const std::any& value)
+{
+	if (auto gs1ScriptValue = std::any_cast<const GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
+		return getScriptValueAsCopy<T>(*gs1ScriptValue);
+	if (auto gameVariable = std::any_cast<const GameVariable*>(&value); gameVariable != nullptr)
+		return (*gameVariable)->getCopy<T>();
+	if (auto gameVariable = std::any_cast<const GameVariable>(&value); gameVariable != nullptr)
+		return gameVariable->getCopy<T>();
+	if (auto gameValue = std::any_cast<const GameValue>(&value); gameValue != nullptr)
+		return gameValue->getCopy<T>();
+	return std::nullopt;
+}
+
+template<StoresInGameValue T>
+inline std::optional<T> GS1Visitor::getScriptValueAsCopy(const GS1ScriptValue& value)
+{
+	if (auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
+		return (*gameVariable)->getCopy<T>();
+	if (auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
+		return gameVariable->getCopy<T>();
+	if (auto gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
+		return gameValue->getCopy<T>();
+	return std::nullopt;
+}
+
+//----------------------------
+
+inline const ScriptEvent& GS1Visitor::getEvent() const
+{
+	return *m_event;
+}
+
+inline const ScriptObject& GS1Visitor::getOriginalSource() const
+{
+	return m_originalSource;
+}
+
+inline const ScriptObject& GS1Visitor::getInitiatingSource() const
+{
+	return m_event->initiator;
+}
+
+inline const ScriptObject& GS1Visitor::getCurrentSource(bool defaultToInitiator) const
+{
+	if (m_event && m_event->initiator.second == ScriptObjectType::NPC)
+		defaultToInitiator = false;
+	return m_currentSource.empty() ? (defaultToInitiator && m_event != nullptr ? m_event->initiator : m_originalSource) : m_currentSource.back();
+}
+
+inline const ScriptObject& GS1Visitor::popSource()
+{
+	m_currentSource.pop_back();
+	return getCurrentSource();
+}
+
+inline const void GS1Visitor::pushSource(ScriptObject source)
+{
+	m_currentSource.emplace_back(std::move(source));
+}
+
+inline auto GS1Visitor::sourceStack() const
+{
+	// Save me C++26...
+	std::vector<ScriptObject> sources{m_currentSource.rbegin(), m_currentSource.rend()};
+	if (m_event != nullptr && m_event->initiator.second != ScriptObjectType::NPC)
+		sources.push_back(m_event->initiator);
+	sources.push_back(m_originalSource);
+	return sources;
+}
+
+inline bool GS1Visitor::hasSleepStack() const
+{
+	return !m_sleepCallStack.empty();
 }
 
 //----------------------------

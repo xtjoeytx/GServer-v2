@@ -5,8 +5,8 @@
 #include <cstdint>
 #include <exception>
 #include <format>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -16,8 +16,10 @@
 
 #include <BabyDI.h>
 #include <Server.h>
+#include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::gs1::grammar
@@ -49,7 +51,12 @@ public:
 
 		// Send the log messages to the server.
 		auto server = BabyDI::Get<Server>();
-		std::ranges::for_each(logbatch, [&server](const auto& kvp) { server->sendToNC(kvp.second); });
+		std::ranges::for_each(logbatch, [&server](const auto& kvp)
+		{
+			server->sendToNC(kvp.second);
+		});
+
+		throw script_error(string::join(logbatch | std::views::values, "\n"));
 	}
 
 protected:

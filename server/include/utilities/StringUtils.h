@@ -521,14 +521,18 @@ inline std::string& eraseCharsMutate(std::string& in, std::string_view chars)
 	return in;
 }
 
+/// @brief Removes everything after the last period.
+/// @param str The input string or string_view to process.
+/// @return A string_view containing the substring of 'str' up to (but not including) the last period. If no period is found, returns the entire string.
 inline auto removeExtension(StringViewIshVariant auto const& str)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
 
-	std::basic_string_view<Elem, Traits> view{ str };
+	StringViewType view{ str };
 	auto pos = view.rfind('.');
-	if (pos == std::string_view::npos)
+	if (pos == StringViewType::npos)
 		return view;
 	return view.substr(0, pos);
 }
@@ -624,6 +628,38 @@ auto unescapeQuotes(StringViewIshVariant auto const& str)
 		ret += str[i];
 
 	return ret;
+}
+
+/// @brief Wraps a string in quotes if it contains a comma, otherwise returns the string as is.
+/// @param str The input string or string_view to potentially wrap in quotes.
+/// @return A new std::string with the input string wrapped in quotes if it contains a comma, or the original string otherwise.
+auto wrapQuotes(StringViewIshVariant auto const& str)
+{
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
+
+	std::basic_string<Elem, Traits> ret{};
+	ret.reserve(str.size() * 1.5);
+
+	if (str.find(',') != StringViewType::npos)
+		return std::format("\"{}\"", string::replace(str, "\"", "\"\""));
+
+	return str;
+}
+
+/// @brief Wraps a string in quotes if it contains a comma, otherwise returns the string as is.
+/// @param str The input string to potentially wrap in quotes.
+/// @return A reference to the input string, potentially modified to be wrapped in quotes.
+inline std::string& wrapQuotesMutate(std::string& str)
+{
+	if (str.find(',') != std::string_view::npos)
+	{
+		string::replaceMutate(str, "\"", "\"\"");
+		str += "\"";
+		str.insert(str.begin(), '\"');
+	}
+	return str;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -966,6 +1002,8 @@ auto toCSV(StringViewIshVariant auto const& str, std::string_view delim = "\n"sv
 /// @return A vector of strings, each representing a parsed field from the CSV input.
 std::vector<std::string> fromCSV(StringViewIshVariant auto const& str, bool ignoreLeadingWhitespace = false)
 {
+	using StrType = std::remove_cvref_t<decltype(str)>;
+
 	std::vector<std::string> tokens{};
 	auto token = std::string{};
 
@@ -1022,7 +1060,7 @@ std::vector<std::string> fromCSV(StringViewIshVariant auto const& str, bool igno
 				// Advance to the comma, ignoring anything after the closing quote.
 				// Text after an unescaped quote is invalid, so just skip it.
 				auto nextcomma = str.find(',', i + 1);
-				if (nextcomma == std::string::npos)
+				if (nextcomma == StrType::npos)
 					break;
 				i = nextcomma;
 			}
@@ -1195,7 +1233,7 @@ bool isIntegral(StringViewIshVariant auto const& str)
 		startPos = 1;
 
 	// Check that all remaining characters are digits.
-	return str.find_first_not_of("0123456789"sv, startPos) == std::string_view::npos;
+	return str.find_first_not_of("0123456789"sv, startPos) == decltype(str)::npos;
 }
 
 /// @brief Checks if a string represents a valid floating-point number, allowing for an optional leading sign and at most one decimal point.
@@ -1467,6 +1505,24 @@ inline auto to_string(double value, int width, int precision)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+/// @brief Extracts a line from a string view, using a specified delimiter.
+/// @param str A reference to the string view to extract from.
+/// @param delim The delimiter character to use for splitting lines. Defaults to '\\n'.
+/// @return A string view containing the extracted line or substring up to the delimiter. If the delimiter is not found, returns the whole string.
+inline auto retrieveLine(StringViewVariant auto const str, char delim = '\n')
+{
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
+	StringViewType strview{ str };
+
+	const auto pos = strview.find(delim);
+	if (pos == StringViewType::npos)
+		return strview;
+
+	return str.substr(0, pos);
+}
 
 /// @brief Extracts the next line or substring from a string view, using a specified delimiter.
 /// @param str A reference to the string view to extract from. This will be updated to remove the extracted line.

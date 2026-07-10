@@ -235,7 +235,7 @@ struct PropertyUnsafeByte : public PropertyBase
 
 	virtual void apply(const GameValue& gameValue) override
 	{
-		value = static_cast<uint8_t>(gameValue.get<double>().value_or(0.0));
+		value = static_cast<uint8_t>(gameValue.getCopy<double>().value_or(0.0));
 	}
 
 	virtual std::format_context::iterator format(std::format_context& ctx) const override
@@ -265,7 +265,7 @@ struct PropertyNumeric : public PropertyBase
 
 	virtual void apply(const GameValue& gameValue) override
 	{
-		value = static_cast<T>(gameValue.get<double>().value_or(0));
+		value = static_cast<T>(gameValue.getCopy<double>().value_or(0.0));
 	}
 
 	virtual std::format_context::iterator format(std::format_context& ctx) const override
@@ -433,20 +433,20 @@ struct PropertyArray : public PropertyBase
     {
 		if (gameValue.get<std::vector<double>>().has_value())
 		{
-			auto* vec = gameValue.get_unsafe<std::vector<double>>();
-			if (vec == nullptr)
+			auto vec = gameValue.get<std::vector<double>>();
+			if (!vec.has_value())
 				return;
 
 			// Convert all values to type T and insert into the values array.
-			for (size_t i = 0; i < N && i < vec->size(); ++i)
+			for (size_t i = 0; i < N && i < vec.value().get().size(); ++i)
 			{
 				if constexpr (std::is_integral_v<T>)
 				{
-					values[i] = static_cast<T>((*vec)[i]);
+					values[i] = static_cast<T>(vec.value().get()[i]);
 				}
 				else
 				{
-					values[i] = T((*vec)[i]);
+					values[i] = T((*vec).get()[i]);
 				}
 			}
 		}

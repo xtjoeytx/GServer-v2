@@ -1168,7 +1168,7 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 	setPropsFromPacket(props, props::SetBy::SERVER, rc);
 
 	// Clear flags
-	for (const auto& [flag, value] : account.variables.store | variables::no_temporary)
+	for (const auto& [flag, value] : account.variables.store | variables::serializable)
 		outPacket >> (char)PLO_FLAGDEL << flag << "\n";
 	account.variables.store.clear();
 
@@ -1305,7 +1305,7 @@ CString Player::getPropsForRCPacket()
 	// Add the player's flags.
 	CString flags;
 	size_t flagCount = 0;
-	for (const auto& [flag, value] : account.variables.store | variables::no_temporary)
+	for (const auto& [flag, value] : account.variables.store | variables::serializable)
 	{
 		if (auto computedFlag = account.variables.serializeModern(flag); computedFlag.has_value())
 		{

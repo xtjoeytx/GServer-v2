@@ -2,6 +2,9 @@
 #define LEVELHORSE_H
 
 #include <cstdint>
+#include <functional>
+#include <optional>
+#include <string_view>
 #include <string>
 
 #include <CString.h>
@@ -35,24 +38,26 @@ struct LevelHorse
 	std::string image;
 	uint8_t direction;
 	uint8_t bushes;
+	uint8_t bombs = 0;
+	uint8_t bombpower = 0;
 	uint8_t type;
 	TimeoutGenerator timeout;
 
 	[[inline]] void constructScriptParameters();
-	string_map<GameValue> scriptParameters;
+	string_map<GameVariable> scriptParameters;
 };
 
 //----------------------------
 
 inline void LevelHorse::constructScriptParameters()
 {
-	scriptParameters.try_emplace("x", set_temporary, "x", gameValueGetter([this]() { return position.x() / 16.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("y", set_temporary, "y", gameValueGetter([this]() { return position.y() / 16.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("dir", set_temporary, "dir", gameValueGetter(direction), GameValue::func_set{});
-	scriptParameters.try_emplace("bushes", set_temporary, "bushes", gameValueGetter(bushes), GameValue::func_set{});
-	scriptParameters.try_emplace("bombs", set_temporary, "bombs", gameValueGetter([this]() { return 0.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("bombpower", set_temporary, "bombpower", gameValueGetter([this]() { return 0.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("type", set_temporary, "type", gameValueGetter([this]() { return static_cast<double>(type); }), GameValue::func_set{});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"x"sv, std::nullopt, std::ref(position.x()), 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"y"sv, std::nullopt, std::ref(position.y()), 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"dir"sv, std::nullopt, std::ref(direction)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"bushes"sv, std::nullopt, std::ref(bushes)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"bombs"sv, std::nullopt, std::ref(bombs)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"bombpower"sv, std::nullopt, std::ref(bombpower)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"type"sv, std::nullopt, std::ref(type)});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

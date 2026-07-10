@@ -1,6 +1,7 @@
 #ifndef ISCRIPTENGINE_H
 #define ISCRIPTENGINE_H
 
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -30,6 +31,7 @@ public:
 	virtual ~IScriptEngine() {};
 
 public:
+	virtual std::string_view getEngineName() = 0;
 	virtual ScriptEngineMode getExecutionMode() = 0;
 	virtual ScriptExecutionType getExecutionType() = 0;
 
@@ -42,8 +44,8 @@ public:
 	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) = 0;
 
 public:
-	virtual double processMathExpression(std::string_view expression, ScriptObject source) = 0;
-	virtual std::string processStringExpression(std::string_view expression, ScriptObject source) = 0;
+	virtual std::optional<double> processMathExpression(std::string_view expression, ScriptObject source) = 0;
+	virtual std::optional<std::string> processStringExpression(std::string_view expression, ScriptObject source) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

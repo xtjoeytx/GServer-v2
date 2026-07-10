@@ -64,8 +64,8 @@ void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& 
 
 		// Set the action flag.
 		// Set both the original action and a lowercased version.
-		variableStore.add(GameValue{ set_temporary, action, true });
-		variableStore.add(GameValue{ set_temporary, string::toLower(action), true });
+		variableStore.add(GameVariable{.name = action, .value = true, .lifetime = variables::Lifetime::TEMPORARY});
+		variableStore.add(GameVariable{.name = string::toLower(action), .value = true, .lifetime = variables::Lifetime::TEMPORARY});
 
 		// If there are just two arguments, try to unpack the second argument.
 		if (event.args.size() == 2)
@@ -84,7 +84,7 @@ void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& 
 	}
 }
 
-void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player)
+void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerPtr player)
 {
 	if (player == nullptr)
 		return;
@@ -146,7 +146,7 @@ void setWeaponFlags(ScriptEvent& event, ScriptObject source, GameVariableStore& 
 	variableStore.add("isweapon", source.second == ScriptObjectType::WEAPON);
 }
 
-void setOtherFlags(ScriptEvent& event, ScriptObject source, GameVariableStore& variableStore, NPCPtr npc, PlayerClientPtr player, LevelPtr level)
+void setOtherFlags(ScriptEvent& event, ScriptObject source, GameVariableStore& variableStore, NPCPtr npc, PlayerPtr player, LevelPtr level)
 {
 	// actionplayer
 	if (event.type == ScriptEventType::TRIGGERACTION && event.initiator.second == ScriptObjectType::PLAYER && level != nullptr)

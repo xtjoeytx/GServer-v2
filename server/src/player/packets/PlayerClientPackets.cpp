@@ -692,12 +692,12 @@ HandlePacketResult PlayerClient::msgPLI_FLAGDEL(CString& pPacket)
 	// Try to remove the flag.
 	if (auto flag = account.variables.get(flagName).lock(); flag != nullptr)
 	{
-		if (flag->has<std::string>())
+		if (flag->value.has<std::string>())
 		{
 			if (hasValue)
 				account.variables.remove(flagName);
 		}
-		else if (flag->has<bool>())
+		else if (flag->value.has<bool>())
 		{
 			if (!hasValue)
 				account.variables.remove(flagName);

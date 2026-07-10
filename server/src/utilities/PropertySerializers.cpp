@@ -52,7 +52,7 @@ void PropertyString::deserialize(CString& data)
 
 void PropertyString::apply(const GameValue& gameValue)
 {
-	value = gameValue.get<std::string>().value_or("");
+	value = std::move(gameValue.getCopy<std::string>().value_or(""s));
 }
 
 std::format_context::iterator PropertyString::format(std::format_context& ctx) const
@@ -119,7 +119,7 @@ void PropertySwordPower::deserialize(CString& data)
 
 void PropertySwordPower::apply(const GameValue& gameValue)
 {
-	image = gameValue.get<std::string>().value_or("");
+	image = std::move(gameValue.getCopy<std::string>().value_or(""s));
 }
 
 std::format_context::iterator PropertySwordPower::format(std::format_context& ctx) const
@@ -183,7 +183,7 @@ void PropertyShieldPower::deserialize(CString& data)
 
 void PropertyShieldPower::apply(const GameValue& gameValue)
 {
-	image = gameValue.get<std::string>().value_or("");
+	image = std::move(gameValue.getCopy<std::string>().value_or(""s));
 }
 
 std::format_context::iterator PropertyShieldPower::format(std::format_context& ctx) const
@@ -242,7 +242,7 @@ void PropertyGaniOrBowGif::deserialize(CString& data)
 
 void PropertyGaniOrBowGif::apply(const GameValue& gameValue)
 {
-	gani = gameValue.get<std::string>().value_or("");
+	gani = std::move(gameValue.getCopy<std::string>().value_or(""s));
 }
 
 std::format_context::iterator PropertyGaniOrBowGif::format(std::format_context& ctx) const
@@ -292,7 +292,7 @@ void PropertyHeadGif::deserialize(CString& data)
 
 void PropertyHeadGif::apply(const GameValue& gameValue)
 {
-	image = gameValue.get<std::string>().value_or("");
+	image = std::move(gameValue.getCopy<std::string>().value_or(""s));
 }
 
 std::format_context::iterator PropertyHeadGif::format(std::format_context& ctx) const
@@ -328,14 +328,14 @@ void PropertyEloRating::deserialize(CString& data)
 void PropertyEloRating::apply(const GameValue& gameValue)
 {
 	auto array = gameValue.get<std::vector<double>>();
-	if (!array.has_value() || array.value().size() != 2)
+	if (!array.has_value() || array.value().get().size() != 2)
 	{
 		rating = 0;
 		deviation = 0;
 		return;
 	}
 
-	auto& values = array.value();
+	auto& values = array.value().get();
 	rating = static_cast<float>(values[0]);
 	deviation = static_cast<float>(values[1]);
 }
@@ -361,7 +361,7 @@ void PropertyAttachNPC::deserialize(CString& data)
 
 void PropertyAttachNPC::apply(const GameValue& gameValue)
 {
-	npcId = static_cast<NPCID>(gameValue.get<double>().value_or(0));
+	npcId = static_cast<NPCID>(gameValue.getCopy<double>().value_or(0));
 }
 
 std::format_context::iterator PropertyAttachNPC::format(std::format_context& ctx) const
@@ -392,7 +392,7 @@ void PropertyPixelCoordinate::deserialize(CString& data)
 
 void PropertyPixelCoordinate::apply(const GameValue& gameValue)
 {
-	pixelCoordinate = static_cast<int16_t>(gameValue.get<double>().value_or(0) * 16);
+	pixelCoordinate = static_cast<int16_t>(gameValue.getCopy<double>().value_or(0) * 16);
 }
 
 std::format_context::iterator PropertyPixelCoordinate::format(std::format_context& ctx) const
@@ -430,7 +430,7 @@ void PropertyTileCoordinate::deserialize(CString& data)
 
 void PropertyTileCoordinate::apply(const GameValue& gameValue)
 {
-	pixelCoordinate = static_cast<int16_t>(gameValue.get<double>().value_or(0) * 16);
+	pixelCoordinate = static_cast<int16_t>(gameValue.getCopy<double>().value_or(0) * 16);
 }
 
 std::format_context::iterator PropertyTileCoordinate::format(std::format_context& ctx) const
@@ -453,7 +453,7 @@ void PropertyTileCoordinateZ::deserialize(CString& data)
 
 void PropertyTileCoordinateZ::apply(const GameValue& gameValue)
 {
-	pixelCoordinate = static_cast<int16_t>(gameValue.get<double>().value_or(0) * 16);
+	pixelCoordinate = static_cast<int16_t>(gameValue.getCopy<double>().value_or(0) * 16);
 }
 
 std::format_context::iterator PropertyTileCoordinateZ::format(std::format_context& ctx) const
@@ -483,7 +483,7 @@ void PropertyGS1Script::deserialize(CString& data)
 
 void PropertyGS1Script::apply(const GameValue& gameValue)
 {
-	script = gameValue.get<std::string>().value_or("");
+	script = std::move(gameValue.getCopy<std::string>().value_or(""s));
 }
 
 std::format_context::iterator PropertyGS1Script::format(std::format_context& ctx) const
@@ -543,14 +543,14 @@ void PropertyHurtDxDy::deserialize(CString& data)
 void PropertyHurtDxDy::apply(const GameValue& gameValue)
 {
 	auto array = gameValue.get<std::vector<double>>();
-	if (!array.has_value() || array.value().size() != 2)
+	if (!array.has_value() || array.value().get().size() != 2)
 	{
 		hurtDX = 0;
 		hurtDY = 0;
 		return;
 	}
 
-	auto& values = array.value();
+	auto& values = array.value().get();
 	float dx = std::clamp(static_cast<float>(values[0]), -1.0f, 1.0f);
 	float dy = std::clamp(static_cast<float>(values[1]), -1.0f, 1.0f);
 	hurtDX = static_cast<int8_t>(dx * 32);
@@ -596,10 +596,10 @@ void PropertyImagePart::deserialize(CString& data)
 void PropertyImagePart::apply(const GameValue& gameValue)
 {
 	auto array = gameValue.get<std::vector<double>>();
-	if (!array.has_value() || array.value().size() < 4)
+	if (!array.has_value() || array.value().get().size() < 4)
 		return;
 
-	auto& values = array.value();
+	auto& values = array.value().get();
 	imagePart.position = {static_cast<uint16_t>(values[0]), static_cast<uint16_t>(values[1])};
 	imagePart.size = {static_cast<uint8_t>(values[2]), static_cast<uint8_t>(values[3])};
 }
@@ -635,7 +635,7 @@ void PropertySprite::deserialize(CString& data)
 
 void PropertySprite::apply(const GameValue& gameValue)
 {
-	auto value = static_cast<uint8_t>(gameValue.get<double>().value_or(0.0));
+	auto value = static_cast<uint8_t>(gameValue.getCopy<double>().value_or(0.0));
 	sprite = value >> 2;
 	direction = value & 0b0000'0011;
 }
@@ -675,18 +675,17 @@ void PropertyColors::deserialize(CString& data)
 
 void PropertyColors::apply(const GameValue& gameValue)
 {
-	if (gameValue.get<std::vector<double>>().has_value())
+	auto value = gameValue.get<std::vector<double>>();
+	if (value.has_value())
 	{
-		auto* vec = gameValue.get_unsafe<std::vector<double>>();
-		if (vec == nullptr)
-			return;
+		auto& vec = value.value().get();
 
 		// Convert all values to type T and insert into the values array.
 		size_t count = getColorCount();
 		size_t maxValue = getMaxColorValue();
-		for (size_t i = 0; i < count && i < vec->size(); ++i)
+		for (size_t i = 0; i < count && i < vec.size(); ++i)
 		{
-			values[i] = std::clamp(static_cast<ValueType>((*vec)[i]), static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
+			values[i] = std::clamp(static_cast<ValueType>(vec[i]), static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
 		}
 	}
 }

@@ -376,7 +376,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		{
 			std::string flagName = string::trimMutate(string::extractLine(lineView, '='));
 			std::string flagValue = std::string{string::trim(lineView)};
-			npc->scripting.variables.add(GameValue::deserialize(flagName, flagValue));
+			npc->scripting.variables.add(GameVariable::deserialize(flagName, flagValue));
 		}
 		else if (command.substr(0, 4) == "ATTR")
 		{
@@ -608,10 +608,11 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 			writeProp(prop, std::format("ATTR{}", i + 1), npc->character.ganiAttributes[i]);
 	}
 
-	for (auto& [flag, value] : npc->scripting.variables.store | variables::no_temporary)
+	for (auto& [flag, value] : npc->scripting.variables.store | variables::serializable)
 	{
 		// Ignore flags.
-		if (value->has<bool>() && !value->has<std::string>()) continue;
+		if (value->value.has<bool>() && !value->value.has<std::string>())
+			continue;
 
 		// Serialize the variable entirely.
 		if (server->Generation == ServerGeneration::MODERN)

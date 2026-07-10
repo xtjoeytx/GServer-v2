@@ -21,6 +21,7 @@
 #include <string_view>
 #include <string>
 #include <thread>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -52,6 +53,7 @@
 #include <object/Weapon.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerLogin.h>
+#include <player/PlayerRC.h>
 #include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
@@ -134,6 +136,75 @@ Server::Server(const CString& pName)
 	m_accountLoader = std::make_unique<FlatFileAccountLoader>();
 	m_npcLoader = std::make_unique<FlatFileNPCLoader>();
 
+	// Scripting variables.
+	// clang-format off
+	auto playerFilter = std::views::filter([](auto& kvp)
+	{
+		bool isClient = dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr;
+		bool isRC = dynamic_cast<PlayerRC*>(kvp.second.get()) != nullptr;
+		return (isClient || isRC) && kvp.second->getId() != 0;
+	});
+
+	Scripting.variables.add("gravity"sv, GameValue{2.0});
+	Scripting.variables.add("waterheight"sv, GameValue{0.0});
+	Scripting.variables.add<double>("timevar"sv, bindGETSIMPLE(static_cast<double>(getNWTime()), this), {});
+	Scripting.variables.add<double>("timevar2"sv, bindGETSIMPLE(static_cast<double>(getFrameStartTimeHighPrecision().time_since_epoch().count()), this), {});
+	Scripting.variables.add<double>("allplayerscount"sv,
+		[this, playerFilter](std::optional<int64_t> index) -> GameValueVariantForGetter
+		{
+			if (!hasNPCServer()) return 0.0;
+			auto size = std::ranges::distance(getNPCServer()->getPlayerList() | playerFilter);
+			return static_cast<double>(size);
+		},
+		{});
+	Scripting.variables.add<std::vector<ScriptObject>>("allplayers"sv,
+		[this, playerFilter](std::optional<int64_t> index) -> GameValueVariantForGetter
+		{
+			if (!hasNPCServer()) return std::vector<ScriptObject>{};
+			auto playerObjects = getNPCServer()->getPlayerList()
+				| playerFilter
+				| std::views::transform([](auto& kvp) { return ScriptObject{ std::make_pair((size_t)kvp.first, ScriptObjectType::PLAYER) }; });
+
+			return std::vector<ScriptObject>{std::ranges::begin(playerObjects), std::ranges::end(playerObjects)};
+		},
+		{});
+	Scripting.variables.add<double>("nwtime"sv, bindGETSIMPLE(static_cast<double>(getNWTime()), this), {});
+	Scripting.variables.add<double>("nwmin"sv, bindGETSIMPLE(static_cast<double>(getNWTime() % 60), this), {});                 // 60 min in an hour
+	Scripting.variables.add<double>("nwhour"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / 60) % 24), this), {});         // 24 hours in a day
+	Scripting.variables.add<double>("nwday"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / 1440) % 28), this), {});        // 28 days in a month
+	Scripting.variables.add<double>("nwweekday"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / 1440) % 7) + 1, this), {}); // 1-7 for Sunday-Saturday
+	Scripting.variables.add<double>("nwweek"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / 10080) % 4), this), {});       // 4 weeks in a month (7 days per week)
+	Scripting.variables.add<double>("nwmonth"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / 40320) % 10), this), {});     // 10 months in a year
+	Scripting.variables.add<double>("nwyear"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / 403200) + 1000), this), {});   // Years start at 1000
+
+	GameVariable groundHeightsVar{.name = "groundheights"};
+	groundHeightsVar.registerGetter<double>([this](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		if (!index.has_value() || index.value() < 0 || index.value() >= (int64_t)groundHeights.size())
+			return 0.0;
+		return groundHeights.at(index.value());
+	});
+	groundHeightsVar.registerGetter<std::vector<double>>(bindGETSIMPLE((std::vector<double>{groundHeights.begin(), groundHeights.end()}), this));
+	groundHeightsVar.registerSetter<double>([this](GameValueVariantForSetter& value, std::optional<int64_t> index)
+	{
+		if (!index.has_value() || index.value() < 0 || index.value() >= (int64_t)groundHeights.size())
+			return;
+		if (auto wrap = std::get_if<std::reference_wrapper<double>>(&value); wrap != nullptr)
+			groundHeights.at(index.value()) = wrap->get();
+	});
+	groundHeightsVar.registerSetter<std::vector<double>>([this](GameValueVariantForSetter& value, std::optional<int64_t> index)
+	{
+		groundHeights.fill(0.0);
+		if (auto wrap = std::get_if<std::reference_wrapper<std::vector<double>>>(&value); wrap != nullptr)
+		{
+			for (size_t i = 0; i < std::min(groundHeights.size(), wrap->get().size()); ++i)
+				groundHeights[i] = wrap->get()[i];
+		}
+	});
+	Scripting.variables.add(std::move(groundHeightsVar));
+	// clang-format on
+
+	// Timed events.
 	m_timedEvents1s.callbackIterations = std::bind(&Server::doTimedEvents, this, std::placeholders::_1);
 	m_timedSave1m.callbackIterations = [this](int)
 	{
@@ -162,7 +233,7 @@ Server::Server(const CString& pName)
 			// We always do this so we can abort early.
 			if (!level->timeSinceLastPlayerLeft.has_value())
 				continue;
-			
+
 			// Register that we will skip if we have the unload time set to 0 (which means never unload).
 			bool skip = (m_unloadInactiveLevelTime.getValue() == 0);
 
@@ -573,8 +644,8 @@ void Server::operator()()
 void Server::cleanup()
 {
 	// Save translations.
-	auto translationManager = BabyDI::Get<ITranslationManager>();
-	translationManager->saveTranslations();
+	if (auto translationManager = BabyDI::Get<ITranslationManager>(); translationManager != nullptr)
+		translationManager->saveTranslations();
 
 	// Save server flags.
 	saveServerFlags();
@@ -586,7 +657,10 @@ void Server::cleanup()
 	m_npcList.clear();
 	m_shootParams.clear();
 
-	auto players = m_playerList | std::views::transform([](const auto& pair) { return pair.second; });
+	auto players = m_playerList | std::views::transform([](const auto& pair)
+	{
+		return pair.second;
+	});
 	std::vector<PlayerPtr> deletePlayers{std::ranges::begin(players), std::ranges::end(players)};
 	for (auto& player : deletePlayers)
 	{
@@ -1076,7 +1150,7 @@ void Server::loadServerFlags()
 		bool hasNS = hasNPCServer();
 
 		// Iterate through all the server flags finding deleted flags and sending changes.
-		for (auto& [flag, value] : Scripting.variables.store | variables::no_temporary)
+		for (auto& [flag, value] : Scripting.variables.store | variables::serializable)
 		{
 			auto search = flagMap.find(flag);
 
@@ -1086,19 +1160,19 @@ void Server::loadServerFlags()
 			else
 			// The server variable was changed.
 			{
-				if (search->second.empty() && !value->has<bool>())
+				if (search->second.empty() && !value->value.has<bool>())
 				{
-					value->unassign<std::string>();
+					value->value.unassign<std::string>();
 					value->assign<bool>(true);
 					if (!hasNS || flag.starts_with("serverr."))
 						sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first);
 				}
-				else if (!value->has<std::string>() || search->second != value->get<std::string>().value())
+				else if (!value->value.has<std::string>() || search->second != value->get<std::string>().value().get())
 				{
-					value->unassign<bool>();
-					value->assign<std::string>(search->second);
+					value->value.unassign<bool>();
+					value->assign(search->second);
 					if (!hasNS || flag.starts_with("serverr."))
-						sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first << "=" << *value->get_unsafe<std::string>());
+						sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << search->first << "=" << search->second);
 				}
 				flagMap.erase(search);
 			}
@@ -1352,6 +1426,8 @@ void Server::saveServerFlags()
 				file->writeLine(serialized.value());
 		}
 	}
+	if (auto info = m_fsServer.infoi(fs::FileCategory::CONFIG, "serverflags.txt"); info != nullptr)
+		info->refreshModTime();
 }
 
 void Server::saveWeapons()
@@ -1753,6 +1829,7 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 	// Set the NPC's name.
 	if (npc->name.empty())
 	{
+		// clang-format off
 		std::string npcNamePrefix = std::format("{}_{}{}{}_{}_",
 			string::toLower(npc->scriptType),
 			level != nullptr && level->isGroupMap ? level->groupMapName : "",
@@ -1763,6 +1840,7 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 		{
 			return pair.second->name.starts_with(npcNamePrefix);
 		});
+		// clang-format on
 
 		npc->name = std::format("{}{}", npcNamePrefix, (count + 1));
 	}
@@ -1776,8 +1854,10 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 #ifdef DEBUG
 	if (running)
 	{
+		// clang-format off
 		log::printLine(log::server, "Adding NPC [{}] '{}' at ({}, {})[{},{}] in level '{}'.",
 			npc->id, npc->name, npc->character.localPixelX, npc->character.localPixelY, npc->character.mapX, npc->character.mapY, npc->level);
+		// clang-format on
 	}
 #endif
 
@@ -1999,7 +2079,7 @@ std::string Server::getLogDateTimeString() const
 		auto localtime = std::chrono::floor<std::chrono::seconds>(std::chrono::current_zone()->to_local(std::chrono::system_clock::now()));
 #endif
 
-		std::string result{ std::format(log::TimestampLong, localtime) };
+		std::string result{std::format(log::TimestampLong, localtime)};
 		result += " ";
 		return result;
 	}
@@ -2086,7 +2166,7 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	if (existing != nullptr)
 	{
 		//bool isFlag = existing->has<bool>() && !existing->has<std::string>();
-		bool isStringFlag = existing->has<std::string>();
+		bool isStringFlag = existing->value.has<std::string>();
 
 		// No change.
 		if (!flagValue.has_value())

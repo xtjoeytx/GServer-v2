@@ -687,7 +687,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 				CString flagName = val.subString(0, pos[0]);
 				auto flagMaybe = p2->account.variables.get(flagName.toStringView());
 				if (auto flag = flagMaybe.lock(); flag != nullptr)
-					val = flag->get<std::string>().value_or(std::string{});
+					val = flag->getCopy<std::string>().value_or(std::string{});
 
 				// If String-Array, Get Index
 				if (pos[2] >= 0)

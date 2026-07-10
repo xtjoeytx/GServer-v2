@@ -7,12 +7,15 @@
 #include <ctime>
 #include <filesystem>
 #include <format>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <span>
-#include <string_view>
 #include <string>
+#include <string_view>
+#include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <CSocket.h>
@@ -32,23 +35,38 @@
 #include <level/LevelItem.h>
 #include <misc/WordFilter.h>
 #include <network/IPacketHandler.h>
+#include <npcserver/NPCServer.h>
+#include <object/Character.h>
 #include <object/Player.h>
 #include <object/Weapon.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerProps.h>
+#include <scripting/IScriptEngine.h>
 #include <scripting/ScriptContainers.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
-#include <utilities/PropertySerializers.h>
-#include <utilities/StringUtils.h>
 #include <utilities/manager/GuildManager.h>
 #include <utilities/manager/ITranslationManager.h>
+#include <utilities/PropertySerializers.h>
+#include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+static constexpr std::array<std::string_view, 8> colorPropertyNames = { "#C0"sv, "#C1"sv, "#C2"sv, "#C3"sv, "#C4"sv, "#C5"sv, "#C6"sv, "#C7"sv };
+static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
+	"#P1"sv, "#P2"sv, "#P3"sv, "#P4"sv, "#P5"sv, "#P6"sv, "#P7"sv, "#P8"sv, "#P9"sv, "#P10"sv,
+	"#P11"sv, "#P12"sv, "#P13"sv, "#P14"sv, "#P15"sv, "#P16"sv, "#P17"sv, "#P18"sv, "#P19"sv, "#P20"sv,
+	"#P21"sv, "#P22"sv, "#P23"sv, "#P24"sv, "#P25"sv, "#P26"sv, "#P27"sv, "#P28"sv, "#P29"sv, "#P30"sv,
+};
+// clang-format on
+
+//----------------------------
 
 #ifdef PACKETLOGGING
 	#define FOR_OUTPUT_PACKETS(DO)     \
@@ -296,6 +314,8 @@ Player::Player(CSocket* pSocket, PlayerID pId)
 	m_server = BabyDI::Get<Server>();
 	m_lastData = clock::now();
 	m_serverName = m_server->getName();
+
+	account.variables.defaultLifetime = variables::Lifetime::PERMANENT;
 
 	srand((unsigned int)time(0));
 }
@@ -1154,125 +1174,251 @@ void Player::constructScriptParameters()
 	if (!scriptParameters.empty())
 		return;
 
-	scriptParameters.try_emplace("id", set_temporary, "id", gameValueGetter([this]() { return static_cast<double>(getId()); }), GameValue::func_set{});
-	scriptParameters.try_emplace("x", set_temporary, "x",
-		gameValueGetter([this]() { return account.character.getGlobalPosition().x() / 16.0; }),
-		gameValueSetter(this, PROPOPT(PlayerProp::X2), [this](const GameValue& value, std::optional<int64_t>) { account.character.localPixelX = value.get<double>().value_or(0.0) * 16; }));
-	scriptParameters.try_emplace("y", set_temporary, "y",
-		gameValueGetter([this]() { return account.character.getGlobalPosition().y() / 16.0; }),
-		gameValueSetter(this, PROPOPT(PlayerProp::Y2), [this](const GameValue& value, std::optional<int64_t>) { account.character.localPixelY = value.get<double>().value_or(0.0) * 16; }));
-	scriptParameters.try_emplace("z", set_temporary, "z",
-		gameValueGetter([this]() { return getCalculatedTileZ(); }),
-		gameValueSetter(this, PROPOPT(PlayerProp::Z2), [this](const GameValue& value, std::optional<int64_t>) { account.character.localPixelZ = value.get<double>().value_or(0.0) * 16; }));
-	scriptParameters.try_emplace("fullhearts", set_temporary, "fullhearts", gameValueGetter(account.maxHitpoints), gameValueSetter(this, PROPOPT(PlayerProp::MAXPOWER), account.maxHitpoints));
-	scriptParameters.try_emplace("maxhp", set_temporary, "maxhp", gameValueGetter(account.maxHitpoints), gameValueSetter(this, PROPOPT(PlayerProp::MAXPOWER), account.maxHitpoints));
-	scriptParameters.try_emplace("hearts", set_temporary, "hearts",
-		gameValueGetter([this]() { return account.character.hitpointsInHalves / 2.0; }),
-		gameValueSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<int64_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
-	scriptParameters.try_emplace("hp", set_temporary, "hp",
-		gameValueGetter([this]() { return account.character.hitpointsInHalves / 2.0; }),
-		gameValueSetter(this, PROPOPT(PlayerProp::CURPOWER), [this](const GameValue& value, std::optional<int64_t>) { account.character.hitpointsInHalves = value.get<double>().value_or(0.0) * 2; }));
-	scriptParameters.try_emplace("mp", set_temporary, "mp", gameValueGetter(account.character.mp), gameValueSetter(this, PROPOPT(PlayerProp::MAGICPOINTS), account.character.mp));
-	scriptParameters.try_emplace("ap", set_temporary, "ap", gameValueGetter(account.character.ap), gameValueSetter(this, PROPOPT(PlayerProp::ALIGNMENT), account.character.ap));
-	scriptParameters.try_emplace("rupees", set_temporary, "rupees", gameValueGetter(account.character.gralats), gameValueSetter(this, PROPOPT(PlayerProp::RUPEESCOUNT), account.character.gralats));
-	scriptParameters.try_emplace("gralats", set_temporary, "gralats", gameValueGetter(account.character.gralats), gameValueSetter(this, PROPOPT(PlayerProp::RUPEESCOUNT), account.character.gralats));
-	scriptParameters.try_emplace("bombs", set_temporary, "bombs", gameValueGetter(account.character.bombs), gameValueSetter(this, PROPOPT(PlayerProp::BOMBSCOUNT), account.character.bombs));
-	scriptParameters.try_emplace("darts", set_temporary, "darts", gameValueGetter(account.character.arrows), gameValueSetter(this, PROPOPT(PlayerProp::ARROWSCOUNT), account.character.arrows));
-	scriptParameters.try_emplace("glovepower", set_temporary, "glovepower", gameValueGetter(account.character.glovePower), gameValueSetter(this, PROPOPT(PlayerProp::GLOVEPOWER), account.character.glovePower));
-	scriptParameters.try_emplace("swordpower", set_temporary, "swordpower", gameValueGetter(account.character.swordPower), gameValueSetter(this, PROPOPT(PlayerProp::SWORDPOWER), account.character.swordPower));
-	scriptParameters.try_emplace("shieldpower", set_temporary, "shieldpower", gameValueGetter(account.character.shieldPower), gameValueSetter(this, PROPOPT(PlayerProp::SHIELDPOWER), account.character.shieldPower));
-	scriptParameters.try_emplace("shootpower", set_temporary, "shootpower", gameValueGetter(account.character.bowPower), gameValueSetter(this, PROPOPT(PlayerProp::GANI), account.character.bowPower));
-	scriptParameters.try_emplace("headset", set_temporary, "headset",
-		gameValueGetter(
-			[this]()
+	// clang-format off
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"id"sv, std::nullopt, std::ref(m_id)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"hurtpower"sv, std::nullopt, std::ref(account.character.hurtDeltaInHalves)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"attachid"sv, std::nullopt, std::ref(m_attachNPC)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"lastdead"sv, std::nullopt, std::ref(lastDeadTime)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"logintime"sv, std::nullopt, std::ref(loginTime)});
+
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"attachtype"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return m_attachNPC == 0 ? 0.0 : 1.0; }
+	});
+
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"saysnumber"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter
+		{
+			// If we have an NPC-Server, we can process the chat message as a math expression and return the result.
+			if (m_server->hasNPCServer())
 			{
-				int headSet = -1;
-				if (account.character.headImage.starts_with("head"))
-					string::toNumber(account.character.headImage.substr(4), headSet);
-				return static_cast<double>(headSet);
-			}),
-		gameValueSetter(this, PROPOPT(PlayerProp::HEADGIF),
-			[this](const GameValue& value, std::optional<int64_t>)
+				auto npcServer = m_server->getNPCServer();
+				if (auto engine = npcServer->scripting.getDefaultScriptEngine(); engine != nullptr)
+				{
+					// Retrieve up to the first space.
+					auto line = string::retrieveLine(std::string_view{ account.character.chatMessage }, ' ');
+
+					// GS1: Then retrieve up to a question mark, since ternary's are not supported.
+					if (engine->getEngineName() == "GS1"sv)
+						line = string::retrieveLine(line, '?');
+
+					if (auto result = engine->processMathExpression(line, source::FromPlayer(m_id)); result.has_value())
+						return result.value();
+				}
+			}
+
+			// Fallback just processes the number.
+			return string::toDouble(account.character.chatMessage);
+		}
+	});
+
+	// trial, classic, vip, gold
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"upgradestatus"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return isGuest() ? "trial"s : "classic"s; }
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"z"sv, std::ref(modTime[PROPID(PlayerProp::Z2)]), std::ref(account.character.localPixelZ), 16});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hearts"sv, std::ref(modTime[PROPID(PlayerProp::CURPOWER)]), std::ref(account.character.hitpointsInHalves), 2});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hp"sv, std::ref(modTime[PROPID(PlayerProp::CURPOWER)]), std::ref(account.character.hitpointsInHalves), 2});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"fullhearts"sv, std::ref(modTime[PROPID(PlayerProp::MAXPOWER)]), std::ref(account.maxHitpoints)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"maxhp"sv, std::ref(modTime[PROPID(PlayerProp::MAXPOWER)]), std::ref(account.maxHitpoints)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"mp"sv, std::ref(modTime[PROPID(PlayerProp::MAGICPOINTS)]), std::ref(account.character.mp)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"ap"sv, std::ref(modTime[PROPID(PlayerProp::ALIGNMENT)]), std::ref(account.character.ap)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"rupees"sv, std::ref(modTime[PROPID(PlayerProp::RUPEESCOUNT)]), std::ref(account.character.gralats)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"gralats"sv, std::ref(modTime[PROPID(PlayerProp::RUPEESCOUNT)]), std::ref(account.character.gralats)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"bombs"sv, std::ref(modTime[PROPID(PlayerProp::BOMBSCOUNT)]), std::ref(account.character.bombs)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"darts"sv, std::ref(modTime[PROPID(PlayerProp::ARROWSCOUNT)]), std::ref(account.character.arrows)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"glovepower"sv, std::ref(modTime[PROPID(PlayerProp::GLOVEPOWER)]), std::ref(account.character.glovePower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"swordpower"sv, std::ref(modTime[PROPID(PlayerProp::SWORDPOWER)]), std::ref(account.character.swordPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"shieldpower"sv, std::ref(modTime[PROPID(PlayerProp::SHIELDPOWER)]), std::ref(account.character.shieldPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"shootpower"sv, std::ref(modTime[PROPID(PlayerProp::GANI)]), std::ref(account.character.bowPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#1"sv, std::ref(modTime[PROPID(PlayerProp::SWORDPOWER)]), std::ref(account.character.swordImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#2"sv, std::ref(modTime[PROPID(PlayerProp::SHIELDPOWER)]), std::ref(account.character.shieldImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#3"sv, std::ref(modTime[PROPID(PlayerProp::HEADGIF)]), std::ref(account.character.headImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#5"sv, std::ref(modTime[PROPID(PlayerProp::HORSEGIF)]), std::ref(account.character.horseImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#7"sv, std::ref(modTime[PROPID(PlayerProp::GANI)]), std::ref(account.character.bowImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#8"sv, std::ref(modTime[PROPID(PlayerProp::BODYIMG)]), std::ref(account.character.bodyImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#c"sv, std::ref(modTime[PROPID(PlayerProp::CURCHAT)]), std::ref(account.character.chatMessage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#m"sv, std::ref(modTime[PROPID(PlayerProp::GANI)]), std::ref(account.character.gani)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#n"sv, std::ref(modTime[PROPID(PlayerProp::NICKNAME)]), std::ref(account.character.nickName)});
+
+	// colors
+	for (size_t i = 0; i < account.character.colors.size(); ++i)
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{colorPropertyNames[i], std::ref(modTime[PROPID(PlayerProp::COLORS)]), std::ref(account.character.colors[i])});
+
+	// gani attributes
+	for (size_t i = 0; i < 30; ++i)
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{ganiAttributePropertyNames[i], std::ref(modTime[GaniAttributePropList[i]]), std::ref(account.character.ganiAttributes[i])});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"x"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return (double)account.character.getTilePosition().x(); },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
-				auto headSet = std::clamp(static_cast<int>(value.get<double>().value_or(-1.0)), -1, 99);
-				if (headSet < 0) return;
+				auto globalPosition = account.character.getGlobalPosition();
+				globalPosition.x() = value->get() * 16;
+				account.character.localPixelX = toLocalPixelPosition(globalPosition).x();
+
+				// Update the location props.
+				auto now = m_server->getFrameStartTime();
+				modTime[PROPID(PlayerProp::X)] = now;
+				modTime[PROPID(PlayerProp::X2)] = now;
+
+				// Fix the map position if applicable.
+				if (auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
+				{
+					if (auto mapX = toMapPosition(globalPosition).x(); mapX != account.character.mapX)
+					{
+						account.character.mapX = mapX;
+						modTime[PROPID(PlayerProp::GMAPLEVELX)] = now;
+					}
+				}
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"y"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return account.character.getTilePosition().y(); },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			{
+				auto globalPosition = account.character.getGlobalPosition();
+				globalPosition.y() = value->get() * 16;
+				account.character.localPixelY = toLocalPixelPosition(globalPosition).y();
+
+				// Update the location props.
+				auto now = m_server->getFrameStartTime();
+				modTime[PROPID(PlayerProp::Y)] = now;
+				modTime[PROPID(PlayerProp::Y2)] = now;
+
+				// Fix the map position if applicable.
+				if (auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
+				{
+					if (auto mapY = toMapPosition(globalPosition).y(); mapY != account.character.mapY)
+					{
+						account.character.mapY = mapY;
+						modTime[PROPID(PlayerProp::GMAPLEVELY)] = now;
+					}
+				}
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"headset"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter
+		{
+			int headSet = -1;
+			if (account.character.headImage.starts_with("head"))
+				string::toNumber(account.character.headImage.substr(4), headSet);
+			return static_cast<double>(headSet);
+		},
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			static double noHeadSet = -1.0;
+			static auto noHeadRef = std::ref(noHeadSet);
+			auto value = std::get_if<std::reference_wrapper<double>>(&incoming);
+			if (value == nullptr)
+				value = &noHeadRef;
+
+			auto headSet = std::clamp(static_cast<int>(value->get()), -1, 99);
+			if (headSet != -1)
+			{
 				account.character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::ORIGINAL ? "gif" : "png"));
-			})
-	);
-	scriptParameters.try_emplace("sprite", set_temporary, "sprite",
-		gameValueGetter(account.character.sprite),
-		gameValueSetter(this, PROPOPT(PlayerProp::SPRITE),
-			[this](const GameValue& value, std::optional<int64_t>)
+				modTime[PROPID(PlayerProp::HEADGIF)] = m_server->getFrameStartTime();
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"sprite"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.character.sprite); },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
-				account.character.sprite = static_cast<uint8_t>(value.get<double>().value_or(0.0));
+				account.character.sprite = static_cast<uint8_t>(value->get());
 				if (account.character.sprite >= 4 && m_server->Generation != ServerGeneration::ORIGINAL)
 				{
 					account.character.gani = std::format("def[{}]", account.character.sprite);
-					this->modTime[PROPID(PlayerProp::GANI)] = currentTime();
+					modTime[PROPID(PlayerProp::GANI)] = m_server->getFrameStartTime();
 				}
-			})
-	);
-	scriptParameters.try_emplace("dir", set_temporary, "dir",
-		gameValueGetter([this]() { return static_cast<double>(account.character.direction); }),
-		gameValueSetter(this, PROPOPT(PlayerProp::SPRITE),
-			[this](const GameValue& value, std::optional<int64_t>)
-			{
-				account.character.direction = std::clamp(static_cast<uint8_t>(value.get<double>().value_or(0.0)), 0_ui8, 3_ui8);
-			})
-	);
-	scriptParameters.try_emplace("hurtpower", set_temporary, "hurtpower", gameValueGetter(account.character.hurtDeltaInHalves), GameValue::func_set{});
-	scriptParameters.try_emplace("attachid", set_temporary, "attachid", gameValueGetter(m_attachNPC), GameValue::func_set{});
-	scriptParameters.try_emplace("attachtype", set_temporary, "attachtype", 1.0);
-	scriptParameters.try_emplace("saysnumber", set_temporary, "saysnumber",
-		gameValueGetter([this]() { return string::toDouble(account.character.chatMessage); }),
-		GameValue::func_set{}
-	);
-	scriptParameters.try_emplace("lastdead", set_temporary, "lastdead", gameValueGetter(lastDeadTime), GameValue::func_set{});
-	scriptParameters.try_emplace("logintime", set_temporary, "logintime", gameValueGetter(loginTime), GameValue::func_set{});
-	scriptParameters.try_emplace("kills", set_temporary, "kills",
-		gameValueGetter(account.kills),
-		gameValueSetter(this, PROPOPT(PlayerProp::KILLSCOUNT),
-		[this](const GameValue& value, std::optional<int64_t>)
-		{
-			if (!m_server->getSettings().get<bool>("dontchangekills").value_or(false))
-				account.kills = static_cast<uint32_t>(std::max(0.0, value.get<double>().value_or(0.0)));
-		})
-	);
-	scriptParameters.try_emplace("deaths", set_temporary, "deaths",
-		gameValueGetter(account.deaths),
-		gameValueSetter(this, PROPOPT(PlayerProp::DEATHSCOUNT),
-		[this](const GameValue& value, std::optional<int64_t>)
-		{
-			if (!m_server->getSettings().get<bool>("dontchangekills").value_or(false))
-				account.deaths = static_cast<uint32_t>(std::max(0.0, value.get<double>().value_or(0.0)));
-		})
-	);
-	scriptParameters.try_emplace("rating", set_temporary, "rating",
-		gameValueGetter(account.eloRating),
-		gameValueSetter(this, PROPOPT(PlayerProp::RATING),
-		[this](const GameValue& value, std::optional<int64_t>)
-		{
-			account.eloRating = static_cast<float>(std::max(0.0, value.get<double>().value_or(0.0)));
-		})
-	);
-	scriptParameters.try_emplace("ratingd", set_temporary, "ratingd",
-		gameValueGetter(account.eloDeviation),
-		gameValueSetter(this, PROPOPT(PlayerProp::RATING),
-		[this](const GameValue& value, std::optional<int64_t>)
-		{
-			if (!m_server->getSettings().get<bool>("dontupdateratingd").value_or(false))
-				account.eloDeviation = static_cast<float>(std::clamp(value.get<double>().value_or(0.0), 0.0, 350.0));
-		})
-	);
+			}
+		}
+	});
 
-	// trial, classic, vip, gold
-	scriptParameters.try_emplace("upgradestatus", set_temporary, "upgradestatus",
-		gameValueGetter([this]() { return isGuest() ? "trial"s : "classic"s; }),
-		GameValue::func_set{}
-	);
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"dir"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.character.direction); },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			{
+				account.character.direction = std::clamp(static_cast<uint8_t>(value->get()), 0_ui8, 3_ui8);
+				modTime[PROPID(PlayerProp::SPRITE)] = m_server->getFrameStartTime();
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"kills"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.kills); },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			{
+				if (!m_server->getSettings().get<bool>("dontchangekills").value_or(false))
+					account.kills = static_cast<uint32_t>(std::max(0.0, value->get()));
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"deaths"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.deaths); },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			{
+				if (!m_server->getSettings().get<bool>("dontchangekills").value_or(false))
+					account.deaths = static_cast<uint32_t>(std::max(0.0, value->get()));
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"rating"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.eloRating); },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+				account.eloRating = static_cast<uint32_t>(std::max(0.0, value->get()));
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		"ratingd"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.eloDeviation); },
+		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			{
+				if (!m_server->getSettings().get<bool>("dontupdateratingd").value_or(false))
+					account.eloDeviation = static_cast<float>(std::clamp(value->get(), 0.0, 350.0));
+			}
+		}
+	});
 
 	// GR extensions.
-	scriptParameters.try_emplace("carrysprite", set_temporary, "carrysprite", gameValueGetter(m_carrySprite), gameValueSetter(this, PROPOPT(PlayerProp::CARRYSPRITE), m_carrySprite));
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"carrysprite"sv, std::ref(modTime[PROPID(PlayerProp::CARRYSPRITE)]), std::ref(m_carrySprite)});
+
+	// clang-format on
 }
 
 ////////////////////////////////////////////////////////////////////////////////

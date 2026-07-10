@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <any>
-#include <chrono>
 #include <cstdint>
 #include <format>
 #include <iterator>
@@ -8,7 +7,9 @@
 #include <memory>
 #include <optional>
 #include <ranges>
+#include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <BabyDI.h>
@@ -16,14 +17,11 @@
 #include <Server.h>
 #include <level/Level.h>
 #include <level/LevelBaddy.h>
-#include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
-#include <player/PlayerClient.h>
-#include <player/PlayerRC.h>
-#include <scripting/gs1/GS1Variables.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
+#include <scripting/gs1/GS1Variables.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 
@@ -31,101 +29,6 @@
 namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
-
-void setGlobalVariables(GameVariableStore& variableStore)
-{
-	auto* server = BabyDI::Get<Server>();
-
-	auto playerFilter = std::views::filter([](auto& kvp)
-	{
-		bool isClient = dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr;
-		bool isRC = dynamic_cast<PlayerRC*>(kvp.second.get()) != nullptr;
-		return (isClient || isRC) && kvp.second->getId() != 0;
-	});
-
-	// timevar
-	variableStore.add(GameValue{ "timevar", gameValueGetter([server]() { return static_cast<double>(server->getNWTime()); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "timevar2", gameValueGetter([server]() { return static_cast<double>(server->getFrameStartTimeHighPrecision().time_since_epoch().count()); }), GameValue::func_set{} });
-
-	// allplayers
-	variableStore.add(GameValue{ "allplayerscount",
-		gameValueGetter([server, playerFilter]()
-		{
-			auto size = std::ranges::distance(server->getNPCServer()->getPlayerList() | playerFilter);
-			return static_cast<double>(size);
-		}), GameValue::func_set{}
-	});
-	variableStore.add(GameValue{ "allplayers",
-		gameValueGetter([server, playerFilter]()
-		{
-			auto playerObjects = server->getNPCServer()->getPlayerList()
-				| playerFilter
-				| std::views::transform([](auto& kvp) { return ScriptObject{ std::make_pair((size_t)kvp.first, ScriptObjectType::PLAYER)}; });
-			std::vector<ScriptObject> players{ std::ranges::begin(playerObjects), std::ranges::end(playerObjects) };
-			return players;
-		}), GameValue::func_set{}
-	});
-
-	// gravity
-	variableStore.add(GameValue{ "gravity",
-		gameValueGetter([server]()
-		{
-			return server->Scripting.variables.getValue<double>("gravity").value_or(2.0);
-		}),
-		gameValueSetter([server](const GameValue& value, std::optional<int64_t> index)
-		{
-			if (auto var = server->Scripting.variables.get("gravity").lock(); var != nullptr)
-				var->set(value.get<double>().value_or(2.0));
-		})
-	});
-
-	// waterheight
-	variableStore.add(GameValue{ "waterheight",
-		gameValueGetter([server]()
-		{
-			return server->Scripting.variables.getValue<double>("waterheight").value_or(0.0);
-		}),
-		gameValueSetter([server](const GameValue& value, std::optional<int64_t> index)
-		{
-			if (auto var = server->Scripting.variables.get("waterheight").lock(); var != nullptr)
-				var->set(value.get<double>().value_or(0.0));
-		})
-	});
-
-	// nwtime and derivatives.
-	variableStore.add(GameValue{ "nwtime",
-		gameValueGetter([server]() { return static_cast<double>(server->getNWTime()); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "nwmin",	// 60 min in an hour
-		gameValueGetter([server]() { return static_cast<double>(server->getNWTime() % 60); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "nwhour",	// 24 hours in a day
-		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 60) % 24); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "nwday",	// 28 days in a month
-		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 1440) % 28); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "nwweekday",
-		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 1440) % 7) + 1; }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "nwweek",	// 4 weeks in a month (7 days per week)
-		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 10080) % 4); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "nwmonth",	// 10 months in a year
-		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 40320) % 10); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "nwyear",	// Years start at 1000
-		gameValueGetter([server]() { return static_cast<double>((server->getNWTime() / 403200) + 1000); }), GameValue::func_set{} });
-
-	// groundheights[]
-	variableStore.add(GameValue{ "groundheights",
-		gameValueGetter([server](std::optional<int64_t> index)
-		{
-			if (!index.has_value() || index.value() < 0 || index.value() >= (int64_t)server->groundHeights.size())
-				return 0.0;
-			return server->groundHeights.at(index.value());
-		}),
-		gameValueSetter([server](const GameValue& value, std::optional<int64_t> index)
-		{
-			if (!index.has_value() || index.value() < 0 || index.value() >= (int64_t)server->groundHeights.size())
-				return;
-			server->groundHeights.at(index.value()) = value.get<double>().value_or(0.0);
-		})
-	});
-}
 
 void setNPCVariables(GameVariableStore& variableStore, std::weak_ptr<NPC> npc)
 {
@@ -135,32 +38,31 @@ void setNPCVariables(GameVariableStore& variableStore, std::weak_ptr<NPC> npc)
 
 	// board[]
 	// This variable only checks the sub-level board data, so we need to know the NPC's level and position.
-	variableStore.add(GameValue{ "board",
-		gameValueGetter([npc](std::optional<int64_t> index) -> GameValue
+	GameVariable board{.name = "board"};
+	board.registerGetter<double>([npc](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		auto npcPtr = npc.lock();
+		if (npcPtr == nullptr) return 0.0;
+
+		auto levelPtr = npcPtr->getLevel();
+		if (levelPtr == nullptr || index.value_or(0) < 0 || index.value_or(0) >= 4096) return 0.0;
+
+		const auto& levelTiles = levelPtr->getTiles(npcPtr->character.getMapPosition());
+		if (!levelTiles.has_value())
+			return 0.0;
+
+		if (!index.has_value())
 		{
-			auto npcPtr = npc.lock();
-			if (npcPtr == nullptr) return 0.0;
-
-			auto levelPtr = npcPtr->getLevel();
-			if (levelPtr == nullptr || index.value_or(0) < 0 || index.value_or(0) >= 4096) return 0.0;
-
-			const auto& levelTiles = levelPtr->getTiles(npcPtr->character.getMapPosition());
-			if (!levelTiles.has_value())
-				return 0.0;
-
-			if (!index.has_value())
-			{
-				std::vector<double> tiles;
-				tiles.insert(tiles.end(), std::ranges::begin(*levelTiles.value()), std::ranges::end(*levelTiles.value()));
-				return tiles;
-			}
-
-			return static_cast<double>(levelTiles.value()->at(index.value()));
-		}), GameValue::func_set{}
+			std::vector<double> tiles;
+			tiles.insert(tiles.end(), std::ranges::begin(*levelTiles.value()), std::ranges::end(*levelTiles.value()));
+			return tiles;
+		}
+		return static_cast<double>(levelTiles.value()->at(index.value()));
 	});
+	variableStore.add(std::move(board));
 }
 
-void setPlayerVariables(GameVariableStore& variableStore, std::weak_ptr<PlayerClient> player)
+void setPlayerVariables(GameVariableStore& variableStore, std::weak_ptr<Player> player)
 {
 	auto playerPtr = player.lock();
 	if (playerPtr == nullptr)
@@ -169,36 +71,47 @@ void setPlayerVariables(GameVariableStore& variableStore, std::weak_ptr<PlayerCl
 	auto* server = BabyDI::Get<Server>();
 
 	// weaponscount
-	variableStore.add(GameValue{ "weaponscount",
-		gameValueGetter([player]() { return player.expired() ? 0.0 : static_cast<double>(player.lock()->account.weapons.size()); }), GameValue::func_set{}});
+	GameVariable weaponscount{.name = "weaponscount"};
+	weaponscount.registerGetter<double>([player](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		return player.expired() ? 0.0 : static_cast<double>(player.lock()->account.weapons.size());
+	});
+	variableStore.add(std::move(weaponscount));
 
 	// levelorgx / levelorgy
-	variableStore.add(GameValue{ "levelorgx",
-		gameValueGetter([server, player]()
-		{
-			if (player.expired()) return 0.0;
-			if (auto npc = server->getNPC(player.lock()->getAttachedNPC()); npc != nullptr)
-				return -npc->character.getGlobalPosition().x() / 16.0;
-			return 0.0;
-		}), GameValue::func_set{}
+	GameVariable levelorgx{.name = "levelorgx"};
+	GameVariable levelorgy{.name = "levelorgy"};
+	levelorgx.registerGetter<double>([server, player](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		if (player.expired()) return 0.0;
+		if (auto npc = server->getNPC(player.lock()->getAttachedNPC()); npc != nullptr)
+			return -npc->character.getGlobalPosition().x() / 16.0;
+		return 0.0;
 	});
-	variableStore.add(GameValue{ "levelorgy",
-		gameValueGetter([server, player]()
-		{
-			if (player.expired()) return 0.0;
-			if (auto npc = server->getNPC(player.lock()->getAttachedNPC()); npc != nullptr)
-				return -npc->character.getGlobalPosition().y() / 16.0;
-			return 0.0;
-		}), GameValue::func_set{}
+	levelorgy.registerGetter<double>([server, player](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		if (player.expired()) return 0.0;
+		if (auto npc = server->getNPC(player.lock()->getAttachedNPC()); npc != nullptr)
+			return -npc->character.getGlobalPosition().y() / 16.0;
+		return 0.0;
 	});
+	variableStore.add(std::move(levelorgx));
+	variableStore.add(std::move(levelorgy));
 
 	// all the player property shortcuts
 	playerPtr->constructScriptParameters();
 	for (const auto& [name, variable] : playerPtr->scriptParameters)
-		variableStore.add(GameValue{ set_temporary, std::format("player{}", name), variable.getGetter(), variable.getSetter() });
+	{
+		// Ignore the message code properties.
+		if (name.starts_with('#'))
+			continue;
+
+		GameVariable v{.name = std::format("player{}", name), .lifetime = variables::Lifetime::NORMAL, .getters = variable.getters, .setters = variable.setters};
+		variableStore.add(std::move(v));
+	}
 }
 
-void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> level)
+void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> level, std::weak_ptr<NPC> npc, std::weak_ptr<Player> player)
 {
 	// TODO: These variables should be stored on the level so they don't get remade for every single script.  Like the object parameters stuff.
 
@@ -206,235 +119,306 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 		return;
 
 	// players
-	variableStore.add(GameValue{ "playerscount", gameValueGetter([level]() { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getPlayers().size()); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "players",
-		gameValueGetter([level](std::optional<int64_t> index)
-		{
-			auto levelPtr = level.lock();
-			if (levelPtr == nullptr) return std::vector<ScriptObject>{};
-			std::vector<ScriptObject> players;
-
-			if (index.value_or(0) == -1)
-			{
-				// TODO: Current player.
-				return players;
-			}
-
-			auto playerObjects = levelPtr->getPlayers()
-				| std::views::drop(index.value_or(0))
-				| std::views::take(index.has_value() ? 1 : std::numeric_limits<size_t>::max())
-				| std::views::transform([](const PlayerID& id) { return ScriptObject{ std::make_pair((size_t)id, ScriptObjectType::PLAYER) }; });
-
-			std::ranges::copy(playerObjects, std::back_inserter(players));
-			return players;
-		}), GameValue::func_set{}
+	GameVariable playerscount{.name = "playerscount"};
+	GameVariable players{.name = "players"};
+	playerscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getPlayers().size());
 	});
+	players.registerGetter<std::vector<ScriptObject>>([level, player](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		auto levelPtr = level.lock();
+		if (levelPtr == nullptr)
+			return std::vector<ScriptObject>{};
+
+		std::vector<ScriptObject> players;
+		if (index.value_or(0) < 0)
+		{
+			if (auto playerClient = player.lock(); playerClient != nullptr && index.value() == -1)
+				players.push_back(ScriptObject{std::make_pair((size_t)playerClient->getId(), ScriptObjectType::PLAYER)});
+			return players;
+		}
+
+		// clang-format off
+		auto playerObjects = levelPtr->getPlayers()
+			| std::views::drop(index.value_or(0))
+			| std::views::take(index.has_value() ? 1 : std::numeric_limits<size_t>::max())
+			| std::views::transform([](const PlayerID& id) { return ScriptObject{std::make_pair((size_t)id, ScriptObjectType::PLAYER)}; });
+		// clang-format on
+
+		std::ranges::copy(playerObjects, std::back_inserter(players));
+		return players;
+	});
+	variableStore.add(std::move(playerscount));
+	variableStore.add(std::move(players));
 
 	// npcs
-	variableStore.add(GameValue{ "npcscount", gameValueGetter([level]() { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getNPCs().size()); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "npcs",
-		gameValueGetter([level](std::optional<int64_t> index)
-		{
-			auto levelPtr = level.lock();
-			if (levelPtr == nullptr || index.value_or(0) < 0) return std::vector<ScriptObject>{};
-			std::vector<ScriptObject> npcs;
-
-			auto npcObjects = levelPtr->getNPCs()
-				| std::views::drop(index.value_or(0))
-				| std::views::take(index.has_value() ? 1 : std::numeric_limits<size_t>::max())
-				| std::views::transform([](const NPCID& id) { return ScriptObject{ std::make_pair((size_t)id, ScriptObjectType::NPC) }; });
-
-			std::ranges::copy(npcObjects, std::back_inserter(npcs));
-			return npcs;
-		}), GameValue::func_set{}
+	GameVariable npcscount{.name = "npcscount"};
+	GameVariable npcs{.name = "npcs"};
+	npcscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getNPCs().size());
 	});
+	npcs.registerGetter<std::vector<ScriptObject>>([level, npc](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		auto levelPtr = level.lock();
+		if (levelPtr == nullptr)
+			return std::vector<ScriptObject>{};
+
+		std::vector<ScriptObject> npcs;
+		if (index.value_or(0) < 0)
+		{
+			if (auto npcPtr = npc.lock(); npcPtr != nullptr && index.value() == -1)
+				npcs.push_back(ScriptObject{std::make_pair((size_t)npcPtr->id, ScriptObjectType::NPC)});
+			return npcs;
+		}
+
+		// clang-format off
+		auto npcObjects = levelPtr->getNPCs()
+			| std::views::drop(index.value_or(0))
+			| std::views::take(index.has_value() ? 1 : std::numeric_limits<size_t>::max())
+			| std::views::transform([](const NPCID& id) { return ScriptObject{std::make_pair((size_t)id, ScriptObjectType::NPC)}; });
+		// clang-format on
+
+		std::ranges::copy(npcObjects, std::back_inserter(npcs));
+		return npcs;
+	});
+	variableStore.add(std::move(npcscount));
+	variableStore.add(std::move(npcs));
 
 	// compus
-	variableStore.add(GameValue{ "compuscount", gameValueGetter([level]() { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getBaddyCount()); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "compus",
-		gameValueGetter([level](std::optional<int64_t> index)
-		{
-			auto levelPtr = level.lock();
-			if (levelPtr == nullptr || index.value_or(0) < 0) return std::vector<ScriptObject>{};
-			std::vector<ScriptObject> compus;
+	GameVariable compuscount{.name = "compuscount"};
+	GameVariable compus{.name = "compus"};
+	compuscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getBaddyCount());
+	});
+	compus.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		auto levelPtr = level.lock();
+		if (levelPtr == nullptr || index.value_or(0) < 0)
+			return std::vector<ScriptObject>{};
 
-			auto objects = levelPtr->getBaddies()
-				| std::views::filter([](const LevelBaddy& baddy) { return baddy.mode != BaddyMode::DEAD; })
-				| std::views::drop(index.value_or(0))
-				| std::views::take(index.has_value() ? 1 : std::numeric_limits<size_t>::max())
-				| std::views::transform([](const LevelBaddy& baddy) { return ScriptObject{ std::make_pair((size_t)baddy.id, ScriptObjectType::BADDY) }; });
+		// clang-format off
+		std::vector<ScriptObject> compus;
+		auto objects = levelPtr->getBaddies()
+			| std::views::filter([](const LevelBaddy& baddy) { return baddy.mode != BaddyMode::DEAD; })
+			| std::views::drop(index.value_or(0))
+			| std::views::take(index.has_value() ? 1 : std::numeric_limits<size_t>::max())
+			| std::views::transform([](const LevelBaddy& baddy) { return ScriptObject{std::make_pair((size_t)baddy.id, ScriptObjectType::BADDY)}; });
+		// clang-format on
 
-			std::ranges::copy(objects, std::back_inserter(compus));
-			return compus;
-		}), GameValue::func_set{}
+		std::ranges::copy(objects, std::back_inserter(compus));
+		return compus;
 	});
 
 	// bombs
-	variableStore.add(GameValue{ "bombscount", gameValueGetter([level]() { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getBombs().size()); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "bombs",
-		gameValueGetter([level](std::optional<int64_t> index)
-		{
-			auto levelPtr = level.lock();
-			if (levelPtr == nullptr || index.value_or(0) < 0) return std::vector<ScriptObject>{};
-
-			if (!index.has_value())
-			{
-				std::vector<ScriptObject> objectList{};
-				for (size_t i = 0; levelPtr && i < levelPtr->getBombs().size(); ++i)
-					objectList.emplace_back(std::make_pair(i, ScriptObjectType::BOMB));
-				return objectList;
-			}
-
-			return std::vector<ScriptObject>{ std::make_pair(index.value(), ScriptObjectType::BOMB) };
-		}), GameValue::func_set{}
+	GameVariable bombscount{.name = "bombscount"};
+	GameVariable bombs{.name = "bombs"};
+	bombscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getBombs().size());
 	});
+	bombs.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		auto levelPtr = level.lock();
+		if (levelPtr == nullptr || index.value_or(0) < 0)
+			return std::vector<ScriptObject>{};
+
+		if (!index.has_value())
+		{
+			std::vector<ScriptObject> objectList{};
+			for (size_t i = 0; levelPtr && i < levelPtr->getBombs().size(); ++i)
+				objectList.emplace_back(std::make_pair(i, ScriptObjectType::BOMB));
+			return objectList;
+		}
+
+		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::BOMB)};
+	});
+	variableStore.add(std::move(compuscount));
+	variableStore.add(std::move(compus));
 
 	// arrows
-	variableStore.add(GameValue{ "arrowscount", gameValueGetter([level]() { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getArrows().size()); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "arrows",
-		gameValueGetter([level](std::optional<int64_t> index)
-		{
-			auto levelPtr = level.lock();
-			if (levelPtr == nullptr || index.value_or(0) < 0) return std::vector<ScriptObject>{};
-
-			if (!index.has_value())
-			{
-				std::vector<ScriptObject> objectList{};
-				for (size_t i = 0; levelPtr && i < levelPtr->getArrows().size(); ++i)
-					objectList.emplace_back(std::make_pair(i, ScriptObjectType::ARROW));
-				return objectList;
-			}
-
-			return std::vector<ScriptObject>{ std::make_pair(index.value(), ScriptObjectType::ARROW) };
-		}), GameValue::func_set{}
+	GameVariable arrowscount{.name = "arrowscount"};
+	GameVariable arrows{.name = "arrows"};
+	arrowscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getArrows().size());
 	});
+	arrows.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		auto levelPtr = level.lock();
+		if (levelPtr == nullptr || index.value_or(0) < 0)
+			return std::vector<ScriptObject>{};
+
+		if (!index.has_value())
+		{
+			std::vector<ScriptObject> objectList{};
+			for (size_t i = 0; levelPtr && i < levelPtr->getArrows().size(); ++i)
+				objectList.emplace_back(std::make_pair(i, ScriptObjectType::ARROW));
+			return objectList;
+		}
+
+		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::ARROW)};
+	});
+	variableStore.add(std::move(arrowscount));
+	variableStore.add(std::move(arrows));
 
 	// items
-	variableStore.add(GameValue{ "itemscount", gameValueGetter([level]() { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getItems().size()); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "items",
-		gameValueGetter([level](std::optional<int64_t> index)
-		{
-			auto levelPtr = level.lock();
-			if (levelPtr == nullptr || index.value_or(0) < 0) return std::vector<ScriptObject>{};
-
-			if (!index.has_value())
-			{
-				std::vector<ScriptObject> objectList{};
-				for (size_t i = 0; levelPtr && i < levelPtr->getItems().size(); ++i)
-					objectList.emplace_back(std::make_pair(i, ScriptObjectType::ITEM));
-				return objectList;
-			}
-
-			return std::vector<ScriptObject>{ std::make_pair(index.value(), ScriptObjectType::ITEM) };
-		}), GameValue::func_set{}
+	GameVariable itemscount{.name = "itemscount"};
+	GameVariable items{.name = "items"};
+	itemscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getItems().size());
 	});
+	items.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		auto levelPtr = level.lock();
+		if (levelPtr == nullptr || index.value_or(0) < 0)
+			return std::vector<ScriptObject>{};
+
+		if (!index.has_value())
+		{
+			std::vector<ScriptObject> objectList{};
+			for (size_t i = 0; levelPtr && i < levelPtr->getItems().size(); ++i)
+				objectList.emplace_back(std::make_pair(i, ScriptObjectType::ITEM));
+			return objectList;
+		}
+
+		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::ITEM)};
+		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::ITEM)};
+	});
+	variableStore.add(std::move(itemscount));
+	variableStore.add(std::move(items));
 
 	// explos
-	variableStore.add(GameValue{ "exploscount", gameValueGetter([level]() { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getExplosions().size()); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "explos",
-		gameValueGetter([level](std::optional<int64_t> index)
-		{
-			auto levelPtr = level.lock();
-			if (levelPtr == nullptr || index.value_or(0) < 0) return std::vector<ScriptObject>{};
-
-			if (!index.has_value())
-			{
-				std::vector<ScriptObject> objectList{};
-				for (size_t i = 0; levelPtr && i < levelPtr->getExplosions().size(); ++i)
-					objectList.emplace_back(std::make_pair(i, ScriptObjectType::EXPLOSION));
-				return objectList;
-			}
-
-			return std::vector<ScriptObject>{ std::make_pair(index.value(), ScriptObjectType::EXPLOSION) };
-		}), GameValue::func_set{}
+	GameVariable exploscount{.name = "exploscount"};
+	GameVariable explos{.name = "explos"};
+	exploscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getExplosions().size());
 	});
+	explos.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		auto levelPtr = level.lock();
+		if (levelPtr == nullptr || index.value_or(0) < 0)
+			return std::vector<ScriptObject>{};
+
+		if (!index.has_value())
+		{
+			std::vector<ScriptObject> objectList{};
+			for (size_t i = 0; levelPtr && i < levelPtr->getExplosions().size(); ++i)
+				objectList.emplace_back(std::make_pair(i, ScriptObjectType::EXPLOSION));
+			return objectList;
+		}
+
+		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::EXPLOSION)};
+	});
+	variableStore.add(std::move(exploscount));
+	variableStore.add(std::move(explos));
 
 	// horses
-	variableStore.add(GameValue{ "horsescount", gameValueGetter([level]() { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getHorses().size()); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "horses",
-		gameValueGetter([level](std::optional<int64_t> index)
-		{
-			auto levelPtr = level.lock();
-			if (levelPtr == nullptr || index.value_or(0) < 0) return std::vector<ScriptObject>{};
-
-			if (!index.has_value())
-			{
-				std::vector<ScriptObject> objectList{};
-				for (size_t i = 0; levelPtr && i < levelPtr->getHorses().size(); ++i)
-					objectList.emplace_back(std::make_pair(i, ScriptObjectType::HORSE));
-				return objectList;
-			}
-
-			return std::vector<ScriptObject>{ std::make_pair(index.value(), ScriptObjectType::HORSE) };
-		}), GameValue::func_set{}
+	GameVariable horsescount{.name = "horsescount"};
+	GameVariable horses{.name = "horses"};
+	horsescount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getHorses().size());
 	});
+	horses.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		auto levelPtr = level.lock();
+		if (levelPtr == nullptr || index.value_or(0) < 0)
+			return std::vector<ScriptObject>{};
+
+		if (!index.has_value())
+		{
+			std::vector<ScriptObject> objectList{};
+			for (size_t i = 0; levelPtr && i < levelPtr->getHorses().size(); ++i)
+				objectList.emplace_back(std::make_pair(i, ScriptObjectType::HORSE));
+			return objectList;
+		}
+
+		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::HORSE)};
+	});
+	variableStore.add(std::move(horsescount));
+	variableStore.add(std::move(horses));
 
 	// signs
-	variableStore.add(GameValue{ "signscount", gameValueGetter([level]() { return level.expired() ? 0.0 : static_cast<double>(level.lock()->getSignCount()); }), GameValue::func_set{} });
-	variableStore.add(GameValue{ "signs",
-		gameValueGetter([level](std::optional<int64_t> index)
-		{
-			auto levelPtr = level.lock();
-			if (levelPtr == nullptr || index.value_or(0) < 0) return std::vector<ScriptObject>{};
-
-			if (!index.has_value())
-			{
-				std::vector<ScriptObject> objectList{};
-				for (size_t i = 0; levelPtr && i < levelPtr->getSignCount(); ++i)
-					objectList.emplace_back(std::make_pair(i, ScriptObjectType::SIGN));
-				return objectList;
-			}
-
-			return std::vector<ScriptObject>{ std::make_pair(index.value(), ScriptObjectType::SIGN) };
-		}), GameValue::func_set{}
+	GameVariable signscount{.name = "signscount"};
+	GameVariable signs{.name = "signs"};
+	signscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getSignCount());
 	});
+	signs.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		auto levelPtr = level.lock();
+		if (levelPtr == nullptr || index.value_or(0) < 0)
+			return std::vector<ScriptObject>{};
+
+		if (!index.has_value())
+		{
+			std::vector<ScriptObject> objectList{};
+			for (size_t i = 0; levelPtr && i < levelPtr->getSignCount(); ++i)
+				objectList.emplace_back(std::make_pair(i, ScriptObjectType::SIGN));
+			return objectList;
+		}
+
+		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::SIGN)};
+	});
+	variableStore.add(std::move(signscount));
+	variableStore.add(std::move(signs));
 
 	// board[]
 	// Needs the map position of the NPC, so moved there.
 
 	// tiles[x,y] -> tiles[]
-	variableStore.add(GameValue{ "tiles",
-		gameValueGetter([level](std::optional<int64_t> index)
-		{
-			auto levelPtr = level.lock();
-			if (levelPtr == nullptr || index.value_or(-1) < 0) return 0.0;
-
-			// Get the tile X/Y out of the index.
-			uint32_t tileX = static_cast<uint32_t>(index.value() >> 32);
-			uint32_t tileY = static_cast<uint32_t>(index.value() & 0xFFFFFFFF);
-			TilePosition tilePos{ static_cast<float>(tileX), static_cast<float>(tileY) };
-
-			// Get the tile.
-			if (auto tile = levelPtr->getMapTileForEditing(tilePos); tile != nullptr)
-				return static_cast<double>(*tile);
+	GameVariable tiles{.name = "tiles"};
+	tiles.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		auto levelPtr = level.lock();
+		if (levelPtr == nullptr || index.value_or(-1) < 0)
 			return 0.0;
-		}),
-		gameValueSetter([level](const GameValue& value, std::optional<int64_t> index)
-		{
-			auto levelPtr = level.lock();
-			if (levelPtr == nullptr || index.value_or(-1) < 0) return;
 
-			// Get the tile X/Y out of the index.
-			uint32_t tileX = static_cast<uint32_t>(index.value() >> 32);
-			uint32_t tileY = static_cast<uint32_t>(index.value() & 0xFFFFFFFF);
-			TilePosition tilePos{ static_cast<float>(tileX), static_cast<float>(tileY) };
+		// Get the tile X/Y out of the index.
+		uint32_t tileX = static_cast<uint32_t>(index.value() >> 32);
+		uint32_t tileY = static_cast<uint32_t>(index.value() & 0xFFFFFFFF);
+		TilePosition tilePos{static_cast<float>(tileX), static_cast<float>(tileY)};
 
-			// Get and update the tile.
-			if (auto tile = levelPtr->getMapTileForEditing(tilePos); tile != nullptr)
-				*tile = static_cast<uint16_t>(value.get<double>().value_or(0.0));
-		})
+		// Get the tile.
+		if (auto tile = levelPtr->getMapTileForEditing(tilePos); tile != nullptr)
+			return static_cast<double>(*tile);
+		return 0.0;
 	});
+	tiles.registerSetter<double>([level](GameValueVariantForSetter& value, std::optional<int64_t> index)
+	{
+		auto levelPtr = level.lock();
+		if (levelPtr == nullptr || index.value_or(-1) < 0) return;
+
+		// Get the tile X/Y out of the index.
+		uint32_t tileX = static_cast<uint32_t>(index.value() >> 32);
+		uint32_t tileY = static_cast<uint32_t>(index.value() & 0xFFFFFFFF);
+		TilePosition tilePos{static_cast<float>(tileX), static_cast<float>(tileY)};
+
+		// Get and update the tile.
+		if (auto wrap = std::get_if<std::reference_wrapper<double>>(&value); wrap != nullptr)
+		{
+			if (auto tile = levelPtr->getMapTileForEditing(tilePos); tile != nullptr)
+				*tile = static_cast<uint16_t>(wrap->get());
+		}
+	});
+	variableStore.add(std::move(tiles));
 }
 
 void setOtherVariables(GameVariableStore& variableStore, ScriptEvent& event)
 {
 	// paramscount
-	variableStore.add(GameValue{ "paramscount",
-		gameValueGetter([&event]()
-		{
-			return static_cast<double>(std::max<std::vector<std::any>::size_type>(1, event.args.size()) - 1);
-		}), GameValue::func_set{}
+	GameVariable paramscount{.name = "paramscount"};
+	paramscount.registerGetter<double>([&event](std::optional<int64_t> index) -> GameValueVariantForGetter
+	{
+		return static_cast<double>(std::max<std::vector<std::any>::size_type>(1, event.args.size()) - 1);
 	});
+	variableStore.add(std::move(paramscount));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

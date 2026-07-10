@@ -1,8 +1,10 @@
 #ifndef LEVELSIGN_H
 #define LEVELSIGN_H
 
-#include <string>
+#include <functional>
+#include <optional>
 #include <string_view>
+#include <string>
 
 #include <CString.h>
 
@@ -31,15 +33,15 @@ struct LevelSign
 	std::string encodedText;
 
 	[[inline]] void constructScriptParameters();
-	string_map<GameValue> scriptParameters;
+	string_map<GameVariable> scriptParameters;
 };
 
 //----------------------------
 
 inline void LevelSign::constructScriptParameters()
 {
-	scriptParameters.try_emplace("x", set_temporary, "x", gameValueGetter([this]() { return position.x() / 16.0; }), GameValue::func_set{});
-	scriptParameters.try_emplace("y", set_temporary, "y", gameValueGetter([this]() { return position.y() / 16.0; }), GameValue::func_set{});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"x"sv, std::nullopt, std::ref(position.x()), 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"y"sv, std::nullopt, std::ref(position.y()), 16});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

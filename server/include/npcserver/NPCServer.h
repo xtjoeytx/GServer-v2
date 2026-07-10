@@ -151,6 +151,14 @@ private:
 template<class T>
 inline std::shared_ptr<T> NPCServer::getPlayer(const PlayerID id) const
 {
+	// The NPC-Server player is not stored in the player list, so we need to check for it separately.
+	if (id == NPCServerPlayerID)
+	{
+		if constexpr (std::same_as<T, PlayerNPCServer>)
+			return m_npcServerPlayer;
+		return std::dynamic_pointer_cast<T>(m_npcServerPlayer);
+	}
+
 	auto iter = m_playerList.find(id);
 	if (iter == std::end(m_playerList))
 		return nullptr;

@@ -1,6 +1,7 @@
 #ifndef COMMONTYPES_H
 #define COMMONTYPES_H
 
+#include <any>
 #include <array>
 #include <chrono>
 #include <concepts>
@@ -71,6 +72,15 @@ concept ContainerLike = std::ranges::range<T> && std::ranges::sized_range<T>;
 
 template<typename T>
 concept ContainerLikeNotString = std::ranges::range<T> && std::ranges::sized_range<T> && !string::StringViewIshVariant<T> && !string::PointerToConstCharString<T>;
+
+template<typename T>
+concept MapContainer = requires(T t) {
+	typename T::key_type;
+	typename T::mapped_type;
+	typename T::value_type;
+	{ t.find(std::declval<typename T::key_type>()) } -> std::same_as<typename T::iterator>;
+	{ t.try_emplace(std::declval<typename T::key_type>(), std::declval<typename T::mapped_type>()) } -> std::same_as<std::pair<typename T::iterator, bool>>;
+};
 
 //----------------------------
 // Aliases
@@ -292,6 +302,8 @@ inline auto removeNulls = std::views::filter([](auto&& ptr) { return ptr != null
 
 inline auto toSharedPtr = std::views::transform([](auto&& ptr) { return ptr.lock(); });
 
+inline auto toAny = std::views::transform([](const auto& value) { return std::any{ value }; });
+
 //----------------------------
 // Floating point helpers
 
@@ -327,6 +339,11 @@ inline auto toWeakPtr(std::shared_ptr<T>& ptr)
 
 //----------------------------
 // Other helpers
+
+inline constexpr bool inRange(std::integral auto value, std::integral auto min, std::integral auto max)
+{
+	return value >= min && value < max;
+}
 
 inline constexpr bool inRangeInclusive(std::integral auto value, std::integral auto min, std::integral auto max)
 {

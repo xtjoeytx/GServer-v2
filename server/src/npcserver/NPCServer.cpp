@@ -330,11 +330,7 @@ void NPCServer::processDeletedPlayers()
 
 std::shared_ptr<NPC> NPCServer::getNPC(const NPCID id) const
 {
-	auto iter = m_globalNPCList.find(id);
-	if (iter == std::end(m_globalNPCList))
-		return nullptr;
-
-	return iter->second.lock();
+	return m_server->getNPC(id);
 }
 
 std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)

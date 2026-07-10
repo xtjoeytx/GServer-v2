@@ -1,6 +1,7 @@
 #ifndef SCRIPTENGINEGS2_H
 #define SCRIPTENGINEGS2_H
 
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -28,6 +29,7 @@ public:
 	virtual ~ScriptEngineGS2() override {}
 
 public:
+	virtual std::string_view getEngineName() override { return "GS2"sv; }
 	virtual ScriptEngineMode getExecutionMode() override { return ScriptEngineMode::CALLBACK; }
 	virtual ScriptExecutionType getExecutionType() override { return ScriptExecutionType::COMPILED; }
 
@@ -40,8 +42,8 @@ public:
 	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override { return false; }
 
 public:
-	virtual double processMathExpression(std::string_view expression, ScriptObject source) override { return 0.0; }
-	virtual std::string processStringExpression(std::string_view expression, ScriptObject source) override { return {}; }
+	virtual std::optional<double> processMathExpression(std::string_view expression, ScriptObject source) override { return std::nullopt; }
+	virtual std::optional<std::string> processStringExpression(std::string_view expression, ScriptObject source) override { return std::nullopt; }
 
 protected:
 	BabyDI_INJECT(Server, m_server);
