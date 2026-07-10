@@ -95,6 +95,9 @@ struct Log
 	/// @brief Specifies the timestamp mode for console output.
 	TimestampMode timestampCli = TimestampMode::Short;
 
+	/// @brief Disables this log instance.  When disabled, no output will be written to the file or console.
+	bool disabled = false;
+
 	/// @brief Mirror output to the console as well as the file.
 	bool mirrorToCli = true;
 
@@ -168,6 +171,10 @@ template <typename ...Args>
 void print(Log& log, std::string_view fmt, const Args&... args)
 {
 	std::lock_guard lock(log.mutex);
+
+	if (log.disabled)
+		return;
+
 	std::ostringstream text;
 
 	// Add the section prefix.
@@ -238,6 +245,10 @@ template <typename ...Args>
 void printLine(Log& log, std::string_view fmt, const Args&... args)
 {
 	std::lock_guard lock(log.mutex);
+
+	if (log.disabled)
+		return;
+
 	print(log, fmt, args...);
 	print(log, "\n"sv);
 }
@@ -251,6 +262,10 @@ template <typename ...Args>
 void printBlock(Log& log, std::string_view fmt, const Args&... args)
 {
 	std::lock_guard lock(log.mutex);
+
+	if (log.disabled)
+		return;
+
 	print(log, fmt, args...);
 	log.atLineStart = false;
 }
@@ -261,6 +276,10 @@ void printBlock(Log& log, std::string_view fmt, const Args&... args)
 void batch(Log& log, RangeOf<std::pair<uint8_t, std::string>> auto const& range)
 {
 	std::lock_guard lock(log.mutex);
+
+	if (log.disabled)
+		return;
+
 	for (auto& [indentation, text] : range)
 	{
 		auto indent = log.indent(indentation);
@@ -274,6 +293,10 @@ void batch(Log& log, RangeOf<std::pair<uint8_t, std::string>> auto const& range)
 void batch(Log& log, RangeOf<std::pair<uint8_t, std::string>> auto&& range)
 {
 	std::lock_guard lock(log.mutex);
+
+	if (log.disabled)
+		return;
+
 	for (auto& [indentation, text] : range)
 	{
 		auto indent = log.indent(indentation);
