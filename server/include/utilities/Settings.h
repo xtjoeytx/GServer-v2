@@ -114,7 +114,7 @@ public:
 		auto range = m_settings.equal_range(key);
 
 		// Not found.
-		if (range.first == std::end(m_settings))
+		if (range.first == std::end(m_settings) || range.first->first != key)
 			return std::nullopt;
 
 		// One element.
