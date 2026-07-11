@@ -795,9 +795,7 @@ bool Player::isAdminIp()
 {
 	for (const auto& ipMask : account.adminIpRange)
 	{
-		if (ipMask == "0.0.0.0")
-			return true;
-		if (CString(account.ipAddress).match(ipMask))
+		if (string::match(std::string_view{ account.ipAddress }, std::string_view{ ipMask }))
 			return true;
 	}
 	return false;

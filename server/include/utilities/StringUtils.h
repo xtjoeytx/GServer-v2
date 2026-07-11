@@ -1565,7 +1565,7 @@ inline std::pair<std::string_view, std::string_view> extractConfigParts(StringVi
 /// @param mask The pattern mask containing wildcards ('*' for zero or more characters, '?' for exactly one character).
 /// @return True if the string matches the mask pattern; otherwise, false.
 template<bool ignoreCase = false>
-inline bool match(StringViewIshVariant auto const& str, StringViewIshVariant auto const& mask)
+inline bool match(StringViewVariant auto const str, StringViewVariant auto const mask)
 {
 	using str_value_type = std::remove_cvref_t<decltype(str)>::value_type;
 	using mask_value_type = std::remove_cvref_t<decltype(mask)>::value_type;
@@ -1639,6 +1639,21 @@ inline bool match(StringViewIshVariant auto const& str, StringViewIshVariant aut
 
 	// Still match characters left.
 	return false;
+}
+
+/// @brief Performs wildcard pattern matching on a string against a mask pattern.
+/// @tparam ignoreCase If true, performs case-insensitive matching; if false, performs case-sensitive matching. Defaults to false.
+/// @param str The string to match against the pattern.
+/// @param mask The pattern mask containing wildcards ('*' for zero or more characters, '?' for exactly one character).
+/// @return True if the string matches the mask pattern; otherwise, false.
+template<bool ignoreCase = false>
+inline bool match(StringVariant auto const& str, StringVariant auto const& mask)
+{
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
+
+	return match<ignoreCase>(StringViewType(str), StringViewType(mask));
 }
 
 /////////////////////////////////////////////////////////////////////

@@ -465,7 +465,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 
 		auto accountName = fileInfo->file.stem().generic_string();
 		if (accountName.empty()) continue;
-		if (!string::match<true>(accountName, name.toStringView())) continue;
+		if (!string::match<true>(std::string_view{accountName}, name.toStringView())) continue;
 		if (conditions.length() == 0 || m_server->getAccountLoader().checkSearchConditions(accountName, string::splitToVector(conditions, std::string_view(","))))
 			ret >> (char)accountName.length() << accountName;
 	}
