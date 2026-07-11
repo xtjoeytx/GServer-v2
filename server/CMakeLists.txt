@@ -317,6 +317,7 @@ FetchContent_Declare(ztd.idk
 	GIT_SHALLOW    ON
 	GIT_TAG        main
 	PATCH_COMMAND  ${CMAKE_COMMAND} -P "${_ztd_idk_patch}"
+	EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(ztd.idk)
 
@@ -485,4 +486,4 @@ endif()
 # Install
 
 set(INSTALL_DEST .)
-install(TARGETS ${TARGET_NAME} RUNTIME DESTINATION ${INSTALL_DEST})
+install(TARGETS ${EXE_NAME} RUNTIME DESTINATION ${INSTALL_DEST})
