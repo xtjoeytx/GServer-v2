@@ -11,17 +11,19 @@ The generation will control how the server behaves, what features are available,
 
 There are currently four identified generations:
 
-    original - 1.x
-    classic  - 2.x/3.x
-    newmain  - 4.x to 5.007
-    modern   - 5.1+
+    classic  - 1.x
+    newworld - unreleased experimental client that became 2.x
+    newmain  - 2.x/3.x
+    modern   - 4.x+
 
 The generation is set in the `serveroptions.txt` file in your playerworld:
 
-    generation = classic
+    generation = newmain
 
 Classic, clientside only mode was removed in client version 2.30.
-If you want to host an older-style server, use the `original` or `classic` generation and edit your `allowedversions.txt` file to remove client versions 2.30 and above.
+If you want to host an older-style server, use the `newmain` generation and edit your `allowedversions.txt` file to remove client versions 2.30 and above.
+
+The `newworld` generation is not supported by the server, but is included in the list of generations for completeness.
 
 ## Configuration
 

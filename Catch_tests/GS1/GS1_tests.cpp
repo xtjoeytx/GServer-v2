@@ -341,21 +341,21 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK_THAT(store->getValue<double>("greaterThanOrEqual2").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 		CHECK_THAT(store->getValue<double>("lessThanOrEqual").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 		CHECK_THAT(store->getValue<double>("lessThanOrEqual2").value_or(0.0), Catch::Matchers::WithinRel(1.0));
-		CHECK_THAT(store->getValue<double>("logicalAnd").value_or(0.0), Catch::Matchers::WithinRel(0.0)); // false
+		CHECK_THAT(store->getValue<double>("logicalAnd").value_or(99.0), Catch::Matchers::WithinRel(0.0)); // false
 		CHECK_THAT(store->getValue<double>("logicalAnd2").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 		CHECK_THAT(store->getValue<double>("logicalOr").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 		CHECK_THAT(store->getValue<double>("not").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 		CHECK_THAT(store->getValue<double>("ternary").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 		CHECK_THAT(store->getValue<double>("rangeII").value_or(0.0), Catch::Matchers::WithinRel(1.0));
-		CHECK_THAT(store->getValue<double>("rangeIE").value_or(0.0), Catch::Matchers::WithinRel(0.0)); // false
+		CHECK_THAT(store->getValue<double>("rangeIE").value_or(99.0), Catch::Matchers::WithinRel(0.0)); // false
 		CHECK_THAT(store->getValue<double>("rangeEI").value_or(0.0), Catch::Matchers::WithinRel(1.0));
-		CHECK_THAT(store->getValue<double>("rangeEE").value_or(0.0), Catch::Matchers::WithinRel(0.0)); // false
+		CHECK_THAT(store->getValue<double>("rangeEE").value_or(99.0), Catch::Matchers::WithinRel(0.0)); // false
 		CHECK_THAT(store->getValue<double>("rangeEE2").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 		CHECK_THAT(store->getValue<double>("rangeV").value_or(0.0), Catch::Matchers::WithinRel(1.0));
-		CHECK_THAT(store->getValue<double>("rangeCF").value_or(0.0), Catch::Matchers::WithinRel(0.0)); // false
+		CHECK_THAT(store->getValue<double>("rangeCF").value_or(99.0), Catch::Matchers::WithinRel(0.0)); // false
 		CHECK_THAT(store->getValue<double>("rangeCS").value_or(0.0), Catch::Matchers::WithinRel(1.0));
-		CHECK_THAT(store->getValue<double>("rangeC1").value_or(0.0), Catch::Matchers::WithinRel(0.0)); // false
-		CHECK_THAT(store->getValue<double>("rangeC2").value_or(0.0), Catch::Matchers::WithinRel(0.0)); // false
+		CHECK_THAT(store->getValue<double>("rangeC1").value_or(99.0), Catch::Matchers::WithinRel(0.0)); // false
+		CHECK_THAT(store->getValue<double>("rangeC2").value_or(99.0), Catch::Matchers::WithinRel(0.0)); // false
 		CHECK_THAT(store->getValue<double>("rangeC3").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 
 		// Implicit conversions to boolean only affect flags.

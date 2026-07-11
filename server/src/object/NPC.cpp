@@ -64,11 +64,11 @@ static bool canSendProp(NPCProp prop)
 	if (server == nullptr)
 		server = BabyDI::Get<Server>();
 
-	if (server->Generation == ServerGeneration::ORIGINAL && PROPID(prop) > PROPID(NPCProp::BODYIMAGE))
+	if (server->Generation == ServerGeneration::CLASSIC && PROPID(prop) > PROPID(NPCProp::BODYIMAGE))
 		return false;
 	if (prop == NPCProp::SCRIPTER || prop == NPCProp::NAME || prop == NPCProp::TYPE)
 		return false;
-	if (prop == NPCProp::CLASS && (server->Generation == ServerGeneration::ORIGINAL || server->Generation == ServerGeneration::CLASSIC))
+	if (prop == NPCProp::CLASS && (server->Generation == ServerGeneration::CLASSIC || server->Generation == ServerGeneration::NEWMAIN))
 		return false;
 
 	return true;
@@ -955,7 +955,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (strProp->value == "#c#" && image != "#c")
 			{
 				visFlags |= PROPID(NPCVisFlags::MALE);
-				if (m_server->Generation != ServerGeneration::ORIGINAL)
+				if (m_server->Generation != ServerGeneration::CLASSIC)
 				{
 					character.gani = "idle";
 					result.resultPropIds.push_back(PROPID(NPCProp::GANI));
@@ -1126,7 +1126,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// 1.x servers didn't have ganis.  This prop was used for the bow instead.
-			if (m_server->Generation == ServerGeneration::ORIGINAL)
+			if (m_server->Generation == ServerGeneration::CLASSIC)
 			{
 				if (!ganiProp->bowGif.has_value())
 					SETPROP_RETURN_ERROR;
@@ -1231,7 +1231,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			result.resultFlags.set(SetResults::getLatestOnSend);
 
 			// If we manually set a sprite, change the gani.
-			if (m_server->Generation != ServerGeneration::ORIGINAL && character.sprite != 0)
+			if (m_server->Generation != ServerGeneration::CLASSIC && character.sprite != 0)
 			{
 				auto gani = std::format("def[{}]", character.sprite);
 				//visFlags |= static_cast<uint8_t>(NPCVisFlags::UNKNOWNBIT5);
@@ -1269,7 +1269,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 			character.horseImage = strProp->value;
 
-			if (m_server->Generation == ServerGeneration::ORIGINAL && !character.horseImage.empty() && !character.horseImage.contains('.'))
+			if (m_server->Generation == ServerGeneration::CLASSIC && !character.horseImage.empty() && !character.horseImage.contains('.'))
 				character.horseImage += ".gif";
 			break;
 		}
@@ -1282,11 +1282,11 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 			std::string img;
 			if (std::holds_alternative<uint8_t>(headProp->image))
-				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (m_server->Generation != ServerGeneration::ORIGINAL ? "png" : "gif"));
+				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (m_server->Generation != ServerGeneration::CLASSIC ? "png" : "gif"));
 			else
 				img = std::get<std::string>(headProp->image);
 
-			if (m_server->Generation == ServerGeneration::ORIGINAL && !img.empty() && !img.contains('.'))
+			if (m_server->Generation == ServerGeneration::CLASSIC && !img.empty() && !img.contains('.'))
 				img += ".gif";
 
 			character.headImage = props::Limits::apply(img, props::Limits::HeadImageLength);
@@ -1827,7 +1827,7 @@ void NPC::constructScriptParameters()
 			auto headSet = std::clamp(static_cast<int>(value->get()), -1, 99);
 			if (headSet != -1)
 			{
-				character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::ORIGINAL ? "gif" : "png"));
+				character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::CLASSIC ? "gif" : "png"));
 				modTime[PROPID(NPCProp::HEADIMAGE)] = m_server->getFrameStartTime();
 			}
 		}
@@ -1842,7 +1842,7 @@ void NPC::constructScriptParameters()
 			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				character.sprite = static_cast<uint8_t>(value->get());
-				if (character.sprite >= 4 && m_server->Generation != ServerGeneration::ORIGINAL)
+				if (character.sprite >= 4 && m_server->Generation != ServerGeneration::CLASSIC)
 				{
 					character.gani = std::format("def[{}]", character.sprite);
 					modTime[PROPID(NPCProp::GANI)] = m_server->getFrameStartTime();

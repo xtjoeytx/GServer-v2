@@ -133,7 +133,7 @@ CString LevelBaddy::getProp(BaddyProp propId) const
 
 		case BaddyProp::POWERIMAGE:
 		{
-			if (m_server->Generation == ServerGeneration::ORIGINAL && image == baddyImages[PROPID(type)])
+			if (m_server->Generation == ServerGeneration::CLASSIC && image == baddyImages[PROPID(type)])
 				return CString() >> (char)power >> (char)image.length() << string::replace(image, ".png", ".gif");
 			else
 				return CString() >> (char)power >> (char)image.length() << image;

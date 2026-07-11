@@ -165,7 +165,7 @@ bool LevelLoader::loadLevelInto(const std::filesystem::path& levelName, LevelPtr
 	}
 
 	// Check if the server generation supports gmaps.
-	if (server->Generation == ServerGeneration::ORIGINAL)
+	if (server->Generation == ServerGeneration::CLASSIC)
 	{
 		log::printLine(log::server, "[ERROR] Server generation does not support gmaps, refusing to load {}.", level->levelName);
 		return false;

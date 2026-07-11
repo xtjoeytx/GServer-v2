@@ -79,7 +79,7 @@ static bool canSendProp(PlayerProp prop)
 	if (server == nullptr)
 		server = BabyDI::Get<Server>();
 
-	if (server->Generation == ServerGeneration::ORIGINAL && PROPID(prop) > PROPID(PlayerProp::RATING))
+	if (server->Generation == ServerGeneration::CLASSIC && PROPID(prop) > PROPID(PlayerProp::RATING))
 		return false;
 
 	return true;
@@ -296,7 +296,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			// 1.x servers didn't have ganis.  This prop was used for the bow instead.
-			if (m_server->Generation == ServerGeneration::ORIGINAL)
+			if (m_server->Generation == ServerGeneration::CLASSIC)
 			{
 				if (!ganiProp->bowGif.has_value())
 					break;
@@ -333,11 +333,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			std::string img;
 			if (std::holds_alternative<uint8_t>(headProp->image))
-				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (m_server->Generation != ServerGeneration::ORIGINAL ? "png" : "gif"));
+				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (m_server->Generation != ServerGeneration::CLASSIC ? "png" : "gif"));
 			else
 				img = std::get<std::string>(headProp->image);
 
-			if (m_server->Generation == ServerGeneration::ORIGINAL && !img.empty() && !img.contains('.'))
+			if (m_server->Generation == ServerGeneration::CLASSIC && !img.empty() && !img.contains('.'))
 				img += ".gif";
 
 			account.character.headImage = props::Limits::apply(img, props::Limits::HeadImageLength);
@@ -473,7 +473,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			result.resultFlags.set(SetResults::getLatestOnSend);
 
 			// If we manually set a sprite, change the gani.
-			if (m_server->Generation != ServerGeneration::ORIGINAL && account.character.sprite != 0 && (!account.character.gani.starts_with("def[") || modTime[PROPID(PlayerProp::GANI)] < curTime))
+			if (m_server->Generation != ServerGeneration::CLASSIC && account.character.sprite != 0 && (!account.character.gani.starts_with("def[") || modTime[PROPID(PlayerProp::GANI)] < curTime))
 			{
 				auto gani = std::format("def[{}]", account.character.sprite);
 				result.resultPropIds.push_back(PROPID(PlayerProp::GANI));
@@ -566,7 +566,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_ERROR;
 
 			account.character.horseImage = strProp->value;
-			if (m_server->Generation == ServerGeneration::ORIGINAL && !account.character.horseImage.empty() && !account.character.horseImage.contains('.'))
+			if (m_server->Generation == ServerGeneration::CLASSIC && !account.character.horseImage.empty() && !account.character.horseImage.contains('.'))
 				account.character.horseImage += ".gif";
 			break;
 		}

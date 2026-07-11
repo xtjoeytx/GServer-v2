@@ -46,25 +46,35 @@ enum class PlayerProp : uint8_t
 	ALIGNMENT = 32,
 	ADDITFLAGS = 33,
 	ACCOUNTNAME = 34,
+	// 1.4+
 	BODYIMG = 35,
+	// 1.41+
 	RATING = 36,
+	// 2.02+
 	GATTRIB1 = 37,
 	GATTRIB2 = 38,
 	GATTRIB3 = 39,
 	GATTRIB4 = 40,
 	GATTRIB5 = 41,
+	// 2.04+
 	ATTACHNPC = 42,
+	// 2.121+ (possibly)
 	GMAPLEVELX = 43,
 	GMAPLEVELY = 44,
 	Z = 45,
+	// 2.13+
 	GATTRIB6 = 46,
 	GATTRIB7 = 47,
 	GATTRIB8 = 48,
 	GATTRIB9 = 49,
+	//
 	JOINLEAVELVL = 50,
 	DISCONNECT = 51,
+	// 2.13+
 	LANGUAGE = 52,
+	// 2.14+
 	PLAYERLISTSTATUS = 53,
+	// 2.19+
 	GATTRIB10 = 54,
 	GATTRIB11 = 55,
 	GATTRIB12 = 56,
@@ -86,9 +96,10 @@ enum class PlayerProp : uint8_t
 	GATTRIB28 = 72,
 	GATTRIB29 = 73,
 	GATTRIB30 = 74,
-	OSTYPE = 75,       // 2.19+
-	TEXTCODEPAGE = 76, // 2.19+
+	OSTYPE = 75,
+	TEXTCODEPAGE = 76,
 	ONLINESECS2 = 77,
+	// 2.3+
 	X2 = 78,
 	Y2 = 79,
 	Z2 = 80,

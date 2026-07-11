@@ -387,11 +387,11 @@ void Script::compileScript() noexcept
 	if (server && server->hasNPCServer())
 	{
 		auto npcServer = server->getNPCServer();
-		if (server->Generation == ServerGeneration::CLASSIC)
+		if (server->Generation == ServerGeneration::NEWMAIN)
 		{
 			m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
 		}
-		else if (server->Generation == ServerGeneration::NEWMAIN || server->Generation == ServerGeneration::MODERN)
+		else if (server->Generation == ServerGeneration::MODERN)
 		{
 			m_client_script = npcServer->scripting.getCompiledClientScript(m_who, m_clientside);
 			m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);

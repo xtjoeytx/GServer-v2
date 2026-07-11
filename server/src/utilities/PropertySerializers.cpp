@@ -98,7 +98,7 @@ void PropertySwordPower::deserialize(CString& data)
 		if (powerVal > 0 && powerVal <= 4)
 		{
 			auto server = BabyDI::Get<Server>();
-			image = std::format("sword{}.{}", powerVal, (server->Generation != ServerGeneration::ORIGINAL ? "png" : "gif"));
+			image = std::format("sword{}.{}", powerVal, (server->Generation != ServerGeneration::CLASSIC ? "png" : "gif"));
 		}
 		else image.clear();
 
@@ -156,7 +156,7 @@ void PropertyShieldPower::deserialize(CString& data)
 
 		// For older clients, we use a default image name.
 		if (powerVal > 0 && powerVal <= 4)
-			image = std::format("shield{}.{}", powerVal, (server->Generation != ServerGeneration::ORIGINAL ? "png" : "gif"));
+			image = std::format("shield{}.{}", powerVal, (server->Generation != ServerGeneration::CLASSIC ? "png" : "gif"));
 		else image.clear();
 
 		power = powerVal;
@@ -174,7 +174,7 @@ void PropertyShieldPower::deserialize(CString& data)
 	image = data.readChars(data.readGUChar());
 
 	// If there is no extension, assume its a .gif, for 1.x servers.
-	if (server->Generation == ServerGeneration::ORIGINAL)
+	if (server->Generation == ServerGeneration::CLASSIC)
 	{
 		if (!image.contains("."))
 			image += ".gif";

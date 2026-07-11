@@ -532,7 +532,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 
 	writeProp(NPCProp::NICKNAME, "NICK", npc->character.nickName);
 
-	if (server->Generation != ServerGeneration::ORIGINAL)
+	if (server->Generation != ServerGeneration::CLASSIC)
 		writeProp(NPCProp::GANI, "ANI", npc->character.gani);
 
 	writeProp(NPCProp::POWER, "HP", std::format("{:.2f}", npc->character.hitpointsInHalves / 2.0f));
@@ -543,7 +543,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	writeProp(NPCProp::SWORDIMAGE, "SWORDP", string::to_string(npc->character.swordPower));
 	writeProp(NPCProp::SHIELDIMAGE, "SHIELDP", string::to_string(npc->character.shieldPower));
 
-	if (server->Generation == ServerGeneration::ORIGINAL)
+	if (server->Generation == ServerGeneration::CLASSIC)
 	{
 		writeProp(NPCProp::GANI, "BOWP", string::to_string(npc->character.bowPower));
 		writeProp(NPCProp::GANI, "BOW", npc->character.bowImage);

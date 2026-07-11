@@ -1,9 +1,11 @@
 [generation-range]
 
-original = GNW13110          // 1.41r1
-classic = GNW03014:GNW28015  // 2.22 - 2.31
-newmain = G3D22067           // 5.007
+classic = GNW13110           // 1.41r1
+newmain = GNW03014:GNW28015  // 2.22 - 2.31
 modern = G3D14097:G3D0511C   // 5.12 - 6.037
+
+//newmain = GNW03014           // 2.22 (no npc-server)
+//modern = G3D22067            // 5.007 (last version to support clientside GS1)
 
 // Specify the range of versions that are allowed for each server generation.
 // Entries can be comma-separated or a range can be specified by using a colon between two versions.

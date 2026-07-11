@@ -14,10 +14,10 @@ Set the following option in the `serveroptions.txt` file:
 
 ## Requirements
 
-Original servers may not use an NPC-Server.  Only classic servers and beyond are supported.
+Classic servers may not use an NPC-Server.  Only newmain servers and beyond are supported.
 Make sure the server generation is set appropriately in the `serveroptions.txt` file:
 
-    generation = classic
+    generation = newmain
 
 See: [server.md](server.md#server-generation) for more information about server generations.
 

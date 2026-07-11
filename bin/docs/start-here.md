@@ -10,7 +10,7 @@
 1. Modify the `config/serveroptions.txt` file:
    1. Set the `name` and `description` of your server.  Servers must have unique names or they will be rejected from the server list.
    1. Set the `generation` of your server.  This controls how the server behaves and which clients can connect.  See: [Generations](server.md#server-generation).
-   1. Set the `serverside` setting to `true` if you want to run an NPC-Server.  Only the `original` and `classic` generations can run without one.
+   1. Set the `serverside` setting to `true` if you want to run an NPC-Server.  Only the `classic` and `newmain` generations can run without one.
 1. If you wish to change which clients are allowed, modify the `allowedverions.txt` file to adjust which client versions are allowed for your chosen generation.
 1. Modify the `config/foldersconfig.txt` to adjust where the server looks for various files.  Make sure to add any changes to your account file's `FOLDERRIGHT` entries if you want to use RC to upload files.
 

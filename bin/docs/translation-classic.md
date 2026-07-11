@@ -44,10 +44,9 @@ Any unused translations (they no longer exist in the `Original` domain) are writ
 Currently, signs (including both `say` and `say2`), RPG messages, the `#U(...)` message code,
 and server generated PMs (jail message, `sendpm` command, and `setpm` replies) are translated.
 
-Translation currently happens AFTER strings are fully processed.
+Translation happens before strings are fully processed so message codes can be included.
 
 ## Missing features
 
 For full compliance:
-- Translation needs to happen BEFORE strings are fully processed (so unprocessed message codes are included).
 - NPC chat/messages need to be translated.

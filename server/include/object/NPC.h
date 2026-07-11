@@ -83,19 +83,22 @@ enum class NPCProp : uint8_t
 	SAVE7 = 30,
 	SAVE8 = 31,
 	SAVE9 = 32,
+	// 1.3+
 	ALIGNMENT = 33,
 	IMAGEPART = 34,
+	// 1.4+
 	BODYIMAGE = 35,
+	// 2.02+
 	GATTRIB1 = 36,
 	GATTRIB2 = 37,
 	GATTRIB3 = 38,
 	GATTRIB4 = 39,
 	GATTRIB5 = 40,
+	// 2.121+ (possibly)
 	GMAPLEVELX = 41,
 	GMAPLEVELY = 42,
-
 	Z = 43,
-
+	// 2.13+
 	GATTRIB6 = 44,
 	GATTRIB7 = 45,
 	GATTRIB8 = 46,
@@ -109,6 +112,7 @@ enum class NPCProp : uint8_t
 	CURLEVEL = 52,
 	// --- END NOT HANDLED BY CLIENT
 
+	// 2.19+
 	GATTRIB10 = 53,
 	GATTRIB11 = 54,
 	GATTRIB12 = 55,
@@ -131,7 +135,10 @@ enum class NPCProp : uint8_t
 	GATTRIB29 = 72,
 	GATTRIB30 = 73,
 
+	// 4.x+
 	CLASS = 74,
+
+	// 2.3+
 	X2 = 75,
 	Y2 = 76,
 	Z2 = 77,

@@ -475,7 +475,7 @@ Server::Server(const CString& pName)
 		{
 			if (ext == ".gupd")
 				m_packageManager.findOrAddResource(fileName)->reload(this);
-			else if (Generation == ServerGeneration::NEWMAIN || Generation == ServerGeneration::MODERN)
+			else if (Generation == ServerGeneration::MODERN)
 			{
 				// Ganis need to be recompiled on update
 				CString bytecodePacket;

@@ -1330,7 +1330,7 @@ void Player::constructScriptParameters()
 			auto headSet = std::clamp(static_cast<int>(value->get()), -1, 99);
 			if (headSet != -1)
 			{
-				account.character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::ORIGINAL ? "gif" : "png"));
+				account.character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::CLASSIC ? "gif" : "png"));
 				modTime[PROPID(PlayerProp::HEADGIF)] = m_server->getFrameStartTime();
 			}
 		}
@@ -1344,7 +1344,7 @@ void Player::constructScriptParameters()
 			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				account.character.sprite = static_cast<uint8_t>(value->get());
-				if (account.character.sprite >= 4 && m_server->Generation != ServerGeneration::ORIGINAL)
+				if (account.character.sprite >= 4 && m_server->Generation != ServerGeneration::CLASSIC)
 				{
 					account.character.gani = std::format("def[{}]", account.character.sprite);
 					modTime[PROPID(PlayerProp::GANI)] = m_server->getFrameStartTime();

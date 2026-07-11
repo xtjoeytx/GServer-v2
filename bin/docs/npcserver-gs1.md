@@ -4,8 +4,8 @@ For generic NPC-Server information, see: [npcserver.md](npcserver.md)
 
 ## Generation
 
-The GS1 npc-server has only been tested with the "classic" generation.
-It is possible that it will work with "newmain" and "modern", but there are no guarantees at this point.
+The GS1 npc-server has only been tested with the "newmain" generation.
+It is possible that it will work with "modern", but there are no guarantees at this point.
 Buyer beware.
 
 ## Considerations

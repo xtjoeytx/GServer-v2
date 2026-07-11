@@ -84,23 +84,23 @@ constexpr int FS_COUNT = 7;
 enum class ServerGeneration
 {
 	// 1.x
-	ORIGINAL = 0,
+	CLASSIC = 0,
+
+	// 1.x - 2.x experimental client that was never publicly released
+	NEWWORLD,
 
 	// 2.x/3.x
-	CLASSIC,
-
-	// 4.x to 5.007
 	NEWMAIN,
 
-	// 5.1 and up
+	// 4.x and up
 	MODERN
 };
 
 inline constexpr std::array<std::string_view, 4> ServerGenerationNames{
-	"original",
 	"classic",
+	"newworld",
 	"newmain",
-	"modern"
+	"modern",
 };
 
 /// @brief Cached settings directly queried from the server by other classes.
@@ -436,7 +436,7 @@ public:
 	void scheduleTask(precise_clock::duration delay, std::function<void()> task);
 
 public:
-	ServerGeneration Generation{ServerGeneration::CLASSIC};
+	ServerGeneration Generation{ServerGeneration::NEWMAIN};
 	ScriptContainer Scripting;
 
 	std::array<double, 7> groundHeights = {0.0, 3.0, 4.0, 5.0, 25.0, 55.0, 65.0};
