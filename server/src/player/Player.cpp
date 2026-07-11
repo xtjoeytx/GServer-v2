@@ -660,7 +660,7 @@ bool Player::sendLogin()
 		}
 
 		// Check and see if we are allowed in.
-		if (!isAdminIp())
+		if (!account.adminIpRange.empty() && account.adminIpRange[0] != "0.0.0.0" && !isAdminIp())
 		{
 			log::printLine(log::rc, "** [Disconnect] '{}': IP does not match the allowed list. (IP: {})", account.name, m_playerSock->getRemoteIp());
 			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your IP doesn't match one of the allowed IPs for this account.");
