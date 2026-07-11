@@ -242,8 +242,8 @@ Server::Server(const CString& pName)
 			auto inactiveDuration = timeDifference(m_frameStartTime, level->timeSinceLastPlayerLeft.value());
 			skip = skip || inactiveDuration < std::chrono::seconds(m_unloadInactiveLevelTime.getValue());
 
-			// Group maps will always unload after 10 minutes if the inactive time is not set.
-			if (level->isGroupMap && inactiveDuration > std::chrono::seconds(m_unloadInactiveLevelTime.get().value_or(600)))
+			// Group maps and single player maps will always unload after 10 minutes if the inactive time is not set.
+			if (level->isPrivateMap() && inactiveDuration > std::chrono::seconds(m_unloadInactiveLevelTime.get().value_or(600)))
 				skip = false;
 
 			// Do the skip now.
@@ -255,7 +255,7 @@ Server::Server(const CString& pName)
 			// If we have an NPC-server, unload (or delete) our serverside NPCs.
 			if (hasNPCServer())
 			{
-				if (level->isGroupMap)
+				if (level->isPrivateMap())
 				{
 					for (const auto& id : level->getNPCs())
 						m_npcServer->deleteNPC(id);
@@ -1006,7 +1006,7 @@ void Server::prepareSettings()
 	m_settings.track(m_newTilesets, m_newTilesetLevels);
 	m_settings.track(m_unloadInactiveLevelTime);
 	m_settings.track(m_staffList, m_bushItemTypes, m_deathItemTypes);
-	m_settings.track(m_gmaps, m_bigmaps, m_groupmaps);
+	m_settings.track(m_gmaps, m_bigmaps, m_groupmaps, m_singleplayerLevels);
 }
 
 void Server::loadSettings()
@@ -1521,33 +1521,60 @@ std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, std::s
 
 	LevelPtr level = nullptr;
 
-	// Check if this level matches the list of group maps.
-	// If it does, and the player's group matches, try to load the group version of the level (or create it).
-	if (!player->account.groupName.empty())
+	if (player != nullptr)
 	{
-		for (const auto& groupmap : m_groupmaps.getValue())
+		auto findGroupLevel = [&](std::string_view mask, std::string_view groupName, std::string_view groupLevelName) -> LevelPtr
 		{
-			auto mask = string::trim(groupmap);
-			if (string::match<true>(levelName, mask))
+			if (string::match<true>(levelName, string::trim(mask)))
 			{
 				// Check if this level already exists.
-				std::string groupMapName = string::toLower(std::format("{}.{}", player->account.groupName, levelName));
-				if (level = findGmapForLevel(groupMapName, player); level != nullptr && level->loaded)
+				if (level = findGmapForLevel(groupLevelName, player); level != nullptr && level->loaded)
 					return level;
 
 				// Level doesn't exist or isn't loaded, create it.
 				if (level == nullptr)
 					level = std::make_shared<Level>();
 
-				// Record that the level is going to be a group map, with the name of the group it belongs to.
-				// We do this now so level NPCs get added with the correct name.
-				level->isGroupMap = true;
-				level->groupMapName = player->account.groupName;
+				// Record the group in the level.
+				level->groupMapName = groupName;
 
 				// Load the level.
 				if (LevelLoader::loadLevelInto(levelName, level))
 				{
-					m_levelList.insert(std::make_pair(groupMapName, level));
+					m_levelList.insert(std::make_pair(string::toLower(groupLevelName), level));
+					return level;
+				}
+			}
+			return nullptr;
+		};
+
+		auto spGroup = std::format("sp.{}", player->account.name);
+		auto& mpGroup = player->account.groupName;
+		auto spMapName = string::toLower(std::format("{}.{}", spGroup, levelName));
+		auto groupMapName = string::toLower(std::format("{}.{}", player->account.groupName, levelName));
+
+		// Check if this level matches the list of singleplayer levels.
+		if (!m_singleplayerLevels.getValue().empty())
+		{
+			for (const auto& singleplayerLevel : m_singleplayerLevels.getValue())
+			{
+				if (auto level = findGroupLevel(singleplayerLevel, spGroup, spMapName); level != nullptr)
+				{
+					level->isSinglePlayer = true;
+					return level;
+				}
+			}
+		}
+
+		// Check if this level matches the list of group maps.
+		// If it does, and the player's group matches, try to load the group version of the level (or create it).
+		if (!player->account.groupName.empty())
+		{
+			for (const auto& groupmap : m_groupmaps.getValue())
+			{
+				if (auto level = findGroupLevel(groupmap, mpGroup, groupMapName); level != nullptr)
+				{
+					level->isGroupMap = true;
 					return level;
 				}
 			}
@@ -1657,7 +1684,7 @@ std::shared_ptr<Level> Server::findGmapForLevel(std::string_view levelName, std:
 			}
 
 			// Otherwise, record this as the level we will return if we don't find anything.
-			if (!level->isGroupMap && !level->isSinglePlayer)
+			if (!level->isPrivateMap())
 				returnLevel = level;
 		}
 		++iter;
@@ -1823,8 +1850,10 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 			level->addNPC(npc);
 	}
 
+	bool isPrivateMap = level != nullptr && level->isPrivateMap();
+
 	// Synchronize the group name of the NPC.
-	if (level != nullptr && level->isGroupMap && npc->groupName != level->groupMapName)
+	if (isPrivateMap && npc->groupName != level->groupMapName)
 		npc->groupName = level->groupMapName;
 
 	// Set the NPC's name.
@@ -1833,8 +1862,8 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 		// clang-format off
 		std::string npcNamePrefix = std::format("{}_{}{}{}_{}_",
 			string::toLower(npc->scriptType),
-			level != nullptr && level->isGroupMap ? level->groupMapName : "",
-			level != nullptr && level->isGroupMap ? "." : "",
+			isPrivateMap ? level->groupMapName : "",
+			isPrivateMap ? "." : "",
 			string::removeExtension(npc->level), m_serverTime
 		);
 		auto count = std::ranges::count_if(m_npcList, [&npcNamePrefix](const auto& pair)

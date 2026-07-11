@@ -478,6 +478,7 @@ private:
 	SettingCache<std::vector<std::string>> m_gmaps{"gmaps", {}};
 	SettingCache<std::vector<std::string>> m_bigmaps{"maps", {}};
 	SettingCache<std::vector<std::string>> m_groupmaps{"groupmaps", {}};
+	SettingCache<std::vector<std::string>> m_singleplayerLevels{"singleplayerlevels", {}};
 
 	std::unique_ptr<IAccountLoader> m_accountLoader;
 	std::unique_ptr<INPCLoader> m_npcLoader;

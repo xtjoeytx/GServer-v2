@@ -4,6 +4,7 @@
 
 Group maps provides a way for a group of players to play on their own private copy of a level.
 All players will only see and interact with other players who have the same group name assigned to them.
+The group level will have its own copies of all level NPCs.
 
 ## How to enable
 
@@ -14,6 +15,7 @@ Enable the triggeraction extension in the `serveroptions.txt` file:
 Then, list all the gmaps and levels that are group maps in the `serveroptions.txt` file:
 
     groupmaps = grouplevels_*.nw,groupgmap.gmap
+    groupmaps = anothermap.gmap
 
 Finally, assign each player the same group name.
 

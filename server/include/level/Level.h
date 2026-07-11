@@ -244,6 +244,7 @@ public:
 	bool hasLivingBaddies() const;
 	[[inline]] bool isSparringZone(const MapPosition& mapPosition) const noexcept;
 	[[inline]] bool isNoPkZone(const MapPosition& mapPosition) const noexcept;
+	[[inline]] bool isPrivateMap() const noexcept;
 
 public:
 	int addPlayer(PlayerID id);
@@ -706,6 +707,11 @@ inline bool Level::isNoPkZone(const MapPosition& mapPosition) const noexcept
 	if (auto subLevel = getSubLevelAtPosition(mapPosition); subLevel != nullptr)
 		return subLevel->isNoPkZone;
 	return false;
+}
+
+inline bool Level::isPrivateMap() const noexcept
+{
+	return isSinglePlayer || isGroupMap;
 }
 
 //----------------------------

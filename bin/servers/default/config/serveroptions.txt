@@ -162,6 +162,11 @@ maps =
 # List of gmaps to be used by the server.
 gmaps = 
 
+# List of levels where you don`t see other players.
+# GR: Comma-delimited list of level names in glob format.
+# GR: Make sure your glob doesn`t match both the gmap and its level files.
+singleplayerlevels = 
+
 # Sets the bigmap and minimap to use.
 # Setting bigmap will break gmaps.
 # bigmap = maptext,mapimage,defaultx,defaulty
@@ -468,9 +473,6 @@ gs2default = false
 
 # Disables global playerlist, reduces lag on servers with thousands of players.
 # noserverlistercpp = true/false
-
-# List of levels where you don`t see other players.
-# singleplayerlevels = 
 
 # When the player drops an item, `player.onItemDrop(x,y,itemname)` will be called and the item will not drop.
 # itemdropevents2 = true/false

@@ -1,14 +1,13 @@
 # GS2Emu Level Singleplayer
 
-NOTE: Currently disabled.  You can simulate it by using a group map with only one player in the group.
-
 ## What are they?
 
 Singleplayer levels are levels where each player has their own private copy of the level.
-They will not see any other players in the level.
+They will not see any other players in the level, and copies of all level NPCs will be created.
 
 ## How to enable
 
-In the level, add an NPC with the following script:
+List all the gmaps and levels that are singleplayer maps in the `serveroptions.txt` file:
 
-    singleplayer
+    singleplayerlevels = grouplevels_*.nw,groupgmap.gmap
+    singleplayerlevels = anothermap.gmap
