@@ -90,6 +90,7 @@ static GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view functionNa
 static GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_onwater2(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_passwordmatches(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_playersays(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_playersays2(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_random(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
@@ -161,6 +162,7 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{hash("onwall2"), &fn_onwall2},
 		{hash("onwater"), &fn_onwater},
 		{hash("onwater2"), &fn_onwater2},
+		{hash("passwordmatches"), &fn_passwordmatches},
 		{hash("playersays"), &fn_playersays},
 		{hash("playersays2"), &fn_playersays2},
 		{hash("random"), &fn_random},
@@ -954,6 +956,36 @@ GS1ScriptValue fn_onwater2(GS1Visitor* visitor, std::string_view messageCode, co
 	}
 
 	return GameValue{false};
+}
+
+// passwordmatches(encrypted, password)
+// Checks if the provided encrypted password matches the specified password.
+GS1ScriptValue fn_passwordmatches(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 2)
+		throw std::invalid_argument("invalid arguments: passwordmatches(encrypted, password)");
+
+	auto param0 = GS1Visitor::getScriptValueAs<std::string>(*arguments[0]);
+	auto param1 = GS1Visitor::getScriptValueAs<std::string>(*arguments[1]);
+	if (!param0.has_value() || !param1.has_value())
+		return GameValue{false};
+
+	auto& encrypted = param0.value().get();
+	auto& password = param1.value().get();
+
+	std::array<uint8_t, 32> hash{};
+	hash_state sha256state{};
+	sha256_init(&sha256state);
+	sha256_process(&sha256state, reinterpret_cast<const unsigned char*>(password.data()), password.size());
+	sha256_done(&sha256state, hash.data());
+
+	// Calculate the length of the resulting base64 string.
+	constexpr unsigned long SHA256BASE64 = 4 * ((hash.size() + 2) / 3) + 1;
+	unsigned long outputLength = SHA256BASE64;
+	std::array<char, SHA256BASE64> output{};
+	base64_encode(reinterpret_cast<const unsigned char*>(hash.data()), static_cast<unsigned long>(hash.size()), output.data(), &outputLength);
+
+	return GameValue{(encrypted == std::string{output.data(), outputLength})};
 }
 
 // playersays(text)

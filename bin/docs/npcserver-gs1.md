@@ -569,6 +569,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       onwall2(x, y, width, height)
       onwater(x, y)
       onwater2(x, y, width, height)
+      passwordmatches(encrypted, test)
     * playersays(index, text)
     * playersays(text)
     * playersays2(index, text)
@@ -592,10 +593,6 @@ Please review the lists below of implemented events, flags, functions, commands,
     * tiletype(x, y)
       vecx(dir)
       vecy(dir)
-
-#### Not implemented
-
-    passwordmatches(encrypted, test)
 
 #### Clientside only
 
@@ -641,6 +638,7 @@ Please review the lists below of implemented events, flags, functions, commands,
     #Q(guild_name, account_name)  [R]  - Nickname of a guild member
     #G | #G(index)                [R]  - Player's account level (e.g., gold, classic, trial, etc.)
     #e(start_index, length, string)    - Extracts a substring from the given string
+    #E(string)              - Password hashes the given string
     #I(string_list, index)  - Returns the string at the given index from the string list
     #K(ascii_number)        - The character represented by the given ASCII code
     #R(string_list)         - Randomly selects a string from the given string list
@@ -649,10 +647,6 @@ Please review the lists below of implemented events, flags, functions, commands,
     #U(string)              - Replaces the string with a translated version of it
     #v(identifier)          - The value of an number variable as a string
     #b                      - Line break
-
-#### Not implemented
-
-    #E(string)              - Password hashes the given string
 
 #### Clientside only
 

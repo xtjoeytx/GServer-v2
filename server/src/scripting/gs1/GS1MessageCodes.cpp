@@ -19,6 +19,7 @@
 
 #include <tree/ParseTree.h>
 #include <tree/ParseTreeType.h>
+#include <tomcrypt.h>
 
 #include <BabyDI.h>
 #include <Server.h>
@@ -390,11 +391,33 @@ GS1ScriptValue mc_D(GS1Visitor* visitor, std::string_view messageCode, const std
 	throw std::logic_error("clientside only: #D | #D(filename)");
 }
 
-// #E
-// The current emoticon character being displayed by the player.
+// #E | #E(password)
+// #E: The current emoticon character being displayed by the player.
+// #E(password): Password to hash.
 GS1ScriptValue mc_E(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("clientside only: #E");
+	if (arguments.size() != 1)
+		throw std::logic_error("clientside only: #E, specify a password: #E(password)");
+
+	auto param0 = GS1Visitor::getScriptValueAs<std::string>(*arguments[0]);
+	if (!param0.has_value())
+		return makeGS1ScriptValue(""s);
+
+	auto& password = param0.value().get();
+
+	std::array<uint8_t, 32> hash{};
+	hash_state sha256state{};
+	sha256_init(&sha256state);
+	sha256_process(&sha256state, reinterpret_cast<const unsigned char*>(password.data()), password.size());
+	sha256_done(&sha256state, hash.data());
+
+	// Calculate the length of the resulting base64 string.
+	constexpr unsigned long SHA256BASE64 = 4 * ((hash.size() + 2) / 3) + 1;
+	unsigned long outputLength = SHA256BASE64;
+	std::array<char, SHA256BASE64> output{};
+	base64_encode(reinterpret_cast<const unsigned char*>(hash.data()), static_cast<unsigned long>(hash.size()), output.data(), &outputLength);
+
+	return makeGS1ScriptValue(std::string{output.data(), outputLength});
 }
 
 // #e(start_index, length, string)

@@ -750,3 +750,30 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 server bindings", "[Scripting][
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(2.0));
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 functions", "[Scripting][IScriptEngine][GS1]")
+{
+	ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source::FromPlayer(NPCServerPlayerID)};
+	auto player = server->getNPCServer()->getPlayerNPCServer();
+	player->account.character = Character{};
+	player->account.character.nickName = "NPC-Server (Server)";
+
+	SECTION("passwordmatches() and #E()")
+	{
+		const std::string_view script = R"(
+			setstring this.passwordHash,#E(hunter2);
+			this.testSuccess = passwordmatches(#s(this.passwordHash), hunter2);
+			this.testFail = passwordmatches(#s(this.passwordHash), hunter3);
+		)";
+		auto result = engine.compileScript("test_script", script);
+		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+
+		auto wrapper = get_wrapper(result);
+		auto store = wrapper->visitor->builtInStore;
+		CHECK(store->getValue<std::string>("passwordHash").value_or(std::string{}) == "9S+9MrKzuG/4jvbEkGKChfSCrxXdyylUH5S89Saj9sc="s);
+		CHECK_THAT(store->getValue<double>("testSuccess").value_or(0.0), Catch::Matchers::WithinRel(1.0));
+		CHECK_THAT(store->getValue<double>("testFail").value_or(0.0), Catch::Matchers::WithinRel(0.0));
+	}
+}

@@ -284,7 +284,7 @@ FetchContent_Declare(tomcrypt
 	FIND_PACKAGE_ARGS CONFIG
 )
 FetchContent_MakeAvailable(tomcrypt)
-target_compile_definitions(libtomcrypt PUBLIC LTC_NOTHING LTC_MD5 LTC_DES LTC_DESGR LTC_BASE64)
+target_compile_definitions(libtomcrypt PUBLIC LTC_NOTHING LTC_MD5 LTC_DES LTC_DESGR LTC_BASE64 LTC_SHA256)
 target_compile_definitions(libtomcrypt PUBLIC LTC_ECB_MODE) # Need to define this to avoid a broken header.
 set_target_properties(libtomcrypt PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
 
