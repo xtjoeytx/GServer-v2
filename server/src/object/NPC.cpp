@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <exception>
 #include <format>
 #include <functional>
 #include <iterator>
@@ -11,8 +12,8 @@
 #include <optional>
 #include <ranges>
 #include <stdexcept>
-#include <string>
 #include <string_view>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -562,7 +563,7 @@ void NPC::hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEvent
 	if (allowServerDamageReactions && isCharacter())
 	{
 		sendPropsFromResults(
-			setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<uint8_t>(std::max(0, character.hitpointsInHalves - damageInHalves)))
+		setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<uint8_t>(std::max(0, character.hitpointsInHalves - damageInHalves)))
 		);
 	}
 
@@ -1574,37 +1575,49 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 
 void NPC::setPropsFromPacket(CString& packet, PlayerPtr source)
 {
-	DO_PACKETLOG(log::printBlock(log::networkdump, "NPC::setPropsFromPacket:\n"));
-
-	PropertySendResults results;
-	auto setBy = (source != nullptr ? SetBy::CLIENT : SetBy::SERVER);
-
-	while (packet.bytesLeft() > 0)
+	try
 	{
-		NPCProp propId = (NPCProp)packet.readGUChar();
+		DO_PACKETLOG(log::printBlock(log::networkdump, "NPC::setPropsFromPacket:\n"));
 
-		DO_PACKETLOG(size_t oldPos = packet.readPos());
+		PropertySendResults results;
+		auto setBy = (source != nullptr ? SetBy::CLIENT : SetBy::SERVER);
 
-		auto prop = constructPropFor(propId);
-		prop->deserialize(packet);
+		while (packet.bytesLeft() > 0)
+		{
+			NPCProp propId = (NPCProp)packet.readGUChar();
+
+			DO_PACKETLOG(size_t oldPos = packet.readPos());
+
+			auto prop = constructPropFor(propId);
+			prop->deserialize(packet);
 
 #ifdef PACKETLOGGING
-		size_t currentPos = packet.readPos();
-		CString rawData = packet.subString(oldPos, currentPos - oldPos);
+			size_t currentPos = packet.readPos();
+			CString rawData = packet.subString(oldPos, currentPos - oldPos);
 
-		log::printBlock(log::networkdump, "  {}: {} |", npcPropNames[PROPID(propId)], prop);
-		for (size_t i = 0; i < rawData.length(); ++i)
-		{
-			log::printBlock(log::networkdump, " {:02x}", (unsigned char)rawData[i]);
-		}
-		log::printBlock(log::networkdump, "\n");
+			log::printBlock(log::networkdump, "  {}: {} |", npcPropNames[PROPID(propId)], prop);
+			for (size_t i = 0; i < rawData.length(); ++i)
+			{
+				log::printBlock(log::networkdump, " {:02x}", (unsigned char)rawData[i]);
+			}
+			log::printBlock(log::networkdump, "\n");
 #endif
 
-		results.emplace_back(setProp(propId, setBy, prop), prop);
-	}
-	DO_PACKETLOG(log::print(log::networkdump, "\n"));
+			results.emplace_back(setProp(propId, setBy, prop), prop);
+		}
+		DO_PACKETLOG(log::print(log::networkdump, "\n"));
 
-	sendPropsFromSendResults(results, source);
+		sendPropsFromSendResults(results, source);
+	}
+	catch (const std::exception& e)
+	{
+		DO_PACKETLOG(log::printLine(log::networkdump, "\nError in NPC::setPropsFromPacket: {}", e.what()));
+		DO_PACKETLOG(log::print(log::networkdump, "\n"));
+
+		log::printLine(log::server, "** Error in NPC::setPropsFromPacket: {}", e.what());
+		if (source != nullptr)
+			source->disconnect("Corrupted packet received.");
+	}
 }
 
 //----------------------------

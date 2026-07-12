@@ -5,14 +5,15 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <exception>
 #include <filesystem>
 #include <format>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <span>
-#include <string>
 #include <string_view>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -47,10 +48,10 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
-#include <utilities/manager/GuildManager.h>
-#include <utilities/manager/ITranslationManager.h>
 #include <utilities/PropertySerializers.h>
 #include <utilities/StringUtils.h>
+#include <utilities/manager/GuildManager.h>
+#include <utilities/manager/ITranslationManager.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -302,8 +303,21 @@ HandlePacketResult Player::handlePacket(std::optional<uint8_t> id, CString& pack
 
 	m_lastData = clock::now();
 
-	auto handle = id.has_value() ? PacketHandlers[id.value()] : &Player::msgPLI_NULL;
-	return (this->*handle)(packet);
+	try
+	{
+		auto handle = id.has_value() ? PacketHandlers[id.value()] : &Player::msgPLI_NULL;
+		return (this->*handle)(packet);
+	}
+	catch (const std::exception& e)
+	{
+		disconnect(e.what());
+		return HandlePacketResult::Failed;
+	}
+	catch (...)
+	{
+		disconnect("Unknown exception while handling packet.");
+		return HandlePacketResult::Failed;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -461,8 +475,11 @@ bool Player::doTimedEvents()
 	return true;
 }
 
-void Player::disconnect()
+void Player::disconnect(std::string_view message)
 {
+	if (!message.empty())
+		sendPacket(CString() >> (char)PLO_DISCMESSAGE << message);
+
 	m_fileQueue.sendCompress();
 	m_server->deletePlayer(shared_from_this());
 }
@@ -709,13 +726,12 @@ bool Player::sendLogin()
 			{
 				if (std::chrono::duration_cast<std::chrono::seconds>(m_server->getFrameStartTime() - player->getLastData()) > 30s)
 				{
-					player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Someone else has logged into your account.");
-					player->disconnect();
+					player->disconnect("Someone else has logged into your account.");
 				}
 				else
 				{
 					log::printLine(log::rc, "** [Disconnect] '{}': Attempted double login.", account.name);
-					sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Account is already in use.");
+					disconnect("Account is already in use.");
 					return false;
 				}
 			}
@@ -795,7 +811,7 @@ bool Player::isAdminIp()
 {
 	for (const auto& ipMask : account.adminIpRange)
 	{
-		if (string::match(std::string_view{ account.ipAddress }, std::string_view{ ipMask }))
+		if (string::match(std::string_view{account.ipAddress}, std::string_view{ipMask}))
 			return true;
 	}
 	return false;

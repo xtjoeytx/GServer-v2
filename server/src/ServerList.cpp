@@ -729,16 +729,14 @@ void ServerList::msgSVI_VERIACC2(CString& pPacket)
 	// If we did not get the success message, inform the client of his failure.
 	if (message != "SUCCESS")
 	{
-		player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << message);
 		player->account.loadOnly = true; // Prevent saving of the account.
-		player->disconnect();
+		player->disconnect(message);
 		return;
 	}
 
 	// Send the player his account.  If it fails, disconnect him.
 	if (player->sendLogin() == false)
 	{
-		//player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Failed to send login information.");
 		player->account.loadOnly = true; // Prevent saving of the account.
 		player->disconnect();
 	}

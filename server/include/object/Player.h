@@ -364,7 +364,7 @@ public:
 	virtual void sendPrivateMessage(PlayerID from, std::string_view message);
 
 	// Misc functions.
-	void disconnect();
+	void disconnect(std::string_view message = ""sv);
 
 	bool addPMServer(CString& option);
 	bool remPMServer(CString& option);
