@@ -2195,19 +2195,26 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	auto existing = Scripting.variables.get(flagName).lock();
 	if (existing != nullptr)
 	{
-		//bool isFlag = existing->has<bool>() && !existing->has<std::string>();
-		bool isStringFlag = existing->value.has<std::string>();
+		bool hasExistingString = existing->value.has<std::string>() && !existing->value.get<std::string>().value().get().empty();
 
-		// No change.
+		// If flagValue is not provided, we are coming from a 'set' call, which applies a boolean true/false.
+		// If the existing value contains a string, exit, as containing a string means the flag is already true.
 		if (!flagValue.has_value())
-			return true;
+		{
+			if (hasExistingString)
+				return true;
+			if (existing->value.has<bool>())
+				return true;
+		}
 
-		// If flag value is empty, delete.
-		if (isStringFlag && flagValue.value().empty())
+		// If a string flag value is empty, delete.
+		if (hasExistingString && flagValue.has_value() && flagValue.value().empty())
 			return deleteFlag(flagName);
 
 		// Alter value.
-		existing->assign<std::string>(cropFlag(flagValue.value()));
+		if (flagValue.has_value())
+			existing->assign<std::string>(cropFlag(flagValue.value()));
+		else existing->assign<bool>(true);
 	}
 	// New flag.
 	else

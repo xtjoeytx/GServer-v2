@@ -562,6 +562,47 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 	player->account.character = Character{};
 	player->account.character.nickName = "NPC-Server (Server)";
 
+	SECTION("variables and flags save to the correct object")
+	{
+		// Tests that variables and flags are saved to the correct object, whether it be the NPC, the player, or the script's built-in store.
+		// TODO: level.variables
+		const std::string_view script = R"(
+			if (created) {
+				contextVar = 42;
+
+				this.npcVar = 33;
+				setstring this.npcFlag,World!;
+
+				setstring playerFlag,Hello!;
+				setstring client.playerFlag,World!;
+				set clientr.playerFlag;
+
+				set server.Test;
+				setstring serverr.Test2,Hello!;
+			}
+		)";
+		auto result = engine.compileScript("test_script", script);
+		REQUIRE(execute_script(engine, created, source::FromNPC(testNPC), result));
+
+		auto wrapper = get_wrapper(result);
+		auto scriptStore = wrapper->visitor->builtInStore;
+		CHECK_THAT(scriptStore->getValue<double>("contextVar").value_or(0.0), Catch::Matchers::WithinRel(42.0));
+
+		auto npc = server->getNPC(testNPC);
+		auto npcstore = &npc->scripting.variables;
+		CHECK_THAT(npcstore->getValue<double>("npcVar").value_or(0.0), Catch::Matchers::WithinRel(33.0));
+		CHECK_THAT(npcstore->getValue<std::string>("npcFlag").value_or(std::string{}), Catch::Matchers::Equals("World!"));
+
+		auto playerstore = &player->account.variables;
+		CHECK_THAT(playerstore->getValue<std::string>("playerFlag").value_or(std::string{}), Catch::Matchers::Equals("Hello!"));
+		CHECK_THAT(playerstore->getValue<std::string>("client.playerFlag").value_or(std::string{}), Catch::Matchers::Equals("World!"));
+		CHECK(playerstore->getValue<bool>("clientr.playerFlag").value_or(false) == true);
+
+		auto serverstore = &server->Scripting.variables;
+		CHECK(serverstore->getValue<bool>("server.Test").value_or(false) == true);
+		CHECK_THAT(serverstore->getValue<std::string>("serverr.Test2").value_or(std::string{}), Catch::Matchers::Equals("Hello!"));
+	}
+
 	SECTION("setting variables inside and outside of with()")
 	{
 		// Tests that variables can be set both inside and outside of a with() block, and that the correct variable is set in each case.
