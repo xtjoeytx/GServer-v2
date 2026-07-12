@@ -344,7 +344,7 @@ GS1ScriptValue fn_base64encode(GS1Visitor* visitor, std::string_view messageCode
 	auto input = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 
 	// Calculate the length of the resulting base64 string.
-	unsigned long outputLength = 4 * ((input.length() + 2) / 3);
+	unsigned long outputLength = 4 * ((input.length() + 2) / 3) + 1;
 
 	// Encode.
 	auto output = std::make_unique<char[]>(outputLength);
