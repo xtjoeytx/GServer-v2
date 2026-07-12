@@ -256,7 +256,7 @@ GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, antlr4::tree::ParseTr
 GS1ScriptValue fn_abs(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function abs requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: abs(value)");
 
 	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	return std::abs(value);
@@ -267,7 +267,7 @@ GS1ScriptValue fn_abs(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_aindexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function aindexof requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: aindexof(value, array)");
 
 	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	auto array = GS1Visitor::getScriptValueAsCopy<std::vector<double>>(*arguments[1]).value_or(std::vector<double>{});
@@ -285,7 +285,7 @@ GS1ScriptValue fn_aindexof(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_arctan(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function arctan requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: arctan(value)");
 
 	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	return std::atan(value);
@@ -296,7 +296,7 @@ GS1ScriptValue fn_arctan(GS1Visitor* visitor, std::string_view messageCode, cons
 GS1ScriptValue fn_arraylen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function arraylen requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: arraylen(array)");
 
 	auto array = GS1Visitor::getScriptValueAsCopy<std::vector<double>>(*arguments[0]).value_or(std::vector<double>{});
 
@@ -308,7 +308,7 @@ GS1ScriptValue fn_arraylen(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_ascii(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function ascii requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: ascii(string)");
 
 	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	if (str.empty())
@@ -322,7 +322,7 @@ GS1ScriptValue fn_ascii(GS1Visitor* visitor, std::string_view messageCode, const
 GS1ScriptValue fn_base64decode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function base64decode requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: base64decode(string)");
 
 	auto input = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	auto output = std::make_unique<unsigned char[]>(input.length());
@@ -337,7 +337,7 @@ GS1ScriptValue fn_base64decode(GS1Visitor* visitor, std::string_view messageCode
 GS1ScriptValue fn_base64encode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function base64encode requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: base64encode(string)");
 
 	auto input = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 
@@ -356,7 +356,7 @@ GS1ScriptValue fn_base64encode(GS1Visitor* visitor, std::string_view messageCode
 GS1ScriptValue fn_cos(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function cos requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: cos(value)");
 
 	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	return std::cos(value);
@@ -367,7 +367,7 @@ GS1ScriptValue fn_cos(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_exp(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function exp requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: exp(value)");
 
 	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	return std::exp(value);
@@ -378,7 +378,7 @@ GS1ScriptValue fn_exp(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function findnearestplayer requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: findnearestplayer(x, y)");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -413,7 +413,7 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, std::string_view messag
 // Probably not supported in GS1.
 GS1ScriptValue fn_findnearestplayers(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function findnearestplayers not implemented");
+	throw unimplemented_error("not implemented: findnearestplayers");
 }
 
 // getangle(dx, dy)
@@ -427,7 +427,7 @@ GS1ScriptValue fn_getangle(GS1Visitor* visitor, std::string_view messageCode, co
 	( 1, 0) right: 0.000000 (0)
 	*/
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function getangle requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: getangle(dx, dy)");
 
 	auto dx = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	auto dy = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
@@ -454,7 +454,7 @@ GS1ScriptValue fn_getangle(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_getareanpcs(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
-		throw std::invalid_argument("Built-in function getareanpcs requires exactly four arguments");
+		throw std::invalid_argument("invalid arguments: getareanpcs(x, y, width, height)");
 
 	std::vector<double> result;
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
@@ -478,7 +478,7 @@ GS1ScriptValue fn_getdir(GS1Visitor* visitor, std::string_view messageCode, cons
 	if (auto* character = getCharacterFromSource(visitor->getOriginalSource()); character != nullptr)
 	{
 		if (arguments.size() != 2)
-			throw std::invalid_argument("Built-in function getdir requires exactly two arguments");
+			throw std::invalid_argument("invalid arguments: getdir(dx, dy)");
 
 		auto dx = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 		auto dy = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
@@ -509,7 +509,7 @@ GS1ScriptValue fn_getdir(GS1Visitor* visitor, std::string_view messageCode, cons
 GS1ScriptValue fn_getflagkeys(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function getflagkeys requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: getflagkeys(prefix)");
 
 	auto prefix = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 
@@ -538,7 +538,7 @@ GS1ScriptValue fn_getflagkeys(GS1Visitor* visitor, std::string_view functionName
 GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function getnearestplayer requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: getnearestplayer(x, y)");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -573,7 +573,7 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view message
 GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() < 2)
-		throw std::invalid_argument("Built-in function getnearestplayers requires two or three arguments");
+		throw std::invalid_argument("invalid arguments: getnearestplayers(x, y, flag)");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -617,7 +617,7 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messag
 GS1ScriptValue fn_getnpc(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function getnpc requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: getnpc(name)");
 
 	auto npcName = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 
@@ -637,7 +637,7 @@ GS1ScriptValue fn_getnpc(GS1Visitor* visitor, std::string_view messageCode, cons
 GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function getplayer requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: getplayer(account)");
 
 	auto playerName = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 
@@ -655,7 +655,7 @@ GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view messageCode, c
 GS1ScriptValue fn_getz(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function getz requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: getz(x, y)");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -672,7 +672,7 @@ GS1ScriptValue fn_getz(GS1Visitor* visitor, std::string_view messageCode, const 
 GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function hasweapon requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: hasweapon(name)");
 
 	auto weaponName = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
@@ -690,14 +690,14 @@ GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view messageCode, c
 // Returns the height of the specified image.
 GS1ScriptValue fn_imgheight(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function imgheight is a clientside function");
+	throw std::logic_error("clientside only: imgheight(image)");
 }
 
 // imgwidth(image)
 // Returns the width of the specified image.
 GS1ScriptValue fn_imgwidth(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function imgwidth is a clientside function");
+	throw std::logic_error("clientside only: imgwidth(image)");
 }
 
 // indexof(substring, string)
@@ -705,7 +705,7 @@ GS1ScriptValue fn_imgwidth(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_indexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function indexof requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: indexof(substring, string)");
 
 	auto substring = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
@@ -718,7 +718,7 @@ GS1ScriptValue fn_indexof(GS1Visitor* visitor, std::string_view messageCode, con
 GS1ScriptValue fn_int(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function int requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: int(value)");
 
 	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	return static_cast<double>(static_cast<int64_t>(value));
@@ -735,7 +735,7 @@ GS1ScriptValue fn_int(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_keycode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function keycode requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: keycode(key)");
 
 	auto key = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	if (key.empty())
@@ -749,7 +749,7 @@ GS1ScriptValue fn_keycode(GS1Visitor* visitor, std::string_view messageCode, con
 // Checks if the specified key is currently pressed down.  (0..10: up, left, down, right, S, A, D, M, tab, Q, P)
 GS1ScriptValue fn_keydown(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function keydown is a clientside function");
+	throw std::logic_error("clientside only: keydown(key)");
 }
 
 // keydown2(keycode, ignorecase)
@@ -757,7 +757,7 @@ GS1ScriptValue fn_keydown(GS1Visitor* visitor, std::string_view messageCode, con
 // (ignorecase must be false to check for shift, ctrl, alt)
 GS1ScriptValue fn_keydown2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::runtime_error("Built-in function keydown2 is a clientside function");
+	throw std::logic_error("clientside only: keydown2(keycode, ignorecase)");
 }
 
 // lindexof(string, list)
@@ -765,7 +765,7 @@ GS1ScriptValue fn_keydown2(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function lindexof requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: lindexof(string, list)");
 
 	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	auto list = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
@@ -784,7 +784,7 @@ GS1ScriptValue fn_lindexof(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_log(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function log requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: log(base, value)");
 
 	auto base = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
@@ -799,7 +799,7 @@ GS1ScriptValue fn_log(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_max(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function max requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: max(value1, value2)");
 
 	auto value1 = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	auto value2 = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
@@ -815,7 +815,7 @@ GS1ScriptValue fn_max(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_min(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function min requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: min(value1, value2)");
 
 	auto value1 = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	auto value2 = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
@@ -831,7 +831,7 @@ GS1ScriptValue fn_min(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_onmapx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function onmapx requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: onmapx(level)");
 
 	if (auto curLevel = visitor->findCurrentLevel(); curLevel != nullptr)
 	{
@@ -848,7 +848,7 @@ GS1ScriptValue fn_onmapx(GS1Visitor* visitor, std::string_view messageCode, cons
 GS1ScriptValue fn_onmapy(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function onmapy requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: onmapy(level)");
 
 	if (auto curLevel = visitor->findCurrentLevel(); curLevel != nullptr)
 	{
@@ -865,7 +865,7 @@ GS1ScriptValue fn_onmapy(GS1Visitor* visitor, std::string_view messageCode, cons
 GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function onwall requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: onwall(x, y)");
 
 	auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 	auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
@@ -892,7 +892,7 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
-		throw std::invalid_argument("Built-in function onwall2 requires exactly four arguments");
+		throw std::invalid_argument("invalid arguments: onwall2(x, y, width, height)");
 
 	auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 	auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
@@ -921,7 +921,7 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, con
 GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function onwater requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: onwater(x, y)");
 
 	auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 	auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
@@ -940,7 +940,7 @@ GS1ScriptValue fn_onwater(GS1Visitor* visitor, std::string_view messageCode, con
 GS1ScriptValue fn_onwater2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
-		throw std::invalid_argument("Built-in function onwater2 requires exactly four arguments");
+		throw std::invalid_argument("invalid arguments: onwater2(x, y, width, height)");
 
 	auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 	auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
@@ -1028,7 +1028,7 @@ GS1ScriptValue fn_random(GS1Visitor* visitor, std::string_view messageCode, cons
 	static std::minstd_rand rng(static_cast<uint32_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()));
 
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function max requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: random(min, max)");
 
 	auto value1 = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	auto value2 = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
@@ -1042,7 +1042,7 @@ GS1ScriptValue fn_random(GS1Visitor* visitor, std::string_view messageCode, cons
 GS1ScriptValue fn_sarraylen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function sarraylen requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: sarraylen(list)");
 
 	auto list = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	return static_cast<double>(std::ranges::count(list, ',') + 1);
@@ -1052,14 +1052,14 @@ GS1ScriptValue fn_sarraylen(GS1Visitor* visitor, std::string_view messageCode, c
 // Converts level coordinates (x, y) to the screen's X coordinate.
 GS1ScriptValue fn_screenx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("Built-in function screenx is a clientside function");
+	throw std::logic_error("clientside only: screenx(x, y)");
 }
 
 // screeny(x, y)
 // Converts level coordinates (x, y) to the screen's Y coordinate.
 GS1ScriptValue fn_screeny(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("Built-in function screeny is a clientside function");
+	throw std::logic_error("clientside only: screeny(x, y)");
 }
 
 // sin(value)
@@ -1067,7 +1067,7 @@ GS1ScriptValue fn_screeny(GS1Visitor* visitor, std::string_view messageCode, con
 GS1ScriptValue fn_sin(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function sin requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: sin(value)");
 
 	auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 
@@ -1082,7 +1082,7 @@ GS1ScriptValue fn_sin(GS1Visitor* visitor, std::string_view messageCode, const s
 GS1ScriptValue fn_startswith(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function startswith requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: startswith(prefix, string)");
 
 	auto prefix = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
@@ -1095,7 +1095,7 @@ GS1ScriptValue fn_startswith(GS1Visitor* visitor, std::string_view messageCode, 
 GS1ScriptValue fn_strcontains(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function strcontains requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: strcontains(string, substring)");
 
 	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	auto substring = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
@@ -1108,7 +1108,7 @@ GS1ScriptValue fn_strcontains(GS1Visitor* visitor, std::string_view messageCode,
 GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function strequals requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: strequals(string1, string2)");
 
 	auto str1 = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	auto str2 = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
@@ -1121,7 +1121,7 @@ GS1ScriptValue fn_strequals(GS1Visitor* visitor, std::string_view messageCode, c
 GS1ScriptValue fn_strlen(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function strlen requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: strlen(string)");
 
 	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 
@@ -1133,7 +1133,7 @@ GS1ScriptValue fn_strlen(GS1Visitor* visitor, std::string_view messageCode, cons
 GS1ScriptValue fn_strtofloat(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function strtofloat requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: strtofloat(string)");
 
 	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
 	if (str.empty())
@@ -1147,7 +1147,7 @@ GS1ScriptValue fn_strtofloat(GS1Visitor* visitor, std::string_view messageCode, 
 GS1ScriptValue fn_testbomb(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: testbomb(x, y)");
 
 	auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
 	auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
@@ -1171,7 +1171,7 @@ GS1ScriptValue fn_testbomb(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_testcompu(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: testcompu(x, y)");
 
 	auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
 	auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
@@ -1195,7 +1195,7 @@ GS1ScriptValue fn_testcompu(GS1Visitor* visitor, std::string_view messageCode, c
 GS1ScriptValue fn_testexplo(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: testexplo(x, y)");
 
 	auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
 	auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
@@ -1219,7 +1219,7 @@ GS1ScriptValue fn_testexplo(GS1Visitor* visitor, std::string_view messageCode, c
 GS1ScriptValue fn_testhorse(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function testhorse requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: testhorse(x, y)");
 
 	auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
 	auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
@@ -1243,7 +1243,7 @@ GS1ScriptValue fn_testhorse(GS1Visitor* visitor, std::string_view messageCode, c
 GS1ScriptValue fn_testitem(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function testitem requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: testitem(x, y)");
 
 	auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
 	auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
@@ -1267,7 +1267,7 @@ GS1ScriptValue fn_testitem(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function testnpc requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: testnpc(x, y)");
 
 	auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
 	auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
@@ -1305,7 +1305,7 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, con
 GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function testplayer requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: testplayer(x, y)");
 
 	auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
 	auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
@@ -1351,7 +1351,7 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, 
 GS1ScriptValue fn_testsign(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function testsign requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: testsign(x, y)");
 
 	auto x = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 	auto y = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
@@ -1373,14 +1373,14 @@ GS1ScriptValue fn_testsign(GS1Visitor* visitor, std::string_view messageCode, co
 // Returns the height of the text in pixels, given the zoom level, font name, and style.
 GS1ScriptValue fn_textheight(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function textheight is a clientside function");
+	throw std::logic_error("clientside only: textheight(zoom, font, style)");
 }
 
 // textwidth(zoom, font, style, text)
 // Returns the width of the text in pixels, given the zoom level, font name, style, and text.
 GS1ScriptValue fn_textwidth(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("Built-in function textwidth is a clientside function");
+	throw std::logic_error("clientside only: textwidth(zoom, font, style, text)");
 }
 
 // tiletype(x, y)
@@ -1388,7 +1388,7 @@ GS1ScriptValue fn_textwidth(GS1Visitor* visitor, std::string_view messageCode, c
 GS1ScriptValue fn_tiletype(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Built-in function tiletype requires exactly two arguments");
+		throw std::invalid_argument("invalid arguments: tiletype(x, y)");
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
@@ -1422,7 +1422,7 @@ GS1ScriptValue fn_tiletype(GS1Visitor* visitor, std::string_view messageCode, co
 GS1ScriptValue fn_vecx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function vecx requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: vecx(dir)");
 
 	static double vecValues[] = {0.0, -1.0, 0.0, 1.0};
 	auto dir = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)) % 4;
@@ -1434,7 +1434,7 @@ GS1ScriptValue fn_vecx(GS1Visitor* visitor, std::string_view messageCode, const 
 GS1ScriptValue fn_vecy(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Built-in function vecy requires exactly one argument");
+		throw std::invalid_argument("invalid arguments: vecy(dir)");
 
 	static double vecValues[] = {-1.0, 0.0, 1.0, 0.0};
 	auto dir = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)) % 4;
@@ -1445,14 +1445,14 @@ GS1ScriptValue fn_vecy(GS1Visitor* visitor, std::string_view messageCode, const 
 // Converts screen (x, y) to level X.
 GS1ScriptValue fn_worldx(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("Built-in function worldx is a clientside function");
+	throw std::logic_error("clientside only: worldx(x, y)");
 }
 
 // worldy(x, y)
 // Converts screen (x, y) to level Y.
 GS1ScriptValue fn_worldy(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("Built-in function worldy is a clientside function");
+	throw std::logic_error("clientside only: worldy(x, y)");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

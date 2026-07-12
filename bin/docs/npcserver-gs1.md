@@ -148,7 +148,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       paramscount
       players[]
       playerscount
-      tiles[x,y]
+      tiles[x,y]        (no negative indexes)
       timevar
       timevar2
       tokenscount
@@ -273,6 +273,10 @@ Please review the lists below of implemented events, flags, functions, commands,
       signs[]
         .x
         .y
+
+#### Not implemented
+
+    tiles[x,y]          (negative indexes)
 
 #### Clientside only
 
@@ -540,6 +544,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       base64decode(string)
       base64encode(string)
       cos(value)
+      exp(value)
       findnearestplayer(x, y)
       getangle(dx, dy)
       getareanpcs(x, y, width, height)
@@ -590,7 +595,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    exp(r,r)
     passwordmatches(encrypted, test)
 
 #### Clientside only

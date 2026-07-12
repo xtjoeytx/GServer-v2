@@ -387,14 +387,14 @@ GS1ScriptValue mc_b(GS1Visitor* visitor, std::string_view messageCode, const std
 // Current file being downloaded | The download position of the specified file.
 GS1ScriptValue mc_D(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("Message Code #D is registered as a clientside message code");
+	throw std::logic_error("clientside only: #D | #D(filename)");
 }
 
 // #E
 // The current emoticon character being displayed by the player.
 GS1ScriptValue mc_E(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("Message Code #E is registered as a clientside message code");
+	throw std::logic_error("clientside only: #E");
 }
 
 // #e(start_index, length, string)
@@ -402,7 +402,7 @@ GS1ScriptValue mc_E(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_e(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
-		throw std::invalid_argument("Message Code #e requires exactly 3 arguments");
+		throw std::invalid_argument("invalid arguments: #e(start_index, length, string)");
 
 	auto startIndex = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 	auto length = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
@@ -500,7 +500,7 @@ GS1ScriptValue mc_G(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_I(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Message Code #I requires exactly 2 arguments");
+		throw std::invalid_argument("invalid arguments: #I(string_list, index)");
 
 	auto csvStringList = string::fromCSV(GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{}));
 	auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
@@ -514,7 +514,7 @@ GS1ScriptValue mc_I(GS1Visitor* visitor, std::string_view messageCode, const std
 // Displays an image or part of an image when used in a sign.
 GS1ScriptValue mc_i(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("Message Code #i is registered as a clientside message code");
+	throw std::logic_error("clientside only: #i(image) | #i(image, x, y, width, height)");
 }
 
 // #K(ascii)
@@ -522,7 +522,7 @@ GS1ScriptValue mc_i(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_K(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Message Code #K requires exactly 1 argument");
+		throw std::invalid_argument("invalid arguments: #K(ascii)");
 
 	uint8_t ascii = std::min(static_cast<size_t>(255), DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)));
 	return makeGS1ScriptValue(std::string{static_cast<char>(ascii)});
@@ -532,7 +532,7 @@ GS1ScriptValue mc_K(GS1Visitor* visitor, std::string_view messageCode, const std
 // The description of the specified key (in client language/key assignments).
 GS1ScriptValue mc_k(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("Message Code #k is registered as a clientside message code (maybe?)");
+	throw std::logic_error("clientside only: #k(key_index)");
 }
 
 // #L  [Read]
@@ -565,7 +565,7 @@ GS1ScriptValue mc_N(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Message Code #p requires exactly 1 argument");
+		throw std::invalid_argument("invalid arguments: #p(index)");
 
 	// The first event argument is the name of the triggeraction, so add +1 to get to the params.
 	auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)) + 1;
@@ -582,7 +582,7 @@ GS1ScriptValue mc_p(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_Q(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
-		throw std::invalid_argument("Message Code #Q requires exactly 2 arguments");
+		throw std::invalid_argument("invalid arguments: #Q(guild_name, account_name)");
 
 	auto guildName = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
 	auto accountName = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(std::string{});
@@ -617,7 +617,7 @@ GS1ScriptValue mc_R(GS1Visitor* visitor, std::string_view messageCode, const std
 // The player's selected sword (Newworld).
 GS1ScriptValue mc_S(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw std::logic_error("Message Code #S is registered as a clientside message code");
+	throw std::logic_error("clientside only: #S");
 }
 
 // #s(identifier)
@@ -625,7 +625,7 @@ GS1ScriptValue mc_S(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_s(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Message Code #s requires exactly 1 argument");
+		throw std::invalid_argument("invalid arguments: #s(identifier)");
 
 	return makeGS1ScriptValue(GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{}));
 }
@@ -635,7 +635,7 @@ GS1ScriptValue mc_s(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Message Code #t requires exactly 1 argument");
+		throw std::invalid_argument("invalid arguments: #t(index)");
 
 	auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 	if (index >= visitor->tokenizeTokens.size())
@@ -650,7 +650,7 @@ GS1ScriptValue mc_t(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_T(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Message Code #T requires exactly 1 argument");
+		throw std::invalid_argument("invalid arguments: #T(string)");
 
 	auto str = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
 	string::trim(str);
@@ -662,7 +662,7 @@ GS1ScriptValue mc_T(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_U(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Message Code #U requires exactly 1 argument");
+		throw std::invalid_argument("invalid arguments: #U(string)");
 
 	// Translation has already happened.
 	return makeGS1ScriptValue(GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{}));
@@ -673,7 +673,7 @@ GS1ScriptValue mc_U(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_v(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
-		throw std::invalid_argument("Message Code #s requires exactly 1 argument");
+		throw std::invalid_argument("invalid arguments: #v(identifier)");
 
 	auto number = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	return makeGS1ScriptValue(std::format("{}", number));
@@ -684,7 +684,7 @@ GS1ScriptValue mc_v(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() == 0)
-		throw std::logic_error("Message Code #W is registered as a clientside message code, specify a weapon index: #W(index)");
+		throw std::logic_error("clientside only: #W, specify a weapon index: #W(index)");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
@@ -711,7 +711,7 @@ GS1ScriptValue mc_W(GS1Visitor* visitor, std::string_view messageCode, const std
 GS1ScriptValue mc_w(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() == 0)
-		throw std::logic_error("Message Code #w is registered as a clientside message code, specify a weapon index: #w(index)");
+		throw std::logic_error("clientside only: #w, specify a weapon index: #w(index)");
 
 	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
