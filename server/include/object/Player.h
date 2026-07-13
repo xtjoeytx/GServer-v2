@@ -700,18 +700,14 @@ inline void Player::recordCurrentPropModTime()
 template<PlayerProp P, typename... Args>
 PropertyContainer auto Player::constructPropFor(Args... values) const
 {
-#define RETURN_CONSTRUCTPROPSFOR_CONSTEXPR(prop, type, ...) if constexpr (P == prop) return type{ values... };
 	FOR_LIST_OF_PLAYER_PROPS(RETURN_CONSTRUCTPROPSFOR_CONSTEXPR);
-
 	throw std::invalid_argument("Invalid PlayerProp type in constructPropFor");
 }
 
 template<PlayerProp P>
 PropertyContainer auto Player::getProp() const
 {
-#define RETURN_GETPROP_CONSTEXPR(prop, type, ...) if constexpr (P == prop) return type{ __VA_ARGS__ };
 	FOR_LIST_OF_PLAYER_PROPS(RETURN_GETPROP_CONSTEXPR);
-
 	throw std::invalid_argument("Invalid PlayerProp type in getProp");
 }
 

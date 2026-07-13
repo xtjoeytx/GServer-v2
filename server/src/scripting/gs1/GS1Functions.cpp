@@ -864,6 +864,8 @@ GS1ScriptValue fn_onmapy(GS1Visitor* visitor, std::string_view messageCode, cons
 
 // onwall(x, y)
 // Checks if the specified X and Y coordinates are on a wall tile.
+// Also checks if the coordinates are on a player or NPC, and returns true if so.
+// isNoPkZone levels have no player collision, so it will skip players if true.
 GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
@@ -874,16 +876,23 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (!level->isOnWall(toPixelPosition({x, y})))
-			return GameValue{false};
+		if (level->isOnWall(toPixelPosition({x, y})))
+			return GameValue{true};
 
 		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 		{
 			auto server = BabyDI::Get<Server>();
-			if (auto npc = server->getNPC(source.value().first); npc != nullptr && !npc->noPlayerOnWall)
-				return GameValue{level->isOnPlayer(toPixelPosition({x, y}))};
+			if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+			{
+				auto subLevel = level->getSubLevelAtPosition(npc->character.getMapPosition());
+				if (subLevel == nullptr)
+					return GameValue{true};
+				if (!npc->noPlayerOnWall && !subLevel->isNoPkZone && level->isOnPlayer(toPixelPosition({x, y})))
+					return GameValue{true};
+				if (level->isOnNPC(toPixelPosition({x, y})))
+					return GameValue{true};
+			}
 		}
-		return GameValue{true};
 	}
 
 	return GameValue{false};
@@ -891,6 +900,8 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, std::string_view messageCode, cons
 
 // onwall2(x, y, width, height)
 // Checks if the specified rectangle defined by X, Y, width, and height is on a wall tile.
+// Also checks if the rectangle is on a player or NPC, and returns true if so.
+// isNoPkZone levels have no player collision, so it will skip players if true.
 GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
@@ -903,16 +914,25 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, std::string_view messageCode, con
 
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (!level->isOnWall2(PixelRectangleArea{toPixelPosition({x, y}), {width, height}}))
-			return GameValue{false};
+		if (level->isOnWall2(PixelRectangleArea{toPixelPosition({x, y}), {width, height}}))
+			return GameValue{true};
 
 		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 		{
 			auto server = BabyDI::Get<Server>();
-			if (auto npc = server->getNPC(source.value().first); npc != nullptr && !npc->noPlayerOnWall)
-				return GameValue{level->isOnPlayer({toPixelPosition({x, y}), {width, height}})};
+			if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+			{
+				auto subLevel = level->getSubLevelAtPosition(npc->character.getMapPosition());
+				if (subLevel == nullptr)
+					return GameValue{true};
+
+				PixelRectangleArea searchRect{toPixelPosition({x, y}), {width, height}};
+				if (!npc->noPlayerOnWall && !subLevel->isNoPkZone && level->isOnPlayer(searchRect))
+					return GameValue{true};
+				if (level->isOnNPC(searchRect))
+					return GameValue{true};
+			}
 		}
-		return GameValue{true};
 	}
 
 	return GameValue{false};

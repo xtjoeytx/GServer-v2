@@ -346,6 +346,8 @@ public:
 	bool isOnWater(const PixelPosition& position) const noexcept;
 	bool isOnWater2(const WholeTileRectangleArea& tileArea) const noexcept;
 	bool isOnWater2(const PixelRectangleArea& area) const noexcept;
+	bool isOnNPC(const PixelPosition& position) const noexcept;
+	bool isOnNPC(const PixelRectangleArea& pixelArea) const noexcept;
 	bool isOnPlayer(const PixelPosition& position) const noexcept;
 	bool isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept;
 	tileset::TileType getTileTypeAt(const WholeTilePosition& tilePosition) const noexcept;

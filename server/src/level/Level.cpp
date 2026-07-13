@@ -2713,13 +2713,39 @@ bool Level::isOnWater2(const PixelRectangleArea& area) const noexcept
 	return isOnWater2(toWholeTileRectangleArea(area));
 }
 
+bool Level::isOnNPC(const PixelPosition& position) const noexcept
+{
+	for (const auto& npcId : findInRangeNPCs(position))
+	{
+		if (auto npc = m_server->getNPC(npcId); npc != nullptr)
+		{
+			if (positionInRectangle(position, npc->getCollisionBoundingBox()))
+				return true;
+		}
+	}
+	return false;
+}
+
+bool Level::isOnNPC(const PixelRectangleArea& pixelArea) const noexcept
+{
+	for (const auto& npcId : findInRangeNPCs(pixelArea.position))
+	{
+		if (auto npc = m_server->getNPC(npcId); npc != nullptr)
+		{
+			if (rectanglesIntersect(pixelArea, npc->getCollisionBoundingBox()))
+				return true;
+		}
+	}
+	return false;
+}
+
 bool Level::isOnPlayer(const PixelPosition& position) const noexcept
 {
 	for (const auto& playerId : findInRangePlayers(position))
 	{
 		if (auto player = m_server->getPlayer(playerId); player != nullptr)
 		{
-			if (positionInRectangle(position, player->getBoundingBox()))
+			if (positionInRectangle(position, player->getCollisionBoundingBox()))
 				return true;
 		}
 	}
@@ -2732,7 +2758,7 @@ bool Level::isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept
 	{
 		if (auto player = m_server->getPlayer(playerId); player != nullptr)
 		{
-			if (rectanglesIntersect(pixelArea, player->getBoundingBox()))
+			if (rectanglesIntersect(pixelArea, player->getCollisionBoundingBox()))
 				return true;
 		}
 	}

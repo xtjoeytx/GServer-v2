@@ -405,4 +405,7 @@ private:
 #define DEBUGPRINT(...)
 #endif
 
+#define RETURN_CONSTRUCTPROPSFOR_CONSTEXPR(prop, type, ...) if constexpr (P == prop) return type{ values... };
+#define RETURN_GETPROP_CONSTEXPR(prop, type, ...) if constexpr (P == prop) return type{ __VA_ARGS__ };
+
 #endif // COMMONTYPES_H

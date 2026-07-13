@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -38,7 +39,7 @@ namespace preagonal
 {
 ////////////////////////////////////////////////////////////////////////////////
 
-inline constexpr std::array<uint8_t, 30> NPCGaniAttrPackets = { 36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73 };
+inline constexpr std::array<uint8_t, 30> NPCGaniAttrPackets = {36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73};
 
 class FlatFileNPCLoader;
 class Level;
@@ -147,7 +148,9 @@ enum class NPCProp : uint8_t
 };
 constexpr int NPCPROP_COUNT = static_cast<int>(NPCProp::NPCPROP_COUNT);
 
-inline constexpr std::array<NPCProp, 10> NPCSaveProps = { NPCProp::SAVE0, NPCProp::SAVE1, NPCProp::SAVE2, NPCProp::SAVE3, NPCProp::SAVE4, NPCProp::SAVE5, NPCProp::SAVE6, NPCProp::SAVE7, NPCProp::SAVE8, NPCProp::SAVE9 };
+inline constexpr std::array<NPCProp, 10> NPCSaveProps = {NPCProp::SAVE0, NPCProp::SAVE1, NPCProp::SAVE2, NPCProp::SAVE3, NPCProp::SAVE4, NPCProp::SAVE5, NPCProp::SAVE6, NPCProp::SAVE7, NPCProp::SAVE8, NPCProp::SAVE9};
+
+// clang-format off
 
 //! NPCPROP_VISFLAGS values.
 enum class NPCVisFlags : uint8_t
@@ -183,6 +186,8 @@ enum class NPCMoveFlags : uint8_t
 	EVENTWHENDONE	= 0b0000'1000,
 	APPLYDIR		= 0b0001'0000,
 };
+
+// clang-format on
 
 /// @brief NPC warp restrictions
 ///
@@ -236,11 +241,11 @@ struct NPCMove
 	/// @brief Callback function to execute when the movement is complete.
 	std::function<void()> onComplete;
 
-	static const int cacheNearbyMovement = 0;	// Value: 1
-	static const int appendMovement = 1;		// Value: 2
-	static const int blockCheck = 2;			// Value: 4
-	static const int informWhenDone = 3;		// Value: 8
-	static const int applyDirection = 4;		// Value: 16
+	static const int cacheNearbyMovement = 0; // Value: 1
+	static const int appendMovement = 1;      // Value: 2
+	static const int blockCheck = 2;          // Value: 4
+	static const int informWhenDone = 3;      // Value: 8
+	static const int applyDirection = 4;      // Value: 16
 
 	/// @brief Returns the current interpolated pixel position based on elapsed time.
 	/// @return A PixelPosition representing the current position interpolated between the origin and destination, based on the elapsed time.
@@ -252,7 +257,7 @@ struct NPCMove
 		double percent = static_cast<double>(elapsed.count()) / duration.count();
 		auto lerpX = std::lerp(origin.x(), destination.x(), percent);
 		auto lerpY = std::lerp(origin.y(), destination.y(), percent);
-		return { static_cast<int32_t>(lerpX), static_cast<int32_t>(lerpY) };
+		return {static_cast<int32_t>(lerpX), static_cast<int32_t>(lerpY)};
 	}
 };
 
@@ -293,10 +298,11 @@ public:
 	void hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, std::optional<ScriptEventType> damageEventType = std::nullopt, std::optional<ScriptObject> source = std::nullopt);
 
 public:
-	const std::string& getWeaponName() const noexcept { return m_weaponName; }
-	bool isCharacter() const noexcept { return image == "#c#"; }
-	bool hasShape() const noexcept { return shape.width() != 0 || shape.height() != 0 || isCharacter(); }
-	bool hasImage() const noexcept { return !image.empty() && image != "-"; }
+	[[inline]] const std::string& getWeaponName() const noexcept;
+	[[inline]] bool isCharacter() const noexcept;
+	[[inline]] bool hasShape() const noexcept;
+	[[inline]] bool hasImage() const noexcept;
+	[[inline]] bool isBlocking() const noexcept;
 	[[inline]] Dimension<uint16_t> getComputedShape() const noexcept;
 	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
 	[[inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
@@ -380,7 +386,8 @@ public:
 
 	/// @brief Sends the results of setting a property across the network.
 	/// @param ...results A list of SetResults results to send.
-	template<typename... Results> requires AllSameAs<SetResults, Results...>
+	template<typename... Results>
+		requires AllSameAs<SetResults, Results...>
 	[[inline]] void sendPropsFromResults(const Results&... results);
 
 	/// @brief Sends the results of setting properties across the network.
@@ -389,7 +396,8 @@ public:
 
 	/// @brief Sends the results of setting a property across the network.
 	/// @param ...results A list of SetResults results to send.
-	template<typename... Results> requires AllSameAs<SetResults, Results...>
+	template<typename... Results>
+		requires AllSameAs<SetResults, Results...>
 	[[inline]] void sendPropsFromResults(PlayerPtr source, const Results&... results);
 
 	/// @brief Sends the results of setting properties across the network.
@@ -467,13 +475,40 @@ using NPCWeakPtr = std::weak_ptr<NPC>;
 
 //----------------------------
 
+inline const std::string& NPC::getWeaponName() const noexcept
+{
+	return m_weaponName;
+}
+
+inline bool NPC::isCharacter() const noexcept
+{
+	return image == "#c#";
+}
+
+inline bool NPC::hasShape() const noexcept
+{
+	return shape.width() != 0 || shape.height() != 0 || isCharacter();
+}
+
+inline bool NPC::hasImage() const noexcept
+{
+	return !image.empty() && image != "-";
+}
+
+inline bool NPC::isBlocking() const noexcept
+{
+	return !(blockFlags & ENUM(NPCBlockFlags::NOBLOCK));
+}
+
 inline std::generator<std::shared_ptr<ScriptClass>> NPC::getJoinedClasses() const
 {
+	// clang-format off
 	auto filter = m_joinedClasses
 		| std::views::transform([](const auto& pair) { return pair.second.lock(); })
 		| std::views::filter([](const auto& scriptClass) { return scriptClass != nullptr; });
 	for (auto scriptClass : filter)
 		co_yield scriptClass;
+	// clang-format on
 }
 
 inline void NPC::recordCurrentPropModTime()
@@ -491,24 +526,28 @@ inline Dimension<uint16_t> NPC::getComputedShape() const noexcept
 {
 	// Unless overridden, characters have a shape of 3 tiles in all directions.
 	if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
-		return { 48, 48, 48 };
+		return {48, 48, 48};
 
 	return shape;
 }
 
 inline PixelRectangleArea NPC::getBoundingBox() const noexcept
 {
-	return { getGlobalPosition(), getComputedShape() };
+	return {getGlobalPosition(), getComputedShape()};
 }
 
 inline PixelRectangleArea NPC::getCollisionBoundingBox() const noexcept
 {
+	// If the NPC has the NOBLOCK flag, it has no collision bounding box.
+	if (blockFlags & ENUM(NPCBlockFlags::NOBLOCK))
+		return {{std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::min(), 0}, {0, 0, 0}};
+
 	// Character NPCs have a specific bounding box.
 	// It is a 2x2 square centered on the character's feet, with a height of 3 tiles.
 	if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
-		return { getGlobalPosition().translate(8, 16), { 32, 32, 48 } };
+		return {getGlobalPosition().translate(8, 16), {32, 32, 48}};
 
-	return { getGlobalPosition(), shape };
+	return {getGlobalPosition(), shape};
 }
 
 inline PixelPosition NPC::getGlobalPosition() const noexcept
@@ -533,6 +572,8 @@ inline TilePosition NPC::getTilePosition() const noexcept
 }
 
 //----------------------------
+
+// clang-format off
 
 // Defines the mapping of NPCProp to PropertyContainer.
 #define FOR_LIST_OF_NPC_PROPS(DO) \
@@ -615,23 +656,21 @@ inline TilePosition NPC::getTilePosition() const noexcept
 	DO(NPCProp::Y2,			PropertyPixelCoordinate,	character.localPixelY) \
 	DO(NPCProp::Z2,			PropertyPixelCoordinate,	character.localPixelZ)
 
+// clang-format on
+
 //----------------------------
 
 template<NPCProp P, typename... Args>
 PropertyContainer auto NPC::constructPropFor(Args... values) const
 {
-#define RETURN_CONSTRUCTPROPSFOR_CONSTEXPR(prop, type, ...) if constexpr (P == prop) return type{ values... };
 	FOR_LIST_OF_NPC_PROPS(RETURN_CONSTRUCTPROPSFOR_CONSTEXPR);
-
 	throw std::invalid_argument("Invalid NPCProp type in constructPropFor");
 }
 
 template<NPCProp P>
 PropertyContainer auto NPC::getProp() const
 {
-#define RETURN_GETPROP_CONSTEXPR(prop, type, ...) if constexpr (P == prop) return type{ __VA_ARGS__ };
 	FOR_LIST_OF_NPC_PROPS(RETURN_GETPROP_CONSTEXPR);
-
 	throw std::invalid_argument("Invalid NPCProp type in getProp");
 }
 
@@ -647,7 +686,8 @@ SetResults NPC::setPropWith(SetBy setBy, Args... values)
 	return setProp<P>(setBy, constructPropFor<P>(values...));
 }
 
-template<typename... Results> requires AllSameAs<SetResults, Results...>
+template<typename... Results>
+	requires AllSameAs<SetResults, Results...>
 void NPC::sendPropsFromResults(const Results&... results)
 {
 	PropertySendResults send_results;
@@ -658,14 +698,18 @@ void NPC::sendPropsFromResults(const Results&... results)
 void NPC::sendPropsFromResults(std::ranges::forward_range auto&& results)
 {
 	PropertySendResults send_results;
-	auto results_range = results | std::views::transform([](const SetResults& results) { return std::make_pair(results, nullptr); });
+	auto results_range = results | std::views::transform([](const SetResults& results)
+	{
+		return std::make_pair(results, nullptr);
+	});
 	for (const auto& r : results_range)
 		send_results.emplace_back(r);
 
 	sendPropsFromSendResults(send_results);
 }
 
-template<typename... Results> requires AllSameAs<SetResults, Results...>
+template<typename... Results>
+	requires AllSameAs<SetResults, Results...>
 void NPC::sendPropsFromResults(PlayerPtr source, const Results&... results)
 {
 	PropertySendResults send_results;
@@ -676,7 +720,10 @@ void NPC::sendPropsFromResults(PlayerPtr source, const Results&... results)
 void NPC::sendPropsFromResults(PlayerPtr source, std::ranges::forward_range auto&& results)
 {
 	PropertySendResults send_results;
-	auto results_range = results | std::views::transform([](const SetResults& results) { return std::make_pair(results, nullptr); });
+	auto results_range = results | std::views::transform([](const SetResults& results)
+	{
+		return std::make_pair(results, nullptr);
+	});
 	for (const auto& r : results_range)
 		send_results.emplace_back(r);
 
