@@ -153,6 +153,7 @@ static void fn_setcharani(GS1Visitor* visitor, std::string_view commandName, con
 static void fn_setchargender(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_seteffect(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setgender(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_sethead(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setimg(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -309,6 +310,7 @@ static BuiltInCommandHandleMap GenerateMap()
 		{hash("setchargender"), &fn_setchargender},
 		{hash("setcharprop"), &fn_setcharprop},
 		{hash("setcoatcolor"), &fn_setcoatcolor},
+		{hash("seteffect"), &fn_seteffect},
 		{hash("setgender"), &fn_setgender},
 		{hash("setgif"), &fn_setimg},
 		{hash("setgifpart"), &fn_setimgpart},
@@ -2176,6 +2178,15 @@ void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const st
 			player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors);
 		}
 	}
+}
+
+// (1.20 to 1.31r1)	seteffect r,g,b;
+// (2.0+)			seteffect r,g,b,a;
+void fn_seteffect(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	// The original seteffect command tinted the entire game screen.
+	// The newer seteffect command adjusts how an NPC is drawn, tinting it and making it translucent.
+	throw std::logic_error("seteffect is clientside only.");
 }
 
 // setgender gender;

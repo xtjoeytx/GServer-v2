@@ -616,7 +616,7 @@ CMD_SETBACKTILE2         : 'setbacktile2'         { pushCommand("EEEEE"); } -> t
 CMD_SETLETTERS           : 'setletters'           { pushCommand("S"); } -> type(COMMAND);
 CMD_SETMAP               : 'setmap'               { pushCommand("SSEE"); } -> type(COMMAND);
 CMD_SETMINIMAP           : 'setminimap'           { pushCommand("SSEE"); } -> type(COMMAND);
-CMD_SETEFFECT            : 'seteffect '           { pushCommand("EEEE"); } -> type(COMMAND);
+CMD_SETEFFECT            : 'seteffect '           { pushCommand("EEP"); } -> type(COMMAND);
 CMD_SETFOCUS             : 'setfocus'             { pushCommand("EE"); } -> type(COMMAND);
 CMD_RESETFOCUS           : 'resetfocus'           -> type(COMMAND);
 CMD_NOPLAYERKILLING      : 'noplayerkilling'      -> type(COMMAND);
