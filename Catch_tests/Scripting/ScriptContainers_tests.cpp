@@ -41,9 +41,10 @@ TEST_CASE("GameValue stores and converts primitive values", "[Scripting][ScriptC
 		REQUIRE(value.has<bool>());
 		REQUIRE(value.getCopy<bool>().value() == true);
 		REQUIRE(value.getCopy<double>().value() == 1.0);
+		REQUIRE(static_cast<bool>(value) == true);
 
 		value.set(0.0);
-		REQUIRE(value.getCopy<bool>().value() == false);
+		REQUIRE_FALSE(value.getCopy<bool>().value_or(true) == false);
 		REQUIRE(static_cast<bool>(value) == false);
 	}
 
@@ -110,7 +111,8 @@ TEST_CASE("GameVariable supports assign, set, indexing and custom getter/setter"
 
 		double replacement = 9.0;
 		variable.set(replacement, 1);
-		REQUIRE(variable.has<double>());
+		REQUIRE_FALSE(variable.has<double>());
+		REQUIRE(variable.has<std::vector<double>>());
 		REQUIRE(variable.getCopy<double>(1).value() == 9.0);
 		REQUIRE(variable.getCopy<double>(99).value() == 1.0);
 	}
