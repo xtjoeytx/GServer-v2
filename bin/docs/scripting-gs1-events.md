@@ -304,7 +304,7 @@ gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
 executed on: 🤖 npc<br>
 
-Triggers when a player's chat text changes (does not trigger on empty chat).
+Triggers when a player's chat text changes.
 
 ## playerdies
 

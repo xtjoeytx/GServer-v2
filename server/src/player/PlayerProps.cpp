@@ -357,7 +357,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			account.character.chatMessage = props::Limits::apply(strProp->value, props::Limits::ChatMessageLength);
 
-			if (player != nullptr && !account.character.chatMessage.empty())
+			if (player != nullptr)
 			{
 				player->setLastChatTime(m_server->getFrameStartTime());
 
