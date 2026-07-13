@@ -29,6 +29,13 @@
    1. Set the `LOCALRIGHTS` setting.  A value of `1040383` would give all rights.  It is easiest to use RC to selectively give rights.
    1. Add `FOLDERRIGHT` entries for RC File Browser access.  It is easiest to copy from your own staff account and modify as necessary.
 
+## Players immediately disconnect when they join
+
+Check to make sure your server generation is set correctly in the `serveroptions.txt` file.
+For example, if you are running a `newmain` server, make sure your `allowedversions.txt` file allows the client version you are using.
+The names of the server generations changed during development so if you never updated your configuration file,
+you may be running the gserver in `classic` 1.x mode and connecting with a 2.x client, which would result in mangled packets.
+
 # Further reading
 
 - [Server](server.md) - Learn about server generations, client versions, and other server options.

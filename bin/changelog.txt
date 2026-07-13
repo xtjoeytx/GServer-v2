@@ -12,7 +12,6 @@
 + Scripted items for all item types, not just "gralats"
 + New internal filesystem keeps track of file changes and automatically reloads modified files, letting you change levels on the fly when locally hosting
 + Introduced "server generations", which simplifies server setup and will help segment incompatible client changes in the future
-+ allowedversions.txt altered to support server generations
 + If the current working directory is set to a player world, that world will be loaded
 + Reintroduced UPNP support
 + Added support for 'GR-V1.05' .graal levels
@@ -36,10 +35,12 @@
 o Removed the v8 NPC-server
 o Removed multiple server support
 o Removed servers.txt and altered how the startup server is found
+o allowedversions.txt altered to support server generations
 o Replaced server logging with a new, better system
 o Changed how files are written to disk to be more reliable
 o Changed how files are named to avoid code page issues (we match official and use %000 to encode special characters)
 o Many NC functions have been improved to get more immediate feedback (like adding/removing weapons)
+o Singleplayer levels must now be configured in the serveroptions.txt file
 o Refactored and rewrote a lot of the source code
 o Changed how IDs are assigned to players and NPCs
 o Any 2x2 tile change is respawned
