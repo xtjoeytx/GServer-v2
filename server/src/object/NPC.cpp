@@ -561,11 +561,7 @@ void NPC::hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEvent
 {
 	// Adjust the NPC's HP.
 	if (allowServerDamageReactions && isCharacter())
-	{
-		sendPropsFromResults(
-		setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<uint8_t>(std::max(0, character.hitpointsInHalves - damageInHalves)))
-		);
-	}
+		sendPropsFromResults(setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<uint8_t>(std::max(0, character.hitpointsInHalves - damageInHalves))));
 
 	// Queue the hurt event.
 	if (damageEventType.has_value())

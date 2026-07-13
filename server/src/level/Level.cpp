@@ -1455,9 +1455,6 @@ bool Level::addNPC(std::shared_ptr<NPC> npc)
 
 		if (script.starts_with("noplayerkilling"))
 			part->isNoPkZone = true;
-
-		//if (script.starts_with("singleplayer"))
-		//	isSingleplayer = true;
 	}
 
 	return true;
