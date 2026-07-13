@@ -680,6 +680,12 @@ void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 		std::vector<std::string> eventAndParams;
 		eventAndParams.emplace_back(GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(std::string{}));
+
+		// Don't allow the created event to be called.
+		// Disabled in client version 2.10.
+		if (string::equalsi(eventAndParams[0], "created"sv))
+			return;
+
 		if (arguments.size() > 2)
 		{
 			auto params = string::fromCSV(GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or(std::string{}));
