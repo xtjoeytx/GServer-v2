@@ -2061,6 +2061,14 @@ void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::v
 		std::vector<double> arrayValues;
 		arrayValues.assign(size, 0.0);
 
+		// Copy over existing values, if any.
+		if (var->has<std::vector<double>>())
+		{
+			auto& existing = var->get<std::vector<double>>().value().get();
+			for (size_t i = 0; i < std::min(size, existing.size()); ++i)
+				arrayValues[i] = existing[i];
+		}
+
 		var->assign<std::vector<double>>(std::move(arrayValues));
 	}
 }
