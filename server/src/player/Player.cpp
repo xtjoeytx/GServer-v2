@@ -1243,6 +1243,7 @@ void Player::constructScriptParameters()
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"gralats"sv, std::ref(modTime[PROPID(PlayerProp::RUPEESCOUNT)]), std::ref(account.character.gralats)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"bombs"sv, std::ref(modTime[PROPID(PlayerProp::BOMBSCOUNT)]), std::ref(account.character.bombs)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"darts"sv, std::ref(modTime[PROPID(PlayerProp::ARROWSCOUNT)]), std::ref(account.character.arrows)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"bombpower"sv, std::ref(modTime[PROPID(PlayerProp::BOMBPOWER)]), std::ref(account.character.bombPower)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"glovepower"sv, std::ref(modTime[PROPID(PlayerProp::GLOVEPOWER)]), std::ref(account.character.glovePower)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"swordpower"sv, std::ref(modTime[PROPID(PlayerProp::SWORDPOWER)]), std::ref(account.character.swordPower)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"shieldpower"sv, std::ref(modTime[PROPID(PlayerProp::SHIELDPOWER)]), std::ref(account.character.shieldPower)});
