@@ -1227,10 +1227,9 @@ void Player::constructScriptParameters()
 		}
 	});
 
-	// trial, classic, vip, gold
 	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"upgradestatus"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return isGuest() ? "trial"s : "classic"s; }
+		"trial"sv,
+		[this](std::optional<size_t>) -> GameValueVariantForGetter { return isGuest() ? 1.0 : 0.0; }
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"z"sv, std::ref(modTime[PROPID(PlayerProp::Z2)]), std::ref(account.character.localPixelZ), 16});

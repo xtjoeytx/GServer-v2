@@ -500,7 +500,7 @@ GS1ScriptValue mc_g(GS1Visitor* visitor, std::string_view messageCode, const std
 
 // #G | #G(index)  [Read]
 // Upgrade status of the player (the player's account level).
-// player.upgradestatus #G(index)
+// trial, classic, vip, gold
 GS1ScriptValue mc_G(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	std::optional<size_t> index = std::nullopt;
@@ -510,7 +510,7 @@ GS1ScriptValue mc_G(GS1Visitor* visitor, std::string_view messageCode, const std
 	if (auto client = getPlayerClientFromSource(visitor->getCurrentSource(), index); client != nullptr)
 	{
 		if (client->isGuest())
-			return makeGS1ScriptValue("guest"s);
+			return makeGS1ScriptValue("trial"s);
 
 		return makeGS1ScriptValue("classic"s);
 	}
