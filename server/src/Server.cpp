@@ -2392,11 +2392,13 @@ void Server::sendPacketToLevelAndPastVisitorsAfter(StaticLevelData* level, clock
 	if (!running) return;
 	for (const auto& [id, player] : players_of_type<PlayerClient>(m_playerList))
 	{
-		auto playerLevel = player->getLevel();
-		auto levelData = playerLevel->getStaticLevelDataAtPosition(player->getMapPosition());
-		auto lastEntered = player->getLevelLastEnteredTime(level);
-		if ((lastEntered.has_value() && lastEntered.value() > modTime) || (levelData != nullptr && levelData.get() == level))
-			player->sendPacket(packet);
+		if (auto playerLevel = player->getLevel(); playerLevel != nullptr)
+		{
+			auto levelData = playerLevel->getStaticLevelDataAtPosition(player->getMapPosition());
+			auto lastEntered = player->getLevelLastEnteredTime(level);
+			if ((lastEntered.has_value() && lastEntered.value() > modTime) || (levelData != nullptr && levelData.get() == level))
+				player->sendPacket(packet);
+		}
 	}
 }
 
