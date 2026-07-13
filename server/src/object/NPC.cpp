@@ -1910,12 +1910,26 @@ void NPC::testForLinks(SetResults& result)
 	auto levelPtr = getLevel();
 	if (levelPtr == nullptr) return;
 
+	// The NPC changed their position.
+	auto informNPCMoved = [&result, this]()
+	{
+		result.resultPropIds.push_back(PROPID(NPCProp::X));
+		result.resultPropIds.push_back(PROPID(NPCProp::Y));
+		result.resultPropIds.push_back(PROPID(NPCProp::X2));
+		result.resultPropIds.push_back(PROPID(NPCProp::Y2));
+	};
+
 	// The NPC changed their level and position.
 	auto informNPCWarped = [&]()
 	{
 		// Tell NCs about our new position.
 		CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
 		m_server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
+
+		// Set our level prop.
+		result.resultPropIds.clear();
+		result.resultPropIds.push_back(PROPID(NPCProp::CURLEVEL));
+		informNPCMoved();
 
 		// Tell players that we changed level.
 		auto localPosition = getLocalPosition();
@@ -1926,100 +1940,94 @@ void NPC::testForLinks(SetResults& result)
 		scripting.events.addEvent(ScriptEventType::NPCWARPED, source::FromNPC(id));
 	};
 
-	// The NPC only changed their position, not their level.
-	auto informNPCOnlyMoved = [&result, this]()
+	// Clamp NPC to the level.
+	auto clampToLevel = [&]()
 	{
-		result.resultPropIds.push_back(PROPID(NPCProp::X));
-		result.resultPropIds.push_back(PROPID(NPCProp::Y));
-		result.resultPropIds.push_back(PROPID(NPCProp::X2));
-		result.resultPropIds.push_back(PROPID(NPCProp::Y2));
+		auto clampedX = std::clamp(character.localPixelX, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
+		auto clampedY = std::clamp(character.localPixelY, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
+		if (clampedX != character.localPixelX || clampedY != character.localPixelY)
+		{
+			character.localPixelX = clampedX;
+			character.localPixelY = clampedY;
+			informNPCMoved();
+		}
 	};
 
 	// Gmaps are treated as one large map, and so level npcs can freely walk across maps (source: post=1193766)
-	uint8_t computedMapX = character.localPixelX / 1024;
-	uint8_t computedMapY = character.localPixelY / 1024;
-	uint8_t computedLocalX = character.localPixelX % 1024;
-	uint8_t computedLocalY = character.localPixelY % 1024;
-
-	// Overworld links.
-	// We test the NPC's x/y position to see if they walked out of the bounds of the current level.
-	// If they did, we warp them to the new level, if allowed.
-	const auto& map = levelPtr->getMap();
-	if (map != nullptr && (computedMapX != character.mapX || computedMapY != character.mapY))
+	if (levelPtr->isGmap())
 	{
-		auto newLevelName = map->getLevelNameAt(computedMapX, computedMapY);
-		if (warpRestrictions != NPCWarpRestrictions::NOTALLOWED)
+		uint8_t computedMapX = character.localPixelX / 1024;
+		uint8_t computedMapY = character.localPixelY / 1024;
+		uint8_t computedLocalX = character.localPixelX % 1024;
+		uint8_t computedLocalY = character.localPixelY % 1024;
+
+		// We test the NPC's x/y position to see if they walked out of the bounds of the current level.
+		// If they did, alter their map location.
+		if (computedMapX != character.mapX || computedMapY != character.mapY)
 		{
-			character.mapX = map->isGmap() ? computedMapX : 0;
-			character.mapY = map->isGmap() ? computedMapY : 0;
+			character.mapX = computedMapX;
+			character.mapY = computedMapY;
 			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
 			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
 
 			character.localPixelX = computedLocalX;
 			character.localPixelY = computedLocalY;
-
-			if (levelPtr->isOnBigMap())
-			{
-				if (auto newLevel = m_server->getLoadedLevel(newLevelName, levelPtr); newLevel != nullptr)
-				{
-					setLevel(newLevel);
-					result.resultPropIds.push_back(PROPID(NPCProp::CURLEVEL));
-					informNPCWarped();
-				}
-			}
-			else informNPCOnlyMoved();
-			return;
+			informNPCMoved();
 		}
-
-		// They aren't allowed to leave the level, so clamp them to the borders.
-		character.localPixelX = std::clamp(character.localPixelX, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
-		character.localPixelY = std::clamp(character.localPixelY, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
-		informNPCOnlyMoved();
-		return;
 	}
 
-	if (warpRestrictions == NPCWarpRestrictions::ALLOWED)
+	// They aren't allowed to leave the level, so clamp them to the borders.
+	if (levelPtr->isGmap() || levelPtr->isOnBigMap())
+		clampToLevel();
+
+	// If we have warp restrictions, don't process any further.
+	if (warpRestrictions == NPCWarpRestrictions::NOTALLOWED)
+		return;
+
+	// Test for links.
+	static Position<int> touchTest[] = {{2, 1}, {0, 2}, {2, 4}, {3, 2}};
+	TilePosition testPos = character.getTilePosition().translate(touchTest[character.direction].x(), touchTest[character.direction].y());
+	if (auto linkTouched = levelPtr->getLink(testPos); linkTouched.has_value())
 	{
-		static Position<int> touchTest[] = {{2, 1}, {0, 2}, {2, 4}, {3, 2}};
-		TilePosition testPos = character.getTilePosition().translate(touchTest[character.direction].x(), touchTest[character.direction].y());
-		if (auto linkTouched = levelPtr->getLink(testPos, map != nullptr); linkTouched.has_value())
+		auto& destLevelName = linkTouched.value()->getDestinationLevel();
+		const auto& currentMap = levelPtr->getMap();
+
+		// If we only allow overworld links, and the destination level was not found on the current map, then don't do anything.
+		if (warpRestrictions == NPCWarpRestrictions::ONLYOVERWORLD && (currentMap == nullptr || !currentMap->hasLevel(destLevelName)))
+			return;
+
+		// Check if we have the level.
+		LevelPtr destLevel = m_server->getLoadedLevel(destLevelName, levelPtr);
+		if (destLevel == nullptr)
+			return;
+
+		// Get the sub-level for the destination level.
+		SubLevelPtr destSubLevel = destLevel->getSubLevelByName(destLevelName);
+		if (destSubLevel == nullptr)
+			return;
+
+		// If the dest level is a gmap, set our map x/y props.
+		if (destSubLevel->isOnGmap)
 		{
-			auto& destLevelName = linkTouched.value()->getDestinationLevel();
-			SubLevelPtr destSubLevel = levelPtr->getSubLevelByName(destLevelName);
-			LevelPtr newLevel = nullptr;
+			auto mapPosition = destSubLevel->mapPosition.value_or(MapPosition{0, 0});
+			character.mapX = mapPosition.x();
+			character.mapY = mapPosition.y();
+			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
+			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
+		}
 
-			// Destination level was not found on the map, so check the server for the level.
-			if (destSubLevel == nullptr)
-			{
-				if (auto newLevel = m_server->getLoadedLevel(destLevelName, levelPtr); newLevel != nullptr)
-				{
-					destSubLevel = newLevel->getSubLevelByName(destLevelName);
-					setLevel(newLevel);
-				}
-			}
+		// Set our position.
+		auto pos = linkTouched.value()->getDestinationForCharacter(character, source::FromNPC(id));
+		character.localPixelX = pos.x();
+		character.localPixelY = pos.y();
 
-			// If we have a destination level, move us to it.
-			if (destSubLevel != nullptr)
-			{
-				auto mapPosition = destSubLevel->mapPosition.value_or(MapPosition{0, 0});
-				character.mapX = mapPosition.x();
-				character.mapY = mapPosition.y();
-				result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
-				result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
-
-				auto pos = linkTouched.value()->getDestinationForCharacter(character, source::FromNPC(id));
-				character.localPixelX = pos.x();
-				character.localPixelY = pos.y();
-
-				// If we are changing levels, do that now.
-				if (newLevel != nullptr)
-				{
-					setLevel(newLevel);
-					result.resultPropIds.push_back(PROPID(NPCProp::CURLEVEL));
-					informNPCWarped();
-				}
-				else informNPCOnlyMoved();
-			}
+		// Warp to the new level.
+		if (destLevel == levelPtr)
+			informNPCMoved();
+		else
+		{
+			setLevel(destLevel);
+			informNPCWarped();
 		}
 	}
 }
