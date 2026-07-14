@@ -80,6 +80,13 @@ std::optional<GameAni> GameAni::load(Server* const server, const std::string& na
 			}
 			gameAni.m_script = code.toString();
 		}
+		// SPRITE
+		// DEFAULTPARAMxx
+		// ANI / ANIEND
+		// WAIT
+		// PLAYSOUND
+		// REDBODY		- newworld, in lava
+		// BLUEBODY		- newworld, in water
 
 		if (i == fileData.end())
 			break;

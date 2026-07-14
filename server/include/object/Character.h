@@ -74,6 +74,21 @@ struct Character
 
 //----------------------------
 
+enum class ColorSlots : uint8_t
+{
+	SKIN = 0,
+	COAT,
+	SLEEVES,
+	SHOES,
+	BELT,
+	// newworld
+	PULLOVER,
+	PANTS,
+	BORDER,
+	//
+	COUNT
+};
+
 enum class ClassicColors : uint8_t
 {
 	WHITE = 0,

@@ -2073,6 +2073,12 @@ void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::v
 	}
 }
 
+// setbacktile tileindex;
+// [newworld] For tiles that have transparency, it controls which tile gets rendered behind it for the whole level.
+
+// setbacktile2 tileindex,x,y,width,height;
+// [newworld] Same as setbacktile, but allows specifying a rectangular area for the tile to be set behind.
+
 // setbeltcolor color;
 // Sets the player's belt color.
 void fn_setbeltcolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
@@ -2087,7 +2093,7 @@ void fn_setbeltcolor(GS1Visitor* visitor, std::string_view commandName, const st
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
-			colors.values[4] = static_cast<uint8_t>(color);
+			colors.values[ENUM(ColorSlots::BELT)] = static_cast<uint8_t>(color);
 			player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors);
 		}
 	}
@@ -2188,7 +2194,7 @@ void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const st
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
-			colors.values[1] = static_cast<uint8_t>(color);
+			colors.values[ENUM(ColorSlots::COAT)] = static_cast<uint8_t>(color);
 			player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors);
 		}
 	}
@@ -2483,7 +2489,7 @@ void fn_setshoecolor(GS1Visitor* visitor, std::string_view commandName, const st
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
-			colors.values[3] = static_cast<uint8_t>(color);
+			colors.values[ENUM(ColorSlots::SHOES)] = static_cast<uint8_t>(color);
 			player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors);
 		}
 	}
@@ -2515,7 +2521,7 @@ void fn_setskincolor(GS1Visitor* visitor, std::string_view commandName, const st
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
-			colors.values[0] = static_cast<uint8_t>(color);
+			colors.values[ENUM(ColorSlots::SKIN)] = static_cast<uint8_t>(color);
 			player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors);
 		}
 	}
@@ -2535,7 +2541,7 @@ void fn_setsleevecolor(GS1Visitor* visitor, std::string_view commandName, const 
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
-			colors.values[2] = static_cast<uint8_t>(color);
+			colors.values[ENUM(ColorSlots::SLEEVES)] = static_cast<uint8_t>(color);
 			player->setPropWith<PlayerProp::COLORS>(SetBy::SERVER, colors);
 		}
 	}

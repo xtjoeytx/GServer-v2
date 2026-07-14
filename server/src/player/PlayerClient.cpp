@@ -843,7 +843,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
-			account.character.colors[0] = color;
+			account.character.colors[ENUM(ColorSlots::SKIN)] = color;
 			setPropsFromPacket(CString() >> (char)PlayerProp::COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], props::SetBy::SERVER);
 		}
 	}
@@ -856,7 +856,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
-			account.character.colors[1] = color;
+			account.character.colors[ENUM(ColorSlots::COAT)] = color;
 			setPropsFromPacket(CString() >> (char)PlayerProp::COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], props::SetBy::SERVER);
 		}
 	}
@@ -869,7 +869,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
-			account.character.colors[2] = color;
+			account.character.colors[ENUM(ColorSlots::SLEEVES)] = color;
 			setPropsFromPacket(CString() >> (char)PlayerProp::COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], props::SetBy::SERVER);
 		}
 	}
@@ -882,7 +882,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
-			account.character.colors[3] = color;
+			account.character.colors[ENUM(ColorSlots::SHOES)] = color;
 			setPropsFromPacket(CString() >> (char)PlayerProp::COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], props::SetBy::SERVER);
 		}
 	}
@@ -895,7 +895,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		signed char color = getColor(chatParse[1].toLower());
 		if (color != -1)
 		{
-			account.character.colors[4] = color;
+			account.character.colors[ENUM(ColorSlots::BELT)] = color;
 			setPropsFromPacket(CString() >> (char)PlayerProp::COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], props::SetBy::SERVER);
 		}
 	}
