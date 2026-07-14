@@ -1508,7 +1508,7 @@ inline auto to_string(double value, int width, int precision)
 
 /// @brief Extracts a line from a string view, using a specified delimiter.
 /// @param str A reference to the string view to extract from.
-/// @param delim The delimiter character to use for splitting lines. Defaults to '\\n'.
+/// @param delim The delimiter character to use for splitting lines. Defaults to '\n'.
 /// @return A string view containing the extracted line or substring up to the delimiter. If the delimiter is not found, returns the whole string.
 inline auto retrieveLine(StringViewVariant auto const str, char delim = '\n')
 {
@@ -1522,6 +1522,18 @@ inline auto retrieveLine(StringViewVariant auto const str, char delim = '\n')
 		return strview;
 
 	return str.substr(0, pos);
+}
+
+/// @brief Extracts a line from a string, using a specified delimiter.
+/// @param str A reference to the string to extract from.
+/// @param delim The delimiter character to use for splitting lines. Defaults to '\n'.
+/// @return A string view containing the extracted line or substring up to the delimiter. If the delimiter is not found, returns the whole string.
+inline auto retrieveLine(StringVariant auto const& str, char delim = '\n')
+{
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
+	return retrieveLine(StringViewType{str}, delim);
 }
 
 /// @brief Extracts the next line or substring from a string view, using a specified delimiter.

@@ -1,10 +1,8 @@
 #include <algorithm>
-#include <cstdint>
 #include <format>
-#include <iterator>
 #include <memory>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -141,8 +139,8 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCWARP(CString& pPacket)
 	}
 
 	NPCID npcId = pPacket.readGUInt();
-	PropertyTileCoordinate tileX{ pPacket.readGUChar() / 2.0f };
-	PropertyTileCoordinate tileY{ pPacket.readGUChar() / 2.0f };
+	PropertyTileCoordinate tileX{pPacket.readGUChar() / 2.0f};
+	PropertyTileCoordinate tileY{pPacket.readGUChar() / 2.0f};
 	std::string npcLevel = pPacket.readString("").trimI().toString();
 
 	auto npc = m_server->getNPC(npcId);
@@ -153,15 +151,17 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCWARP(CString& pPacket)
 	if (npcLevel != npc->getLevelName())
 	{
 		if (auto newLevel = m_server->getLoadedLevel(npcLevel, npc->getLevel()); newLevel != nullptr)
-			npc->warp(newLevel, { tileX.pixelCoordinate, tileY.pixelCoordinate });
+			npc->warp(newLevel, {tileX.pixelCoordinate, tileY.pixelCoordinate});
 	}
 	// Changing position in the current level.
 	else
 	{
+		// clang-format off
 		npc->sendPropsFromResults(
 			npc->setPropWith<NPCProp::X2>(SetBy::SERVER, tileX.pixelCoordinate),
 			npc->setPropWith<NPCProp::Y2>(SetBy::SERVER, tileY.pixelCoordinate)
 		);
+		// clang-format on
 	}
 
 	return HandlePacketResult::Handled;
@@ -240,70 +240,105 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 		std::vector<std::string> addedFlags;
 		std::vector<std::string> updatedFlags;
 		std::vector<std::string> deletedFlags;
-		auto npcFlags = string::fromCSV(pPacket.readString("").toString());
-
-		// Remove any flags that do not contain an equal sign, as these are not valid flags for NPCs.
-		std::erase_if(npcFlags, [](std::string& flag) { return !flag.contains('='); });
+		auto incomingFlags = string::fromCSV(pPacket.readString("").toString());
 
 		// Go through the existing flags and delete/update them.
 		auto it = npc->scripting.variables.store.begin();
 		while (it != npc->scripting.variables.store.end())
 		{
-			// Ignore temporary variables and non-flag variables.
-			if (auto var = it->second; var != nullptr && var->lifetime == variables::Lifetime::PERMANENT && var->value.testAsFlag())
-			{
-				auto flagBeingSet = std::ranges::find_if(npcFlags, [&it](std::string& flag) { return flag.starts_with(it->first); });
+			auto& storeFlagName = it->first;
 
-				// Not in range, delete it.
-				if (flagBeingSet == std::ranges::end(npcFlags))
+			// Ignore temporary variables and non-flag variables.
+			if (auto storeFlag = it->second; storeFlag != nullptr && storeFlag->lifetime == variables::Lifetime::PERMANENT && storeFlag->value.testAsFlag())
+			{
+				auto flagBeingSet = std::ranges::find_if(incomingFlags, [&storeFlagName](std::string& flag)
 				{
-					deletedFlags.emplace_back(std::format("flag deleted:\t{}={}", it->first, it->second->getCopy<std::string>().value_or(std::string{})));
+					auto incomingFlagValue = string::retrieveLine(flag, '=');
+					return incomingFlagValue == storeFlagName;
+				});
+
+				// Store flag is not found in the incoming flags, so delete it.
+				if (flagBeingSet == std::ranges::end(incomingFlags))
+				{
+					if (it->second->has<std::string>())
+						deletedFlags.emplace_back(std::format("flag deleted:\t{}={}", storeFlagName, it->second->getCopy<std::string>().value_or(std::string{})));
+					else deletedFlags.emplace_back(std::format("flag deleted:\t{}", storeFlagName));
+
 					it = npc->scripting.variables.store.erase(it);
+					continue;
 				}
-				// Is in range, check if updated.
-				else if (auto existingValueWrap = it->second->get<std::string>(); existingValueWrap.has_value())
+
+				// Store flag was found, so check if we need to modify it.
+				if (auto existingValueWrap = it->second->get<std::string>(); existingValueWrap.has_value())
 				{
 					auto& existingValue = existingValueWrap.value().get();
 					auto equalPos = flagBeingSet->find('=');
-					std::string flagValue{ string::trimMutate(flagBeingSet->substr(equalPos + 1)) };
+					std::string flagValue{string::trimMutate(flagBeingSet->substr(equalPos + 1))};
+
+					// It was modified!
 					if (existingValue != flagValue)
 					{
-						updatedFlags.emplace_back(std::format("flag updated:\t{}={} -> {}", it->first, existingValue, flagValue));
-						it->second->assign(flagValue);
-						npcFlags.erase(flagBeingSet);
-						++it;
+						updatedFlags.emplace_back(std::format("flag updated:\t{}={} -> {}", storeFlagName, existingValue, flagValue));
+						it->second->set(flagValue);
+						incomingFlags.erase(flagBeingSet);
 					}
+					// It was not modified, so remove it from the incoming flags so we don't add it again.
+					else
+					{
+						incomingFlags.erase(flagBeingSet);
+					}
+
+					++it;
+					continue;
 				}
 			}
-			else ++it;
+
+			// This flag will be added.
+			++it;
 		}
 
 		// Add new flags.
-		for (std::string_view flag : npcFlags)
+		for (std::string_view flag : incomingFlags)
 		{
 			auto equalPos = flag.find('=');
 			if (equalPos == std::string::npos)
-				continue;
-
-			auto flagName = string::trim(flag.substr(0, equalPos));
-			auto flagValue = string::trim(flag.substr(equalPos + 1));
-			npc->scripting.variables.add(flagName, GameValue{ std::string{ flagValue } });
-			addedFlags.emplace_back(std::format("flag added:\t{}={}", flagName, flagValue));
+			{
+				npc->scripting.variables.add(flag, GameValue{true});
+				addedFlags.emplace_back(std::format("flag added:\t{}", flag));
+			}
+			else
+			{
+				auto flagName = string::trim(flag.substr(0, equalPos));
+				auto flagValue = string::trim(flag.substr(equalPos + 1));
+				npc->scripting.variables.add(flagName, GameValue{std::string{flagValue}});
+				addedFlags.emplace_back(std::format("flag added:\t{}={}", flagName, flagValue));
+			}
 		}
 
 		// Save the NPC.
 		m_server->getNPCLoader().saveNPC(npc);
 
 		// Announce changes.
+		// clang-format off
 		CString updateMsg = std::format("NPC flags of {} updated by {}", npc->name, account.name);
 		m_server->sendToNC(updateMsg);
 		log::printLine(log::npc, updateMsg);
 		if (!addedFlags.empty())
+		{
+			std::ranges::for_each(addedFlags, [&](std::string& message) { m_server->sendToNC(message); });
 			log::printLine(log::npc, string::join(addedFlags, "\n"sv));
+		}
 		if (!updatedFlags.empty())
+		{
+			std::ranges::for_each(updatedFlags, [&](std::string& message) { m_server->sendToNC(message); });
 			log::printLine(log::npc, string::join(updatedFlags, "\n"sv));
+		}
 		if (!deletedFlags.empty())
+		{
+			std::ranges::for_each(deletedFlags, [&](std::string& message) { m_server->sendToNC(message); });
 			log::printLine(log::npc, string::join(deletedFlags, "\n"sv));
+		}
+		// clang-format on
 	}
 
 	return HandlePacketResult::Handled;
@@ -372,7 +407,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	auto newNPC = m_server->getNPCServer()->addNPC(npcName, npcId, npcType, npcScripter, level, { npcX, npcY });
+	auto newNPC = m_server->getNPCServer()->addNPC(npcName, npcId, npcType, npcScripter, level, {npcX, npcY});
 	if (newNPC != nullptr)
 	{
 		// Persist NPC
@@ -497,9 +532,10 @@ HandlePacketResult PlayerNC::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 
 		for (auto npcId : npcLevel->getNPCs())
 		{
+			// clang-format off
 			auto npc = m_server->getNPC(npcId);
-			npcDump << "\n"
-				<< string::join(npc->getVariableDump(), "\n") << "\n";
+			npcDump << "\n" << string::join(npc->getVariableDump(), "\n") << "\n";
+			// clang-format on
 		}
 
 		sendPacket(CString() >> (char)PLO_NC_LEVELDUMP << npcDump.gtokenize());
@@ -553,6 +589,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONGET(CString& pPacket)
 	std::string script = weapon->getScript().getOriginalSource();
 	std::replace(script.begin(), script.end(), '\n', '\xa7');
 
+	// clang-format off
 	if (getVersion() < NCVER_2_1)
 	{
 		sendPacket(CString() >> (char)PLO_NPCWEAPONADD
@@ -568,6 +605,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONGET(CString& pPacket)
 			>> (char)weapon->image.length() << weapon->image
 			<< script);
 	}
+	// clang-format on
 
 	return HandlePacketResult::Handled;
 }
