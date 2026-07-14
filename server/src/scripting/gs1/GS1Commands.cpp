@@ -3142,6 +3142,9 @@ void fn_takeplayercarry(GS1Visitor* visitor, std::string_view commandName, const
 		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
+			if (auto level = player->getLevel(); level != nullptr)
+				level->addThrownItem(player->getTilePosition().translate(0.5f, 1.0f), player->account.character.direction, ENUM<CarryObjectSprite>(player->getCarrySprite()), source::FromPlayer(player->getId()));
+
 			player->sendPacket(CString() >> (char)PLO_THROWCARRIED >> (short)player->getId());
 			player->setPropWith<PlayerProp::CARRYSPRITE>(SetBy::SERVER, 0xFF_ui8);
 		}

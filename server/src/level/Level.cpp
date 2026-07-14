@@ -1037,6 +1037,15 @@ void Level::doFrameEvents(precise_clock::time_point time)
 	{
 		return std::find(deletedItems.begin(), deletedItems.end(), &arrow - &m_arrows[0]) != deletedItems.end();
 	});
+
+	// Run thrown item events.
+	for (size_t i = 0; i < m_thrownItems.size(); ++i)
+	{
+		if (!moveThrownItem(i, iterations))
+			m_thrownItems.at(i) = std::nullopt;
+	}
+	if (!m_thrownItems.empty() && !m_thrownItems.back().has_value())
+		m_thrownItems.pop_back(); // Will eventually collapse the vector.
 }
 
 //----------------------------
@@ -2515,6 +2524,29 @@ std::optional<const LevelSign*> Level::getSign(size_t index) const noexcept
 
 //----------------------------
 
+void Level::addThrownItem(const TilePosition& position, uint8_t direction, CarryObjectSprite item, ScriptObject from)
+{
+	constexpr float tilesPerFrame = 8.5f / 10;
+
+	// clang-format off
+	auto it = std::ranges::find_if(m_thrownItems, [](const std::optional<LevelThrownItem>& item) { return !item.has_value(); });
+
+	TilePosition velocity{};
+	if (direction == 0) velocity = {0, -tilesPerFrame};
+	else if (direction == 1) velocity = {-tilesPerFrame, 0};
+	else if (direction == 2) velocity = {0, tilesPerFrame};
+	else if (direction == 3) velocity = {tilesPerFrame, 0};
+	// clang-format on
+
+	std::optional<LevelThrownItem>& thrownItem = (it != std::ranges::end(m_thrownItems) ? *it : m_thrownItems.emplace_back(LevelThrownItem{}));
+	thrownItem.value().item = item;
+	thrownItem.value().position = position;
+	thrownItem.value().velocity = velocity;
+	thrownItem.value().source = from;
+}
+
+//----------------------------
+
 bool Level::moveShoot(LevelShoot* shoot, int iterations)
 {
 	if (shoot == nullptr)
@@ -2638,6 +2670,50 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 				addExplosion(arrow->position, arrow->from, 1_ui8, 1_ui8);
 			return false;
 		}
+	}
+
+	return true;
+}
+
+bool Level::moveThrownItem(size_t index, int iterations)
+{
+	constexpr uint8_t framesUntilHitsGround = 10;
+	constexpr int8_t damageFromThrownItem = 2;
+
+	auto& thrownItem = m_thrownItems.at(index);
+	if (!thrownItem.has_value())
+		return false;
+
+	auto& item = thrownItem.value();
+
+	for (int i = 0; i < iterations; ++i)
+	{
+		// Move the thrown item.
+		// Do it twice since we calculated velocity based on the client's 0.05 seconds per frame, but the server runs at 0.1 seconds per frame.
+		item.position.translate(item.velocity.x(), item.velocity.y());
+		item.position.translate(item.velocity.x(), item.velocity.y());
+
+		// Increase the duration twice.
+		item.flyDuration += 2;
+
+		// Check for NPC collision.
+		bool hitSomething = false;
+		PixelRectangleArea searchBox = {toPixelPosition(item.position), {32_ui16, 32_ui16} };
+		auto center = searchBox.center();
+		for (const auto& npc : findIntersectingNPCsForCollision(searchBox))
+		{
+			if (auto npcPtr = m_server->getNPC(npc); npcPtr != nullptr)
+				npcPtr->hurtAndPush(damageFromThrownItem, center, ScriptEventType::WASPELT, item.source, getCarryObjectType(item.item));
+
+			hitSomething = true;
+		}
+
+		// Check for ground collision.
+		hitSomething |= item.flyDuration >= framesUntilHitsGround;
+
+		// If we hit something, destroy the thrown item.
+		if (hitSomething)
+			return false;
 	}
 
 	return true;

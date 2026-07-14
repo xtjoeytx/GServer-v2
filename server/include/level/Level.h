@@ -27,6 +27,7 @@
 #include <level/LevelShoot.h>
 #include <level/LevelSign.h>
 #include <level/LevelTerrain.h>
+#include <level/LevelThrownItem.h>
 #include <level/LevelTiles.h>
 #include <level/LevelTileTypes.h>
 #include <level/Map.h>
@@ -334,8 +335,12 @@ public:
 	std::optional<const LevelSign*> getSign(size_t index) const noexcept;
 
 public:
+	void addThrownItem(const TilePosition& position, uint8_t direction, CarryObjectSprite item, ScriptObject from);
+
+public:
 	bool moveShoot(LevelShoot* shoot, int iterations);
 	bool moveArrow(LevelArrow* arrow, int iterations);
+	bool moveThrownItem(size_t index, int iterations);
 
 public:
 	bool isOnWall(const WholeTilePosition& tilePosition) const noexcept;
@@ -398,6 +403,7 @@ private:
 	std::vector<LevelHorse> m_horses;
 	std::vector<LevelItem> m_items;
 	std::vector<LevelShoot> m_shoots;
+	std::vector<std::optional<LevelThrownItem>> m_thrownItems;
 };
 
 using LevelPtr = std::shared_ptr<Level>;

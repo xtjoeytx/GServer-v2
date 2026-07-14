@@ -47,6 +47,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       triggeraction events
       updategani
       washit	(hitobjects)
+    * waspelt
       wasshot
       wasshooted
       wasthrown
@@ -54,7 +55,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 #### Not implemented
 
     * washit	(anything not hitobjects)
-    waspelt
 
 #### Clientside only
 
@@ -88,6 +88,13 @@ Please review the lists below of implemented events, flags, functions, commands,
       issparringzone            - (2.02)
       isweapon                  - (1.34)
       nopkzone                  - (2.02)
+    * peltwithblackstone        - (beta 5)
+    * peltwithbush              - (beta 5)
+    * peltwithnpc               - around (1.20)
+    * peltwithperson            - (beta 7) to around (1.20)
+    * peltwithsign              - (beta 5)
+    * peltwithstone             - (beta 5)
+    * peltwithvase              - (beta 5)
       playerattached            - (2.04)
       playerisfemale            - (1.36)
       playerismale              - (1.36)
@@ -103,16 +110,9 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    peltwithblackstone          - (beta 5)
-    peltwithbush                - (beta 5)
-    peltwithnpc                 - around (1.20)
-    peltwithperson              - (beta 7) to around (1.20)
-    peltwithsign                - (beta 5)
-    peltwithstone               - (beta 5)
-    peltwithvase                - (beta 5)
-    playerkiller                - (beta 5) to (1.32)
-    isinguild <guild>           - (beta 5) to (beta 7)
-    playeringuild <guild>       - (beta 7) to around (1.25)
+      playerkiller              - (beta 5) to (1.32)
+      isinguild <guild>         - (beta 5) to (beta 7)
+      playeringuild <guild>     - (beta 7) to around (1.25)
 
 #### Clientside only
 

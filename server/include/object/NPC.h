@@ -294,8 +294,8 @@ public:
 	void refreshModTimes(clock::time_point modTime) noexcept;
 
 public:
-	void hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEventType = std::nullopt, std::optional<ScriptObject> source = std::nullopt);
-	void hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, std::optional<ScriptEventType> damageEventType = std::nullopt, std::optional<ScriptObject> source = std::nullopt);
+	void hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEventType = std::nullopt, std::optional<ScriptObject> source = std::nullopt, std::optional<CarryObjectType> hitByType = std::nullopt);
+	void hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, std::optional<ScriptEventType> damageEventType = std::nullopt, std::optional<ScriptObject> source = std::nullopt, std::optional<CarryObjectType> hitByType = std::nullopt);
 
 public:
 	[[inline]] const std::string& getWeaponName() const noexcept;

@@ -47,6 +47,7 @@ set(
 	"include/level/LevelShoot.h"
 	"include/level/LevelSign.h"
 	"include/level/LevelTerrain.h"
+	"include/level/LevelThrownItem.h"
 	"include/level/LevelTiles.h"
 	"include/level/LevelTileTypes.h"
 	"include/level/Map.h"

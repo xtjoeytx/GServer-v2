@@ -557,7 +557,7 @@ std::shared_ptr<Level> NPC::getLevel() const
 
 //----------------------------
 
-void NPC::hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEventType, std::optional<ScriptObject> source)
+void NPC::hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEventType, std::optional<ScriptObject> source, std::optional<CarryObjectType> hitByType)
 {
 	// Adjust the NPC's HP.
 	if (allowServerDamageReactions && isCharacter())
@@ -565,10 +565,14 @@ void NPC::hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEvent
 
 	// Queue the hurt event.
 	if (damageEventType.has_value())
-		scripting.events.addEvent(damageEventType.value(), source.value_or(source::FromServer()));
+	{
+		if (hitByType.has_value())
+			scripting.events.addEvent(damageEventType.value(), source.value_or(source::FromServer()), hitByType.value());
+		else scripting.events.addEvent(damageEventType.value(), source.value_or(source::FromServer()));
+	}
 }
 
-void NPC::hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, std::optional<ScriptEventType> damageEventType, std::optional<ScriptObject> source)
+void NPC::hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, std::optional<ScriptEventType> damageEventType, std::optional<ScriptObject> source, std::optional<CarryObjectType> hitByType)
 {
 	if (allowServerDamageReactions && isCharacter())
 	{
@@ -609,7 +613,7 @@ void NPC::hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, st
 	}
 
 	// Do the damage.
-	hurt(damageInHalves, damageEventType, source);
+	hurt(damageInHalves, damageEventType, source, hitByType);
 }
 
 //----------------------------

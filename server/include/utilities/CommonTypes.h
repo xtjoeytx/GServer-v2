@@ -391,6 +391,72 @@ private:
 	T m_oldValue;
 };
 
+//----------------------------
+// Enums
+
+enum class CarryObjectSprite : uint8_t
+{
+	BOMB = 0,
+	BUSH = 1,
+	STONE = 3,
+	VASE = 5,
+	SIGN = 7,
+	SUPERBOMB = 61,
+	JOLTBOMB = 87,
+	HOTJOLTBOMB = 88,
+	HOTBOMB = 200,
+	BLACKSTONE = 201,
+	NPC = 251,
+	NONE = 255
+};
+
+enum class CarryObjectType : uint8_t
+{
+	NONE = 0,
+	BOMB = 1,
+	BUSH = 2,
+	STONE = 3,
+	VASE = 4,
+	SIGN = 5,
+	SUPERBOMB = 6,
+	JOLTBOMB = 7,
+	HOTJOLTBOMB = 8,
+	HOTBOMB = 9,
+	BLACKSTONE = 10,
+	NPC = 11,
+	PLAYER = 12,
+	//
+	COUNT
+};
+
+// clang-format off
+inline constexpr std::array<CarryObjectSprite, static_cast<size_t>(CarryObjectType::COUNT)> carryObjectSpriteForType{
+	CarryObjectSprite::NONE,		// CarryObjectType::NONE
+	CarryObjectSprite::BOMB,		// CarryObjectType::BOMB
+	CarryObjectSprite::BUSH,		// CarryObjectType::BUSH
+	CarryObjectSprite::STONE,		// CarryObjectType::STONE
+	CarryObjectSprite::VASE,		// CarryObjectType::VASE
+	CarryObjectSprite::SIGN,		// CarryObjectType::SIGN
+	CarryObjectSprite::SUPERBOMB,	// CarryObjectType::SUPERBOMB
+	CarryObjectSprite::JOLTBOMB,	// CarryObjectType::JOLTBOMB
+	CarryObjectSprite::HOTJOLTBOMB, // CarryObjectType::HOTJOLTBOMB
+	CarryObjectSprite::HOTBOMB,		// CarryObjectType::HOTBOMB
+	CarryObjectSprite::BLACKSTONE,	// CarryObjectType::BLACKSTONE
+	CarryObjectSprite::NPC,			// CarryObjectType::NPC
+	CarryObjectSprite::NPC,			// CarryObjectType::PLAYER
+};
+// clang-format on
+
+inline constexpr CarryObjectType getCarryObjectType(CarryObjectSprite sprite)
+{
+	for (size_t i = 0; i < carryObjectSpriteForType.size(); ++i)
+	{
+		if (carryObjectSpriteForType[i] == sprite)
+			return static_cast<CarryObjectType>(i);
+	}
+	return CarryObjectType::NONE;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 }; // end namespace preagonal
 

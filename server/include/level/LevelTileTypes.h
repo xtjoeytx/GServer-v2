@@ -38,7 +38,8 @@ enum class TileType : uint8_t
 	LAVA = 12,
 	THROW_THROUGH = 20,
 	JUMP_STONE = 21,
-	BLOCKING = 22
+	BLOCKING = 22,
+	BLOCKING_FOREGROUND = 23, // newworld
 };
 
 inline constexpr std::array<uint8_t, 4096> Type0 =

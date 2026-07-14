@@ -32,6 +32,8 @@ concept TileBasedPosition = std::floating_point<T>;
 template<typename T>
 struct Position
 {
+	using ValueType = T;
+
 	constexpr Position() : data{ T{}, T{}, T{} } {}
 	constexpr Position(T x, T y) : data{ x, y, T{} } {}
 	constexpr Position(T x, T y, T z) : data{ x, y, z } {}
@@ -176,6 +178,16 @@ using WholeTilePosition = Position<uint16_t>;
 using LocalWholeTilePosition = Position<uint8_t>;
 
 using MapPosition = Position<uint8_t>;
+
+//----------------------------
+// MovingPosition
+
+template<typename T>
+struct MovingPosition
+{
+	Position<T> position{};
+	Position<T> velocity{};
+};
 
 //----------------------------
 // Dimension

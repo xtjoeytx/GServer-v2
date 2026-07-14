@@ -331,6 +331,13 @@ HandlePacketResult PlayerClient::msgPLI_FIRESPY(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_THROWCARRIED(CString& pPacket)
 {
 	m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_THROWCARRIED >> (short)m_id, getGlobalPosition(), getLevel(), { m_id });
+
+	if (m_server->hasNPCServer())
+	{
+		if (auto level = getLevel(); level != nullptr)
+			level->addThrownItem(getTilePosition().translate(0.5f, 1.0f), account.character.direction, ENUM<CarryObjectSprite>(m_carrySprite), source::FromPlayer(m_id));
+	}
+
 	return HandlePacketResult::Handled;
 }
 

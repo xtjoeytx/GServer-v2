@@ -35,13 +35,6 @@ void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
 	// TODO: Put extensions under a server option?
 	variableStore.add("playertouchesme", event == ScriptEventType::PLAYERTOUCHSME);
 	variableStore.add("playertouchesother", event == ScriptEventType::PLAYERTOUCHSOTHER);
-
-	/*
-		washit              the npc was slayed with a sword or axe
-		waspelt             the npc was pelt
-		wasthrown           the npc was carried and then thrown
-		emoticon
-	*/
 }
 
 void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& variableStore)
@@ -109,8 +102,6 @@ void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerPtr play
 
 	auto level = player->getLevel();
 	variableStore.add("isleader", level != nullptr && level->isPlayerLeader(player->getId()));
-
-	// playertrial
 }
 
 void setNPCFlags(ScriptEvent& event, GameVariableStore& variableStore, NPCPtr npc)
@@ -125,12 +116,22 @@ void setNPCFlags(ScriptEvent& event, GameVariableStore& variableStore, NPCPtr np
 	// Extension.
 	variableStore.add("shotbynpc", event.type == ScriptEventType::WASSHOT && event.initiator.second == ScriptObjectType::NPC);
 
-	variableStore.add("peltwithblackstone", false);
-	variableStore.add("peltwithbush", false);
-	variableStore.add("peltwithnpc", false);
-	variableStore.add("peltwithsign", false);
-	variableStore.add("peltwithstone", false);
-	variableStore.add("peltwithvase", false);
+	// The WASPELT event has the item in the event args so pull it out.
+	CarryObjectType carryType = CarryObjectType::NONE;
+	if (event.type == ScriptEventType::WASPELT && event.args.size() > 0)
+	{
+		CarryObjectType* type = std::any_cast<CarryObjectType>(&event.args.front());
+		if (type != nullptr)
+			carryType = *type;
+	}
+
+	variableStore.add("peltwithblackstone", carryType == CarryObjectType::BLACKSTONE);
+	variableStore.add("peltwithbush", carryType == CarryObjectType::BUSH);
+	variableStore.add("peltwithnpc", carryType == CarryObjectType::NPC);
+	variableStore.add("peltwithsign", carryType == CarryObjectType::SIGN);
+	variableStore.add("peltwithstone", carryType == CarryObjectType::STONE);
+	variableStore.add("peltwithvase", carryType == CarryObjectType::VASE);
+	variableStore.add("peltwithplayer", carryType == CarryObjectType::PLAYER);
 }
 
 void setLevelFlags(GameVariableStore& variableStore, NPCPtr npc, LevelPtr level)

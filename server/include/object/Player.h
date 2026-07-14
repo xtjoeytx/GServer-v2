@@ -124,22 +124,6 @@ enum class GameStatsFlags : uint32_t
 	ALLSTATS = 0xFFFF
 };
 
-enum class CarryObjectSprite : uint8_t
-{
-	BOMB = 0,
-	BUSH = 1,
-	STONE = 3,
-	VASE = 5,
-	SIGN = 7,
-	SUPERBOMB = 61,
-	JOLTBOMB = 87,
-	HOTJOLTBOMB = 88,
-	HOTBOMB = 200,
-	BLACKSTONE = 201,
-	NPC = 251,
-	NONE = 255
-};
-
 //----------------------------
 
 struct ShootPacketWrapper
