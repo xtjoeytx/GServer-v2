@@ -255,7 +255,10 @@ bool GuildManager::addPlayerToGuild(std::string_view guildName, std::string_view
 	// Create the guild.
 	if (createGuild(guildName))
 	{
-		m_guilds.at(std::string{ guildName }).members.emplace(account, nickName);
+		auto& newGuild = m_guilds.at(std::string{ guildName });
+		newGuild.members.emplace(account, nickName);
+		newGuild.modifiedSinceLastSave = true;
+
 		saveGuild(guildName);
 		return true;
 	}
