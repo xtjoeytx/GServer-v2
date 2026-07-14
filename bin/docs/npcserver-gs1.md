@@ -42,6 +42,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       playertouchsother
       pm
       rcchat
+      serverlistconnect
       timeout
       triggeraction events
       updategani
@@ -52,8 +53,7 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    serverlistconnect
-    washit	(anything not hitobjects)
+    * washit	(anything not hitobjects)
     waspelt
 
 #### Clientside only
@@ -200,7 +200,7 @@ Please review the lists below of implemented events, flags, functions, commands,
         .gralats                - sometime in (2.0x) or (2.1x)
         .headset                - (beta 5)
         .hearts                 - (beta 5)
-        .hp                     - possibly (2.12), revealed (???)
+        .hp                     - possibly (2.12), revealed (???), newworld origin
         .hurtdx                 - (2.00)
         .hurtdy                 - (2.00)
         .hurtpower              - (2.01)
@@ -208,7 +208,7 @@ Please review the lists below of implemented events, flags, functions, commands,
         .kills                  - possibly (1.39rev1)
         .lastdead
         .logintime
-        .maxhp                  - possibly (2.12), revealed (???)
+        .maxhp                  - possibly (2.12), revealed (???), newworld origin
         .mp                     - (1.22)
         .rating
         .ratingd
@@ -221,7 +221,7 @@ Please review the lists below of implemented events, flags, functions, commands,
         .trial
         .x                      - (beta 5)
         .y                      - (beta 5)
-        .z                      - possibly (2.12), revealed (???)
+        .z                      - possibly (2.12), revealed (???), newworld origin
       players[] shorthand: e.g., playerhearts
 
     * arrowscount               - (1.36)
@@ -463,16 +463,16 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    hitcompu                    - around (1.20)
-    savelevel           [GR]
-    setbow                      - around (1.20) to (2.00)
-    setx                        - (beta 2) to (beta 5)
-    sety                        - (beta 2) to (beta 5)
-    setplayerx                  - (beta 3) to (beta 5)
-    setplayery                  - (beta 3) to (beta 5)
-    reducerupees                - (beta 3) to (beta 5)
-    reducebombs                 - (beta 3) to (beta 5)
-    reducedarts                 - (beta 3) to (beta 5)
+    * hitcompu                  - around (1.20)
+      savelevel           [GR]
+      setbow                    - around (1.20) to (2.00)
+      setx                      - (beta 2) to (beta 5)
+      sety                      - (beta 2) to (beta 5)
+      setplayerx                - (beta 3) to (beta 5)
+      setplayery                - (beta 3) to (beta 5)
+      reducerupees              - (beta 3) to (beta 5)
+      reducebombs               - (beta 3) to (beta 5)
+      reducedarts               - (beta 3) to (beta 5)
 
 #### Clientside only
 

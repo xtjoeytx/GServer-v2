@@ -6,8 +6,8 @@
 #include <filesystem>
 #include <format>
 #include <memory>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <CSocket.h>
@@ -27,6 +27,7 @@
 #include <object/Player.h>
 #include <player/PlayerClient.h>
 #include <player/PlayerProps.h>
+#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 #include <utilities/PropertySerializers.h>
@@ -289,6 +290,10 @@ bool ServerList::connectServer()
 
 	// Set the ping time so we start pings 60 seconds from now.
 	m_lastPingTime = m_server->getFrameStartTimeHighPrecision();
+
+	// If we have an NPC-Server, issue the serverlistconnect event.
+	if (m_server->hasNPCServer())
+		m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::SERVERLISTCONNECT, source::FromServer());
 
 	// Return Connection-Status
 	return getConnected();
@@ -1024,9 +1029,11 @@ void ServerList::msgSVI_PMPLAYER(CString& pPacket)
 	CString message2 = data.readString("");
 	CString message3 = message2.gtokenizeI();
 
+	// clang-format off
 	CString player = CString(CString() << account << "\n" << nick << "\n").gtokenizeI() << "\n";
 	CString pmMessageType("\"\",");
 	pmMessageType << "\"Private message:\",";
+	// clang-format on
 
 	auto p = m_server->getPlayer(account2, PLTYPE_ANYPLAYER);
 	if (p)

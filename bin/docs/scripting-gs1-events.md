@@ -420,7 +420,7 @@ Triggers whenever an RC player sends an RC chat message starting with `/npc`.
 ## serverlistconnect
 
 > introduced: -<br>
-gserver support: ❌<br>
+gserver support: ✅ 4.0<br>
 scope: 💻 server<br>
 executed on: 🌐 control-npc<br>
 
