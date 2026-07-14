@@ -418,8 +418,11 @@ bool ScriptEngineGS1::executeFunction(std::string_view function, ScriptEvent& ev
 
 std::optional<double> ScriptEngineGS1::processMathExpression(std::string_view expression, ScriptObject source)
 {
-	static GS1Visitor visitor{};
-	static GameVariableStore variableStore{};
+	if (expression.empty())
+		return std::nullopt;
+
+	GS1Visitor visitor{};
+	GameVariableStore variableStore{};
 	visitor.builtInStore = &variableStore;
 
 	visitor.pushSource(source);
@@ -463,8 +466,11 @@ std::optional<double> ScriptEngineGS1::processMathExpression(std::string_view ex
 
 std::optional<std::string> ScriptEngineGS1::processStringExpression(std::string_view expression, ScriptObject source)
 {
-	static GS1Visitor visitor{};
-	static GameVariableStore variableStore{};
+	if (expression.empty())
+		return std::nullopt;
+
+	GS1Visitor visitor{};
+	GameVariableStore variableStore{};
 	visitor.builtInStore = &variableStore;
 
 	visitor.pushSource(source);
