@@ -358,13 +358,17 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 			// Try to drop the item on the level.
 			// If the item was ultimately not dropped on the level (e.g., a gralats NPC was created), tell the client to delete it.
 			if (!dropItem(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), itemType))
+			{
 				sendPacket(CString() >> (char)PLO_ITEMDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
+				return HandlePacketResult::Handled;
+			}
 		}
 		else
 		{
 			level->addItem(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), itemType);
-			m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_ITEMADD >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)item, getGlobalPosition(), level, { m_id });
 		}
+
+		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_ITEMADD >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)item, getGlobalPosition(), level, { m_id });
 	}
 
 	return HandlePacketResult::Handled;

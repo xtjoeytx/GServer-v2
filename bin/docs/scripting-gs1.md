@@ -50,7 +50,7 @@ Reference: GS1 Message Codes
 ---
 ## Functions
 
-Functions can be used in expressions and return a boolean value.
+Functions can be used in expressions and return a non-string value.
 
 For example:
 ```
