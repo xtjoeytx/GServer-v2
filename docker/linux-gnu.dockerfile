@@ -21,7 +21,7 @@ RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
 	&& cd /tmp/gserver \
 	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build --preset "Linux Release" -DVCPKG_TARGET_TRIPLET:STRING=${ARCH}-linux -DSTATIC=ON -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=ON -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
 	&& cmake --build /tmp/gserver/build --target clean \
-	&& cmake --build /tmp/gserver/build --target package --parallel $(getconf _NPROCESSORS_ONLN) \
+	&& cmake --build /tmp/gserver/build --target package --parallel 4 \
 	&& rm -rf /tmp/gserver/dist/_CPack_Packages \
 	&& chown 1001:1001 -R /tmp/gserver \
 	&& chmod 777 -R /tmp/gserver/dist \

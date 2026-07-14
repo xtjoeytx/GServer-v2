@@ -38,7 +38,7 @@ RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
 	&& cd /tmp/gserver \
 	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build --preset "Release MINGW" -DVCPKG_TARGET_TRIPLET:STRING=${ARCH}-mingw-static -DSTATIC=ON -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=ON -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
 	&& cmake --build /tmp/gserver/build --target clean \
-	&& cmake --build /tmp/gserver/build --target package --parallel $(getconf _NPROCESSORS_ONLN) \
+	&& cmake --build /tmp/gserver/build --target package --parallel 4 \
 	&& chmod 777 -R /tmp/gserver/dist \
 	&& rm -rf /tmp/gserver/dist/_CPack_Packages \
 	&& apt purge -y libssl-dev libzstd-dev cmake git ninja-build openjdk-21-jre
