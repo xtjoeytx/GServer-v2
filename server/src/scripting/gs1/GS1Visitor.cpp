@@ -1670,7 +1670,6 @@ std::any GS1Visitor::visitCompoundString(GS1Parser::CompoundStringContext* conte
 
 std::any GS1Visitor::visitMessageCode(GS1Parser::MessageCodeContext* context)
 {
-	auto results = visitChildrenAndCollect(context);
 	auto messageCode = context->MESSAGECODE()->getText();
 	if (messageCode.empty())
 		RECOVERABLE_PARSE_ERROR(std::format("Message code '{}' is not a valid message code.", messageCode), ""s);
