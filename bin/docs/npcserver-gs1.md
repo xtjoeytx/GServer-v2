@@ -110,9 +110,12 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-      playerkiller              - (beta 5) to (1.32)
-      isinguild <guild>         - (beta 5) to (beta 7)
-      playeringuild <guild>     - (beta 7) to around (1.25)
+    * playerkiller              - (beta 5) to (1.32)
+
+#### Won't implement
+
+    * isinguild <guild>         - (beta 5) to (beta 7)
+    * playeringuild <guild>     - (beta 7) to around (1.25)
 
 #### Clientside only
 
@@ -570,6 +573,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       getnpc(name)
       getplayer(account)
       getz(x, y)                        - possibly (2.12), revealed (???)
+      hasright(rw,path)
       hasweapon(name)                   - (1.37)
       indexof(substring, string)        - (2.02)
       int(value)                        - around (1.20)
@@ -608,10 +612,6 @@ Please review the lists below of implemented events, flags, functions, commands,
     * tiletype(x, y)                    - possibly (2.12), revealed (???)
       vecx(dir)                         - (2.03)
       vecy(dir)                         - (2.03)
-
-#### Not implemented
-
-    hasright(rw,path)
 
 #### Clientside only
 

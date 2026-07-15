@@ -676,6 +676,9 @@ auto split(StringViewVariant auto const str, StringViewVariant auto const delims
 	using StringViewType = std::basic_string_view<Elem, Traits>;
 	StringViewType strview{ str };
 
+	if (str.empty())
+		co_return;
+
 	size_t start = 0, end = 0;
 	while (start < str.length())
 	{
@@ -701,6 +704,10 @@ auto split(StringViewVariant auto const str, StringViewVariant auto const delims
 
 		start = end + 1;
 	}
+
+	// Handle a case where the string ends with a delimiter and we are not ignoring empty tokens.
+	if (!ignoreEmpty && start == str.length() && start > 0 && strview.find_first_of(delims, start - 1) != StringViewType::npos)
+		co_yield StringViewType{};
 }
 
 /// @brief Splits a string into tokens separated by a delimiting string and returns them as a generator of string views.
@@ -714,6 +721,9 @@ auto splitByString(StringViewVariant auto const str, StringViewVariant auto cons
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 	using StringViewType = std::basic_string_view<Elem, Traits>;
 	StringViewType strview{ str };
+
+	if (str.empty())
+		co_return;
 
 	size_t start = 0, end = 0;
 	while (start < str.length())
@@ -735,6 +745,14 @@ auto splitByString(StringViewVariant auto const str, StringViewVariant auto cons
 			co_yield StringViewType{};
 
 		start = end + delim.length();
+	}
+
+	// Handle a case where the string ends with a delimiter and we are not ignoring empty tokens.
+	if (!ignoreEmpty && start == str.length())
+	{
+		bool endsWithDelim = strview.length() >= delim.length() && strview.compare(strview.length() - delim.length(), delim.length(), delim) == 0;
+		if (endsWithDelim)
+			co_yield StringViewType{};
 	}
 }
 

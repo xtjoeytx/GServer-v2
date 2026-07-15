@@ -1,30 +1,22 @@
 #include <regex>
-#include <sstream>
 #include <string>
 #include <vector>
+#include <string_view>
 
 #include <utilities/FilePermissions.h>
+#include <utilities/StringUtils.h>
+
+using namespace std::literals;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-const char FOLDER_SEPARATOR = '/';
+constexpr auto FOLDER_SEPARATOR = "/"sv;
 const std::regex WILDCARD_REGEX(R"(\*)");
 
-static std::vector<std::string> splitInput(const std::string& input, const char delimiter = FOLDER_SEPARATOR)
-{
-	std::istringstream stream(input);
-	std::string line;
-	std::vector<std::string> lines;
-	while (std::getline(stream, line, delimiter))
-		lines.push_back(line);
-
-	return lines;
-}
-
-bool FilePermissions::hasPermission(const std::string& path, FilePermissions::Type type) const
+bool FilePermissions::hasPermission(std::string_view path, FilePermissions::Type type) const
 {
 	for (const auto& perm : negativePermissions)
 	{
@@ -41,7 +33,7 @@ bool FilePermissions::hasPermission(const std::string& path, FilePermissions::Ty
 	return false;
 }
 
-void FilePermissions::addPermission(const std::string& permissionString)
+void FilePermissions::addPermission(std::string_view permissionString)
 {
 	Permission permission{};
 	std::vector<std::string> segments;
@@ -55,7 +47,7 @@ void FilePermissions::addPermission(const std::string& permissionString)
 			permission.flags.set(Type::Write);
 		else if (ch == ' ')
 		{
-			segments = splitInput(permissionString.substr(idx + 1));
+			segments = string::splitToVector(permissionString.substr(idx + 1), FOLDER_SEPARATOR);
 			break;
 		}
 	}
@@ -75,20 +67,18 @@ void FilePermissions::addPermission(const std::string& permissionString)
 	}
 }
 
-void FilePermissions::loadPermissions(const std::string& permissionStr)
+void FilePermissions::loadPermissions(std::string_view permissionStr)
 {
 	permissions.clear();
 	negativePermissions.clear();
 
-	std::vector<std::string> lines = splitInput(permissionStr, '\n');
-	for (const auto& str : lines)
-		addPermission(str);
+	for (const auto& str : string::split(permissionStr, "\n"sv))
+		addPermission(string::trim(str));
 }
 
-bool FilePermissions::match(const std::string& path, const FilePermissions::Permission& permission)
+bool FilePermissions::match(std::string_view path, const FilePermissions::Permission& permission)
 {
-	const auto& segments = splitInput(path);
-
+	auto segments = string::splitToVector(path, FOLDER_SEPARATOR, false);
 	if (segments.empty() || segments.size() != permission.segments.size())
 		return false;
 

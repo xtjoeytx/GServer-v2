@@ -750,6 +750,7 @@ FUNC_GROUP_3
 		| 'strequals'
 		| 'startswith'
 		| 'passwordmatches'
+		| 'hasright'
 	) { pushCommand("(SS)"); } -> type(FUNCTION)
 	;
 

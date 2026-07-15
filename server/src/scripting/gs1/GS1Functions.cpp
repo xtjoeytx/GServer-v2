@@ -41,6 +41,7 @@
 #include <scripting/gs1/ScriptEngineGS1.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
+#include <utilities/FilePermissions.h>
 #include <utilities/Log.h>
 #include <utilities/StringUtils.h>
 
@@ -72,6 +73,7 @@ static GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view
 static GS1ScriptValue fn_getnpc(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getplayer(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getz(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_hasright(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_imgheight(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_imgwidth(GS1Visitor* visitor, std::string_view functionName, const std::vector<GS1ScriptValue*>& arguments);
@@ -144,6 +146,7 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{hash("getnpc"), &fn_getnpc},
 		{hash("getplayer"), &fn_getplayer},
 		{hash("getz"), &fn_getz},
+		{hash("hasright"), &fn_hasright},
 		{hash("hasweapon"), &fn_hasweapon},
 		{hash("imgheight"), &fn_imgheight},
 		{hash("imgwidth"), &fn_imgwidth},
@@ -667,6 +670,37 @@ GS1ScriptValue fn_getz(GS1Visitor* visitor, std::string_view messageCode, const 
 	}
 
 	return 0.0;
+}
+
+// hasright(rw,path)
+// Checks if the player has the specified file browser rights for the path.  (rw = read/write, r = read only, w = write only)
+GS1ScriptValue fn_hasright(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 2)
+		throw std::invalid_argument("invalid arguments: hasright(rw, path)");
+
+	auto rights = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
+	if (rights.empty())
+		return GameValue{false};
+
+	auto path = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
+	auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
+	if (player.has_value())
+	{
+		auto* server = BabyDI::Get<Server>();
+		if (auto playerObject = server->getNPCServer()->getPlayer(player.value().first); playerObject != nullptr)
+		{
+			bool result = false;
+			if (rights.contains('r'))
+				result |= playerObject->account.folderRights.hasPermission(path, FilePermissions::Type::Read);
+			if (!result && rights.contains('w'))
+				result |= playerObject->account.folderRights.hasPermission(path, FilePermissions::Type::Write);
+
+			return GameValue{result};
+		}
+	}
+
+	return GameValue{false};
 }
 
 // hasweapon(name)
