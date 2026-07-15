@@ -531,6 +531,11 @@ HandlePacketResult PlayerClient::msgPLI_BADDYHURT(CString& pPacket)
 	if (leader == nullptr)
 		return HandlePacketResult::Handled;
 
+	// [[unused]] uint8_t baddyId = pPacket.readGUChar();
+	// [[unused]] int8_t hurtDX = pPacket.readGChar();		// midpoint: 64
+	// [[unused]] int8_t hurtDY = pPacket.readGChar();		// midpoint: 64
+	// [[unused]] uint8_t damage = pPacket.readGUChar();	// half hearts
+
 	leader->sendPacket(CString() >> (char)PLO_BADDYHURT << (pPacket.text() + 1));
 	return HandlePacketResult::Handled;
 }

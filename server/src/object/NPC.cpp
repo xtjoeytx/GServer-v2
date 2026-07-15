@@ -1209,7 +1209,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::HURTDXDY:
 		{
-			PropertyHurtDxDy* hurtProp = dynamic_cast<PropertyHurtDxDy*>(base);
+			PropertyHurtDxDy<>* hurtProp = dynamic_cast<PropertyHurtDxDy<>*>(base);
 			if (hurtProp == nullptr)
 				SETPROP_RETURN_ERROR;
 

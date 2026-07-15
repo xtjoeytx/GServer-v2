@@ -568,27 +568,94 @@ struct PropertyGS1Script : public PropertyBase
 };
 
 /// @brief A property that stores a hurt direction (dx, dy) for an NPC.
+template<int8_t MidPoint = 32, float TileDistance = 9.0f>
 struct PropertyHurtDxDy : public PropertyBase
 {
 	PropertyHurtDxDy() = default;
 
-	/// @brief Displacement from -1.0 to 1.0 (-9 tiles to 9 tiles).
-	explicit PropertyHurtDxDy(float dx, float dy);
+	/// @brief Displacement from -1.0 to 1.0.
+	explicit PropertyHurtDxDy(float dx, float dy)
+	{
+		hurtDX = static_cast<int8_t>(std::clamp(dx, -1.0f, 1.0f) * MidPoint);
+		hurtDY = static_cast<int8_t>(std::clamp(dy, -1.0f, 1.0f) * MidPoint);
+	}
 
-	/// @brief Displacement from -32 to 32 (-9 tiles to 9 tiles).
-	explicit PropertyHurtDxDy(int8_t dx, int8_t dy);
+	/// @brief Displacement from -MidPoint to MidPoint.
+	explicit PropertyHurtDxDy(int8_t dx, int8_t dy)
+	{
+		hurtDX = std::clamp(dx, static_cast<int8_t>(-MidPoint), MidPoint);
+		hurtDY = std::clamp(dy, static_cast<int8_t>(-MidPoint), MidPoint);
+	}
 
-	/// @brief Displacement in tiles from -9.0 to 9.0.
-	explicit PropertyHurtDxDy(const Position<float>& displacement);
+	/// @brief Displacement in tiles from -TileDistance to TileDistance.
+	explicit PropertyHurtDxDy(const Position<float>& displacement)
+	{
+		hurtDX = static_cast<int8_t>((std::clamp(displacement.x(), -TileDistance, TileDistance) / TileDistance) * MidPoint);
+		hurtDY = static_cast<int8_t>((std::clamp(displacement.y(), -TileDistance, TileDistance) / TileDistance) * MidPoint);
+	}
 
-	/// @brief Displacement in pixel tiles from -144 to 144 (-9 tiles to 9 tiles).
-	explicit PropertyHurtDxDy(const Position<int16_t>& displacement);
+	/// @brief Displacement in pixel tiles from -TileDistance*16 to TileDistance*16.
+	explicit PropertyHurtDxDy(const Position<int16_t>& displacement)
+	{
+		int16_t pixels = TileDistance * 16;
+		hurtDX = (std::clamp(displacement.x(), static_cast<int16_t>(-pixels), pixels) * MidPoint) / pixels;
+		hurtDY = (std::clamp(displacement.y(), static_cast<int16_t>(-pixels), pixels) * MidPoint) / pixels;
+	}
 
-	virtual CString serialize() const override;
-	virtual void deserialize(CString& data) override;
-	virtual void apply(const GameValue& gameValue) override;
-	virtual std::format_context::iterator format(std::format_context& ctx) const override;
-	std::pair<float, float> getAsTiles() const;
+	virtual CString serialize() const override
+	{
+		auto clampedDX = std::clamp(hurtDX, static_cast<int8_t>(-MidPoint), MidPoint);
+		auto clampedDY = std::clamp(hurtDY, static_cast<int8_t>(-MidPoint), MidPoint);
+
+		// The range is from 0 - 2*MidPoint, with MidPoint being the center.
+		// So a value of MidPoint is 0, a value of 0 is -MidPoint, and a value of 2*MidPoint is +MidPoint.
+
+		return CString() >> (char)(clampedDX + MidPoint) >> (char)(clampedDY + MidPoint);
+	}
+
+	virtual void deserialize(CString& data) override
+	{
+		int8_t dx = data.readGChar();
+		int8_t dy = data.readGChar();
+
+		// Recenter the values around 0.
+		hurtDX = static_cast<int8_t>(dx - MidPoint);
+		hurtDY = static_cast<int8_t>(dy - MidPoint);
+	}
+
+	virtual void apply(const GameValue& gameValue) override
+	{
+		auto array = gameValue.get<std::vector<double>>();
+		if (!array.has_value() || array.value().get().size() != 2)
+		{
+			hurtDX = 0;
+			hurtDY = 0;
+			return;
+		}
+
+		auto& values = array.value().get();
+		float dx = std::clamp(static_cast<float>(values[0]), -1.0f, 1.0f);
+		float dy = std::clamp(static_cast<float>(values[1]), -1.0f, 1.0f);
+		hurtDX = static_cast<int8_t>(dx * MidPoint);
+		hurtDY = static_cast<int8_t>(dy * MidPoint);
+	}
+
+	virtual std::format_context::iterator format(std::format_context& ctx) const override
+	{
+		auto [dx, dy] = getAsTiles();
+		return std::format_to(ctx.out(), "dx: {:.2f}, dy: {:.2f}", dx, dy);
+	}
+
+	std::pair<float, float> getAsTiles() const
+	{
+		std::pair<float, float> result;
+		result.first = std::clamp(TileDistance * (hurtDX / static_cast<float>(MidPoint)), -TileDistance, TileDistance);
+		result.second = std::clamp(TileDistance * (hurtDY / static_cast<float>(MidPoint)), -TileDistance, TileDistance);
+		return result;
+	}
+
+	int8_t midpoint() const noexcept { return MidPoint; }
+	float tileDistance() const noexcept { return TileDistance; }
 
 	int8_t hurtDX = 0;
 	int8_t hurtDY = 0;
@@ -775,10 +842,10 @@ struct std::formatter<preagonal::props::PropertyGS1Script> : std::formatter<std:
 	auto format(const preagonal::props::PropertyGS1Script& prop, std::format_context& ctx) const { return prop.format(ctx); }
 };
 
-template <>
-struct std::formatter<preagonal::props::PropertyHurtDxDy> : std::formatter<std::string>
+template <uint8_t MidPoint>
+struct std::formatter<preagonal::props::PropertyHurtDxDy<MidPoint>> : std::formatter<std::string>
 {
-	auto format(const preagonal::props::PropertyHurtDxDy& prop, std::format_context& ctx) const { return prop.format(ctx); }
+	auto format(const preagonal::props::PropertyHurtDxDy<MidPoint>& prop, std::format_context& ctx) const { return prop.format(ctx); }
 };
 
 template <>

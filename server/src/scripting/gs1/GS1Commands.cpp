@@ -1286,7 +1286,39 @@ void fn_hideimgs(GS1Visitor* visitor, std::string_view commandName, const std::v
 // hitcompu index,power,fromx,fromy;
 void fn_hitcompu(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
-	throw unimplemented_error("hitcompu is not implemented yet.");
+	if (arguments.size() != 4)
+		throw std::invalid_argument("invalid arguments: hitcompu index,power,fromx,fromy");
+
+	// Only calculate for non-gmap levels with players.
+	if (auto level = visitor->findCurrentLevel(); level != nullptr && level->hasPlayers() && !level->isGmap())
+	{
+		auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		auto halfhearts = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		auto fromx = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+		auto fromy = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
+
+		auto server = BabyDI::Get<Server>();
+		auto leader = level->getPlayers().front();
+		auto baddyOpt = level->getBaddyById(index);
+		if (!baddyOpt.has_value() || baddyOpt.value() != nullptr)
+			return;
+
+		if (auto player = server->getPlayer(leader); player != nullptr)
+		{
+			auto& baddy = baddyOpt.value();
+
+			// Get the DX/DY.
+			auto tilePosition = toTilePosition(baddy->position);
+			auto dx = tilePosition.x() - fromx;
+			auto dy = tilePosition.y() - fromy;
+			float length = std::sqrt(dx * dx + dy * dy);
+			dx /= length;
+			dy /= length;
+
+			PropertyHurtDxDy<64> hurtDxDy{dx, dy};
+			player->sendPacket(CString() >> (char)PLO_BADDYHURT >> (char)index << hurtDxDy.serialize() >> (char)halfhearts);
+		}
+	}
 }
 
 // hitnpc index,halfhearts,fromx,fromy;
@@ -2150,7 +2182,8 @@ void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::v
 		// Copy over existing values, if any.
 		if (var->has<std::vector<double>>())
 		{
-			auto& existing = var->get<std::vector<double>>().value().get();
+			auto vec = var->get<std::vector<double>>().value();
+			auto& existing = vec.get();
 			for (size_t i = 0; i < std::min(size, existing.size()); ++i)
 				arrayValues[i] = existing[i];
 		}
@@ -2219,10 +2252,11 @@ void fn_setbow(GS1Visitor* visitor, std::string_view commandName, const std::vec
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto prop = player->getProp<PlayerProp::GANI>();
-			if (!prop.bowGif.has_value())
-				prop.bowGif = {};
+			if (prop.bowGif.has_value())
+				prop.bowGif.value().first = image;
+			else
+				prop.bowGif = std::make_optional(std::make_pair(image, 1_ui8));
 
-			prop.bowGif.value().first = image;
 			player->setProp<PlayerProp::GANI>(SetBy::SERVER, prop);
 		}
 	}

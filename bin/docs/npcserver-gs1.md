@@ -372,6 +372,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       hide                      - (beta 2)
       hideimg                   - around (1.20)
     * hideimgs                  - (2.17)
+    * hitcompu                  - around (1.20)
     * hitnpc                    - (1.38)
       hitobjects                - (2.01)
     * hitplayer                 - around (1.20)
@@ -486,7 +487,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    * hitcompu                  - around (1.20)
       savelevel           [GR]
     * setz                      - possibly (2.12), revealed (???)
 
