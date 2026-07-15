@@ -111,9 +111,24 @@ Please review the lists below of implemented events, flags, functions, commands,
 #### Not implemented
 
     * playerkiller              - (beta 5) to (1.32)
+    * gotaxe                    - (beta 5) to (1.38)
+    * gotbomb                   - (beta 2) to (1.38)
+    * gotbow                    - (beta 5) to (1.38)
+    * gotglove1                 - (beta 2) to (1.38)
+    * gotglove1                 - (beta 5) to (1.38)
+    * gotgoldensword            - (beta 5) to (1.38)
+    * gotlizardshield           - (beta 5) to (1.38)
+    * gotlizardsword            - (beta 5) to (1.38)
+    * gotmirrorshield           - (beta 5) to (1.38)
+    * gotshield                 - (beta 5) to (1.38)
+    * gotsuperbomb              - (beta 5) to (1.38)
+    * gotsword                  - (beta 5) to (1.38)
 
 #### Won't implement
 
+    * gotbombs <integer>        - (beta 2) to around (1.20) - npc takes >= bombs
+    * gotdarts <integer>        - (beta 2) to around (1.20) - npc takes >= darts
+    * gotrupees <integer>       - (beta 2) to around (1.20) - npc takes >= rupees
     * isinguild <guild>         - (beta 5) to (beta 7)
     * playeringuild <guild>     - (beta 7) to around (1.25)
 
