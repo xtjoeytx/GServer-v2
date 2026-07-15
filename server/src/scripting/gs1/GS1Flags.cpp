@@ -1,19 +1,21 @@
 #include <any>
 #include <iterator>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <IEnums.h>
 
+#include <BabyDI.h>
+#include <Server.h>
 #include <level/LevelTileTypes.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
-#include <scripting/gs1/GS1Flags.h>
-#include <scripting/gs1/ScriptEngineGS1.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
+#include <scripting/gs1/GS1Flags.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/StringUtils.h>
 
@@ -110,11 +112,30 @@ void setNPCFlags(ScriptEvent& event, GameVariableStore& variableStore, NPCPtr np
 		return;
 
 	variableStore.add("visible", npc->visFlags != PROPID(NPCVisFlags::HIDDEN));
+
+	if (auto server = BabyDI::Get<Server>(); server != nullptr && server->Generation == ServerGeneration::CLASSIC)
+	{
+		variableStore.add("gotsword", npc->character.swordPower == 1);
+		variableStore.add("gotaxe", npc->character.swordPower == 2);
+		variableStore.add("gotlizardsword", npc->character.swordPower == 3);
+		variableStore.add("gotgoldensword", npc->character.swordPower == 4);
+		//
+		variableStore.add("gotshield", npc->character.shieldPower == 1);
+		variableStore.add("gotmirrorshield", npc->character.shieldPower == 2);
+		variableStore.add("gotlizardshield", npc->character.shieldPower == 3);
+		//
+		variableStore.add("gotbomb", npc->character.bombPower == 1);
+		variableStore.add("gotsuperbomb", npc->character.bombPower == 2);
+		//
+		variableStore.add("gotbow", npc->character.bowPower == 1);
+		//
+		variableStore.add("gotglove1", npc->character.glovePower == 2);
+		variableStore.add("gotglove2", npc->character.glovePower == 3);
+	}
+
 	variableStore.add("shotbyplayer", event.type == ScriptEventType::WASSHOT && event.initiator.second == ScriptObjectType::PLAYER);
 	variableStore.add("shotbybaddy", event.type == ScriptEventType::WASSHOT && event.initiator.second == ScriptObjectType::SERVER);
-
-	// Extension.
-	variableStore.add("shotbynpc", event.type == ScriptEventType::WASSHOT && event.initiator.second == ScriptObjectType::NPC);
+	variableStore.add("shotbynpc", event.type == ScriptEventType::WASSHOT && event.initiator.second == ScriptObjectType::NPC); // GR extension
 
 	// The WASPELT event has the item in the event args so pull it out.
 	CarryObjectType carryType = CarryObjectType::NONE;
@@ -163,7 +184,7 @@ void setOtherFlags(ScriptEvent& event, ScriptObject source, GameVariableStore& v
 			}
 			++index;
 		}
-		variableStore.add("actionplayer", GameValue{ (double)(found ? index : -1) });
+		variableStore.add("actionplayer", GameValue{(double)(found ? index : -1)});
 	}
 
 	// playerswimming

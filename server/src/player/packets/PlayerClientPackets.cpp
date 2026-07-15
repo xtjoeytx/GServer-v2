@@ -409,6 +409,9 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 	if (killer == nullptr || killer.get() == this)
 		return HandlePacketResult::Handled;
 
+	// Mark the player as a killer for this session.
+	killer->account.variables.add(GameVariable{.name = "playerkiller", .value = GameValue{true}, .lifetime = variables::Lifetime::NORMAL});
+
 	// Sparring zone rating code.
 	// Uses the glicko rating system.
 	auto level = getLevel();

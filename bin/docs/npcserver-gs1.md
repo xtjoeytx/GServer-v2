@@ -83,6 +83,18 @@ Please review the lists below of implemented events, flags, functions, commands,
       carriesstone              - (beta 4)
       carriesvase               - (beta 4)
       compsdead                 - (beta 7)
+    * gotaxe                    - (beta 5) to (1.38)
+    * gotbomb                   - (beta 2) to (1.38)
+    * gotbow                    - (beta 5) to (1.38)
+    * gotglove1                 - (beta 2) to (1.38)
+    * gotglove2                 - (beta 5) to (1.38)
+    * gotgoldensword            - (beta 5) to (1.38)
+    * gotlizardshield           - (beta 5) to (1.38)
+    * gotlizardsword            - (beta 5) to (1.38)
+    * gotmirrorshield           - (beta 5) to (1.38)
+    * gotshield                 - (beta 5) to (1.38)
+    * gotsuperbomb              - (beta 5) to (1.38)
+    * gotsword                  - (beta 5) to (1.38)
       isleader                  - (1.22)
       isonmap                   - (1.38)
       issparringzone            - (2.02)
@@ -98,6 +110,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       playerattached            - (2.04)
       playerisfemale            - (1.36)
       playerismale              - (1.36)
+    * playerkiller              - (beta 5) to (1.32)
       playeronhorse             - around (1.20)
       playeronline
       playerpaused              - (2.14rev7)
@@ -107,22 +120,6 @@ Please review the lists below of implemented events, flags, functions, commands,
       shotbyplayer              - (beta 7)
       visible                   - (beta 5)
       weaponsenabled            - (beta 5)
-
-#### Not implemented
-
-    * playerkiller              - (beta 5) to (1.32)
-    * gotaxe                    - (beta 5) to (1.38)
-    * gotbomb                   - (beta 2) to (1.38)
-    * gotbow                    - (beta 5) to (1.38)
-    * gotglove1                 - (beta 2) to (1.38)
-    * gotglove1                 - (beta 5) to (1.38)
-    * gotgoldensword            - (beta 5) to (1.38)
-    * gotlizardshield           - (beta 5) to (1.38)
-    * gotlizardsword            - (beta 5) to (1.38)
-    * gotmirrorshield           - (beta 5) to (1.38)
-    * gotshield                 - (beta 5) to (1.38)
-    * gotsuperbomb              - (beta 5) to (1.38)
-    * gotsword                  - (beta 5) to (1.38)
 
 #### Won't implement
 
