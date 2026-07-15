@@ -1557,9 +1557,9 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 	{
 		auto param1 = visit(expressions[0]);
 		auto param2 = visit(expressions[1]);
-		auto x = static_cast<uint32_t>(std::max(0.0, getScriptValueAsCopy<double>(param1).value_or(0.0)));
-		auto y = static_cast<uint32_t>(std::max(0.0, getScriptValueAsCopy<double>(param2).value_or(0.0)));
-		index = (static_cast<size_t>(x) << 32) | y;
+		auto x = static_cast<int32_t>(std::max(0.0, getScriptValueAsCopy<double>(param1).value_or(0.0)));
+		auto y = static_cast<int32_t>(std::max(0.0, getScriptValueAsCopy<double>(param2).value_or(0.0)));
+		index = (static_cast<int64_t>(x) << 32) | (static_cast<int64_t>(y) & 0xFFFFFFFF);
 	}
 	else if (expressions.size() == 1)
 	{

@@ -392,35 +392,79 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 	// board[]
 	// Needs the map position of the NPC, so moved there.
 
+	auto tilesCheckForAdjacent = [](LevelPtr& levelPtr, int32_t tileX, int32_t tileY)
+	{
+		// Test for out of bounds indexes.
+		// This is valid for a level on a bigmap and should result in a _different_ level being tested.
+		auto subLevelTiles = Level::tilesPerSubLevel();
+		bool outOfBounds = (tileX < 0 || tileY < 0 || tileX > subLevelTiles.width() || tileY > subLevelTiles.height());
+		if (levelPtr->isOnBigMap() && outOfBounds)
+		{
+			auto map = levelPtr->getMap();
+			auto mapPosition = map->getLevelPosition(levelPtr->levelName).value_or(MapPosition{ 0, 0 });
+			mapPosition.x() += tileX / subLevelTiles.width();
+			mapPosition.y() += tileY / subLevelTiles.height();
+			if (mapPosition.x() >= 0 && mapPosition.y() >= 0 && mapPosition.x() < map->size.width() && mapPosition.y() < map->size.height())
+			{
+				auto newLevelName = map->getLevelNameAt(mapPosition.x(), mapPosition.y());
+				auto server = BabyDI::Get<Server>();
+				if (auto newLevel = server->getLoadedLevel(newLevelName, levelPtr); newLevel != nullptr)
+					levelPtr = newLevel;
+			}
+		}
+	};
+
 	// tiles[x,y] -> tiles[]
 	GameVariable tiles{.name = "tiles"};
-	tiles.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
+	tiles.registerGetter<double>([level, tilesCheckForAdjacent](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		auto levelPtr = level.lock();
 		if (levelPtr == nullptr || index.value_or(-1) < 0)
 			return 0.0;
 
 		// Get the tile X/Y out of the index.
-		uint32_t tileX = static_cast<uint32_t>(index.value() >> 32);
-		uint32_t tileY = static_cast<uint32_t>(index.value() & 0xFFFFFFFF);
-		TilePosition tilePos{static_cast<float>(tileX), static_cast<float>(tileY)};
+		int32_t tileX = static_cast<int32_t>(index.value() >> 32);
+		int32_t tileY = static_cast<int32_t>(index.value() & 0xFFFFFFFF);
+
+		// Test for out of bounds indexes.
+		// This is valid for a level on a bigmap and should result in a _different_ level being tested.
+		tilesCheckForAdjacent(levelPtr, tileX, tileY);
+
+		// Restrict to the level's dimensions.
+		auto levelTiles = levelPtr->sizeInTiles();
+		tileX %= levelTiles.width();
+		tileY %= levelTiles.height();
+		tileX = std::clamp(tileX, 0_i32, static_cast<int32_t>(levelTiles.width() - 1));
+		tileY = std::clamp(tileY, 0_i32, static_cast<int32_t>(levelTiles.height() - 1));
 
 		// Get the tile.
-		if (auto tile = levelPtr->getMapTileForEditing(tilePos); tile != nullptr)
-			return static_cast<double>(*tile);
+		TilePosition tilePos{static_cast<float>(tileX), static_cast<float>(tileY)};
+		if (auto tile = levelPtr->getMapTileAtPosition(tilePos); tile.has_value())
+			return static_cast<double>(tile.value());
 		return 0.0;
 	});
-	tiles.registerSetter<double>([level](GameValueVariantForSetter& value, std::optional<int64_t> index)
+	tiles.registerSetter<double>([level, tilesCheckForAdjacent](GameValueVariantForSetter& value, std::optional<int64_t> index)
 	{
 		auto levelPtr = level.lock();
 		if (levelPtr == nullptr || index.value_or(-1) < 0) return;
 
 		// Get the tile X/Y out of the index.
-		uint32_t tileX = static_cast<uint32_t>(index.value() >> 32);
-		uint32_t tileY = static_cast<uint32_t>(index.value() & 0xFFFFFFFF);
-		TilePosition tilePos{static_cast<float>(tileX), static_cast<float>(tileY)};
+		int32_t tileX = static_cast<int32_t>(index.value() >> 32);
+		int32_t tileY = static_cast<int32_t>(index.value() & 0xFFFFFFFF);
+
+		// Test for out of bounds indexes.
+		// This is valid for a level on a bigmap and should result in a _different_ level being tested.
+		tilesCheckForAdjacent(levelPtr, tileX, tileY);
+
+		// Restrict to the level's dimensions.
+		auto levelTiles = levelPtr->sizeInTiles();
+		tileX %= levelTiles.width();
+		tileY %= levelTiles.height();
+		tileX = std::clamp(tileX, 0_i32, static_cast<int32_t>(levelTiles.width() - 1));
+		tileY = std::clamp(tileY, 0_i32, static_cast<int32_t>(levelTiles.height() - 1));
 
 		// Get and update the tile.
+		TilePosition tilePos{static_cast<float>(tileX), static_cast<float>(tileY)};
 		if (auto wrap = std::get_if<std::reference_wrapper<double>>(&value); wrap != nullptr)
 		{
 			if (auto tile = levelPtr->getMapTileForEditing(tilePos); tile != nullptr)

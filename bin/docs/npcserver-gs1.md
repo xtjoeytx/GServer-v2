@@ -167,7 +167,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       nwyear
       paramscount               - (2.03)
       playerscount              - around (1.20)
-      tiles[x,y]    (no negative indexes)   - (2.10)
+      tiles[x,y]                - (2.10)
       timevar                   - (2.10)
       timevar2                  - (2.30)
       tokenscount               - (2.02)
@@ -295,10 +295,6 @@ Please review the lists below of implemented events, flags, functions, commands,
       signs[]                   - (1.39rev2)
         .x                      - (1.39rev2)
         .y                      - (1.39rev2)
-
-#### Not implemented
-
-    tiles[x,y]          (negative indexes)
 
 #### Clientside only
 

@@ -2879,6 +2879,20 @@ bool Level::isGmap() const noexcept
 	return m_map != nullptr && m_map->isGmap();
 }
 
+std::optional<uint16_t> Level::getMapTileAtPosition(const TilePosition& position) noexcept
+{
+	auto subLevel = getSubLevelAtPosition(position);
+	if (subLevel == nullptr)
+		return std::nullopt;
+
+	auto localTilePos = toLocalWholeTilePosition(position);
+	auto layer = subLevel->getTiles(0);
+	if (!layer.has_value())
+		return std::nullopt;
+
+	return layer.value()->at(static_cast<size_t>(localTilePos.y()) * 64 + localTilePos.x());
+}
+
 uint16_t* Level::getMapTileForEditing(const TilePosition& position) noexcept
 {
 	auto subLevel = getSubLevelAtPosition(position);
@@ -2889,7 +2903,11 @@ uint16_t* Level::getMapTileForEditing(const TilePosition& position) noexcept
 	if (!subLevel->scriptUpdatedTiles.has_value())
 		subLevel->scriptUpdatedTiles = LevelTiles();
 
-	auto layer = subLevel->scriptUpdatedTiles.value().getOrCreateLayer(0);
+	LevelTiles::TileArray* copyLayer = nullptr;
+	if (auto staticData = subLevel->staticData.lock(); staticData != nullptr)
+		copyLayer = staticData->tiles.getLayer(0).value_or(nullptr);
+
+	auto layer = subLevel->scriptUpdatedTiles.value().getOrCreateLayer(0, copyLayer);
 	if (layer == nullptr)
 		return nullptr;
 

@@ -46,7 +46,7 @@ public:
 
 public:
 	[[inline]] std::generator<uint8_t> getUsedTileLayers() const noexcept;
-	[[inline]] TileArray* getOrCreateLayer(uint8_t layer) noexcept;
+	[[inline]] TileArray* getOrCreateLayer(uint8_t layer, TileArray* copyLayer = nullptr) noexcept;
 	[[inline]] std::optional<TileArray*> getLayer(uint8_t layer) noexcept;
 	[[inline]] std::optional<const TileArray*> getLayer(uint8_t layer) const noexcept;
 
@@ -77,13 +77,20 @@ inline std::generator<uint8_t> LevelTiles::getUsedTileLayers() const noexcept
 		co_yield layer;
 }
 
-inline LevelTiles::TileArray* LevelTiles::getOrCreateLayer(uint8_t layer) noexcept
+inline LevelTiles::TileArray* LevelTiles::getOrCreateLayer(uint8_t layer, TileArray* copyLayer) noexcept
 {
 	auto it = m_tiles.find(layer);
 	if (it == m_tiles.end())
 	{
-		m_tiles[layer] = TileArray{};
-		m_tiles[layer].fill(layer == 0 ? BaseLayerEmptyTile : constants::EmptyTileInLayer);
+		if (copyLayer == nullptr)
+		{
+			m_tiles[layer] = TileArray{};
+			m_tiles[layer].fill(layer == 0 ? BaseLayerEmptyTile : constants::EmptyTileInLayer);
+		}
+		else
+		{
+			m_tiles[layer] = *copyLayer;
+		}
 		return &m_tiles[layer];
 	}
 	return &it->second;

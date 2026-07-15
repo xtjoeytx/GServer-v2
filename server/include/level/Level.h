@@ -165,6 +165,7 @@ public:
 	[[inline]] Dimension<uint32_t> sizeInTiles() const noexcept;
 	[[inline]] Dimension<uint32_t> sizeInPixels() const noexcept;
 	[[inline]] Rectangle<uint32_t, uint32_t> getBoundingBox() const noexcept;
+	std::optional<uint16_t> getMapTileAtPosition(const TilePosition& position) noexcept;
 	uint16_t* getMapTileForEditing(const TilePosition& position) noexcept;
 	[[inline]] std::string_view getLevelNameAtPosition(const PixelPosition& position) const noexcept;
 
@@ -442,7 +443,7 @@ inline constexpr Dimension<uint16_t> Level::pixelsPerSubLevel() noexcept
 
 inline Dimension<uint8_t> Level::sizeInSubLevels() const noexcept
 {
-	if (m_map == nullptr) return { 1, 1 };
+	if (m_map == nullptr || m_map->isBigMap()) return { 1, 1 };
 	return m_map->size;
 }
 
