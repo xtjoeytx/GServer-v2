@@ -495,7 +495,9 @@ struct GameVariable
 public:
 	/// @brief The name of the game variable.
 	std::string name;
-	//std::optional<size_t> index;
+
+	/// @brief The optional index for array elements.
+	std::optional<int64_t> index;
 
 	/// @brief The value of the game variable.
 	GameValue value;
@@ -593,7 +595,7 @@ inline GameVariable& GameVariable::assign(StoresInGameValue auto&& value, std::o
 	if (auto funcIt = setters.find(typeid(V).hash_code()); funcIt != setters.end())
 	{
 		GameValueVariantForSetter variantValue = std::ref(value);
-		funcIt->second(variantValue, index);
+		funcIt->second(variantValue, index.has_value() ? index : this->index);
 		return *this;
 	}
 
@@ -620,7 +622,7 @@ inline GameVariable& GameVariable::set(StoresInGameValue auto& value, std::optio
 	if (auto funcIt = setters.find(typeid(V).hash_code()); funcIt != setters.end())
 	{
 		GameValueVariantForSetter variantValue = std::ref(value);
-		funcIt->second(variantValue, index);
+		funcIt->second(variantValue, index.has_value() ? index : this->index);
 		return *this;
 	}
 
@@ -646,13 +648,15 @@ inline std::optional<std::reference_wrapper<T>> GameVariable::get(std::optional<
 	if (auto funcIt = getters.find(typeid(T).hash_code()); funcIt != getters.end())
 	{
 		std::optional<std::reference_wrapper<T>> result;
-		auto variantValue = funcIt->second(index);
+		auto variantValue = funcIt->second(index.has_value() ? index : this->index);
 		if (std::holds_alternative<std::reference_wrapper<T>>(variantValue))
 		{
 			result = std::get<std::reference_wrapper<T>>(variantValue);
 		}
 		else if (std::holds_alternative<T>(variantValue))
 		{
+			// We did not get a direct reference, so store the index so we can properly set the value back later.
+			this->index = index;
 			value.set(std::get<T>(variantValue));
 			result = value.get<T>();
 		}
@@ -692,7 +696,7 @@ inline const std::optional<T> GameVariable::getCopy(std::optional<int64_t> index
 	if (auto funcIt = getters.find(typeid(T).hash_code()); funcIt != getters.end())
 	{
 		std::optional<T> result;
-		auto variantValue = funcIt->second(index);
+		auto variantValue = funcIt->second(index.has_value() ? index : this->index);
 		if (std::holds_alternative<std::reference_wrapper<T>>(variantValue))
 		{
 			result = std::get<std::reference_wrapper<T>>(variantValue).get();

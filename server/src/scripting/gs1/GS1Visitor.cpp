@@ -1102,25 +1102,25 @@ std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentCont
 	switch (op.value())
 	{
 		case GS1Parser::OP_ASSIGN:
-			left->assign(right);
+			left->assign(right, left->index);
 			break;
 		case GS1Parser::OP_ASSIGN_ADD:
-			left->assign(leftD + right);
+			left->assign(leftD + right, left->index);
 			break;
 		case GS1Parser::OP_ASSIGN_SUB:
-			left->assign(leftD - right);
+			left->assign(leftD - right, left->index);
 			break;
 		case GS1Parser::OP_ASSIGN_MUL:
-			left->assign(leftD * right);
+			left->assign(leftD * right, left->index);
 			break;
 		case GS1Parser::OP_ASSIGN_DIV:
-			left->assign(leftD / right);
+			left->assign(leftD / right, left->index);
 			break;
 		case GS1Parser::OP_ASSIGN_MOD:
-			left->assign(static_cast<double>(static_cast<int64_t>(leftD) % static_cast<int64_t>(right)));
+			left->assign(static_cast<double>(static_cast<int64_t>(leftD) % static_cast<int64_t>(right)), left->index);
 			break;
 		case GS1Parser::OP_ASSIGN_POW:
-			left->assign(std::pow(leftD, right));
+			left->assign(std::pow(leftD, right), left->index);
 			break;
 	}
 
@@ -1603,7 +1603,7 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 				return makeGS1ScriptValue(GameVariable{.value = 0.0});
 
 			size_t fixedIndex = static_cast<size_t>(std::max(0_i64, index.value()));
-			if (auto val = variable->get<double>(index); val.has_value())
+			if (auto val = variable->get<double>(index); val.has_value() && !variable->index.has_value())
 			{
 				// Construct a new GameVariable that wraps around the reference.
 				return makeGS1ScriptValue(helpers::wrapReferenceIntoGameVariable(val.value()));
