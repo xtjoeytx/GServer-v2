@@ -118,13 +118,16 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 	if (level.expired())
 		return;
 
-	// players
+	// playerscount
 	GameVariable playerscount{.name = "playerscount"};
-	GameVariable players{.name = "players"};
 	playerscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getPlayers().size());
 	});
+	variableStore.add(std::move(playerscount));
+
+	// players
+	GameVariable players{.name = "players"};
 	players.registerGetter<std::vector<ScriptObject>>([level, player](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		auto levelPtr = level.lock();
@@ -149,16 +152,18 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 		std::ranges::copy(playerObjects, std::back_inserter(players));
 		return players;
 	});
-	variableStore.add(std::move(playerscount));
 	variableStore.add(std::move(players));
 
-	// npcs
+	// npcscount
 	GameVariable npcscount{.name = "npcscount"};
-	GameVariable npcs{.name = "npcs"};
 	npcscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getNPCs().size());
 	});
+	variableStore.add(std::move(npcscount));
+
+	// npcs
+	GameVariable npcs{.name = "npcs"};
 	npcs.registerGetter<std::vector<ScriptObject>>([level, npc](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		auto levelPtr = level.lock();
@@ -183,16 +188,18 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 		std::ranges::copy(npcObjects, std::back_inserter(npcs));
 		return npcs;
 	});
-	variableStore.add(std::move(npcscount));
 	variableStore.add(std::move(npcs));
 
-	// compus
+	// compuscount
 	GameVariable compuscount{.name = "compuscount"};
-	GameVariable compus{.name = "compus"};
 	compuscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getBaddyCount());
 	});
+	variableStore.add(std::move(compuscount));
+
+	// compus
+	GameVariable compus{.name = "compus"};
 	compus.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		auto levelPtr = level.lock();
@@ -211,14 +218,18 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 		std::ranges::copy(objects, std::back_inserter(compus));
 		return compus;
 	});
+	variableStore.add(std::move(compus));
 
-	// bombs
+	// bombscount
 	GameVariable bombscount{.name = "bombscount"};
-	GameVariable bombs{.name = "bombs"};
 	bombscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getBombs().size());
 	});
+	variableStore.add(std::move(bombscount));
+
+	// bombs
+	GameVariable bombs{.name = "bombs"};
 	bombs.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		auto levelPtr = level.lock();
@@ -235,16 +246,18 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 
 		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::BOMB)};
 	});
-	variableStore.add(std::move(compuscount));
-	variableStore.add(std::move(compus));
+	variableStore.add(std::move(bombs));
 
-	// arrows
+	// arrowscount
 	GameVariable arrowscount{.name = "arrowscount"};
-	GameVariable arrows{.name = "arrows"};
 	arrowscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getArrows().size());
 	});
+	variableStore.add(std::move(arrowscount));
+
+	// arrows
+	GameVariable arrows{.name = "arrows"};
 	arrows.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		auto levelPtr = level.lock();
@@ -261,16 +274,18 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 
 		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::ARROW)};
 	});
-	variableStore.add(std::move(arrowscount));
 	variableStore.add(std::move(arrows));
 
-	// items
+	// itemscount
 	GameVariable itemscount{.name = "itemscount"};
-	GameVariable items{.name = "items"};
 	itemscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getItems().size());
 	});
+	variableStore.add(std::move(itemscount));
+
+	// items
+	GameVariable items{.name = "items"};
 	items.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		auto levelPtr = level.lock();
@@ -288,16 +303,18 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::ITEM)};
 		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::ITEM)};
 	});
-	variableStore.add(std::move(itemscount));
 	variableStore.add(std::move(items));
 
-	// explos
+	// exploscount
 	GameVariable exploscount{.name = "exploscount"};
-	GameVariable explos{.name = "explos"};
 	exploscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getExplosions().size());
 	});
+	variableStore.add(std::move(exploscount));
+
+	// explos
+	GameVariable explos{.name = "explos"};
 	explos.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		auto levelPtr = level.lock();
@@ -314,16 +331,18 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 
 		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::EXPLOSION)};
 	});
-	variableStore.add(std::move(exploscount));
 	variableStore.add(std::move(explos));
 
-	// horses
+	// horsescount
 	GameVariable horsescount{.name = "horsescount"};
-	GameVariable horses{.name = "horses"};
 	horsescount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getHorses().size());
 	});
+	variableStore.add(std::move(horsescount));
+
+	// horses
+	GameVariable horses{.name = "horses"};
 	horses.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		auto levelPtr = level.lock();
@@ -340,16 +359,18 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 
 		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::HORSE)};
 	});
-	variableStore.add(std::move(horsescount));
 	variableStore.add(std::move(horses));
 
-	// signs
+	// signscount
 	GameVariable signscount{.name = "signscount"};
-	GameVariable signs{.name = "signs"};
 	signscount.registerGetter<double>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		return level.expired() ? 0.0 : static_cast<double>(level.lock()->getSignCount());
 	});
+	variableStore.add(std::move(signscount));
+
+	// signs
+	GameVariable signs{.name = "signs"};
 	signs.registerGetter<std::vector<ScriptObject>>([level](std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		auto levelPtr = level.lock();
@@ -366,7 +387,6 @@ void setLevelVariables(GameVariableStore& variableStore, std::weak_ptr<Level> le
 
 		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::SIGN)};
 	});
-	variableStore.add(std::move(signscount));
 	variableStore.add(std::move(signs));
 
 	// board[]

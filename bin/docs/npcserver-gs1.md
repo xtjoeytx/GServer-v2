@@ -488,7 +488,6 @@ Please review the lists below of implemented events, flags, functions, commands,
 #### Not implemented
 
       savelevel           [GR]
-    * setz                      - possibly (2.12), revealed (???)
 
 #### Clientside only
 
@@ -541,6 +540,7 @@ Please review the lists below of implemented events, flags, functions, commands,
     setspritesimage             - (5.00rev6)
     setstatusimage              - (5.00rev6)
     seturllevel                 - (beta 5)
+    setz                        - possibly (2.12), revealed (???)
     setzoomeffect               - (2.00)
     showfile                    - (1.26rev2)
     showlocal                   - (1.34)
