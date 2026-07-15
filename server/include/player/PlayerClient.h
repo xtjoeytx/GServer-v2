@@ -102,6 +102,9 @@ public:
 	std::shared_ptr<SubLevel> getSubLevel() const;
 
 public:
+	// Set the player's position in the current level.
+	virtual void setPosition(const PixelPosition& position) override;
+
 	// Forcibly move a player (the client doesn't know it is transitioning levels).
 	virtual bool warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
 	virtual bool warp(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;

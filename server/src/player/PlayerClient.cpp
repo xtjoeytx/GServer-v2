@@ -1157,6 +1157,27 @@ std::shared_ptr<SubLevel> PlayerClient::getSubLevel() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void PlayerClient::setPosition(const PixelPosition& position)
+{
+	auto localPosition = toLocalPixelPosition(position);
+	if (auto level = getLevel(); level != nullptr)
+	{
+		std::inplace_vector<props::SetResults, 4> propResults{
+			setPropWith<PlayerProp::X2>(props::SetBy::SERVER, localPosition.x()),
+			setPropWith<PlayerProp::Y2>(props::SetBy::SERVER, localPosition.y())
+		};
+
+		if (level->isGmap())
+		{
+			auto destMapPosition = toMapPosition(position);
+			propResults.push_back(setPropWith<PlayerProp::GMAPLEVELX>(props::SetBy::SERVER, destMapPosition.x()));
+			propResults.push_back(setPropWith<PlayerProp::GMAPLEVELY>(props::SetBy::SERVER, destMapPosition.y()));
+		}
+
+		sendPropsFromResults(propResults);
+	}
+}
+
 bool PlayerClient::warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime)
 {
 	// Find the level.
@@ -1189,19 +1210,7 @@ bool PlayerClient::warp(std::shared_ptr<Level> level, const PixelPosition& posit
 	auto localPosition = toLocalPixelPosition(position);
 	if (!m_currentLevel.expired() && account.level == level->levelName)
 	{
-		std::inplace_vector<props::SetResults, 4> propResults{
-			setPropWith<PlayerProp::X2>(props::SetBy::SERVER, localPosition.x()),
-			setPropWith<PlayerProp::Y2>(props::SetBy::SERVER, localPosition.y())
-		};
-
-		if (level->isGmap())
-		{
-			auto destMapPosition = toMapPosition(position);
-			propResults.push_back(setPropWith<PlayerProp::GMAPLEVELX>(props::SetBy::SERVER, destMapPosition.x()));
-			propResults.push_back(setPropWith<PlayerProp::GMAPLEVELY>(props::SetBy::SERVER, destMapPosition.y()));
-		}
-
-		sendPropsFromResults(propResults);
+		setPosition(position);
 		return true;
 	}
 

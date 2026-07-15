@@ -54,7 +54,7 @@ Please review the lists below of implemented events, flags, functions, commands,
 
 #### Not implemented
 
-    * washit	(anything not hitobjects)
+    * washit	(sword)
 
 #### Clientside only
 
@@ -379,6 +379,9 @@ Please review the lists below of implemented events, flags, functions, commands,
     * putnewcomp                - around (1.20)
     * putnpc                    - around (1.20)
       putnpc2
+    * reducebombs               - (beta 3) to (beta 5)
+    * reducedarts               - (beta 3) to (beta 5)
+    * reducerupees              - (beta 3) to (beta 5)
     * removearrow               - (1.36)
     * removebomb                - (1.36)
     * removecompus              - (beta 3)
@@ -404,6 +407,7 @@ Please review the lists below of implemented events, flags, functions, commands,
       setarray                  - around (1.20)
       setbeltcolor              - (beta 3)
     * setbody                   - (1.40)
+    * setbow                    - around (1.20) to (2.00)
       setcharani                - (2.00)
       setchargender             - (2.00)
       setcharprop               - (1.25)
@@ -420,6 +424,8 @@ Please review the lists below of implemented events, flags, functions, commands,
     * setminimap                - (1.23)
     * setplayerdir              - (beta 3)
       setplayerprop             - (1.25)
+    * setplayerx                - (beta 3) to (beta 5)
+    * setplayery                - (beta 3) to (beta 5)
       setpm
       setshape                  - (2.04)
     * setshield                 - around (1.20)
@@ -429,6 +435,8 @@ Please review the lists below of implemented events, flags, functions, commands,
       setsleevecolor            - (beta 3)
       setstring                 - (1.27)
     * setsword                  - around (1.20)
+    * setx                      - (beta 2) to (beta 5)
+    * sety                      - (beta 2) to (beta 5)
       shoot                     - revealed (2.14)
     * shootarrow                - (beta 5)
     * shootball                 - (beta 5) (gr extension - dir parameter)
@@ -468,14 +476,7 @@ Please review the lists below of implemented events, flags, functions, commands,
 
     * hitcompu                  - around (1.20)
       savelevel           [GR]
-      setbow                    - around (1.20) to (2.00)
-      setx                      - (beta 2) to (beta 5)
-      sety                      - (beta 2) to (beta 5)
-      setplayerx                - (beta 3) to (beta 5)
-      setplayery                - (beta 3) to (beta 5)
-      reducerupees              - (beta 3) to (beta 5)
-      reducebombs               - (beta 3) to (beta 5)
-      reducedarts               - (beta 3) to (beta 5)
+    * setz                      - possibly (2.12), revealed (???)
 
 #### Clientside only
 
@@ -529,7 +530,6 @@ Please review the lists below of implemented events, flags, functions, commands,
     setstatusimage              - (5.00rev6)
     seturllevel                 - (beta 5)
     setzoomeffect               - (2.00)
-    setz                        - possibly (2.12), revealed (???)
     showfile                    - (1.26rev2)
     showlocal                   - (1.34)
     showstats                   - (1.41)

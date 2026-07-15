@@ -303,6 +303,7 @@ public:
 	bool setFlag(std::string_view flagName, std::optional<std::string> flagValue, const SetBy setBy);
 
 public:
+	virtual void setPosition(const PixelPosition& position);
 	virtual bool warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
 	virtual bool warp(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
 	virtual bool enterLevel(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);

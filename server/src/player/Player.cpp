@@ -845,6 +845,8 @@ double Player::getCalculatedTileZ() const noexcept
 
 std::shared_ptr<Level> Player::getLevel() const
 {
+	if (account.level.empty())
+		return nullptr;
 	return m_server->getStubbedLevel(account.level, account.groupName);
 }
 
@@ -1079,6 +1081,20 @@ void Player::sendPrivateMessage(PlayerID from, std::string_view message)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void Player::setPosition(const PixelPosition& position)
+{
+	auto localPosition = toLocalPixelPosition(position);
+	account.character.localPixelX = localPosition.x();
+	account.character.localPixelY = localPosition.y();
+
+	if (auto level = getLevel(); level != nullptr && level->isGmap())
+	{
+		auto mapPosition = toMapPosition(position);
+		account.character.mapX = mapPosition.x();
+		account.character.mapY = mapPosition.y();
+	}
+}
 
 bool Player::warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime)
 {

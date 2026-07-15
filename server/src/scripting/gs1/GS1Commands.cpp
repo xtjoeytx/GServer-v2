@@ -8,13 +8,14 @@
 #include <filesystem>
 #include <format>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <numbers>
 #include <optional>
 #include <ranges>
 #include <stdexcept>
-#include <string>
 #include <string_view>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -123,6 +124,9 @@ static void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const
 static void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_putnpc2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_reducebombs(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_reducedarts(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_reducerupees(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_removearrow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_removebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_removecompus(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -149,6 +153,7 @@ static void fn_setani(GS1Visitor* visitor, std::string_view commandName, const s
 static void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setbeltcolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setbody(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setbow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setcharani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setchargender(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -164,6 +169,8 @@ static void fn_setmap(GS1Visitor* visitor, std::string_view commandName, const s
 static void fn_setminimap(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setplayerdir(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setplayerprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setplayerx(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setplayery(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setpm(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setshape(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -173,6 +180,8 @@ static void fn_setskincolor(GS1Visitor* visitor, std::string_view commandName, c
 static void fn_setsleevecolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setsword(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setx(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_sety(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setz(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_shoot(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_shootarrow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
@@ -280,6 +289,9 @@ static BuiltInCommandHandleMap GenerateMap()
 		{hash("putnewcomp"), &fn_putnewcomp},
 		{hash("putnpc"), &fn_putnpc},
 		{hash("putnpc2"), &fn_putnpc2},
+		{hash("reducebombs"), &fn_reducebombs},
+		{hash("reducedarts"), &fn_reducedarts},
+		{hash("reducerupees"), &fn_reducerupees},
 		{hash("removearrow"), &fn_removearrow},
 		{hash("removebomb"), &fn_removebomb},
 		{hash("removecompus"), &fn_removecompus},
@@ -306,6 +318,7 @@ static BuiltInCommandHandleMap GenerateMap()
 		{hash("setarray"), &fn_setarray},
 		{hash("setbeltcolor"), &fn_setbeltcolor},
 		{hash("setbody"), &fn_setbody},
+		{hash("setbow"), &fn_setbow},
 		{hash("setcharani"), &fn_setcharani},
 		{hash("setchargender"), &fn_setchargender},
 		{hash("setcharprop"), &fn_setcharprop},
@@ -323,6 +336,8 @@ static BuiltInCommandHandleMap GenerateMap()
 		{hash("setminimap"), &fn_setminimap},
 		{hash("setplayerdir"), &fn_setplayerdir},
 		{hash("setplayerprop"), &fn_setplayerprop},
+		{hash("setplayerx"), &fn_setplayerx},
+		{hash("setplayery"), &fn_setplayery},
 		{hash("setpm"), &fn_setpm},
 		{hash("setshape"), &fn_setshape},
 		{hash("setshield"), &fn_setshield},
@@ -332,6 +347,8 @@ static BuiltInCommandHandleMap GenerateMap()
 		{hash("setsleevecolor"), &fn_setsleevecolor},
 		{hash("setstring"), &fn_setstring},
 		{hash("setsword"), &fn_setsword},
+		{hash("setx"), &fn_setx},
+		{hash("sety"), &fn_sety},
 		{hash("setz"), &fn_setz},
 		{hash("shoot"), &fn_shoot},
 		{hash("shootarrow"), &fn_shootarrow},
@@ -1693,6 +1710,75 @@ void fn_putnpc2(GS1Visitor* visitor, std::string_view commandName, const std::ve
 	}
 }
 
+// reducebombs amount;
+// Reduces the player's bombs by the specified amount.
+void fn_reducebombs(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: reducebombs amount");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	{
+		auto amount = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		auto server = BabyDI::Get<Server>();
+		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		{
+			// clang-format off
+			int16_t bombs = player->account.character.bombs;
+			bombs = std::clamp(static_cast<int16_t>(bombs - amount), static_cast<int16_t>(0), static_cast<int16_t>(99));
+			// clang-format on
+
+			player->setPropWith<PlayerProp::BOMBSCOUNT>(SetBy::SERVER, static_cast<uint8_t>(bombs));
+		}
+	}
+}
+
+// reducedarts amount;
+// Reduces the player's darts by the specified amount.
+void fn_reducedarts(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: reducedarts amount");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	{
+		auto amount = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		auto server = BabyDI::Get<Server>();
+		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		{
+			// clang-format off
+			int16_t arrows = player->account.character.arrows;
+			arrows = std::clamp(static_cast<int16_t>(arrows - amount), static_cast<int16_t>(0), static_cast<int16_t>(99));
+			// clang-format on
+
+			player->setPropWith<PlayerProp::ARROWSCOUNT>(SetBy::SERVER, static_cast<uint8_t>(arrows));
+		}
+	}
+}
+
+// reducerupees amount;
+// Reduces the player's rupees by the specified amount.
+void fn_reducerupees(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: reducerupees amount");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	{
+		auto amount = DoubleAsIntegralFloor<int64_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		auto server = BabyDI::Get<Server>();
+		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		{
+			// clang-format off
+			int64_t rupees = player->account.character.gralats;
+			rupees = std::clamp(static_cast<int64_t>(rupees - amount), static_cast<int64_t>(0), static_cast<int64_t>(std::numeric_limits<uint32_t>::max()));
+			// clang-format on
+
+			player->setPropWith<PlayerProp::RUPEESCOUNT>(SetBy::SERVER, static_cast<uint32_t>(rupees));
+		}
+	}
+}
+
 // removearrow index;
 void fn_removearrow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -2115,6 +2201,33 @@ void fn_setbody(GS1Visitor* visitor, std::string_view commandName, const std::ve
 	}
 }
 
+// setbow image;
+// Sets the bow image for the player.
+void fn_setbow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setbow image");
+
+	// Only set bow image for classic servers, as this property was replaced with the gani property in newer server generations.
+	auto server = BabyDI::Get<Server>();
+	if (server->Generation != ServerGeneration::CLASSIC)
+		return;
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	{
+		auto image = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		{
+			auto prop = player->getProp<PlayerProp::GANI>();
+			if (!prop.bowGif.has_value())
+				prop.bowGif = {};
+
+			prop.bowGif.value().first = image;
+			player->setProp<PlayerProp::GANI>(SetBy::SERVER, prop);
+		}
+	}
+}
+
 // setcharani gani;
 // setcharani gani,attribs;
 // Sets the NPC character's animation.
@@ -2420,6 +2533,46 @@ void fn_setplayerprop(GS1Visitor* visitor, std::string_view commandName, const s
 	}
 }
 
+// setplayerx value;
+// Sets the player's X coordinate.
+void fn_setplayerx(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setplayerx value");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	{
+		auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+		auto server = BabyDI::Get<Server>();
+		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		{
+			TilePosition position = player->getTilePosition();
+			position.x() = value;
+			player->setPosition(toPixelPosition(position));
+		}
+	}
+}
+
+// setplayery value;
+// Sets the player's Y coordinate.
+void fn_setplayery(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setplayery value");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	{
+		auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+		auto server = BabyDI::Get<Server>();
+		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		{
+			TilePosition position = player->getTilePosition();
+			position.y() = value;
+			player->setPosition(toPixelPosition(position));
+		}
+	}
+}
+
 // setpm message;
 void fn_setpm(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
@@ -2603,6 +2756,46 @@ void fn_setsword(GS1Visitor* visitor, std::string_view commandName, const std::v
 		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::SWORDPOWER>(SetBy::SERVER, image, power);
+	}
+}
+
+// setx value;
+// Sets the NPC's X coordinate.
+void fn_setx(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setx value");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	{
+		auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+		auto server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
+		{
+			TilePosition position = npc->getTilePosition();
+			position.x() = value;
+			npc->setPropWith<NPCProp::X>(SetBy::SERVER, position.x());
+		}
+	}
+}
+
+// sety value;
+// Sets the NPC's Y coordinate.
+void fn_sety(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setyx value");
+
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	{
+		auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+		auto server = BabyDI::Get<Server>();
+		if (auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
+		{
+			TilePosition position = npc->getTilePosition();
+			position.y() = value;
+			npc->setPropWith<NPCProp::Y>(SetBy::SERVER, position.y());
+		}
 	}
 }
 
