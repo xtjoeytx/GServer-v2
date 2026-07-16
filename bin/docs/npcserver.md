@@ -165,3 +165,30 @@ Variable prefixes:
     this.var - stored on the npc
     flag - stored on the player account
     var - stored in the script execution context (not visible to joined classes)
+
+### Emulating sword hits
+
+The `washit` event is only triggered for the `hitobjects` command on the server, so if you swing your sword at an NPC,
+the serverside script will not detect it.  To handle sword hits, make a system weapon that does the following:
+
+```
+//#CLIENTSIDE
+if (created) {
+  this.hitlocx = {1,2, -1,-1, 1,2, 4,4};
+  this.hitlocy = {-1,-1, 1,1, 4,4, 1,2};
+  this.wait = 0;
+}
+if (keypressed && keydown(5) && this.wait == 0) {
+  this.p = playerswordpower;
+  hitobjects this.p,playerx+this.hitlocx[playerdir*2],playery+0.5+this.hitlocy[playerdir*2];
+  hitobjects this.p,playerx+this.hitlocx[playerdir*2+1],playery+0.5+this.hitlocy[playerdir*2+1];
+  timeout = 0.05;
+}
+if (timeout) {
+  if (!keydown(5))
+    this.wait = 0;
+  else timeout = 0.05;
+}
+```
+
+This script will trigger sword attacks at the same exact locations the client would trigger them.

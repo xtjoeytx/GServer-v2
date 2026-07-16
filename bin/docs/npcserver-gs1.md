@@ -52,10 +52,6 @@ Please review the lists below of implemented events, flags, functions, commands,
       wasshooted
       wasthrown
 
-#### Not implemented
-
-    * washit	(sword)
-
 #### Clientside only
 
     firedonhorse
@@ -64,7 +60,12 @@ Please review the lists below of implemented events, flags, functions, commands,
     mouseup
     mousewheel
     playerendsreading
+    washit (sword)
     weaponfired
+
+Emulating `washit` on the server is too difficult and hacky due to the `replaceani` command.
+
+Instead, see: ["Emulating sword hits"](npcserver.md#emulating-sword-hits) in npcserver.md.
 
 ---
 ## Flags
