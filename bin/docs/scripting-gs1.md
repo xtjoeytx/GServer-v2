@@ -32,7 +32,7 @@ For example:
 if (playerenters && issparringzone) { }
 ```
 
-Reference: GS1 Flags
+Reference: [GS1 Flags](scripting-gs1-flags.md)
 
 ---
 ## Message Codes
