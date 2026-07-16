@@ -4,8 +4,20 @@
 
 This is a reference of all known GS1 commands and how to use them.
 
-Anything that is marked as executing on an NPC will also execute on clientside weapons, which are technically NPCs on the client.
-However, this does NOT include serverside weapon scripts, which only respond to "serverside" action events that explicitly target the weapon.
+---
+## Flow Control and Operators
+
+Flow control elements are used to direct the flow of the script.
+Operators are used to perform math on numbers and make comparisons between them.
+
+For example:
+```
+for (i = 0; i < 10; i++) {
+  // do stuff
+}
+```
+
+Reference: [GS1 Flow Control and Operators](scripting-gs1-flow-control-operators.md)
 
 ---
 ## Events
