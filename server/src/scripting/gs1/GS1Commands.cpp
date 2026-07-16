@@ -1743,70 +1743,70 @@ void fn_putnpc2(GS1Visitor* visitor, std::string_view commandName, const std::ve
 }
 
 // reducebombs amount;
-// Reduces the player's bombs by the specified amount.
+// Reduces the NPC's bombs by the specified amount.
 void fn_reducebombs(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: reducebombs amount");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
 		auto amount = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		if (auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
 		{
 			// clang-format off
-			int16_t bombs = player->account.character.bombs;
+			int16_t bombs = npc->character.bombs;
 			bombs = std::clamp(static_cast<int16_t>(bombs - amount), static_cast<int16_t>(0), static_cast<int16_t>(99));
 			// clang-format on
 
-			player->setPropWith<PlayerProp::BOMBSCOUNT>(SetBy::SERVER, static_cast<uint8_t>(bombs));
+			npc->setPropWith<NPCProp::BOMBS>(SetBy::SERVER, static_cast<uint8_t>(bombs));
 		}
 	}
 }
 
 // reducedarts amount;
-// Reduces the player's darts by the specified amount.
+// Reduces the NPC's darts by the specified amount.
 void fn_reducedarts(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: reducedarts amount");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
 		auto amount = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		if (auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
 		{
 			// clang-format off
-			int16_t arrows = player->account.character.arrows;
+			int16_t arrows = npc->character.arrows;
 			arrows = std::clamp(static_cast<int16_t>(arrows - amount), static_cast<int16_t>(0), static_cast<int16_t>(99));
 			// clang-format on
 
-			player->setPropWith<PlayerProp::ARROWSCOUNT>(SetBy::SERVER, static_cast<uint8_t>(arrows));
+			npc->setPropWith<NPCProp::ARROWS>(SetBy::SERVER, static_cast<uint8_t>(arrows));
 		}
 	}
 }
 
 // reducerupees amount;
-// Reduces the player's rupees by the specified amount.
+// Reduces the NPC's rupees by the specified amount.
 void fn_reducerupees(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: reducerupees amount");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
 		auto amount = DoubleAsIntegralFloor<int64_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		if (auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
 		{
 			// clang-format off
-			int64_t rupees = player->account.character.gralats;
+			int64_t rupees = npc->character.gralats;
 			rupees = std::clamp(static_cast<int64_t>(rupees - amount), static_cast<int64_t>(0), static_cast<int64_t>(std::numeric_limits<uint32_t>::max()));
 			// clang-format on
 
-			player->setPropWith<PlayerProp::RUPEESCOUNT>(SetBy::SERVER, static_cast<uint32_t>(rupees));
+			npc->setPropWith<NPCProp::RUPEES>(SetBy::SERVER, static_cast<uint32_t>(rupees));
 		}
 	}
 }

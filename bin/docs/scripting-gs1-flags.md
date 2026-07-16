@@ -117,7 +117,7 @@ removed: around 1.20<br>
 gserver support: ❌ (won't implement)<br>
 official support: ❌<br>
 
-True when the NPC has taken `>= integer` bombs.
+True when the NPC has `>= integer` bombs.
 
 ## gotbow
 
@@ -135,7 +135,7 @@ removed: around 1.20<br>
 gserver support: ❌ (won't implement)<br>
 official support: ❌<br>
 
-True when the NPC has taken `>= integer` arrows.
+True when the NPC has `>= integer` arrows.
 
 ## gotglove1
 
@@ -144,7 +144,7 @@ removed: 1.38<br>
 gserver support: ✅ 4.0<br>
 official support: ❌<br>
 
-True when the NPC's glovepower is 2.
+True when the NPC's glovepower is 1.
 
 ## gotglove2
 
@@ -153,7 +153,7 @@ removed: 1.38<br>
 gserver support: ✅ 4.0<br>
 official support: ❌<br>
 
-True when the NPC's glovepower is 3.
+True when the NPC's glovepower is 2.
 
 ## gotgoldensword
 
@@ -198,7 +198,7 @@ removed: around 1.20<br>
 gserver support: ❌ (won't implement)<br>
 official support: ❌<br>
 
-True when the NPC has taken `>= integer` gralats.
+True when the NPC has `>= integer` gralats.
 
 ## gotshield
 
@@ -351,11 +351,11 @@ True when the NPC has been hit by another thrown NPC.
 
 > introduced: beta 7<br>
 removed: around 1.20<br>
-gserver support: ❌<br>
+gserver support: ✅ 4.0<br>
 official support: ❌<br>
 
-True when the NPC has been hit by a thrown player.
-This might have been the same as `peltwithnpc`; much older versions of the game would sometimes refer to NPCs as a "person".
+True when the NPC has been hit by another thrown NPC.
+Renamed to `peltwithnpc` when the game renamed "person" to "npc".
 
 ## peltwithplayer
 > introduced: -<br>

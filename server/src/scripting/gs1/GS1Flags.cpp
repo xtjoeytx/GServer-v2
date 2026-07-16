@@ -129,8 +129,8 @@ void setNPCFlags(ScriptEvent& event, GameVariableStore& variableStore, NPCPtr np
 		//
 		variableStore.add("gotbow", npc->character.bowPower == 1);
 		//
-		variableStore.add("gotglove1", npc->character.glovePower == 2);
-		variableStore.add("gotglove2", npc->character.glovePower == 3);
+		variableStore.add("gotglove1", npc->character.glovePower == 1);
+		variableStore.add("gotglove2", npc->character.glovePower == 2);
 	}
 
 	variableStore.add("shotbyplayer", event.type == ScriptEventType::WASSHOT && event.initiator.second == ScriptObjectType::PLAYER);
@@ -149,6 +149,7 @@ void setNPCFlags(ScriptEvent& event, GameVariableStore& variableStore, NPCPtr np
 	variableStore.add("peltwithblackstone", carryType == CarryObjectType::BLACKSTONE);
 	variableStore.add("peltwithbush", carryType == CarryObjectType::BUSH);
 	variableStore.add("peltwithnpc", carryType == CarryObjectType::NPC);
+	variableStore.add("peltwithperson", carryType == CarryObjectType::NPC);
 	variableStore.add("peltwithsign", carryType == CarryObjectType::SIGN);
 	variableStore.add("peltwithstone", carryType == CarryObjectType::STONE);
 	variableStore.add("peltwithvase", carryType == CarryObjectType::VASE);
