@@ -649,15 +649,15 @@ Instead, see: ["Emulating sword hits"](npcserver.md#emulating-sword-hits) in npc
     #8 | #8(index)  [RW]    - Body image (2.x+)                 - readable around (1.34), writeable (1.40)
     #a | #a(index)  [R]     - Player account name               - (1.30)
     #c | #c(index)  [RW]    - Chat text                         - (1.24-1.25)
-    #g | #g(index)  [R]     - Guild name                        - (1.24-1.25)
+    #g | #g(index)  [RW]    - Guild name                        - (1.24-1.25)
     #m | #m(index)  [RW]    - Animation                         - (2.00)
     #n | #n(index)  [RW]    - Nickname                          - (1.24-1.25)
     #N | #N(index)  [R]     - Database NPC name
     #f | #f(index)  [R]     - NPC image                         - non-indexed (1.24-1.25), indexed (2.12)
     #W(index)       [R]     - Weapon image                      - (2.04)
     #w(index)       [R]     - Weapon name                       - (2.04)
-    #p(index)       [RW]    - Action parameter (triggeraction)  - (2.03)
-    #t(index)       [RW]    - Token (tokenize)                  - (2.02)
+    #p(index)       [R]     - Action parameter (triggeraction)  - (2.03)
+    #t(index)       [R]     - Token (tokenize)                  - (2.02)
     #F              [R]     - Level of the player
     #L              [R]     - Level of the source NPC           - (1.24)
     #C0 - #C4(index)  [RW]  - Body colors                       - (1.24-1.25)
@@ -678,7 +678,7 @@ Instead, see: ["Emulating sword hits"](npcserver.md#emulating-sword-hits) in npc
 
 #### Clientside only
 
-    #D | #D(filename)       - Current file being downloaded | The download position of the specified file       - (2.14)
+    #D                      - Current file being downloaded                                                     - (2.14)
     #E                      - The current emoticon character being displayed by the player
     #i(image) | #i(image, x, y, width, height)  - Displays an image or part of an image when used in a sign     - (2.02)
     #k(key_index)           - The description of the specified key (in client language/key assignments)

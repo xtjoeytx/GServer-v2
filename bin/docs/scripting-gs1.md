@@ -57,7 +57,7 @@ For example, this will set the string `mystring` to include the player's account
 setstring mystring,My account is #a;
 ```
 
-Reference: GS1 Message Codes
+Reference: [GS1 Message Codes](scripting-gs1-messagecodes.md)
 
 ---
 ## Functions

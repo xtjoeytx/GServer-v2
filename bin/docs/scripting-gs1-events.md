@@ -24,6 +24,15 @@ executed on: 🤖 🌐 npc, control-npc<br>
 
 Triggered when NPC is created or its script has been changed.  It will only be fired once for an NPC.
 
+## emoticon
+
+> introduced: after 2.10, before 2.17rev1, maybe 2.13rev3?<br>
+gserver support: ❌ (clientside)<br>
+scope: 🧑 client<br>
+executed on: 🤖 npc<br>
+
+Triggered when the player displays an emoticon.
+
 ## exploded
 
 > introduced: beta 5<br>
