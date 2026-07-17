@@ -54,6 +54,20 @@ if (true)
 | `if` `(` _expression_ `)` _statement_ `else` _statement_ | Beta 5 | If the _expression_ is `true`, the first _statement_ is executed. Otherwise, the `else` _statement_ is executed. |
 | `for` `(` _init-op_ `;` _expression_ `;` _incr-op_ `)` _statement_ | around 1.20 | Performs _init-op_ (an assignment statement), then executes the _statement_ if the _expression_ is `true`.  After each time the _statement_ was executed, _incr-op_ is performed (an assigment statement). |
 | `while` `(` _expression_ `)` _statement_ | 1.2.2 | Continuously executes the _statement_ while the _expression_ is `true`. |
+| `with` `(` _expression_ `)` _statement_ | (npcserver) | Executes _statement_ under the context of the object returned from _expression_. |
+
+#### With
+
+Changes the current source object the script is running in relation to.
+
+```
+if (playertouchsme) {
+  playerx = 10;    // Moves the player who touched the NPC.
+  with (getplayer(Bob)) {
+    playerx = 15;  // Moves Bob, not the player who touched the NPC.
+  }
+}
+```
 
 #### Loop control
 
