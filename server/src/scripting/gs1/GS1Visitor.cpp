@@ -305,8 +305,6 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 	switch (type)
 	{
 		case ENUM(StorageType::THIS):
-		case ENUM(StorageType::LOCAL):
-		case ENUM(StorageType::TEMP):
 		case ENUM(StorageType::THISO):
 			store = findGameVariableStoreFromStack(ScriptObjectType::NPC, skip);
 			if (store == nullptr)
@@ -345,6 +343,9 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 			auto level = std::visit(picker, pair.value());
 			return &level->scripting.variables;
 		}
+		case ENUM(StorageType::LOCAL):
+		case ENUM(StorageType::TEMP):
+			return builtInStore;
 	}
 
 	return store;

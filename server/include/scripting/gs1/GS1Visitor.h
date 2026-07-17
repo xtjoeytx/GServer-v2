@@ -291,8 +291,6 @@ inline void GS1Visitor::stripStorageNameFromIdentifier(std::string& identifier) 
 		// Erase the storage prefix from the identifier, leaving only the actual variable name.
 		case ENUM(StorageType::THIS):
 		case ENUM(StorageType::THISO):
-		case ENUM(StorageType::LOCAL):
-		case ENUM(StorageType::TEMP):
 			identifier.erase(0, period + 1);
 			break;
 

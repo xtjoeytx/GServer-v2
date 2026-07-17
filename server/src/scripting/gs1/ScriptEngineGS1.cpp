@@ -191,6 +191,9 @@ GS1ScriptWrapper::GS1ScriptWrapper(std::string_view who, std::string_view script
 	visitor = std::make_shared<GS1Visitor>();
 	program = parser->program();
 
+	// Set our variable lifetime to temporary.
+	variables.defaultLifetime = variables::Lifetime::TEMPORARY;
+
 #ifdef DEBUG
 	//if (who == "MoveTester")
 	if (false)
@@ -270,6 +273,9 @@ bool ScriptEngineGS1::prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, Scr
 
 	// Set the built-in store.
 	wrapper.visitor->builtInStore = &wrapper.variables;
+
+	// Temporarily switch to normal storage for setting our flags.
+	SetAndRestore defaultLifetime{wrapper.variables.defaultLifetime, variables::Lifetime::NORMAL};
 
 	// Set events.
 	setTriggerActionAndCustomEventFlags(event, wrapper.visitor->flagStore);

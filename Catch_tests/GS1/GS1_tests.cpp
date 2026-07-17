@@ -25,6 +25,7 @@
 #include <player/PlayerClient.h>
 #include <player/PlayerRC.h>
 #include <scripting/IScriptEngine.h>
+#include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
 #include <scripting/gs1/GS1Variables.h>
@@ -81,19 +82,6 @@ struct ServerFixture
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static bool execute_script(IScriptEngine& engine, ScriptEvent& event, ScriptObject source, CompiledScriptResult& result, const std::source_location location = std::source_location::current())
-{
-	CAPTURE(location.line());
-	CAPTURE(location.function_name());
-
-	REQUIRE(std::holds_alternative<ScriptExecutionContext>(result));
-
-	auto& context = std::get<ScriptExecutionContext>(result);
-	auto contextPtr = std::shared_ptr<ScriptExecutionContext>(&context, [](ScriptExecutionContext*) {});
-
-	return engine.execute(event, source, contextPtr);
-}
-
 static gs1::GS1ScriptWrapper* get_wrapper(CompiledScriptResult& result, const std::source_location location = std::source_location::current())
 {
 	CAPTURE(location.line());
@@ -107,6 +95,24 @@ static gs1::GS1ScriptWrapper* get_wrapper(CompiledScriptResult& result, const st
 	REQUIRE(wrapper->parser != nullptr);
 
 	return wrapper;
+}
+
+static bool execute_script(IScriptEngine& engine, ScriptEvent& event, ScriptObject source, CompiledScriptResult& result, const std::source_location location = std::source_location::current())
+{
+	CAPTURE(location.line());
+	CAPTURE(location.function_name());
+
+	REQUIRE(std::holds_alternative<ScriptExecutionContext>(result));
+
+	// Force normal lifetime so we don't lose our script results.
+	auto wrapper = get_wrapper(result);
+	REQUIRE(wrapper != nullptr);
+	wrapper->variables.defaultLifetime = variables::Lifetime::NORMAL;
+
+	auto& context = std::get<ScriptExecutionContext>(result);
+	auto contextPtr = std::shared_ptr<ScriptExecutionContext>(&context, [](ScriptExecutionContext*) {});
+
+	return engine.execute(event, source, contextPtr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -254,8 +260,11 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK(store->contains("negativeIndex"));
 
 		auto myarray = store->get("myarray").lock();
+		REQUIRE(myarray != nullptr);
 		auto direct = store->get("direct").lock();
+		REQUIRE(direct != nullptr);
 		auto negativeIndex = store->get("negativeIndex").lock();
+		REQUIRE(negativeIndex != nullptr);
 
 		CHECK(myarray->value.has<std::vector<double>>());
 		CHECK(myarray->value.get<std::vector<double>>().value().get().size() == 5);
@@ -486,16 +495,17 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 
 		auto wrapper = get_wrapper(result);
 		auto npcstore = &server->getNPC(testNPC)->scripting.variables;
-		CHECK(npcstore->getValue<double>("myvar").value_or(0.0) == 1.0);
+		CHECK_THAT(npcstore->getValue<double>("myvar").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 
 		CHECK(execute_script(engine, timeout, source::FromNPC(testNPC), result));
-		CHECK(npcstore->getValue<double>("myvar").value_or(0.0) == 2.0);
+		CHECK_THAT(npcstore->getValue<double>("myvar").value_or(0.0), Catch::Matchers::WithinRel(2.0));
 
 		CHECK(execute_script(engine, timeout, source::FromNPC(testNPC), result));
-		CHECK(npcstore->getValue<double>("myvar").value_or(0.0) == 3.0);
+		CHECK_THAT(npcstore->getValue<double>("myvar").value_or(0.0), Catch::Matchers::WithinRel(3.0));
 
 		CHECK(execute_script(engine, timeout, source::FromNPC(testNPC), result));
-		CHECK_FALSE(npcstore->getValue<double>("myvar").value_or(0.0) == 4.0);
+		auto match = Catch::Matchers::WithinRel(4.0);
+		CHECK_FALSE(match.match(npcstore->getValue<double>("myvar").value_or(0.0)));
 	}
 
 	SECTION("timeout as a variable and not a flag")
@@ -522,7 +532,29 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 
 		auto wrapper = get_wrapper(result);
 		auto npcstore = &server->getNPC(testNPC)->scripting.variables;
-		CHECK(npcstore->getValue<double>("test").value_or(0.0) == 42.0);
+		CHECK_THAT(npcstore->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(42.0));
+	}
+
+	SECTION("reserved constants cannot be used as variables")
+	{
+		const std::string_view script = R"(
+            pi = 3.14;
+		)";
+		auto result = engine.compileScript("test_script", script);
+		REQUIRE_THROWS_AS(execute_script(engine, created, source::FromNPC(testNPC), result), script_error);
+	}
+
+	SECTION("reserved constants allowed in scoped variables")
+	{
+		const std::string_view script = R"(
+            this.pi = 3.14;
+		)";
+		auto result = engine.compileScript("test_script", script);
+		REQUIRE(execute_script(engine, created, source::FromNPC(testNPC), result));
+
+		auto wrapper = get_wrapper(result);
+		auto npcstore = &server->getNPC(testNPC)->scripting.variables;
+		CHECK_THAT(npcstore->getValue<double>("pi").value_or(0.0), Catch::Matchers::WithinRel(3.14));
 	}
 }
 
@@ -684,6 +716,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 
 		player->account.character.chatMessage = "10 playerhearts";
 		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+
 		auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(10.0));
