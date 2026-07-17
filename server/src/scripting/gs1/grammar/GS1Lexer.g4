@@ -906,6 +906,7 @@ fragment BADDY
 	| 'swampsoldier'
 	| 'frog'
 	| 'octopus'
+	| 'spider'
 	| 'goldenwarrior'
 	| 'lizardon'
 	| 'dragon'

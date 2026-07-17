@@ -47,12 +47,18 @@ BaddyType LevelBaddy::getBaddyTypeFromString(const std::string& type)
 	for (unsigned int i = 0; i < BaddyNames.size(); ++i)
 	{
 		if (string::equalsi(BaddyNames[i], type))
+		{
+			// Handle spider.
+			if (i == BADDYTYPE_COUNT)
+				i = ENUM(BaddyType::OCTOPUS);
+
 			return BaddyType(i);
+		}
 	}
 
 	// Try by ID.
 	uint32_t itemId = 0;
-	if (string::toNumber(type, itemId) && itemId < BaddyNames.size())
+	if (string::toNumber(type, itemId) && itemId < BADDYTYPE_COUNT)
 		return BaddyType(itemId);
 
 	// Bad.

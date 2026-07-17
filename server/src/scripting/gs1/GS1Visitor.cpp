@@ -1862,7 +1862,12 @@ std::any GS1Visitor::visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context)
 	if (it == BaddyNames.end())
 		it = BaddyNames.begin();
 
-	return makeGS1ScriptValue(static_cast<double>(std::distance(BaddyNames.begin(), it)));
+	// Specially handle spider.
+	auto id = std::distance(BaddyNames.begin(), it);
+	if (id == BADDYTYPE_COUNT)
+		id = ENUM(BaddyType::OCTOPUS);
+
+	return makeGS1ScriptValue(static_cast<double>(id));
 }
 
 std::any GS1Visitor::visitPrimaryExpression(GS1Parser::PrimaryExpressionContext* context)

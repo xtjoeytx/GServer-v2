@@ -39,11 +39,11 @@ enum class BaddyType : uint8_t
 };
 constexpr size_t BADDYTYPE_COUNT = static_cast<size_t>(BaddyType::COUNT);
 
-/// @brief The names of the baddies.
-inline constexpr std::array<std::string_view, 10> BaddyNames =
+/// @brief The names of the baddies. If using, spider needs to be manually mapped to octopus.
+inline constexpr std::array<std::string_view, 11> BaddyNames =
 {
 	"graysoldier"sv, "bluesoldier"sv, "redsoldier"sv, "shootingsoldier"sv, "swampsoldier"sv,
-	"frog"sv, "octopus"sv, "goldenwarrior"sv, "lizardon"sv, "dragon"sv
+	"frog"sv, "octopus"sv, "goldenwarrior"sv, "lizardon"sv, "dragon"sv, "spider"sv
 };
 
 //----------------------------
