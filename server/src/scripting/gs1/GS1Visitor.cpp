@@ -9,6 +9,7 @@
 #include <functional>
 #include <iterator>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -1624,13 +1625,25 @@ std::any GS1Visitor::visitCompoundIdentifier(GS1Parser::CompoundIdentifierContex
 
 	// Temporarily turn off the flag expectation while we build the final identifier.
 	// This allows things like server.player_#v(playerid) to read from the correct storage area.
-	bool oldExpectingFlag = expectingFlag;
-	expectingFlag = false;
+	SetAndRestore sar{expectingFlag, false};
+
+	bool hasReservedConstant = false;
+	auto reservedConstants = context->RESERVEDCONSTANTS();
 
 	for (auto& tree : context->children)
 	{
-		if (tree->getTreeType() == antlr4::tree::ParseTreeType::TERMINAL)
+		// Check for reserved constants.
+		// Variables like 'pi' are not allowed, but 'this.pi' would be.
+		// So flag that we had a reserved constant so we can check if it is allowed after the full compound identifier is formed.
+		if (std::ranges::contains(reservedConstants, tree))
+		{
+			hasReservedConstant = true;
 			compoundIdentifier.append(tree->getText());
+		}
+		// Just normal text.
+		else if (tree->getTreeType() == antlr4::tree::ParseTreeType::TERMINAL)
+			compoundIdentifier.append(tree->getText());
+		// Something like a message code.
 		else
 		{
 			auto piece = tree->accept(this);
@@ -1638,9 +1651,14 @@ std::any GS1Visitor::visitCompoundIdentifier(GS1Parser::CompoundIdentifierContex
 		}
 	}
 
-	expectingFlag = oldExpectingFlag;
-
 	string::trimMutate(compoundIdentifier);
+
+	if (hasReservedConstant)
+	{
+		if (isReservedConstant(compoundIdentifier))
+			throw script_error(std::format("'{}' is a reserved keyword and cannot be used as an identifier.", compoundIdentifier));
+	}
+
 	return std::make_any<std::string>(std::move(compoundIdentifier));
 }
 
@@ -1732,11 +1750,16 @@ std::any GS1Visitor::visitLiteral(GS1Parser::LiteralContext* context)
 		if (text == "false") return makeGS1ScriptValue(false);
 		return makeGS1ScriptValue(std::stod(text));
 	}
-	else if (context->ALLFEATURES() != nullptr)
-		return makeGS1ScriptValue(static_cast<double>(0xFFFF));
-	else if (context->ALLSTATS() != nullptr)
-		return makeGS1ScriptValue(static_cast<double>(0xFFFF));
-
+	else if (auto reserved = context->RESERVEDCONSTANTS(); reserved != nullptr)
+	{
+		auto text = reserved->getText();
+		if (string::equalsi(text, "allstats"sv))
+			return makeGS1ScriptValue(static_cast<double>(0xFFFF));
+		if (string::equalsi(text, "allfeatures"sv))
+			return makeGS1ScriptValue(static_cast<double>(0xFFFF));
+		if (string::equalsi(text, "pi"sv))
+			return makeGS1ScriptValue(std::numbers::pi);
+	}
 	return makeGS1ScriptValue(0.0);
 }
 

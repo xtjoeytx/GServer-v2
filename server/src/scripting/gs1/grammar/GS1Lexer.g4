@@ -249,6 +249,23 @@ constexpr bool isBuiltInCommand(std::string_view name)
 	}
 	return false;
 }
+
+constexpr std::array<std::string_view, 3> reservedConstants =
+{
+	"pi",
+	"allstats",
+	"allfeatures"
+};
+
+constexpr bool isReservedConstant(std::string_view name)
+{
+	for (const auto& constant : reservedConstants)
+	{
+		if (name.compare(constant) == 0)
+			return true;
+	}
+	return false;
+}
 // --------------------------------------------------------
 }
 
@@ -849,12 +866,10 @@ TOKEN_QUESTION		: '?';
 TOKEN_COLON			: ':';
 TOKEN_PERIOD		: '.';
 
-ALLSTATS
-	: 'allstats'
-	;
-
-ALLFEATURES
-	: 'allfeatures'
+RESERVEDCONSTANTS
+	: 'pi'
+	| 'allstats'
+	| 'allfeatures'
 	;
 
 LINECOMMENT
@@ -1021,7 +1036,8 @@ PARAM_V_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAG
 PARAM_V_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
 PARAM_V_MC_Q            : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
 PARAM_V_LITERAL         : LITERAL -> type(LITERAL);
-PARAM_V_IDENTIFIER      : IDENTIFIER -> type(IDENTIFIER);
+PARAM_V_RESERVEDCONSTANTS : RESERVEDCONSTANTS -> type(RESERVEDCONSTANTS);
+PARAM_V_IDENTIFIER        : IDENTIFIER -> type(IDENTIFIER);
 PARAM_V_TOKEN_BRACKET_LEFT  : TOKEN_BRACKET_LEFT { pushArrayAccess(); } -> type(TOKEN_BRACKET_LEFT);
 PARAM_V_TOKEN_PIPE          : TOKEN_PIPE -> type(TOKEN_PIPE);
 PARAM_V_TOKEN_QUESTION      : TOKEN_QUESTION -> type(TOKEN_QUESTION);

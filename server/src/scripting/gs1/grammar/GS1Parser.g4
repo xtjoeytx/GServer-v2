@@ -228,7 +228,7 @@ identifier_value
 	;
 
 compound_identifier
-	: (IDENTIFIER | messagecode_string | REAL | TOKEN_PERIOD)+								# CompoundIdentifier
+	: (IDENTIFIER | messagecode_string | REAL | RESERVEDCONSTANTS | TOKEN_PERIOD)+			# CompoundIdentifier
 	;
 
 compound_string
@@ -258,9 +258,7 @@ array_literal
 	;
 
 literal_literal
-	: ( LITERAL
-		| ALLFEATURES
-		| ALLSTATS )																		# Literal
+	: (LITERAL | RESERVEDCONSTANTS)															# Literal
 	;
 
 range_literal
