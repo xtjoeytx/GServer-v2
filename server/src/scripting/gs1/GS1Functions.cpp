@@ -422,7 +422,7 @@ GS1ScriptValue fn_findnearestplayers(GS1Visitor* visitor, std::string_view messa
 }
 
 // getangle(dx, dy)
-// Returns the angle in radians from the current position to the position specified by dx and dy.
+// Returns the angle in radians from (0,0) to the position specified by dx and dy.
 GS1ScriptValue fn_getangle(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	/*
@@ -490,18 +490,37 @@ GS1ScriptValue fn_getdir(GS1Visitor* visitor, std::string_view messageCode, cons
 		auto ix = static_cast<int>(std::min(-1.0, std::max(1.0, std::round(dx))));
 		auto iy = static_cast<int>(std::min(-1.0, std::max(1.0, std::round(dy))));
 
-		// Up
-		if (ix == 0 && iy == -1)
-			return 0.0;
-		// Left
-		if (ix == -1 && iy == 0)
-			return 1.0;
-		// Down
-		if (ix == 0 && iy == 1)
-			return 2.0;
-		// Right
-		if (ix == 1 && iy == 0)
+		// Get the angle we are looking.
+		double angle = 0.0;
+		if (!DoubleIsZero(dx) || DoubleIsZero(dy))
+		{
+			// Flip the Y coordinate to match the game's coordinate system.
+			dy = -dy;
+
+			// Get the angle.
+			angle = std::atan2(dy, dx);
+
+			// If the angle is negative, we need to adjust it to be in the range [0, 2π).
+			if (angle < 0.0)
+				angle += std::numbers::pi * 2;
+		}
+
+		constexpr auto angleNE = std::numbers::pi * (1.0 / 4.0);
+		constexpr auto angleNW = std::numbers::pi * (3.0 / 4.0);
+		constexpr auto angleSW = std::numbers::pi + angleNE;
+		constexpr auto angleSE = std::numbers::pi + angleNW;
+
+		// Convert the angle to a direction.
+		// Diagonals are biased towards up (0) and down (2).
+		if (angle < angleNE)
 			return 3.0;
+		if (angle <= angleNW)
+			return 0.0;
+		if (angle < angleSW)
+			return 1.0;
+		if (angle <= angleSE)
+			return 2.0;
+		return 3.0;
 	}
 
 	// Default to looking down.
@@ -876,7 +895,7 @@ GS1ScriptValue fn_onmapx(GS1Visitor* visitor, std::string_view messageCode, cons
 			return static_cast<double>(map->getLevelPosition(level).value_or(MapPosition{0, 0}).x());
 	}
 
-	return 0.0;
+	return -1.0;
 }
 
 // onmapy(level)
@@ -893,7 +912,7 @@ GS1ScriptValue fn_onmapy(GS1Visitor* visitor, std::string_view messageCode, cons
 			return static_cast<double>(map->getLevelPosition(level).value_or(MapPosition{0, 0}).y());
 	}
 
-	return 0.0;
+	return -1.0;
 }
 
 // onwall(x, y)
