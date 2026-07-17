@@ -383,7 +383,10 @@ inline GameValue& GameValue::insert(const StoresInGameValue auto& value)
 	{
 		m_array = value;
 	}
-	else throw std::bad_variant_access();
+	else
+	{
+		throw std::bad_variant_access();
+	}
 
 	return *this;
 }
@@ -418,7 +421,10 @@ inline GameValue& GameValue::insert(StoresInGameValue auto&& value)
 	{
 		m_array = std::move(value);
 	}
-	else throw std::bad_variant_access();
+	else
+	{
+		throw std::bad_variant_access();
+	}
 
 	return *this;
 }
@@ -591,8 +597,9 @@ public:
 inline GameVariable& GameVariable::assign(StoresInGameValue auto&& value, std::optional<int64_t> index)
 {
 	using V = std::remove_cvref_t<decltype(value)>;
+	using G = std::conditional_t<std::same_as<V, ScriptObject>, std::vector<ScriptObject>, V>;
 
-	if (auto funcIt = setters.find(typeid(V).hash_code()); funcIt != setters.end())
+	if (auto funcIt = setters.find(typeid(G).hash_code()); funcIt != setters.end())
 	{
 		GameValueVariantForSetter variantValue = std::ref(value);
 		funcIt->second(variantValue, index.has_value() ? index : this->index);
@@ -609,7 +616,10 @@ inline GameVariable& GameVariable::assign(StoresInGameValue auto&& value, std::o
 			if (wrap.has_value())
 				wrap.value().get() = std::forward<decltype(value)>(value);
 		}
-		else throw std::bad_variant_access();
+		else
+		{
+			throw std::bad_variant_access();
+		}
 	}
 
 	return *this;
@@ -618,8 +628,9 @@ inline GameVariable& GameVariable::assign(StoresInGameValue auto&& value, std::o
 inline GameVariable& GameVariable::set(StoresInGameValue auto& value, std::optional<int64_t> index)
 {
 	using V = std::remove_cvref_t<decltype(value)>;
+	using G = std::conditional_t<std::same_as<V, ScriptObject>, std::vector<ScriptObject>, V>;
 
-	if (auto funcIt = setters.find(typeid(V).hash_code()); funcIt != setters.end())
+	if (auto funcIt = setters.find(typeid(G).hash_code()); funcIt != setters.end())
 	{
 		GameValueVariantForSetter variantValue = std::ref(value);
 		funcIt->second(variantValue, index.has_value() ? index : this->index);
@@ -636,7 +647,10 @@ inline GameVariable& GameVariable::set(StoresInGameValue auto& value, std::optio
 			if (wrap.has_value())
 				wrap.value().get() = value;
 		}
-		else throw std::bad_variant_access();
+		else
+		{
+			throw std::bad_variant_access();
+		}
 	}
 
 	return *this;
@@ -645,26 +659,40 @@ inline GameVariable& GameVariable::set(StoresInGameValue auto& value, std::optio
 template<StoresInGameValue T>
 inline std::optional<std::reference_wrapper<T>> GameVariable::get(std::optional<int64_t> index)
 {
-	if (auto funcIt = getters.find(typeid(T).hash_code()); funcIt != getters.end())
+	using G = std::conditional_t<std::same_as<T, ScriptObject>, std::vector<ScriptObject>, T>;
+
+	if (auto funcIt = getters.find(typeid(G).hash_code()); funcIt != getters.end())
 	{
-		std::optional<std::reference_wrapper<T>> result;
+		std::optional<std::reference_wrapper<T>> ret;
+		std::optional<std::reference_wrapper<G>> result;
 		auto variantValue = funcIt->second(index.has_value() ? index : this->index);
-		if (std::holds_alternative<std::reference_wrapper<T>>(variantValue))
+		if (std::holds_alternative<std::reference_wrapper<G>>(variantValue))
 		{
-			result = std::get<std::reference_wrapper<T>>(variantValue);
+			result = std::get<std::reference_wrapper<G>>(variantValue);
 		}
 		else if (std::holds_alternative<T>(variantValue))
 		{
 			// We did not get a direct reference, so store the index so we can properly set the value back later.
 			this->index = index;
-			value.set(std::get<T>(variantValue));
-			result = value.get<T>();
+			value.set(std::get<G>(variantValue));
+			result = value.get<G>();
 		}
 		else
 		{
 			throw std::bad_variant_access();
 		}
-		return result;
+
+		// Handle ScriptObject.
+		if constexpr (!std::same_as<T, G> && std::same_as<std::vector<T>, G>)
+		{
+			if (!result.value().get().empty())
+				ret = std::reference_wrapper<T>(result.value().get().at(0));
+			return ret;
+		}
+		else
+		{
+			return result;
+		}
 	}
 
 	if (!index.has_value())
@@ -685,7 +713,10 @@ inline std::optional<std::reference_wrapper<T>> GameVariable::get(std::optional<
 
 			return std::ref(arr[index.value()]);
 		}
-		else throw std::bad_variant_access();
+		else
+		{
+			throw std::bad_variant_access();
+		}
 	}
 	return std::nullopt;
 }
@@ -693,23 +724,37 @@ inline std::optional<std::reference_wrapper<T>> GameVariable::get(std::optional<
 template<StoresInGameValue T>
 inline const std::optional<T> GameVariable::getCopy(std::optional<int64_t> index) const
 {
-	if (auto funcIt = getters.find(typeid(T).hash_code()); funcIt != getters.end())
+	using G = std::conditional_t<std::same_as<T, ScriptObject>, std::vector<ScriptObject>, T>;
+
+	if (auto funcIt = getters.find(typeid(G).hash_code()); funcIt != getters.end())
 	{
-		std::optional<T> result;
+		std::optional<T> ret;
+		std::optional<G> result;
 		auto variantValue = funcIt->second(index.has_value() ? index : this->index);
-		if (std::holds_alternative<std::reference_wrapper<T>>(variantValue))
+		if (std::holds_alternative<std::reference_wrapper<G>>(variantValue))
 		{
-			result = std::get<std::reference_wrapper<T>>(variantValue).get();
+			result = std::get<std::reference_wrapper<G>>(variantValue).get();
 		}
-		else if (std::holds_alternative<T>(variantValue))
+		else if (std::holds_alternative<G>(variantValue))
 		{
-			result = std::get<T>(variantValue);
+			result = std::get<G>(variantValue);
 		}
 		else
 		{
 			throw std::bad_variant_access();
 		}
-		return result;
+
+		// Handle ScriptObject.
+		if constexpr (!std::same_as<T, G> && std::same_as<std::vector<T>, G>)
+		{
+			if (!result.value().empty())
+				ret = result.value().at(0);
+			return ret;
+		}
+		else
+		{
+			return result;
+		}
 	}
 
 	if (!index.has_value())
@@ -730,7 +775,10 @@ inline const std::optional<T> GameVariable::getCopy(std::optional<int64_t> index
 
 			return arr[index.value()];
 		}
-		else throw std::bad_variant_access();
+		else
+		{
+			throw std::bad_variant_access();
+		}
 	}
 	return std::nullopt;
 }
@@ -738,20 +786,25 @@ inline const std::optional<T> GameVariable::getCopy(std::optional<int64_t> index
 template<StoresInGameValue T>
 inline bool GameVariable::has() const
 {
-	if (getters.find(typeid(T).hash_code()) != getters.end())
+	using G = std::conditional_t<std::same_as<T, ScriptObject>, std::vector<ScriptObject>, T>;
+
+	if (getters.find(typeid(G).hash_code()) != getters.end())
 		return true;
+
 	return value.has<T>();
 }
 
 template<StoresInGameValue T>
 inline void GameVariable::registerGetter(func_get getter)
 {
+	static_assert(!std::same_as<ScriptObject, T>, "Use std::vector<ScriptObject> instead.");
 	getters[typeid(T).hash_code()] = std::move(getter);
 }
 
 template<StoresInGameValue T>
 inline void GameVariable::registerSetter(func_set setter)
 {
+	static_assert(!std::same_as<ScriptObject, T>, "Use std::vector<ScriptObject> instead.");
 	setters[typeid(T).hash_code()] = std::move(setter);
 }
 

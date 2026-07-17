@@ -1610,6 +1610,13 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 				// Construct a new GameVariable that wraps around the reference.
 				return makeGS1ScriptValue(helpers::wrapReferenceIntoGameVariable(val.value()));
 			}
+			else
+			{
+				// Make a copy and set the index.
+				GameVariable wrap{*variable};
+				wrap.index = fixedIndex;
+				return makeGS1ScriptValue(std::move(wrap));
+			}
 		}
 
 		return makeGS1ScriptValue(std::move(variable));
