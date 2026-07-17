@@ -592,8 +592,8 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, std::string_view message
 	return 0.0;
 }
 
-// getnearestplayers(x, y, flag)
-// Returns an array of all the level players sorted by how close they are to the specified position, containing the optional flag.
+// getnearestplayers(x, y, condition)
+// Returns an array of all the level players sorted by how close they are to the specified position, matching the condition expression.
 GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() < 2)
@@ -605,22 +605,30 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, std::string_view messag
 		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto position = toPixelPosition({x, y});
 
-		std::string flag;
-		if (arguments.size() > 2)
-			flag = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or(""s);
-
-		std::map<double, PlayerID> playersByDistance;
+		std::map<double, size_t> playersByDistance;
 		auto* server = BabyDI::Get<Server>();
+		auto& players = level->getPlayers();
 		for (const auto& id : level->findInRangePlayers(position))
 		{
-			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
+			// Execute the condition.
+			bool skip = false;
+			if (arguments.size() > 2)
 			{
-				if (!flag.empty() && !player->account.variables.contains(flag))
-					continue;
+				visitor->pushSource(source::FromPlayer(id));
+				skip = DoubleIsZero(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+				visitor->popSource();
+			}
+			if (skip) continue;
 
-				TilePosition playerPos = toTilePosition(player->account.character.getGlobalPosition());
-				auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
-				playersByDistance.emplace(distance, id);
+			if (auto iter = std::ranges::find(players, id); iter != std::ranges::end(players))
+			{
+				if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
+				{
+					auto pidx = std::ranges::distance(std::ranges::begin(players), iter);
+					TilePosition playerPos = toTilePosition(player->account.character.getGlobalPosition());
+					auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
+					playersByDistance.emplace(distance, pidx);
+				}
 			}
 		}
 
