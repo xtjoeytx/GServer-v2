@@ -71,7 +71,7 @@ if (!onwall(x,y)) {
 }
 ```
 
-Reference: GS1 Functions
+Reference: [GS1 Functions](scripting-gs1-functions.md)
 
 ---
 ## Commands

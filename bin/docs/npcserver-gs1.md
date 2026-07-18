@@ -15,6 +15,8 @@ Please review the lists below of implemented events, flags, functions, commands,
 ---
 ## Events
 
+Reference: [GS1 Events](scripting-gs1-events.md)
+
     *    - Existed on official, but not serverside.
     [GR] - Never existed on official.
 
@@ -69,6 +71,8 @@ Instead, see: ["Emulating sword hits"](npcserver.md#emulating-sword-hits) in npc
 
 ---
 ## Flags
+
+Reference: [GS1 Flags](scripting-gs1-flags.md)
 
     *    - Existed on official, but not serverside.
     [GR] - Never existed on official.
@@ -558,6 +562,8 @@ Instead, see: ["Emulating sword hits"](npcserver.md#emulating-sword-hits) in npc
 ---
 ## Functions
 
+Reference: [GS1 Functions](scripting-gs1-functions.md)
+
     *    - Existed on official, but not serverside.
     [GR] - Never existed on official.
 
@@ -637,6 +643,8 @@ Instead, see: ["Emulating sword hits"](npcserver.md#emulating-sword-hits) in npc
 
 ---
 ## Message codes
+
+Reference: [GS1 Message Codes](scripting-gs1-messagecodes.md)
 
 #### Implemented
 
