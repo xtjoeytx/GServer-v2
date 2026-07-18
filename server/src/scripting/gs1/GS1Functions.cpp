@@ -1271,7 +1271,7 @@ GS1ScriptValue fn_testbomb(GS1Visitor* visitor, std::string_view messageCode, co
 		for (size_t i = 0; i < bombs.size(); ++i)
 		{
 			auto& bomb = bombs[i];
-			if (bomb.position.x() == x && bomb.position.y() == y)
+			if (inRange(bomb.position.x(), x, x + 2) && inRange(bomb.position.y(), y, y + 2))
 				return static_cast<double>(i);
 		}
 	}
@@ -1294,7 +1294,7 @@ GS1ScriptValue fn_testcompu(GS1Visitor* visitor, std::string_view messageCode, c
 		size_t index = 0;
 		for (const auto& baddy : level->getBaddies())
 		{
-			if (baddy.position.x() == x && baddy.position.y() == y && baddy.mode != BaddyMode::DEAD)
+			if (inRange(baddy.position.x(), x, x + 2) && inRange(baddy.position.y(), y, y + 3) && baddy.mode != BaddyMode::DEAD)
 				return static_cast<double>(index);
 			++index;
 		}
@@ -1319,7 +1319,7 @@ GS1ScriptValue fn_testexplo(GS1Visitor* visitor, std::string_view messageCode, c
 		for (size_t i = 0; i < explos.size(); ++i)
 		{
 			auto& explo = explos[i];
-			if (explo.position.x() == x && explo.position.y() == y)
+			if (inRange(explo.position.x(), x, x + 2) && inRange(explo.position.y(), y, y + 2))
 				return static_cast<double>(i);
 		}
 	}
@@ -1343,7 +1343,7 @@ GS1ScriptValue fn_testhorse(GS1Visitor* visitor, std::string_view messageCode, c
 		for (size_t i = 0; i < horses.size(); ++i)
 		{
 			auto& horse = horses[i];
-			if (horse.position.x() == x && horse.position.y() == y)
+			if (inRange(horse.position.x(), x, x + 2) && inRange(horse.position.y(), y, y + 3))
 				return static_cast<double>(i);
 		}
 	}
@@ -1367,7 +1367,7 @@ GS1ScriptValue fn_testitem(GS1Visitor* visitor, std::string_view messageCode, co
 		for (size_t i = 0; i < items.size(); ++i)
 		{
 			auto& item = items[i];
-			if (item.position.x() == x && item.position.y() == y)
+			if (inRange(item.position.x(), x, x + 2) && inRange(item.position.y(), y, y + 2))
 				return static_cast<double>(i);
 		}
 	}
