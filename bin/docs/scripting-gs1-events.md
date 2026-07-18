@@ -10,8 +10,9 @@ Events with an empty "introduced" field have no known release date since they we
 ## compusdied
 
 > introduced: beta 2<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ???<br>
 executed on: 🤖 npc<br>
 
 Triggers when all of the baddies in the level have died.
@@ -20,8 +21,9 @@ Triggers when all of the baddies in the level have died.
 ## created
 
 > introduced: 1.27<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 🌐 npc, control-npc<br>
 
 Triggered when NPC is created or its script has been changed.  It will only be fired once for an NPC.
@@ -30,8 +32,9 @@ Triggered when NPC is created or its script has been changed.  It will only be f
 ## emoticon
 
 > introduced: after 2.10, before 2.17rev1, maybe 2.13rev3?<br>
-gserver support: ❌ (clientside)<br>
 scope: 🧑 client<br>
+gserver support: ❌ (clientside)<br>
+official support: ❌<br>
 executed on: 🤖 npc<br>
 
 Triggered when the player displays an emoticon.
@@ -40,8 +43,9 @@ Triggered when the player displays an emoticon.
 ## exploded
 
 > introduced: beta 5<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
 Triggered when an NPC is touched by an explosion.
@@ -50,8 +54,9 @@ Triggered when an NPC is touched by an explosion.
 ## firedonhorse
 
 > introduced: 1.34r1<br>
-gserver support: ❌ (clientside)<br>
 scope: 🧑 client<br>
+gserver support: ❌ (clientside)<br>
+official support: ❌<br>
 executed on: ⚔️ weapon npc<br>
 
 Triggered on a weapon NPC when the player fires the weapon while on a horse.
@@ -60,8 +65,9 @@ Triggered on a weapon NPC when the player fires the weapon while on a horse.
 ## initialized
 
 > introduced: -<br>
-gserver support: ✅ 4.0<br>
 scope: 💻 server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 🌐 npc, control-npc<br>
 
 Triggers when a serverside NPC is loaded from the disk on server start.
@@ -70,8 +76,9 @@ Triggers when a serverside NPC is loaded from the disk on server start.
 ## itemdrop
 
 > introduced: -<br>
-gserver support: ✅ 4.0<br>
 scope: 💻 server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🌐 control-npc<br>
 
 Triggers when an item is dropped on the ground, assuming the `itemdropevents` option is enabled in `serveroptions.txt`.
@@ -80,8 +87,9 @@ Triggers when an item is dropped on the ground, assuming the `itemdropevents` op
 ## keypressed
 
 > introduced: 2.14<br>
-gserver support: ❌ (clientside)<br>
 scope: 🧑 client<br>
+gserver support: ❌ (clientside)<br>
+official support: ❌<br>
 executed on: 🤖 npc<br>
 
 Triggered on an NPC when a key is pressed.
@@ -94,8 +102,9 @@ Related message codes:
 ## mousedown
 
 > introduced: 2.14<br>
-gserver support: ❌ (clientside)<br>
 scope: 🧑 client<br>
+gserver support: ❌ (clientside)<br>
+official support: ❌<br>
 executed on: 🤖 npc<br>
 
 Triggered on an NPC when the player presses the mouse button down.
@@ -116,8 +125,9 @@ Related variables:
 ## mouseup
 
 > introduced: 2.14<br>
-gserver support: ❌ (clientside)<br>
 scope: 🧑 client<br>
+gserver support: ❌ (clientside)<br>
+official support: ❌<br>
 executed on: 🤖 npc<br>
 
 Triggered on an NPC when the player releases the mouse button.
@@ -138,8 +148,9 @@ Related variables:
 ## mousewheel
 
 > introduced: 2.14<br>
-gserver support: ❌ (clientside)<br>
 scope: 🧑 client<br>
+gserver support: ❌ (clientside)<br>
+official support: ❌<br>
 executed on: 🤖 npc<br>
 
 Triggered on an NPC when the player scrolls the mouse wheel.
@@ -150,8 +161,9 @@ Related flags: `mousewheeldelta`
 ## movementfinished
 
 > introduced: 2.03<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
 Triggers after all movement commands have finished executing, assuming the 'inform when done' option was set.
@@ -160,8 +172,9 @@ Triggers after all movement commands have finished executing, assuming the 'info
 ## npcwarped
 
 > introduced: -<br>
-gserver support: ✅ 4.0<br>
 scope: 💻 server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
 Triggers when an NPC changes level.
@@ -170,8 +183,9 @@ Triggers when an NPC changes level.
 ## playerchats
 
 > introduced: 1.21<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
 Triggers when a player's chat text changes.
@@ -180,8 +194,9 @@ Triggers when a player's chat text changes.
 ## playerdies
 
 > introduced: 2.01<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ???<br>
 executed on: 🤖 npc<br>
 
 Triggers when a player dies.
@@ -190,8 +205,9 @@ Triggers when a player dies.
 ## playerendsreading
 
 > introduced: beta 3<br>
-gserver support: ❌ (clientside)<br>
 scope: 🧑 client<br>
+gserver support: ❌ (clientside)<br>
+official support: ❌<br>
 executed on: 🤖 npc<br>
 
 Triggers when a player finishes reading a sign.
@@ -200,8 +216,9 @@ Triggers when a player finishes reading a sign.
 ## playerenters
 
 > introduced: beta 2<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
 Triggers when a player enters the level.
@@ -209,10 +226,12 @@ Triggers when a player enters the level.
 ---
 ## playerhurt
 
+#### alt: playerhurted (GR serverside supported)
+
 > introduced: 2.01<br>
-alternative: playerhurted (GR serverside supported)<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ???<br>
 executed on: 🤖 npc<br>
 
 Triggers when a player loses health.
@@ -221,8 +240,9 @@ Triggers when a player loses health.
 ## playerlaysitem
 
 > introduced: beta 2<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ???<br>
 executed on: 🤖 npc<br>
 
 Triggers when a player drops an item on the ground.
@@ -231,8 +251,9 @@ Triggers when a player drops an item on the ground.
 ## playerleaves
 
 > introduced: -<br>
-gserver support: ✅ 4.0<br>
 scope: 💻 server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
 Triggers when a player leaves the level.
@@ -241,8 +262,9 @@ Triggers when a player leaves the level.
 ## playerlogin
 
 > introduced: -<br>
-gserver support: ✅ 4.0<br>
 scope: 💻 server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🌐 control-npc<br>
 
 Triggers when a player logs into the server.
@@ -251,8 +273,9 @@ Triggers when a player logs into the server.
 ## playerlogout
 
 > introduced: -<br>
-gserver support: ✅ 4.0<br>
 scope: 💻 server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🌐 control-npc<br>
 
 Triggers when a player logs out of the server.
@@ -260,10 +283,12 @@ Triggers when a player logs out of the server.
 ---
 ## playertouchsme
 
+#### alt: playertouchesme
+
 > introduced: beta 2<br>
-alternative: playertouchesme<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client and server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
 Triggers on an NPC when a player touches it.
@@ -271,10 +296,12 @@ Triggers on an NPC when a player touches it.
 ---
 ## playertouchsother
 
+#### alt: playertouchesother
+
 > introduced: beta 2<br>
-alternative: playertouchesother<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client and server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
 Triggers on an NPC when a player touches some other NPC.
@@ -283,8 +310,9 @@ Triggers on an NPC when a player touches some other NPC.
 ## pm
 
 > introduced: -<br>
-gserver support: ✅ 4.0<br>
 scope: 💻 server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🌐 control-npc<br>
 
 Triggers when a player sends a private message to the NPC-Server player.
@@ -293,8 +321,9 @@ Triggers when a player sends a private message to the NPC-Server player.
 ## rcchat
 
 > introduced: -<br>
-gserver support: ✅ 4.0<br>
 scope: 💻 server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🌐 control-npc<br>
 
 Triggers whenever an RC player sends an RC chat message starting with `/npc`.
@@ -303,8 +332,9 @@ Triggers whenever an RC player sends an RC chat message starting with `/npc`.
 ## serverlistconnect
 
 > introduced: -<br>
-gserver support: ✅ 4.0<br>
 scope: 💻 server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🌐 control-npc<br>
 
 Triggers when the server makes a connection to the server list.
@@ -313,18 +343,22 @@ Triggers when the server makes a connection to the server list.
 ## timeout
 
 > introduced: beta 5<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 🌐 npc, control-npc<br>
 
 Triggers when a timeout occurs on the NPC.
 
 ---
-## triggeraction events (action...)
+## triggeraction events
+
+`action...`
 
 > introduced: 2.03<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 🌐 npc, control-npc<br>
 
 | event | introduced | description |
@@ -350,8 +384,9 @@ executed on: 🤖 🌐 npc, control-npc<br>
 ## updategani
 
 > introduced: -<br>
-gserver support: ✅ 4.0<br>
 scope: 💻 server<br>
+gserver serverside: ✅<br>
+official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
 Special event that gets triggered by the server when an item-class NPC needs to be updated.
@@ -361,8 +396,9 @@ For example, the item NPCs created from the "gralats" class will receive this ev
 ## washit
 
 > introduced: beta 5<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ???<br>
 executed on: 🤖 npc<br>
 
 Triggers when an NPC is hit by `hitnpc` or `hitobjects`.
@@ -373,8 +409,9 @@ On clientside, this will also trigger by a player's sword attack.
 ## waspelt
 
 > introduced: beta 5<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ???<br>
 executed on: 🤖 npc<br>
 
 Triggers when an NPC is hit by a thrown object.
@@ -382,10 +419,12 @@ Triggers when an NPC is hit by a thrown object.
 ---
 ## wasshot
 
+#### alt: wasshooted
+
 > introduced: beta 5 (wasshooted), beta 7<br>
-alternative: wasshooted<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ???<br>
 executed on: 🤖 npc<br>
 
 Triggers when an NPC was shot with an arrow.
@@ -396,8 +435,9 @@ Does not trigger for `shoot` based projectiles, which trigger `actionprojectile`
 ## wasthrown
 
 > introduced: beta 7<br>
-gserver support: ✅ 4.0<br>
 scope: 🧑 💻 client, server<br>
+gserver serverside: ✅<br>
+official serverside: ❌<br>
 executed on: 🤖 npc<br>
 
 Triggers when an NPC is thrown by a player.
@@ -406,8 +446,9 @@ Triggers when an NPC is thrown by a player.
 ## weaponfired
 
 > introduced: around 1.19 to 1.21<br>
-gserver support: ❌ (clientside)<br>
 scope: 🧑 client<br>
+gserver support: ❌ (clientside)<br>
+official support: ❌<br>
 executed on: ⚔️ weapon npc<br>
 
 Triggered on a weapon NPC when the player fires the weapon.

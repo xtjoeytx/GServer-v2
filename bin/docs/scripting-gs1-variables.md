@@ -11,14 +11,14 @@ The `scope` can be one or both of clientside 🧑 and serverside 💻.
 | Variable | Introduced | Scope | Description |
 | -------- | ---------- | ----- | ----------- |
 | actionplayer | 2.03 | 🧑💻 | The player who initiated the triggeraction event. |
-| paramscount  | 2.03 | 🧑💻 | The number of parameters passed along with the triggeraction event. |
+| paramscount  | 2.03 | 🧑💻 | The number of parameters passed along with the [triggeraction](scripting-gs1-events.md#triggeraction-events) event. |
 
 ---
 ## Tokenize
 
 | Variable | Introduced | Scope | Description |
 | -------- | ---------- | ----- | ----------- |
-| tokenscount | 2.02 | 🧑💻 | The number of `#t()` message code tokens after a call to `tokenize` or `tokenize2`. |
+| tokenscount | 2.02 | 🧑💻 | The number of [#t()](scripting-gs1-messagecodes.md#t) message code tokens after a call to `tokenize` or `tokenize2`. |
 
 ---
 ## Time
@@ -104,9 +104,9 @@ The `picso.png` tileset is paged from top to bottom, left to right.
 | Variable | Introduced | Scope | Description |
 | -------- | ---------- | ----- | ----------- |
 | allplayerscount | (npcserver) | 💻 | The number of players in the `allplayers[]` array. |
-| allplayers[]    | (npcserver) | 💻 | Array of objects for all the players in the server.  Can only be used with the `with()` statement. |
+| allplayers[]    | (npcserver) | 💻 | Array of objects for all the players in the server.  Can only be used with the [with()](scripting-gs1-flow-control-operators.md#flow-control-statements) statement. |
 | playerscount    | around 1.20 | 🧑💻 | The number of players in the `players[]` array. |
-| players[]       | around 1.20 | 💻 | Array of objects for all the players in the level.  Can only be used with the `with()` statement.  In older clients, this included `showcharacter` NPCs. |
+| players[]       | around 1.20 | 💻 | Array of objects for all the players in the level.  Can only be used with the [with()](scripting-gs1-flow-control-operators.md#flow-control-statements) statement. |
 | players[].anistep     | possibly 2.12<br>revealed 2.14 | 🧑 | The frame of the current gani animation. |
 | players[].ap          | 1.30 | 🧑💻 | Alignment points of the player. |
 | players[].attachid    | 2.04 | 🧑💻 | The ID of the NPC the player is attached to. |
@@ -157,7 +157,7 @@ and the resulting number is displayed.
 | Variable | Introduced | Scope | Description |
 | -------- | ---------- | ----- | ----------- |
 | npcscount      | 1.38 | 🧑💻 | The number of NPCs in the `npcs[]` array. |
-| npcs[]         | 1.38 | 💻 | Array of objects for all the NPCs in the level.  Can only be used with the `with()` statement. |
+| npcs[]         | 1.38 | 💻 | Array of objects for all the NPCs in the level.  Can only be used with the [with()](scripting-gs1-flow-control-operators.md#flow-control-statements) statement. |
 | npcs[].anistep     | possibly 2.12<br>revealed 2.14 | 🧑 | The frame of the current gani animation. |
 | npcs[].ap          | 1.30 | 🧑💻 | Alignment points of the NPC. |
 | npcs[].bombs       | beta 5 | 🧑💻 | The number of bombs the NPC has. |
@@ -320,6 +320,9 @@ official support: ❌<br>
 | horses[].bombpower | 1.36 | 🧑 | The power of the bombs the horse has eaten.  Serverside, it is always 0, as the client never sends this data. |
 | horses[].type      | 1.36 | 🧑💻 | The type of horse. `0` is a normal horse, `1` is a boat (a horse placed on water). |
 
+Boats, horses placed on water, only count water tiles as walkable.
+They cannot eat bushes or bombs.
+
 ---
 ## Signs
 
@@ -333,7 +336,7 @@ official support: ❌<br>
 ---
 ## Item names
 
-| Item | Index | Introduced |
+| Item | Integer | Introduced |
 | ---- | ----- | ---------- |
 | greenrupee   | 0 | Beta 2 |
 | bluerupee    | 1 | Beta 2 |
@@ -364,38 +367,38 @@ official support: ❌<br>
 ---
 ## Colors
 
-| Color | Introduced | Integer |
-| ----- | ---------- | ------- |
-| white       | Beta 3 | 0 |
-| yellow      | Beta 3 | 1 |
-| orange      | Beta 3 | 2 |
-| pink        | Beta 3 | 3 |
-| red         | Beta 3 | 4 |
-| darkred     | Beta 3 | 5 |
-| lightgreen  | Beta 3 | 6 |
-| green       | Beta 3 | 7 |
-| darkgreen   | Beta 3 | 8 |
-| lightblue   | Beta 3 | 9 |
-| blue        | Beta 3 | 10 |
-| darkblue    | Beta 3 | 11 |
-| brown       | Beta 3 | 12 |
-| cynober     | Beta 3 | 13 |
-| purple      | Beta 3 | 14 |
-| darkpurple  | Beta 3 | 15 |
-| lightgray   | Beta 3 | 16 |
-| gray        | Beta 3 | 17 |
-| black       | Beta 3 | 18 |
-| transparent | 1.38 | 19 |
+| Color | Integer | Introduced |
+| ----- | ------- | ---------- |
+| white       | 0 | Beta 3 |
+| yellow      | 1 | Beta 3 |
+| orange      | 2 | Beta 3 |
+| pink        | 3 | Beta 3 |
+| red         | 4 | Beta 3 |
+| darkred     | 5 | Beta 3 |
+| lightgreen  | 6 | Beta 3 |
+| green       | 7 | Beta 3 |
+| darkgreen   | 8 | Beta 3 |
+| lightblue   | 9 | Beta 3 |
+| blue        | 10 | Beta 3 |
+| darkblue    | 11 | Beta 3 |
+| brown       | 12 | Beta 3 |
+| cynober     | 13 | Beta 3 |
+| purple      | 14 | Beta 3 |
+| darkpurple  | 15 | Beta 3 |
+| lightgray   | 16 | Beta 3 |
+| gray        | 17 | Beta 3 |
+| black       | 18 | Beta 3 |
+| transparent | 19 | 1.38 |
 
 ---
 ## Directions
 
-| Direction | Introduced | Integer |
-| --------- | ---------- | -------
-| up    | Beta 3 | 0 |
-| left  | Beta 3 | 1 |
-| down  | Beta 3 | 2 |
-| right | Beta 3 | 3 |
+| Direction | Integer | Introduced |
+| --------- | ------- | ---------- |
+| up    | 0 | Beta 3 |
+| left  | 1 | Beta 3 |
+| down  | 2 | Beta 3 |
+| right | 3 | Beta 3 |
 
 ---
 ## Baddy names

@@ -7,72 +7,119 @@ If a function lacks a `scope` tag, it is supported both clientside 🧑 and serv
 If it is known that official does not support this function serverside, it will be marked as such.
 
 ---
-## abs(value)
+## abs
+
+`abs(value)`
 
 > introduced: around 1.20<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the absolute value of the given value.
 
 ---
-## aindexof(value, array)
+## aindexof
+
+`aindexof(value, array)`
 
 > introduced: 2.16<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the index in the array where the value can be found.
 
 ---
-## arctan(value)
+## arctan
+
+`arctan(value)`
 
 > introduced: around 1.20<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the mathematical arctangent of the given value.
 
 ---
-## arraylen(array)
+## arraylen
+
+`arraylen(array)`
 
 > introduced: around 1.20<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns how many elements the array contains.
 
 ---
-## ascii(character)
+## ascii
+
+`ascii(character)`
 
 > introduced: 2.10<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the ASCII code of the given character.
 
 `ascii(A)` returns `65`.
 
 ---
-## base64decode(string)
+## base64decode
+
+`base64decode(string)`
 
 > introduced: ???<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Decodes a base64 encoded string.
 
 ---
-## base64encode(string)
+## base64encode
+
+`base64encode(string)`
 
 > introduced: ???<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Encodes the given string in base64 encoding.
 
 ---
-## cos(value)
+## cos
+
+`cos(value)`
 
 > introduced: around 1.20<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the mathematical cosine of the given value.
 
 ---
-## exp(value)
+## exp
+
+`exp(value)`
 
 > introduced: ???<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Computes mathematical `e^value`.
 
 ---
-## findnearestplayer(x, y)
+## findnearestplayer
+
+`findnearestplayer(x, y)`
 
 > introduced: 5.00rev6<br>
 scope: 💻 server<br>
@@ -88,36 +135,45 @@ It is unknown if official supported this function serverside, either.
 This gserver _DOES_ support this function serverside, and is used like so:
 
 ```
-with (findnearestplayer(x+1.5,y+2)) {
+with (findnearestplayer(x+1.5, y+2)) {
   // ...
 }
 ```
 
 ---
-## getangle(dx, dy)
+## getangle
+
+`getangle(dx, dy)`
 
 > introduced: 2.10<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
-Returns the angle in radians from (0,0) to the position specified by dx and dy.
+Returns the angle in radians from (0, 0) to the position specified by dx and dy.
 
 | Input | Output |
 | ----- | ------ |
-| ( 0,-1) up | 1.570796 (pi/2) |
-| (-1, 0) left | 3.141593 (pi) |
-| ( 0, 1) down | 4.712389 (3pi/2) |
-| ( 1, 0) right | 0.000000 (0) |
+| ( 0, -1) up    | 1.570796 (pi/2) |
+| (-1,  0) left  | 3.141593 (pi) |
+| ( 0,  1) down  | 4.712389 (3pi/2) |
+| ( 1,  0) right | 0.000000 (0) |
 
 ---
-## getareanpcs(x, y, width, height)
+## getareanpcs
+
+`getareanpcs(x, y, width, height)`
 
 > introduced: (npcserver)<br>
 scope: 💻 server<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns an array with the indices of all NPCs contained within the search region.
 
 The NPCs can then be accessed with:
 ```
-this.npclist = getareanpcs(10,10,5,5);
+this.npclist = getareanpcs(10, 10, 5, 5);
 for (i=0; i<arraylen(this.npclist); i++) {
   npcid = this.npclist[i];
   with (npcs[npcid]) {
@@ -127,7 +183,9 @@ for (i=0; i<arraylen(this.npclist); i++) {
 ```
 
 ---
-## getdir(dx, dy)
+## getdir
+
+`getdir(dx, dy)`
 
 > introduced: 2.16<br>
 official serverside: ???<br>
@@ -138,9 +196,9 @@ Diagonals are biased to looking up (0) and down (2).
 
 | Input | Output |
 | ----- | ------ |
-| ( 0,-1) up | 0 |
-| (-1, 0) left | 1 |
-| ( 0, 1) down | 2 |
+| ( 0, -1) up   | 0 |
+| (-1, 0) left  | 1 |
+| ( 0, 1) down  | 2 |
 | ( 1, 0) right | 3 |
 | ( 0.5,  0.5) SE | 2 |
 | ( 0.5, -0.5) NE | 0 |
@@ -149,13 +207,16 @@ Diagonals are biased to looking up (0) and down (2).
 | ( 0.5,  0.4) SWW | 3 |
 
 ---
-## getflagkeys(prefix)
+## getflagkeys
+
+`getflagkeys(prefix)`
 
 > introduced: possibly 2.12<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
- ---Searches for all flags in the format of prefix
- ---### and returns an array of all the
- ###.
+Searches for all flags in the format of prefix### and returns an array of all the ###.
 
 For example, assuming you have the flags `bankaccount_0`, `bankaccount_1`, `bankaccount_3`, etc:
 
@@ -165,9 +226,14 @@ this.acc = getflagkeys(bankaccount_);
 ```
 
 ---
-## getnearestplayer(x, y)
+## getnearestplayer
+
+`getnearestplayer(x, y)`
 
 > introduced: 5.00rev6<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Finds the player nearest to the specified level tile position and returns their index in the `players[]` array.
 
@@ -179,9 +245,14 @@ with (players[this.pid]) {
 ```
 
 ---
-## getnearestplayers(x, y, condition)
+## getnearestplayers
+
+`getnearestplayers(x, y, condition)`
 
 > introduced: 5.00rev6<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns an array of all the level players sorted by how close they are to the specified position.
 
@@ -192,7 +263,7 @@ If `false`, the player will be excluded from the results.
 ```
 // All players, except me, who own a dog.
 pid = playerid;
-dogowners = getnearestplayers(x+1.5, y+2, playerid != pid && strequals(#s(client.pet),dog));
+dogowners = getnearestplayers(x+1.5, y+2, playerid != pid && strequals(#s(client.pet), dog));
 for (i = 0; i < arraylen(dogowners); i++) {
   idx = dogowners[i];
   with (players[idx]) {
@@ -202,10 +273,14 @@ for (i = 0; i < arraylen(dogowners); i++) {
 ```
 
 ---
-## getnpc(name)
+## getnpc
+
+`getnpc(name)`
 
 > introduced: (npcserver)<br>
 scope: 💻 server<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns a database NPC with the given name.
 The return value is an object, so it must be used in conjunction with the `with()` statement.
@@ -217,10 +292,14 @@ with (getnpc(Bank Teller)) {
 ```
 
 ---
-## getplayer(account)
+## getplayer
+
+`getplayer(account)`
 
 > introduced: (npcserver)<br>
 scope: 💻 server<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the player associated with the given account name.
 The reeturn value is an object, so it must be used in conjunction with the `with()` statement.
@@ -232,17 +311,26 @@ with (getplayer(#c)) {
 ```
 
 ---
-## getz(x, y)
+## getz
+
+`getz(x, y)`
 
 > introduced: possibly 2.12, revealed ???<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the Z height at the specified level tile position.
 
 ---
-## hasright(rw,path)
+## hasright
+
+`hasright(rw, path)`
 
 > introduced: (npcserver)<br>
 scope: 💻 server<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Checks if a player has permissions to an RC File Browser file or folder.
 
@@ -257,51 +345,74 @@ FOLDERRIGHT rw world/heads/*
 
 Then the following would all be `true`:
 ```
-hasright(r,world/heads/)
-hasright(w,world/heads/head123.png)
-hasright(rw,world/heads/head)
+hasright(r, world/heads/)
+hasright(w, world/heads/head123.png)
+hasright(rw, world/heads/head)
 ```
 
 ---
-## hasweapon(name)
+## hasweapon
+
+`hasweapon(name)`
 
 > introduced: 1.37<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Checks if the player has a weapon with the given name.
 
 ---
-## imgheight(file)
+## imgheight
+
+`imgheight(file)`
 
 > introduced: 2.13<br>
 scope: 🧑 client<br>
+gs2emu serverside: ❌<br>
+official serverside: ❌<br>
 
 Returns the height of the specified image.
 
 ---
-## imgwidth(file)
+## imgwidth
+
+`imgwidth(file)`
 
 > introduced: 2.13<br>
 scope: 🧑 client<br>
+gs2emu serverside: ❌<br>
+official serverside: ❌<br>
 
 Returns the width of the specified image.
 
 ---
-## indexof(substring, string)
+## indexof
+
+`indexof(substring, string)`
 
 > introduced: 2.02<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the position in which `string` can be found in `substring`.
 
 ```
-setstring test,thisisatest;
-pos = indexof(#s(test),isa);
+setstring test, thisisatest;
+pos = indexof(#s(test), isa);
 // pos == 4
 ```
 
 ---
-## int(value)
+## int
+
+`int(value)`
 
 > introduced: around 1.20<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Removes the floating point part of a number.  Does not round.
 
@@ -312,7 +423,9 @@ int(2.954) == 2
 ```
 
 ---
-## keycode(character)
+## keycode
+
+`keycode(character)`
 
 > introduced: 2.14<br>
 official serverside: ???<br>
@@ -326,10 +439,14 @@ keycode(3) == 51
 ```
 
 ---
-## keydown(value)
+## keydown
+
+`keydown(value)`
 
 > introduced: 1.39rev2<br>
 scope: 🧑 client<br>
+gs2emu serverside: ❌<br>
+official serverside: ❌<br>
 
 Returns `true` if the specified key is being pressed.
 `Value` is a number from 0 through 10 and corresponds to one of the game's default control functions.
@@ -353,10 +470,14 @@ if (keypressed && keydown(5)) { }
 ```
 
 ---
-## keydown2(keycode, allowmodifiers)
+## keydown2
+
+`keydown2(keycode, allowmodifiers)`
 
 > introduced: 2.14<br>
 scope: 🧑 client<br>
+gs2emu serverside: ❌<br>
+official serverside: ❌<br>
 
 Returns true if the specified key is being pressed.
 
@@ -371,68 +492,103 @@ isfalse = keydown2(keycode(A), false);
 ```
 
 ---
-## lindexof(string, list)
+## lindexof
+
+`lindexof(string, list)`
 
 > introduced: 2.10<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the index in which `string` can be found in `list`, a CSV formatted string list.
 Returns `-1` if not found.
 
 ```
-setstring test,Testing;
-addstring test,More;
-addstring test,Stuff;
-isFound = lindexof(#s(test),More);   // 1
-isNotFound = lindexof(#s(test),Hey); // -1
+setstring test, Testing;
+addstring test, More;
+addstring test, Stuff;
+isFound = lindexof(#s(test), More);   // 1
+isNotFound = lindexof(#s(test), Hey); // -1
 ```
 
 ---
-## log(base, value)
+## log
+
+`log(base, value)`
 
 > introduced: 2.16<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Inverse of the mathematical power function (`^` operator).
 Can be used to determine what exponent the `base` must be powered by to reach `value`.
 ```
-base^log(base,val) == val
-log(3,9) == 2
+base^log(base, val) == val
+log(3, 9) == 2
 2^3 == 9
 ```
 
 ---
-## max(value1, value2)
+## max
+
+`max(value1, value2)`
 
 > introduced: 2.16<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the maximum of two values.
 
 ---
-## min(value1, value2)
+## min
+
+`min(value1, value2)`
 
 > introduced: 2.16<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the minimum of two values.
 
 ---
-## onmapx(level)
+## onmapx
+
+`onmapx(level)`
 
 > introduced: 2.03<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the X position of the level on the currently set bigmap.
 Returns `-1` if the level is not on a bigmap.
 
 ---
-## onmapy(level)
+## onmapy
+
+`onmapy(level)`
 
 > introduced: 2.03<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the Y position of the level on the currently set bigmap.
 Returns `-1` if the level is not on a bigmap.
 
 ---
-## onwall(x, y)
+## onwall
+
+`onwall(x, y)`
 
 > introduced: beta 5<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns true if the specified coordinate is blocking.
 
@@ -442,91 +598,127 @@ It tests:
 - If a player's collision bounding box blocks the location (`noplayerkilling` levels disable player blocking).
 
 ---
-## onwall2(x, y, width, height)
+## onwall2
+
+`onwall2(x, y, width, height)`
 
 > introduced: 2.30<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Performs `onwall()` tests across a region.
 
 ---
-## onwater(x, y)
+## onwater
+
+`onwater(x, y)`
 
 > introduced: 1.38<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns true if the specified coordinate is a water tile.
 
 ---
-## onwater2(x, y, width, height)
+## onwater2
+
+`onwater2(x, y, width, height)`
 
 > introduced: 2.30<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Performs `onwater()` tests across a region.
 
 ---
-## passwordmatches(hashed, string)
+## passwordmatches
+
+`passwordmatches(hashed, string)`
 
 > introduced: (npcserver)<br>
 scope: 💻 server<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Checks if the given `string`, once password hashed, matches `hashed`.
 
 Used in conjunction with the `#E()` message code.
 
 ```
-setstring hashed,#E(hunter2);
-if (playerchats && passwordmatches(#s(hashed),#c)) {
-  setstring #c,*******;
+setstring hashed, #E(hunter2);
+if (playerchats && passwordmatches(#s(hashed), #c)) {
+  setstring #c, *******;
 }
 ```
 
 ---
-## playersays(index, text)
+## playersays
+
+`playersays(index, text)`
 
 > introduced: 1.21<br>
+scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 
 Checks if the player at the given `index` in the level has a chat message equal to `text`.
 
-Equivalent to: `strequals(#c(index),text)`
+Equivalent to: `strequals(#c(index), text)`
 
 ---
-## playersays(text)
+## playersays
+
+`playersays(text)`
 
 > introduced: 1.21<br>
+scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 
 Checks if the player has a chat message equal to `text`.
 
-Equivalent to: `strequals(#c,text)`
+Equivalent to: `strequals(#c, text)`
 
 ---
-## playersays2(index, text)
+## playersays2
+
+`playersays2(index, text)`
 
 > introduced: 1.21<br>
+scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 
 Checks if the player at the given `index` in the level has a chat message that contains `text`.
 
-Equivalent to: `strcontains(text,#c(index))`
+Equivalent to: `strcontains(text, #c(index))`
 
 ---
-## playersays2(text)
+## playersays2
+
+`playersays2(text)`
 
 > introduced: 1.21<br>
+scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 
 Checks if the player has a chat message that contains `text`.
 
-Equivalent to: `strcontains(text,#c)`
+Equivalent to: `strcontains(text, #c)`
 
 ---
-## random(min, max)
+## random
+
+`random(min, max)`
 
 > introduced: beta 5<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Produces a random value in the range:
 ```
@@ -534,92 +726,138 @@ min <= value < max
 ```
 
 ---
-## sarraylen(list)
+## sarraylen
+
+`sarraylen(list)`
 
 > introduced: 2.10<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the number of elements inside a CSV formatted string list.
 
 ```
-setstring test,This,"is,a",test;
+setstring test, This, "is, a", test;
 num = sarraylen(test); // 3
 ```
 
 ---
-## screenx(x, y)
+## screenx
+
+`screenx(x, y)`
 
 > introduced: 2.16<br>
 scope: 🧑 client<br>
+gs2emu serverside: ❌<br>
+official serverside: ❌<br>
 
 Converts the given level tile position to screen coordinates (pixels from top-left corner of the game window) and returns the X pixel position.
 
 Requires both X and Y tile positions to work with 3D terrain.
 
 ---
-## screeny(x, y)
+## screeny
+
+`screeny(x, y)`
 
 > introduced: 2.16<br>
 scope: 🧑 client<br>
+gs2emu serverside: ❌<br>
+official serverside: ❌<br>
 
 Converts the given level tile position to screen coordinates (pixels from top-left corner of the game window) and returns the Y pixel position.
 
 Requires both X and Y tile positions to work with 3D terrain.
 
 ---
-## sin(value)
+## sin
+
+`sin(value)`
 
 > introduced: around 1.20<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Computes the mathematical sine of the given `value`.
 
 ---
-## startswith(prefix, string)
+## startswith
+
+`startswith(prefix, string)`
 
 > introduced: 2.02<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Checks if `string` starts with `prefix`, in a case-insensitive manner.
 
 The order of the parameters is swapped compared to `strcontains`, which can be confusing.
 
 ---
-## strcontains(string, substring)
+## strcontains
+
+`strcontains(string, substring)`
 
 > introduced: 1.27<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Checks if `string` contains `substring`, in a case-insensitive manner.
 
 ---
-## strequals(string1, string2)
+## strequals
+
+`strequals(string1, string2)`
 
 > introduced: 1.24<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Checks if `string1` is equal to `string2`, in a case-insensitive manner.
 
 ---
-## strlen(string)
+## strlen
+
+`strlen(string)`
 
 > introduced: 2.02<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the number of characters in `string`.
 
 ---
-## strtofloat(string)
+## strtofloat
+
+`strtofloat(string)`
 
 > introduced: 1.27<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Converts `string` into a number.
 
 ```
-if (playerchats && startswith(/x,#c)) {
+if (playerchats && startswith(/x, #c)) {
   tokenize #c;
   playerx = strtofloat(#t(1));
 }
 ```
 
 ---
-## testbomb(x, y)
+## testbomb
+
+`testbomb(x, y)`
 
 > introduced: 1.38<br>
+scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 
@@ -628,9 +866,12 @@ Returns the index of the bomb at the level tile position, or `-1` if no bomb was
 The index can be used with the `bombs[]` array.
 
 ---
-## testcompu(x, y)
+## testcompu
+
+`testcompu(x, y)`
 
 > introduced: 1.38<br>
+scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 
@@ -639,9 +880,12 @@ Returns the index of the baddy at the level tile position, or `-1` if no baddy w
 The index can be used with the `compus[]` array.
 
 ---
-## testexplo(x, y)
+## testexplo
+
+`testexplo(x, y)`
 
 > introduced: 1.38<br>
+scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 
@@ -652,9 +896,12 @@ The index can be used with the `explos[]` array.
 This command tests explosion tiles.  When a standard bomb explodes, it creates five 2x2 explosion tiles, not one explosion.
 
 ---
-## testhorse(x, y)
+## testhorse
+
+`testhorse(x, y)`
 
 > introduced: 1.38<br>
+scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 
@@ -665,9 +912,12 @@ The index can be used with the `horses[]` array.
 Only tests horses in the level.  If a player mounts a horse, it is removed from the level, and thus it is not detected.
 
 ---
-## testitem(x, y)
+## testitem
+
+`testitem(x, y)`
 
 > introduced: 1.38<br>
+scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 
@@ -676,9 +926,14 @@ Returns the index of the item at the level tile position, or `-1` if no item is 
 The index can be used with the `items[]` array.
 
 ---
-## testnpc(x, y)
+## testnpc
+
+`testnpc(x, y)`
 
 > introduced: 1.38<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the index of the NPC at the level tile position, or `-1` if no NPC is found.
 The NPC must be visible and have a collision boundary to be discovered by this function.
@@ -686,9 +941,14 @@ The NPC must be visible and have a collision boundary to be discovered by this f
 The index can be used with the `npcs[]` array.
 
 ---
-## testplayer(x, y)
+## testplayer
+
+`testplayer(x, y)`
 
 > introduced: 1.38<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 It returns the returns the index of the player at the level tile position.
 
@@ -705,40 +965,63 @@ Players in `noplayerkilling` levels or are currently paused will not be discover
 The index can be used with the `players[]` array.
 
 ---
-## testsign(x, y)
+## testsign
+
+`testsign(x, y)`
 
 > introduced: 1.39rev2<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the index of the sign at the level tile position, or `-1` if no sign is found.
 
 ---
-## textheight(zoom, font, style)
+## textheight
+
+`textheight(zoom, font, style)`
 
 > introduced: 2.20<br>
 scope: 🧑 client<br>
+gs2emu serverside: ❌<br>
+official serverside: ❌<br>
 
 Returns the number of vertical pixels required to draw text in the given `zoom` level, `font`, and `style`.
 
 ---
-## textwidth(zoom, font, style, text)
+## textwidth
+
+`textwidth(zoom, font, style, text)`
 
 > introduced: 2.19<br>
 scope: 🧑 client<br>
+gs2emu serverside: ❌<br>
+official serverside: ❌<br>
 
 Returns the number of horizontal pixels required to draw the given `text` string in the given `zoom` level, `font`, and `style`.
 
 ---
-## tiletype(x, y)
+## tiletype
+
+`tiletype(x, y)`
 
 > introduced: possibly 2.10 to 2.12, revealed ???<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the type of tile that is at the specified level tile position.
 Any NPCs at the location that have used `setshape2` to change the types of tiles at that position will also be discovered by this function.
 
 ---
-## vecx(direction)
+## vecx
+
+`vecx(direction)`
 
 > introduced: 2.03<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the X velocity an NPC will travel for the given `direction`.
 
@@ -750,9 +1033,14 @@ Returns the X velocity an NPC will travel for the given `direction`.
 | 3 (right) |  1 |
 
 ---
-## vecy(dir)
+## vecy
+
+`vecy(dir)`
 
 > introduced: 2.03<br>
+scope: 🧑💻 clientside, serverside<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 Returns the Y velocity an NPC will travel for the given `direction`.
 
@@ -764,20 +1052,28 @@ Returns the Y velocity an NPC will travel for the given `direction`.
 | 3 (right) |  0 |
 
 ---
-## worldx(x, y)
+## worldx
+
+`worldx(x, y)`
 
 > introduced: 2.16<br>
 scope: 🧑 client<br>
+gs2emu serverside: ❌<br>
+official serverside: ❌<br>
 
 Converts the given screen coordinates (pixels from top-left corner of the game window) to a level position and returns the level tile X position.
 
 Requires both X and Y tile positions to work with 3D terrain.
 
 ---
-## worldy(x, y)
+## worldy
+
+`worldy(x, y)`
 
 > introduced: 2.16<br>
 scope: 🧑 client<br>
+gs2emu serverside: ❌<br>
+official serverside: ❌<br>
 
 Converts the given screen coordinates (pixels from top-left corner of the game window) to a level position and returns the level tile Y position.
 
