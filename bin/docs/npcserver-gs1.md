@@ -148,6 +148,8 @@ Reference: [GS1 Flags](scripting-gs1-flags.md)
 ---
 ## Variables
 
+Reference: [GS1 Variables](scripting-gs1-variables.md)
+
     *    - Existed on official, but not serverside.
     [GR] - Never existed on official.
 
