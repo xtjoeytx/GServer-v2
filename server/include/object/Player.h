@@ -10,8 +10,8 @@
 #include <ranges>
 #include <set>
 #include <stdexcept>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -25,13 +25,14 @@
 #include <IUtil.h>
 
 #include <Account.h>
+#include <limits>
 #include <network/IPacketHandler.h>
 #include <player/PlayerProps.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
-#include <utilities/generator/IdGenerator.h>
 #include <utilities/PropertySerializers.h>
+#include <utilities/generator/IdGenerator.h>
 
 using namespace preagonal::props;
 
@@ -102,8 +103,8 @@ enum class GameFeatureFlags : uint32_t
 	OPEN_PROFILE = 0x0800,
 	EMOTICONS = 0x1000,
 	LEVELSNAPSHOTS = 0x2000, // ALT+5
-	LEVELZOOMING = 0x4000, // ALT+8/9
-	LOGFRAME = 0x8000, // F2 (savelog() / echo())
+	LEVELZOOMING = 0x4000,   // ALT+8/9
+	LOGFRAME = 0x8000,       // F2 (savelog() / echo())
 	ALLFEATURES = 0xFFFF
 };
 
@@ -186,6 +187,8 @@ public:
 	NPCID getCarryNPC() const { return m_carryNPC; }
 	NPCID getAttachedNPC() const { return m_attachNPC; }
 	uint8_t getCarrySprite() const { return m_carrySprite; }
+	[[inline]] bool isPaused() const noexcept;
+	bool isInNoPkLevel() const noexcept;
 	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
 	[[inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
 	[[inline]] PixelPosition getGlobalPosition() const noexcept;
@@ -209,7 +212,7 @@ public:
 public:
 	/// @brief Records the current modification time of all properties.
 	[[inline]] void recordCurrentPropModTime();
-	
+
 	/// @brief Constructs a PropertyContainer for PlayerProp P with the given values.
 	/// @tparam P The PlayerProp that determines the type of container to construct.
 	/// @param ...values The values to pass to the container's constructor.
@@ -258,7 +261,8 @@ public:
 
 	/// @brief Sends the results of setting a property across the network.
 	/// @param ...results A list of SetResults results to send.
-	template<typename... Results> requires AllSameAs<SetResults, Results...>
+	template<typename... Results>
+		requires AllSameAs<SetResults, Results...>
 	[[inline]] void sendPropsFromResults(const Results&... results);
 
 	/// @brief Sends the results of setting properties across the network.
@@ -473,11 +477,11 @@ protected:
 	PlayerListCategory m_playerListCategory = PlayerListCategory::PLAYERLIST;
 	NPCID m_attachNPC = 0;
 	NPCID m_carryNPC = 0;
-	std::array<uint8_t, 5> m_effectColors{ 0, 0, 0, 0, 0 };
+	std::array<uint8_t, 5> m_effectColors{0, 0, 0, 0, 0};
 
 	std::vector<CString> m_privateMessageServerList;
 	std::unordered_map<PlayerID, std::shared_ptr<Player>> m_externalPlayers;
-	IdGenerator<PlayerID> m_externalPlayerIdGenerator{ PLAYERID_GEN_EXTERNAL };
+	IdGenerator<PlayerID> m_externalPlayerIdGenerator{PLAYERID_GEN_EXTERNAL};
 
 	bool m_loaded = false;
 	bool m_isExternal = false;
@@ -501,10 +505,12 @@ concept DerivedFromPlayer = std::is_base_of_v<Player, T>;
 template<DerivedFromPlayer P>
 auto players_of_type(const std::unordered_map<PlayerID, PlayerPtr>& range)
 {
+	// clang-format off
 	using newpair = std::pair<const PlayerID, std::shared_ptr<P>>;
 	return range
 		| std::views::filter([](auto& kvp) { return dynamic_cast<P*>(kvp.second.get()) != nullptr; })
 		| std::views::transform([](auto& kvp) { return newpair(kvp.first, std::dynamic_pointer_cast<P>(kvp.second)); });
+	// clang-format on
 }
 
 inline bool Player::isLoggedIn() const
@@ -522,14 +528,23 @@ inline void Player::setId(PlayerID pId)
 	m_id = pId;
 }
 
+inline bool Player::isPaused() const noexcept
+{
+	return (account.status & PLSTATUS_PAUSED);
+}
+
 inline PixelRectangleArea Player::getBoundingBox() const noexcept
 {
-	return { getGlobalPosition(), { 48, 48, 48 } };
+	return {getGlobalPosition(), {48, 48, 48}};
 }
 
 inline PixelRectangleArea Player::getCollisionBoundingBox() const noexcept
 {
-	return { getGlobalPosition().translate(8, 16), { 32, 32, 48 }};
+	// Check if we are in a state that can't be collided with.
+	if (isPaused() || isInNoPkLevel())
+		return {{std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::min(), 0}, {0, 0, 0}};
+
+	return {getGlobalPosition().translate(8, 16), {32, 32, 48}};
 }
 
 inline PixelPosition Player::getGlobalPosition() const noexcept
@@ -555,12 +570,12 @@ inline TilePosition Player::getTilePosition() const noexcept
 
 inline PixelPosition Player::getSubLevelOrigin() const noexcept
 {
-	return PixelPosition{ account.character.mapX * 1024, account.character.mapY * 1024, 0 };
+	return PixelPosition{account.character.mapX * 1024, account.character.mapY * 1024, 0};
 }
 
 inline MapPosition Player::getMapPosition() const noexcept
 {
-	return MapPosition{ account.character.mapX, account.character.mapY, 0 };
+	return MapPosition{account.character.mapX, account.character.mapY, 0};
 }
 
 inline bool Player::inChatChannel(const std::string& channel) const
@@ -595,90 +610,90 @@ inline void Player::recordCurrentPropModTime()
 //----------------------------
 
 // Defines the mapping of PlayerProp to PropertyContainer.
-#define FOR_LIST_OF_PLAYER_PROPS(DO) \
-	DO(PlayerProp::NICKNAME,	PropertyString,				account.character.nickName) \
-	DO(PlayerProp::MAXPOWER,	PropertyNumeric<GBYTE1>,	account.maxHitpoints) \
-	DO(PlayerProp::CURPOWER,	PropertyNumeric<GBYTE1>,	account.character.hitpointsInHalves) \
-	DO(PlayerProp::RUPEESCOUNT,	PropertyNumeric<GBYTE3>,	account.character.gralats) \
-	DO(PlayerProp::ARROWSCOUNT,	PropertyNumeric<GBYTE1>,	account.character.arrows) \
-	DO(PlayerProp::BOMBSCOUNT,	PropertyNumeric<GBYTE1>,	account.character.bombs) \
-	DO(PlayerProp::GLOVEPOWER,	PropertyNumeric<GBYTE1>,	account.character.glovePower) \
-	DO(PlayerProp::BOMBPOWER,	PropertyNumeric<GBYTE1>,	account.character.bombPower) \
-	DO(PlayerProp::SWORDPOWER,	PropertySwordPower,			account.character.swordImage, account.character.swordPower) \
-	DO(PlayerProp::SHIELDPOWER,	PropertyShieldPower,		account.character.shieldImage, account.character.shieldPower) \
-	DO(PlayerProp::GANI,		PropertyGaniOrBowGif,		account.character.gani, account.character.bowPower, account.character.bowImage) \
-	DO(PlayerProp::HEADGIF,		PropertyHeadGif,			account.character.headImage) \
-	DO(PlayerProp::CURCHAT,		PropertyString,				account.character.chatMessage) \
-	DO(PlayerProp::COLORS,		PropertyColors,				account.character.colors) \
-	DO(PlayerProp::ID,			PropertyNumeric<GBYTE2>,	m_id) \
-	DO(PlayerProp::X,			PropertyTileCoordinate,		account.character.localPixelX) \
-	DO(PlayerProp::Y,			PropertyTileCoordinate,		account.character.localPixelY) \
-	DO(PlayerProp::SPRITE,		PropertySprite,				account.character.sprite, account.character.direction) \
-	DO(PlayerProp::STATUS,		PropertyNumeric<GBYTE1>,	account.status) \
-	DO(PlayerProp::CARRYSPRITE,	PropertyUnsafeByte,			m_carrySprite) \
-	DO(PlayerProp::CURLEVEL,	PropertyString,				getLevelName()) \
-	DO(PlayerProp::HORSEGIF,	PropertyString,				account.character.horseImage) \
-	DO(PlayerProp::HORSEBUSHES,	PropertyNumeric<GBYTE1>,	m_horseBombCount) \
-	DO(PlayerProp::EFFECTCOLORS,PropertyEffectColors,		m_effectColors) \
-	DO(PlayerProp::CARRYNPC,	PropertyNumeric<GBYTE3>,	m_carryNPC) \
-	DO(PlayerProp::APCOUNTER,	PropertyNumeric<GBYTE2>,	account.apCounter) \
-	DO(PlayerProp::MAGICPOINTS,	PropertyNumeric<GBYTE1>,	account.character.mp) \
-	DO(PlayerProp::KILLSCOUNT,	PropertyNumeric<GBYTE3>,	account.kills) \
-	DO(PlayerProp::DEATHSCOUNT,	PropertyNumeric<GBYTE3>,	account.deaths) \
-	DO(PlayerProp::ONLINESECS,	PropertyNumeric<GBYTE3>,	account.onlineSeconds) \
-	DO(PlayerProp::IPADDR,		PropertyNumeric<GBYTE5>,	m_accountIp) \
-	DO(PlayerProp::UDPPORT,		PropertyNumeric<GBYTE3>,	m_udpport) \
-	DO(PlayerProp::ALIGNMENT,	PropertyNumeric<GBYTE1>,	account.character.ap) \
-	DO(PlayerProp::ADDITFLAGS,	PropertyNumeric<GBYTE1>,	m_additionalFlags) \
-	DO(PlayerProp::ACCOUNTNAME,	PropertyString,				account.name) \
-	DO(PlayerProp::BODYIMG,		PropertyString,				account.character.bodyImage) \
-	DO(PlayerProp::RATING,		PropertyEloRating,			account.eloRating, account.eloDeviation) \
-	DO(PlayerProp::GATTRIB1,	PropertyString,				account.character.ganiAttributes[0]) \
-	DO(PlayerProp::GATTRIB2,	PropertyString,				account.character.ganiAttributes[1]) \
-	DO(PlayerProp::GATTRIB3,	PropertyString,				account.character.ganiAttributes[2]) \
-	DO(PlayerProp::GATTRIB4,	PropertyString,				account.character.ganiAttributes[3]) \
-	DO(PlayerProp::GATTRIB5,	PropertyString,				account.character.ganiAttributes[4]) \
-	DO(PlayerProp::ATTACHNPC,	PropertyAttachNPC,			m_attachNPC) \
-	DO(PlayerProp::GMAPLEVELX,	PropertyNumeric<GBYTE1>,	account.character.mapX) \
-	DO(PlayerProp::GMAPLEVELY,	PropertyNumeric<GBYTE1>,	account.character.mapY) \
-	DO(PlayerProp::Z,			PropertyTileCoordinateZ,	account.character.localPixelZ) \
-	DO(PlayerProp::GATTRIB6,	PropertyString,				account.character.ganiAttributes[5]) \
-	DO(PlayerProp::GATTRIB7,	PropertyString,				account.character.ganiAttributes[6]) \
-	DO(PlayerProp::GATTRIB8,	PropertyString,				account.character.ganiAttributes[7]) \
-	DO(PlayerProp::GATTRIB9,	PropertyString,				account.character.ganiAttributes[8]) \
-	DO(PlayerProp::JOINLEAVELVL,PropertyNumeric<GBYTE1>,	1_ui8) \
-	DO(PlayerProp::DISCONNECT,	PropertyVoid) \
-	DO(PlayerProp::LANGUAGE,	PropertyString,				account.language) \
-	DO(PlayerProp::PLAYERLISTSTATUS, PropertyNumeric<GBYTE1>, m_statusMsg) \
-	DO(PlayerProp::GATTRIB10,	PropertyString,				account.character.ganiAttributes[9]) \
-	DO(PlayerProp::GATTRIB11,	PropertyString,				account.character.ganiAttributes[10]) \
-	DO(PlayerProp::GATTRIB12,	PropertyString,				account.character.ganiAttributes[11]) \
-	DO(PlayerProp::GATTRIB13,	PropertyString,				account.character.ganiAttributes[12]) \
-	DO(PlayerProp::GATTRIB14,	PropertyString,				account.character.ganiAttributes[13]) \
-	DO(PlayerProp::GATTRIB15,	PropertyString,				account.character.ganiAttributes[14]) \
-	DO(PlayerProp::GATTRIB16,	PropertyString,				account.character.ganiAttributes[15]) \
-	DO(PlayerProp::GATTRIB17,	PropertyString,				account.character.ganiAttributes[16]) \
-	DO(PlayerProp::GATTRIB18,	PropertyString,				account.character.ganiAttributes[17]) \
-	DO(PlayerProp::GATTRIB19,	PropertyString,				account.character.ganiAttributes[18]) \
-	DO(PlayerProp::GATTRIB20,	PropertyString,				account.character.ganiAttributes[19]) \
-	DO(PlayerProp::GATTRIB21,	PropertyString,				account.character.ganiAttributes[20]) \
-	DO(PlayerProp::GATTRIB22,	PropertyString,				account.character.ganiAttributes[21]) \
-	DO(PlayerProp::GATTRIB23,	PropertyString,				account.character.ganiAttributes[22]) \
-	DO(PlayerProp::GATTRIB24,	PropertyString,				account.character.ganiAttributes[23]) \
-	DO(PlayerProp::GATTRIB25,	PropertyString,				account.character.ganiAttributes[24]) \
-	DO(PlayerProp::GATTRIB26,	PropertyString,				account.character.ganiAttributes[25]) \
-	DO(PlayerProp::GATTRIB27,	PropertyString,				account.character.ganiAttributes[26]) \
-	DO(PlayerProp::GATTRIB28,	PropertyString,				account.character.ganiAttributes[27]) \
-	DO(PlayerProp::GATTRIB29,	PropertyString,				account.character.ganiAttributes[28]) \
-	DO(PlayerProp::GATTRIB30,	PropertyString,				account.character.ganiAttributes[29]) \
-	DO(PlayerProp::OSTYPE,		PropertyString,				account.platform) \
-	DO(PlayerProp::TEXTCODEPAGE,PropertyNumeric<GBYTE3>,	account.codePage) \
-	DO(PlayerProp::ONLINESECS2,	PropertyNumeric<GBYTE5>) \
-	DO(PlayerProp::X2,			PropertyPixelCoordinate,	account.character.localPixelX) \
-	DO(PlayerProp::Y2,			PropertyPixelCoordinate,	account.character.localPixelY) \
-	DO(PlayerProp::Z2,			PropertyPixelCoordinate,	account.character.localPixelZ) \
-	DO(PlayerProp::PLAYERLISTCATEGORY, PropertyNumeric<GBYTE1>, (uint8_t)m_playerListCategory) \
-	DO(PlayerProp::COMMUNITYNAME, PropertyString,			account.communityName)
+#define FOR_LIST_OF_PLAYER_PROPS(DO)                                                                                           \
+	DO(PlayerProp::NICKNAME, PropertyString, account.character.nickName)                                                       \
+	DO(PlayerProp::MAXPOWER, PropertyNumeric<GBYTE1>, account.maxHitpoints)                                                    \
+	DO(PlayerProp::CURPOWER, PropertyNumeric<GBYTE1>, account.character.hitpointsInHalves)                                     \
+	DO(PlayerProp::RUPEESCOUNT, PropertyNumeric<GBYTE3>, account.character.gralats)                                            \
+	DO(PlayerProp::ARROWSCOUNT, PropertyNumeric<GBYTE1>, account.character.arrows)                                             \
+	DO(PlayerProp::BOMBSCOUNT, PropertyNumeric<GBYTE1>, account.character.bombs)                                               \
+	DO(PlayerProp::GLOVEPOWER, PropertyNumeric<GBYTE1>, account.character.glovePower)                                          \
+	DO(PlayerProp::BOMBPOWER, PropertyNumeric<GBYTE1>, account.character.bombPower)                                            \
+	DO(PlayerProp::SWORDPOWER, PropertySwordPower, account.character.swordImage, account.character.swordPower)                 \
+	DO(PlayerProp::SHIELDPOWER, PropertyShieldPower, account.character.shieldImage, account.character.shieldPower)             \
+	DO(PlayerProp::GANI, PropertyGaniOrBowGif, account.character.gani, account.character.bowPower, account.character.bowImage) \
+	DO(PlayerProp::HEADGIF, PropertyHeadGif, account.character.headImage)                                                      \
+	DO(PlayerProp::CURCHAT, PropertyString, account.character.chatMessage)                                                     \
+	DO(PlayerProp::COLORS, PropertyColors, account.character.colors)                                                           \
+	DO(PlayerProp::ID, PropertyNumeric<GBYTE2>, m_id)                                                                          \
+	DO(PlayerProp::X, PropertyTileCoordinate, account.character.localPixelX)                                                   \
+	DO(PlayerProp::Y, PropertyTileCoordinate, account.character.localPixelY)                                                   \
+	DO(PlayerProp::SPRITE, PropertySprite, account.character.sprite, account.character.direction)                              \
+	DO(PlayerProp::STATUS, PropertyNumeric<GBYTE1>, account.status)                                                            \
+	DO(PlayerProp::CARRYSPRITE, PropertyUnsafeByte, m_carrySprite)                                                             \
+	DO(PlayerProp::CURLEVEL, PropertyString, getLevelName())                                                                   \
+	DO(PlayerProp::HORSEGIF, PropertyString, account.character.horseImage)                                                     \
+	DO(PlayerProp::HORSEBUSHES, PropertyNumeric<GBYTE1>, m_horseBombCount)                                                     \
+	DO(PlayerProp::EFFECTCOLORS, PropertyEffectColors, m_effectColors)                                                         \
+	DO(PlayerProp::CARRYNPC, PropertyNumeric<GBYTE3>, m_carryNPC)                                                              \
+	DO(PlayerProp::APCOUNTER, PropertyNumeric<GBYTE2>, account.apCounter)                                                      \
+	DO(PlayerProp::MAGICPOINTS, PropertyNumeric<GBYTE1>, account.character.mp)                                                 \
+	DO(PlayerProp::KILLSCOUNT, PropertyNumeric<GBYTE3>, account.kills)                                                         \
+	DO(PlayerProp::DEATHSCOUNT, PropertyNumeric<GBYTE3>, account.deaths)                                                       \
+	DO(PlayerProp::ONLINESECS, PropertyNumeric<GBYTE3>, account.onlineSeconds)                                                 \
+	DO(PlayerProp::IPADDR, PropertyNumeric<GBYTE5>, m_accountIp)                                                               \
+	DO(PlayerProp::UDPPORT, PropertyNumeric<GBYTE3>, m_udpport)                                                                \
+	DO(PlayerProp::ALIGNMENT, PropertyNumeric<GBYTE1>, account.character.ap)                                                   \
+	DO(PlayerProp::ADDITFLAGS, PropertyNumeric<GBYTE1>, m_additionalFlags)                                                     \
+	DO(PlayerProp::ACCOUNTNAME, PropertyString, account.name)                                                                  \
+	DO(PlayerProp::BODYIMG, PropertyString, account.character.bodyImage)                                                       \
+	DO(PlayerProp::RATING, PropertyEloRating, account.eloRating, account.eloDeviation)                                         \
+	DO(PlayerProp::GATTRIB1, PropertyString, account.character.ganiAttributes[0])                                              \
+	DO(PlayerProp::GATTRIB2, PropertyString, account.character.ganiAttributes[1])                                              \
+	DO(PlayerProp::GATTRIB3, PropertyString, account.character.ganiAttributes[2])                                              \
+	DO(PlayerProp::GATTRIB4, PropertyString, account.character.ganiAttributes[3])                                              \
+	DO(PlayerProp::GATTRIB5, PropertyString, account.character.ganiAttributes[4])                                              \
+	DO(PlayerProp::ATTACHNPC, PropertyAttachNPC, m_attachNPC)                                                                  \
+	DO(PlayerProp::GMAPLEVELX, PropertyNumeric<GBYTE1>, account.character.mapX)                                                \
+	DO(PlayerProp::GMAPLEVELY, PropertyNumeric<GBYTE1>, account.character.mapY)                                                \
+	DO(PlayerProp::Z, PropertyTileCoordinateZ, account.character.localPixelZ)                                                  \
+	DO(PlayerProp::GATTRIB6, PropertyString, account.character.ganiAttributes[5])                                              \
+	DO(PlayerProp::GATTRIB7, PropertyString, account.character.ganiAttributes[6])                                              \
+	DO(PlayerProp::GATTRIB8, PropertyString, account.character.ganiAttributes[7])                                              \
+	DO(PlayerProp::GATTRIB9, PropertyString, account.character.ganiAttributes[8])                                              \
+	DO(PlayerProp::JOINLEAVELVL, PropertyNumeric<GBYTE1>, 1_ui8)                                                               \
+	DO(PlayerProp::DISCONNECT, PropertyVoid)                                                                                   \
+	DO(PlayerProp::LANGUAGE, PropertyString, account.language)                                                                 \
+	DO(PlayerProp::PLAYERLISTSTATUS, PropertyNumeric<GBYTE1>, m_statusMsg)                                                     \
+	DO(PlayerProp::GATTRIB10, PropertyString, account.character.ganiAttributes[9])                                             \
+	DO(PlayerProp::GATTRIB11, PropertyString, account.character.ganiAttributes[10])                                            \
+	DO(PlayerProp::GATTRIB12, PropertyString, account.character.ganiAttributes[11])                                            \
+	DO(PlayerProp::GATTRIB13, PropertyString, account.character.ganiAttributes[12])                                            \
+	DO(PlayerProp::GATTRIB14, PropertyString, account.character.ganiAttributes[13])                                            \
+	DO(PlayerProp::GATTRIB15, PropertyString, account.character.ganiAttributes[14])                                            \
+	DO(PlayerProp::GATTRIB16, PropertyString, account.character.ganiAttributes[15])                                            \
+	DO(PlayerProp::GATTRIB17, PropertyString, account.character.ganiAttributes[16])                                            \
+	DO(PlayerProp::GATTRIB18, PropertyString, account.character.ganiAttributes[17])                                            \
+	DO(PlayerProp::GATTRIB19, PropertyString, account.character.ganiAttributes[18])                                            \
+	DO(PlayerProp::GATTRIB20, PropertyString, account.character.ganiAttributes[19])                                            \
+	DO(PlayerProp::GATTRIB21, PropertyString, account.character.ganiAttributes[20])                                            \
+	DO(PlayerProp::GATTRIB22, PropertyString, account.character.ganiAttributes[21])                                            \
+	DO(PlayerProp::GATTRIB23, PropertyString, account.character.ganiAttributes[22])                                            \
+	DO(PlayerProp::GATTRIB24, PropertyString, account.character.ganiAttributes[23])                                            \
+	DO(PlayerProp::GATTRIB25, PropertyString, account.character.ganiAttributes[24])                                            \
+	DO(PlayerProp::GATTRIB26, PropertyString, account.character.ganiAttributes[25])                                            \
+	DO(PlayerProp::GATTRIB27, PropertyString, account.character.ganiAttributes[26])                                            \
+	DO(PlayerProp::GATTRIB28, PropertyString, account.character.ganiAttributes[27])                                            \
+	DO(PlayerProp::GATTRIB29, PropertyString, account.character.ganiAttributes[28])                                            \
+	DO(PlayerProp::GATTRIB30, PropertyString, account.character.ganiAttributes[29])                                            \
+	DO(PlayerProp::OSTYPE, PropertyString, account.platform)                                                                   \
+	DO(PlayerProp::TEXTCODEPAGE, PropertyNumeric<GBYTE3>, account.codePage)                                                    \
+	DO(PlayerProp::ONLINESECS2, PropertyNumeric<GBYTE5>)                                                                       \
+	DO(PlayerProp::X2, PropertyPixelCoordinate, account.character.localPixelX)                                                 \
+	DO(PlayerProp::Y2, PropertyPixelCoordinate, account.character.localPixelY)                                                 \
+	DO(PlayerProp::Z2, PropertyPixelCoordinate, account.character.localPixelZ)                                                 \
+	DO(PlayerProp::PLAYERLISTCATEGORY, PropertyNumeric<GBYTE1>, (uint8_t)m_playerListCategory)                                 \
+	DO(PlayerProp::COMMUNITYNAME, PropertyString, account.communityName)
 
 //----------------------------
 
@@ -708,7 +723,8 @@ SetResults Player::setPropWith(SetBy setBy, Args... values)
 	return setProp<P>(setBy, constructPropFor<P>(values...));
 }
 
-template<typename... Results> requires AllSameAs<SetResults, Results...>
+template<typename... Results>
+	requires AllSameAs<SetResults, Results...>
 void Player::sendPropsFromResults(const Results&... results)
 {
 	PropertySendResults send_results;
@@ -719,7 +735,10 @@ void Player::sendPropsFromResults(const Results&... results)
 void Player::sendPropsFromResults(std::ranges::forward_range auto&& results)
 {
 	PropertySendResults send_results;
-	auto results_range = results | std::views::transform([](const SetResults& results) { return std::make_pair(results, nullptr); });
+	auto results_range = results | std::views::transform([](const SetResults& results)
+	{
+		return std::make_pair(results, nullptr);
+	});
 	for (auto&& r : results_range)
 		send_results.emplace_back(r);
 

@@ -843,6 +843,15 @@ double Player::getCalculatedTileZ() const noexcept
 	return account.character.localPixelZ / 16.0;
 }
 
+bool Player::isInNoPkLevel() const noexcept
+{
+	if (account.level.empty())
+		return false;
+	if (auto level = getLevel(); level != nullptr && level->isNoPkZone(account.character.getMapPosition()))
+		return true;
+	return false;
+}
+
 std::shared_ptr<Level> Player::getLevel() const
 {
 	if (account.level.empty())

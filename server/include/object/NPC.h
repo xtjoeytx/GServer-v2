@@ -539,7 +539,7 @@ inline PixelRectangleArea NPC::getBoundingBox() const noexcept
 inline PixelRectangleArea NPC::getCollisionBoundingBox() const noexcept
 {
 	// If the NPC has the NOBLOCK flag, it has no collision bounding box.
-	if (blockFlags & ENUM(NPCBlockFlags::NOBLOCK))
+	if (!isBlocking())
 		return {{std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::min(), 0}, {0, 0, 0}};
 
 	// Character NPCs have a specific bounding box.

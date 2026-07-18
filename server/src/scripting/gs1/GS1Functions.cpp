@@ -1396,7 +1396,7 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, con
 		{
 			if (auto npc = server->getNPC(npcId); npc != nullptr)
 			{
-				if (positionInRectangle(position, npc->getBoundingBox()))
+				if (positionInRectangle(position, npc->getCollisionBoundingBox()))
 				{
 					found = true;
 					break;
@@ -1414,7 +1414,6 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, std::string_view messageCode, con
 
 // testplayer(x, y)
 // The index of the player at level position (x, y), or -2 if there is no player at that position.
-// -1 is reserved for the current npc if showcharacter is enabled.
 GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
@@ -1425,16 +1424,6 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, 
 	auto position = PixelPosition{x, y};
 	auto* server = BabyDI::Get<Server>();
 
-	if (auto source = visitor->getOriginalSource(); source.second == ScriptObjectType::NPC)
-	{
-		if (auto npc = server->getNPC(source.first); npc != nullptr)
-		{
-			// If the current NPC is the one being tested, return -1.
-			if (positionInRectangle(position, npc->getBoundingBox()))
-				return -1.0;
-		}
-	}
-
 	if (auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		bool found = false;
@@ -1443,7 +1432,7 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, std::string_view messageCode, 
 		{
 			if (auto player = server->getPlayer(playerId); player != nullptr)
 			{
-				if (positionInRectangle(position, player->getBoundingBox()))
+				if (positionInRectangle(position, player->getCollisionBoundingBox()))
 				{
 					found = true;
 					break;
