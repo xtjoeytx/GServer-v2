@@ -86,7 +86,7 @@ setsword sword3.png;
 
 Reference: GS1 Commands
 
---
+---
 ## Variables
 
 GS1 has many pre-defined variables that hold a variety of values.

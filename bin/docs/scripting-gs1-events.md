@@ -6,6 +6,7 @@ This does NOT include serverside weapon scripts, which only respond to "serversi
 
 Events with an empty "introduced" field have no known release date since they were serverside-only events that were never documented in release notes.
 
+---
 ## compusdied
 
 > introduced: beta 2<br>
@@ -15,6 +16,7 @@ executed on: 🤖 npc<br>
 
 Triggers when all of the baddies in the level have died.
 
+---
 ## created
 
 > introduced: 1.27<br>
@@ -24,6 +26,7 @@ executed on: 🤖 🌐 npc, control-npc<br>
 
 Triggered when NPC is created or its script has been changed.  It will only be fired once for an NPC.
 
+---
 ## emoticon
 
 > introduced: after 2.10, before 2.17rev1, maybe 2.13rev3?<br>
@@ -33,6 +36,7 @@ executed on: 🤖 npc<br>
 
 Triggered when the player displays an emoticon.
 
+---
 ## exploded
 
 > introduced: beta 5<br>
@@ -42,6 +46,7 @@ executed on: 🤖 npc<br>
 
 Triggered when an NPC is touched by an explosion.
 
+---
 ## firedonhorse
 
 > introduced: 1.34r1<br>
@@ -51,6 +56,7 @@ executed on: ⚔️ weapon npc<br>
 
 Triggered on a weapon NPC when the player fires the weapon while on a horse.
 
+---
 ## initialized
 
 > introduced: -<br>
@@ -60,6 +66,7 @@ executed on: 🤖 🌐 npc, control-npc<br>
 
 Triggers when a serverside NPC is loaded from the disk on server start.
 
+---
 ## itemdrop
 
 > introduced: -<br>
@@ -69,6 +76,7 @@ executed on: 🌐 control-npc<br>
 
 Triggers when an item is dropped on the ground, assuming the `itemdropevents` option is enabled in `serveroptions.txt`.
 
+---
 ## keypressed
 
 > introduced: 2.14<br>
@@ -82,6 +90,7 @@ Related message codes:
 - `#p(0)` - keycode
 - `#p(1)` - character
 
+---
 ## mousedown
 
 > introduced: 2.14<br>
@@ -103,6 +112,7 @@ Related variables:
 - `mousescreenx`
 - `mousescreeny`
 
+---
 ## mouseup
 
 > introduced: 2.14<br>
@@ -124,6 +134,7 @@ Related variables:
 - `mousescreenx`
 - `mousescreeny`
 
+---
 ## mousewheel
 
 > introduced: 2.14<br>
@@ -135,6 +146,7 @@ Triggered on an NPC when the player scrolls the mouse wheel.
 
 Related flags: `mousewheeldelta`
 
+---
 ## movementfinished
 
 > introduced: 2.03<br>
@@ -144,6 +156,7 @@ executed on: 🤖 npc<br>
 
 Triggers after all movement commands have finished executing, assuming the 'inform when done' option was set.
 
+---
 ## npcwarped
 
 > introduced: -<br>
@@ -153,6 +166,7 @@ executed on: 🤖 npc<br>
 
 Triggers when an NPC changes level.
 
+---
 ## playerchats
 
 > introduced: 1.21<br>
@@ -162,6 +176,7 @@ executed on: 🤖 npc<br>
 
 Triggers when a player's chat text changes.
 
+---
 ## playerdies
 
 > introduced: 2.01<br>
@@ -171,6 +186,7 @@ executed on: 🤖 npc<br>
 
 Triggers when a player dies.
 
+---
 ## playerendsreading
 
 > introduced: beta 3<br>
@@ -180,6 +196,7 @@ executed on: 🤖 npc<br>
 
 Triggers when a player finishes reading a sign.
 
+---
 ## playerenters
 
 > introduced: beta 2<br>
@@ -189,6 +206,7 @@ executed on: 🤖 npc<br>
 
 Triggers when a player enters the level.
 
+---
 ## playerhurt
 
 > introduced: 2.01<br>
@@ -199,6 +217,7 @@ executed on: 🤖 npc<br>
 
 Triggers when a player loses health.
 
+---
 ## playerlaysitem
 
 > introduced: beta 2<br>
@@ -208,6 +227,7 @@ executed on: 🤖 npc<br>
 
 Triggers when a player drops an item on the ground.
 
+---
 ## playerleaves
 
 > introduced: -<br>
@@ -217,6 +237,7 @@ executed on: 🤖 npc<br>
 
 Triggers when a player leaves the level.
 
+---
 ## playerlogin
 
 > introduced: -<br>
@@ -226,6 +247,7 @@ executed on: 🌐 control-npc<br>
 
 Triggers when a player logs into the server.
 
+---
 ## playerlogout
 
 > introduced: -<br>
@@ -235,6 +257,7 @@ executed on: 🌐 control-npc<br>
 
 Triggers when a player logs out of the server.
 
+---
 ## playertouchsme
 
 > introduced: beta 2<br>
@@ -245,6 +268,7 @@ executed on: 🤖 npc<br>
 
 Triggers on an NPC when a player touches it.
 
+---
 ## playertouchsother
 
 > introduced: beta 2<br>
@@ -255,6 +279,7 @@ executed on: 🤖 npc<br>
 
 Triggers on an NPC when a player touches some other NPC.
 
+---
 ## pm
 
 > introduced: -<br>
@@ -264,6 +289,7 @@ executed on: 🌐 control-npc<br>
 
 Triggers when a player sends a private message to the NPC-Server player.
 
+---
 ## rcchat
 
 > introduced: -<br>
@@ -273,6 +299,7 @@ executed on: 🌐 control-npc<br>
 
 Triggers whenever an RC player sends an RC chat message starting with `/npc`.
 
+---
 ## serverlistconnect
 
 > introduced: -<br>
@@ -282,6 +309,7 @@ executed on: 🌐 control-npc<br>
 
 Triggers when the server makes a connection to the server list.
 
+---
 ## timeout
 
 > introduced: beta 5<br>
@@ -291,6 +319,7 @@ executed on: 🤖 🌐 npc, control-npc<br>
 
 Triggers when a timeout occurs on the NPC.
 
+---
 ## triggeraction events (action...)
 
 > introduced: 2.03<br>
@@ -317,6 +346,7 @@ executed on: 🤖 🌐 npc, control-npc<br>
 | actionserverstartparams | 2.30 | triggers on the Control-NPC when a player connects via the `graal://` or `graal3://` browser protocols:<pre>graal://servername/param1,param2,ect...</pre> |
 | action... | | triggers on NPCs that the event touches |
 
+---
 ## updategani
 
 > introduced: -<br>
@@ -327,6 +357,7 @@ executed on: 🤖 npc<br>
 Special event that gets triggered by the server when an item-class NPC needs to be updated.
 For example, the item NPCs created from the "gralats" class will receive this event when the NPC's gralats property is changed.
 
+---
 ## washit
 
 > introduced: beta 5<br>
@@ -338,6 +369,7 @@ Triggers when an NPC is hit by `hitnpc` or `hitobjects`.
 
 On clientside, this will also trigger by a player's sword attack.
 
+---
 ## waspelt
 
 > introduced: beta 5<br>
@@ -347,6 +379,7 @@ executed on: 🤖 npc<br>
 
 Triggers when an NPC is hit by a thrown object.
 
+---
 ## wasshot
 
 > introduced: beta 5 (wasshooted), beta 7<br>
@@ -359,6 +392,7 @@ Triggers when an NPC was shot with an arrow.
 
 Does not trigger for `shoot` based projectiles, which trigger `actionprojectile` style events instead.
 
+---
 ## wasthrown
 
 > introduced: beta 7<br>
@@ -368,6 +402,7 @@ executed on: 🤖 npc<br>
 
 Triggers when an NPC is thrown by a player.
 
+---
 ## weaponfired
 
 > introduced: around 1.19 to 1.21<br>

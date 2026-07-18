@@ -46,6 +46,7 @@ if (true)
   }
 ```
 
+---
 ## Flow control statements
 
 | Directive | Introduced | Description |
@@ -79,6 +80,7 @@ Introduced in 1.39rev2.
 | `break` | Breaks out of a loop. |
 | `return` | Breaks out of a function. |
 
+---
 ## Assignment statements
 
 | Directive | Introduced | Description |
@@ -97,6 +99,7 @@ Introduced in 1.39rev2.
 | -------- | ----------- |
 | `=` | `:=` |
 
+---
 ## Logical expression operators
 
 | Operator | Introduced | Description |
@@ -141,6 +144,7 @@ x,y in <0,10| - is true when 0 < x <= 10 AND 0 < y <= 10
 
 Array comparisons using `==` and `!=` were added in 1.38.
 
+---
 ## Mathematical expression operators
 
 Mathematical expression operators are performed on two expressions.
@@ -157,6 +161,7 @@ Both expressions are implicitly converted to a `double` data type, the operation
 
 Versions prior to 2.16rev5 did not follow the order of operations.
 
+---
 ## User-defined Functions
 
 > `function` name `(` `)` `{` _statement-list_ `}`
