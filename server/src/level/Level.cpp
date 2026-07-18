@@ -2480,7 +2480,7 @@ LevelShoot* Level::addShoot(const PixelPosition& position, float angle, float za
 	double ground = getHeightAt(position.translate(8, 16));
 	tilePosition.translate(0, 0, ground);
 
-	LevelShoot newShoot{.position = tilePosition, .angle = angle, .zangle = zangle, .powerIn44Pixels = power, .gani = gani, .gravity = gravity, .from = from};
+	LevelShoot newShoot{.position = tilePosition, .angle = angle, .zangle = zangle, .powerIn44TileParts = power, .gani = gani, .gravity = gravity, .from = from};
 	if (newShoot.gani.back() == ',')
 		newShoot.gani.pop_back();
 	newShoot.calculateSpeeds();

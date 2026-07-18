@@ -592,6 +592,7 @@ void fn_debugger(GS1Visitor* visitor, std::string_view commandName, const std::v
 #endif
 
 // addguildmember guild,account,nick;
+// Adds a player to a guild.
 void fn_addguildmember(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)

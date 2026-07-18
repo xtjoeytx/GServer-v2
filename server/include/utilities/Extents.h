@@ -34,6 +34,23 @@ struct Position
 {
 	using ValueType = T;
 
+	static constexpr Position<T> playerDirectionVector(uint8_t direction)
+	{
+		switch (direction)
+		{
+			case 0:
+				return Position<T>{ static_cast<T>(0), static_cast<T>(-1) };
+			case 1:
+				return Position<T>{ static_cast<T>(-1), static_cast<T>(0) };
+			case 2:
+				return Position<T>{ static_cast<T>(0), static_cast<T>(1) };
+			case 3:
+				return Position<T>{ static_cast<T>(1), static_cast<T>(0) };
+			default:
+				return Position<T>{0, 0};
+		}
+	}
+
 	constexpr Position() : data{ T{}, T{}, T{} } {}
 	constexpr Position(T x, T y) : data{ x, y, T{} } {}
 	constexpr Position(T x, T y, T z) : data{ x, y, z } {}

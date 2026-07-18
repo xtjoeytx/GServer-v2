@@ -43,7 +43,8 @@ inline constexpr uint8_t arrowTypeNormal = 1;
 inline constexpr uint8_t arrowTypeFireball = 2;
 inline constexpr uint8_t arrowTypeFireblast = 3;
 inline constexpr uint8_t arrowTypeNukeshot = 4;
-inline constexpr float arrowSpeedInTilesPer50ms = 2.0f;
+inline constexpr float arrowSpeedInTilesPerSecond = 20.0f;
+inline constexpr float arrowSpeedInTilesPer50ms = 1.0f;
 inline constexpr int16_t arrowSpeedInPixelsPer50ms = 16;
 
 struct LevelArrow

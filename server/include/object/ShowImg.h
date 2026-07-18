@@ -45,6 +45,8 @@ changeimgzoom,changeimgcolors
 		- it is 1-indexed in the packet (val - 33)
 		- caps at 8 (9 in the packet)
 	prop 4: {GSHORT imagePartX}{GSHORT imagePartY}{GCHAR imagePartWidth}{GCHAR imagePartHeight}
+
+	// 2.16+ for these
 	prop 5: {GCHAR red}{GCHAR green}{GCHAR blue}{GCHAR alpha}
 		- value / 200.0, for 0..1
 	prop 6: {GCHAR zoom}

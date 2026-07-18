@@ -2504,7 +2504,7 @@ void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level
 	newPacket.offsety = 0;
 	newPacket.sangle = static_cast<uint8_t>(220 * (std::clamp(shoot->angle, 0.0f, 2 * pi) / (2 * pi)));
 	newPacket.sanglez = std::clamp(110 + static_cast<uint8_t>(110 * (std::clamp(shoot->zangle, -halfpi, halfpi) / halfpi)), 0, 220);
-	newPacket.power = shoot->powerIn44Pixels;
+	newPacket.power = shoot->powerIn44TileParts;
 	newPacket.gravity = static_cast<uint8_t>(shoot->gravity * 16);
 	newPacket.gani = shoot->gani;
 	newPacket.shootParams = string::toCSV(getShootParams());

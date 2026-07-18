@@ -19,7 +19,7 @@ shoot x,y,z,angle,zangle,power,gani,ganiparams;
 
 angle: east = 0, north = pi/2, west = pi, south = 3*pi/2
 zangle: horizontal = 0, up = pi/2
-power: 0 = old projectile (no gravity, 20 tiles per second), otherwise
+power: 0 = old projectile (no gravity, 20 tiles per second), otherwise in tiles per 0.05 seconds (maxes at 5.0).
 
 z <= 3:
 	Collides with walls and NPCs
@@ -32,8 +32,8 @@ When landing/hitting:
 	serverside weapons: ???
 
 On creation:
-	horzspeed = cos(zangle) * (power * 44)
-	vertspeed = sin(zangle) * (power * 44)
+	horzspeed = cos(zangle) * (power / 44)
+	vertspeed = sin(zangle) * (power / 44)
 
 Every second (but done spread out every 0.05ms):
 	vertspeed = vertspeed - gravity
@@ -47,7 +47,7 @@ struct LevelShoot
 	TilePosition position;
 	float angle = 0.0f;
 	float zangle = 0.0f;
-	uint8_t powerIn44Pixels = 0;
+	uint8_t powerIn44TileParts = 44;
 	std::string gani;
 
 	float gravity = 2.0;
@@ -63,8 +63,8 @@ struct LevelShoot
 
 inline void LevelShoot::calculateSpeeds()
 {
-	float horizSpeed = std::cos(zangle) * (powerIn44Pixels / 44.0f);
-	float vertSpeed = std::sin(zangle) * (powerIn44Pixels / 44.0f);
+	float horizSpeed = std::cos(zangle) * (powerIn44TileParts / 44.0f);
+	float vertSpeed = std::sin(zangle) * (powerIn44TileParts / 44.0f);
 	movementPerFrame.x() = std::cos(angle) * horizSpeed;
 	movementPerFrame.y() = std::sin(angle) * horizSpeed;
 	movementPerFrame.z() = vertSpeed;
