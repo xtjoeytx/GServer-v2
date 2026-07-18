@@ -794,9 +794,86 @@ GS1ScriptValue fn_int(GS1Visitor* visitor, std::string_view messageCode, const s
 }
 
 // keycode(key)
-// Returns the key code for the specified key.
+// Returns the Windows Virtual Key Code for the specified key.
 GS1ScriptValue fn_keycode(GS1Visitor* visitor, std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
+	// Use characters that can be typed on a US ANSI keyboard.
+	using P = std::pair<char, uint8_t>;
+	constexpr std::array<P, 60> vkcs =
+	{
+		std::make_pair('\t', 0x09_ui8),
+		std::make_pair(' ', 0x20_ui8),
+		std::make_pair('0', 0x30_ui8),
+		std::make_pair('1', 0x31_ui8),
+		std::make_pair('2', 0x32_ui8),
+		std::make_pair('3', 0x33_ui8),
+		std::make_pair('4', 0x34_ui8),
+		std::make_pair('5', 0x35_ui8),
+		std::make_pair('6', 0x36_ui8),
+		std::make_pair('7', 0x37_ui8),
+		std::make_pair('8', 0x38_ui8),
+		std::make_pair('9', 0x39_ui8),
+		std::make_pair('A', 0x41_ui8),
+		std::make_pair('B', 0x42_ui8),
+		std::make_pair('C', 0x43_ui8),
+		std::make_pair('D', 0x44_ui8),
+		std::make_pair('E', 0x45_ui8),
+		std::make_pair('F', 0x46_ui8),
+		std::make_pair('G', 0x47_ui8),
+		std::make_pair('H', 0x48_ui8),
+		std::make_pair('I', 0x49_ui8),
+		std::make_pair('J', 0x4A_ui8),
+		std::make_pair('K', 0x4B_ui8),
+		std::make_pair('L', 0x4C_ui8),
+		std::make_pair('M', 0x4D_ui8),
+		std::make_pair('N', 0x4E_ui8),
+		std::make_pair('O', 0x4F_ui8),
+		std::make_pair('P', 0x50_ui8),
+		std::make_pair('Q', 0x51_ui8),
+		std::make_pair('R', 0x52_ui8),
+		std::make_pair('S', 0x53_ui8),
+		std::make_pair('T', 0x54_ui8),
+		std::make_pair('U', 0x55_ui8),
+		std::make_pair('V', 0x56_ui8),
+		std::make_pair('W', 0x57_ui8),
+		std::make_pair('X', 0x58_ui8),
+		std::make_pair('Y', 0x59_ui8),
+		std::make_pair('Z', 0x5A_ui8),
+		//
+		std::make_pair(';', 0xBA_ui8),
+		std::make_pair(':', 0xBA_ui8),
+		//
+		std::make_pair('=', 0xBB_ui8),
+		std::make_pair('+', 0xBB_ui8),
+		//
+		std::make_pair(',', 0xBC_ui8),
+		std::make_pair('<', 0xBC_ui8),
+		//
+		std::make_pair('-', 0xBD_ui8),
+		std::make_pair('_', 0xBD_ui8),
+		//
+		std::make_pair('.', 0xBE_ui8),
+		std::make_pair('>', 0xBE_ui8),
+		//
+		std::make_pair('/', 0xBF_ui8),
+		std::make_pair('?', 0xBF_ui8),
+		//
+		std::make_pair('`', 0xC0_ui8),
+		std::make_pair('~', 0xC0_ui8),
+		//
+		std::make_pair('[', 0xDB_ui8),
+		std::make_pair('{', 0xDB_ui8),
+		//
+		std::make_pair('\\', 0xDC_ui8),
+		std::make_pair('|', 0xDC_ui8),
+		//
+		std::make_pair(']', 0xDD_ui8),
+		std::make_pair('}', 0xDD_ui8),
+		//
+		std::make_pair('\'', 0xDE_ui8),
+		std::make_pair('"', 0xDE_ui8),
+	};
+
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: keycode(key)");
 
@@ -804,8 +881,18 @@ GS1ScriptValue fn_keycode(GS1Visitor* visitor, std::string_view messageCode, con
 	if (key.empty())
 		return 0.0;
 
-	uint8_t code = static_cast<uint8_t>(key.front());
-	return static_cast<double>(code);
+	// Simple uppercase.
+	char keycode = key.front();
+	if (keycode >= 'a' && keycode <= 'z')
+		keycode -= 32;
+
+	// clang-format off
+	auto result = std::ranges::find_if(vkcs, [&keycode](const P& pair) { return pair.first == keycode; });
+	if (result == std::ranges::end(vkcs))
+		return 0.0;
+	// clang-format on
+
+	return static_cast<double>(result->second);
 }
 
 // keydown(key)
