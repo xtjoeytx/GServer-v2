@@ -169,14 +169,20 @@ Server::Server(const CString& pName)
 			return std::vector<ScriptObject>{std::ranges::begin(playerObjects), std::ranges::end(playerObjects)};
 		},
 		{});
-	Scripting.variables.add<double>("nwtime"sv, bindGETSIMPLE(static_cast<double>(getNWTime()), this), {});
-	Scripting.variables.add<double>("nwmin"sv, bindGETSIMPLE(static_cast<double>(getNWTime() % 60), this), {});                 // 60 min in an hour
-	Scripting.variables.add<double>("nwhour"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / 60) % 24), this), {});         // 24 hours in a day
-	Scripting.variables.add<double>("nwday"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / 1440) % 28), this), {});        // 28 days in a month
-	Scripting.variables.add<double>("nwweekday"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / 1440) % 7) + 1, this), {}); // 1-7 for Sunday-Saturday
-	Scripting.variables.add<double>("nwweek"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / 10080) % 4), this), {});       // 4 weeks in a month (7 days per week)
-	Scripting.variables.add<double>("nwmonth"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / 40320) % 10), this), {});     // 10 months in a year
-	Scripting.variables.add<double>("nwyear"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / 403200) + 1000), this), {});   // Years start at 1000
+
+	constexpr int toHours = 60;
+	constexpr int toDays = 1440;
+	constexpr int toWeeks = 10080;
+	constexpr int toMonths = 40320;
+	constexpr int toYears = 403200;
+	Scripting.variables.add<double>("nwtime"sv, bindGETSIMPLE(static_cast<double>(getNWTime() % 1440), this), {});                 // minutes of the day
+	Scripting.variables.add<double>("nwmin"sv, bindGETSIMPLE(static_cast<double>(getNWTime() % 60), this), {});                    // 60 min in an hour
+	Scripting.variables.add<double>("nwhour"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / toHours) % 24), this), {});       // 24 hours in a day
+	Scripting.variables.add<double>("nwday"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / toDays) % 28 + 1), this), {});     // 28 days in a month (1..28)
+	Scripting.variables.add<double>("nwweekday"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / toDays) % 7 + 1), this), {});  // Sunday-Saturday (1..7)
+	Scripting.variables.add<double>("nwweek"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / toWeeks) % 40 + 1), this), {});   // 40 weeks in a year (1..40)
+	Scripting.variables.add<double>("nwmonth"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / toMonths) % 10 + 1), this), {}); // 10 months in a year (1..10)
+	Scripting.variables.add<double>("nwyear"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / toYears) + 1000), this), {});     // Years start at 1000
 
 	GameVariable groundHeightsVar{.name = "groundheights"};
 	groundHeightsVar.registerGetter<double>([this](std::optional<int64_t> index) -> GameValueVariantForGetter
