@@ -106,7 +106,7 @@ Introduced in 1.39rev2.
 | -------- | ---------- | ----------- |
 | `!` _expression_ | Beta 2 | Logical NOT.  If the _expression_ is `true`, it becomes `false`, and vice-versa. |
 | _expression_ `&&` _expression_ | Beta 2 | Logical AND.  Returns `true` if both *expression*s are `true`.  If the first _expression_ is false, the second will not be evaluated. |
-| _expression_ `||` _expression_ | Beta 2 | Logical OR.  Returns `true` if one _expression_ is `true`.  If the first _expression_ is `true`, the second will not be evaluated. |
+| _expression_ `\|\|` _expression_ | Beta 2 | Logical OR.  Returns `true` if one _expression_ is `true`.  If the first _expression_ is `true`, the second will not be evaluated. |
 | _expression_ `==` _expression_ | Beta 5 | Returns `true` if both expressions are equal to each other. |
 | _expression_ `!=` _expression_ | around 1.20 | Returns `true` if both expressions are **not** equal to each other. |
 | _expression_ `>` _expression_ | around 1.20 | Returns `true` if the left _expression_ has a greater value than the right _expression_. |
@@ -117,6 +117,8 @@ Introduced in 1.39rev2.
 | _expression_ [, _expression_ ...] ` in ` _array_ | 1.40 | Returns `true` if every _expression_ is contained within the array. |
 | _expression_ [, _expression_ ...] ` in ` _range_ | 1.40 | Returns `true` if every _expression_ is contained within the range. |
 | _expression_ `?` _expression_ `:` _expression_ | 1.39rev2 | Ternary expression, shortcut for an if-then statement that can be used in an expression. |
+
+> `in` requires spaces around the word.
 
 #### range
 
