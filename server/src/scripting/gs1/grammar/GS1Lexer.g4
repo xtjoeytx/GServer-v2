@@ -792,6 +792,7 @@ FUNC_GROUP_5 : 'lindexof'                     { pushCommand("(SV)"); }   -> type
 FUNC_GROUP_6 : 'sarraylen'                    { pushCommand("(V)"); }    -> type(FUNCTION);
 FUNC_GROUP_7 : ('playersays' | 'playersays2') { pushCommand("<ES)"); }   -> type(FUNCTION);
 
+MC_ESCAPE		: '##'          { setText("#"); }         -> type(IDENTIFIER);
 MC_NOINDEX		: '#' ([angcmWw1235678NDLFfpbES] | 'C' [01234567] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 MC_SIMPLE		: '#' ([angcmWw1235678NDptKkG]   | 'C' [01234567] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { pushCommand("(P)"); }   -> type(MESSAGECODE);
 MC_COMPUTED_S	: '#s'          { pushCommand("(V)"); }   -> type(MESSAGECODE);
@@ -1024,6 +1025,7 @@ PARAM_V_FUNC_GROUP_4    : FUNC_GROUP_4 { pushCommand("(ESSS)"); } -> type(FUNCTI
 PARAM_V_FUNC_GROUP_5    : FUNC_GROUP_5 { pushCommand("(SV)"); }   -> type(FUNCTION);
 PARAM_V_FUNC_GROUP_6    : FUNC_GROUP_6 { pushCommand("(V)"); }    -> type(FUNCTION);
 PARAM_V_FUNC_GROUP_7    : FUNC_GROUP_7 { pushCommand("<ES)"); }   -> type(FUNCTION);
+PARAM_V_MC_ESCAPE       : MC_ESCAPE    { setText("#"); }          -> type(IDENTIFIER);
 PARAM_V_MC_NOINDEX      : MC_NOINDEX                              -> type(MESSAGECODE);
 PARAM_V_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGECODE);
 PARAM_V_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
@@ -1099,6 +1101,7 @@ PARAM_S_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?   { popNextMode(tru
 PARAM_S_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }?  { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_S_POP_END         : END               { canCmdPop() }?   { popNextMode(true); } -> type(END);
 PARAM_S_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }? { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_S_MC_ESCAPE       : MC_ESCAPE                            { setText("#"); }      -> type(STRING);
 PARAM_S_MC_NOINDEX      : MC_NOINDEX                              -> type(MESSAGECODE);
 PARAM_S_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGECODE);
 PARAM_S_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
@@ -1133,6 +1136,7 @@ PARAM_L_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true
 PARAM_L_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_L_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
 PARAM_L_COMMA           : TOKEN_COMMA   { emitIdentifierAfter(GS1Lexer::STRING, getText()); } -> type(TOKEN_COMMA);
+PARAM_L_MC_ESCAPE       : MC_ESCAPE                           { setText("#"); }      -> type(STRING);
 PARAM_L_MC_NOINDEX      : MC_NOINDEX                              -> type(MESSAGECODE);
 PARAM_L_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGECODE);
 PARAM_L_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
@@ -1157,6 +1161,7 @@ PARAM_M_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true
 PARAM_M_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_M_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
 PARAM_M_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_M_MC_ESCAPE       : MC_ESCAPE                           { setText("#"); }      -> type(IDENTIFIER);
 PARAM_M_MC_NOINDEX      : MC_NOINDEX                              -> type(MESSAGECODE);
 PARAM_M_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGECODE);
 PARAM_M_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
@@ -1287,6 +1292,7 @@ PARAM_D_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 mode IN_PARAM_X;
 
 PARAM_X_IDENTIFIER    : IDENTIFIER    { popNextMode(); }        -> type(IDENTIFIER);
+PARAM_X_MC_ESCAPE     : MC_ESCAPE     { setText("#"); }         -> type(IDENTIFIER);
 PARAM_X_MC_NOINDEX    : MC_NOINDEX                              -> type(MESSAGECODE);
 PARAM_X_MC_SIMPLE     : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGECODE);
 PARAM_X_MC_COMPUTED_S : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
