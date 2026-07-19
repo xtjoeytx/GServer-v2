@@ -12,8 +12,8 @@
 #include <optional>
 #include <ranges>
 #include <stdexcept>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -31,6 +31,7 @@
 #include <object/Character.h>
 #include <object/NPC.h>
 #include <object/Player.h>
+#include <object/ShowImg.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
@@ -213,6 +214,17 @@ void NPC::setLevel(LevelPtr level)
 
 //----------------------------
 
+void NPC::addShowImg(uint8_t index, ShowImg&& showImg)
+{
+	if (index > 199)
+		return;
+
+	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)id >> (char)(index + 10) << showImg.getAllPropsPacket(), getGlobalPosition(), getLevel());
+
+	m_hadShowImgs = true;
+	showImgList[index] = std::move(showImg);
+}
+
 CString NPC::getShowImagesPacket(std::optional<clock::time_point> modTime) const noexcept
 {
 	// Construct the packet.
@@ -243,6 +255,8 @@ void NPC::sendAllShowImagesToLevel(std::optional<clock::time_point> modTime) con
 	// Only start sending showimg packets when the NPC gains showimgs.
 	if (!m_hadShowImgs && showImgList.size() == 0)
 		return;
+
+	m_hadShowImgs = true;
 
 	m_server->sendPacketToNearby(getShowImagesPacket(modTime), getGlobalPosition(), getLevel());
 }

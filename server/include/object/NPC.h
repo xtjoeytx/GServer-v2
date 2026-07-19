@@ -281,6 +281,7 @@ public:
 public:
 	bool warp(LevelPtr level, const PixelPosition& position);
 	void setLevel(LevelPtr level);
+	void addShowImg(uint8_t index, ShowImg&& showImg);
 	CString getShowImagesPacket(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
 	void sendShowImagesToPlayer(PlayerPtr player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
 	void sendAllShowImagesToLevel(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;

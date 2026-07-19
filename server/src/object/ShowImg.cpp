@@ -24,7 +24,7 @@ namespace preagonal
 ShowImg ShowImg::ConstructImage(clock::time_point modTime, const PixelPosition& position, std::string_view image) noexcept
 {
 	ShowImg showimg{ .image = std::string{ image }, .position = position };
-	showimg.modTime.fill(clock::time_point::min());
+	showimg.modTime.fill(std::nullopt);
 	showimg.modTime[PROPID(ShowImgProp::IMAGE)] = modTime;
 	showimg.modTime[PROPID(ShowImgProp::X)] = modTime;
 	showimg.modTime[PROPID(ShowImgProp::Y)] = modTime;
@@ -53,7 +53,7 @@ ShowImg ShowImg::ConstructText(clock::time_point modTime, const PixelPosition& p
 
 	// Create the showimg.
 	ShowImg showimg{ .image = std::move(formattedTextString), .position = position };
-	showimg.modTime.fill(clock::time_point::min());
+	showimg.modTime.fill(std::nullopt);
 	showimg.modTime[PROPID(ShowImgProp::IMAGE)] = modTime;
 	showimg.modTime[PROPID(ShowImgProp::X)] = modTime;
 	showimg.modTime[PROPID(ShowImgProp::Y)] = modTime;
@@ -67,7 +67,7 @@ ShowImg ShowImg::ConstructGani(clock::time_point modTime, const PixelPosition& p
 {
 	// Create the showimg.
 	ShowImg showimg{ .image = std::format("&{},{}", direction, animation), .position = position };
-	showimg.modTime.fill(clock::time_point::min());
+	showimg.modTime.fill(std::nullopt);
 	showimg.modTime[PROPID(ShowImgProp::IMAGE)] = modTime;
 	showimg.modTime[PROPID(ShowImgProp::X)] = modTime;
 	showimg.modTime[PROPID(ShowImgProp::Y)] = modTime;
@@ -87,7 +87,7 @@ ShowImg ShowImg::ConstructPoly(clock::time_point modTime, const std::vector<doub
 
 	// Create the showimg.
 	ShowImg showimg{ .image = std::move(polygon), .position = { 0_i32, 0_i32 } };
-	showimg.modTime.fill(clock::time_point::min());
+	showimg.modTime.fill(std::nullopt);
 	showimg.modTime[PROPID(ShowImgProp::IMAGE)] = modTime;
 	showimg.modTime[PROPID(ShowImgProp::X)] = modTime;
 	showimg.modTime[PROPID(ShowImgProp::Y)] = modTime;

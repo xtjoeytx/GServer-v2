@@ -590,8 +590,7 @@ void NPCServer::showImage(std::shared_ptr<NPC> npc, uint8_t index, const PixelPo
 		return;
 
 	auto showimg = ShowImg::ConstructImage(m_frameStartTime, position, image);
-	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(), npc->getGlobalPosition(), level);
-	npc->showImgList[index] = std::move(showimg);
+	npc->addShowImg(index, std::move(showimg));
 }
 
 void NPCServer::showText(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view text, std::string_view font, std::string_view style) const
@@ -604,8 +603,7 @@ void NPCServer::showText(std::shared_ptr<NPC> npc, uint8_t index, const PixelPos
 		return;
 
 	auto showimg = ShowImg::ConstructText(m_frameStartTime, position, text, font, style);
-	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(), npc->getGlobalPosition(), level);
-	npc->showImgList[index] = std::move(showimg);
+	npc->addShowImg(index, std::move(showimg));
 }
 
 void NPCServer::showGani(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view animation, uint8_t direction) const
@@ -618,8 +616,7 @@ void NPCServer::showGani(std::shared_ptr<NPC> npc, uint8_t index, const PixelPos
 		return;
 
 	auto showimg = ShowImg::ConstructGani(m_frameStartTime, position, animation, direction);
-	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(), npc->getGlobalPosition(), level);
-	npc->showImgList[index] = std::move(showimg);
+	npc->addShowImg(index, std::move(showimg));
 }
 
 void NPCServer::showPoly(std::shared_ptr<NPC> npc, uint8_t index, const std::vector<double>& points) const
@@ -632,8 +629,7 @@ void NPCServer::showPoly(std::shared_ptr<NPC> npc, uint8_t index, const std::vec
 		return;
 
 	auto showimg = ShowImg::ConstructPoly(m_frameStartTime, points);
-	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(), npc->getGlobalPosition(), level);
-	npc->showImgList[index] = std::move(showimg);
+	npc->addShowImg(index, std::move(showimg));
 }
 
 void NPCServer::changeShowImgColors(std::shared_ptr<NPC> npc, uint8_t index, float red, float green, float blue, float alpha) const
