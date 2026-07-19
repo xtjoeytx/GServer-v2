@@ -1,6 +1,6 @@
 # GS1 Flow Control and Operators
 
-GS1 uses a C-like syntax.  Braces (`{` and `}`) are used to wrap blocks of code and semi-colons (`;`) are used to separate statements.
+GS1 uses a C-like syntax.  Braces `{` and `}` are used to wrap blocks of code and semi-colons (`;`) are used to separate statements.
 
 It uses C99/C++ style comments:
 > // everything until the end of the line.<br>
