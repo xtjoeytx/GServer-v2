@@ -7,6 +7,15 @@ Message codes that target a `player` will always target the currently active pla
 In clientside scripts, this will always be the player's character.
 
 ---
+## \#\#
+
+`##`
+
+> introduced: ???<br>
+
+Inserts a single `#` into the string.  It is an escape character for message codes.
+
+---
 ## #1
 
 `#1`
