@@ -177,7 +177,7 @@ and the resulting number is displayed.
 | npcs[].hurtpower   | ??? | 💻 | How much life the NPC lost when they last got hurt. |
 | npcs[].id          | 1.38 | 🧑💻 | The NPC's ID number (persistent only for database NPCs). |
 | npcs[].rupees      | beta 5 | 🧑💻 | How many gralats the NPC has. |
-| npcs[].save[]      | 1.27 | 🧑💻 | Array of 10 numbers [0..9] saved to the NPC.  Value is in the range of [0..220] |
+| npcs[].save[]      | 1.27 | 🧑💻 | Array of 10 numbers [0..9] saved to the NPC.  Value is in the range of `[0..220]` |
 | npcs[].shieldpower | around 1.20 | 🧑💻 | The power of the NPC's shield. |
 | npcs[].sprite      | 1.25 | 🧑💻 | The NPC's current sprite.  See: [Character sprites](#character-sprites) |
 | npcs[].swordpower  | around 1.20 | 🧑💻 | The power of the NPC's sword. |
@@ -185,7 +185,7 @@ and the resulting number is displayed.
 | npcs[].width       | 1.38 | 🧑💻 | The width of the NPC, in tiles.  Serverside, this only works if [setshape](scripting-gs1-commands.md#setshape) was called. |
 | npcs[].x           | beta 5 | 🧑💻 | The X tile position of the NPC. |
 | npcs[].y           | beta 5 | 🧑💻 | The Y tile position of the NPC. |
-| npcs[].z           | possibly 2.12<br>revealed (npcserver) | 🧑💻 | The Z height of the NPC, from `-50` to `170`. |
+| npcs[].z           | possibly 2.12<br>revealed (npcserver) | 🧑💻 | The Z height of the NPC, in the range of `[-50..170]`. |
 
 > npcs[] shorthand: e.g., hearts
 

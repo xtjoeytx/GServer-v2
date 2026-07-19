@@ -808,7 +808,7 @@ scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 
-Hides [showimg](#showimg) images in the range `[index_start, index_end]`.
+Hides [showimg](#showimg) images in the range `[index_start..index_end]`.
 
 ---
 ## hidelocal
@@ -1856,7 +1856,7 @@ official serverside: ❌<br>
 Default: `setcoloreffect 1,1,1,1;`
 
 Draws the NPC using alpha blending.
-The parameters are in the range of [0.0, 1.0].
+The parameters are in the range of `[0.0..1.0]`.
 
 ---
 ## setcursor
@@ -1924,7 +1924,7 @@ official serverside: ❌<br>
 Default: `seteffect 0,0,0,0;`
 
 Adds a tinted overlay to the game.
-The `red`, `green`, `blue`, and `alpha` values are a floating-point number in the range [0.0, 1.0].
+The `red`, `green`, `blue`, and `alpha` values are a floating-point number in the range `[0.0..1.0]`.
 Using values of 0.0 and increasing the alpha makes the screen darker.
 
 ---
@@ -1939,7 +1939,7 @@ gs2emu serverside: ❌<br>
 official serverside: ❌<br>
 
 Adds a tinted overlay to the game.
-The `red`, `green`, and `blue` values are a whole number in the range [0, 255].
+The `red`, `green`, and `blue` values are a whole number in the range `[0..255]`.
 Use `unseteffect;` to remove.
 
 ---
@@ -2453,8 +2453,8 @@ Shoots a projectile.
 | X      | The starting X tile position of the projectile. |
 | Y      | The starting Y tile position of the projectile. |
 | Z      | The starting Z position of the projectile, from ground level.  Do not manually add the ground Z height for 3D terrain.  This is relative to ground level. |
-| Angle  | The direction of the projectile, in radians, where east is `0`, north is `pi/2`, west is `pi`, and south is `3*pi/2`.  Range is [`0`, `2*pi`]. |
-| ZAngle | The upward angle of the projectile, in radians, where `0` is flat horizontal, straight up is `pi/2`, and flat horizontal, backwards, is `pi`.  Can be negative to shoot downwards.  Range of [`-pi`, `pi`]. |
+| Angle  | The direction of the projectile, in radians, where east is `0`, north is `pi/2`, west is `pi`, and south is `3*pi/2`.  Range is `[0..2*pi]`. |
+| ZAngle | The upward angle of the projectile, in radians, where `0` is flat horizontal, straight up is `pi/2`, and flat horizontal, backwards, is `pi`.  Can be negative to shoot downwards.  Range of `[-pi..pi]`. |
 | Power  | Launch strength of the projectile.  Value is tiles traveled every 0.05 seconds, up to 5 tiles.  When power is `0`, the projectile has no gravity and flies like a classic arrow, moving 1 tile per 0.05 seoncds (20 per second). |
 | Gani   | The gani animation to play for the projectile. |
 | Ganiattribs | A CSV formatted string of gani attributes. |
@@ -2576,7 +2576,7 @@ official serverside: ✅<br>
 Shows a gani animation as a [showimg](#showimg) image.
 
 `index` ranges between `[0..199]` cause the showimg to appear for other players,
-while ranges `200` and above are only visible to the player who issues the command.
+while ranges `[200...]` and above are only visible to the player who issues the command.
 
 See: [showimg](#showimg).
 
@@ -2593,7 +2593,7 @@ official serverside: ✅<br>
 Shows a gani animation as a [showimg](#showimg) image.
 
 `index` ranges between `[0..199]` cause the showimg to appear for other players,
-while ranges `200` and above are only visible to the player who issues the command.
+while ranges `[200...]` and above are only visible to the player who issues the command.
 
 See: [showimg](#showimg).
 
@@ -2635,7 +2635,7 @@ official serverside: ✅<br>
 Shows an image on the screen at the specified position.
 
 `index` ranges between `[0..199]` cause the showimg to appear for other players,
-while ranges `200` and above are only visible to the player who issues the command.
+while ranges `[200...]` and above are only visible to the player who issues the command.
 
 See also:
 - [changeimgcolors](#changeimgcolors)
@@ -2710,7 +2710,7 @@ official serverside: ✅<br>
 Shows an image on the screen at the specified position.
 
 `index` ranges between `[0..199]` cause the showimg to appear for other players,
-while ranges `200` and above are only visible to the player who issues the command.
+while ranges `[200...]` and above are only visible to the player who issues the command.
 
 See: [showimg](#showimg).
 
@@ -2740,7 +2740,7 @@ Draws a polygon on the screen.  At least two sets of coordinates are required, w
 With three or more sets of coordinates, the polygon will automatically be closed with a line drawn from the last coordinate to the first.
 
 `index` ranges between `[0..199]` cause the showimg to appear for other players,
-while ranges `200` and above are only visible to the player who issues the command.
+while ranges `[200...]` and above are only visible to the player who issues the command.
 
 The [changeimgcolors](#changeimgcolors) command cannot change the alpha value of the polygon.
 
@@ -2762,7 +2762,7 @@ With three or more sets of coordinates, the polygon will automatically be closed
 > NOTE: This command doesn't seem to show the polygon correctly to other players, at least in the 2.x clients.
 
 `index` ranges between `[0..199]` cause the showimg to appear for other players,
-while ranges `200` and above are only visible to the player who issues the command.
+while ranges `[200...]` and above are only visible to the player who issues the command.
 
 The [changeimgcolors](#changeimgcolors) command cannot change the alpha value of the polygon.
 
@@ -2815,7 +2815,7 @@ official serverside: ✅<br>
 Shows text in a [showimg](#showimg) image.
 
 `index` ranges between `[0..199]` cause the showimg to appear for other players,
-while ranges `200` and above are only visible to the player who issues the command.
+while ranges `[200...]` and above are only visible to the player who issues the command.
 
 `style` is a combination of letters that enable different styles.
 

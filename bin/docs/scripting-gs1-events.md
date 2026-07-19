@@ -11,7 +11,7 @@ Events with an empty "introduced" field have no known release date since they we
 
 > introduced: beta 2<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ???<br>
 executed on: 🤖 npc<br>
 
@@ -22,7 +22,7 @@ Triggers when all of the baddies in the level have died.
 
 > introduced: 1.27<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 🌐 npc, control-npc<br>
 
@@ -44,7 +44,7 @@ Triggered when the player displays an emoticon.
 
 > introduced: beta 5<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
@@ -66,7 +66,7 @@ Triggered on a weapon NPC when the player fires the weapon while on a horse.
 
 > introduced: -<br>
 scope: 💻 server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 🌐 npc, control-npc<br>
 
@@ -77,7 +77,7 @@ Triggers when a serverside NPC is loaded from the disk on server start.
 
 > introduced: -<br>
 scope: 💻 server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🌐 control-npc<br>
 
@@ -162,7 +162,7 @@ Related flags: `mousewheeldelta`
 
 > introduced: 2.03<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
@@ -173,7 +173,7 @@ Triggers after all movement commands have finished executing, assuming the 'info
 
 > introduced: -<br>
 scope: 💻 server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
@@ -184,7 +184,7 @@ Triggers when an NPC changes level.
 
 > introduced: 1.21<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
@@ -195,7 +195,7 @@ Triggers when a player's chat text changes.
 
 > introduced: 2.01<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ???<br>
 executed on: 🤖 npc<br>
 
@@ -217,7 +217,7 @@ Triggers when a player finishes reading a sign.
 
 > introduced: beta 2<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
@@ -230,7 +230,7 @@ Triggers when a player enters the level.
 
 > introduced: 2.01<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ???<br>
 executed on: 🤖 npc<br>
 
@@ -241,7 +241,7 @@ Triggers when a player loses health.
 
 > introduced: beta 2<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ???<br>
 executed on: 🤖 npc<br>
 
@@ -252,7 +252,7 @@ Triggers when a player drops an item on the ground.
 
 > introduced: -<br>
 scope: 💻 server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
@@ -263,7 +263,7 @@ Triggers when a player leaves the level.
 
 > introduced: -<br>
 scope: 💻 server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🌐 control-npc<br>
 
@@ -274,7 +274,7 @@ Triggers when a player logs into the server.
 
 > introduced: -<br>
 scope: 💻 server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🌐 control-npc<br>
 
@@ -287,7 +287,7 @@ Triggers when a player logs out of the server.
 
 > introduced: beta 2<br>
 scope: 🧑 💻 client and server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
@@ -300,7 +300,7 @@ Triggers on an NPC when a player touches it.
 
 > introduced: beta 2<br>
 scope: 🧑 💻 client and server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
@@ -311,7 +311,7 @@ Triggers on an NPC when a player touches some other NPC.
 
 > introduced: -<br>
 scope: 💻 server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🌐 control-npc<br>
 
@@ -322,7 +322,7 @@ Triggers when a player sends a private message to the NPC-Server player.
 
 > introduced: -<br>
 scope: 💻 server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🌐 control-npc<br>
 
@@ -333,7 +333,7 @@ Triggers whenever an RC player sends an RC chat message starting with `/npc`.
 
 > introduced: -<br>
 scope: 💻 server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🌐 control-npc<br>
 
@@ -344,7 +344,7 @@ Triggers when the server makes a connection to the server list.
 
 > introduced: beta 5<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 🌐 npc, control-npc<br>
 
@@ -357,7 +357,7 @@ Triggers when a timeout occurs on the NPC.
 
 > introduced: 2.03<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 🌐 npc, control-npc<br>
 
@@ -385,7 +385,7 @@ executed on: 🤖 🌐 npc, control-npc<br>
 
 > introduced: -<br>
 scope: 💻 server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
@@ -397,7 +397,7 @@ For example, the item NPCs created from the "gralats" class will receive this ev
 
 > introduced: beta 5<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ???<br>
 executed on: 🤖 npc<br>
 
@@ -410,7 +410,7 @@ On clientside, this will also trigger by a player's sword attack.
 
 > introduced: beta 5<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ???<br>
 executed on: 🤖 npc<br>
 
@@ -423,7 +423,7 @@ Triggers when an NPC is hit by a thrown object.
 
 > introduced: beta 5 (wasshooted), beta 7<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ???<br>
 executed on: 🤖 npc<br>
 
@@ -436,7 +436,7 @@ Does not trigger for `shoot` based projectiles, which trigger `actionprojectile`
 
 > introduced: beta 7<br>
 scope: 🧑 💻 client, server<br>
-gserver serverside: ✅<br>
+gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 executed on: 🤖 npc<br>
 

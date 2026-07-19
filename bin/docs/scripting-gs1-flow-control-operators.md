@@ -4,8 +4,8 @@ GS1 uses a C-like syntax.  Braces (`{` and `}`) are used to wrap blocks of code 
 
 It uses C99/C++ style comments:
 > // everything until the end of the line.<br>
-> /* everything until<br>
-> the closing */<br>
+/* everything until<br>
+the closing */<br>
 
 Strings are trimmed.
 Whitespace in expressions and statements is ignored, except in a few circumstances (which will be mentioned when relevant).

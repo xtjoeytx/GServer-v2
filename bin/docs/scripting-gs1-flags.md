@@ -7,38 +7,38 @@ Flags are boolean values that are set by the game engine before every script run
 
 > introduced: ? (beta 7 or 1.32)<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
-True when the player has the spinattack.
+True when the player has the [spinattack](scripting-gs1-variables.md#item-names).
 
 ---
 ## carriesblackstone
 
 > introduced: beta 4<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
-True when the player is carrying a blackstone object.
+True when the player is carrying a [blackstone](scripting-gs1-variables.md#carry-objects) object.
 
 ---
 ## carriesbush
 
 > introduced: beta 4<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
-True when the player is carrying a bush object.
+True when the player is carrying a [bush](scripting-gs1-variables.md#carry-objects) object.
 
 ---
 ## carriesnpc
 
 > introduced: around 1.20<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the player is carrying an NPC.
 
@@ -47,38 +47,38 @@ True when the player is carrying an NPC.
 
 > introduced: beta 4<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
-True when the player is carrying a sign object.
+True when the player is carrying a [sign](scripting-gs1-variables.md#carry-objects) object.
 
 ---
 ## carriesstone
 
 > introduced: beta 4<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
-True when the player is carrying a stone object.
+True when the player is carrying a [stone](scripting-gs1-variables.md#carry-objects) object.
 
 ---
 ## carriesvase
 
 > introduced: beta 4<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
-True when the player is carrying a vase object.
+True when the player is carrying a [vase](scripting-gs1-variables.md#carry-objects) object.
 
 ---
 ## carrying
 
 > introduced: around 1.20<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the player is carrying anything.
 
@@ -87,8 +87,8 @@ True when the player is carrying anything.
 
 > introduced: beta 7<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when all the baddies are dead in the level.
 
@@ -97,8 +97,8 @@ True when all the baddies are dead in the level.
 
 > introduced: beta 7<br>
 removed: -<br>
-gserver support: ❌ (clientside)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (clientside)<br>
+official serverside: ❌<br>
 
 True when the NPC is following a player.
 
@@ -107,28 +107,28 @@ True when the NPC is following a player.
 
 > introduced: beta 5<br>
 removed: 1.38<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC's swordpower is 2.
+True when the NPC's swordpower is `2`.
 
 ---
 ## gotbomb
 
 > introduced: beta 2<br>
 removed: 1.38<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC's bombpower is 1.
+True when the NPC's bombpower is `1`.
 
 ---
 ## gotbombs `<integer>`
 
 > introduced: beta 2<br>
 removed: around 1.20<br>
-gserver support: ❌ (won't implement)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (won't implement)<br>
+official serverside: ❌<br>
 
 True when the NPC has `>= integer` bombs.
 
@@ -137,18 +137,18 @@ True when the NPC has `>= integer` bombs.
 
 > introduced: beta 5<br>
 removed: 1.38<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC's bowpower is 1.
+True when the NPC's bowpower is `1`.
 
 ---
 ## gotdarts `<integer>`
 
 > introduced: beta 2<br>
 removed: around 1.20<br>
-gserver support: ❌ (won't implement)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (won't implement)<br>
+official serverside: ❌<br>
 
 True when the NPC has `>= integer` arrows.
 
@@ -157,68 +157,68 @@ True when the NPC has `>= integer` arrows.
 
 > introduced: beta 2<br>
 removed: 1.38<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC's glovepower is 1.
+True when the NPC's glovepower is `1`.
 
 ---
 ## gotglove2
 
 > introduced: beta 5<br>
 removed: 1.38<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC's glovepower is 2.
+True when the NPC's glovepower is `2`.
 
 ---
 ## gotgoldensword
 
 > introduced: beta 5<br>
 removed: 1.38<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC's swordpower is 4.
+True when the NPC's swordpower is `4`.
 
 ---
 ## gotlizardshield
 
 > introduced: beta 5<br>
 removed: 1.38<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC's shieldpower is 3.
+True when the NPC's shieldpower is `3`.
 
 ---
 ## gotlizardsword
 
 > introduced: beta 5<br>
 removed: 1.38<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC's swordpower is 3.
+True when the NPC's swordpower is `3`.
 
 ---
 ## gotmirrorshield
 
 > introduced: beta 5<br>
 removed: 1.38<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC's shieldpower is 2.
+True when the NPC's shieldpower is `2`.
 
 ---
 ## gotrupees `<integer>`
 
 > introduced: beta 2<br>
 removed: around 1.20<br>
-gserver support: ❌ (won't implement)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (won't implement)<br>
+official serverside: ❌<br>
 
 True when the NPC has `>= integer` gralats.
 
@@ -227,38 +227,38 @@ True when the NPC has `>= integer` gralats.
 
 > introduced: beta 5<br>
 removed: 1.38<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC's shieldpower is 1.
+True when the NPC's shieldpower is `1`.
 
 ---
 ## gotsuperbomb
 
 > introduced: beta 5<br>
 removed: 1.38<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC's bombpower is 2.
+True when the NPC's bombpower is `2`.
 
 ---
 ## gotsword
 
 > introduced: beta 5<br>
 removed: 1.38<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC's swordpower is 1.
+True when the NPC's swordpower is `1`.
 
 ---
 ## isfocused
 
 > introduced: 2.16rev5<br>
 removed: -<br>
-gserver support: ❌ (clientside)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (clientside)<br>
+official serverside: ❌<br>
 
 True when the `setfocus` command has changed where the camera is looking.
 
@@ -267,8 +267,8 @@ True when the `setfocus` command has changed where the camera is looking.
 
 > introduced: beta 5<br>
 removed: beta 7<br>
-gserver support: ❌ (won't implement)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (won't implement)<br>
+official serverside: ❌<br>
 
 True when the NPC is in the specified guild.
 
@@ -277,20 +277,20 @@ True when the NPC is in the specified guild.
 
 > introduced: 1.22<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the player is the level leader.
 The level leader is the player who has been inside the level the longest.
-They are in charge of processing baddies and can trigger `timeout` events on NPCs that didn't issue the `timereverywhere` command.
+They are in charge of processing baddies and can process [timeout](scripting-gs1-events.md#timeout) events on NPCs that didn't issue the [timereverywhere](scripting-gs1-commands.md#timereverywhere) command.
 
 ---
 ## isonmap
 
 > introduced: 1.38<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the player is on a map.
 It is currently unknown if it should be `true` if the player is on a gmap or not.
@@ -300,8 +300,8 @@ It is currently unknown if it should be `true` if the player is on a gmap or not
 
 > introduced: 2.02<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the player is in a sparring zone level.
 
@@ -310,8 +310,8 @@ True when the player is in a sparring zone level.
 
 > introduced: 1.34<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True if the current script is executing on a weapon.
 
@@ -320,8 +320,8 @@ True if the current script is executing on a weapon.
 
 > introduced: 2.14<br>
 removed: -<br>
-gserver support: ❌ (clientside)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (clientside)<br>
+official serverside: ❌<br>
 
 True when the left mouse button is pressed.
 
@@ -330,8 +330,8 @@ True when the left mouse button is pressed.
 
 > introduced: 2.03<br>
 removed: -<br>
-gserver support: ❌ (clientside)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (clientside)<br>
+official serverside: ❌<br>
 
 True when the client has enabled light effects.
 
@@ -340,8 +340,8 @@ True when the client has enabled light effects.
 
 > introduced: 2.14<br>
 removed: -<br>
-gserver support: ❌ (clientside)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (clientside)<br>
+official serverside: ❌<br>
 
 True when the middle mouse button is pressed.
 
@@ -350,38 +350,38 @@ True when the middle mouse button is pressed.
 
 > introduced: 2.02<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
-True when the player is in a `noplayerkilling` zone.
+True when the player is in a [noplayerkilling](scripting-gs1-commands.md#noplayerkilling) zone.
 
 ---
 ## peltwithblackstone
 
 > introduced: beta 5<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC has been hit by a thrown blackstone object.
+True when the NPC has been hit by a thrown [blackstone](scripting-gs1-variables.md#carry-objects) object.
 
 ---
 ## peltwithbush
 
 > introduced: beta 5<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC has been hit by a thrown bush object.
+True when the NPC has been hit by a thrown [bush](scripting-gs1-variables.md#carry-objects) object.
 
 ---
 ## peltwithnpc
 
 > introduced: around 1.20<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
 True when the NPC has been hit by another thrown NPC.
 
@@ -390,8 +390,8 @@ True when the NPC has been hit by another thrown NPC.
 
 > introduced: beta 7<br>
 removed: around 1.20<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
 True when the NPC has been hit by another thrown NPC.
 Renamed to `peltwithnpc` when the game renamed "person" to "npc".
@@ -400,8 +400,8 @@ Renamed to `peltwithnpc` when the game renamed "person" to "npc".
 ## peltwithplayer
 > introduced: -<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
 True when the NPC has been hit by a thrown player.
 
@@ -410,38 +410,38 @@ True when the NPC has been hit by a thrown player.
 
 > introduced: beta 5<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC has been hit by a thrown sign object.
+True when the NPC has been hit by a thrown [sign](scripting-gs1-variables.md#carry-objects) object.
 
 ---
 ## peltwithstone
 
 > introduced: beta 5<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC has been hit by a thrown stone object.
+True when the NPC has been hit by a thrown [stone](scripting-gs1-variables.md#carry-objects) object.
 
 ---
 ## peltwithvase
 
 > introduced: beta 5<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
-True when the NPC has been hit by a thrown vase object.
+True when the NPC has been hit by a thrown [vase](scripting-gs1-variables.md#carry-objects) object.
 
 ---
 ## playerattached
 
 > introduced: 2.04<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the player is attached to an NPC.
 
@@ -450,8 +450,8 @@ True when the player is attached to an NPC.
 
 > introduced: beta 7<br>
 removed: around 1.25<br>
-gserver support: ❌ (won't implement)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (won't implement)<br>
+official serverside: ❌<br>
 
 True when the player is in the specified guild.
 
@@ -460,8 +460,8 @@ True when the player is in the specified guild.
 
 > introduced: 1.36<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the player is "female".
 
@@ -470,8 +470,8 @@ True when the player is "female".
 
 > introduced: 1.36<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the player is "male".
 
@@ -480,8 +480,8 @@ True when the player is "male".
 
 > introduced: beta 5<br>
 removed: 1.32<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
 True when the player has killed another player.
 
@@ -490,8 +490,8 @@ True when the player has killed another player.
 
 > introduced: 2.14rev7<br>
 removed: -<br>
-gserver support: ❌ (clientside)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (clientside)<br>
+official serverside: ❌<br>
 
 True when the player is looking at the map.
 
@@ -500,8 +500,8 @@ True when the player is looking at the map.
 
 > introduced: around 1.20<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the player is riding a horse.
 
@@ -510,8 +510,8 @@ True when the player is riding a horse.
 
 > introduced: -<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ✅<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 True when the player is playing online.
 
@@ -520,8 +520,8 @@ True when the player is playing online.
 
 > introduced: 2.14rev7<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the player is currently paused.
 
@@ -530,8 +530,8 @@ True when the player is currently paused.
 
 > introduced: 2.03<br>
 removed: -<br>
-gserver support: ❌ (clientside)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (clientside)<br>
+official serverside: ❌<br>
 
 True when the player is reading a sign.
 
@@ -540,8 +540,8 @@ True when the player is reading a sign.
 
 > introduced: around 1.32<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the player is swimming in water.
 
@@ -550,8 +550,8 @@ True when the player is swimming in water.
 
 > introduced: 2.14<br>
 removed: -<br>
-gserver support: ❌ (clientside)<br>
-official support: ❌<br>
+gs2emu serverside: ❌ (clientside)<br>
+official serverside: ❌<br>
 
 True when the right mouse button is pressed.
 
@@ -560,8 +560,8 @@ True when the right mouse button is pressed.
 
 > introduced: beta 7<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the NPC has been hit by an arrow shot by a baddie.
 
@@ -570,8 +570,8 @@ True when the NPC has been hit by an arrow shot by a baddie.
 
 > introduced: -<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ❌<br>
+gs2emu serverside: ✅<br>
+official serverside: ❌<br>
 
 True when the NPC has been hit by an arrow shot by another NPC.
 
@@ -580,8 +580,8 @@ True when the NPC has been hit by an arrow shot by another NPC.
 
 > introduced: beta 7<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the NPC has been hit by an arrow shot by a player.
 
@@ -590,20 +590,20 @@ True when the NPC has been hit by an arrow shot by a player.
 
 > introduced: beta 5<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ✅<br>
+gs2emu serverside: ✅<br>
+official serverside: ✅<br>
 
 True when the NPC is visible.
 Being outside of camera range does not make this flag false.
-It instead refers to an NPC that has been made invisible or not by a command like `hide`.
+It instead refers to an NPC that has been made invisible or not by a command like [hide](scripting-gs1-commands.md#hide).
 
 ---
 ## weaponsenabled
 
 > introduced: beta 5<br>
 removed: -<br>
-gserver support: ✅ 4.0<br>
-official support: ???<br>
+gs2emu serverside: ✅<br>
+official serverside: ???<br>
 
 True when the player's weapons are enabled.
-A player's weapon can be disabled with the `disableweapons` command.
+A player's weapon can be disabled with the [disableweapons](scripting-gs1-commands.md#disableweapons) command.
