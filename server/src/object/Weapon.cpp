@@ -275,8 +275,12 @@ void Weapon::registerWeaponWithPlayer(std::shared_ptr<Player> player) const
 	CString weaponPacket;
 	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)name.length() << name >> (char)NPCProp::IMAGE >> (char)image.length() << image;
 
-	// Classic weapons.
-	if (m_server->Generation != ServerGeneration::MODERN && m_script.getClientByteCode().empty())
+	/*
+	 * Classic weapons: decide by whether client bytecode exists, not by server
+	 * generation. A weapon without compiled bytecode has no valid script headers
+	 * to send, so sending the never-built m_headerWithCRC would crash the server.
+	 */
+	if (m_script.getClientByteCode().empty())
 	{
 		std::string script = getClientSideScript();
 		weaponPacket >> (char)NPCProp::SCRIPT >> (short)script.length() << script;
