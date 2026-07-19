@@ -138,7 +138,7 @@ Manually executes a named event on an NPC.
 | --------- | ----------- |
 | index     | The level index of the npc.  See: [npcscount](scripting-gs1-variables.md#npcs).
 | eventname | The name of an event to trigger, like [playertouchsme](scripting-gs1-events.md#playertouchsme). |
-| params    | Optional parameters that can be accessed in the target NPC through [#p()](scripting-gs1-messagecodes.md#p) and [paramscount](scripting-gs1-variables.md#triggeraction). |
+| params    | Optional parameters that can be accessed in the target NPC through [#p(index)](scripting-gs1-messagecodes.md#p) and [paramscount](scripting-gs1-variables.md#triggeraction). |
 
 ```
 for (i = 0; i < npcscount; i++) {
@@ -165,7 +165,7 @@ Manually executes a named event on a weapon.
 | --------- | ----------- |
 | index     | The index of the weapon.  See: [weaponscount](scripting-gs1-variables.md#game-client).
 | eventname | The name of an event to trigger, like [playertouchsme](scripting-gs1-events.md#playertouchsme). |
-| params    | Optional parameters that can be accessed in the target NPC through [#p()](scripting-gs1-messagecodes.md#p) and [paramscount](scripting-gs1-variables.md#triggeraction). |
+| params    | Optional parameters that can be accessed in the target NPC through [#p(index)](scripting-gs1-messagecodes.md#p) and [paramscount](scripting-gs1-variables.md#triggeraction). |
 
 ---
 ## canbecarried
@@ -591,7 +591,7 @@ See: [Draw layers](scripting-gs1-variables.md#draw-layers)
 `drawovertrees;`
 
 > introduced: (newworld)<br>
-scope: 💻 serverside<br>
+scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 
@@ -1549,7 +1549,11 @@ Internal command to save data directly to the official database.
 > introduced: [GR]<br>
 scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ❌<br>
-official serverside: ✅<br>
+official serverside: ⚠️<br>
+
+Saves the level.
+
+Not currently implemented, and it is currently unknown if official supported this.
 
 ---
 ## savelog
@@ -2455,14 +2459,14 @@ Shoots a projectile.
 | Z      | The starting Z position of the projectile, from ground level.  Do not manually add the ground Z height for 3D terrain.  This is relative to ground level. |
 | Angle  | The direction of the projectile, in radians, where east is `0`, north is `pi/2`, west is `pi`, and south is `3*pi/2`.  Range is `[0..2*pi]`. |
 | ZAngle | The upward angle of the projectile, in radians, where `0` is flat horizontal, straight up is `pi/2`, and flat horizontal, backwards, is `pi`.  Can be negative to shoot downwards.  Range of `[-pi..pi]`. |
-| Power  | Launch strength of the projectile.  Value is tiles traveled every 0.05 seconds, up to 5 tiles.  When power is `0`, the projectile has no gravity and flies like a classic arrow, moving 1 tile per 0.05 seoncds (20 per second). |
+| Power  | Launch strength of the projectile.  Value is tiles traveled every 0.05 seconds, up to 5 tiles.  When power is `0`, the projectile has no gravity and flies like a classic arrow, moving 1 tile per 0.05 seconds (20 per second).  Range of `[0.0..5.0]`. |
 | Gani   | The gani animation to play for the projectile. |
 | Ganiattribs | A CSV formatted string of gani attributes. |
 
-Until client 5.1, the `X`, `Y`, and `Z` parameters have half tile (0.5) precision.
-On client 5.1 and up, they have pixel precision.
+Until client 5.1, the `X`, `Y`, and `Z` parameters have half tile (`0.5`) resolution.
+On client 5.1 and up, they have pixel resolution.
 
-The resolution of the `power` parameter is 1/44'ths of a tile (0.022727...).
+The resolution of the `power` parameter is 1/44'th of a tile (`0.022727...`).
 
 If the gani is multi-directional, the game chooses the direction based on the travel direction of the projectile.
 The gani can have 1 frame (static) or 7 frames of animation (rising and falling).
@@ -2470,23 +2474,23 @@ Maximum ascent is frame 1, horizontal is frame 4, and maximum descent is frame 7
 
 Various events are spawned when the projectile lands or hits something.
 
-| Event | Scope | Versions | Condition | Parameters `#p()` |
+| Event | Scope | Versions | Condition | Parameters `#p(index)` |
 | ----- | ----- | -------- | --------- | ---------- |
-| actionprojectile  | 🧑 | except 2.17x - 2.18x | The projectile hits a player or NPC. | [setshootparams](#setshootparams) |
+| actionprojectile  | 🧑 | <2.17<br>>=2.19 | The projectile hits a player or NPC. | [setshootparams](#setshootparams) |
 | actionprojectile  | 🧑 | 2.17x - 2.18x | The projectile hits the ground or hits a player or NPC. | `#p(0)` = X<br>`#p(1)` = Y<br>`#p(2+)` = [setshootparams](#setshootparams) |
 | actionprojectile2 | 🧑 | 2.19+ | The projectile hits the ground. | `#p(0)` = X<br>`#p(1)` = Y<br>`#p(2+)` = [setshootparams](#setshootparams) |
 | actionprojectile  | 💻 | | A projectile launched by a client hits the ground or hits an NPC. | `#p(0)` = X<br>`#p(1)` = Y<br>`#p(2+)` = [setshootparams](#setshootparams) |
 | actionsprojectile | 💻 | | A projectile launched by a serverside NPC hits the ground or hits an NPC. | `#p(0)` = X<br>`#p(1)` = Y<br>`#p(2+)` = [setshootparams](#setshootparams) |
 
-Clients 2.17 - 2.18rev1 briefly triggered `actionprojectile` upon hitting the ground, but this caused problems and was reverted in 2.19.
+Clients 2.17 through 2.18rev1 briefly triggered `actionprojectile` upon hitting the ground, but this caused problems and was reverted in 2.19.
 Instead, `actionprojectile2` was created to handle ground hits.
 
 The [setshootparams](#setshootparams) command can be used to embed launch parameters into the projectile.
 It must be called _BEFORE_ the projectile is shot.
 
-Projectiles are affected by the [gravity](scripting-gs1-variables.md#levels) variable.
+Shoot projectiles are affected by the [gravity](scripting-gs1-variables.md#levels) variable.
 Until client version 5.1, this variable had to be changed on both the client and server, or else projectiles would get out of sync.
-Starting on client 5.1, the client's gravity variable is embedded in the projectile when being sent to the server.
+Starting on client 5.1, the [gravity](scripting-gs1-variables.md#levels) variable is embedded in the projectile, so each projectile can have its own gravity.
 
 ---
 ## shootarrow

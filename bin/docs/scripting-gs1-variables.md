@@ -26,7 +26,7 @@ The `scope` can be one or both of clientside 🧑 and serverside 💻.
 | Variable | Introduced | Scope | Description |
 | -------- | ---------- | ----- | ----------- |
 | timevar   | 2.10 | 🧑💻 | A synchronized time variable that is incremented once every 5 seconds. |
-| timevar2  | 2.30 | 🧑💻 | Clientside, it is the time since the start of the machine (in milliseconds, until client 4.20rev6. Serverside, it is the Unix timestamp. |
+| timevar2  | 2.30 | 🧑💻 | Clientside, it is the time since the start of the machine (in milliseconds, until client 4.20rev6). Serverside, it is the Unix timestamp. |
 | nwtime    | (npcserver) | 💻 | Minute in the day [0..1439] |
 | nwmin     | (npcserver) | 💻 | Minute of the hour [0..59] |
 | nwhour    | (npcserver) | 💻 | Hour of the day [0..23] |
@@ -71,7 +71,7 @@ The `scope` can be one or both of clientside 🧑 and serverside 💻.
 | levelorgx       | 2.04        | 🧑💻 | When a player is attached to an NPC, this is the player's Y offset from level position (0, 0).  When attached, the player's tile position is relative to the NPC. |
 | levelorgy       | 2.04        | 🧑💻 | When a player is attached to an NPC, this is the player's Y offset from level position (0, 0).  When attached, the player's tile position is relative to the NPC. |
 | board[]         | around 1.20 | 🧑💻 | [Read only] The tile at the specific level board index.  The level board consists of 64x64 tiles. |
-| tiles[x,y]      | 2.10        | 🧑💻 | [RW] The tile at the specific tile position.  Positions outside of [0..63] will affect adjacent levels when on a bigmap. |
+| tiles[x,y]      | 2.10        | 🧑💻 | [RW] The tile at the specific tile position.  Positions outside of `[0..63]` will affect adjacent levels when on a bigmap. |
 | gravity         | 2.22        | 🧑💻 | How fast items fall to the ground (defaults to a velocity of `2.0` tiles per second). |
 | groundheights[] | possibly 2.12<br>revealed ??? | 🧑💻 | The height at which 3D terrain will transition to different tiles. |
 | waterheight     | possibly 2.12<br>revealed ??? | 🧑 | The height that water is drawn at on 3D terrain (global value).  The player will switch to the swim gani, but their Z height will still keep lowering until it hits zero. |
@@ -145,7 +145,7 @@ The `picso.png` tileset is paged from top to bottom, left to right.
 | players[].trial       | ??? | 🧑💻 | Identifies if the player is a trial account. |
 | players[].x           | beta 5 | 🧑💻 | The X tile position of the player. |
 | players[].y           | beta 5 | 🧑💻 | The Y tile position of the player. |
-| players[].z           | possibly 2.12<br>revealed (npcserver) | 🧑💻 | The Z height of the player, from `-50` to `170`. |
+| players[].z           | possibly 2.12<br>revealed (npcserver) | 🧑💻 | The Z height of the player, in the range of `[-50..170]`. |
 | playerfreezetime      | ??? | 🧑 | The seconds left until the player is no longer frozen, or `-1` when not frozen. |
 
 > players[] shorthand: e.g., playerhearts
@@ -505,13 +505,13 @@ Note 2:
 | flag          | beta 2 | The currently active player. |
 | this.var      | 1.10 | The currently active NPC. |
 | this.flag     | 2.19 | The currently active NPC. |
-| thiso.var     | (npcserver) | The source NPC (the one outside of `with()`). |
-| thiso.flag    | (npcserver) | The source NPC (the one outside of `with()`). |
+| thiso.var     | (npcserver) | The source NPC (the one outside of [with()](scripting-gs1-flow-control-operators.md#flow-control-statements)). |
+| thiso.flag    | (npcserver) | The source NPC (the one outside of [with()](scripting-gs1-flow-control-operators.md#flow-control-statements)). |
 | level.        | (npcserver) | The level. |
 | local.flag    | 2.02 | Clientside: The level.  Does not get sent to the server.<br>Serverside: The script context. |
 | client.flag   | 2.19 | The currently aftive player. |
 | clientr.flag  | (npcserver) | The currently active player.  Clientside cannot alter this flag. |
-| cliento.flag  | (npcserver) | The source player (the one outside of `with()`). |
-| clientro.flag | (npcserver) | The source player (the one outside of `with()`).  Clientside cannot alter this flag. |
+| cliento.flag  | (npcserver) | The source player (the one outside of [with()](scripting-gs1-flow-control-operators.md#flow-control-statements)). |
+| clientro.flag | (npcserver) | The source player (the one outside of [with()](scripting-gs1-flow-control-operators.md#flow-control-statements)).  Clientside cannot alter this flag. |
 | server.flag   | ??? | The server.  NPC-Server enabled servers do not send these to clients. |
 | serverr.flag  | (npcserver) | The server. |

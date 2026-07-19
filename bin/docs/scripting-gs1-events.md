@@ -110,11 +110,11 @@ executed on: 🤖 npc<br>
 Triggered on an NPC when the player presses the mouse button down.
 
 Related flags:
-- `leftmousebutton`
-- `middlemousebutton`
-- `rightmousebutton`
+- [leftmousebutton](scripting-gs1-flags.md#leftmousebutton)
+- [middlemousebutton](scripting-gs1-flags.md#middlemousebutton)
+- [rightmousebutton](scripting-gs1-flags.md#rightmousebutton)
 
-Related variables:
+Related [variables](scripting-gs1-variables.md#game-client):
 - `mousex`
 - `mousey`
 - `mousebuttons`
@@ -133,11 +133,11 @@ executed on: 🤖 npc<br>
 Triggered on an NPC when the player releases the mouse button.
 
 Related flags:
-- `leftmousebutton`
-- `middlemousebutton`
-- `rightmousebutton`
+- [leftmousebutton](scripting-gs1-flags.md#leftmousebutton)
+- [middlemousebutton](scripting-gs1-flags.md#middlemousebutton)
+- [rightmousebutton](scripting-gs1-flags.md#rightmousebutton)
 
-Related variables:
+Related [variables](scripting-gs1-variables.md#game-client):
 - `mousex`
 - `mousey`
 - `mousebuttons`
@@ -155,7 +155,7 @@ executed on: 🤖 npc<br>
 
 Triggered on an NPC when the player scrolls the mouse wheel.
 
-Related flags: `mousewheeldelta`
+Related flags: [mousewheeldelta](scripting-gs1-flags.md#mousewheeldelta).
 
 ---
 ## movementfinished
@@ -167,6 +167,8 @@ official serverside: ✅<br>
 executed on: 🤖 npc<br>
 
 Triggers after all movement commands have finished executing, assuming the 'inform when done' option was set.
+
+See: [move](scripting-gs1-commands.md#move).
 
 ---
 ## npcwarped
@@ -328,6 +330,8 @@ executed on: 🌐 control-npc<br>
 
 Triggers whenever an RC player sends an RC chat message starting with `/npc`.
 
+The chat message is ran through [tokenize](scripting-gs1-commands.md#tokenize) and [#p(index)](scripting-gs1-messagecodes.md#p) parameters are created.
+
 ---
 ## serverlistconnect
 
@@ -361,24 +365,26 @@ gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 executed on: 🤖 🌐 npc, control-npc<br>
 
-| event | introduced | description |
+| Event | Introduced | Description |
 | ----- | ---------- | ----------- |
-| actionplayeronline | | triggers on Control-NPCs when a player logs in |
-| actionclientside  | 2.21 | triggers on clientside weapon scripts |
-| actionserverside  | | triggers on a serverside weapon when a client sends the `serverside` action |
-| actionserverside  | 5.006 | triggers on a serverside NPC when a client sends the `servernpc` action |
-| actionserver...   | | triggers on Control-NPCs |
-| actionpushed      | | triggers when an NPC is pushed, `#p(0)` is the direction of the push |
-| actionpulled      | | triggers when an NPC is pulled, `#p(0)` is the direction of the pull |
-| actionprojectile  | 2.14 | - triggers on clients when a projectile collides with an npc/player<br>- triggers on Control-NPCs when a player spawned projectile collides or lands |
-| actionsprojectile | 2.14 | triggers on Control-NPCs when a serverside spawned projectile collides or lands |
-| actionprojectile2 | 2.19 | triggers on clients when a projectile lands on the ground |
-| actionleftmouse   | 2.14 | triggers on NPCs the player clicks with the left mouse button |
-| actionrightmouse  | 2.14 | triggers on NPCs the player clicks with the right mouse button |
-| actionmiddlemouse | 2.14 | triggers on NPCs the player clicks with the middle mouse button |
-| actiondoublemouse | 2.14 | triggers on NPCs the player double-clicks |
-| actionserverstartparams | 2.30 | triggers on the Control-NPC when a player connects via the `graal://` or `graal3://` browser protocols:<pre>graal://servername/param1,param2,ect...</pre> |
-| action... | | triggers on NPCs that the event touches |
+| actionplayeronline |      | Triggers on Control-NPCs when a player logs in. |
+| actionclientside   | 2.21 | Triggers on clientside weapon scripts. |
+| actionserverside   |      | Triggers on a serverside weapon when a client sends the `serverside` [triggeraction](scripting-gs1-commands.md#triggeraction). |
+| actionserverside   | 5.00rev6 | Triggers on a serverside NPC when a client sends the `servernpc` [triggeraction](scripting-gs1-commands.md#triggeraction). |
+| actionserver...    |      | Triggers on Control-NPCs. |
+| actionpushed       |      | Triggers when an NPC is pushed, [#p(0)](scripting-gs1-messagecodes.md#p) is the direction of the push. |
+| actionpulled       |      | Triggers when an NPC is pulled, [#p(0)](scripting-gs1-messagecodes.md#p) is the direction of the pull. |
+| actionprojectile   | 2.14 | Triggers on clients when a projectile collides with an npc or player<br>- triggers on Control-NPCs when a player spawned projectile collides or lands. |
+| actionsprojectile  | 2.14 | Triggers on Control-NPCs when a serverside spawned projectile collides or lands. |
+| actionprojectile2  | 2.19 | Triggers on clients when a projectile lands on the ground. |
+| actionleftmouse    | 2.14 | Triggers on NPCs the player clicks with the left mouse button. |
+| actionrightmouse   | 2.14 | Triggers on NPCs the player clicks with the right mouse button. |
+| actionmiddlemouse  | 2.14 | Triggers on NPCs the player clicks with the middle mouse button. |
+| actiondoublemouse  | 2.14 | Triggers on NPCs the player double-clicks. |
+| actionserverstartparams | 2.30 | Triggers on the Control-NPC when a player connects via the `graal://` or `graal3://` browser protocols:<pre>graal://servername/param1,param2,ect...</pre> |
+| action... | | Triggers on NPCs that the event touches. |
+
+See: [triggeraction](scripting-gs1-commands.md#triggeraction).
 
 ---
 ## updategani
@@ -401,7 +407,7 @@ gs2emu serverside: ✅<br>
 official serverside: ???<br>
 executed on: 🤖 npc<br>
 
-Triggers when an NPC is hit by `hitnpc` or `hitobjects`.
+Triggers when an NPC is hit by [hitnpc](scripting-gs1-commands.md#hitnpc) or [hitobjects](scripting-gs1-commands.md#hitobjects).
 
 On clientside, this will also trigger by a player's sword attack.
 
@@ -429,7 +435,7 @@ executed on: 🤖 npc<br>
 
 Triggers when an NPC was shot with an arrow.
 
-Does not trigger for `shoot` based projectiles, which trigger `actionprojectile` style events instead.
+Does not trigger for [shoot](scripting-gs1-commands.md#shoot) based projectiles, which trigger `actionprojectile` style events instead.
 
 ---
 ## wasthrown

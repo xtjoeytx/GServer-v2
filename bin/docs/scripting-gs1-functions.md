@@ -129,7 +129,7 @@ official serverside: ???<br>
 Finds the player nearest to the specified level tile position and returns them as an object.
 
 Client 5.00rev6 added this function clientside, but due to the nature of returning an object,
-it would only work serverside using the `with()` statement.
+it would only work serverside using the [with()](scripting-gs1-flow-control-operators.md#flow-control-statements) statement.
 
 It is unknown if official supported this function serverside, either.
 This gserver _DOES_ support this function serverside, and is used like so:
@@ -235,7 +235,7 @@ scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 
-Finds the player nearest to the specified level tile position and returns their index in the `players[]` array.
+Finds the player nearest to the specified level tile position and returns their index in the [players\[\]](scripting-gs1-variables.md#players) array.
 
 ```
 this.pid = getnearestplayer(x+1.5, y+2);
@@ -283,7 +283,7 @@ gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 
 Returns a database NPC with the given name.
-The return value is an object, so it must be used in conjunction with the `with()` statement.
+The return value is an object, so it must be used in conjunction with the [with()](scripting-gs1-flow-control-operators.md#flow-control-statements) statement.
 
 ```
 with (getnpc(Bank Teller)) {
@@ -302,7 +302,7 @@ gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 
 Returns the player associated with the given account name.
-The reeturn value is an object, so it must be used in conjunction with the `with()` statement.
+The reeturn value is an object, so it must be used in conjunction with the [with()](scripting-gs1-flow-control-operators.md#flow-control-statements) statement.
 
 ```
 with (getplayer(#c)) {
@@ -595,7 +595,7 @@ Returns true if the specified coordinate is blocking.
 It tests:
 - If the tile at the level position is a blocking tile.
 - If an NPC collision bounding box blocks the location (hidden NPCs do not block).
-- If a player's collision bounding box blocks the location (`noplayerkilling` levels disable player blocking).
+- If a player's collision bounding box blocks the location ([noplayerkilling](scripting-gs1-commands.md#noplayerkilling) levels disable player blocking).
 
 ---
 ## onwall2
@@ -607,7 +607,7 @@ scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 
-Performs `onwall()` tests across a region.
+Performs [onwall()](#onwall) tests across a region.
 
 ---
 ## onwater
@@ -631,7 +631,7 @@ scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 
-Performs `onwater()` tests across a region.
+Performs [onwater()](#onwater) tests across a region.
 
 ---
 ## passwordmatches
@@ -645,7 +645,7 @@ official serverside: ✅<br>
 
 Checks if the given `string`, once password hashed, matches `hashed`.
 
-Used in conjunction with the `#E()` message code.
+Used in conjunction with the [#E()](scripting-gs1-messagecodes.md#estring) message code.
 
 ```
 setstring hashed, #E(hunter2);
@@ -794,7 +794,7 @@ official serverside: ✅<br>
 
 Checks if `string` starts with `prefix`, in a case-insensitive manner.
 
-The order of the parameters is swapped compared to `strcontains`, which can be confusing.
+The order of the parameters is swapped compared to [strcontains](#strcontains), which can be confusing.
 
 ---
 ## strcontains
@@ -863,7 +863,7 @@ official serverside: ❌<br>
 
 Returns the index of the bomb at the level tile position, or `-1` if no bomb was found.
 
-The index can be used with the `bombs[]` array.
+The index can be used with the [bombs\[\]](scripting-gs1-variables.md#bombs) array.
 
 ---
 ## testcompu
@@ -877,7 +877,7 @@ official serverside: ❌<br>
 
 Returns the index of the baddy at the level tile position, or `-1` if no baddy was found.
 
-The index can be used with the `compus[]` array.
+The index can be used with the [compus\[\]](scripting-gs1-variables.md#compus) array.
 
 ---
 ## testexplo
@@ -891,7 +891,7 @@ official serverside: ❌<br>
 
 Returns the index of the explosion tile at the level tile position, or `-1` if no explosion tile was found.
 
-The index can be used with the `explos[]` array.
+The index can be used with the [explos\[\]](scripting-gs1-variables.md#explos) array.
 
 This command tests explosion tiles.  When a standard bomb explodes, it creates five 2x2 explosion tiles, not one explosion.
 
@@ -907,7 +907,7 @@ official serverside: ❌<br>
 
 Returns the index of the horse at the level tile position, or `-1` if no horse is found.
 
-The index can be used with the `horses[]` array.
+The index can be used with the [horses\[\]](scripting-gs1-variables.md#horses) array.
 
 Only tests horses in the level.  If a player mounts a horse, it is removed from the level, and thus it is not detected.
 
@@ -923,7 +923,7 @@ official serverside: ❌<br>
 
 Returns the index of the item at the level tile position, or `-1` if no item is found.
 
-The index can be used with the `items[]` array.
+The index can be used with the [items\[\]](scripting-gs1-variables.md#items) array.
 
 ---
 ## testnpc
@@ -938,7 +938,7 @@ official serverside: ✅<br>
 Returns the index of the NPC at the level tile position, or `-1` if no NPC is found.
 The NPC must be visible and have a collision boundary to be discovered by this function.
 
-The index can be used with the `npcs[]` array.
+The index can be used with the [npcs\[\]](scripting-gs1-variables.md#npcs) array.
 
 ---
 ## testplayer
@@ -955,14 +955,14 @@ It returns the returns the index of the player at the level tile position.
 Serverside, if no player is found, it returns `-2`.
 
 Clientside, it returns either `-2` or `-1`, depending on your client version.
-In earlier versions of game, the client would include `showcharacter` NPCs in the `players[]` array.
+In earlier versions of game, the client would include [showcharacter](scripting-gs1-commands.md#showcharacter) NPCs in the [players\[\]](scripting-gs1-variables.md#players) array.
 For versions of the client that did that, it would return `-2` when it finds nothing, or `-1` if it finds the current NPC.
 For later clients, it will return `-1` if nothing is found.
 
 The player must be visible and have a collision boundary to be discovered by this function.
-Players in `noplayerkilling` levels or are currently paused will not be discovered.
+Players in [noplayerkilling](scripting-gs1-commands.md#noplayerkilling) levels or are currently paused will not be discovered.
 
-The index can be used with the `players[]` array.
+The index can be used with the [players\[\]](scripting-gs1-variables.md#players) array.
 
 ---
 ## testsign
@@ -1011,7 +1011,7 @@ gs2emu serverside: ✅<br>
 official serverside: ✅<br>
 
 Returns the type of tile that is at the specified level tile position.
-Any NPCs at the location that have used `setshape2` to change the types of tiles at that position will also be discovered by this function.
+Any NPCs at the location that have used [setshape2](scripting-gs1-commands.md#setshape2) to change the types of tiles at that position will also be discovered by this function.
 
 ---
 ## vecx
