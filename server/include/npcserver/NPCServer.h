@@ -100,7 +100,7 @@ public:
 	void showImage(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view image) const;
 	void showText(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view text, std::string_view font = {}, std::string_view style = {}) const;
 	void showGani(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view animation, uint8_t direction) const;
-	void showPoly(std::shared_ptr<NPC> npc, uint8_t index, const std::vector<double>& points) const;
+	void showPoly(std::shared_ptr<NPC> npc, uint8_t index, uint8_t dimensions, const std::vector<double>& points) const;
 	void changeShowImgColors(std::shared_ptr<NPC> npc, uint8_t index, float red, float green, float blue, float alpha) const;
 	void changeShowImgMode(std::shared_ptr<NPC> npc, uint8_t index, uint8_t drawMode) const;
 	void changeShowImgPart(std::shared_ptr<NPC> npc, uint8_t index, const ImagePartRectangle& imagePart) const;

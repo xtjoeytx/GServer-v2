@@ -58,8 +58,10 @@ changeimgzoom,changeimgcolors
 	image prop:
 		If it starts with @, it is a showtext:  @Font@Style@Text
 		If it starts with &, it is a showani:   &dir,gani  e.g.:  &0,skip
-		If it starts with :, it is a showpoly:  #2,x1,y1,...,xn,yn  e.g.:  #2,10,10,15,10,15,15,10,15
-			Unknown what the 2 is for.
+		If it starts with #, it is a showpoly:  #2,x1,y1,...,xn,yn  e.g.:  #2,10,10,15,10,15,15,10,15
+			The first number after the # is how many numbers there are per point.
+			2 = 2D: x,y
+			3 = 3D: x,y,z
 
 	layer prop:
 		0 - under players
@@ -99,7 +101,7 @@ struct ShowImg
 	static ShowImg ConstructImage(clock::time_point modTime, const PixelPosition& position, std::string_view image) noexcept;
 	static ShowImg ConstructText(clock::time_point modTime, const PixelPosition& position, std::string_view text, std::string_view font = {}, std::string_view style = {}) noexcept;
 	static ShowImg ConstructGani(clock::time_point modTime, const PixelPosition& position, std::string_view animation, uint8_t direction) noexcept;
-	static ShowImg ConstructPoly(clock::time_point modTime, const std::vector<double>& points) noexcept;
+	static ShowImg ConstructPoly(clock::time_point modTime, uint8_t dimensions, const std::vector<double>& points) noexcept;
 
 	void processProps(CString& props);
 	CString getPropPacket(ShowImgProp prop) const;

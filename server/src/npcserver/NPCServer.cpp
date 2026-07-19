@@ -619,16 +619,16 @@ void NPCServer::showGani(std::shared_ptr<NPC> npc, uint8_t index, const PixelPos
 	npc->addShowImg(index, std::move(showimg));
 }
 
-void NPCServer::showPoly(std::shared_ptr<NPC> npc, uint8_t index, const std::vector<double>& points) const
+void NPCServer::showPoly(std::shared_ptr<NPC> npc, uint8_t index, uint8_t dimensions, const std::vector<double>& points) const
 {
-	if (index > 199)
+	if (index > 199 || dimensions < 2 || dimensions > 3)
 		return;
 
 	auto level = npc->getLevel();
 	if (level == nullptr)
 		return;
 
-	auto showimg = ShowImg::ConstructPoly(m_frameStartTime, points);
+	auto showimg = ShowImg::ConstructPoly(m_frameStartTime, dimensions, points);
 	npc->addShowImg(index, std::move(showimg));
 }
 

@@ -3115,7 +3115,7 @@ void fn_showpoly(GS1Visitor* visitor, std::string_view commandName, const std::v
 			if (polygons.size() == 0 || polygons.size() % 2 != 0)
 				throw std::invalid_argument("invalid arguments: showpoly index,{ x1,y1,...,xn,yn }");
 
-			server->getNPCServer()->showPoly(npc, index, polygons);
+			server->getNPCServer()->showPoly(npc, index, 2, polygons);
 		}
 	}
 }
@@ -3138,7 +3138,7 @@ void fn_showpoly2(GS1Visitor* visitor, std::string_view commandName, const std::
 			if (polygons.size() == 0 || polygons.size() % 3 != 0)
 				throw std::invalid_argument("invalid arguments: showpoly2 index,{ x1,y1,z1,...,xn,yn,zn }");
 
-			server->getNPCServer()->showPoly(npc, index, polygons);
+			server->getNPCServer()->showPoly(npc, index, 3, polygons);
 		}
 	}
 }

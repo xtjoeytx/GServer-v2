@@ -77,9 +77,9 @@ ShowImg ShowImg::ConstructGani(clock::time_point modTime, const PixelPosition& p
 	return showimg;
 }
 
-ShowImg ShowImg::ConstructPoly(clock::time_point modTime, const std::vector<double>& points) noexcept
+ShowImg ShowImg::ConstructPoly(clock::time_point modTime, uint8_t dimensions, const std::vector<double>& points) noexcept
 {
-	std::string polygon{ "#2" };
+	std::string polygon = std::format("#{}", dimensions);
 	for (const auto& point : points)
 	{
 		polygon += std::format(",{:.0f}", point);
