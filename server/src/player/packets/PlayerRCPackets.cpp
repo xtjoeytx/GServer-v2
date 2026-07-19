@@ -7,17 +7,15 @@
 #include <limits>
 #include <map>
 #include <memory>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <utility>
 #include <vector>
 
 #include <CString.h>
-#include <IConfig.h>
 #include <IEnums.h>
 
-#include <BabyDI.h>
 #include <Account.h>
 #include <Server.h>
 #include <filesystem/File.h>
@@ -30,11 +28,9 @@
 #include <player/PlayerClient.h>
 #include <player/PlayerRC.h>
 #include <scripting/ScriptContainers.h>
-#include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
-#include <utilities/manager/ITranslationManager.h>
 #include <utilities/StringUtils.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -292,7 +288,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ADMINMESSAGE(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	m_server->sendPacketToAll(CString() >> (char)PLO_RC_ADMINMESSAGE << "Admin " << account.name << ":\xa7" << pPacket.readString(""), { m_id });
+	m_server->sendPacketToAll(CString() >> (char)PLO_RC_ADMINMESSAGE << "Admin " << account.name << ":\xa7" << pPacket.readString(""), {m_id});
 	return HandlePacketResult::Handled;
 }
 
@@ -642,6 +638,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 			return HandlePacketResult::Handled;
 	}
 
+	// clang-format off
 	sendPacket(CString() >> (char)PLO_RC_ACCOUNTGET >> (char)acc.length() << acc
 		>> (char)0 // >> (char)password_length << password
 		>> (char)p->account.email.size() << p->account.email
@@ -649,6 +646,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTGET(CString& pPacket)
 		>> (char)4 << "main"
 		>> (char)p->account.banLength.size() << p->account.banLength
 		>> (char)p->account.banReason.size() << p->account.banReason);
+	// clang-format on
 
 	return HandlePacketResult::Handled;
 }
@@ -706,7 +704,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 	// If the player was just now banned, kick him off the server.
 	if (account.hasRight(PLPERM_BAN) && banned && p->getId() != 0)
 	{
-		auto reason = string::join(string::fromCSV(banreason), std::string_view{ "\r" });
+		auto reason = string::join(string::fromCSV(banreason), std::string_view{"\r"});
 
 		p->setLoaded(false);
 		p->sendPacket(CString() >> (char)PLO_DISCMESSAGE << account.name << " has banned you.  Reason: " << reason);
@@ -736,282 +734,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 	}
 
 	CString message = pPacket.readString("");
-	if (message.isEmpty()) return HandlePacketResult::Handled;
-	auto words = string::splitToVectorView(message.toStringView());
-
-	if (words[0].at(0) != '/')
-	{
-		m_server->sendToRC(CString(account.character.nickName) << ": " << message);
-		return HandlePacketResult::Handled;
-	}
-	else
-	{
-#ifndef NDEBUG
-		if (words[0] == "/sendtext")
-		{
-			sendPacket(CString() >> (char)PLO_SERVERTEXT << message.subString(10) << "\n");
-		}
-		else
-#endif
-		if (words[0] == "/help" && words.size() == 1)
-		{
-			if (auto file = m_server->getFileSystemServer().open(fs::FileCategory::CONFIG, "rchelp.txt"); file != nullptr)
-			{
-				for (const auto& line : file->readAllLines())
-					sendPacket(CString() >> (char)PLO_RC_CHAT << line);
-			}
-		}
-		else if (words[0] == "/version" && words.size() == 1)
-		{
-			sendPacket(CString() >> (char)PLO_RC_CHAT << APP_NAME << " version: " << APP_VERSION);
-		}
-		else if (words[0] == "/credits" && words.size() == 1)
-		{
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Programmed by " << APP_CREDITS);
-		}
-		else if (words[0] == "/open" && words.size() != 1)
-		{
-			message.setRead(0);
-			message.readString(" ");
-			CString acc = message.readString("");
-			return msgPLI_RC_PLAYERPROPSGET3(CString() >> (char)acc.length() << acc);
-		}
-		else if (words[0] == "/openacc" && words.size() != 1)
-		{
-			message.setRead(0);
-			message.readString(" ");
-			CString acc = message.readString("");
-			return msgPLI_RC_ACCOUNTGET(CString() << acc);
-		}
-		else if (words[0] == "/opencomments" && words.size() != 1)
-		{
-			message.setRead(0);
-			message.readString(" ");
-			CString acc = message.readString("");
-			return msgPLI_RC_PLAYERCOMMENTSGET(CString() << acc);
-		}
-		else if (words[0] == "/openaccess" && words.size() != 1)
-		{
-			message.setRead(0);
-			message.readString(" ");
-
-			CString acc = message.readString("");
-			auto pl = m_server->getPlayer(acc, PLTYPE_ANYPLAYER);
-			if (pl)
-				sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,lister,ban," << pl->account.name << "," << std::to_string(pl->getDeviceId()));
-			else
-			{
-				// TODO: player not logged in, load from offline?
-			}
-		}
-		else if (words[0] == "/openban" && words.size() != 1)
-		{
-			message.setRead(0);
-			message.readString(" ");
-			CString acc = message.readString("");
-			return msgPLI_RC_PLAYERBANGET(CString() << acc);
-		}
-		else if (words[0] == "/openrights" && words.size() != 1)
-		{
-			message.setRead(0);
-			message.readString(" ");
-			CString acc = message.readString("");
-			return msgPLI_RC_PLAYERRIGHTSGET(CString() << acc);
-		}
-		else if (words[0] == "/reset" && words.size() != 1)
-		{
-			message.setRead(0);
-			message.readString(" ");
-			CString acc = message.readString("");
-			return msgPLI_RC_PLAYERPROPSRESET(CString() << acc);
-		}
-		else if (words[0] == "/updatelevel" && words.size() != 1 && account.hasRight(PLPERM_UPDATELEVEL))
-		{
-			for (std::string_view l : string::split(std::string_view{ words[1] }))
-			{
-				auto level = m_server->getLoadedLevelNoHint(l);
-				if (level)
-				{
-					m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " updated level: " << level->levelName);
-					log::printLine(log::rc, "{} updated level: {}", account.name, level->levelName);
-					level->reload(l);
-				}
-			}
-		}
-		else if (words[0] == "/updatelevelall" && words.size() == 1 && account.hasRight(PLPERM_UPDATELEVEL))
-		{
-			log::print(log::rc, "{} updated all the levels", account.name);
-			int count = 0;
-			auto& levels = m_server->getLevelList();
-			for (auto& [name, level] : levels)
-			{
-				level->reload(MapPosition{});
-				++count;
-			}
-			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " updated all the levels (" << CString((int)count) << " levels updated).");
-			log::printLine(log::rc, " ({} levels updated).", count);
-		}
-		else if (words[0] == "/restartserver" && words.size() == 1 && account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
-		{
-			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " restarted the server.");
-			log::printLine(log::rc, "{} restarted the server.", account.name);
-			m_server->restart();
-		}
-		else if (words[0] == "/reloadserver" && words.size() == 1 && account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
-		{
-			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " reloaded the server configuration files.");
-			log::printLine(log::rc, "{} reloaded the server configuration files.", account.name);
-			m_server->loadConfigFiles();
-		}
-		else if (words[0] == "/updateserverhq" && words.size() == 1 && account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
-		{
-			m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " sent ServerHQ updates.");
-			log::printLine(log::rc, "{} sent ServerHQ updates.", account.name);
-			m_server->loadAdminSettings();
-			m_server->getServerList().sendServerHQ();
-		}
-		else if (words[0] == "/serveruptime" && words.size() == 1)
-		{
-			auto time_diff = std::chrono::system_clock::now() - m_server->getServerStartTime();
-
-			constexpr auto format_time_fn = [](std::string& m, const uint64_t t, const char* fmtStr)
-			{
-				if (t > 0)
-				{
-					m.append(std::format(" {} {}", t, fmtStr));
-					if (t > 1)
-						m.append("s");
-				}
-			};
-
-			auto days = std::chrono::duration_cast<std::chrono::days>(time_diff).count();
-			auto hours = std::chrono::duration_cast<std::chrono::hours>(time_diff).count() % 24;
-			auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time_diff).count() % 60;
-			auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time_diff).count() % 60;
-
-			std::string msg;
-			format_time_fn(msg, days, "day");
-			format_time_fn(msg, hours, "hour");
-			format_time_fn(msg, minutes, "minute");
-			if (days == 0)
-				format_time_fn(msg, seconds, "second");
-
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Server Uptime:" << msg);
-		}
-		else if (words[0] == "/savenpcs" && words.size() == 1)
-		{
-			if (m_server->hasNPCServer())
-			{
-				m_server->getNPCServer()->saveNPCs();
-				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " saved all npcs to disk.");
-				log::printLine(log::npc, "{} saved the npcs to disk.", account.name);
-			}
-		}
-		else if (words[0] == "/stats" && words.size() == 1)
-		{
-			// TODO(NPCSERVER): Execution stats.
-			//auto npcStats = m_server->calculateNPCStats();
-
-			sendPacket(CString() >> (char)PLO_RC_CHAT << "Top scripts using the most execution time (in the last min)");
-
-			/*
-			int idx = 0;
-			for (auto it = npcStats.begin(); it != npcStats.end(); ++it)
-			{
-				idx++;
-				sendPacket(CString() >> (char)PLO_RC_CHAT << CString(idx) << ". 	" << CString((*it).first) << "	" << (*it).second);
-				if (idx == 50)
-					break;
-			}
-			*/
-		}
-		else if (words[0] == "/find" && words.size() > 1)
-		{
-			std::map<CString, CString> found;
-
-			// Assemble the search string.
-			CString search(words[1]);
-			for (unsigned int i = 2; i < words.size(); ++i)
-				search << " " << words[i];
-
-			std::vector<std::string> categories;
-			for (auto& fileInfoPtr : m_server->getFileSystem().info(fs::FileCategory::ALL))
-			{
-				auto fileInfo = fileInfoPtr.lock();
-				if (fileInfo == nullptr) continue;
-
-				CString fileName = fs::getANSIFileName(fileInfo->file);
-				if (fileName.match(search))
-				{
-					categories.clear();
-					if (fileInfo->categories.test(ENUM(fs::FileCategory::FILE)))
-						categories.push_back("file");
-					if (fileInfo->categories.test(ENUM(fs::FileCategory::LEVEL)))
-						categories.push_back("level");
-					if (fileInfo->categories.test(ENUM(fs::FileCategory::HEAD)))
-						categories.push_back("head");
-					if (fileInfo->categories.test(ENUM(fs::FileCategory::BODY)))
-						categories.push_back("body");
-					if (fileInfo->categories.test(ENUM(fs::FileCategory::SWORD)))
-						categories.push_back("sword");
-					if (fileInfo->categories.test(ENUM(fs::FileCategory::SHIELD)))
-						categories.push_back("shield");
-
-					found[fileName] = string::join(categories);
-				}
-			}
-
-			// Return a list of files found.
-			for (auto i = found.begin(); i != found.end(); ++i)
-			{
-				sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: File found (" << search << "): " << i->first << " [" << i->second << "]");
-			}
-
-			// No files found.
-			if (found.size() == 0)
-				sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: No files found matching: " << search);
-		}
-		else if (words[0] == "/synctranslation")
-		{
-			auto translationManager = BabyDI::Get<ITranslationManager>();
-			if (words.size() == 1)
-			{
-				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " is synchronizing translations.");
-				for (const auto& [language, added, removed] : translationManager->syncAllLanguagesWithOriginal())
-					m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << std::format("Server: '{}' translation synchronized: {} added, {} removed.", language, added, removed));
-			}
-			else
-			{
-				auto [actualLanguage, added, removed] = translationManager->syncLanguageWithOriginal(words[1]);
-				if (actualLanguage.empty())
-					sendPacket(CString() >> (char)PLO_RC_CHAT << std::format("Server: Could not find translation language '{}'.", words[1]));
-				else m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << std::format("Server: {} synchronized the '{}' translation: {} added, {} removed.", account.name, actualLanguage, added, removed));
-			}
-		}
-		else if (words[0] == "/generatetranslationstubs" && words.size() == 1)
-		{
-			auto translationManager = BabyDI::Get<ITranslationManager>();
-			auto count = translationManager->generateAllLanguageStubs();
-			if (count != 0)
-				m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << std::format(" generated stubs for {} languages.", count));
-			else m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << account.name << " tried to generate language stubs, but there was a failure.");
-		}
-		// Try to send to the control-NPC.
-		else if (m_server->hasNPCServer() && words[0].starts_with("/npc"))
-		{
-			// Remove the /npc.
-			words[0].remove_prefix(4);
-
-			// Add "rcchat" to the front of the list (the first argument is the event name).
-			if (words[0].empty())
-				words[0] = "rcchat"sv;
-			else
-				words.insert(words.begin(), "rcchat"sv);
-
-			// Send the event to the control-NPC.
-			m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::CUSTOM, source::FromPlayer(m_id), words);
-		}
-	}
+	if (!m_server->processRCChat(message.toStringView(), shared_from_this()))
+		m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.character.nickName << ": " << message);
 
 	return HandlePacketResult::Handled;
 }
@@ -1028,7 +752,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_WARPPLAYER(CString& pPacket)
 	auto p = m_server->getPlayer<PlayerClient>(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
 	if (p == nullptr) return HandlePacketResult::Handled;
 
-	Position<int16_t> pos = { static_cast<int16_t>(pPacket.readGChar() * 8), static_cast<int16_t>(pPacket.readGChar() * 8) };
+	Position<int16_t> pos = {static_cast<int16_t>(pPacket.readGChar() * 8), static_cast<int16_t>(pPacket.readGChar() * 8)};
 	CString wLevel = pPacket.readString("");
 	p->warp(wLevel, pos);
 
@@ -1372,7 +1096,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 		account.lastFolderAccessed += '/';
 
 	// Create the file system.
-	std::filesystem::directory_iterator dirs{ account.lastFolderAccessed };
+	std::filesystem::directory_iterator dirs{account.lastFolderAccessed};
 
 	// Construct the file list.
 	CString files;
@@ -1448,9 +1172,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 		account.lastFolderAccessed += '/';
 
 	// Make sure our folder exists.
-	std::filesystem::path fsPath{ account.lastFolderAccessed };
+	std::filesystem::path fsPath{account.lastFolderAccessed};
 	std::filesystem::create_directories(fsPath);
-	std::filesystem::directory_iterator dirs{ fsPath };
+	std::filesystem::directory_iterator dirs{fsPath};
 
 	// Construct the file list.
 	// file packet: {CHAR name_length}{STRING name}{CHAR rights_length}{STRING rights}{INT5 file_size}{INT5 file_mod_time}
@@ -1503,8 +1227,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 	}
 
 	// Send file.
-	std::filesystem::path file{ pPacket.readString("").toString()};
-	std::filesystem::path lastFolderAccessed{ account.lastFolderAccessed };
+	std::filesystem::path file{pPacket.readString("").toString()};
+	std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
 	CString checkFile = (lastFolderAccessed / file).generic_string();
 
 	// Don't let us download/view important files.
@@ -1536,8 +1260,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	std::filesystem::path file{ pPacket.readChars(pPacket.readGUChar()).toString()};
-	std::filesystem::path lastFolderAccessed{ account.lastFolderAccessed };
+	std::filesystem::path file{pPacket.readChars(pPacket.readGUChar()).toString()};
+	std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
 	CString fileData = pPacket.subString(pPacket.readPos());
 	CString checkFile = (lastFolderAccessed / file).generic_string();
 
@@ -1599,9 +1323,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	std::filesystem::path dir{ pPacket.readChars(pPacket.readGUChar()).toString() };
-	std::filesystem::path file{ pPacket.readString("").toString()};
-	std::filesystem::path lastFolderAccessed{ account.lastFolderAccessed };
+	std::filesystem::path dir{pPacket.readChars(pPacket.readGUChar()).toString()};
+	std::filesystem::path file{pPacket.readString("").toString()};
+	std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
 
 	// Assemble destination and source.
 	auto destination = dir / file;
@@ -1641,7 +1365,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 	}
 
 	CString file = pPacket.readString("");
-	std::filesystem::path filePath = std::filesystem::path{ account.lastFolderAccessed } / file.toStringView();
+	std::filesystem::path filePath = std::filesystem::path{account.lastFolderAccessed} / file.toStringView();
 
 	// Don't let us delete important files.
 	CString checkFile = filePath.generic_string();
@@ -1707,8 +1431,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	CString f1 = pPacket.readChars(pPacket.readGUChar());
 	CString f2 = pPacket.readChars(pPacket.readGUChar());
 
-	std::filesystem::path oldPath = std::filesystem::path{ account.lastFolderAccessed } / f1.toStringView();
-	std::filesystem::path newPath = std::filesystem::path{ account.lastFolderAccessed } / f2.toStringView();
+	std::filesystem::path oldPath = std::filesystem::path{account.lastFolderAccessed} / f1.toStringView();
+	std::filesystem::path newPath = std::filesystem::path{account.lastFolderAccessed} / f2.toStringView();
 
 	// Don't let us rename/overwrite important files.
 	CString checkFile1 = oldPath.generic_string();
@@ -1772,7 +1496,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILESTART(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	std::filesystem::path file{ pPacket.readString("").toString() };
+	std::filesystem::path file{pPacket.readString("").toString()};
 	m_rcLargeFiles[file] = CString();
 
 	return HandlePacketResult::Handled;
@@ -1786,8 +1510,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	std::filesystem::path file{ pPacket.readString("").toString() };
-	std::filesystem::path filePath = std::filesystem::path{ account.lastFolderAccessed } / file;
+	std::filesystem::path file{pPacket.readString("").toString()};
+	std::filesystem::path filePath = std::filesystem::path{account.lastFolderAccessed} / file;
 
 	// Save the file.
 	m_rcLargeFiles[file].save(filePath.string());
@@ -1810,7 +1534,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 
 HandlePacketResult PlayerRC::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 {
-	std::filesystem::path folder{ pPacket.readString("").toString() };
+	std::filesystem::path folder{pPacket.readString("").toString()};
 	if (isClient())
 	{
 		log::printLine(log::rc, "[Hack] {} attempted to delete a folder through the File Browser: {}", account.name, folder.generic_string());

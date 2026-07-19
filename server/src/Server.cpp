@@ -11,6 +11,7 @@
 #include <format>
 #include <functional>
 #include <iterator>
+#include <map>
 #include <memory>
 #include <numbers>
 #include <optional>
@@ -31,9 +32,11 @@
 #include <CSocket.h>
 
 #include <CString.h>
+#include <IConfig.h>
 #include <IEnums.h>
 #include <IUtil.h>
 
+#include <Account.h>
 #include <BabyDI.h>
 #include <Server.h>
 #include <filesystem/File.h>
@@ -2308,9 +2311,323 @@ void Server::sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, const PixelPos
 	sendPacketToNearby(packet, position, toLevel);
 }
 
-/*
-	Packet-Sending Functions
-*/
+////////////////////////////////////////////////////////////////////////////////
+
+bool Server::processRCChat(std::string_view message, std::weak_ptr<Player> sender)
+{
+	auto player = sender.lock();
+
+	std::string_view who = "Server"sv;
+	if (player != nullptr)
+		who = player->account.character.nickName;
+
+	if (player == nullptr || message.empty() || message.front() != '/')
+		return false;
+
+	auto words = string::splitToVectorView(message);
+
+	if (words[0] == "/help" && words.size() == 1)
+	{
+		if (auto file = m_fsServer.open(fs::FileCategory::CONFIG, "rchelp.txt"); file != nullptr)
+		{
+			for (const auto& line : file->readAllLines())
+				player->sendPacket(CString() >> (char)PLO_RC_CHAT << line);
+		}
+		return true;
+	}
+
+#ifndef NDEBUG
+	if (words[0] == "/sendtext" && player != nullptr)
+	{
+		player->sendPacket(CString() >> (char)PLO_SERVERTEXT << message.substr(10));
+		return true;
+	}
+#endif
+
+	if (words[0] == "/version" && words.size() == 1)
+	{
+		player->sendPacket(CString() >> (char)PLO_RC_CHAT << APP_NAME << " version: " << APP_VERSION);
+		return true;
+	}
+
+	if (words[0] == "/credits" && words.size() == 1)
+	{
+		player->sendPacket(CString() >> (char)PLO_RC_CHAT << "Programmed by " << APP_CREDITS);
+		return true;
+	}
+
+	if (words[0] == "/updatelevel" && words.size() != 1 && player->account.hasRight(PLPERM_UPDATELEVEL))
+	{
+		for (std::string_view l : string::split(std::string_view{words[1]}))
+		{
+			if (auto level = getLoadedLevelNoHint(l); level)
+			{
+				sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << player->account.name << " updated level: " << level->levelName);
+				log::printLine(log::rc, "{} updated level: {}", player->account.name, level->levelName);
+				level->reload(l);
+			}
+		}
+		return true;
+	}
+
+	if (words[0] == "/updatelevelall" && words.size() == 1 && player->account.hasRight(PLPERM_UPDATELEVEL))
+	{
+		log::print(log::rc, "{} updated all the levels", player->account.name);
+		int count = 0;
+		auto& levels = getLevelList();
+		for (auto& [name, level] : levels)
+		{
+			level->reload(MapPosition{});
+			++count;
+		}
+		sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << player->account.name << " updated all the levels (" << CString((int)count) << " levels updated).");
+		log::printLine(log::rc, " ({} levels updated).", count);
+		return true;
+	}
+
+	if (words[0] == "/restartserver" && words.size() == 1 && player->account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	{
+		sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << player->account.name << " restarted the server.");
+		log::printLine(log::rc, "{} restarted the server.", player->account.name);
+		restart();
+		return true;
+	}
+
+	if (words[0] == "/reloadserver" && words.size() == 1 && player->account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	{
+		sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << player->account.name << " reloaded the server configuration files.");
+		log::printLine(log::rc, "{} reloaded the server configuration files.", player->account.name);
+		loadConfigFiles();
+		return true;
+	}
+
+	if (words[0] == "/updateserverhq" && words.size() == 1 && player->account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
+	{
+		sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << player->account.name << " sent ServerHQ updates.");
+		log::printLine(log::rc, "{} sent ServerHQ updates.", player->account.name);
+		loadAdminSettings();
+		getServerList().sendServerHQ();
+		return true;
+	}
+
+	if (words[0] == "/serveruptime" && words.size() == 1)
+	{
+		auto time_diff = std::chrono::system_clock::now() - getServerStartTime();
+
+		constexpr auto format_time_fn = [](std::string& m, const uint64_t t, const char* fmtStr)
+		{
+			if (t > 0)
+			{
+				m.append(std::format(" {} {}", t, fmtStr));
+				if (t > 1)
+					m.append("s");
+			}
+		};
+
+		auto days = std::chrono::duration_cast<std::chrono::days>(time_diff).count();
+		auto hours = std::chrono::duration_cast<std::chrono::hours>(time_diff).count() % 24;
+		auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time_diff).count() % 60;
+		auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time_diff).count() % 60;
+
+		std::string msg;
+		format_time_fn(msg, days, "day");
+		format_time_fn(msg, hours, "hour");
+		format_time_fn(msg, minutes, "minute");
+		if (days == 0)
+			format_time_fn(msg, seconds, "second");
+
+		player->sendPacket(CString() >> (char)PLO_RC_CHAT << "Server Uptime:" << msg);
+		return true;
+	}
+
+	if (words[0] == "/savenpcs" && words.size() == 1)
+	{
+		if (hasNPCServer())
+		{
+			getNPCServer()->saveNPCs();
+			sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << player->account.name << " saved all npcs to disk.");
+			log::printLine(log::npc, "{} saved the npcs to disk.", player->account.name);
+			return true;
+		}
+	}
+
+	if (words[0] == "/stats" && words.size() == 1)
+	{
+		// TODO(NPCSERVER): Execution stats.
+		//auto npcStats = m_server->calculateNPCStats();
+
+		player->sendPacket(CString() >> (char)PLO_RC_CHAT << "Top scripts using the most execution time (in the last min)");
+
+		/*
+		int idx = 0;
+		for (auto it = npcStats.begin(); it != npcStats.end(); ++it)
+		{
+			idx++;
+			sendPacket(CString() >> (char)PLO_RC_CHAT << CString(idx) << ". 	" << CString((*it).first) << "	" << (*it).second);
+			if (idx == 50)
+				break;
+		}
+		*/
+		return true;
+	}
+
+	// Try to send to the control-NPC.
+	if (hasNPCServer() && words[0].starts_with("/npc"))
+	{
+		// Tokenize everything after the /npc.
+		auto tokens = string::tokenize(message.substr(4)) | range::as_string | std::ranges::to<std::vector<std::string>>();
+
+		// Add "rcchat" to the front of the list (the first argument is the event name).
+		tokens.emplace(tokens.begin(), "rcchat");
+
+		// Send the event to the control-NPC.
+		getNPCServer()->addEventToControlNPC(ScriptEventType::CUSTOM, source::FromPlayer(player->getId()), tokens);
+		return true;
+	}
+
+	if (words[0] == "/find" && words.size() > 1)
+	{
+		std::map<CString, CString> found;
+
+		// Assemble the search string.
+		CString search(words[1]);
+		for (unsigned int i = 2; i < words.size(); ++i)
+			search << " " << words[i];
+
+		std::vector<std::string> categories;
+		for (auto& fileInfoPtr : m_fsServer.info(fs::FileCategory::ALL))
+		{
+			auto fileInfo = fileInfoPtr.lock();
+			if (fileInfo == nullptr) continue;
+
+			CString fileName = fs::getANSIFileName(fileInfo->file);
+			if (fileName.match(search))
+			{
+				categories.clear();
+				if (fileInfo->categories.test(ENUM(fs::FileCategory::FILE)))
+					categories.push_back("file");
+				if (fileInfo->categories.test(ENUM(fs::FileCategory::LEVEL)))
+					categories.push_back("level");
+				if (fileInfo->categories.test(ENUM(fs::FileCategory::HEAD)))
+					categories.push_back("head");
+				if (fileInfo->categories.test(ENUM(fs::FileCategory::BODY)))
+					categories.push_back("body");
+				if (fileInfo->categories.test(ENUM(fs::FileCategory::SWORD)))
+					categories.push_back("sword");
+				if (fileInfo->categories.test(ENUM(fs::FileCategory::SHIELD)))
+					categories.push_back("shield");
+
+				found[fileName] = string::join(categories);
+			}
+		}
+
+		// Return a list of files found.
+		for (auto i = found.begin(); i != found.end(); ++i)
+		{
+			player->sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: File found (" << search << "): " << i->first << " [" << i->second << "]");
+		}
+
+		// No files found.
+		if (found.size() == 0)
+			player->sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: No files found matching: " << search);
+
+		return true;
+	}
+
+	if (words[0] == "/synctranslation")
+	{
+		auto translationManager = BabyDI::Get<ITranslationManager>();
+		if (words.size() == 1)
+		{
+			sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << player->account.name << " is synchronizing translations.");
+			for (const auto& [language, added, removed] : translationManager->syncAllLanguagesWithOriginal())
+				sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << std::format("Server: '{}' translation synchronized: {} added, {} removed.", language, added, removed));
+		}
+		else
+		{
+			auto [actualLanguage, added, removed] = translationManager->syncLanguageWithOriginal(words[1]);
+			if (actualLanguage.empty())
+				player->sendPacket(CString() >> (char)PLO_RC_CHAT << std::format("Server: Could not find translation language '{}'.", words[1]));
+			else sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << std::format("Server: {} synchronized the '{}' translation: {} added, {} removed.", player->account.name, actualLanguage, added, removed));
+		}
+
+		return true;
+	}
+
+	if (words[0] == "/generatetranslationstubs" && words.size() == 1)
+	{
+		auto translationManager = BabyDI::Get<ITranslationManager>();
+		auto count = translationManager->generateAllLanguageStubs();
+		if (count != 0)
+			sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << player->account.name << std::format(" generated stubs for {} languages.", count));
+		else sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << player->account.name << " tried to generate language stubs, but there was a failure.");
+
+		return true;
+	}
+
+	// Commands that require the player to be a PlayerRC.
+	if (auto playerRC = std::dynamic_pointer_cast<PlayerRC>(player); playerRC != nullptr)
+	{
+		if (words[0] == "/open" && words.size() != 1)
+		{
+			auto account = string::trim(message.substr(words[0].size()));
+			playerRC->msgPLI_RC_PLAYERPROPSGET3(CString() >> (char)account.length() << account);
+			return true;
+		}
+
+		if (words[0] == "/openacc" && words.size() != 1)
+		{
+			auto account = string::trim(message.substr(words[0].size()));
+			playerRC->msgPLI_RC_ACCOUNTGET(CString() << account);
+			return true;
+		}
+
+		if (words[0] == "/opencomments" && words.size() != 1)
+		{
+			auto account = string::trim(message.substr(words[0].size()));
+			playerRC->msgPLI_RC_PLAYERCOMMENTSGET(CString() << account);
+			return true;
+		}
+
+		if (words[0] == "/openaccess" && words.size() != 1)
+		{
+			auto account = string::trim(message.substr(words[0].size()));
+			if (auto pl = getPlayer(account, PLTYPE_ANYPLAYER); pl != nullptr)
+				player->sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,lister,ban," << pl->account.name << "," << std::to_string(pl->getDeviceId()));
+			else
+			{
+				// TODO: player not logged in, load from offline?
+			}
+			return true;
+		}
+
+		if (words[0] == "/openban" && words.size() != 1)
+		{
+			auto account = string::trim(message.substr(words[0].size()));
+			playerRC->msgPLI_RC_PLAYERBANGET(CString() << account);
+			return true;
+		}
+
+		if (words[0] == "/openrights" && words.size() != 1)
+		{
+			auto account = string::trim(message.substr(words[0].size()));
+			playerRC->msgPLI_RC_PLAYERRIGHTSGET(CString() << account);
+			return true;
+		}
+
+		if (words[0] == "/reset" && words.size() != 1)
+		{
+			auto account = string::trim(message.substr(words[0].size()));
+			playerRC->msgPLI_RC_PLAYERPROPSRESET(CString() << account);
+			return true;
+		}
+	}
+
+	// Chat text was not a valid command.
+	return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 void Server::sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
 {

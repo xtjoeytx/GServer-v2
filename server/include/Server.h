@@ -364,8 +364,11 @@ public:
 	[[inline]] void logToFileSafely(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const;
 
 public:
-	void sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
-	void sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender = {}) const;
+	bool processRCChat(std::string_view message, std::weak_ptr<Player> sender = {});
+
+public:
+	void sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender = {});
+	void sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender = {});
 	void sendTriggerAction(PlayerID toPlayerId, NPCID fromNpcId, const LocalPixelPosition& localPosition, std::string_view action, std::string_view params) const;
 	void sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, const PixelPosition& position, std::string_view action, std::string_view params) const;
 
@@ -557,22 +560,22 @@ inline void Server::logToFileSafely(std::filesystem::path fileName, string::Inpu
 	}
 }
 
-inline void Server::sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender) const
+inline void Server::sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender)
 {
-	int len = pMessage.find("\n");
-	if (len == -1)
-		len = pMessage.length();
+	std::string_view message = pMessage.toStringView();
+	message = string::retrieveLine(message);
 
-	sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
+	if (!processRCChat(message, pSender))
+		sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << message, pSender);
 }
 
-inline void Server::sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender) const
+inline void Server::sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender)
 {
-	int len = pMessage.find("\n");
-	if (len == -1)
-		len = pMessage.length();
+	std::string_view message = pMessage.toStringView();
+	message = string::retrieveLine(message);
 
-	sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << pMessage.subString(0, len), pSender);
+	if (!processRCChat(message, pSender))
+		sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << message, pSender);
 }
 
 template<class T>
