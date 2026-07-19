@@ -462,7 +462,8 @@ void popNextMode(bool terminateEarly = false)
 	}
 }
 
-size_t m_braceCount = 0;
+size_t m_braceCount = 0;  // {}
+size_t m_parenCount = 0;  // ()
 std::deque<CommandState> m_commandStates;
 
 std::deque<std::unique_ptr<antlr4::Token>> m_pendingTokensBefore{};
@@ -1051,8 +1052,8 @@ PARAM_V_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 mode IN_PARAM_E;
 
 PARAM_E_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
-PARAM_E_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?                         { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
-PARAM_E_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() && m_braceCount == 0 }?   { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
+PARAM_E_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() && m_braceCount == 0 }?    { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
+PARAM_E_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() && m_parenCount == 0 }?   { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_E_POP_END         : END               { canCmdPop() }?                         { popNextMode(true); } -> type(END);
 PARAM_E_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }?                       { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_E_COMMA           : TOKEN_COMMA       { !canCommaPop() }?   -> type(TOKEN_COMMA);
@@ -1087,8 +1088,10 @@ PARAM_E_OP_LOGICALNOT     : OP_LOGICALNOT -> type(OP_LOGICALNOT);
 PARAM_E_TOKEN_BRACKET_LEFT      : TOKEN_BRACKET_LEFT                     { pushArrayAccess(); } -> type(TOKEN_BRACKET_LEFT);
 PARAM_E_POP_TOKEN_BRACKET_RIGHT : TOKEN_BRACKET_RIGHT { canArrayPop() }? { popNextMode(); }     -> type(TOKEN_BRACKET_RIGHT);
 PARAM_E_TOKEN_BRACKET_RIGHT     : TOKEN_BRACKET_RIGHT { !canArrayPop() }?                       -> type(TOKEN_BRACKET_RIGHT);
-PARAM_E_TOKEN_PAREN_LEFT    : TOKEN_PAREN_LEFT  { ++m_braceCount; } -> type(TOKEN_PAREN_LEFT);
-PARAM_E_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT { --m_braceCount; } -> type(TOKEN_PAREN_RIGHT);
+PARAM_E_TOKEN_BRACE_LEFT    : TOKEN_BRACE_LEFT  { ++m_braceCount; } -> type(TOKEN_BRACE_LEFT);
+PARAM_E_TOKEN_BRACE_RIGHT   : TOKEN_BRACE_RIGHT { --m_braceCount; } -> type(TOKEN_BRACE_RIGHT);
+PARAM_E_TOKEN_PAREN_LEFT    : TOKEN_PAREN_LEFT  { ++m_parenCount; } -> type(TOKEN_PAREN_LEFT);
+PARAM_E_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT { --m_parenCount; } -> type(TOKEN_PAREN_RIGHT);
 PARAM_E_TOKEN_PIPE          : TOKEN_PIPE -> type(TOKEN_PIPE);
 PARAM_E_TOKEN_QUESTION      : TOKEN_QUESTION -> type(TOKEN_QUESTION);
 PARAM_E_TOKEN_COLON         : TOKEN_COLON -> type(TOKEN_COLON);
