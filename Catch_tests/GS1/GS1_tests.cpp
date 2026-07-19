@@ -476,6 +476,49 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK(store->getValue<std::string>("test8").value_or(std::string{}) == "Two");
 	}
 
+	SECTION("tokenized text")
+	{
+		// Tests tokenize and tokenize2.
+		const std::string_view script = R"(
+			setstring test,This, is "A, test" string;
+
+			// First test.
+			tokenize #s(test);
+			tokens1count = tokenscount;
+			for (i=0; i<tokenscount; i++)
+				setstring tokens1_t#v(i),#t(i);
+
+			// Second test.
+			tokenize2 i,#s(test);
+			tokens2count = tokenscount;
+			for (i=0; i<tokenscount; i++)
+				setstring tokens2_t#v(i),#t(i);
+		)";
+		auto result = engine.compileScript("test_script", script);
+		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+
+		auto player = server->getNPCServer()->getPlayerNPCServer();
+		REQUIRE(player != nullptr);
+
+		auto wrapper = get_wrapper(result);
+		auto store = wrapper->visitor->builtInStore;
+		auto playerstore = &player->account.variables;
+		CHECK(playerstore->getValue<std::string>("test").value_or(std::string{}) == "This, is \"A, test\" string");
+		CHECK_THAT(store->getValue<double>("tokens1count").value_or(0.0), Catch::Matchers::WithinRel(4.0));
+		CHECK(playerstore->getValue<std::string>("tokens1_t0").value_or(std::string{}) == "This");
+		CHECK(playerstore->getValue<std::string>("tokens1_t1").value_or(std::string{}) == "is");
+		CHECK(playerstore->getValue<std::string>("tokens1_t2").value_or(std::string{}) == "A, test");
+		CHECK(playerstore->getValue<std::string>("tokens1_t3").value_or(std::string{}) == "string");
+
+		CHECK_THAT(store->getValue<double>("tokens2count").value_or(0.0), Catch::Matchers::WithinRel(6.0));
+		CHECK(playerstore->getValue<std::string>("tokens2_t0").value_or(std::string{}) == "Th");
+		CHECK(playerstore->getValue<std::string>("tokens2_t1").value_or(std::string{}) == "s");
+		CHECK(playerstore->getValue<std::string>("tokens2_t2").value_or(std::string{}) == "s");
+		CHECK(playerstore->getValue<std::string>("tokens2_t3").value_or(std::string{}) == "A, test");
+		CHECK(playerstore->getValue<std::string>("tokens2_t4").value_or(std::string{}) == "str");
+		CHECK(playerstore->getValue<std::string>("tokens2_t5").value_or(std::string{}) == "ng");
+	}
+
 	SECTION("sleep and resume")
 	{
 		// Tests the sleep command, which pauses execution of the script.

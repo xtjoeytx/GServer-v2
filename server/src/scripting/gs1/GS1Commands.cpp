@@ -3423,7 +3423,7 @@ void fn_tokenize(GS1Visitor* visitor, std::string_view commandName, const std::v
 		throw std::invalid_argument("invalid arguments: tokenize text");
 
 	auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-	visitor->tokenizeTokens = string::splitToVector(text, " "sv);
+	visitor->tokenizeTokens = string::tokenize(std::string_view{text}) | range::as_string | std::ranges::to<std::vector<std::string>>();
 	visitor->builtInStore->add(GameVariable{.name = "tokenscount", .value = static_cast<double>(visitor->tokenizeTokens.size()), .lifetime = variables::Lifetime::TEMPORARY});
 }
 
@@ -3436,7 +3436,7 @@ void fn_tokenize2(GS1Visitor* visitor, std::string_view commandName, const std::
 
 	auto delims = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 	auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
-	visitor->tokenizeTokens = string::splitToVector(text, delims);
+	visitor->tokenizeTokens = string::tokenize(std::string_view{text}, std::string_view{delims}) | range::as_string | std::ranges::to<std::vector<std::string>>();
 	visitor->builtInStore->add(GameVariable{.name = "tokenscount", .value = static_cast<double>(visitor->tokenizeTokens.size()), .lifetime = variables::Lifetime::TEMPORARY});
 }
 

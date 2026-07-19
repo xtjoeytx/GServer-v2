@@ -676,11 +676,11 @@ auto split(StringViewVariant auto const str, StringViewVariant auto const delims
 	using StringViewType = std::basic_string_view<Elem, Traits>;
 	StringViewType strview{ str };
 
-	if (str.empty())
+	if (strview.empty())
 		co_return;
 
 	size_t start = 0, end = 0;
-	while (start < str.length())
+	while (start < strview.length())
 	{
 		// Find the next delimiter.
 		end = strview.find_first_of(delims, start);
@@ -722,11 +722,11 @@ auto splitByString(StringViewVariant auto const str, StringViewVariant auto cons
 	using StringViewType = std::basic_string_view<Elem, Traits>;
 	StringViewType strview{ str };
 
-	if (str.empty())
+	if (strview.empty())
 		co_return;
 
 	size_t start = 0, end = 0;
-	while (start < str.length())
+	while (start < strview.length())
 	{
 		// Find the next delimiter.
 		end = strview.find(delim, start);
@@ -939,6 +939,84 @@ std::string join(std::ranges::input_range auto&& range, std::string_view delim =
 	for (; it != std::ranges::end(range); ++it)
 		oss << delim << *it;
 	return oss.str();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/// @brief Tokenizes the string, splitting on whitespace, commas, and the optional delimiters, keeping quoted text as a single token.
+/// @param str The string to tokenize.
+/// @param delims Optional delims to split on.
+/// @return A generator yielding each token as a std::string_view.
+auto tokenize(StringViewVariant auto const str, StringViewVariant auto const delims) -> std::generator<std::remove_cvref_t<decltype(str)>>
+{
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
+	StringViewType strview{string::trim(str)};
+
+	// Splits a string into tokens.
+	// Delimiters are [ \t,], plus whatever is in delims.
+	// Quotation marks wrap a chunk of text as its own token, too.
+	// Hey "Mr. Bear",Guy => 3 tokens
+
+	if (strview.empty())
+		co_return;
+
+	size_t start = 0;
+	for (size_t i = 0; i < strview.length(); ++i)
+	{
+		auto c = strview.at(i);
+
+		// Check for quotation marks.
+		if (c == '\"')
+		{
+			// Search until the next quotation mark.
+			start = i + 1;
+			auto end = strview.find('"', start);
+
+			// If we reached the end of the string, return everything left as a token and terminate.
+			if (end == StringViewType::npos)
+			{
+				co_yield strview.substr(start);
+				co_return;
+			}
+
+			// Otherwise, return everything in the quotation marks as a token.
+			co_yield strview.substr(start, end - start);
+
+			// And advance all of our markers to the next character.
+			start = end + 1;
+			i = end;
+			continue;
+		}
+
+		// Check for a delim match.
+		bool found = (c == ' ' || c == '\t' || c == ',');
+		found = found || (delims.find_first_of(c) != decltype(delims)::npos);
+
+		// Found a match, split.
+		if (found)
+		{
+			// Test for consecutive split delimiters.
+			if (start != i)
+				co_yield strview.substr(start, i - start);
+
+			// Move the start up to the next character.
+			start = i + 1;
+		}
+	}
+
+	// Final token.
+	if (start != strview.length())
+		co_yield strview.substr(start);
+}
+
+/// @brief Tokenizes the string, splitting on whitespace and commas, keeping quoted text as a single token.
+/// @param str The string to tokenize.
+/// @return A generator yielding each token as a std::string_view.
+auto tokenize(StringViewVariant auto const str)
+{
+	return tokenize(str, std::string_view{});
 }
 
 ///////////////////////////////////////////////////////////////////////////////
