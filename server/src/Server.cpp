@@ -101,7 +101,7 @@ void ExternalServerCachedSettings::bind(Server* server)
 {
 	auto& settings = server->getSettings();
 
-	settings.track(maxPlayers, sleepWhenNoPlayers);
+	settings.track(maxPlayers, sleepWhenNoPlayers, localhostMode);
 	settings.track(unstickMeLevel, unstickMeTile[0], unstickMeTile[1], unstickMeSeconds);
 	settings.track(enableBushItemDrops, enableVaseItemDrops, disableItemDropping);
 	settings.track(enableInsideSyncDistance, syncDistance[0], syncDistance[1]);
