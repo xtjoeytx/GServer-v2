@@ -434,8 +434,13 @@ bool PlayerClient::handleLogin(CString& pPacket)
 		return false;
 	}
 
+	if (m_server->cached.localhostMode.getValue())
+	{
+		log::printLine(log::server, "[Login] Localhost mode: accepting '{}' without listserver verification.", account.name);
+		return sendLogin();
+	}
+
 	// Verify login details with the serverlist.
-	// TODO: localhost mode.
 	if (!m_server->getServerList().getConnected())
 	{
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "The login server is offline.  Try again later.");

@@ -108,6 +108,7 @@ struct ExternalServerCachedSettings
 {
 	SettingCache<uint32_t> maxPlayers{"maxplayers", 128};
 	SettingCache<bool> sleepWhenNoPlayers{"sleepwhennoplayers", true};
+	SettingCache<bool> localhostMode{"localhost", false};
 	SettingCache<std::string> unstickMeLevel{"unstickmelevel", "onlinestartlocal.nw"};
 	std::array<SettingCache<float>, 2> unstickMeTile{{{"unstickmex", 30.0f}, {"unstickmey", 30.5f}}};
 	SettingCache<int> unstickMeSeconds{"unstickmetime", 30};
