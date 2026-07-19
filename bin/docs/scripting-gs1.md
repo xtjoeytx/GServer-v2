@@ -84,7 +84,7 @@ For example:
 setsword sword3.png;
 ```
 
-Reference: GS1 Commands
+Reference: [GS1 Commands](scripting-gs1-commands.md)
 
 ---
 ## Variables

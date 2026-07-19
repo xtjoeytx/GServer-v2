@@ -330,6 +330,8 @@ Reference: [GS1 Variables](scripting-gs1-variables.md)
 ---
 ## Commands
 
+Reference: [GS1 Commands](scripting-gs1-commands.md)
+
     *    - Existed on official, but not serverside.
     [GR] - Never existed on official.
 

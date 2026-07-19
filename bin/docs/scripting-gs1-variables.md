@@ -11,14 +11,14 @@ The `scope` can be one or both of clientside 🧑 and serverside 💻.
 | Variable | Introduced | Scope | Description |
 | -------- | ---------- | ----- | ----------- |
 | actionplayer | 2.03 | 🧑💻 | The player who initiated the triggeraction event. |
-| paramscount  | 2.03 | 🧑💻 | The number of parameters passed along with the [triggeraction](scripting-gs1-events.md#triggeraction-events) event. |
+| paramscount  | 2.03 | 🧑💻 | The number of parameters passed along with the [triggeraction](scripting-gs1-events.md#triggeraction-events) event.  Also used by [callnpc](scripting-gs1-commands.md#callnpc) and [callweapon](scripting-gs1-commands.md#callweapon). |
 
 ---
 ## Tokenize
 
 | Variable | Introduced | Scope | Description |
 | -------- | ---------- | ----- | ----------- |
-| tokenscount | 2.02 | 🧑💻 | The number of [#t()](scripting-gs1-messagecodes.md#t) message code tokens after a call to `tokenize` or `tokenize2`. |
+| tokenscount | 2.02 | 🧑💻 | The number of [#t()](scripting-gs1-messagecodes.md#t) message code tokens after a call to [tokenize](scripting-gs1-commands.md#tokenize) or [tokenize2](scripting-gs1-commands.md#tokenize2). |
 
 ---
 ## Time
@@ -41,9 +41,9 @@ The `scope` can be one or both of clientside 🧑 and serverside 💻.
 
 | Variable | Introduced | Scope | Description |
 | -------- | ---------- | ----- | ----------- |
-| focusx           | possibly 2.12<br>revealed 2.16 | 🧑 | The current tile X focus position after the `setfocus` command was used. |
-| focusy           | possibly 2.12<br>revealed 2.16 | 🧑 | The current tile Y focus position after the `setfocus` command was used. |
-| mousebuttons     | 2.14 | 🧑 | Sum which identifies the mouse buttons being pressed. Left mouse = 1, middle mouse = 2, right mouse = 4. |
+| focusx           | possibly 2.12<br>revealed 2.16 | 🧑 | The current tile X focus position after the [setfocus](scripting-gs1-commands.md#setfocus) command was used. |
+| focusy           | possibly 2.12<br>revealed 2.16 | 🧑 | The current tile Y focus position after the [setfocus](scripting-gs1-commands.md#setfocus) command was used. |
+| mousebuttons     | 2.14 | 🧑 | Sum which identifies the mouse buttons being pressed. Left mouse = `1`, middle mouse = `2`, right mouse = `4`. |
 | mousescreenx     | 2.14 | 🧑 | Pixel X position of the mouse on the game screen. |
 | mousescreeny     | 2.14 | 🧑 | Pixel Y position of the mouse on the game screen. |
 | mousewheeldelta  | 2.14 | 🧑 | The movement of the mouse wheel since the last frame. |
@@ -59,7 +59,9 @@ The `scope` can be one or both of clientside 🧑 and serverside 💻.
 | selectedsword    | (newworld) | 🧑 | The index of the currently selected sword. |
 | selectedweapon   | 2.04 | 🧑 | The index of the currently selected weapon. |
 | weaponscount     | 2.04 | 🧑💻 | How many weapons the player holds. |
-| playerfreezetime | possibly around 1.20 | 🧑 | How many seconds until the player stops being frozen after a call to `freezeplayer`. |
+| playerfreezetime | possibly around 1.20 | 🧑 | How many seconds until the player stops being frozen after a call to [freezeplayer](scripting-gs1-commands.md#freezeplayer). |
+| allfeatures      | 2.16 | 🧑 | Equivalent to `0xFFFF`, which is the sum of all [enablefeatures](scripting-gs1-commands.md#enablefeatures) flags. |
+| allstats         | 2.16 | 🧑 | Equivalent to `0xFFFF`, which is the sum of all [showstats](scripting-gs1-commands.md#showstats) flags. |
 
 ---
 ## Levels
@@ -70,7 +72,7 @@ The `scope` can be one or both of clientside 🧑 and serverside 💻.
 | levelorgy       | 2.04        | 🧑💻 | When a player is attached to an NPC, this is the player's Y offset from level position (0, 0).  When attached, the player's tile position is relative to the NPC. |
 | board[]         | around 1.20 | 🧑💻 | [Read only] The tile at the specific level board index.  The level board consists of 64x64 tiles. |
 | tiles[x,y]      | 2.10        | 🧑💻 | [RW] The tile at the specific tile position.  Positions outside of [0..63] will affect adjacent levels when on a bigmap. |
-| gravity         | 2.22        | 🧑💻 | How fast items fall to the ground (defaults to a velocity of 2.0 tiles per second). |
+| gravity         | 2.22        | 🧑💻 | How fast items fall to the ground (defaults to a velocity of `2.0` tiles per second). |
 | groundheights[] | possibly 2.12<br>revealed ??? | 🧑💻 | The height at which 3D terrain will transition to different tiles. |
 | waterheight     | possibly 2.12<br>revealed ??? | 🧑 | The height that water is drawn at on 3D terrain (global value).  The player will switch to the swim gani, but their Z height will still keep lowering until it hits zero. |
 
@@ -106,11 +108,11 @@ The `picso.png` tileset is paged from top to bottom, left to right.
 | allplayerscount | (npcserver) | 💻 | The number of players in the `allplayers[]` array. |
 | allplayers[]    | (npcserver) | 💻 | Array of objects for all the players in the server.  Can only be used with the [with()](scripting-gs1-flow-control-operators.md#flow-control-statements) statement. |
 | playerscount    | around 1.20 | 🧑💻 | The number of players in the `players[]` array. |
-| players[]       | around 1.20 | 💻 | Array of objects for all the players in the level.  Can only be used with the [with()](scripting-gs1-flow-control-operators.md#flow-control-statements) statement. |
+| players[]       | around 1.20 | 💻 | Array of objects for all the players in the level.  Can only be used with the [with()](scripting-gs1-flow-control-operators.md#flow-control-statements) statement.  In older clients, this included [showcharacter](scripting-gs1-commands.md#showcharacter) NPCs. |
 | players[].anistep     | possibly 2.12<br>revealed 2.14 | 🧑 | The frame of the current gani animation. |
 | players[].ap          | 1.30 | 🧑💻 | Alignment points of the player. |
 | players[].attachid    | 2.04 | 🧑💻 | The ID of the NPC the player is attached to. |
-| players[].attachtype  | 2.04 | 🧑💻 | The type of object the player is attached to (0 = NPC, the only supported type). |
+| players[].attachtype  | 2.04 | 🧑💻 | The type of object the player is attached to (`0` = NPC, the only supported type). |
 | players[].bombs       | beta 5 | 🧑💻 | The number of bombs the player has. |
 | players[].bombpower   | beta 5 | 🧑💻 | The power of the player's bomb (classic generation only). |
 | players[].carrysprite | [GR] | 💻 | The sprite of the object the player is carrying. |
@@ -118,7 +120,7 @@ The `picso.png` tileset is paged from top to bottom, left to right.
 | players[].deaths      | possibly 1.39rev1 | 🧑💻 | How many times the player has died. |
 | players[].dir         | beta 5 | 🧑💻 | The direction the player is facing.  See: [Directions](#directions) |
 | players[].fullhearts  | beta 5 | 🧑💻 | The maximum life of the player. |
-| players[].glovepower  | beta 5 | 🧑💻 | The player's glove power (2 = glove1, 3 = glove2). |
+| players[].glovepower  | beta 5 | 🧑💻 | The player's glove power (`2` = glove1, `3` = glove2). |
 | players[].gralats     | sometime before 2.20 | 🧑💻 | How many gralats the player has. |
 | players[].headset     | beta 5 | 🧑💻 | The number of the player's current head, when the head matches `head000.png`. |
 | players[].hearts      | beta 5 | 🧑💻 | The player's current life total. |
@@ -143,7 +145,8 @@ The `picso.png` tileset is paged from top to bottom, left to right.
 | players[].trial       | ??? | 🧑💻 | Identifies if the player is a trial account. |
 | players[].x           | beta 5 | 🧑💻 | The X tile position of the player. |
 | players[].y           | beta 5 | 🧑💻 | The Y tile position of the player. |
-| players[].z           | possibly 2.12<br>revealed (npcserver) | 🧑💻 | The Z height of the player, from -50 to 170. |
+| players[].z           | possibly 2.12<br>revealed (npcserver) | 🧑💻 | The Z height of the player, from `-50` to `170`. |
+| playerfreezetime      | ??? | 🧑 | The seconds left until the player is no longer frozen, or `-1` when not frozen. |
 
 > players[] shorthand: e.g., playerhearts
 
@@ -163,11 +166,11 @@ and the resulting number is displayed.
 | npcs[].bombs       | beta 5 | 🧑💻 | The number of bombs the NPC has. |
 | npcs[].darts       | beta 5 | 🧑💻 | The number of arrows the NPC has. |
 | npcs[].dir         | 1.25 | 🧑💻 | The direction the NPC is facing.  See: [Directions](#directions) |
-| npcs[].glovepower  | around 1.20 | 🧑💻 | The NPC's glove power (1 = glove1, 2 = glove2). |
+| npcs[].glovepower  | around 1.20 | 🧑💻 | The NPC's glove power (`1` = glove1, `2` = glove2). |
 | npcs[].gralats     | sometime before 2.2 | 🧑💻 | How many gralats the NPC has. |
 | npcs[].headset     | ??? | 🧑💻 | The number of the NPC's current head, when the head matches `head000.png`. |
 | npcs[].hearts      | beta 5 | 🧑💻 | The NPC's current life total. |
-| npcs[].height      | 1.38 | 🧑💻 | The height of the NPC, in tiles.  Serverside, this only works if `setshape` was called. |
+| npcs[].height      | 1.38 | 🧑💻 | The height of the NPC, in tiles.  Serverside, this only works if [setshape](scripting-gs1-commands.md#setshape) was called. |
 | npcs[].hp          | possibly 2.12<br>revealed (npcserver) | 🧑💻 | The NPC's current life total. |
 | npcs[].hurtdx      | 1.27 | 🧑💻 | The X direction of the NPC's hurt movement. |
 | npcs[].hurtdy      | 1.27 | 🧑💻 | The Y direction of the NPC's hurt movement. |
@@ -179,10 +182,10 @@ and the resulting number is displayed.
 | npcs[].sprite      | 1.25 | 🧑💻 | The NPC's current sprite.  See: [Character sprites](#character-sprites) |
 | npcs[].swordpower  | around 1.20 | 🧑💻 | The power of the NPC's sword. |
 | npcs[].timeout     | beta 5 | 🧑💻 | Time current `timeout` value of the NPC, in seconds. |
-| npcs[].width       | 1.38 | 🧑💻 | The width of the NPC, in tiles.  Serverside, this only works if `setshape` was called. |
+| npcs[].width       | 1.38 | 🧑💻 | The width of the NPC, in tiles.  Serverside, this only works if [setshape](scripting-gs1-commands.md#setshape) was called. |
 | npcs[].x           | beta 5 | 🧑💻 | The X tile position of the NPC. |
 | npcs[].y           | beta 5 | 🧑💻 | The Y tile position of the NPC. |
-| npcs[].z           | possibly 2.12<br>revealed (npcserver) | 🧑💻 | The Z height of the NPC, from -50 to 170. |
+| npcs[].z           | possibly 2.12<br>revealed (npcserver) | 🧑💻 | The Z height of the NPC, from `-50` to `170`. |
 
 > npcs[] shorthand: e.g., hearts
 
@@ -338,16 +341,16 @@ They cannot eat bushes or bombs.
 
 | Item | Integer | Introduced |
 | ---- | ----- | ---------- |
-| greenrupee   | 0 | Beta 2 |
-| bluerupee    | 1 | Beta 2 |
-| redrupee     | 2 | Beta 2 |
-| bombs        | 3 | Beta 2 |
-| darts        | 4 | Beta 2 |
-| heart        | 5 | Beta 2 |
-| glove1       | 6 | Beta 2 |
-| bow          | 7 | Beta 2 |
-| bomb         | 8 | Beta 2 |
-| shield       | 9 | Beta 3 |
+| greenrupee   |  0 | Beta 2 |
+| bluerupee    |  1 | Beta 2 |
+| redrupee     |  2 | Beta 2 |
+| bombs        |  3 | Beta 2 |
+| darts        |  4 | Beta 2 |
+| heart        |  5 | Beta 2 |
+| glove1       |  6 | Beta 2 |
+| bow          |  7 | Beta 2 |
+| bomb         |  8 | Beta 2 |
+| shield       |  9 | Beta 3 |
 | sword        | 10 | Beta 3 |
 | fullheart    | 11 | Beta 3 |
 | superbomb    | 12 | Beta 4 |
@@ -362,23 +365,40 @@ They cannot eat bushes or bombs.
 | fireblast    | 21 | Beta 9 |
 | nukeshot     | 22 | Beta 9 |
 | joltbomb     | 23 | Beta 9 |
-| spinattack   | 24 | 1.32 |
+| spinattack   | 24 | 1.32   |
+
+---
+## Carry objects
+
+| Object |
+| ------ |
+| none        |
+| bomb        |
+| bush        |
+| stone       |
+| vase        |
+| sign        |
+| superbomb   |
+| joltbomb    |
+| hotjoltbomb |
+| hotbomb     |
+| blackstone  |
 
 ---
 ## Colors
 
 | Color | Integer | Introduced |
 | ----- | ------- | ---------- |
-| white       | 0 | Beta 3 |
-| yellow      | 1 | Beta 3 |
-| orange      | 2 | Beta 3 |
-| pink        | 3 | Beta 3 |
-| red         | 4 | Beta 3 |
-| darkred     | 5 | Beta 3 |
-| lightgreen  | 6 | Beta 3 |
-| green       | 7 | Beta 3 |
-| darkgreen   | 8 | Beta 3 |
-| lightblue   | 9 | Beta 3 |
+| white       |  0 | Beta 3 |
+| yellow      |  1 | Beta 3 |
+| orange      |  2 | Beta 3 |
+| pink        |  3 | Beta 3 |
+| red         |  4 | Beta 3 |
+| darkred     |  5 | Beta 3 |
+| lightgreen  |  6 | Beta 3 |
+| green       |  7 | Beta 3 |
+| darkgreen   |  8 | Beta 3 |
+| lightblue   |  9 | Beta 3 |
 | blue        | 10 | Beta 3 |
 | darkblue    | 11 | Beta 3 |
 | brown       | 12 | Beta 3 |
@@ -388,7 +408,7 @@ They cannot eat bushes or bombs.
 | lightgray   | 16 | Beta 3 |
 | gray        | 17 | Beta 3 |
 | black       | 18 | Beta 3 |
-| transparent | 19 | 1.38 |
+| transparent | 19 | 1.38   |
 
 ---
 ## Directions
@@ -417,35 +437,81 @@ They cannot eat bushes or bombs.
 | dragon           | Beta 5 |
 
 ---
-## Variable prefixes
-
-| Prefix | Introduced |
-| ------ | ---------- |
-| this.var    | 1.10 |
-| this.flag   | 2.19 |
-| level.      | (npcserver) |
-| local.flag  | 2.02 |
-| client.flag | 2.19 |
-| clientr.    | (npcserver) |
-| server.     | ??? |
-| serverr.    | (npcserver) |
-
----
 ## Character sprites
 
 | Action | Sprite |
 | ------ | ------ |
-| no movement   | 0 |
-| walking       | 1-8 |
-| sword slaying | 9-13 |
-| pushing       | 14-18 |
-| pulling       | 19-22 |
-| lifting       | 23 |
-| no movement, carrying something | 24 |
-| walking, carrying something | 25-32 |
-| shooting      | 33 |
-| riding        | 34-36 |
-| sitting       | 37 |
-| sleeping      | 38 |
-| hurted        | 39 |
-| dead          | 40 |
+| Idle            | 0     |
+| Walking         | 1-8   |
+| Sword slaying   | 9-13  |
+| Pushing         | 14-18 |
+| Pulling         | 19-22 |
+| Lifting         | 23    |
+| Idle (carry)    | 24    |
+| Walking (carry) | 25-32 |
+| Shooting        | 33    |
+| Riding          | 34-36 |
+| Sitting         | 37    |
+| Sleeping        | 38    |
+| Hurt            | 39    |
+| Dead            | 40    |
+
+---
+## Tile types
+
+| Integer | Tile Type |
+| ------- | --------- |
+|  0 | Nonblocking      |
+|  2 | Hurt underground |
+|  3 | Chair            |
+|  4 | Bed upper        |
+|  5 | Bed lower        |
+|  6 | Swamp            |
+|  7 | Lava swamp       |
+|  8 | Near water       |
+| 11 | Water            |
+| 12 | Lava             |
+| 20 | Throw-through    |
+| 21 | Jump stone       |
+| 22 | Blocking         |
+| 23 | Foreground (newworld) |
+
+---
+## Draw layers
+
+| Layer | Command | Description |
+| ----- | ------- | ----------- |
+| 0 | [drawunderplayer;](scripting-gs1-commands.md#drawunderplayer) | Draws under the player's character. |
+| 1 | (Note 1) | Draws at the same level of the player's character. |
+| 2 | [drawoverplayer;](scripting-gs1-commands.md#drawoverplayer)   | Draws over the player's character. |
+| 3 | [drawaslight;](scripting-gs1-commands.md#drawaslight)         | Draws above any effects.  See: [seteffect](scripting-gs1-commands.md#seteffect) |
+| 4 | (Note 2) | Draws on the UI layer.  X/Y coordinates are in pixels. |
+
+Note 1:
+> Layer 1 is difficult to get back to without knowing how.
+The **newworld** only [drawovertrees](scripting-gs1-commands.md#drawovertrees) command was probably intended to do this, and was often cited,
+but this command does nothing in the normal game client.  **gs2emu** supports it serverside as a convenience.
+The normal way to get back to layer 1 is by using the [blockagain](scripting-gs1-commands.md#blockagain) command.
+
+Note 2:
+> Layer 4 can be accessed by using the [changeimgvis](scripting-gs1-commands.md#changeimgvis) command on a [showimg](scripting-gs1-commands.md#showimg) image.
+
+---
+## Variable prefixes
+
+| Prefix | Introduced | Storage location |
+| ------ | ---------- | ---------------- |
+| var           | beta 2 | Clientside: The level.<br>Serverside: The script context. |
+| flag          | beta 2 | The currently active player. |
+| this.var      | 1.10 | The currently active NPC. |
+| this.flag     | 2.19 | The currently active NPC. |
+| thiso.var     | (npcserver) | The source NPC (the one outside of `with()`). |
+| thiso.flag    | (npcserver) | The source NPC (the one outside of `with()`). |
+| level.        | (npcserver) | The level. |
+| local.flag    | 2.02 | Clientside: The level.  Does not get sent to the server.<br>Serverside: The script context. |
+| client.flag   | 2.19 | The currently aftive player. |
+| clientr.flag  | (npcserver) | The currently active player.  Clientside cannot alter this flag. |
+| cliento.flag  | (npcserver) | The source player (the one outside of `with()`). |
+| clientro.flag | (npcserver) | The source player (the one outside of `with()`).  Clientside cannot alter this flag. |
+| server.flag   | ??? | The server.  NPC-Server enabled servers do not send these to clients. |
+| serverr.flag  | (npcserver) | The server. |
