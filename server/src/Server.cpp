@@ -576,15 +576,21 @@ int Server::init(std::string_view serverip, std::string_view serverport, std::st
 
 	// Start listening on the player socket.
 	log::printLine(log::server, "Initializing player listen socket.");
-	if (m_playerSock.init((oInter.empty() ? 0 : oInter.data()), m_settings.get<std::string>("serverport").value_or(""s).c_str()))
+	const char* iface = (oInter.empty() ? 0 : oInter.data());
+	const std::string port = m_settings.get<std::string>("serverport").value_or(""s);
+	if (m_playerSock.init(iface, port.c_str(), oInter.empty() ? SOCKET_PROTOCOL_IPV6 : SOCKET_PROTOCOL_ANY) || m_playerSock.connect())
 	{
-		log::printLine(log::server, "** [Error] Could not initialize listening socket.");
-		return ERR_LISTEN;
-	}
-	if (m_playerSock.connect())
-	{
-		log::printLine(log::server, "** [Error] Could not connect listening socket.");
-		return ERR_LISTEN;
+		log::printLine(log::server, "Could not create a dual-stack listener, falling back to IPv4 only.");
+		if (m_playerSock.init(iface, port.c_str(), SOCKET_PROTOCOL_IPV4))
+		{
+			log::printLine(log::server, "** [Error] Could not initialize listening socket.");
+			return ERR_LISTEN;
+		}
+		if (m_playerSock.connect())
+		{
+			log::printLine(log::server, "** [Error] Could not connect listening socket.");
+			return ERR_LISTEN;
+		}
 	}
 
 	// Announce the ports.
