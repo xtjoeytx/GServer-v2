@@ -36,7 +36,7 @@ constexpr std::array<std::string_view, 31> AdminServerOptions = {
 // Files that are protected from being downloaded by people without the
 // 'change staff account' right.
 constexpr std::array<std::string_view, 4> ProtectedFiles = {
-	"accounts/defaultaccount.txt",
+	"accounts/(defaultaccount).txt",
 	"config/adminconfig.txt",
 	"config/allowedversions.txt",
 	"config/rchelp.txt",
@@ -44,7 +44,7 @@ constexpr std::array<std::string_view, 4> ProtectedFiles = {
 
 // List of important files.
 constexpr std::array<std::string_view, 10> ImportantFiles = {
-	"accounts/defaultaccount.txt",
+	"accounts/(defaultaccount).txt",
 	"config/adminconfig.txt",
 	"config/allowedversions.txt",
 	"config/foldersconfig.txt",

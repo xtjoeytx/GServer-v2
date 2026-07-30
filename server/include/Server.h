@@ -196,6 +196,7 @@ public:
 	bool doMain();
 
 	// Server Configuration
+	void performMigrations() const;
 	int loadConfigFiles();
 	void prepareSettings();
 	void loadSettings();

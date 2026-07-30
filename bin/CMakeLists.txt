@@ -65,8 +65,8 @@ install(FILES ${SERVERS_DEFAULT} DESTINATION "./servers/default")
 # servers/default/accounts/
 file(GLOB SERVERS_DEFAULT_ACCOUNTS
 	 "servers/default/accounts/(npcserver).txt"
-	 servers/default/accounts/defaultaccount.txt
-	 servers/default/accounts/YOURACCOUNT.txt
+	 "servers/default/accounts/(defaultaccount).txt"
+	 "servers/default/accounts/YOURACCOUNT.txt"
 	 )
 install(FILES ${SERVERS_DEFAULT_ACCOUNTS} DESTINATION "./servers/default/accounts")
 

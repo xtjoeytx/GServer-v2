@@ -415,7 +415,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 	CString acc = pPacket.readString("");
 	if (acc.find("/") != -1) acc.removeI(acc.findl('/') + 1);
 	if (acc.find("\\") != -1) acc.removeI(acc.findl('\\') + 1);
-	if (acc == "defaultaccount")
+	if (acc == "(defaultaccount)")
 	{
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not allowed to delete the default account.");
 		return HandlePacketResult::Handled;
@@ -427,9 +427,16 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 		return HandlePacketResult::Handled;
 
 	// Remove the account from the file system.
-	fileInfo->deleteFile();
-	log::printLine(log::rc, "{} has deleted the account: {}", account.name, acc.text());
-	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has deleted the account: " << acc);
+	if (fileInfo->deleteFile())
+	{
+		log::printLine(log::rc, "{} has deleted the account: {}", account.name, acc.text());
+		m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has deleted the account: " << acc);
+	}
+	else
+	{
+		log::printLine(log::rc, "{} tried to delete account '{}', but the delete failed.", account.name, acc.text());
+		m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " tried to delete account " << acc << ", but an error occurred.");
+	}
 	return HandlePacketResult::Handled;
 }
 
@@ -462,7 +469,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 		auto accountName = fileInfo->file.stem().generic_string();
 		if (accountName.empty()) continue;
 		if (!string::match<true>(std::string_view{accountName}, name.toStringView())) continue;
-		if (conditions.length() == 0 || m_server->getAccountLoader().checkSearchConditions(accountName, string::splitToVector(conditions, std::string_view(","))))
+		if (conditions.empty() || m_server->getAccountLoader().checkSearchConditions(accountName, string::splitToVector(conditions, std::string_view(","))))
 			ret >> (char)accountName.length() << accountName;
 	}
 
@@ -546,7 +553,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 	std::ranges::copy(p->account.folderList, std::back_inserter(folders));
 
 	// Reset the player.
-	m_server->getAccountLoader().loadAccount("defaultaccount", p->account);
+	m_server->getAccountLoader().loadAccount("(defaultaccount)", p->account);
 	p->account.name = acc.toStringView();
 	m_server->getAccountLoader().saveAccount(p->account);
 
@@ -600,7 +607,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSSET2(CString& pPacket)
 	}
 
 	// Only people with PLPERM_MODIFYSTAFFACCOUNT can alter the default account.
-	if (!account.hasRight(PLPERM_MODIFYSTAFFACCOUNT) && acc == "defaultaccount")
+	if (!account.hasRight(PLPERM_MODIFYSTAFFACCOUNT) && acc == "(defaultaccount)")
 	{
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: You are not authorized to modify the default account.");
 		return HandlePacketResult::Handled;
@@ -822,7 +829,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 
 	// Don't allow RCs to give rights that they don't have.
 	// Only affect people who don't have PLPERM_MODIFYSTAFFACCOUNT.
-	int n_adminRights = (int)pPacket.readGUInt5();
+	auto n_adminRights = static_cast<uint32_t>(pPacket.readGUInt5());
 	if (!account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
 		for (int i = 0; i < 20; ++i)
@@ -841,10 +848,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 			n_adminRights |= PLPERM_SETRIGHTS;
 	}
 
-	int changed_rights = account.adminRights ^ n_adminRights;
+	const auto changed_rights = account.adminRights ^ n_adminRights;
 	p->account.adminRights = n_adminRights;
 
-	std::string adminIp = pPacket.readChars(pPacket.readGUChar()).toString();
+	const std::string adminIp = pPacket.readChars(pPacket.readGUChar()).toString();
 	p->account.adminIpRange = string::splitToVector(adminIp, ","sv);
 
 	// Untokenize and load the directories.
@@ -853,7 +860,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	// Remove any invalid directories.
 	for (auto i = folders.begin(); i != folders.end();)
 	{
-		if ((*i).find(":") != std::string::npos || (*i).find("..") != std::string::npos || (*i).find(" /*") != std::string::npos)
+		if (i->find(':') != std::string::npos || i->find("..") != std::string::npos || i->find(" /*") != std::string::npos)
 			i = folders.erase(i);
 		else
 			++i;
@@ -866,9 +873,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	m_server->getAccountLoader().saveAccount(p->account);
 
 	// If the account is currently on RC, reload it.
-	if (auto pRC = m_server->getPlayer<PlayerRC>(acc, PLTYPE_ANYRC); pRC)
+	if (const auto pRC = m_server->getPlayer<PlayerRC>(acc, PLTYPE_ANYRC); pRC)
 	{
-		std::string nickname = pRC->account.character.nickName;
+		const std::string nickname = pRC->account.character.nickName;
 		m_server->getAccountLoader().loadAccount(acc.toStringView(), pRC->account);
 		pRC->account.character.nickName = nickname;
 

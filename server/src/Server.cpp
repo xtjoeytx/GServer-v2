@@ -535,6 +535,9 @@ int Server::init(std::string_view serverip, std::string_view serverport, std::st
 	// Register the server start time.
 	m_serverStartTime = std::chrono::system_clock::now();
 
+	// Perform any migrations, if necessary.
+	performMigrations();
+
 	// Load the config files.
 	int ret = loadConfigFiles();
 	if (ret) return ret;
@@ -1461,6 +1464,21 @@ void Server::saveWeapons()
 			if (fileData != nullptr)
 				fileData->setModTime(weapon->modTime);
 		}
+	}
+}
+
+void Server::performMigrations() const
+{
+	std::filesystem::path defaultaccount = std::filesystem::path("accounts") / "defaultaccount.txt";
+
+	// If we have defaultaccount.txt, rename to (defaultaccount).txt.
+	if (std::filesystem::exists(defaultaccount))
+	{
+		std::filesystem::path newdefaultaccount = defaultaccount;
+		newdefaultaccount.replace_filename("(defaultaccount).txt");
+
+		std::filesystem::rename(defaultaccount, newdefaultaccount);
+		log::printLine(log::server, ":: [MIGRATE] Renaming 'defaultaccount.txt' to '(defaultaccount).txt'.");
 	}
 }
 

@@ -99,7 +99,7 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 	auto path = accountFS.findi(fs::FileCategory::ACCOUNT, std::format("{}.txt", accountName));
 	if (path.empty())
 	{
-		path = "accounts/defaultaccount.txt";
+		path = "accounts/(defaultaccount).txt";
 		loadedFromDefault = true;
 	}
 

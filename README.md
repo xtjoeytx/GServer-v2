@@ -37,7 +37,7 @@ IDEs such as Visual Studio and CLion have CMake support built-in and can be used
 How-to setup a server:
 
 1. Under the accounts folder, rename the text file `YOURACCOUNT.txt` to your account name.  For example: `KuJi.txt`
-2. Modify `defaultaccount.txt` to your liking.  This is the default settings new players will start with.  It can also be modified via RC.
+2. Modify `(defaultaccount).txt` to your liking.  This is the default settings new players will start with.  It can also be modified via RC.
 3. Open `config/serveroptions.txt` and edit it to your liking (like selecting a server generation).  Be sure to modify the settings under "Private server options".
 4. Find the line that starts with `staff=` in `config/serveroptions.txt`.  Replace `YOURACCOUNT` with your account name.  Anybody who needs RC access must be added to this line with their account names separated by commas.  Additionally, RC users must have their IP range changed to at least `*.*.*.*` in their account to connect.
 5. Run `gs2emu.exe` -- enjoy.
