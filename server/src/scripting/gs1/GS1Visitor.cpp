@@ -1452,19 +1452,21 @@ std::any GS1Visitor::visitExpressionPostfix(GS1Parser::ExpressionPostfixContext*
 	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	auto anyval = visit(context->children[0]);
-	if (auto left = getScriptValueAs<double>(anyval); left.has_value())
+	if (const auto left = getScriptValueAs<double>(anyval); left.has_value())
 	{
-		auto value = left.value().get();
+		auto& value = left.value().get();
 
 		// Perform the operation.
 		switch (op.value())
 		{
 			case GS1Parser::OP_INC:
-				left.value().get() += 1.0;
+				value += 1.0;
 				break;
 			case GS1Parser::OP_DEC:
-				left.value().get() -= 1.0;
+				value -= 1.0;
 				break;
+			default:
+				throw std::runtime_error("ExpressionPostfix does not have an operator");
 		}
 	}
 

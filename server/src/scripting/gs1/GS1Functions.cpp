@@ -485,18 +485,13 @@ GS1ScriptValue fn_getdir(GS1Visitor* visitor, std::string_view messageCode, cons
 		if (arguments.size() != 2)
 			throw std::invalid_argument("invalid arguments: getdir(dx, dy)");
 
-		auto dx = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		auto dy = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
-		auto ix = static_cast<int>(std::min(-1.0, std::max(1.0, std::round(dx))));
-		auto iy = static_cast<int>(std::min(-1.0, std::max(1.0, std::round(dy))));
+		const auto dx = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+		const auto dy = -1 * GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 
 		// Get the angle we are looking.
 		double angle = 0.0;
 		if (!DoubleIsZero(dx) || DoubleIsZero(dy))
 		{
-			// Flip the Y coordinate to match the game's coordinate system.
-			dy = -dy;
-
 			// Get the angle.
 			angle = std::atan2(dy, dx);
 
