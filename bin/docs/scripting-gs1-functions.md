@@ -400,7 +400,7 @@ Returns the position in which `string` can be found in `substring`.
 
 ```
 setstring test, thisisatest;
-pos = indexof(#s(test), isa);
+pos = indexof(isa, #s(test));
 // pos == 4
 ```
 
