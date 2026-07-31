@@ -5,6 +5,8 @@
 #include <CString.h>
 #include <IEnums.h>
 
+#include <BabyDI.h>
+#include <Server.h>
 #include <level/LevelItem.h>
 #include <object/Player.h>
 #include <player/PlayerProps.h>
@@ -101,14 +103,49 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 			return CString() >> (char)PlayerProp::GLOVEPOWER >> (char)glovePower;
 		}
 
-		case LevelItemType::BOW:       // bow
 		case LevelItemType::BOMB:      // bomb
 		case LevelItemType::SUPERBOMB: // superbomb
+		case LevelItemType::JOLTBOMB:  // joltbomb
+		{
+			// TODO: Change to versions <1.2 once the version stuff is fixed up.
+			if (const auto server = BabyDI::Get<Server>(); server != nullptr && server->Generation == ServerGeneration::CLASSIC && player->getVersion() < CLVER_1_25)
+			{
+				auto bombPower = player->account.character.bombPower;
+				if (itemType == LevelItemType::BOMB && bombPower < 1)
+					bombPower = 1;
+				else if (itemType == LevelItemType::SUPERBOMB && bombPower < 2)
+					bombPower = 2;
+				else if (itemType == LevelItemType::JOLTBOMB && bombPower < 3)
+					bombPower = 3;
+
+				return CString() >> (char)PlayerProp::BOMBPOWER >> (char)bombPower;
+			}
+
+			player->addWeapon(itemType);
+			return {};
+		}
+
+		case LevelItemType::BOW:       // bow
 		case LevelItemType::FIREBALL:  // fireball
 		case LevelItemType::FIREBLAST: // fireblast
 		case LevelItemType::NUKESHOT:  // nukeshot
-		case LevelItemType::JOLTBOMB:  // joltbomb
 		{
+			// TODO: Change to versions <1.2 once the version stuff is fixed up.
+			if (const auto server = BabyDI::Get<Server>(); server != nullptr && server->Generation == ServerGeneration::CLASSIC && player->getVersion() < CLVER_1_25)
+			{
+				auto bowPower = player->account.character.bowPower;
+				if (itemType == LevelItemType::BOW && bowPower < 1)
+					bowPower = 1;
+				else if (itemType == LevelItemType::FIREBALL && bowPower < 2)
+					bowPower = 2;
+				else if (itemType == LevelItemType::FIREBLAST && bowPower < 3)
+					bowPower = 3;
+				else if (itemType == LevelItemType::NUKESHOT && bowPower < 3)
+					bowPower = 4;
+
+				return CString() >> (char)PlayerProp::GANI >> (char)bowPower;
+			}
+
 			player->addWeapon(itemType);
 			return {};
 		}
