@@ -12,18 +12,18 @@ namespace preagonal
 enum class PlayerProp : uint8_t
 {
 	NICKNAME = 0,
-	MAXPOWER = 1,
-	CURPOWER = 2,
-	RUPEESCOUNT = 3,
-	ARROWSCOUNT = 4,
-	BOMBSCOUNT = 5,
+	FULLHEARTS = 1,
+	HALFHEARTS = 2,
+	GRALATS = 3,
+	ARROWS = 4,
+	BOMBS = 5,
 	GLOVEPOWER = 6,
 	BOMBPOWER = 7,
-	SWORDPOWER = 8,
-	SHIELDPOWER = 9,
-	GANI = 10, // PLPROP_BOWGIF in pre-2.x
-	HEADGIF = 11,
-	CURCHAT = 12,
+	SWORDIMAGE = 8,
+	SHIELDIMAGE = 9,
+	GANI = 10, // BOWIMAGE in pre-2.x
+	HEADIMAGE = 11,
+	MESSAGE = 12,
 	COLORS = 13,
 	ID = 14,
 	X = 15,
@@ -31,23 +31,23 @@ enum class PlayerProp : uint8_t
 	SPRITE = 17,
 	STATUS = 18,
 	CARRYSPRITE = 19,
-	CURLEVEL = 20,
-	HORSEGIF = 21,
+	LEVEL = 20,
+	HORSEIMAGE = 21,
 	HORSEBUSHES = 22,
 	EFFECTCOLORS = 23,
-	CARRYNPC = 24,
+	CARRYNPCID = 24,
 	APCOUNTER = 25,
 	MAGICPOINTS = 26, // 1.22, maybe 1.27
-	KILLSCOUNT = 27,
-	DEATHSCOUNT = 28,
-	ONLINESECS = 29,
+	KILLS = 27,
+	DEATHS = 28,
+	ONLINESECONDS = 29,
 	IPADDR = 30,
 	UDPPORT = 31,
 	ALIGNMENT = 32,
 	ADDITFLAGS = 33,
 	ACCOUNTNAME = 34,
 	// 1.4+
-	BODYIMG = 35,
+	BODYIMAGE = 35,
 	// 1.41+
 	RATING = 36,
 	// 2.02+
@@ -57,7 +57,7 @@ enum class PlayerProp : uint8_t
 	GATTRIB4 = 40,
 	GATTRIB5 = 41,
 	// 2.04+
-	ATTACHNPC = 42,
+	ATTACHNPCID = 42,
 	// 2.121+ (possibly)
 	GMAPLEVELX = 43,
 	GMAPLEVELY = 44,
@@ -98,7 +98,7 @@ enum class PlayerProp : uint8_t
 	GATTRIB30 = 74,
 	OSTYPE = 75,
 	TEXTCODEPAGE = 76,
-	ONLINESECS2 = 77,
+	ONLINESECONDS2 = 77,
 	// 2.3+
 	X2 = 78,
 	Y2 = 79,
@@ -111,9 +111,9 @@ enum class PlayerProp : uint8_t
 	// v6 will read a GBYTE5 and store it inside some variable, as long as the number is less than 1,000,000,000.
 	UNKNOWN83 = 83,
 
-	PLAYERPROP_COUNT
+	COUNT
 };
-constexpr int PLAYERPROP_COUNT = static_cast<int>(PlayerProp::PLAYERPROP_COUNT);
+constexpr int PLAYERPROP_COUNT = static_cast<int>(PlayerProp::COUNT);
 
 enum class PlayerListCategory : uint8_t
 {

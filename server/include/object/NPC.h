@@ -55,8 +55,8 @@ enum class NPCProp : uint8_t
 	SCRIPT = 1,
 	X = 2,
 	Y = 3,
-	POWER = 4,
-	RUPEES = 5,
+	HALFHEARTS = 4,
+	GRALATS = 5,
 	ARROWS = 6,
 	BOMBS = 7,
 	GLOVEPOWER = 8,
@@ -110,7 +110,7 @@ enum class NPCProp : uint8_t
 	SCRIPTER = 49, // My guess is UNKNOWN48 or this is the scripter's name
 	NAME = 50,
 	TYPE = 51,
-	CURLEVEL = 52,
+	LEVEL = 52,
 	// --- END NOT HANDLED BY CLIENT
 
 	// 2.19+
@@ -144,15 +144,15 @@ enum class NPCProp : uint8_t
 	Y2 = 76,
 	Z2 = 77,
 
-	NPCPROP_COUNT
+	COUNT
 };
-constexpr int NPCPROP_COUNT = static_cast<int>(NPCProp::NPCPROP_COUNT);
+constexpr int NPCPROP_COUNT = static_cast<int>(NPCProp::COUNT);
 
 inline constexpr std::array<NPCProp, 10> NPCSaveProps = {NPCProp::SAVE0, NPCProp::SAVE1, NPCProp::SAVE2, NPCProp::SAVE3, NPCProp::SAVE4, NPCProp::SAVE5, NPCProp::SAVE6, NPCProp::SAVE7, NPCProp::SAVE8, NPCProp::SAVE9};
 
 // clang-format off
 
-//! NPCPROP_VISFLAGS values.
+/// @brief NPCProp::VISFLAGS values.
 enum class NPCVisFlags : uint8_t
 {
 	HIDDEN			= 0b0000'0000,
@@ -166,7 +166,7 @@ enum class NPCVisFlags : uint8_t
 	MALE			= 0b0100'0000,
 };
 
-//! NPCPROP_BLOCKFLAGS values.
+/// @brief NPCProp::BLOCKFLAGS values.
 enum class NPCBlockFlags : uint8_t
 {
 	BLOCK			= 0b0000'0000,
@@ -176,7 +176,7 @@ enum class NPCBlockFlags : uint8_t
 	CANBEPUSHED		= 0b0000'1000,
 };
 
-//! NPCMOVE_FLAGS values
+/// @brief NPC Move options
 enum class NPCMoveFlags : uint8_t
 {
 	NOCACHE			= 0b0000'0000,
@@ -582,8 +582,8 @@ inline TilePosition NPC::getTilePosition() const noexcept
 	DO(NPCProp::SCRIPT,		PropertyGS1Script,			getClientSideScript()) \
 	DO(NPCProp::X,			PropertyTileCoordinate,		character.localPixelX) \
 	DO(NPCProp::Y,			PropertyTileCoordinate,		character.localPixelY) \
-	DO(NPCProp::POWER,		PropertyNumeric<GBYTE1>,	character.hitpointsInHalves) \
-	DO(NPCProp::RUPEES,		PropertyNumeric<GBYTE3>,	character.gralats) \
+	DO(NPCProp::HALFHEARTS,	PropertyNumeric<GBYTE1>,	character.hitpointsInHalves) \
+	DO(NPCProp::GRALATS,	PropertyNumeric<GBYTE3>,	character.gralats) \
 	DO(NPCProp::ARROWS,		PropertyNumeric<GBYTE1>,	character.arrows) \
 	DO(NPCProp::BOMBS,		PropertyNumeric<GBYTE1>,	character.bombs) \
 	DO(NPCProp::GLOVEPOWER,	PropertyNumeric<GBYTE1>,	character.glovePower) \
@@ -630,7 +630,7 @@ inline TilePosition NPC::getTilePosition() const noexcept
 	DO(NPCProp::SCRIPTER,	PropertyString,				scripter) \
 	DO(NPCProp::NAME,		PropertyString,				name) \
 	DO(NPCProp::TYPE,		PropertyString,				scriptType) \
-	DO(NPCProp::CURLEVEL,	PropertyString,				getLevelName()) \
+	DO(NPCProp::LEVEL,		PropertyString,				getLevelName()) \
 	DO(NPCProp::GATTRIB10,	PropertyString,				character.ganiAttributes[9]) \
 	DO(NPCProp::GATTRIB11,	PropertyString,				character.ganiAttributes[10]) \
 	DO(NPCProp::GATTRIB12,	PropertyString,				character.ganiAttributes[11]) \

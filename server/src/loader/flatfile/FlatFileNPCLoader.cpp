@@ -199,12 +199,12 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (command == "HP")
 		{
 			npc->character.hitpointsInHalves = static_cast<uint8_t>(2 * string::toFloat(std::string{lineView}));
-			npc->modTime[PROPID(NPCProp::POWER)] = updateTime;
+			npc->modTime[PROPID(NPCProp::HALFHEARTS)] = updateTime;
 		}
 		else if (command == "GRALATS")
 		{
 			npc->character.gralats = string::toNumber<uint32_t>(std::string{lineView});
-			npc->modTime[PROPID(NPCProp::RUPEES)] = updateTime;
+			npc->modTime[PROPID(NPCProp::GRALATS)] = updateTime;
 		}
 		else if (command == "ARROWS")
 		{
@@ -535,8 +535,8 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	if (server->Generation != ServerGeneration::CLASSIC)
 		writeProp(NPCProp::GANI, "ANI", npc->character.gani);
 
-	writeProp(NPCProp::POWER, "HP", std::format("{:.2f}", npc->character.hitpointsInHalves / 2.0f));
-	writeProp(NPCProp::RUPEES, "GRALATS", string::to_string(npc->character.gralats));
+	writeProp(NPCProp::HALFHEARTS, "HP", std::format("{:.2f}", npc->character.hitpointsInHalves / 2.0f));
+	writeProp(NPCProp::GRALATS, "GRALATS", string::to_string(npc->character.gralats));
 	writeProp(NPCProp::ARROWS, "ARROWS", string::to_string(npc->character.arrows));
 	writeProp(NPCProp::BOMBS, "BOMBS", string::to_string(npc->character.bombs));
 	writeProp(NPCProp::GLOVEPOWER, "GLOVEP", string::to_string(npc->character.glovePower));

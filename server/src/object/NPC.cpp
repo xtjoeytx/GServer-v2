@@ -186,7 +186,7 @@ bool NPC::warp(LevelPtr level, const PixelPosition& position)
 	// If we are moving levels, change the current level.
 	// Do this last so our current position is passed on the warp.
 	if (level != m_currentLevel.lock())
-		warpResults.push_back(setPropWith<NPCProp::CURLEVEL>(SetBy::SERVER, level->levelName));
+		warpResults.push_back(setPropWith<NPCProp::LEVEL>(SetBy::SERVER, level->levelName));
 
 	sendPropsFromResults(warpResults);
 
@@ -575,7 +575,7 @@ void NPC::hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEvent
 {
 	// Adjust the NPC's HP.
 	if (allowServerDamageReactions && isCharacter())
-		sendPropsFromResults(setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<uint8_t>(std::max(0, character.hitpointsInHalves - damageInHalves))));
+		sendPropsFromResults(setPropWith<NPCProp::HALFHEARTS>(SetBy::SERVER, static_cast<uint8_t>(std::max(0, character.hitpointsInHalves - damageInHalves))));
 
 	// Queue the hurt event.
 	if (damageEventType.has_value())
@@ -1044,7 +1044,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case NPCProp::POWER:
+		case NPCProp::HALFHEARTS:
 		{
 			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
@@ -1058,7 +1058,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case NPCProp::RUPEES:
+		case NPCProp::GRALATS:
 		{
 			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
 			if (numProp == nullptr)
@@ -1412,7 +1412,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case NPCProp::CURLEVEL:
+		case NPCProp::LEVEL:
 		{
 			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr || !canUpdatePosition)
@@ -1443,7 +1443,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			m_server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), newLevel);
 
 			// Tell NCs about our new position.
-			CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
+			CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::LEVEL << getProp<NPCProp::LEVEL>().serialize();
 			m_server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
 
 			// Send the NPCWARPED event to the NPC.
@@ -1744,11 +1744,11 @@ void NPC::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"z"sv, std::ref(modTime[PROPID(NPCProp::Z2)]), std::ref(character.localPixelZ), 16});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hearts"sv, std::ref(modTime[PROPID(NPCProp::POWER)]), std::ref(character.hitpointsInHalves), 2});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hp"sv, std::ref(modTime[PROPID(NPCProp::POWER)]), std::ref(character.hitpointsInHalves), 2});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hearts"sv, std::ref(modTime[PROPID(NPCProp::HALFHEARTS)]), std::ref(character.hitpointsInHalves), 2});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hp"sv, std::ref(modTime[PROPID(NPCProp::HALFHEARTS)]), std::ref(character.hitpointsInHalves), 2});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"ap"sv, std::ref(modTime[PROPID(NPCProp::ALIGNMENT)]), std::ref(character.ap)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"rupees"sv, std::ref(modTime[PROPID(NPCProp::RUPEES)]), std::ref(character.gralats)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"gralats"sv, std::ref(modTime[PROPID(NPCProp::RUPEES)]), std::ref(character.gralats)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"rupees"sv, std::ref(modTime[PROPID(NPCProp::GRALATS)]), std::ref(character.gralats)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"gralats"sv, std::ref(modTime[PROPID(NPCProp::GRALATS)]), std::ref(character.gralats)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"bombs"sv, std::ref(modTime[PROPID(NPCProp::BOMBS)]), std::ref(character.bombs)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"darts"sv, std::ref(modTime[PROPID(NPCProp::ARROWS)]), std::ref(character.arrows)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"glovepower"sv, std::ref(modTime[PROPID(NPCProp::GLOVEPOWER)]), std::ref(character.glovePower)});
@@ -1941,12 +1941,12 @@ void NPC::testForLinks(SetResults& result)
 	auto informNPCWarped = [&]()
 	{
 		// Tell NCs about our new position.
-		CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::CURLEVEL << getProp<NPCProp::CURLEVEL>().serialize();
+		CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::LEVEL << getProp<NPCProp::LEVEL>().serialize();
 		m_server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
 
 		// Set our level prop.
 		result.resultPropIds.clear();
-		result.resultPropIds.push_back(PROPID(NPCProp::CURLEVEL));
+		result.resultPropIds.push_back(PROPID(NPCProp::LEVEL));
 		informNPCMoved();
 
 		// Tell players that we changed level.

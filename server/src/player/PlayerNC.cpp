@@ -171,7 +171,7 @@ bool PlayerNC::sendLogin()
 			CString npcPacket = CString() >> (char)PLO_NC_NPCADD >> (int)npc->id
 				>> (char)NPCProp::NAME << npc->getProp<NPCProp::NAME>().serialize()
 				>> (char)NPCProp::TYPE << npc->getProp<NPCProp::TYPE>().serialize()
-				>> (char)NPCProp::CURLEVEL << npc->getProp<NPCProp::CURLEVEL>().serialize();
+				>> (char)NPCProp::LEVEL << npc->getProp<NPCProp::LEVEL>().serialize();
 			sendPacket(npcPacket);
 		}
 

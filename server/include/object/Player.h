@@ -612,18 +612,18 @@ inline void Player::recordCurrentPropModTime()
 // Defines the mapping of PlayerProp to PropertyContainer.
 #define FOR_LIST_OF_PLAYER_PROPS(DO)                                                                                           \
 	DO(PlayerProp::NICKNAME, PropertyString, account.character.nickName)                                                       \
-	DO(PlayerProp::MAXPOWER, PropertyNumeric<GBYTE1>, account.maxHitpoints)                                                    \
-	DO(PlayerProp::CURPOWER, PropertyNumeric<GBYTE1>, account.character.hitpointsInHalves)                                     \
-	DO(PlayerProp::RUPEESCOUNT, PropertyNumeric<GBYTE3>, account.character.gralats)                                            \
-	DO(PlayerProp::ARROWSCOUNT, PropertyNumeric<GBYTE1>, account.character.arrows)                                             \
-	DO(PlayerProp::BOMBSCOUNT, PropertyNumeric<GBYTE1>, account.character.bombs)                                               \
+	DO(PlayerProp::FULLHEARTS, PropertyNumeric<GBYTE1>, account.maxHitpoints)                                                  \
+	DO(PlayerProp::HALFHEARTS, PropertyNumeric<GBYTE1>, account.character.hitpointsInHalves)                                   \
+	DO(PlayerProp::GRALATS, PropertyNumeric<GBYTE3>, account.character.gralats)                                                \
+	DO(PlayerProp::ARROWS, PropertyNumeric<GBYTE1>, account.character.arrows)                                                  \
+	DO(PlayerProp::BOMBS, PropertyNumeric<GBYTE1>, account.character.bombs)                                                    \
 	DO(PlayerProp::GLOVEPOWER, PropertyNumeric<GBYTE1>, account.character.glovePower)                                          \
 	DO(PlayerProp::BOMBPOWER, PropertyNumeric<GBYTE1>, account.character.bombPower)                                            \
-	DO(PlayerProp::SWORDPOWER, PropertySwordPower, account.character.swordImage, account.character.swordPower)                 \
-	DO(PlayerProp::SHIELDPOWER, PropertyShieldPower, account.character.shieldImage, account.character.shieldPower)             \
+	DO(PlayerProp::SWORDIMAGE, PropertySwordPower, account.character.swordImage, account.character.swordPower)                 \
+	DO(PlayerProp::SHIELDIMAGE, PropertyShieldPower, account.character.shieldImage, account.character.shieldPower)             \
 	DO(PlayerProp::GANI, PropertyGaniOrBowGif, account.character.gani, account.character.bowPower, account.character.bowImage) \
-	DO(PlayerProp::HEADGIF, PropertyHeadGif, account.character.headImage)                                                      \
-	DO(PlayerProp::CURCHAT, PropertyString, account.character.chatMessage)                                                     \
+	DO(PlayerProp::HEADIMAGE, PropertyHeadGif, account.character.headImage)                                                    \
+	DO(PlayerProp::MESSAGE, PropertyString, account.character.chatMessage)                                                     \
 	DO(PlayerProp::COLORS, PropertyColors, account.character.colors)                                                           \
 	DO(PlayerProp::ID, PropertyNumeric<GBYTE2>, m_id)                                                                          \
 	DO(PlayerProp::X, PropertyTileCoordinate, account.character.localPixelX)                                                   \
@@ -631,29 +631,29 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::SPRITE, PropertySprite, account.character.sprite, account.character.direction)                              \
 	DO(PlayerProp::STATUS, PropertyNumeric<GBYTE1>, account.status)                                                            \
 	DO(PlayerProp::CARRYSPRITE, PropertyUnsafeByte, m_carrySprite)                                                             \
-	DO(PlayerProp::CURLEVEL, PropertyString, getLevelName())                                                                   \
-	DO(PlayerProp::HORSEGIF, PropertyString, account.character.horseImage)                                                     \
+	DO(PlayerProp::LEVEL, PropertyString, getLevelName())                                                                      \
+	DO(PlayerProp::HORSEIMAGE, PropertyString, account.character.horseImage)                                                   \
 	DO(PlayerProp::HORSEBUSHES, PropertyNumeric<GBYTE1>, m_horseBombCount)                                                     \
 	DO(PlayerProp::EFFECTCOLORS, PropertyEffectColors, m_effectColors)                                                         \
-	DO(PlayerProp::CARRYNPC, PropertyNumeric<GBYTE3>, m_carryNPC)                                                              \
+	DO(PlayerProp::CARRYNPCID, PropertyNumeric<GBYTE3>, m_carryNPC)                                                            \
 	DO(PlayerProp::APCOUNTER, PropertyNumeric<GBYTE2>, account.apCounter)                                                      \
 	DO(PlayerProp::MAGICPOINTS, PropertyNumeric<GBYTE1>, account.character.mp)                                                 \
-	DO(PlayerProp::KILLSCOUNT, PropertyNumeric<GBYTE3>, account.kills)                                                         \
-	DO(PlayerProp::DEATHSCOUNT, PropertyNumeric<GBYTE3>, account.deaths)                                                       \
-	DO(PlayerProp::ONLINESECS, PropertyNumeric<GBYTE3>, account.onlineSeconds)                                                 \
+	DO(PlayerProp::KILLS, PropertyNumeric<GBYTE3>, account.kills)                                                              \
+	DO(PlayerProp::DEATHS, PropertyNumeric<GBYTE3>, account.deaths)                                                            \
+	DO(PlayerProp::ONLINESECONDS, PropertyNumeric<GBYTE3>, account.onlineSeconds)                                              \
 	DO(PlayerProp::IPADDR, PropertyNumeric<GBYTE5>, m_accountIp)                                                               \
 	DO(PlayerProp::UDPPORT, PropertyNumeric<GBYTE3>, m_udpport)                                                                \
 	DO(PlayerProp::ALIGNMENT, PropertyNumeric<GBYTE1>, account.character.ap)                                                   \
 	DO(PlayerProp::ADDITFLAGS, PropertyNumeric<GBYTE1>, m_additionalFlags)                                                     \
 	DO(PlayerProp::ACCOUNTNAME, PropertyString, account.name)                                                                  \
-	DO(PlayerProp::BODYIMG, PropertyString, account.character.bodyImage)                                                       \
+	DO(PlayerProp::BODYIMAGE, PropertyString, account.character.bodyImage)                                                     \
 	DO(PlayerProp::RATING, PropertyEloRating, account.eloRating, account.eloDeviation)                                         \
 	DO(PlayerProp::GATTRIB1, PropertyString, account.character.ganiAttributes[0])                                              \
 	DO(PlayerProp::GATTRIB2, PropertyString, account.character.ganiAttributes[1])                                              \
 	DO(PlayerProp::GATTRIB3, PropertyString, account.character.ganiAttributes[2])                                              \
 	DO(PlayerProp::GATTRIB4, PropertyString, account.character.ganiAttributes[3])                                              \
 	DO(PlayerProp::GATTRIB5, PropertyString, account.character.ganiAttributes[4])                                              \
-	DO(PlayerProp::ATTACHNPC, PropertyAttachNPC, m_attachNPC)                                                                  \
+	DO(PlayerProp::ATTACHNPCID, PropertyAttachNPC, m_attachNPC)                                                                \
 	DO(PlayerProp::GMAPLEVELX, PropertyNumeric<GBYTE1>, account.character.mapX)                                                \
 	DO(PlayerProp::GMAPLEVELY, PropertyNumeric<GBYTE1>, account.character.mapY)                                                \
 	DO(PlayerProp::Z, PropertyTileCoordinateZ, account.character.localPixelZ)                                                  \
@@ -688,7 +688,7 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::GATTRIB30, PropertyString, account.character.ganiAttributes[29])                                            \
 	DO(PlayerProp::OSTYPE, PropertyString, account.platform)                                                                   \
 	DO(PlayerProp::TEXTCODEPAGE, PropertyNumeric<GBYTE3>, account.codePage)                                                    \
-	DO(PlayerProp::ONLINESECS2, PropertyNumeric<GBYTE5>)                                                                       \
+	DO(PlayerProp::ONLINESECONDS2, PropertyNumeric<GBYTE5>)                                                                    \
 	DO(PlayerProp::X2, PropertyPixelCoordinate, account.character.localPixelX)                                                 \
 	DO(PlayerProp::Y2, PropertyPixelCoordinate, account.character.localPixelY)                                                 \
 	DO(PlayerProp::Z2, PropertyPixelCoordinate, account.character.localPixelZ)                                                 \

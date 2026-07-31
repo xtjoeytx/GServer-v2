@@ -479,13 +479,14 @@ They cannot eat bushes or bombs.
 ---
 ## Draw layers
 
-| Layer | Command | Description |
-| ----- | ------- | ----------- |
-| 0 | [drawunderplayer;](scripting-gs1-commands.md#drawunderplayer) | Draws under the player's character. |
-| 1 | (Note 1) | Draws at the same level of the player's character. |
-| 2 | [drawoverplayer;](scripting-gs1-commands.md#drawoverplayer)   | Draws over the player's character. |
-| 3 | [drawaslight;](scripting-gs1-commands.md#drawaslight)         | Draws above any effects.  See: [seteffect](scripting-gs1-commands.md#seteffect) |
-| 4 | (Note 2) | Draws on the UI layer.  X/Y coordinates are in pixels. |
+| Layer | Command                                                       | Description                                                                                    |
+|-------|---------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| 0     | [drawunderplayer;](scripting-gs1-commands.md#drawunderplayer) | Draws under the player's character.                                                            |
+| 1     | (Note 1)                                                      | Draws at the same level of the player's character.                                             |
+| 2     | [drawoverplayer;](scripting-gs1-commands.md#drawoverplayer)   | Draws over the player's character.                                                             |
+|       |                                                               | Effects are applied here to layers 0-2.  See: [seteffect](scripting-gs1-commands.md#seteffect) |
+| 3     | [drawaslight;](scripting-gs1-commands.md#drawaslight)         | Draws above any effects.                                                                       |
+| 4     | (Note 2)                                                      | Draws on the UI layer.  X/Y coordinates are in pixels.                                         |
 
 Note 1:
 > Layer 1 is difficult to get back to without knowing how.

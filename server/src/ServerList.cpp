@@ -350,7 +350,7 @@ void ServerList::addPlayer(std::shared_ptr<Player> player)
 	dataPacket >> (char)SVO_PLYRADD >> (short)player->getId() >> (char)player->getType();
 	dataPacket >> (char)PlayerProp::ACCOUNTNAME << player->getProp<PlayerProp::ACCOUNTNAME>().serialize();
 	dataPacket >> (char)PlayerProp::NICKNAME << player->getProp<PlayerProp::NICKNAME>().serialize();
-	dataPacket >> (char)PlayerProp::CURLEVEL << player->getProp<PlayerProp::CURLEVEL>().serialize();
+	dataPacket >> (char)PlayerProp::LEVEL << player->getProp<PlayerProp::LEVEL>().serialize();
 	dataPacket >> (char)PlayerProp::X << player->getProp<PlayerProp::X>().serialize();
 	dataPacket >> (char)PlayerProp::Y << player->getProp<PlayerProp::Y>().serialize();
 	dataPacket >> (char)PlayerProp::ALIGNMENT << player->getProp<PlayerProp::ALIGNMENT>().serialize();
@@ -612,7 +612,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 		val = CString((int)p2->account.deaths);
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getProp<PlayerProp::MAXPOWER>().value);
+		val = CString((int)p2->getProp<PlayerProp::FULLHEARTS>().value);
 		profile >> (char)val.length() << val;
 
 		auto rating = p2->getProp<PlayerProp::RATING>();
@@ -622,10 +622,10 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 		val = CString((int)p2->getProp<PlayerProp::ALIGNMENT>().value);
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getProp<PlayerProp::RUPEESCOUNT>().value);
+		val = CString((int)p2->getProp<PlayerProp::GRALATS>().value);
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getProp<PlayerProp::SWORDPOWER>().power.value_or(1));
+		val = CString((int)p2->getProp<PlayerProp::SWORDIMAGE>().power.value_or(1));
 		profile >> (char)val.length() << val;
 
 		bool canSpin = ((p2->getProp<PlayerProp::STATUS>().value & PLSTATUS_HASSPIN) != 0 ? true : false);
@@ -650,7 +650,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 			else if (val == "playerdeaths")
 				val = CString(p2->account.deaths);
 			else if (val == "playerfullhearts")
-				val = CString(p2->getProp<PlayerProp::MAXPOWER>().value);
+				val = CString(p2->getProp<PlayerProp::FULLHEARTS>().value);
 			else if (val == "playerrating")
 			{
 				auto rating = p2->getProp<PlayerProp::RATING>();
@@ -659,25 +659,25 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 			else if (val == "playerap")
 				val = CString(p2->getProp<PlayerProp::ALIGNMENT>().value);
 			else if (val == "playerrupees")
-				val = CString(p2->getProp<PlayerProp::RUPEESCOUNT>().value);
+				val = CString(p2->getProp<PlayerProp::GRALATS>().value);
 			else if (val == "playerswordpower")
-				val = CString(p2->getProp<PlayerProp::SWORDPOWER>().power.value_or(1));
+				val = CString(p2->getProp<PlayerProp::SWORDIMAGE>().power.value_or(1));
 			else if (val == "canspin")
 				val = ((p2->getProp<PlayerProp::STATUS>().value & PLSTATUS_HASSPIN) ? "true" : "false");
 			else if (val == "playerhearts")
 			{
-				auto power = p2->getProp<PlayerProp::CURPOWER>().value;
+				auto power = p2->getProp<PlayerProp::HALFHEARTS>().value;
 				val = CString(power / 2);
 				if (power % 2 == 1) val << ".5";
 			}
 			else if (val == "playerdarts")
-				val = CString(p2->getProp<PlayerProp::ARROWSCOUNT>().value);
+				val = CString(p2->getProp<PlayerProp::ARROWS>().value);
 			else if (val == "playerbombs")
-				val = CString(p2->getProp<PlayerProp::BOMBSCOUNT>().value);
+				val = CString(p2->getProp<PlayerProp::BOMBS>().value);
 			else if (val == "playermp")
 				val = CString(p2->getProp<PlayerProp::MAGICPOINTS>().value);
 			else if (val == "playershieldpower")
-				val = CString(p2->getProp<PlayerProp::SHIELDPOWER>().power.value_or(1));
+				val = CString(p2->getProp<PlayerProp::SHIELDIMAGE>().power.value_or(1));
 			else if (val == "playerglovepower")
 				val = CString(p2->getProp<PlayerProp::GLOVEPOWER>().value);
 			else
@@ -883,19 +883,19 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 		switch (type)
 		{
 			case SVF_HEAD:
-				result = p->setPropWith<PlayerProp::HEADGIF>(props::SetBy::SERVER, shortName.toString());
+				result = p->setPropWith<PlayerProp::HEADIMAGE>(props::SetBy::SERVER, shortName.toString());
 				break;
 
 			case SVF_BODY:
-				result = p->setPropWith<PlayerProp::BODYIMG>(props::SetBy::SERVER, shortName.toString());
+				result = p->setPropWith<PlayerProp::BODYIMAGE>(props::SetBy::SERVER, shortName.toString());
 				break;
 
 			case SVF_SWORD:
-				result = p->setPropWith<PlayerProp::SWORDPOWER>(props::SetBy::SERVER, shortName.toString());
+				result = p->setPropWith<PlayerProp::SWORDIMAGE>(props::SetBy::SERVER, shortName.toString());
 				break;
 
 			case SVF_SHIELD:
-				result = p->setPropWith<PlayerProp::SHIELDPOWER>(props::SetBy::SERVER, shortName.toString());
+				result = p->setPropWith<PlayerProp::SHIELDIMAGE>(props::SetBy::SERVER, shortName.toString());
 				break;
 		}
 

@@ -707,7 +707,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// Try to load the file.
 		if (!file.empty())
-			sendPropsFromResults(setPropWith<PlayerProp::HEADGIF>(props::SetBy::SERVER, chatParse[1].toString()));
+			sendPropsFromResults(setPropWith<PlayerProp::HEADIMAGE>(props::SetBy::SERVER, chatParse[1].toString()));
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)0 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -725,7 +725,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			sendPropsFromResults(setPropWith<PlayerProp::BODYIMG>(props::SetBy::SERVER, chatParse[1].toString()));
+			sendPropsFromResults(setPropWith<PlayerProp::BODYIMAGE>(props::SetBy::SERVER, chatParse[1].toString()));
 			return false;
 		}
 
@@ -750,7 +750,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// Try to load the file.
 		if (!file.empty())
-			sendPropsFromResults(setPropWith<PlayerProp::BODYIMG>(props::SetBy::SERVER, chatParse[1].toString()));
+			sendPropsFromResults(setPropWith<PlayerProp::BODYIMAGE>(props::SetBy::SERVER, chatParse[1].toString()));
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)1 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -768,7 +768,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			sendPropsFromResults(setPropWith<PlayerProp::SWORDPOWER>(props::SetBy::SERVER, chatParse[1].toString()));
+			sendPropsFromResults(setPropWith<PlayerProp::SWORDIMAGE>(props::SetBy::SERVER, chatParse[1].toString()));
 			return false;
 		}
 
@@ -793,7 +793,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// Try to load the file.
 		if (!file.empty())
-			sendPropsFromResults(setPropWith<PlayerProp::SWORDPOWER>(props::SetBy::SERVER, chatParse[1].toString()));
+			sendPropsFromResults(setPropWith<PlayerProp::SWORDIMAGE>(props::SetBy::SERVER, chatParse[1].toString()));
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)2 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -811,7 +811,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		// malicious gservers.
 		if (isDefault)
 		{
-			sendPropsFromResults(setPropWith<PlayerProp::SHIELDPOWER>(props::SetBy::SERVER, chatParse[1].toString()));
+			sendPropsFromResults(setPropWith<PlayerProp::SHIELDIMAGE>(props::SetBy::SERVER, chatParse[1].toString()));
 			return false;
 		}
 
@@ -836,7 +836,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// Try to load the file.
 		if (!file.empty())
-			sendPropsFromResults(setPropWith<PlayerProp::SHIELDPOWER>(props::SetBy::SERVER, chatParse[1].toString()));
+			sendPropsFromResults(setPropWith<PlayerProp::SHIELDIMAGE>(props::SetBy::SERVER, chatParse[1].toString()));
 		else
 			m_server->getServerList().sendPacket(CString() >> (char)SVO_GETFILE3 >> (short)m_id >> (char)3 >> (char)chatParse[1].length() << chatParse[1]);
 	}
@@ -1289,7 +1289,7 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, std::optional<clock:
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
 	CString minimap = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id
-		>> (char)PlayerProp::CURLEVEL << getProp<PlayerProp::CURLEVEL>().serialize()
+		>> (char)PlayerProp::LEVEL << getProp<PlayerProp::LEVEL>().serialize()
 		>> (char)PlayerProp::X << getProp<PlayerProp::X>().serialize()
 		>> (char)PlayerProp::Y << getProp<PlayerProp::Y>().serialize();
 
@@ -1303,7 +1303,7 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, std::optional<clock:
 
 	// Update RCs.
 	CString myRCProps = CString() >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name
-		>> (char)PlayerProp::CURLEVEL << getProp<PlayerProp::CURLEVEL>().serialize()
+		>> (char)PlayerProp::LEVEL << getProp<PlayerProp::LEVEL>().serialize()
 		>> (char)PlayerProp::PLAYERLISTSTATUS << getProp<PlayerProp::PLAYERLISTSTATUS>().serialize()
 		>> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize()
 		>> (char)PlayerProp::COMMUNITYNAME << getProp<PlayerProp::COMMUNITYNAME>().serialize();
@@ -1900,7 +1900,7 @@ void PlayerClient::dropItemsOnDeath()
 	account.character.gralats -= drop_gralats;
 	account.character.arrows -= (drop_arrows * 5);
 	account.character.bombs -= (drop_bombs * 5);
-	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::RUPEESCOUNT >> (int)account.character.gralats >> (char)PlayerProp::ARROWSCOUNT >> (char)account.character.arrows >> (char)PlayerProp::BOMBSCOUNT >> (char)account.character.bombs);
+	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::GRALATS >> (int)account.character.gralats >> (char)PlayerProp::ARROWS >> (char)account.character.arrows >> (char)PlayerProp::BOMBS >> (char)account.character.bombs);
 
 	// Check which gralats we can drop.
 	bool canDropGold = std::ranges::contains(allowedDeathDrops, LevelItemType::GOLDRUPEE);
@@ -2092,18 +2092,18 @@ props::SetResults PlayerClient::addItem(LevelItemType itemType, props::SetBy set
 		case LevelItemType::BLUERUPEE:
 		case LevelItemType::REDRUPEE:
 		case LevelItemType::GOLDRUPEE:
-			return setPropWith<PlayerProp::RUPEESCOUNT>(setBy, account.character.gralats + LevelItem::GetRupeeCount(itemType));
+			return setPropWith<PlayerProp::GRALATS>(setBy, account.character.gralats + LevelItem::GetRupeeCount(itemType));
 
 		case LevelItemType::BOMBS:
-			return setPropWith<PlayerProp::BOMBSCOUNT>(setBy, std::min(99_ui8, static_cast<uint8_t>(account.character.bombs + 5)));
+			return setPropWith<PlayerProp::BOMBS>(setBy, std::min(99_ui8, static_cast<uint8_t>(account.character.bombs + 5)));
 
 		case LevelItemType::DARTS:
-			return setPropWith<PlayerProp::ARROWSCOUNT>(setBy, std::min(99_ui8, static_cast<uint8_t>(account.character.arrows + 5)));
+			return setPropWith<PlayerProp::ARROWS>(setBy, std::min(99_ui8, static_cast<uint8_t>(account.character.arrows + 5)));
 
 		case LevelItemType::HEART:
 		{
 			uint8_t maxHearts = static_cast<uint8_t>(std::min(account.maxHitpoints, static_cast<uint8_t>(m_server->cached.maxHeartLimit.getValue())) * 2);
-			return setPropWith<PlayerProp::BOMBSCOUNT>(setBy, std::min(maxHearts, static_cast<uint8_t>(account.character.hitpointsInHalves + 2)));
+			return setPropWith<PlayerProp::BOMBS>(setBy, std::min(maxHearts, static_cast<uint8_t>(account.character.hitpointsInHalves + 2)));
 		}
 
 		case LevelItemType::GLOVE1:

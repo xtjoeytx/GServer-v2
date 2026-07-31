@@ -1038,7 +1038,7 @@ HandlePacketResult PlayerClient::msgPLI_HITOBJECTS(CString& pPacket)
 			{
 				if (auto npc = m_server->getNPC(npcId); npc != nullptr && npc->isCharacter() && npc->visFlags != PROPID(NPCVisFlags::HIDDEN))
 				{
-					npc->setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<GBYTE1>(std::max(0, (int)npc->getProp<NPCProp::POWER>().value - int(power * 2))));
+					npc->setPropWith<NPCProp::HALFHEARTS>(SetBy::SERVER, static_cast<GBYTE1>(std::max(0, (int)npc->getProp<NPCProp::HALFHEARTS>().value - int(power * 2))));
 					npc->hurtAndPush(power, translatePosition(getGlobalPosition(), 24_i32, 32_i32), ScriptEventType::WASHIT, source::FromPlayer(m_id));
 				}
 			}
@@ -1263,7 +1263,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 				{
 					++start;
 					int hearts = string::toNumber(string::trimMutate(actionData.substr(start)));
-					sendPropsFromResults(setPropWith<PlayerProp::MAXPOWER>(props::SetBy::SERVER, static_cast<uint8_t>(hearts)));
+					sendPropsFromResults(setPropWith<PlayerProp::FULLHEARTS>(props::SetBy::SERVER, static_cast<uint8_t>(hearts)));
 				}
 			}
 		}

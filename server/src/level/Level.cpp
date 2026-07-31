@@ -3245,13 +3245,13 @@ std::shared_ptr<NPC> Level::generateItemNPC(const PixelPosition& position, Level
 
 	static std::unordered_map<LevelItemType, NPCProp> stackableItems =
 		{
-			{LevelItemType::GREENRUPEE, NPCProp::RUPEES},
-			{LevelItemType::BLUERUPEE, NPCProp::RUPEES},
-			{LevelItemType::REDRUPEE, NPCProp::RUPEES},
-			{LevelItemType::GOLDRUPEE, NPCProp::RUPEES},
+			{LevelItemType::GREENRUPEE, NPCProp::GRALATS},
+			{LevelItemType::BLUERUPEE, NPCProp::GRALATS},
+			{LevelItemType::REDRUPEE, NPCProp::GRALATS},
+			{LevelItemType::GOLDRUPEE, NPCProp::GRALATS},
 			{LevelItemType::BOMBS, NPCProp::BOMBS},
 			{LevelItemType::DARTS, NPCProp::ARROWS},
-			{LevelItemType::HEART, NPCProp::POWER},
+			{LevelItemType::HEART, NPCProp::HALFHEARTS},
 		};
 	static std::unordered_map<LevelItemType, uint32_t> stackableCount =
 		{
@@ -3297,8 +3297,8 @@ std::shared_ptr<NPC> Level::generateItemNPC(const PixelPosition& position, Level
 		props::SetResults results;
 		switch (stackable->second)
 		{
-			case NPCProp::RUPEES:
-				results = itemNPC->setPropWith<NPCProp::RUPEES>(props::SetBy::SERVER, static_cast<props::GBYTE3>(itemNPC->getProp<NPCProp::RUPEES>().value + stackCount));
+			case NPCProp::GRALATS:
+				results = itemNPC->setPropWith<NPCProp::GRALATS>(props::SetBy::SERVER, static_cast<props::GBYTE3>(itemNPC->getProp<NPCProp::GRALATS>().value + stackCount));
 				break;
 			case NPCProp::BOMBS:
 				results = itemNPC->setPropWith<NPCProp::BOMBS>(props::SetBy::SERVER, static_cast<props::GBYTE1>(itemNPC->getProp<NPCProp::BOMBS>().value + stackCount));
@@ -3306,8 +3306,8 @@ std::shared_ptr<NPC> Level::generateItemNPC(const PixelPosition& position, Level
 			case NPCProp::ARROWS:
 				results = itemNPC->setPropWith<NPCProp::ARROWS>(props::SetBy::SERVER, static_cast<props::GBYTE1>(itemNPC->getProp<NPCProp::ARROWS>().value + stackCount));
 				break;
-			case NPCProp::POWER:
-				results = itemNPC->setPropWith<NPCProp::POWER>(props::SetBy::SERVER, static_cast<props::GBYTE1>(itemNPC->getProp<NPCProp::POWER>().value + stackCount));
+			case NPCProp::HALFHEARTS:
+				results = itemNPC->setPropWith<NPCProp::HALFHEARTS>(props::SetBy::SERVER, static_cast<props::GBYTE1>(itemNPC->getProp<NPCProp::HALFHEARTS>().value + stackCount));
 				break;
 		}
 		itemNPC->sendPropsFromResults(results);

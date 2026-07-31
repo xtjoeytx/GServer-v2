@@ -102,7 +102,7 @@ bool PlayerClientOriginal::enterLevel(std::shared_ptr<Level> level, std::optiona
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
 	CString minimap = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id
-		>> (char)PlayerProp::CURLEVEL << getProp<PlayerProp::CURLEVEL>().serialize()
+		>> (char)PlayerProp::LEVEL << getProp<PlayerProp::LEVEL>().serialize()
 		>> (char)PlayerProp::X << getProp<PlayerProp::X>().serialize()
 		>> (char)PlayerProp::Y << getProp<PlayerProp::Y>().serialize();
 
@@ -114,7 +114,7 @@ bool PlayerClientOriginal::enterLevel(std::shared_ptr<Level> level, std::optiona
 
 	// Update RCs.
 	CString myRCProps = CString() >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name
-		>> (char)PlayerProp::CURLEVEL << getProp<PlayerProp::CURLEVEL>().serialize()
+		>> (char)PlayerProp::LEVEL << getProp<PlayerProp::LEVEL>().serialize()
 		>> (char)PlayerProp::PLAYERLISTSTATUS << getProp<PlayerProp::PLAYERLISTSTATUS>().serialize()
 		>> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize()
 		>> (char)PlayerProp::COMMUNITYNAME << getProp<PlayerProp::COMMUNITYNAME>().serialize();

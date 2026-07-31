@@ -1960,7 +1960,7 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 		// Tell the clients to delete the NPC.
 		std::string levelName = npc->getLevelName();
 
-		auto lastLevelChange = npc->modTime[PROPID(NPCProp::CURLEVEL)];
+		auto lastLevelChange = npc->modTime[PROPID(NPCProp::LEVEL)];
 		for (auto& [pid, p] : m_playerList)
 		{
 			std::optional<clock::time_point> lastEntered = std::nullopt;

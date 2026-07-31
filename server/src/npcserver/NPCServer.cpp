@@ -393,7 +393,7 @@ std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::str
 
 	if (type != NPCTYPE_LOCAL)
 	{
-		CString props = npc->getPropsPacketFor<NPCProp::NAME, NPCProp::TYPE, NPCProp::CURLEVEL>();
+		CString props = npc->getPropsPacketFor<NPCProp::NAME, NPCProp::TYPE, NPCProp::LEVEL>();
 		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)npc->id << props);
 	}
 
@@ -414,7 +414,7 @@ std::shared_ptr<NPC> NPCServer::addNPCFromFile(const std::filesystem::path& file
 		{
 			m_globalNPCList[npc->id] = npc;
 
-			CString props = npc->getPropsPacketFor<NPCProp::NAME, NPCProp::TYPE, NPCProp::CURLEVEL>();
+			CString props = npc->getPropsPacketFor<NPCProp::NAME, NPCProp::TYPE, NPCProp::LEVEL>();
 			m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)npc->id << props);
 		}
 	}

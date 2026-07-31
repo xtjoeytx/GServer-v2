@@ -68,25 +68,25 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 				rupeeCount += 1;
 
 			rupeeCount = std::clamp(rupeeCount, 0, 9999999);
-			return CString() >> (char)PlayerProp::RUPEESCOUNT >> (int)rupeeCount;
+			return CString() >> (char)PlayerProp::GRALATS >> (int)rupeeCount;
 		}
 
 		case LevelItemType::BOMBS: // bombs
 		{
 			int bombCount = std::clamp(player->account.character.bombs + 5, 0, 99);
-			return CString() >> (char)PlayerProp::BOMBSCOUNT >> (char)bombCount;
+			return CString() >> (char)PlayerProp::BOMBS >> (char)bombCount;
 		}
 
 		case LevelItemType::DARTS: // darts
 		{
 			int arrowCount = std::clamp(player->account.character.arrows + 5, 0, 99);
-			return CString() >> (char)PlayerProp::ARROWSCOUNT >> (char)arrowCount;
+			return CString() >> (char)PlayerProp::ARROWS >> (char)arrowCount;
 		}
 
 		case LevelItemType::HEART: // heart
 		{
 			uint8_t newPower = std::clamp(player->account.character.hitpointsInHalves + 2, 0, player->account.maxHitpoints * 2);
-			return CString() >> (char)PlayerProp::CURPOWER >> (char)(newPower);
+			return CString() >> (char)PlayerProp::HALFHEARTS >> (char)(newPower);
 		}
 
 		case LevelItemType::GLOVE1: // glove1
@@ -126,7 +126,7 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 			if (player->account.character.shieldPower > newShieldPower)
 				newShieldPower = player->account.character.shieldPower;
 
-			return CString() >> (char)PlayerProp::SHIELDPOWER >> (char)newShieldPower;
+			return CString() >> (char)PlayerProp::SHIELDIMAGE >> (char)newShieldPower;
 		}
 
 		case LevelItemType::SWORD:       // sword
@@ -142,13 +142,14 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 				swordPower = (swordPower < 2 ? 2 : swordPower);
 			else
 				swordPower = (swordPower < 1 ? 1 : swordPower);
-			return CString() >> (char)PlayerProp::SWORDPOWER >> (char)swordPower;
+
+			return CString() >> (char)PlayerProp::SWORDIMAGE >> (char)swordPower;
 		}
 
 		case LevelItemType::FULLHEART: // fullheart
 		{
 			char heartMax = std::clamp(player->account.maxHitpoints + 1, 0, 20); // Hard limit of 20 hearts.
-			return CString() >> (char)PlayerProp::MAXPOWER >> (char)heartMax >> (char)PlayerProp::CURPOWER >> (char)(heartMax * 2);
+			return CString() >> (char)PlayerProp::FULLHEARTS >> (char)heartMax >> (char)PlayerProp::HALFHEARTS >> (char)(heartMax * 2);
 		}
 
 		case LevelItemType::SPINATTACK: // spinattack

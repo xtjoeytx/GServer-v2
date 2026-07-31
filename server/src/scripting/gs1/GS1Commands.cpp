@@ -662,7 +662,7 @@ void fn_attachplayertoobj(GS1Visitor* visitor, std::string_view commandName, con
 
 		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-			player->setPropWith<PlayerProp::ATTACHNPC>(SetBy::SERVER, id, objecttype);
+			player->setPropWith<PlayerProp::ATTACHNPCID>(SetBy::SERVER, id, objecttype);
 	}
 }
 
@@ -1100,7 +1100,7 @@ void fn_detachplayer(GS1Visitor* visitor, std::string_view commandName, const st
 	{
 		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-			player->setPropWith<PlayerProp::ATTACHNPC>(SetBy::SERVER, static_cast<NPCID>(0), 0_ui8);
+			player->setPropWith<PlayerProp::ATTACHNPCID>(SetBy::SERVER, static_cast<NPCID>(0), 0_ui8);
 	}
 }
 
@@ -1356,7 +1356,7 @@ void fn_hitnpc(GS1Visitor* visitor, std::string_view commandName, const std::vec
 
 					// Set the NPC's props.
 					npc->setPropWith<NPCProp::HURTDXDY>(SetBy::SERVER, dx, dy);
-					npc->setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<uint8_t>(std::max(0, npc->character.hitpointsInHalves - halfhearts)));
+					npc->setPropWith<NPCProp::HALFHEARTS>(SetBy::SERVER, static_cast<uint8_t>(std::max(0, npc->character.hitpointsInHalves - halfhearts)));
 					if (npc->isCharacter())
 						npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, "hurt"sv);
 
@@ -1807,7 +1807,7 @@ void fn_reducerupees(GS1Visitor* visitor, std::string_view commandName, const st
 			rupees = std::clamp(static_cast<int64_t>(rupees - amount), static_cast<int64_t>(0), static_cast<int64_t>(std::numeric_limits<uint32_t>::max()));
 			// clang-format on
 
-			npc->setPropWith<NPCProp::RUPEES>(SetBy::SERVER, static_cast<uint32_t>(rupees));
+			npc->setPropWith<NPCProp::GRALATS>(SetBy::SERVER, static_cast<uint32_t>(rupees));
 		}
 	}
 }
@@ -2231,7 +2231,7 @@ void fn_setbody(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-			player->setPropWith<PlayerProp::BODYIMG>(SetBy::SERVER, filename);
+			player->setPropWith<PlayerProp::BODYIMAGE>(SetBy::SERVER, filename);
 	}
 }
 
@@ -2395,7 +2395,7 @@ void fn_sethead(GS1Visitor* visitor, std::string_view commandName, const std::ve
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			// This needs to go to everybody (for the player list), so we have to send it immediately.
-			auto results = player->setPropWith<PlayerProp::HEADGIF>(SetBy::SERVER, filename);
+			auto results = player->setPropWith<PlayerProp::HEADIMAGE>(SetBy::SERVER, filename);
 			results.resultFlags = results.sendToAll;
 			player->sendPropsFromResults(results);
 		}
@@ -2659,7 +2659,7 @@ void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::
 		auto power = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-			player->setPropWith<PlayerProp::SHIELDPOWER>(SetBy::SERVER, image, power);
+			player->setPropWith<PlayerProp::SHIELDIMAGE>(SetBy::SERVER, image, power);
 	}
 }
 
@@ -2790,7 +2790,7 @@ void fn_setsword(GS1Visitor* visitor, std::string_view commandName, const std::v
 		auto power = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-			player->setPropWith<PlayerProp::SWORDPOWER>(SetBy::SERVER, image, power);
+			player->setPropWith<PlayerProp::SWORDIMAGE>(SetBy::SERVER, image, power);
 	}
 }
 
@@ -3277,9 +3277,9 @@ void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 					{
 						itemIndices.push_back(static_cast<uint8_t>(i - 1));
 						if (LevelItem::isRupeeType(item.item))
-							npc->setPropWith<NPCProp::RUPEES>(SetBy::SERVER, npc->getProp<NPCProp::RUPEES>().value + LevelItem::GetRupeeCount(item.item));
+							npc->setPropWith<NPCProp::GRALATS>(SetBy::SERVER, npc->getProp<NPCProp::GRALATS>().value + LevelItem::GetRupeeCount(item.item));
 						else if (item.item == LevelItemType::HEART)
-							npc->setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<GBYTE1>(npc->getProp<NPCProp::POWER>().value + 2));
+							npc->setPropWith<NPCProp::HALFHEARTS>(SetBy::SERVER, static_cast<GBYTE1>(npc->getProp<NPCProp::HALFHEARTS>().value + 2));
 						else if (item.item == LevelItemType::DARTS)
 							npc->setPropWith<NPCProp::ARROWS>(SetBy::SERVER, static_cast<GBYTE1>(npc->getProp<NPCProp::ARROWS>().value + 5));
 						else if (item.item == LevelItemType::BOMBS)
@@ -3317,9 +3317,9 @@ void fn_take2(GS1Visitor* visitor, std::string_view commandName, const std::vect
 				if (auto item = level->getItem(index); item.has_value())
 				{
 					if (LevelItem::isRupeeType(item.value()->item))
-						npc->setPropWith<NPCProp::RUPEES>(SetBy::SERVER, npc->getProp<NPCProp::RUPEES>().value + LevelItem::GetRupeeCount(item.value()->item));
+						npc->setPropWith<NPCProp::GRALATS>(SetBy::SERVER, npc->getProp<NPCProp::GRALATS>().value + LevelItem::GetRupeeCount(item.value()->item));
 					else if (item.value()->item == LevelItemType::HEART)
-						npc->setPropWith<NPCProp::POWER>(SetBy::SERVER, static_cast<GBYTE1>(npc->getProp<NPCProp::POWER>().value + 2));
+						npc->setPropWith<NPCProp::HALFHEARTS>(SetBy::SERVER, static_cast<GBYTE1>(npc->getProp<NPCProp::HALFHEARTS>().value + 2));
 					else if (item.value()->item == LevelItemType::DARTS)
 						npc->setPropWith<NPCProp::ARROWS>(SetBy::SERVER, static_cast<GBYTE1>(npc->getProp<NPCProp::ARROWS>().value + 5));
 					else if (item.value()->item == LevelItemType::BOMBS)
@@ -3387,7 +3387,7 @@ void fn_takeplayerhorse(GS1Visitor* visitor, std::string_view commandName, const
 	{
 		auto server = BabyDI::Get<Server>();
 		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
-			player->setPropWith<PlayerProp::HORSEGIF>(SetBy::SERVER, std::string{});
+			player->setPropWith<PlayerProp::HORSEIMAGE>(SetBy::SERVER, std::string{});
 	}
 }
 

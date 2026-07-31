@@ -307,12 +307,12 @@ inline auto toAny = std::views::transform([](const auto& value) { return std::an
 //----------------------------
 // Floating point helpers
 
-inline static bool DoubleIsZero(double value)
+inline static bool DoubleIsZero(const double value)
 {
 	return std::abs(value) < std::numeric_limits<double>::epsilon();
 }
 
-inline static bool DoublesAreSame(double left, double right)
+inline static bool DoublesAreSame(const double left, const double right)
 {
 	// Graal uses 0.0001 as the threshold for comparing doubles.
 	return std::abs(left - right) < 0.0001;
@@ -320,7 +320,7 @@ inline static bool DoublesAreSame(double left, double right)
 }
 
 template<std::integral T>
-inline static T DoubleAsIntegralFloor(double value)
+inline static T DoubleAsIntegralFloor(const double value)
 {
 	if (value < 0.0)
 		return static_cast<T>(value - std::numeric_limits<double>::epsilon());
@@ -447,7 +447,7 @@ inline constexpr std::array<CarryObjectSprite, static_cast<size_t>(CarryObjectTy
 };
 // clang-format on
 
-inline constexpr CarryObjectType getCarryObjectType(CarryObjectSprite sprite)
+inline constexpr CarryObjectType getCarryObjectType(const CarryObjectSprite sprite)
 {
 	for (size_t i = 0; i < carryObjectSpriteForType.size(); ++i)
 	{

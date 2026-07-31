@@ -764,7 +764,7 @@ void Player::exchangeMyPropsWithOthers()
 {
 	// RC props are sent differently.
 	CString myRCProps;
-	myRCProps >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name >> (char)PlayerProp::CURLEVEL << getProp<PlayerProp::CURLEVEL>().serialize() >> (char)PlayerProp::PLAYERLISTSTATUS << getProp<PlayerProp::PLAYERLISTSTATUS>().serialize() >> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize() >> (char)PlayerProp::COMMUNITYNAME << getProp<PlayerProp::COMMUNITYNAME>().serialize();
+	myRCProps >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name >> (char)PlayerProp::LEVEL << getProp<PlayerProp::LEVEL>().serialize() >> (char)PlayerProp::PLAYERLISTSTATUS << getProp<PlayerProp::PLAYERLISTSTATUS>().serialize() >> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize() >> (char)PlayerProp::COMMUNITYNAME << getProp<PlayerProp::COMMUNITYNAME>().serialize();
 
 	CString toOthers = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id;
 	CString joinLevel = CString() >> (char)PlayerProp::JOINLEAVELVL >> (char)1;
@@ -800,7 +800,7 @@ void Player::exchangeMyPropsWithOthers()
 			// clang-format off
 			// Get the other player's RC props.
 			sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)player->getId() >> (char)player->account.name.length() << player->account.name
-				>> (char)PlayerProp::CURLEVEL << player->getProp<PlayerProp::CURLEVEL>().serialize()
+				>> (char)PlayerProp::LEVEL << player->getProp<PlayerProp::LEVEL>().serialize()
 				>> (char)PlayerProp::PLAYERLISTSTATUS << player->getProp<PlayerProp::PLAYERLISTSTATUS>().serialize()
 				>> (char)PlayerProp::NICKNAME << player->getProp<PlayerProp::NICKNAME>().serialize()
 				>> (char)PlayerProp::COMMUNITYNAME << player->getProp<PlayerProp::COMMUNITYNAME>().serialize());
@@ -949,7 +949,7 @@ void Player::setNick(CString pNickName, bool force)
 
 void Player::setChat(const CString& pChat)
 {
-	sendPropsFromResults(setPropWith<PlayerProp::CURCHAT>(props::SetBy::SERVER, pChat.toString()));
+	sendPropsFromResults(setPropWith<PlayerProp::MESSAGE>(props::SetBy::SERVER, pChat.toString()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1183,7 +1183,7 @@ bool Player::leaveLevel(bool keepLevelReference)
 	account.character.mapX = 0;
 	account.character.mapY = 0;
 
-	modTime[PROPID(PlayerProp::CURLEVEL)] = now;
+	modTime[PROPID(PlayerProp::LEVEL)] = now;
 	modTime[PROPID(PlayerProp::GMAPLEVELX)] = now;
 	modTime[PROPID(PlayerProp::GMAPLEVELY)] = now;
 
@@ -1262,28 +1262,28 @@ void Player::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"z"sv, std::ref(modTime[PROPID(PlayerProp::Z2)]), std::ref(account.character.localPixelZ), 16});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hearts"sv, std::ref(modTime[PROPID(PlayerProp::CURPOWER)]), std::ref(account.character.hitpointsInHalves), 2});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hp"sv, std::ref(modTime[PROPID(PlayerProp::CURPOWER)]), std::ref(account.character.hitpointsInHalves), 2});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"fullhearts"sv, std::ref(modTime[PROPID(PlayerProp::MAXPOWER)]), std::ref(account.maxHitpoints)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"maxhp"sv, std::ref(modTime[PROPID(PlayerProp::MAXPOWER)]), std::ref(account.maxHitpoints)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hearts"sv, std::ref(modTime[PROPID(PlayerProp::HALFHEARTS)]), std::ref(account.character.hitpointsInHalves), 2});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hp"sv, std::ref(modTime[PROPID(PlayerProp::HALFHEARTS)]), std::ref(account.character.hitpointsInHalves), 2});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"fullhearts"sv, std::ref(modTime[PROPID(PlayerProp::FULLHEARTS)]), std::ref(account.maxHitpoints)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"maxhp"sv, std::ref(modTime[PROPID(PlayerProp::FULLHEARTS)]), std::ref(account.maxHitpoints)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"mp"sv, std::ref(modTime[PROPID(PlayerProp::MAGICPOINTS)]), std::ref(account.character.mp)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"ap"sv, std::ref(modTime[PROPID(PlayerProp::ALIGNMENT)]), std::ref(account.character.ap)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"rupees"sv, std::ref(modTime[PROPID(PlayerProp::RUPEESCOUNT)]), std::ref(account.character.gralats)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"gralats"sv, std::ref(modTime[PROPID(PlayerProp::RUPEESCOUNT)]), std::ref(account.character.gralats)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"bombs"sv, std::ref(modTime[PROPID(PlayerProp::BOMBSCOUNT)]), std::ref(account.character.bombs)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"darts"sv, std::ref(modTime[PROPID(PlayerProp::ARROWSCOUNT)]), std::ref(account.character.arrows)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"rupees"sv, std::ref(modTime[PROPID(PlayerProp::GRALATS)]), std::ref(account.character.gralats)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"gralats"sv, std::ref(modTime[PROPID(PlayerProp::GRALATS)]), std::ref(account.character.gralats)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"bombs"sv, std::ref(modTime[PROPID(PlayerProp::BOMBS)]), std::ref(account.character.bombs)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"darts"sv, std::ref(modTime[PROPID(PlayerProp::ARROWS)]), std::ref(account.character.arrows)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"bombpower"sv, std::ref(modTime[PROPID(PlayerProp::BOMBPOWER)]), std::ref(account.character.bombPower)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"glovepower"sv, std::ref(modTime[PROPID(PlayerProp::GLOVEPOWER)]), std::ref(account.character.glovePower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"swordpower"sv, std::ref(modTime[PROPID(PlayerProp::SWORDPOWER)]), std::ref(account.character.swordPower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"shieldpower"sv, std::ref(modTime[PROPID(PlayerProp::SHIELDPOWER)]), std::ref(account.character.shieldPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"swordpower"sv, std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), std::ref(account.character.swordPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"shieldpower"sv, std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), std::ref(account.character.shieldPower)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"shootpower"sv, std::ref(modTime[PROPID(PlayerProp::GANI)]), std::ref(account.character.bowPower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#1"sv, std::ref(modTime[PROPID(PlayerProp::SWORDPOWER)]), std::ref(account.character.swordImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#2"sv, std::ref(modTime[PROPID(PlayerProp::SHIELDPOWER)]), std::ref(account.character.shieldImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#3"sv, std::ref(modTime[PROPID(PlayerProp::HEADGIF)]), std::ref(account.character.headImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#5"sv, std::ref(modTime[PROPID(PlayerProp::HORSEGIF)]), std::ref(account.character.horseImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#1"sv, std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), std::ref(account.character.swordImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#2"sv, std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), std::ref(account.character.shieldImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#3"sv, std::ref(modTime[PROPID(PlayerProp::HEADIMAGE)]), std::ref(account.character.headImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#5"sv, std::ref(modTime[PROPID(PlayerProp::HORSEIMAGE)]), std::ref(account.character.horseImage)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#7"sv, std::ref(modTime[PROPID(PlayerProp::GANI)]), std::ref(account.character.bowImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#8"sv, std::ref(modTime[PROPID(PlayerProp::BODYIMG)]), std::ref(account.character.bodyImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#c"sv, std::ref(modTime[PROPID(PlayerProp::CURCHAT)]), std::ref(account.character.chatMessage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#8"sv, std::ref(modTime[PROPID(PlayerProp::BODYIMAGE)]), std::ref(account.character.bodyImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#c"sv, std::ref(modTime[PROPID(PlayerProp::MESSAGE)]), std::ref(account.character.chatMessage)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#m"sv, std::ref(modTime[PROPID(PlayerProp::GANI)]), std::ref(account.character.gani)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#n"sv, std::ref(modTime[PROPID(PlayerProp::NICKNAME)]), std::ref(account.character.nickName)});
 
@@ -1374,7 +1374,7 @@ void Player::constructScriptParameters()
 			if (headSet != -1)
 			{
 				account.character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::CLASSIC ? "gif" : "png"));
-				modTime[PROPID(PlayerProp::HEADGIF)] = m_server->getFrameStartTime();
+				modTime[PROPID(PlayerProp::HEADIMAGE)] = m_server->getFrameStartTime();
 			}
 		}
 	});

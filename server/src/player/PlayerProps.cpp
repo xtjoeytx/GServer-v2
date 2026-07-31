@@ -168,7 +168,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::MAXPOWER:
+		case PlayerProp::FULLHEARTS:
 		{
 			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
@@ -181,13 +181,13 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				account.maxHitpoints = props::Limits::applyMaxHitpoints(newMaxHitpoints);
 				account.character.hitpointsInHalves = newMaxHitpoints * 2;
 
-				result.resultPropIds.push_back(PROPID(PlayerProp::CURPOWER));
+				result.resultPropIds.push_back(PROPID(PlayerProp::HALFHEARTS));
 				result.resultFlags.set(props::SetResults::sendToSource);
 			}
 			break;
 		}
 
-		case PlayerProp::CURPOWER:
+		case PlayerProp::HALFHEARTS:
 		{
 			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
@@ -209,7 +209,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::RUPEESCOUNT:
+		case PlayerProp::GRALATS:
 		{
 			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
 			if (numProp == nullptr)
@@ -221,7 +221,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::ARROWSCOUNT:
+		case PlayerProp::ARROWS:
 		{
 			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
@@ -231,7 +231,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::BOMBSCOUNT:
+		case PlayerProp::BOMBS:
 		{
 			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
@@ -263,7 +263,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::SWORDPOWER:
+		case PlayerProp::SWORDIMAGE:
 		{
 			PropertySwordPower* swordProp = dynamic_cast<PropertySwordPower*>(base);
 			if (swordProp == nullptr)
@@ -276,7 +276,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::SHIELDPOWER:
+		case PlayerProp::SHIELDIMAGE:
 		{
 			PropertyShieldPower* shieldProp = dynamic_cast<PropertyShieldPower*>(base);
 			if (shieldProp == nullptr)
@@ -325,7 +325,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::HEADGIF:
+		case PlayerProp::HEADIMAGE:
 		{
 			PropertyHeadGif* headProp = dynamic_cast<PropertyHeadGif*>(base);
 			if (headProp == nullptr)
@@ -345,7 +345,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::CURCHAT:
+		case PlayerProp::MESSAGE:
 		{
 			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
@@ -505,7 +505,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				auto newPower = props::Limits::applyMaxHitpoints(account.character.ap < 20 ? 3 : (account.character.ap < 40 ? 5 : account.maxHitpoints)) * 2;
 				account.character.hitpointsInHalves = newPower;
 
-				result.resultPropIds.push_back(PROPID(PlayerProp::CURPOWER));
+				result.resultPropIds.push_back(PROPID(PlayerProp::HALFHEARTS));
 				result.resultFlags.set(props::SetResults::sendToSource);
 			}
 
@@ -548,7 +548,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::CURLEVEL:
+		case PlayerProp::LEVEL:
 		{
 			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
@@ -559,7 +559,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::HORSEGIF:
+		case PlayerProp::HORSEIMAGE:
 		{
 			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
@@ -591,7 +591,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::CARRYNPC:
+		case PlayerProp::CARRYNPCID:
 		{
 			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
 			if (numProp == nullptr)
@@ -633,13 +633,13 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 						for (auto& [otherId, other] : playerList)
 						{
 							if (other.get() == this) continue;
-							if (other->getProp<PlayerProp::CARRYNPC>().value == newNPCID)
+							if (other->getProp<PlayerProp::CARRYNPCID>().value == newNPCID)
 							{
 								// Somebody else got this NPC first.  Force the player to throw his down
 								// and tell the player to remove the NPC from memory.
-								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::CARRYNPC >> (int)0);
+								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::CARRYNPCID >> (int)0);
 								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->levelName.length() << level->levelName >> (int)newNPCID);
-								m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::CARRYNPC >> (int)0, player->getGlobalPosition(), level, { m_id });
+								m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::CARRYNPCID >> (int)0, player->getGlobalPosition(), level, { m_id });
 								isOwner = false;
 								newNPCID = 0;
 								break;
@@ -733,7 +733,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::KILLSCOUNT:
+		case PlayerProp::KILLS:
 		{
 			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
 			if (numProp == nullptr)
@@ -744,7 +744,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::DEATHSCOUNT:
+		case PlayerProp::DEATHS:
 		{
 			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
 			if (numProp == nullptr)
@@ -755,7 +755,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::ONLINESECS:
+		case PlayerProp::ONLINESECONDS:
 			break;
 
 		case PlayerProp::IPADDR:
@@ -796,7 +796,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::ACCOUNTNAME:
 			break;
 
-		case PlayerProp::BODYIMG:
+		case PlayerProp::BODYIMAGE:
 		{
 			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
@@ -820,7 +820,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::ATTACHNPC:
+		case PlayerProp::ATTACHNPCID:
 		{
 			PropertyAttachNPC* attachProp = dynamic_cast<PropertyAttachNPC*>(base);
 			if (attachProp == nullptr)
@@ -970,7 +970,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		}
 
 		// TODO(Nalin): Does this need to be read?
-		case PlayerProp::ONLINESECS2:
+		case PlayerProp::ONLINESECONDS2:
 			break;
 
 		// Location, in pixels, of the player on the level in 2.30+ clients.
@@ -1118,7 +1118,7 @@ void Player::setPropsFromPacket(CString& packet, props::SetBy setBy, Player* ori
 bool Player::checkPropSetAccess(PlayerProp prop, SetBy setBy, Player* originator) const
 {
 	// Admin check on changing gralats.
-	if (prop == PlayerProp::RUPEESCOUNT && originator != nullptr)
+	if (prop == PlayerProp::GRALATS && originator != nullptr)
 	{
 		bool canSet = m_server->cached.normalAdminsCanChangeGralats.getValue();
 		canSet = canSet || (originator->isStaff() && originator->account.hasRight(PLPERM_SETRIGHTS));
