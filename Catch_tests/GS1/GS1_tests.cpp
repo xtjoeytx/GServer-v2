@@ -614,6 +614,35 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		auto npcstore = &server->getNPC(testNPC)->scripting.variables;
 		CHECK_THAT(npcstore->getValue<double>("pi").value_or(0.0), Catch::Matchers::WithinRel(3.14));
 	}
+
+	SECTION("loop statements")
+	{
+		const std::string_view script = R"(
+			while (i < 10) {
+				i++;
+				if (i == 5) break;
+			}
+			for (j = 0; j < 6; j++) {
+				if (j == 4) continue;
+				q += j;
+			}
+			testFunc();
+
+			function testFunc() {
+				k = 3;
+				return;
+				k = 5;
+			}
+		)";
+		auto result = engine.compileScript("test_script", script);
+		REQUIRE(execute_script(engine, created, source::FromNPC(testNPC), result));
+
+		[[maybe_unused]] auto wrapper = get_wrapper(result);
+		auto store = wrapper->visitor->builtInStore;
+		CHECK_THAT(store->getValue<double>("i").value_or(0.0), Catch::Matchers::WithinRel(5.0));
+		CHECK_THAT(store->getValue<double>("q").value_or(0.0), Catch::Matchers::WithinRel(11.0));
+		CHECK_THAT(store->getValue<double>("k").value_or(0.0), Catch::Matchers::WithinRel(3.0));
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

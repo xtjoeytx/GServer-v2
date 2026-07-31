@@ -896,6 +896,8 @@ std::any GS1Visitor::visitStatementFor(GS1Parser::StatementForContext* context)
 		safeVisit(context->assignmentStatement(0));
 	}
 
+	// for (assignmentStatement; expression; (assignmentStatement | expression)) block
+
 	// Condition.
 	size_t loopCount = 0;
 	while ((loopCount++ < maximumLoopCount && getScriptValueAsCopy<bool>(safeVisit(context->expression(0))).value_or(false)) || enterLoopAfterSleep)
@@ -913,7 +915,8 @@ std::any GS1Visitor::visitStatementFor(GS1Parser::StatementForContext* context)
 		}
 		catch (const continue_exception&)
 		{
-			continue;
+			// Increment happens below.
+			// continue;
 		}
 		catch (const sleep_exception&)
 		{
