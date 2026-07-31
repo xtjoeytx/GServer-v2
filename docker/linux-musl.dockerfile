@@ -16,7 +16,7 @@ COPY --chown=1001:1001 ./ /tmp/gserver
 
 RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
     && apk add --update --virtual .gserver-build-dependencies \
-		cmake \
+        cmake \
         gcc \
         g++ \
         bison \
@@ -33,17 +33,19 @@ RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
         ninja-is-really-ninja \
         openssl-dev \
         openssl-libs-static \
-		python3 \
-	&& git clone https://github.com/microsoft/vcpkg $VCPKG_ROOT \
-	&& cd $VCPKG_ROOT \
-	&& sh bootstrap-vcpkg.sh -disableMetrics \
-	&& chmod 777 -R /tmp/gserver \
-	&& cd /tmp/gserver \
-	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build --preset "Linux Release" -DMUSL=ON -DVCPKG_TARGET_TRIPLET:STRING=${ARCH}-linux -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=ON -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
-	&& cmake --build /tmp/gserver/build --config Release --target clean \
-	&& cmake --build /tmp/gserver/build --config Release --target package --parallel 4 \
-	&& chmod 777 -R /tmp/gserver/dist \
-	&& rm -rf /tmp/gserver/dist/_CPack_Packages \
+        python3 \
+    && git clone https://github.com/microsoft/vcpkg $VCPKG_ROOT \
+    && cd $VCPKG_ROOT \
+    && git checkout 1600ce2ba1b6b621bfc5a31a785c4963b817a1c7 \
+    && git fetch origin 1600ce2ba1b6b621bfc5a31a785c4963b817a1c7 \
+    && sh bootstrap-vcpkg.sh -disableMetrics \
+    && chmod 777 -R /tmp/gserver \
+    && cd /tmp/gserver \
+    && cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build --preset "Linux Release" -DMUSL=ON -DVCPKG_TARGET_TRIPLET:STRING=${ARCH}-linux -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=ON -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
+    && cmake --build /tmp/gserver/build --config Release --target clean \
+    && cmake --build /tmp/gserver/build --config Release --target package --parallel 4 \
+    && chmod 777 -R /tmp/gserver/dist \
+    && rm -rf /tmp/gserver/dist/_CPack_Packages \
     && chown 1001:1001 -R /tmp/gserver \
     && chmod 777 -R /tmp/gserver/build \
     && apk del --purge .gserver-build-dependencies
