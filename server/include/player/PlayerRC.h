@@ -24,13 +24,13 @@ namespace preagonal
 
 // Admin-only server options.  They are protected from being changed by people without the
 // 'change staff account' right.
-constexpr std::array<std::string_view, 31> AdminServerOptions = {
+constexpr std::array<std::string_view, 32> AdminServerOptions = {
 	"name", "description", "url", "serverip", "serverport", "serverinterface",
 	"localip", "upnp", "listip", "listport", "maxplayers", "onlystaff",
 	"nofoldersconfig", "serverside", "sharefolder", "language", "protectdbnpcs",
 	// GR extensions
 	"triggerhack_weapons", "triggerhack_guilds", "triggerhack_groups", "triggerhack_files", "triggerhack_rc", "triggerhack_execscript", "triggerhack_props", "triggerhack_levels",
-	"flaghack_movement", "flaghack_ip", "generation", "runallscriptevents", "clientsidesigns", "clientsidelinks"
+	"flaghack_movement", "flaghack_ip", "generation", "runallscriptevents", "clientsidesigns", "clientsidelinks", "localhost",
 };
 
 // Files that are protected from being downloaded by people without the

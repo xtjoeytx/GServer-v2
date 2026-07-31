@@ -265,6 +265,10 @@ serverinterface = AUTO
 localip = AUTO
 upnp = true
 
+# Sets the server into localhost mode, which does not communicate with the list server.
+# All logins will be allowed with no verification.
+# localhost = false
+
 # Specifies the location of the list server.
 # DON`T CHANGE IF YOU DON`T KNOW WHAT YOU ARE DOING.
 listip = listserver.graal.in
