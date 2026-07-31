@@ -42,7 +42,7 @@ class Player;
 class NPCServer
 {
 public:
-	NPCServer() = default;
+	NPCServer();
 	NPCServer(const NPCServer&) = delete;
 	NPCServer(NPCServer&&) = delete;
 	NPCServer& operator=(const NPCServer&) = delete;
@@ -126,7 +126,7 @@ private:
 	void loadDatabaseNPCs();
 
 private:
-	BabyDI_INJECT(Server, m_server);
+	Server* m_server;
 
 	std::shared_ptr<PlayerNPCServer> m_npcServerPlayer;
 	std::string m_ncHost;

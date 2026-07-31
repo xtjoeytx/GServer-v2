@@ -476,6 +476,21 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK(store->getValue<std::string>("test8").value_or(std::string{}) == "Two");
 	}
 
+	SECTION("string operations")
+	{
+		// Tests additional string functions.
+		const std::string_view script = R"(
+			setstring s, thisisatest;
+			test1 = indexof(isa, #s(s));
+		)";
+		auto result = engine.compileScript("test_script", script);
+		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+
+		auto wrapper = get_wrapper(result);
+		auto store = wrapper->visitor->builtInStore;
+		CHECK_THAT(store->getValue<double>("test1").value_or(0.0), Catch::Matchers::WithinRel(4.0));
+	}
+
 	SECTION("tokenized text")
 	{
 		// Tests tokenize and tokenize2.
@@ -536,7 +551,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		auto result = engine.compileScript("test_script", script);
 		REQUIRE(execute_script(engine, created, source::FromNPC(testNPC), result));
 
-		auto wrapper = get_wrapper(result);
+		[[maybe_unused]] auto wrapper = get_wrapper(result);
 		auto npcstore = &server->getNPC(testNPC)->scripting.variables;
 		CHECK_THAT(npcstore->getValue<double>("myvar").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 
@@ -573,7 +588,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		auto result = engine.compileScript("test_script", script);
 		REQUIRE(execute_script(engine, created, source::FromNPC(testNPC), result));
 
-		auto wrapper = get_wrapper(result);
+		[[maybe_unused]] auto wrapper = get_wrapper(result);
 		auto npcstore = &server->getNPC(testNPC)->scripting.variables;
 		CHECK_THAT(npcstore->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(42.0));
 	}
@@ -595,7 +610,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		auto result = engine.compileScript("test_script", script);
 		REQUIRE(execute_script(engine, created, source::FromNPC(testNPC), result));
 
-		auto wrapper = get_wrapper(result);
+		[[maybe_unused]] auto wrapper = get_wrapper(result);
 		auto npcstore = &server->getNPC(testNPC)->scripting.variables;
 		CHECK_THAT(npcstore->getValue<double>("pi").value_or(0.0), Catch::Matchers::WithinRel(3.14));
 	}

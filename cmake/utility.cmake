@@ -173,6 +173,24 @@ function(add_test_og target target_path)
 		target_link_options(${target} PRIVATE -static -fstack-protector)
 	endif()
 
+	# GCC ignore attribute warnings.
+	if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+		target_compile_options(${target} PRIVATE
+			-Wno-attributes
+			-Wno-narrowing
+			-Wno-switch
+		)
+	endif()
+
+	# Clang ignore attribute warnings.
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		target_compile_options(${target} PRIVATE
+			-Wno-unknown-attributes
+			-Wno-narrowing
+			-Wno-switch
+		)
+	endif()
+
 	list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 
 	include(CTest)

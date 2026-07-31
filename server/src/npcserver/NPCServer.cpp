@@ -47,6 +47,11 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+NPCServer::NPCServer()
+{
+	m_server = BabyDI::Get<Server>();
+}
+
 void NPCServer::initialize()
 {
 	// TODO(Nalin): This needs to be an option somewhere.
