@@ -160,11 +160,10 @@ bool PlayerNC::sendLogin()
 	if (Player::sendLogin() == false)
 		return false;
 
-	if (auto npcServer = m_server->getNPCServer(); npcServer != nullptr)
+	if (const auto npcServer = m_server->getNPCServer(); npcServer != nullptr)
 	{
 		// Send database npcs
-		auto& npcList = npcServer->getGlobalNPCList();
-		for (auto& [npcName, npcPtr] : npcList)
+		for (const auto& npcList = npcServer->getGlobalNPCList(); const auto& npcPtr : npcList | std::views::values)
 		{
 			auto npc = npcPtr.lock();
 			if (npc == nullptr) continue;
@@ -178,15 +177,13 @@ bool PlayerNC::sendLogin()
 
 		// Send classes
 		CString classPacket;
-		auto& classList = npcServer->getClassList();
-		for (auto it = classList.begin(); it != classList.end(); ++it)
-			classPacket >> (char)PLO_NC_CLASSADD << it->first << "\n";
+		for (const auto& classList = npcServer->getClassList(); const auto& key : classList | std::views::keys)
+			classPacket >> (char)PLO_NC_CLASSADD << key << "\n";
 		sendPacket(classPacket);
 	}
 
 	// Send list of currently connected NC's
-	auto& playerList = m_server->getPlayerList();
-	for (auto& [playerId, player] : playerList)
+	for (const auto& playerList = m_server->getPlayerList(); auto& player : playerList | std::views::values)
 	{
 		if (player.get() != this && player->isNC())
 			sendPacket(CString() >> (char)PLO_RC_CHAT << "New NC: " << player->account.name);

@@ -465,7 +465,7 @@ void Player::doMain()
 
 bool Player::doTimedEvents()
 {
-	if (m_playerSock == 0 || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	if (m_playerSock == nullptr || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 	{
 		m_fileQueue.clearBuffers();
 		return false;
@@ -478,7 +478,11 @@ bool Player::doTimedEvents()
 void Player::disconnect(std::string_view message)
 {
 	if (!message.empty())
+	{
+		// TODO: Move this outside of this block, which is difficult since ServerList::msgSVI_VERIACC2 will call disconnect() after sendLogin(), which may add a disconnect message packet.
+		m_fileQueue.clearBuffers();
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << message);
+	}
 
 	m_fileQueue.sendCompress();
 	m_server->deletePlayer(shared_from_this());

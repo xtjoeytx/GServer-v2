@@ -210,7 +210,7 @@ bool PlayerRC::sendLogin()
 	if (Player::sendLogin() == false)
 		return false;
 
-	auto& settings = m_server->getSettings();
+	const auto& settings = m_server->getSettings();
 
 	// This packet clears the players weapons on the client, but official
 	// also sends it to the RC's so we are maintaining the same behavior
@@ -270,7 +270,7 @@ bool PlayerRC::sendLogin()
 	// Queue up the login event.
 	if (m_server->hasNPCServer())
 	{
-		auto npcServer = m_server->getNPCServer();
+		const auto npcServer = m_server->getNPCServer();
 		npcServer->playerLogin(shared_from_this());
 		npcServer->addEventToControlNPC(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), "playeronline");
 		npcServer->addEventToControlNPC(ScriptEventType::PLAYERLOGIN, source::FromPlayer(m_id));

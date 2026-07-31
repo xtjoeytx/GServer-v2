@@ -618,6 +618,7 @@ bool PlayerClient::sendLogin()
 	if (!warp(account.level, getGlobalPosition()) && m_currentLevel.expired())
 	{
 		log::printLine(log::rc, "** [Disconnect] '{}': No level available for player.", account.name);
+		m_fileQueue.clearBuffers();
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
 		log::printLine(log::server, "** Cannot find level for {}.", account.name);
 		return false;
@@ -652,7 +653,7 @@ bool PlayerClient::sendLogin()
 bool PlayerClient::processChat(const CString& pChat)
 {
 	std::vector<CString> chatParse = pChat.tokenizeConsole();
-	if (chatParse.size() == 0) return false;
+	if (chatParse.empty()) return false;
 	bool processed = false;
 	bool setcolorsallowed = m_server->getSettings().get<bool>("setcolorsallowed").value_or(true);
 
