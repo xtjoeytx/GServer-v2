@@ -11,6 +11,7 @@
 
 #include <filesystem/FileSystemTypes.h>
 #include <filesystem/watch/FileWatch.h>
+#include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 
 #define BUFF_SIZE ((sizeof(struct inotify_event)+FILENAME_MAX)*100)
@@ -60,7 +61,7 @@ uint32_t FileWatch::add(const std::filesystem::path& directory, watch_cb callbac
 {
 	auto addWatch = [this, &callback](const std::filesystem::path& file) -> int
 	{
-		log::printLine(log::server, "[FS] Adding watch for directory: {}", file.string());
+		DEBUGPRINT("[FS] Adding watch for directory: {}", file.string());
 
 		// Add the watch for this directory.
 		int wd = inotify_add_watch(m_watch_os->fd, file.c_str(),
