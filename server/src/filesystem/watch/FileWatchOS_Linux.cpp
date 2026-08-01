@@ -11,6 +11,7 @@
 
 #include <filesystem/FileSystemTypes.h>
 #include <filesystem/watch/FileWatch.h>
+#include <utilities/Log.h>
 
 #define BUFF_SIZE ((sizeof(struct inotify_event)+FILENAME_MAX)*100)
 
@@ -21,7 +22,7 @@ namespace preagonal::fs::watch
 
 struct Watch
 {
-	uint32_t watch_id;
+	int watch_id = 0;
 	std::filesystem::path dir;
 	watch_cb callback;
 };
@@ -57,40 +58,61 @@ FileWatch::~FileWatch()
 
 uint32_t FileWatch::add(const std::filesystem::path& directory, watch_cb callback, bool recursive)
 {
-	int wd = inotify_add_watch(m_watch_os->fd, directory.c_str(),
-		IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_MOVED_FROM | IN_DELETE);
+	auto addWatch = [this, &callback](const std::filesystem::path& file) -> int
+	{
+		log::printLine(log::server, "[FS] Adding watch for directory: {}", file.string());
 
-	if (wd < 0)
+		// Add the watch for this directory.
+		int wd = inotify_add_watch(m_watch_os->fd, file.c_str(),
+			IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_MOVED_FROM | IN_DELETE);
+
+		if (wd < 0)
+			return 0;
+
+		auto watch = new Watch;
+		watch->watch_id = wd;
+		watch->dir = file;
+		watch->callback = callback;
+
+		m_watchers.insert(std::make_pair(wd, watch));
+		return wd;
+	};
+
+	const int wd = addWatch(directory);
+	if (wd == 0)
 		return 0;
 
-	Watch* watch = new Watch;
-	watch->watch_id = wd;
-	watch->dir = directory;
-	watch->callback = callback;
+	if (recursive)
+	{
+		for (const auto& file : std::filesystem::recursive_directory_iterator(directory))
+		{
+			if (!file.is_directory())
+				continue;
 
-	m_watchers.insert(std::make_pair(wd, watch));
+			if (addWatch(file.path()) == 0)
+				return 0;
+		}
+	}
+
 	return wd;
 }
 
 void FileWatch::remove(const std::filesystem::path& directory)
 {
-	for (auto& w : m_watchers)
+	for (auto& [wd, watch] : m_watchers)
 	{
-		if (directory == w.second->dir)
-		{
-			remove(w.first);
-			return;
-		}
+		if (const auto rel = std::filesystem::relative(watch->dir, directory); !rel.empty() && rel.string()[0] != '.')
+			remove(wd);
 	}
 }
 
 void FileWatch::remove(uint32_t watch_id)
 {
-	auto i = m_watchers.find(watch_id);
+	const auto i = m_watchers.find(watch_id);
 	if (i == m_watchers.end())
 		return;
 
-	Watch* watch = i->second;
+	const Watch* watch = i->second;
 	m_watchers.erase(i);
 
 	inotify_rm_watch(m_watch_os->fd, watch->watch_id);
@@ -99,10 +121,10 @@ void FileWatch::remove(uint32_t watch_id)
 
 void FileWatch::removeAll()
 {
-	for (auto& w : m_watchers)
+	for (const auto& watch : m_watchers | std::views::values)
 	{
-		inotify_rm_watch(m_watch_os->fd, w.second->watch_id);
-		delete w.second;
+		inotify_rm_watch(m_watch_os->fd, watch->watch_id);
+		delete watch;
 	}
 
 	m_watchers.clear();
@@ -112,26 +134,23 @@ void FileWatch::update()
 {
 	FD_SET(m_watch_os->fd, &m_watch_os->descriptor_set);
 
-	int ret = select(m_watch_os->fd + 1, &m_watch_os->descriptor_set, NULL, NULL, &m_watch_os->timeout);
-	if (ret < 0)
+	if (const int ret = select(m_watch_os->fd + 1, &m_watch_os->descriptor_set, nullptr, nullptr, &m_watch_os->timeout); ret < 0)
 	{
 		perror("select");
 	}
 	else if (FD_ISSET(m_watch_os->fd, &m_watch_os->descriptor_set))
 	{
-		ssize_t len, i = 0;
+		ssize_t i = 0;
 		std::unordered_map<std::filesystem::path, FileEventData> fileEvents;
 		char notifyBuff[BUFF_SIZE] = { 0 };
 		char fileBuff[FILENAME_MAX + 1] = { 0 };
 
-		len = read(m_watch_os->fd, notifyBuff, BUFF_SIZE);
-
+		const ssize_t len = read(m_watch_os->fd, notifyBuff, BUFF_SIZE);
 		while (i < len)
 		{
-			struct inotify_event* pevent = (struct inotify_event*)&notifyBuff[i];
+			const auto pevent = reinterpret_cast<struct inotify_event*>(&notifyBuff[i]);
 
-			auto iter = m_watchers.find(pevent->wd);
-			if (iter != m_watchers.end())
+			if (auto iter = m_watchers.find(pevent->wd); iter != m_watchers.end())
 			{
 				Watch* watch = iter->second;
 				if (pevent->name[0] != '.')
@@ -173,9 +192,9 @@ void FileWatch::update()
 		// When we save files, a temp file gets created and renamed over top of the original file.
 		// The temp file will get an Added event, and the original file will get a Deleted event + a Renamed event.
 		// We want the original file to have a single Modified event, while the original file should get a Deleted event.
-		for (auto& [file, data] : fileEvents)
+		for (auto& data : fileEvents | std::views::values)
 		{
-			auto* watch = (Watch*)data.fsData;
+			const auto watch = static_cast<Watch*>(data.fsData);
 			if (watch == nullptr) continue;
 
 			// If we have both an added and deleted event, test if the file exists and only set the appropriate one.
@@ -194,12 +213,12 @@ void FileWatch::update()
 		}
 
 		// Execute callbacks for our queued data.
-		for (auto& [file, data] : fileEvents)
+		for (auto& data : fileEvents | std::views::values)
 		{
 			if (data.events.test(FileEvent::Invalid))
 				continue;
 
-			if (auto* watch = (Watch*)data.fsData; watch != nullptr)
+			if (const auto watch = static_cast<Watch*>(data.fsData); watch != nullptr)
 				watch->callback(watch->watch_id, watch->dir, data.fileName, data.oldFileName, data.events);
 		}
 	}
