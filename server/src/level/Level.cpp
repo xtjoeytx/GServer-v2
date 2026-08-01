@@ -2639,12 +2639,34 @@ bool Level::moveArrow(LevelArrow* arrow, int iterations)
 		if (std::abs(arrow->position.x() - arrow->startPosition.x()) > maxDistance || std::abs(arrow->position.y() - arrow->startPosition.y()) > maxDistance)
 			return false;
 
+		constexpr std::array<Dimension<uint16_t>, 4> hitboxDimensions = {
+			Dimension<uint16_t>{3_i32, 0_i32},  // up
+			Dimension<uint16_t>{32_i32, 0_i32}, // left
+			Dimension<uint16_t>{3_i32, 32_i32}, // down
+			Dimension<uint16_t>{32_i32, 0_i32}, // right
+		};
+
+		// Arrow collision bounding box.
+		PixelRectangleArea searchBox = {arrow->position, hitboxDimensions[arrow->direction]};
+
+		// If a normal arrow passes through an explosion, it becomes a fireblast.
+		if (arrow->type == arrowTypeNormal)
+		{
+			for (const auto& explosion : m_explosions)
+			{
+				if (rectanglesIntersect(searchBox, PixelRectangleArea{explosion.position, {32_ui16, 32_ui16}}))
+				{
+					arrow->type = arrowTypeFireblast;
+					break;
+				}
+			}
+		}
+
 		bool hitWall = false;
 
 		// Check for NPC collision.
-		PixelRectangleArea searchBox = {translatePosition(arrow->position, 16_i32, -8_i32), {32_ui16, 32_ui16}};
 		auto center = searchBox.center();
-		int8_t arrowPower = arrow->type == arrowTypeFireball ? 2 : 1;
+		const int8_t arrowPower = arrow->type == arrowTypeFireball ? 2 : 1;
 		for (const auto& npc : findIntersectingNPCsForCollision(searchBox))
 		{
 			if (arrow->from.second == ScriptObjectType::NPC && arrow->from.first == npc)
