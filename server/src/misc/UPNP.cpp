@@ -34,12 +34,22 @@ UPNP::~UPNP()
 #endif
 }
 
+bool UPNP::initialize(std::string_view localIp, std::string_view port)
+{
+	if (localIp.empty())
+	{
+		log::printLine(log::server, "[UPNP] No local IP address, skipping port forward.");
+		return false;
+	}
+
+	m_localIp = localIp;
+	m_port = port;
+	return true;
+}
+
 void UPNP::discover()
 {
 #ifdef ENABLE_UPNP
-	struct UPNPDev* device_list;
-	struct UPNPDev* device;
-	char* xmlDescription;
 	int xmlDescriptionSize = 0, responseCode = 0;
 
 	std::memset(&m_urls, 0, sizeof(UPNPUrls));
@@ -48,12 +58,11 @@ void UPNP::discover()
 	std::vector<std::pair<uint8_t, std::string>> logbatch;
 	logbatch.emplace_back(0_ui8, "Discovering UPNP devices:");
 
-	device_list = upnpDiscover(2000, 0, 0, UPNP_LOCAL_PORT_ANY, 0, 2, 0);
-	if (device_list)
+	if (struct UPNPDev* device_list = upnpDiscover(2000, nullptr, nullptr, UPNP_LOCAL_PORT_ANY, 0, 2, nullptr))
 	{
 		std::vector<UPNPDev*> gatewayDevices;
 
-		device = device_list;
+		struct UPNPDev* device = device_list;
 		while (device)
 		{
 			std::string_view device_view{ device->st };
@@ -70,8 +79,7 @@ void UPNP::discover()
 		device = gatewayDevices.front();
 
 		// Get the XML description of the UPNP device.
-		xmlDescription = (char*)miniwget(device->descURL, &xmlDescriptionSize, 0, &responseCode);
-		if (xmlDescription)
+		if (auto xmlDescription = static_cast<char*>(miniwget(device->descURL, &xmlDescriptionSize, 0, &responseCode)))
 		{
 			// Parse the XML description.
 			parserootdesc(xmlDescription, xmlDescriptionSize, &m_data);
@@ -95,17 +103,17 @@ void UPNP::discover()
 void UPNP::addPortForward(std::string_view address, std::string_view port)
 {
 #ifdef ENABLE_UPNP
-	if (m_urls.controlURL == 0 || m_urls.controlURL[0] == '\0')
+	if (m_urls.controlURL == nullptr || m_urls.controlURL[0] == '\0')
 		return;
 
-	int r = UPNP_AddPortMapping(m_urls.controlURL, m_data.first.servicetype, port.data(), port.data(), address.data(), "Graal GServer", "TCP", "", 0);
+	const int r = UPNP_AddPortMapping(m_urls.controlURL, m_data.first.servicetype, port.data(), port.data(), address.data(), "Graal GServer", "TCP", "", nullptr);
 	if (r == UPNPCOMMAND_CONFLICTING_MAPPING)
 	{
 		// Check if this port map was likely created by us and was left behind.
 		char intClient[16] = { 0 };
 		char intPort[6] = { 0 };
 		char desc[80] = { 0 };
-		int r2 = UPNP_GetSpecificPortMappingEntry(m_urls.controlURL, m_data.first.servicetype, port.data(), "TCP", "", intClient, intPort, desc, 0, 0);
+		int r2 = UPNP_GetSpecificPortMappingEntry(m_urls.controlURL, m_data.first.servicetype, port.data(), "TCP", "", intClient, intPort, desc, nullptr, nullptr);
 		if (r2 == 0 && std::string_view{ desc }.find("Graal GServer") != std::string_view::npos)
 		{
 			log::printLine(log::server, "[UPnP] Found existing port mapping on port {} likely created by us.", port);
@@ -128,9 +136,8 @@ void UPNP::addPortForward(std::string_view address, std::string_view port)
 			}
 			else
 			{
-				PortMappingParserData parserData;
-				memset(&parserData, 0, sizeof(PortMappingParserData));
-				if (UPNP_GetListOfPortMappings(m_urls.controlURL, m_data.first.servicetype, "1", "65535", "TCP", 0, &parserData) == UPNPCOMMAND_SUCCESS)
+				PortMappingParserData parserData = {};
+				if (UPNP_GetListOfPortMappings(m_urls.controlURL, m_data.first.servicetype, "1", "65535", "TCP", nullptr, &parserData) == UPNPCOMMAND_SUCCESS)
 				{
 					int i = 0;
 					for (auto pm = parserData.l_head; pm != nullptr; pm = pm->l_next)
@@ -158,8 +165,8 @@ void UPNP::addPortForward(std::string_view address, std::string_view port)
 			case UPNPCOMMAND_CONFLICTING_MAPPING:
 				log::printLine(log::server, "Port mapping already exists.");
 				break;
-			default:
 			case UPNPCOMMAND_UNKNOWN_ERROR:
+			default:
 				log::printLine(log::server, "Unknown error.");
 				break;
 		}
@@ -175,10 +182,10 @@ void UPNP::addPortForward(std::string_view address, std::string_view port)
 void UPNP::removePortForward(std::string_view port)
 {
 #ifdef ENABLE_UPNP
-	if (m_urls.controlURL == 0 || m_urls.controlURL[0] == '\0')
+	if (m_urls.controlURL == nullptr || m_urls.controlURL[0] == '\0')
 		return;
 
-	UPNP_DeletePortMapping(m_urls.controlURL, m_data.first.servicetype, port.data(), "TCP", 0);
+	UPNP_DeletePortMapping(m_urls.controlURL, m_data.first.servicetype, port.data(), "TCP", nullptr);
 	log::printLine(log::server, "[UPnP] Removing forward on port {}.", port);
 	m_portsForwarded.erase(std::string{ port });
 #endif

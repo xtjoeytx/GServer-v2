@@ -261,7 +261,6 @@ serverinterface = AUTO
 
 # The local IP address of the computer.  Helps you connect to your server if your router can`t route on
 # its WAN-side IP address.  Leave it as AUTO unless you know what you are doing.
-# If you have a Linux server, you will want to change this, though.
 localip = AUTO
 upnp = true
 

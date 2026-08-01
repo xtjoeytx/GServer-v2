@@ -23,15 +23,15 @@ public:
 	// Allows std::thread to work.
 	void operator()()
 	{
+		if (m_localIp.empty())
+			return;
+
 		discover();
 		addPortForward(m_localIp, m_port);
 	}
 
-	void initialize(std::string_view localIp, std::string_view port)
-	{
-		m_localIp = localIp;
-		m_port = port;
-	}
+	// Initializes everything.
+	bool initialize(std::string_view localIp, std::string_view port);
 
 	// Finds a valid UPNP device.
 	void discover();

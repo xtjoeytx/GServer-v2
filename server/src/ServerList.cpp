@@ -254,7 +254,7 @@ bool ServerList::connectServer()
 
 	// Grab the local ip.
 	if (localip.isEmpty() || localip == "AUTO")
-		localip = m_socket.getLocalIp();
+		localip = CSocket::getLocalIp();
 	if (localip == "127.0.1.1" || localip == "127.0.0.1")
 	{
 		log::printLine(log::server, "** [WARNING] Socket returned {} for its local ip!  Not sending local ip to serverlist.", localip);

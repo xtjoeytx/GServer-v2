@@ -602,8 +602,9 @@ int Server::init(std::string_view serverip, std::string_view serverport, std::st
 	{
 		log::printLine(log::server, "Starting UPnP discovery thread.");
 		m_upnp = std::make_unique<UPNP>();
-		m_upnp->initialize((oInter.empty() ? m_playerSock.getLocalIp() : oInter.data()), m_settings.get<std::string>("serverport").value_or(""s).c_str());
-		m_upnpThread = std::thread(std::ref(*m_upnp.get()));
+		if (m_upnp->initialize((oInter.empty() ? CSocket::getLocalIp() : oInter.data()), m_settings.get<std::string>("serverport").value_or(""s)))
+			m_upnpThread = std::thread(std::ref(*m_upnp));
+		else m_upnp.reset(nullptr);
 	}
 #endif
 
@@ -1494,7 +1495,7 @@ std::shared_ptr<Level> Server::getStubbedLevel(std::string_view levelName, std::
 	if (!groupName.empty())
 	{
 		lowerCaseLevel = groupName;
-		lowerCaseLevel += ".";
+		lowerCaseLevel += '.';
 	}
 	lowerCaseLevel += string::toLower(levelName);
 
