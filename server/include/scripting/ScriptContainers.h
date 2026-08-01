@@ -822,7 +822,7 @@ GameVariable GameVariable::deserialize(std::string identifier, const std::string
 	if constexpr (std::same_as<T, std::vector<double>>)
 	{
 		std::vector<double> array;
-		for (auto number : string::split(data, ","sv))
+		for (auto number : string::split(data, ",;"sv))
 			array.emplace_back(string::toDouble(number));
 		return GameVariable{.name = identifier, .value = std::move(array)};
 	}
@@ -848,7 +848,7 @@ inline std::string GameVariable::serialize() const
 			{
 				array += std::format("{}", (value_array.value().get())[i]);
 				if (i != value_array.value().get().size() - 1)
-					array += ",";
+					array += ";";
 			}
 		}
 		return array;
