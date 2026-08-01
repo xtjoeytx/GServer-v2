@@ -145,45 +145,45 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (command == "STARTLEVEL")
 			npc->m_initialLevel = lineView;
 		else if (command == "STARTX")
-			npc->m_initialCharacter.localPixelX = static_cast<int16_t>(string::toFloat(std::string{lineView}) * 16);
+			npc->m_initialCharacter.localPixelX = static_cast<int16_t>(string::toFloat(lineView) * 16);
 		else if (command == "STARTY")
-			npc->m_initialCharacter.localPixelY = static_cast<int16_t>(string::toFloat(std::string{lineView}) * 16);
+			npc->m_initialCharacter.localPixelY = static_cast<int16_t>(string::toFloat(lineView) * 16);
 		else if (command == "STARTZ")
-			npc->m_initialCharacter.localPixelZ = static_cast<int16_t>(string::toFloat(std::string{lineView}) * 16);
+			npc->m_initialCharacter.localPixelZ = static_cast<int16_t>(string::toFloat(lineView) * 16);
 		else if (command == "STARTMAPX")
-			npc->m_initialCharacter.mapX = string::toNumber<uint8_t>(std::string{lineView});
+			npc->m_initialCharacter.mapX = string::toNumber<uint8_t>(lineView);
 		else if (command == "STARTMAPY")
-			npc->m_initialCharacter.mapY = string::toNumber<uint8_t>(std::string{lineView});
+			npc->m_initialCharacter.mapY = string::toNumber<uint8_t>(lineView);
 		else if (command == "LEVEL")
 			npc->level = lineView;
 		else if (command == "GROUPNAME")
 			npc->groupName = lineView;
 		else if (command == "X")
 		{
-			npc->character.localPixelX = static_cast<int16_t>(string::toFloat(std::string{lineView}) * 16);
+			npc->character.localPixelX = static_cast<int16_t>(string::toFloat(lineView) * 16);
 			npc->modTime[PROPID(NPCProp::X)] = updateTime;
 			npc->modTime[PROPID(NPCProp::X2)] = updateTime;
 		}
 		else if (command == "Y")
 		{
-			npc->character.localPixelY = static_cast<int16_t>(string::toFloat(std::string{lineView}) * 16);
+			npc->character.localPixelY = static_cast<int16_t>(string::toFloat(lineView) * 16);
 			npc->modTime[PROPID(NPCProp::Y)] = updateTime;
 			npc->modTime[PROPID(NPCProp::Y2)] = updateTime;
 		}
 		else if (command == "Z")
 		{
-			npc->character.localPixelZ = static_cast<int16_t>(string::toFloat(std::string{lineView}) * 16);
+			npc->character.localPixelZ = static_cast<int16_t>(string::toFloat(lineView) * 16);
 			npc->modTime[PROPID(NPCProp::Z)] = updateTime;
 			npc->modTime[PROPID(NPCProp::Z2)] = updateTime;
 		}
 		else if (command == "MAPX")
 		{
-			npc->character.mapX = string::toNumber<uint8_t>(std::string{lineView});
+			npc->character.mapX = string::toNumber<uint8_t>(lineView);
 			npc->modTime[PROPID(NPCProp::GMAPLEVELX)] = updateTime;
 		}
 		else if (command == "MAPY")
 		{
-			npc->character.mapY = string::toNumber<uint8_t>(std::string{lineView});
+			npc->character.mapY = string::toNumber<uint8_t>(lineView);
 			npc->modTime[PROPID(NPCProp::GMAPLEVELY)] = updateTime;
 		}
 		else if (command == "NICK")
@@ -198,42 +198,42 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "HP")
 		{
-			npc->character.hitpointsInHalves = static_cast<uint8_t>(2 * string::toFloat(std::string{lineView}));
+			npc->character.hitpointsInHalves = static_cast<uint8_t>(2 * string::toFloat(lineView));
 			npc->modTime[PROPID(NPCProp::HALFHEARTS)] = updateTime;
 		}
 		else if (command == "GRALATS")
 		{
-			npc->character.gralats = string::toNumber<uint32_t>(std::string{lineView});
+			npc->character.gralats = string::toNumber<uint32_t>(lineView);
 			npc->modTime[PROPID(NPCProp::GRALATS)] = updateTime;
 		}
 		else if (command == "ARROWS")
 		{
-			npc->character.arrows = string::toNumber<uint8_t>(std::string{lineView});
+			npc->character.arrows = string::toNumber<uint8_t>(lineView);
 			npc->modTime[PROPID(NPCProp::ARROWS)] = updateTime;
 		}
 		else if (command == "BOMBS")
 		{
-			npc->character.bombs = string::toNumber<uint8_t>(std::string{lineView});
+			npc->character.bombs = string::toNumber<uint8_t>(lineView);
 			npc->modTime[PROPID(NPCProp::BOMBS)] = updateTime;
 		}
 		else if (command == "GLOVEP")
 		{
-			npc->character.glovePower = string::toNumber<uint8_t>(std::string{lineView});
+			npc->character.glovePower = string::toNumber<uint8_t>(lineView);
 			npc->modTime[PROPID(NPCProp::GLOVEPOWER)] = updateTime;
 		}
 		else if (command == "SWORDP")
 		{
-			npc->character.swordPower = string::toNumber<uint8_t>(std::string{lineView});
+			npc->character.swordPower = string::toNumber<int8_t>(lineView);
 			npc->modTime[PROPID(NPCProp::SWORDIMAGE)] = updateTime;
 		}
 		else if (command == "SHIELDP")
 		{
-			npc->character.shieldPower = string::toNumber<uint8_t>(std::string{lineView});
+			npc->character.shieldPower = string::toNumber<uint8_t>(lineView);
 			npc->modTime[PROPID(NPCProp::SHIELDIMAGE)] = updateTime;
 		}
 		else if (command == "BOWP")
 		{
-			npc->character.bowPower = string::toNumber<uint8_t>(std::string{lineView});
+			npc->character.bowPower = string::toNumber<uint8_t>(lineView);
 			npc->modTime[PROPID(NPCProp::GANI)] = updateTime;
 		}
 		else if (command == "BOW")
@@ -269,20 +269,20 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (command == "COLORS")
 		{
 			auto tokens = string::splitToVectorView(lineView, ","sv);
-			for (size_t idx = 0; idx < std::min(tokens.size(), (size_t)8); idx++)
+			for (size_t idx = 0; idx < std::min(tokens.size(), 8ZU); idx++)
 				npc->character.colors[idx] = string::toNumber<uint8_t>(tokens[idx]);
 			npc->modTime[PROPID(NPCProp::COLORS)] = updateTime;
 		}
 		else if (command == "SPRITE")
 		{
-			auto sprite = string::toNumber<uint8_t>(std::string{lineView});
+			auto sprite = string::toNumber<uint8_t>(lineView);
 			npc->character.sprite = sprite >> 2;
 			npc->character.direction = sprite & 0b11;
 			npc->modTime[PROPID(NPCProp::SPRITE)] = updateTime;
 		}
 		else if (command == "AP")
 		{
-			npc->character.ap = string::toNumber<uint8_t>(std::string{lineView});
+			npc->character.ap = string::toNumber<uint8_t>(lineView);
 			npc->modTime[PROPID(NPCProp::ALIGNMENT)] = updateTime;
 		}
 		else if (command == "TIMEOUT")
@@ -309,12 +309,12 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "DONTBLOCK")
 		{
-			npc->blockFlags = string::toNumber<uint8_t>(std::string{lineView});
+			npc->blockFlags = string::toNumber<uint8_t>(lineView);
 			npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
 		}
 		else if (command == "NOPLAYERONWALL")
 		{
-			npc->noPlayerOnWall = string::toNumber<uint8_t>(std::string{lineView}) != 0;
+			npc->noPlayerOnWall = string::toNumber<uint8_t>(lineView) != 0;
 		}
 		else if (command == "SAVEARR")
 		{
@@ -352,8 +352,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "VISIBLE")
 		{
-			auto value = string::toNumber<uint8_t>(std::string{lineView});
-			if (value == 0)
+			if (auto value = string::toNumber<uint8_t>(lineView); value == 0)
 			{
 				npc->visFlags &= ~PROPID(NPCVisFlags::VISIBLE);
 				npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
@@ -366,8 +365,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "MALE")
 		{
-			auto value = string::toNumber<uint8_t>(std::string{lineView});
-			if (value == 0)
+			if (auto value = string::toNumber<uint8_t>(lineView); value == 0)
 				isMale = false;
 		}
 		//---
@@ -375,7 +373,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (command == "FLAG")
 		{
 			std::string flagName = string::trimMutate(string::extractLine(lineView, '='));
-			std::string flagValue = std::string{string::trim(lineView)};
+			std::string flagValue{string::trim(lineView)};
 			npc->scripting.variables.add(GameVariable::deserialize(flagName, flagValue));
 		}
 		else if (command.substr(0, 4) == "ATTR")
@@ -466,14 +464,14 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		return false;
 
 	// Open the file for writing.
-	auto server = BabyDI::Get<Server>();
-	auto fileName = fs::getHTMLEscapedFileName(std::format("npc{}.txt", npc->name));
-	auto file = server->getFileSystemServer().openiForWriting(fs::FileCategory::NPC, fileName, true);
+	const auto server = BabyDI::Get<Server>();
+	const auto fileName = fs::getHTMLEscapedFileName(std::format("npc{}.txt", npc->name));
+	const auto file = server->getFileSystemServer().openiForWriting(fs::FileCategory::NPC, fileName, true);
 	if (!file)
 		return false;
 
 	// Function to check for prop modification before writing.
-	auto writeProp = [&](NPCProp prop, std::string_view key, std::string_view value)
+	auto writeProp = [&](const NPCProp prop, std::string_view key, std::string_view value)
 	{
 		if (npc->modTime[PROPID(prop)].has_value())
 			file->writeConfigLine(key, value);
@@ -483,9 +481,9 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 
 	// Get the draw layer number.
 	int layer = 0;
-	if (npc->visFlags & PROPID(NPCVisFlags::DRAWUNDERPLAYER))
+	if (npc->visFlags & ENUM(NPCVisFlags::DRAWUNDERPLAYER))
 		layer = -1;
-	else if (npc->visFlags & PROPID(NPCVisFlags::DRAWOVERPLAYER))
+	else if (npc->visFlags & ENUM(NPCVisFlags::DRAWOVERPLAYER))
 		layer = 1;
 
 	// Start the file.
@@ -535,7 +533,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	if (server->Generation != ServerGeneration::CLASSIC)
 		writeProp(NPCProp::GANI, "ANI", npc->character.gani);
 
-	writeProp(NPCProp::HALFHEARTS, "HP", std::format("{:.2f}", npc->character.hitpointsInHalves / 2.0f));
+	writeProp(NPCProp::HALFHEARTS, "HP", std::format("{:.2f}", static_cast<float>(npc->character.hitpointsInHalves) / 2.0f));
 	writeProp(NPCProp::GRALATS, "GRALATS", string::to_string(npc->character.gralats));
 	writeProp(NPCProp::ARROWS, "ARROWS", string::to_string(npc->character.arrows));
 	writeProp(NPCProp::BOMBS, "BOMBS", string::to_string(npc->character.bombs));
@@ -566,7 +564,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		file->writeConfigLine("TIMEOUT", string::to_string(static_cast<int>(npc->timeout.count() * 0.05)));
 
 	if (layer != 0)
-		file->writeConfigLine("LAYER", string::to_string(layer + 1));
+		file->writeConfigLine("LAYER", string::to_string(layer));
 
 	if (npc->shape.width() != 0 || npc->shape.height() != 0)
 	{
@@ -579,9 +577,9 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	if (npc->noPlayerOnWall)
 		file->writeLine("NOPLAYERONWALL 1");
 	if (npc->warpRestrictions == NPCWarpRestrictions::ALLOWED)
-		file->writeLine("CANWARP");
+		file->writeLine("CANWARP 1");
 	if (npc->warpRestrictions == NPCWarpRestrictions::ONLYOVERWORLD)
-		file->writeLine("CANWARP2");
+		file->writeLine("CANWARP2 1");
 
 	// Official variables for these are unknown.
 	if (npc->blockFlags & PROPID(NPCBlockFlags::CANBECARRIED))
@@ -603,7 +601,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 
 	for (int i = 0; i < 30; i++)
 	{
-		NPCProp prop = static_cast<NPCProp>(NPCGaniAttrPackets[i]);
+		const auto prop = static_cast<NPCProp>(NPCGaniAttrPackets[i]);
 		if (!npc->character.ganiAttributes[i].empty())
 			writeProp(prop, std::format("ATTR{}", i + 1), npc->character.ganiAttributes[i]);
 	}
@@ -643,7 +641,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 
 	// If the NPC exists on the filesystem, refresh its mod time to avoid any modification events.
 	auto& fs = server->getFileSystemServer();
-	if (auto info = fs.info(fs::FileCategory::NPC, file->filePath().filename()); info != nullptr)
+	if (const auto info = fs.info(fs::FileCategory::NPC, file->filePath().filename()); info != nullptr)
 		info->refreshModTime();
 	// Else if the NPC doesn't exist, we want to add it to the file system so the file watcher doesn't cause a reload.
 	else
