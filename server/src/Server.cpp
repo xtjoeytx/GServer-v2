@@ -1478,7 +1478,7 @@ void Server::performMigrations() const
 		newdefaultaccount.replace_filename("(defaultaccount).txt");
 
 		std::filesystem::rename(defaultaccount, newdefaultaccount);
-		log::printLine(log::server, ":: [MIGRATE] Renaming 'defaultaccount.txt' to '(defaultaccount).txt'.");
+		log::printLine(log::server, "[MIGRATE] Renaming 'defaultaccount.txt' to '(defaultaccount).txt'.");
 	}
 }
 
