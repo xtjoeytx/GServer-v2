@@ -287,15 +287,21 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "TIMEOUT")
 		{
-			npc->timeout = std::chrono::milliseconds(string::toNumber<int>(std::string{lineView}) * 20);
+			npc->timeout = std::chrono::duration_cast<std::chrono::milliseconds>(duration_seconds_double(string::toDouble(lineView)));
 		}
 		else if (command == "LAYER")
 		{
-			auto layer = string::toNumber<uint8_t>(std::string{lineView});
-			if (layer == 0)
-				npc->visFlags |= PROPID(NPCVisFlags::DRAWUNDERPLAYER);
-			if (layer == 2)
-				npc->visFlags |= PROPID(NPCVisFlags::DRAWOVERPLAYER);
+			switch (string::toNumber<int8_t>(lineView))
+			{
+				case -1:
+					npc->visFlags |= PROPID(NPCVisFlags::DRAWUNDERPLAYER);
+					break;
+				case 1:
+					npc->visFlags |= PROPID(NPCVisFlags::DRAWOVERPLAYER);
+					break;
+				default:;
+			}
+
 			npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
 		}
 		else if (command == "SHAPETYPE")
@@ -521,7 +527,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		file->writeConfigLine("X", string::to_string(npc->character.localPixelX / 16.0, 2));
 		file->writeConfigLine("Y", string::to_string(npc->character.localPixelY / 16.0, 2));
 		file->writeConfigLine("Z", string::to_string(npc->character.localPixelZ / 16.0, 2));
-		if (npc->character.mapX != 0 || npc->character.mapY != 0)
+		if (npc->character.mapX != 0 || npc->character.mapY != 0 || (level != nullptr && level->isGmap()))
 		{
 			file->writeConfigLine("MAPX", string::to_string(npc->character.mapX));
 			file->writeConfigLine("MAPY", string::to_string(npc->character.mapY));
@@ -561,7 +567,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	writeProp(NPCProp::ALIGNMENT, "AP", string::to_string(npc->character.ap));
 
 	if (npc->timeout != 0ms)
-		file->writeConfigLine("TIMEOUT", string::to_string(static_cast<int>(npc->timeout.count() * 0.05)));
+		file->writeConfigLine("TIMEOUT", string::to_string(std::chrono::duration_cast<duration_seconds_double>(npc->timeout).count()));
 
 	if (layer != 0)
 		file->writeConfigLine("LAYER", string::to_string(layer));
@@ -608,10 +614,6 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 
 	for (auto& [flag, value] : npc->scripting.variables.store | variables::serializable)
 	{
-		// Ignore flags.
-		if (value->value.has<bool>() && !value->value.has<std::string>())
-			continue;
-
 		// Serialize the variable entirely.
 		if (server->Generation == ServerGeneration::MODERN)
 		{
