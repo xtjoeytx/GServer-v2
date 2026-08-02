@@ -1904,7 +1904,7 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 	}
 
 	// Created event.
-	if (hasNPCServer())
+	if (hasNPCServer() && !npc->isCreated())
 	{
 		npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
 	}

@@ -304,6 +304,7 @@ public:
 	[[inline]] bool hasShape() const noexcept;
 	[[inline]] bool hasImage() const noexcept;
 	[[inline]] bool isBlocking() const noexcept;
+	[[inline]] bool isCreated() const noexcept;
 	[[inline]] Dimension<uint16_t> getComputedShape() const noexcept;
 	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
 	[[inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
@@ -499,6 +500,11 @@ inline bool NPC::hasImage() const noexcept
 inline bool NPC::isBlocking() const noexcept
 {
 	return !(blockFlags & ENUM(NPCBlockFlags::NOBLOCK));
+}
+
+inline bool NPC::isCreated() const noexcept
+{
+	return (visFlags & ENUM(NPCVisFlags::CREATED)) != 0;
 }
 
 inline std::generator<std::shared_ptr<ScriptClass>> NPC::getJoinedClasses() const
