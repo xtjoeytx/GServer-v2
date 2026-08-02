@@ -28,13 +28,13 @@
 
 namespace preagonal
 {
-class Character;
+struct Character;
 class GuildManager;
 class ITranslationManager;
 class Level;
 class Server;
-class StaticLevelData;
-class SubLevel;
+struct StaticLevelData;
+struct SubLevel;
 } // namespace preagonal
 
 ///////////////////////////////////////////////////////////////////////////////

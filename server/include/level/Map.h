@@ -33,7 +33,7 @@ enum class MapType
 };
 
 class Server;
-class StaticLevelData;
+struct StaticLevelData;
 
 struct MapTerrain
 {

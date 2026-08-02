@@ -4,7 +4,7 @@ The game supports three different types of tilesets.
 
 ### Classic - Type 0
 
-Default: `pics0.png`
+Default: `pics1.png`
 
 The type 0 tileset is the original, classic tileset.
 Tiles were added over time, resulting in a very disorganized tileset.

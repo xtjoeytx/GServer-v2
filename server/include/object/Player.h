@@ -42,8 +42,8 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 class Level;
-class SubLevel;
-class StaticLevelData;
+struct SubLevel;
+struct StaticLevelData;
 class Map;
 class Weapon;
 
