@@ -44,11 +44,11 @@ official serverside: ❌<br>
 Swaps the tileset for all levels whose filenames start with `levelstart`.
 The `type` parameter identifies how the tiles are layed out.
 
-| Type | Format |
-|----- | ------ |
-| 0 | pics1.png |
-| 1 | (new style) |
-| 5 | picso.png (3D terrain) |
+| Type | Format                 |
+|------|------------------------|
+| 0    | pics1.png              |
+| 1    | (new order)            |
+| 5    | picso.png (3D terrain) |
 
 ---
 ## addtiledef2

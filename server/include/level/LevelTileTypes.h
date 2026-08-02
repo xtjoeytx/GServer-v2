@@ -34,6 +34,8 @@ enum class TileType : uint8_t
 	SWAMP = 6,
 	LAVA_SWAMP = 7,
 	NEAR_WATER = 8,
+	NEAR_LAVA = 9,
+	DESERT = 10,
 	WATER = 11,
 	LAVA = 12,
 	THROW_THROUGH = 20,
