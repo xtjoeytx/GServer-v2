@@ -39,7 +39,9 @@ public:
 
 public:
 	virtual bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override { return false; }
+	virtual bool execute(ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context) override { return false; }
 	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override { return false; }
+	virtual bool executeFunction(std::string_view function, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context) override { return false; }
 
 public:
 	virtual std::optional<double> processMathExpression(std::string_view expression, ScriptObject source) override { return std::nullopt; }

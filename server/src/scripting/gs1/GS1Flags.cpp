@@ -24,19 +24,24 @@ namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void setEventFlags(ScriptEventType event, GameVariableStore& variableStore)
+static bool hasEvent(const ScriptEventType check, const ScriptEventType& eventType, std::vector<ScriptEventType>* additionalEventTypes)
+{
+	return check == eventType || (additionalEventTypes != nullptr && std::ranges::contains(*additionalEventTypes, check));
+}
+
+void setEventFlags(ScriptEventType event, std::vector<ScriptEventType>* additionalEventTypes, GameVariableStore& variableStore)
 {
 	// Set all our built-in event flags.
 	for (auto& [eventType, flagName] : eventFlagMap)
-		variableStore.add(flagName, event == eventType);
+		variableStore.add(flagName, hasEvent(eventType, event, additionalEventTypes));
 
 	// Valid alternates.
-	variableStore.add("playerhurted", event == ScriptEventType::PLAYERHURT);
-	variableStore.add("wasshooted", event == ScriptEventType::WASSHOT);
+	variableStore.add("playerhurted", hasEvent(ScriptEventType::PLAYERHURT, event, additionalEventTypes));
+	variableStore.add("wasshooted", hasEvent(ScriptEventType::WASSHOT, event, additionalEventTypes));
 
 	// TODO: Put extensions under a server option?
-	variableStore.add("playertouchesme", event == ScriptEventType::PLAYERTOUCHSME);
-	variableStore.add("playertouchesother", event == ScriptEventType::PLAYERTOUCHSOTHER);
+	variableStore.add("playertouchesme", hasEvent(ScriptEventType::PLAYERTOUCHSME, event, additionalEventTypes));
+	variableStore.add("playertouchesother", hasEvent(ScriptEventType::PLAYERTOUCHSOTHER, event, additionalEventTypes));
 }
 
 void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& variableStore)
@@ -45,11 +50,11 @@ void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& 
 		return;
 
 	std::string action;
-	if (auto* actionStr = std::any_cast<std::string>(&event.args[0]); actionStr != nullptr)
+	if (const auto* actionStr = std::any_cast<std::string>(&event.args[0]); actionStr != nullptr)
 		action = *actionStr;
-	else if (auto* actionStr = std::any_cast<const char*>(&event.args[0]); actionStr != nullptr)
+	else if (const auto* actionStr = std::any_cast<const char*>(&event.args[0]); actionStr != nullptr)
 		action = *actionStr;
-	else if (auto* actionStr = std::any_cast<std::string_view>(&event.args[0]); actionStr != nullptr)
+	else if (const auto* actionStr = std::any_cast<std::string_view>(&event.args[0]); actionStr != nullptr)
 		action = std::string(*actionStr);
 
 	if (!action.empty())
@@ -65,11 +70,10 @@ void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& 
 		// If there are just two arguments, try to unpack the second argument.
 		if (event.args.size() == 2)
 		{
-			if (auto* params = std::any_cast<std::string>(&event.args[1]); params != nullptr)
+			if (const auto* params = std::any_cast<std::string>(&event.args[1]); params != nullptr)
 			{
 				// Split the parameters by commas.
-				auto tokens = string::fromCSV(*params);
-				if (tokens.size() > 1)
+				if (auto tokens = string::fromCSV(*params); tokens.size() > 1)
 				{
 					event.args.erase(event.args.begin() + 1);
 					event.args.insert(event.args.end(), std::ranges::begin(tokens), std::ranges::end(tokens));
@@ -139,10 +143,9 @@ void setNPCFlags(ScriptEvent& event, GameVariableStore& variableStore, NPCPtr np
 
 	// The WASPELT event has the item in the event args so pull it out.
 	CarryObjectType carryType = CarryObjectType::NONE;
-	if (event.type == ScriptEventType::WASPELT && event.args.size() > 0)
+	if (event.type == ScriptEventType::WASPELT && !event.args.empty())
 	{
-		CarryObjectType* type = std::any_cast<CarryObjectType>(&event.args.front());
-		if (type != nullptr)
+		if (const auto type = std::any_cast<CarryObjectType>(&event.args.front()); type != nullptr)
 			carryType = *type;
 	}
 
@@ -185,7 +188,7 @@ void setOtherFlags(ScriptEvent& event, ScriptObject source, GameVariableStore& v
 			}
 			++index;
 		}
-		variableStore.add("actionplayer", GameValue{(double)(found ? index : -1)});
+		variableStore.add("actionplayer", GameValue{static_cast<double>(found ? index : -1)});
 	}
 
 	// playerswimming

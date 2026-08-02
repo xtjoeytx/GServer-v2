@@ -123,7 +123,7 @@ void NPCServer::sendNCLoginToPlayer(std::shared_ptr<Player> player)
 
 	// Grab NPCServer & Send
 	// If the player is connecting from the same IP as the NPC server, use that IP.
-	std::string connectString = std::format("{},{}", (player->account.ipAddress == m_npcServerPlayer->getSocket()->getLocalIp() ? player->account.ipAddress : m_ncHost), m_ncPort);
+	const std::string connectString = std::format("{},{}", (player->account.ipAddress == m_npcServerPlayer->getSocket()->getLocalIp() ? player->account.ipAddress : m_ncHost), m_ncPort);
 	log::printLine(log::server, "-- Sending NPC-Server connection info to '{}': {}", player->account.name, connectString);
 
 	player->sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)m_npcServerPlayer->getId() << connectString);
@@ -178,16 +178,16 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 	}
 
 	// Save all player prop mod times.
-	for (auto& [id, player] : m_playerList)
+	for (auto& player : m_playerList | std::views::values)
 	{
 		player->recordCurrentPropModTime();
 	}
 
 	// Run all weapon scripts.
-	for (auto& [name, weapon] : m_server->getWeaponList())
+	for (const auto& weapon : m_server->getWeaponList() | std::views::values)
 	{
 		// Copy the shared_ptr so if we "destroy" gets called, the weapon isn't immediately deleted while we are running the script.
-		WeaponPtr copy = weapon;
+		const WeaponPtr copy = weapon;
 		copy->executeEvents(weapon->scripting.events, source::FromWeapon(weapon));
 	}
 
@@ -206,7 +206,7 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 	// Send all queued movements.
 	{
 		CString propsPacket;
-		for (auto& [id, npc] : m_server->getNPCList())
+		for (const auto& npc : m_server->getNPCList() | std::views::values)
 		{
 			if (auto level = npc->getLevel(); level != nullptr)
 			{
@@ -225,7 +225,7 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 	// Send all changed player props.
 	{
 		CString propsPacket;
-		for (auto& [id, player] : m_playerList)
+		for (auto& player : m_playerList | std::views::values)
 		{
 			auto playerClient = std::dynamic_pointer_cast<PlayerClient>(player);
 			if (playerClient == nullptr) continue;
@@ -340,7 +340,7 @@ std::shared_ptr<NPC> NPCServer::getNPC(const NPCID id) const
 
 std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
 {
-	for (const auto& [_, npc] : m_globalNPCList)
+	for (const auto& npc : m_globalNPCList | std::views::values)
 	{
 		if (auto npcptr = npc.lock(); npcptr != nullptr)
 		{

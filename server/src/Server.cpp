@@ -715,7 +715,7 @@ bool Server::doMain()
 	m_sockManager.update(0, 5000); // 5ms
 
 	// Current time
-	auto oldTime = m_frameStartTimeHighPrecision;
+	const auto oldTime = m_frameStartTimeHighPrecision;
 	m_frameStartTimeHighPrecision = precise_clock::now();
 	m_frameStartTime = currentTime();
 
@@ -730,16 +730,16 @@ bool Server::doMain()
 	m_timedMaintenance5m.update(m_frameStartTimeHighPrecision);
 
 	// Do level frame events.
-	for (auto& [name, level] : m_levelList)
+	for (auto& level : m_levelList | std::views::values)
 	{
 		if (level != nullptr)
 			level->doFrameEvents(m_frameStartTimeHighPrecision);
 	}
 
 	// Execute our scheduled tasks.
-	auto startingTasks = m_scheduledTasks.size();
+	const auto startingTasks = m_scheduledTasks.size();
+	const auto diff = m_frameStartTimeHighPrecision - oldTime;
 	auto tasks = startingTasks;
-	auto diff = m_frameStartTimeHighPrecision - oldTime;
 	for (size_t i = 0; i < tasks;)
 	{
 		auto& task = m_scheduledTasks.at(i);
@@ -780,7 +780,7 @@ bool Server::doTimedEvents(int)
 	// Do player events.
 	{
 		std::vector<PlayerPtr> deletePlayers;
-		for (auto& [id, player] : m_playerList)
+		for (auto& player : m_playerList | std::views::values)
 		{
 			assert(player);
 			if (!player->isNPCServer())
@@ -798,7 +798,7 @@ bool Server::doTimedEvents(int)
 
 	// Do level events.
 	{
-		for (auto& [name, level] : m_levelList)
+		for (const auto& level : m_levelList | std::views::values)
 		{
 			assert(level);
 			level->doTimedEvents();
@@ -898,7 +898,7 @@ int Server::loadConfigFiles()
 			auto indentsettings = log::server.indent();
 			prepareSettings();
 			loadSettings();
-			log::printLine(log::server, "Server generation: {}", ServerGenerationNames[(size_t)Generation]);
+			log::printLine(log::server, "Server generation: {}", ServerGenerationNames[ENUM(Generation)]);
 		}
 
 		// Load Admin Settings
@@ -966,7 +966,7 @@ void Server::prepareSettings()
 	m_bushItemTypes.onUpdate = [this](const std::optional<std::vector<std::string>>& newValue, const std::optional<std::vector<std::string>>& oldValue)
 	{
 		// greenrupee 10, bluerupee 5, bombs 5, heart 5
-		static const std::array<int, 25> defaults = {10, 5, 0, 5, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+		static constexpr std::array<int, 25> defaults = {10, 5, 0, 5, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 		m_bushDrops.clear();
 		for (const auto& curItem : newValue.value())
@@ -1061,11 +1061,11 @@ void Server::loadAllowedVersions()
 				std::vector<std::string> formattedVersions;
 				for (const auto& version : string::split(versionRange, ","sv))
 				{
-					m_allowedVersions.push_back(version);
+					m_allowedVersions.emplace_back(version);
 					auto rangeParts = string::splitToVector(version, ":"sv);
 					if (rangeParts.size() == 1)
 					{
-						formattedVersions.push_back(getVersionString(rangeParts[0], PLTYPE_ANYCLIENT));
+						formattedVersions.emplace_back(getVersionString(rangeParts[0], PLTYPE_ANYCLIENT));
 					}
 					else if (rangeParts.size() == 2)
 					{
@@ -1225,7 +1225,7 @@ void Server::loadServerFlags()
 
 void Server::loadGuilds()
 {
-	if (auto guild = BabyDI::Get<GuildManager>(); guild != nullptr)
+	if (const auto guild = BabyDI::Get<GuildManager>(); guild != nullptr)
 		guild->loadGuilds("guilds");
 }
 
@@ -1932,16 +1932,16 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 	return npc;
 }
 
-bool Server::deleteNPC(int id, bool eraseFromLevel)
+bool Server::deleteNPC(const NPCID id, const bool eraseFromLevel)
 {
-	auto npc = getNPC(id);
+	const auto npc = getNPC(id);
 	if (npc == nullptr)
 		return false;
 
 	return deleteNPC(npc, eraseFromLevel);
 }
 
-bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
+bool Server::deleteNPC(const std::shared_ptr<NPC>& npc, const bool eraseFromLevel)
 {
 	assert(npc);
 
@@ -1949,7 +1949,7 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 	m_npcList.erase(npc->id);
 	m_npcIdGenerator.freeId(npc->id);
 
-	if (auto level = npc->getLevel(); level)
+	if (const auto level = npc->getLevel(); level)
 	{
 		// Get the sub-level the NPC is on.
 		auto [subLevel, levelData] = level->getSubLevelAndStaticDataAtPosition(MapPosition{npc->character.mapX, npc->character.mapY});
@@ -1959,10 +1959,10 @@ bool Server::deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel)
 			level->removeNPC(npc);
 
 		// Tell the clients to delete the NPC.
-		std::string levelName = npc->getLevelName();
+		const std::string levelName = npc->getLevelName();
 
 		auto lastLevelChange = npc->modTime[PROPID(NPCProp::LEVEL)];
-		for (auto& [pid, p] : m_playerList)
+		for (auto& p : m_playerList | std::views::values)
 		{
 			std::optional<clock::time_point> lastEntered = std::nullopt;
 			auto playerClient = std::dynamic_pointer_cast<PlayerClient>(p);
@@ -2145,7 +2145,7 @@ std::string Server::getLogDateTimeString() const
 
 void Server::logToFile(std::filesystem::path fileName, std::string_view message, bool writeTimestamp) const
 {
-	std::filesystem::path logPath{"logs"};
+	const std::filesystem::path logPath{"logs"};
 
 	fs::FileSimpleIO file{logPath / fileName};
 	if (!file.opened())
@@ -2159,7 +2159,7 @@ void Server::logToFile(std::filesystem::path fileName, std::string_view message,
 
 void Server::logToFileSafely(std::filesystem::path fileName, std::string_view message, bool writeTimestamp) const
 {
-	std::filesystem::path logPath{"logs"};
+	const std::filesystem::path logPath{"logs"};
 
 	fs::FileIO file{logPath / fileName};
 	if (!file.opened())
@@ -2177,8 +2177,8 @@ void Server::logToFileSafely(std::filesystem::path fileName, std::string_view me
 
 std::optional<std::string> Server::getFlag(std::string_view flagName) const
 {
-	auto flagVal = Scripting.variables.get(flagName);
-	if (auto flag = flagVal.lock(); flag != nullptr)
+	const auto flagVal = Scripting.variables.get(flagName);
+	if (const auto flag = flagVal.lock(); flag != nullptr)
 		return flag->get<std::string>();
 	return std::nullopt;
 }

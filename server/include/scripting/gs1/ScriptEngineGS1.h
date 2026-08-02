@@ -175,14 +175,16 @@ public:
 
 public:
 	virtual bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
+	virtual bool execute(ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context) override;
 	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
+	virtual bool executeFunction(std::string_view function, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context) override;
 
 public:
 	virtual std::optional<double> processMathExpression(std::string_view expression, ScriptObject source) override;
 	virtual std::optional<std::string> processStringExpression(std::string_view expression, ScriptObject source) override;
 
 protected:
-	bool prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context, NPCPtr& npc, LevelPtr& level);
+	bool prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context, NPCPtr& npc, LevelPtr& level);
 	void cleanup(GS1ScriptWrapper& wrapper);
 };
 

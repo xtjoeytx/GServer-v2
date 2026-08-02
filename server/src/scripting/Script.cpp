@@ -3,8 +3,8 @@
 #include <array>
 #include <format>
 #include <iterator>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -21,29 +21,32 @@
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
-#include <utilities/std/generator.h>
 #include <utilities/StringUtils.h>
+#include <utilities/std/generator.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr std::string_view clientSideTerminator = "//#CLIENTSIDE"sv;
+constexpr auto clientSideTerminator = "//#CLIENTSIDE"sv;
 
 //----------------------------
 
 static std::string performClientSideJoinHack(std::string_view code)
 {
-	static const std::array<char, 5> blockStarters = { '\n', '\xa7', ')', '{', ';' };
+	static constexpr std::array<char, 5> blockStarters = { '\n', '\xa7', ')', '{', ';' };
+	static constexpr size_t joinKeywordLen = 5; // strlen("join ")
 
 	std::string result;
 	std::vector<std::string_view> joins;
 
-	size_t start = 0, end = 0;
+	size_t start = 0;
+	size_t end = 0;
+
 	while (start < code.length())
 	{
-		// Find the next join.
+		// Find the next "join " token.
 		// If we don't find one, copy the rest of the code and break.
 		end = code.find("join ", start);
 		if (end == std::string_view::npos)
@@ -52,43 +55,45 @@ static std::string performClientSideJoinHack(std::string_view code)
 			break;
 		}
 
-		// Look for a newline or the start of a code block so we don't capture the word join in a string.
-		bool join_is_start_of_block = true;
+		// Ensure "join " starts a script block context (avoid matching inside strings/text).
 		if (end != 0)
 		{
-			size_t block_start = end - 1;
-			while (block_start > 0)
+			bool joinIsStartOfBlock = true;
+			size_t blockStart = end - 1;
+			while (blockStart > 0)
 			{
 				// Skip any whitespace before the join.
-				if (code[block_start] == ' ' || code[block_start] == '\t')
+				if (code[blockStart] == ' ' || code[blockStart] == '\t')
 				{
-					--block_start;
+					--blockStart;
 					continue;
 				}
+
 				// Look for the start of a block or a newline.
-				else if (!std::ranges::contains(blockStarters, code[block_start]))
+				if (!std::ranges::contains(blockStarters, code[blockStart]))
 				{
-					join_is_start_of_block = false;
+					joinIsStartOfBlock = false;
 					break;
 				}
 
 				// We found a new line or a block start.
 				break;
 			}
-			if (!join_is_start_of_block)
+
+			if (!joinIsStartOfBlock)
 			{
 				result += code.substr(start, end);
-				start = end + 5; // 5 = strlen("join ")
+				start = end + joinKeywordLen;
 				continue;
 			}
 		}
 
-		// Copy the code before the join.
+		// Copy content before join.
 		result += code.substr(start, end - start);
 
-		// Get the name of the join.
-		start = end + 5; // 5 = strlen("join ")
-		end = code.find(";", start);
+		// Parse joined class/file name until semicolon.
+		start = end + joinKeywordLen;
+		end = code.find(';', start);
 		if (end == std::string_view::npos)
 		{
 			result += "join ";
@@ -97,22 +102,20 @@ static std::string performClientSideJoinHack(std::string_view code)
 		}
 
 		// Save the join to the list of joins.
-		std::string_view join = string::trim(code.substr(start, end - start));
-		if (!join.empty())
+		if (std::string_view join = string::trim(code.substr(start, end - start)); !join.empty())
 		{
-			bool in_sign = false;
+			bool inSign = false;
 
 			// A simple check to make sure we aren't in a say2 sign.
 			// This won't identify when the join keyword is used as the first word in the last line of a sign.
 			// TODO: Improve this check.
-			if (auto line_end = code.find('\n', start); line_end != std::string_view::npos)
+			if (const auto lineEnd = code.find('\n', start); lineEnd != std::string_view::npos)
 			{
-				if (auto sign_check = code.find("#b", start); sign_check < line_end)
-					in_sign = true;
+				if (const auto signCheck = code.find("#b", start); signCheck < lineEnd)
+					inSign = true;
 			}
 
-			// If we are in a sign, add the join back in.
-			if (in_sign)
+			if (inSign)
 			{
 				result += "join ";
 				result += join;
@@ -124,15 +127,14 @@ static std::string performClientSideJoinHack(std::string_view code)
 			}
 
 			// Make sure the semi-colon stays.
-			result += ";";
+			result += ';';
 		}
 
 		start = end + 1;
 	}
 
-	// Load the files and append them to the result.
-	auto server = BabyDI::Get<Server>();
-	if (server && server->hasNPCServer())
+	// Append scripts from collected joins.
+	if (const auto server = BabyDI::Get<Server>(); server && server->hasNPCServer())
 	{
 		for (const auto& className : joins)
 		{
@@ -146,13 +148,12 @@ static std::string performClientSideJoinHack(std::string_view code)
 	}
 	else
 	{
-		std::string classScript;
 		for (const auto& fileName : joins)
 		{
 			auto file = server->getFileSystemServer().open(fs::FileCategory::SCRIPTCLASS, std::format("{}.txt", fileName));
 			if (file != nullptr)
 			{
-				classScript = Script::minify(file->readAsString());
+				std::string classScript = Script::minify(file->readAsString());
 				string::replaceMutate(classScript, "\r", "");
 				if (result.back() != '\n')
 					result += '\n';
@@ -201,7 +202,7 @@ const ScriptByteCode& Script::getClientByteCode() const noexcept
 
 void Script::executeEvents(ScriptContainer& container, ScriptObject source) const
 {
-	return executeEvents(container.events, source);
+	executeEvents(container.events, source);
 }
 
 void Script::executeEvents(ScriptEventQueue& events, ScriptObject source) const
@@ -210,8 +211,46 @@ void Script::executeEvents(ScriptEventQueue& events, ScriptObject source) const
 		return;
 
 	auto* engine = m_server_script->engine;
-	for (auto& event : events.queue())
-		engine->execute(event, source, m_server_script);
+	auto& queue = events.queue();
+
+	if (queue.size() == 1)
+	{
+		for (auto& event : queue)
+			engine->execute(event, source, m_server_script);
+		return;
+	}
+
+	std::vector<ScriptEventType> types;
+	std::vector<ScriptEventType> processedTypes;
+
+	for (auto& event : queue)
+	{
+		// Execute events with args (or TIMEOUT) individually.
+		if (!event.args.empty() || event.type == ScriptEventType::TIMEOUT)
+		{
+			engine->execute(event, source, m_server_script);
+			processedTypes.emplace_back(event.type);
+			continue;
+		}
+
+		// Consolidate same-shape events that can run together.
+		if (!std::ranges::contains(processedTypes, event.type))
+		{
+			types.clear();
+
+			std::ranges::for_each(queue, [&event, &types, &processedTypes](const ScriptEvent& e)
+			{
+				if (e.type != event.type && e.args.empty() && !std::ranges::contains(processedTypes, e.type))
+				{
+					types.emplace_back(e.type);
+					processedTypes.emplace_back(e.type);
+				}
+			});
+
+			engine->execute(event, &types, source, m_server_script);
+			processedTypes.emplace_back(event.type);
+		}
+	}
 }
 
 void Script::executeEvents(clear_container_t, ScriptContainer& container, ScriptObject source) const
@@ -231,8 +270,7 @@ bool Script::runUserDefinedFunction(std::string_view functionName, ScriptEvent& 
 	if (m_server_script == nullptr || m_server_script->engine == nullptr)
 		return false;
 
-	auto* engine = m_server_script->engine;
-	return engine->executeFunction(functionName, event, source, m_server_script);
+	return m_server_script->engine->executeFunction(functionName, event, source, m_server_script);
 }
 
 //----------------------------
@@ -245,11 +283,13 @@ std::string Script::minify(const std::string& src) noexcept
 	std::string minified;
 	std::string_view srcView{ src };
 
+	const auto server = BabyDI::Get<Server>();
+
 	// We don't want to trim serverside code so check if we have any.
-	auto server = BabyDI::Get<Server>();
 	bool hasServerSide = true;
 	if (server && !server->hasNPCServer())
 		hasServerSide = false;
+
 	bool inServerSide = true;
 
 	// Trim the lines.
@@ -261,7 +301,7 @@ std::string Script::minify(const std::string& src) noexcept
 			newline = srcView.size();
 
 		// Save the start of the next line since the carriage return check will mess it up.
-		size_t nextline = std::min(srcView.size(), newline + 1);
+		const size_t nextLine = std::min(srcView.size(), newline + 1);
 
 		// Search for \r and remove that too.
 		if (newline > 0 && srcView[newline - 1] == '\r')
@@ -270,12 +310,13 @@ std::string Script::minify(const std::string& src) noexcept
 		// Extract the line.
 		auto line = srcView.substr(0, newline);
 
-		// Remove single-line comments.
-		// But don't remove //# comments as those are directives.
-		if (auto comment = line.find("//"); comment != std::string_view::npos)
+		// Remove single-line comments, preserving //# directives.
+		if (const auto comment = line.find("//"); comment != std::string_view::npos)
 		{
 			if (comment + 2 < line.size() && line[comment + 2] != '#')
+			{
 				line = line.substr(0, comment);
+			}
 			else if (line.find(clientSideTerminator) != std::string_view::npos)
 			{
 				// If we have a clientside terminator, we are now in clientside code.
@@ -292,14 +333,14 @@ std::string Script::minify(const std::string& src) noexcept
 			minified.append(line).append("\n");
 
 		// Move to the next line.
-		srcView.remove_prefix(nextline);
+		srcView.remove_prefix(nextLine);
 	}
 
-	// Remove multi-line comments from minified.
+	// Remove /* ... */ blocks from already compacted text.
 	std::string::size_type start = 0;
 	while ((start = minified.find("/*", start)) != std::string::npos)
 	{
-		auto end = minified.find("*/", start);
+		const auto end = minified.find("*/", start);
 		if (end == std::string::npos)
 			break;
 		minified.erase(start, end - start + 2);
@@ -314,18 +355,21 @@ std::string Script::minify(const std::string& src) noexcept
 
 void Script::split(std::string& source) noexcept
 {
-	auto determineClientSideLocation = [](std::string& source) -> std::string::iterator
+	auto determineClientSideLocation = [](std::string& text) -> std::string::iterator
 	{
-		auto clientside = source.begin();
-		if (auto clientSep = source.find(clientSideTerminator); clientSep != std::string::npos)
-			std::advance(clientside, clientSep);
-		else clientside = source.end();
+		auto clientside = text.begin();
+		if (const auto pos = text.find(clientSideTerminator); pos != std::string::npos)
+			std::advance(clientside, pos);
+		else
+			clientside = text.end();
+
 		return clientside;
 	};
 
+	const auto server = BabyDI::Get<Server>();
+
 	// Check if we have an npc-server or not.
 	// If we don't, we don't have serverside code, and thus we will ignore the clientside terminator.
-	auto server = BabyDI::Get<Server>();
 	bool hasServerSide = true;
 	if (server && !server->hasNPCServer())
 		hasServerSide = false;
@@ -337,14 +381,16 @@ void Script::split(std::string& source) noexcept
 	if (hasServerSide)
 		clientside = determineClientSideLocation(source);
 
-	// Do clientside script joins.
+	// Expand clientside "join" statements when server-side scripts are unavailable.
 	if (!hasServerSide && server->getSettings().get<bool>("clientsidejoins").value_or(true) && clientside != source.end())
 	{
-		auto joinedScript = performClientSideJoinHack(std::string_view{ clientside, source.end() });
+		const auto joinedScript = performClientSideJoinHack(std::string_view{ clientside, source.end() });
 		source.replace(clientside, source.end(), joinedScript);
+
 		if (hasServerSide)
 			clientside = determineClientSideLocation(source);
-		else clientside = source.begin();
+		else
+			clientside = source.begin();
 	}
 
 	// Mangle the line terminators.
@@ -359,7 +405,7 @@ void Script::split(std::string& source) noexcept
 	}
 
 	// Split the code into clientside and serverside.
-	if (auto clientSep = source.find(clientSideTerminator); clientSep != std::string::npos)
+	if (const auto clientSep = source.find(clientSideTerminator); clientSep != std::string::npos)
 	{
 		auto endOfLine = source.find('\xa7', clientSep);
 		if (endOfLine == std::string::npos)
@@ -383,19 +429,20 @@ void Script::compileScript() noexcept
 	m_client_script.reset();
 	m_server_script.reset();
 
-	auto server = BabyDI::Get<Server>();
-	if (server && server->hasNPCServer())
+	const auto server = BabyDI::Get<Server>();
+	if (!(server && server->hasNPCServer()))
+		return;
+
+	const auto npcServer = server->getNPCServer();
+
+	if (server->Generation == ServerGeneration::NEWMAIN)
 	{
-		auto npcServer = server->getNPCServer();
-		if (server->Generation == ServerGeneration::NEWMAIN)
-		{
-			m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
-		}
-		else if (server->Generation == ServerGeneration::MODERN)
-		{
-			m_client_script = npcServer->scripting.getCompiledClientScript(m_who, m_clientside);
-			m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
-		}
+		m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
+	}
+	else if (server->Generation == ServerGeneration::MODERN)
+	{
+		m_client_script = npcServer->scripting.getCompiledClientScript(m_who, m_clientside);
+		m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
 	}
 }
 

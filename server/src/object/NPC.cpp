@@ -640,7 +640,7 @@ void NPC::executeEvents(ScriptEventQueue& events, ScriptObject source) const
 	m_script.executeEvents(events, source);
 
 	// Execute classes.
-	for (auto& [handle, scriptClassPtr] : m_joinedClasses)
+	for (auto& scriptClassPtr : m_joinedClasses | std::views::values)
 	{
 		if (auto scriptClass = scriptClassPtr.lock(); scriptClass != nullptr)
 			scriptClass->getScript().executeEvents(events, source);
@@ -669,7 +669,7 @@ void NPC::setScript(const Script& script)
 
 	// Just a little warning for people who don't know.
 	if (m_script.getClientByteCode().empty() && m_script.getClientSide().length() > 0x705F)
-		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (image.length() != 0 ? image : std::to_string(id)));
+		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (!image.empty() ? image : std::to_string(id)));
 }
 
 void NPC::setScript(std::string_view script)
@@ -682,7 +682,7 @@ void NPC::setScript(std::string_view script)
 	modTime[PROPID(NPCProp::SCRIPT)] = m_server->getFrameStartTime();
 
 	// Check if we have joined classes already (due to a cached script).
-	for (const auto& [name, classPtr] : m_script.getServerJoinedClasses())
+	for (const auto& [className, classPtr] : m_script.getServerJoinedClasses())
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
@@ -695,13 +695,13 @@ void NPC::setScript(std::string_view script)
 
 			auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
 #ifdef DEBUG
-			log::printLine(log::server, "[DEBUG] NPC '{}' auto-joining class '{}' due to cached script.", name, scriptClass->name);
+			log::printLine(log::server, "[DEBUG] NPC '{}' auto-joining class '{}' due to cached script.", className, scriptClass->name);
 #endif
 			m_joinedClasses.emplace_back(handle, scriptClass);
 		}
 	}
 
-	auto clientside = m_script.getClientSide();
+	const auto clientside = m_script.getClientSide();
 
 	// Check for position update blocking.
 	if (m_server->hasNPCServer() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
@@ -719,14 +719,14 @@ void NPC::setScript(std::string_view script)
 std::string NPC::getClientSideScript() const
 {
 	std::string result{m_script.getClientSide()};
-	for (const auto& [handle, classPtr] : m_joinedClasses)
+	for (const auto& classPtr : m_joinedClasses | std::views::values)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
 			const auto& clientSide = scriptClass->getScript().getClientSide();
 			if (!clientSide.empty())
 			{
-				result += "\xa7";
+				result += '\xa7';
 				result += clientSide;
 			}
 		}
@@ -738,7 +738,7 @@ std::string NPC::getJoinedClassesList() const
 {
 	bool hasExpired = false;
 	std::string result;
-	for (const auto& [handle, classPtr] : m_joinedClasses)
+	for (const auto& classPtr : m_joinedClasses | std::views::values)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
@@ -753,7 +753,7 @@ std::string NPC::getJoinedClassesList() const
 	// If we have expired, clear them out.
 	if (hasExpired)
 	{
-		std::erase_if(m_joinedClasses, [this](const decltype(m_joinedClasses)::value_type& pair)
+		std::erase_if(m_joinedClasses, [](const decltype(m_joinedClasses)::value_type& pair)
 		{
 			return pair.second.expired();
 		});
@@ -764,7 +764,7 @@ std::string NPC::getJoinedClassesList() const
 
 bool NPC::hasJoinedClass(std::string_view className) const
 {
-	for (const auto& [handle, classPtr] : m_joinedClasses)
+	for (const auto& classPtr : m_joinedClasses | std::views::values)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr && scriptClass->name == className)
 			return true;
@@ -811,7 +811,7 @@ void NPC::setJoinedClasses(std::string_view classes)
 
 void NPC::joinClass(std::string_view className)
 {
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp)
+	const auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp)
 	{
 		return kvp.second.lock()->name == className;
 	});
@@ -840,7 +840,7 @@ void NPC::joinClass(std::string_view className)
 
 void NPC::leaveClass(std::string_view className)
 {
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp)
+	const auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp)
 	{
 		return kvp.second.lock()->name == className;
 	});
@@ -851,7 +851,7 @@ void NPC::leaveClass(std::string_view className)
 		return;
 
 	bool sendToLevel = false;
-	if (auto scriptClass = it->second.lock(); scriptClass != nullptr)
+	if (const auto scriptClass = it->second.lock(); scriptClass != nullptr)
 	{
 		scriptClass->onScriptModified.unsubscribe(it->first);
 		modTime[PROPID(NPCProp::CLASS)] = m_server->getFrameStartTime();
@@ -870,9 +870,9 @@ void NPC::leaveClass(std::string_view className)
 
 void NPC::sendScriptUpdatesToLevel(clock::time_point when) const
 {
-	if (auto npclevel = getLevel(); npclevel != nullptr)
+	if (const auto npclevel = getLevel(); npclevel != nullptr)
 	{
-		if (auto levelData = npclevel->getStaticLevelDataAtPosition(character.getMapPosition()); levelData != nullptr)
+		if (const auto levelData = npclevel->getStaticLevelDataAtPosition(character.getMapPosition()); levelData != nullptr)
 		{
 			const auto& levelName = npclevel->levelName;
 
@@ -937,7 +937,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 	auto levelPtr = getLevel();
 	bool canUpdatePosition = !m_blockPositionUpdates || setBy == props::SetBy::SERVER;
 
-	props::SetResults result{.propId = {PROPID(prop)}};
+	props::SetResults result{.propId = PROPID(prop)};
 	result.resultFlags.set(props::SetResults::sendToLevel, true);
 	result.resultFlags.set(props::SetResults::sendToSource, false);
 
@@ -962,7 +962,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 	{
 		case NPCProp::IMAGE:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr || strProp->value == image)
 				SETPROP_RETURN_ERROR;
 
@@ -995,7 +995,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::SCRIPT:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr || setBy != SetBy::SERVER)
 				SETPROP_RETURN_ERROR;
 
@@ -1005,7 +1005,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::X:
 		{
-			PropertyTileCoordinate* coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
+			auto coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
 			if (coordProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
@@ -1019,7 +1019,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::Y:
 		{
-			PropertyTileCoordinate* coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
+			auto coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
 			if (coordProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
@@ -1033,7 +1033,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::Z:
 		{
-			PropertyTileCoordinateZ* zProp = dynamic_cast<PropertyTileCoordinateZ*>(base);
+			auto zProp = dynamic_cast<PropertyTileCoordinateZ*>(base);
 			if (zProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
@@ -1046,7 +1046,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::HALFHEARTS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1060,7 +1060,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::GRALATS:
 		{
-			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1070,7 +1070,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::ARROWS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1080,7 +1080,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::BOMBS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1090,7 +1090,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::GLOVEPOWER:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1100,7 +1100,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::BOMBPOWER:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1110,7 +1110,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::SWORDIMAGE:
 		{
-			PropertySwordPower* swordProp = dynamic_cast<PropertySwordPower*>(base);
+			auto swordProp = dynamic_cast<PropertySwordPower*>(base);
 			if (swordProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1123,7 +1123,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::SHIELDIMAGE:
 		{
-			PropertyShieldPower* shieldProp = dynamic_cast<PropertyShieldPower*>(base);
+			auto shieldProp = dynamic_cast<PropertyShieldPower*>(base);
 			if (shieldProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1136,7 +1136,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::GANI:
 		{
-			PropertyGaniOrBowGif* ganiProp = dynamic_cast<PropertyGaniOrBowGif*>(base);
+			auto ganiProp = dynamic_cast<PropertyGaniOrBowGif*>(base);
 			if (ganiProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1193,7 +1193,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::VISFLAGS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1203,7 +1203,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::BLOCKFLAGS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1213,7 +1213,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::MESSAGE:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1223,7 +1223,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::HURTDXDY:
 		{
-			PropertyHurtDxDy<>* hurtProp = dynamic_cast<PropertyHurtDxDy<>*>(base);
+			auto hurtProp = dynamic_cast<PropertyHurtDxDy<>*>(base);
 			if (hurtProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1237,7 +1237,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::SPRITE:
 		{
-			PropertySprite* spriteProp = dynamic_cast<PropertySprite*>(base);
+			auto spriteProp = dynamic_cast<PropertySprite*>(base);
 			if (spriteProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1258,7 +1258,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::COLORS:
 		{
-			PropertyColors* colorProp = dynamic_cast<PropertyColors*>(base);
+			auto colorProp = dynamic_cast<PropertyColors*>(base);
 			if (colorProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1268,7 +1268,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::NICKNAME:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1278,7 +1278,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::HORSEIMAGE:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1291,7 +1291,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::HEADIMAGE:
 		{
-			PropertyHeadGif* headProp = dynamic_cast<PropertyHeadGif*>(base);
+			auto headProp = dynamic_cast<PropertyHeadGif*>(base);
 			if (headProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1320,7 +1320,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 		case NPCProp::SAVE8:
 		case NPCProp::SAVE9:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1331,7 +1331,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::ALIGNMENT:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1341,7 +1341,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::IMAGEPART:
 		{
-			PropertyImagePart* imgPartProp = dynamic_cast<PropertyImagePart*>(base);
+			auto imgPartProp = dynamic_cast<PropertyImagePart*>(base);
 			if (imgPartProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1351,7 +1351,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::BODYIMAGE:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1361,7 +1361,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::GMAPLEVELX:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1371,7 +1371,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::GMAPLEVELY:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1384,7 +1384,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::SCRIPTER:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1394,7 +1394,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::NAME:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1404,7 +1404,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::TYPE:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1414,7 +1414,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::LEVEL:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
@@ -1482,7 +1482,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 		case NPCProp::GATTRIB29:
 		case NPCProp::GATTRIB30:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1493,7 +1493,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::CLASS:
 		{
-			PropertyLongString* strProp = dynamic_cast<PropertyLongString*>(base);
+			auto strProp = dynamic_cast<PropertyLongString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1503,7 +1503,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::X2:
 		{
-			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
+			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
 			if (pixelProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
@@ -1517,7 +1517,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::Y2:
 		{
-			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
+			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
 			if (pixelProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
@@ -1531,7 +1531,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 		case NPCProp::Z2:
 		{
-			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
+			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
 			if (pixelProp == nullptr || !canUpdatePosition)
 				SETPROP_RETURN_ERROR;
 
@@ -1547,8 +1547,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 	// If we are sending other ids, we need to update the mod time for them too.
 	if (!result.resultPropIds.empty() && !result.resultFlags.test(SetResults::wasInvalid))
 	{
-		for (const auto& id : result.resultPropIds)
-			modTime[id] = curTime;
+		for (const auto& pid : result.resultPropIds)
+			modTime[pid] = curTime;
 	}
 
 	return result;
@@ -1562,12 +1562,12 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 
 	std::erase_if(results, [](const PropertySendResults::value_type& res)
 	{
-		return !canSendProp((NPCProp)res.first.propId);
+		return !canSendProp(static_cast<NPCProp>(res.first.propId));
 	});
 
 	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId, SetResults::ResultFlagType& destinations)
 	{
-		return this->getProp((NPCProp)propId);
+		return this->getProp(static_cast<NPCProp>(propId));
 	});
 
 	// Send the buffers out.
@@ -1598,7 +1598,7 @@ void NPC::setPropsFromPacket(CString& packet, PlayerPtr source)
 
 		while (packet.bytesLeft() > 0)
 		{
-			NPCProp propId = (NPCProp)packet.readGUChar();
+			const auto propId = static_cast<NPCProp>(packet.readGUChar());
 
 			DO_PACKETLOG(size_t oldPos = packet.readPos());
 
@@ -1643,7 +1643,7 @@ CString NPC::getModifiedPropsPacket() const
 	CString result;
 	for (auto i = 0; i < NPCPROP_COUNT; ++i)
 	{
-		if (!canSendProp((NPCProp)i))
+		if (!canSendProp(static_cast<NPCProp>(i)))
 			continue;
 
 		if (modTime[i].has_value() && modTime[i] != m_savedModTime[i])
@@ -1658,11 +1658,11 @@ CString NPC::getModifiedPropsPacket() const
 			else
 			{
 #ifdef PACKETLOGGING
-				auto prop = getProp((NPCProp)i);
+				auto prop = getProp(static_cast<NPCProp>(i));
 				CString data = prop->serialize();
 
 				log::printBlock(log::networkdump, "  {}: {}", npcPropNames[i], prop);
-				if ((NPCProp)i != NPCProp::SCRIPT)
+				if (static_cast<NPCProp>(i) != NPCProp::SCRIPT)
 				{
 					log::printBlock(log::networkdump, " |");
 					for (size_t i = 0; i < data.length(); ++i)
@@ -1672,7 +1672,7 @@ CString NPC::getModifiedPropsPacket() const
 
 				result >> (char)i << data;
 #else
-				result >> (char)i << getProp((NPCProp)i)->serialize();
+				result >> (char)i << getProp(static_cast<NPCProp>(i))->serialize();
 #endif
 			}
 		}
@@ -1691,7 +1691,7 @@ CString NPC::getAllPropsPacket(std::optional<clock::time_point> newTime) const
 
 	for (int i = 0; i < pmax; i++)
 	{
-		if (!canSendProp((NPCProp)i))
+		if (!canSendProp(static_cast<NPCProp>(i)))
 			continue;
 
 		if (modTime[i].has_value() && modTime[i].value() >= newTime.value_or(clock::time_point::min()))
@@ -1704,11 +1704,11 @@ CString NPC::getAllPropsPacket(std::optional<clock::time_point> newTime) const
 			else
 			{
 #ifdef PACKETLOGGING
-				auto prop = getProp((NPCProp)i);
+				auto prop = getProp(static_cast<NPCProp>(i));
 				CString data = prop->serialize();
 
 				log::printBlock(log::networkdump, "  {}: {}", npcPropNames[i], prop);
-				if ((NPCProp)i != NPCProp::SCRIPT)
+				if (static_cast<NPCProp>(i) != NPCProp::SCRIPT)
 				{
 					log::printBlock(log::networkdump, " |");
 					for (size_t i = 0; i < data.length(); ++i)
@@ -1718,7 +1718,7 @@ CString NPC::getAllPropsPacket(std::optional<clock::time_point> newTime) const
 
 				retVal >> (char)i << data;
 #else
-				retVal >> (char)i << getProp((NPCProp)i)->serialize();
+				retVal >> (char)i << getProp(static_cast<NPCProp>(i))->serialize();
 #endif
 			}
 		}
@@ -1792,9 +1792,9 @@ void NPC::constructScriptParameters()
 				modTime[PROPID(NPCProp::X2)] = now;
 
 				// Fix the map position if applicable.
-				if (auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
+				if (const auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
 				{
-					if (auto mapX = toMapPosition(globalPosition).x(); mapX != character.mapX)
+					if (const auto mapX = toMapPosition(globalPosition).x(); mapX != character.mapX)
 					{
 						character.mapX = mapX;
 						modTime[PROPID(NPCProp::GMAPLEVELX)] = now;
@@ -1822,9 +1822,9 @@ void NPC::constructScriptParameters()
 				modTime[PROPID(NPCProp::Y2)] = now;
 
 				// Fix the map position if applicable.
-				if (auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
+				if (const auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
 				{
-					if (auto mapY = toMapPosition(globalPosition).y(); mapY != character.mapY)
+					if (const auto mapY = toMapPosition(globalPosition).y(); mapY != character.mapY)
 					{
 						character.mapY = mapY;
 						modTime[PROPID(NPCProp::GMAPLEVELY)] = now;
@@ -1929,7 +1929,7 @@ void NPC::testForLinks(SetResults& result)
 	if (levelPtr == nullptr) return;
 
 	// The NPC changed their position.
-	auto informNPCMoved = [&result, this]()
+	auto informNPCMoved = [&result]()
 	{
 		result.resultPropIds.push_back(PROPID(NPCProp::X));
 		result.resultPropIds.push_back(PROPID(NPCProp::Y));
@@ -2070,7 +2070,7 @@ std::string_view toWeaponName(std::string_view code)
 
 	name_start += 9; // 9 = strlen("toweapons")
 
-	size_t name_end[2] = {code.find(";", name_start), code.find("}", name_start)};
+	const size_t name_end[2] = {code.find(';', name_start), code.find('}', name_start)};
 	if (name_end[0] == notFound && name_end[1] == notFound)
 		return {};
 
@@ -2154,7 +2154,7 @@ std::vector<std::string> NPC::getVariableDump() const
 	std::string nameprop;
 	for (const auto& prop : propSendOrder)
 	{
-		auto propId = PROPID(prop);
+		const auto propId = PROPID(prop);
 
 		// Don't show character props if the NPC is not a character.
 		if (!isCharacter() && std::ranges::contains(characterProps, prop))

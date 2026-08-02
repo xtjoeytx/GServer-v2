@@ -11,7 +11,7 @@ namespace preagonal::gs1
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void setEventFlags(ScriptEventType event, GameVariableStore& variableStore);
+void setEventFlags(ScriptEventType event, std::vector<ScriptEventType>* additionalEventTypes, GameVariableStore& variableStore);
 void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& variableStore);
 void setPlayerFlags(GameVariableStore& variableStore, NPCPtr npc, PlayerPtr player);
 void setNPCFlags(ScriptEvent& event, GameVariableStore& variableStore, NPCPtr npc);

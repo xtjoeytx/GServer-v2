@@ -327,8 +327,8 @@ public:
 	std::shared_ptr<NPC> getNPC(const NPCID id) const;
 	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCStorageType storageType, bool sendToPlayers = false, std::string_view type = {});
 	std::shared_ptr<NPC> addNPC(NPCPtr npc, bool sendToPlayers = false);
-	bool deleteNPC(int id, bool eraseFromLevel = true);
-	bool deleteNPC(std::shared_ptr<NPC> npc, bool eraseFromLevel = true);
+	bool deleteNPC(const NPCID id, const bool eraseFromLevel = true);
+	bool deleteNPC(const std::shared_ptr<NPC>& npc, const bool eraseFromLevel = true);
 
 public:
 	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;
