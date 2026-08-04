@@ -1,7 +1,7 @@
 ARG VER_EXTRA=""
 
 # GServer Build Environment
-FROM alpine:3.22 AS build-env
+FROM alpine:3.24 AS build-env
 ARG VER_EXTRA
 ARG TARGETARCH
 
