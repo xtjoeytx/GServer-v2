@@ -253,7 +253,7 @@ generation = newmain
 # Sets the server mode.
 #   normal   - The default.
 #   kingdoms - Disables all default client interactions, controls, UI, etc., requiring everything to be scripted.
-#   newworld - Kingdoms mode, but allows the use of body colors 5-7.
+#   newworld - Kingdoms mode, but allows the use of body colors 5-7.  2.x clients only.
 # servermode = normal
 
 # The NPC-Server nickname.
