@@ -81,9 +81,9 @@ public:
 	GuildManager* guildManager = nullptr;
 
 public:
-	[[inline]] static std::optional<size_t> getStorageTypeFromIdentifier(std::string_view identifier, std::optional<size_t> defaultValue = {}) noexcept;
-	[[inline]] static void applyStorageNameToIdentifier(std::optional<size_t> storage, std::string& identifier) noexcept;
-	[[inline]] static void stripStorageNameFromIdentifier(std::string& identifier) noexcept;
+	[[a::inline]] static std::optional<size_t> getStorageTypeFromIdentifier(std::string_view identifier, std::optional<size_t> defaultValue = {}) noexcept;
+	[[a::inline]] static void applyStorageNameToIdentifier(std::optional<size_t> storage, std::string& identifier) noexcept;
+	[[a::inline]] static void stripStorageNameFromIdentifier(std::string& identifier) noexcept;
 	static double getColorValueFromString(std::string_view colorString);
 	static GameVariable* getGameVariable(std::any& value);
 	static GameVariable* getGameVariable(GS1ScriptValue& value);
@@ -96,32 +96,32 @@ public:
 	static bool isScriptObject(const GS1ScriptValue& value);
 
 	template<StoresInGameValue T>
-	[[inline]] static bool scriptValueContains(std::any& value);
+	[[a::inline]] static bool scriptValueContains(std::any& value);
 
 	template<StoresInGameValue T>
-	[[inline]] static bool scriptValueContains(GS1ScriptValue& value);
+	[[a::inline]] static bool scriptValueContains(GS1ScriptValue& value);
 
 	template<StoresInGameValue T>
-	[[inline]] static std::optional<std::reference_wrapper<T>> getScriptValueAs(std::any& value);
+	[[a::inline]] static std::optional<std::reference_wrapper<T>> getScriptValueAs(std::any& value);
 
 	template<StoresInGameValue T>
-	[[inline]] static std::optional<std::reference_wrapper<T>> getScriptValueAs(GS1ScriptValue& value);
+	[[a::inline]] static std::optional<std::reference_wrapper<T>> getScriptValueAs(GS1ScriptValue& value);
 
 	template<StoresInGameValue T>
-	[[inline]] static std::optional<T> getScriptValueAsCopy(const std::any& value);
+	[[a::inline]] static std::optional<T> getScriptValueAsCopy(const std::any& value);
 
 	template<StoresInGameValue T>
-	[[inline]] static std::optional<T> getScriptValueAsCopy(const GS1ScriptValue& value);
+	[[a::inline]] static std::optional<T> getScriptValueAsCopy(const GS1ScriptValue& value);
 
 public:
-	[[inline]] const ScriptEvent& getEvent() const;
-	[[inline]] const ScriptObject& getOriginalSource() const;
-	[[inline]] const ScriptObject& getInitiatingSource() const;
-	[[inline]] const ScriptObject& getCurrentSource(bool defaultToInitiator = false) const;
-	[[inline]] const ScriptObject& popSource();
-	[[inline]] const void pushSource(ScriptObject source);
-	[[inline]] auto sourceStack() const;
-	[[inline]] bool hasSleepStack() const;
+	[[a::inline]] const ScriptEvent& getEvent() const;
+	[[a::inline]] const ScriptObject& getOriginalSource() const;
+	[[a::inline]] const ScriptObject& getInitiatingSource() const;
+	[[a::inline]] const ScriptObject& getCurrentSource(bool defaultToInitiator = false) const;
+	[[a::inline]] const ScriptObject& popSource();
+	[[a::inline]] const void pushSource(ScriptObject source);
+	[[a::inline]] auto sourceStack() const;
+	[[a::inline]] bool hasSleepStack() const;
 	std::optional<ScriptObject> findNearestScriptObjectSourceFromStack(ScriptObjectType type) const;
 	GameVariableStore* findGameVariableStoreFromStack(ScriptObjectType type, int skip = 0) const;
 	GameVariableStore* getGameVariableStoreForStorageType(size_t type);
@@ -141,7 +141,7 @@ public:
 	GameValue processMathExpression(std::string_view expression);
 
 	template<class T = GS1Parser::CompoundStringContext>
-	[[inline]] T* walkToContext(antlr4::tree::ParseTree* node);
+	[[a::inline]] T* walkToContext(antlr4::tree::ParseTree* node);
 
 public:
 	std::vector<std::any> visitChildrenAndCollect(antlr4::tree::ParseTree* node);

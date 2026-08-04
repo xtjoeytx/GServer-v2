@@ -94,9 +94,9 @@ struct Account
 	std::vector<std::string> folderList;
 	std::string lastFolderAccessed;
 
-	[[inline]] bool hasRight(uint32_t right) const;
-	[[inline]] bool hasChest(std::string_view level, const LocalWholeTilePosition& position) const;
-	[[inline]] bool hasWeapon(std::string_view weapon) const;
+	[[a::inline]] bool hasRight(uint32_t right) const;
+	[[a::inline]] bool hasChest(std::string_view level, const LocalWholeTilePosition& position) const;
+	[[a::inline]] bool hasWeapon(std::string_view weapon) const;
 };
 
 inline bool Account::hasRight(uint32_t right) const

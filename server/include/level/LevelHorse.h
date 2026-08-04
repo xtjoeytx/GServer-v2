@@ -43,7 +43,7 @@ struct LevelHorse
 	uint8_t type;
 	TimeoutGenerator timeout;
 
-	[[inline]] void constructScriptParameters();
+	[[a::inline]] void constructScriptParameters();
 	string_map<GameVariable> scriptParameters;
 };
 

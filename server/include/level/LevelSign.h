@@ -32,7 +32,7 @@ struct LevelSign
 	std::string text;
 	std::string encodedText;
 
-	[[inline]] void constructScriptParameters();
+	[[a::inline]] void constructScriptParameters();
 	string_map<GameVariable> scriptParameters;
 };
 

@@ -55,8 +55,8 @@ struct LevelShoot
 	std::vector<std::string> shootParams;
 	ScriptObject from;
 
-	[[inline]] void calculateSpeeds();
-	[[inline]] void move();
+	[[a::inline]] void calculateSpeeds();
+	[[a::inline]] void move();
 };
 
 //----------------------------

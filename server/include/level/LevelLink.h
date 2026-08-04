@@ -33,20 +33,20 @@ public:
 	void parseLinkStr(const std::vector<CString>& pLink);
 
 public:
-	[[inline]] const Rectangle<uint8_t, uint8_t>& getBoundingBox() const;
-	[[inline]] void setX(uint8_t posX = 0);
-	[[inline]] void setY(uint8_t posY = 0);
-	[[inline]] void setWidth(uint8_t width = 0);
-	[[inline]] void setHeight(uint8_t height = 0);
+	[[a::inline]] const Rectangle<uint8_t, uint8_t>& getBoundingBox() const;
+	[[a::inline]] void setX(uint8_t posX = 0);
+	[[a::inline]] void setY(uint8_t posY = 0);
+	[[a::inline]] void setWidth(uint8_t width = 0);
+	[[a::inline]] void setHeight(uint8_t height = 0);
 
 public:
 	LocalPixelPosition getDestinationForCharacter(Character& character, ScriptObject source) const;
-	[[inline]] const std::string& getDestinationLevel() const;
-	[[inline]] const std::string& getDestinationX() const;
-	[[inline]] const std::string& getDestinationY() const;
-	[[inline]] void setDestinationLevel(std::string_view level);
-	[[inline]] void setDestinationX(std::string_view newX);
-	[[inline]] void setDestinationY(std::string_view newY);
+	[[a::inline]] const std::string& getDestinationLevel() const;
+	[[a::inline]] const std::string& getDestinationX() const;
+	[[a::inline]] const std::string& getDestinationY() const;
+	[[a::inline]] void setDestinationLevel(std::string_view level);
+	[[a::inline]] void setDestinationX(std::string_view newX);
+	[[a::inline]] void setDestinationY(std::string_view newY);
 
 public:
 	bool isProbableMapLink() const;

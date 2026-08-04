@@ -45,7 +45,7 @@ struct LevelExplosion
 	ScriptObject from;
 	TimeoutGenerator timeout;
 
-	[[inline]] void constructScriptParameters();
+	[[a::inline]] void constructScriptParameters();
 	string_map<GameVariable> scriptParameters;
 };
 

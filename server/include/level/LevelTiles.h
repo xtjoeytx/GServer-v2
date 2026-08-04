@@ -42,20 +42,20 @@ public:
 	using TileArray = std::array<uint16_t, constants::LevelPartTileCount>;
 
 public:
-	[[inline]] void reset();
+	[[a::inline]] void reset();
 
 public:
-	[[inline]] std::generator<uint8_t> getUsedTileLayers() const noexcept;
-	[[inline]] TileArray* getOrCreateLayer(uint8_t layer, TileArray* copyLayer = nullptr) noexcept;
-	[[inline]] std::optional<TileArray*> getLayer(uint8_t layer) noexcept;
-	[[inline]] std::optional<const TileArray*> getLayer(uint8_t layer) const noexcept;
+	[[a::inline]] std::generator<uint8_t> getUsedTileLayers() const noexcept;
+	[[a::inline]] TileArray* getOrCreateLayer(uint8_t layer, TileArray* copyLayer = nullptr) noexcept;
+	[[a::inline]] std::optional<TileArray*> getLayer(uint8_t layer) noexcept;
+	[[a::inline]] std::optional<const TileArray*> getLayer(uint8_t layer) const noexcept;
 
 public:
-	[[inline]] void writeTiles(const LocalWholeTilePosition& position, uint8_t width, std::span<uint16_t> sourceTiles, uint8_t layer = 0) noexcept;
+	[[a::inline]] void writeTiles(const LocalWholeTilePosition& position, uint8_t width, std::span<uint16_t> sourceTiles, uint8_t layer = 0) noexcept;
 
 public:
-	[[inline]] void writeLayerToPacket(uint8_t layer, CString& packet) const noexcept;
-	[[inline]] void writeLayerToPacket(uint8_t layer, const LocalWholeTilePosition& position, uint8_t width, CString& packet) const noexcept;
+	[[a::inline]] void writeLayerToPacket(uint8_t layer, CString& packet) const noexcept;
+	[[a::inline]] void writeLayerToPacket(uint8_t layer, const LocalWholeTilePosition& position, uint8_t width, CString& packet) const noexcept;
 
 public:
 	uint16_t BaseLayerEmptyTile = constants::EmptyTileInBase;

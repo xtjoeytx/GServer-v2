@@ -154,56 +154,56 @@ private:
 	precise_clock::duration m_frameEventDuration = precise_clock::duration::zero();
 
 public:
-	[[inline]] void setMap(std::shared_ptr<Map> map);
-	[[inline]] auto getMap() const noexcept;
+	[[a::inline]] void setMap(std::shared_ptr<Map> map);
+	[[a::inline]] auto getMap() const noexcept;
 	bool isGmap() const noexcept;
-	[[inline]] bool isOnBigMap() const noexcept;
-	[[inline]] static constexpr Dimension<uint8_t> tilesPerSubLevel() noexcept;
-	[[inline]] static constexpr Dimension<uint8_t> pixelsPerTile() noexcept;
-	[[inline]] static constexpr Dimension<uint16_t> pixelsPerSubLevel() noexcept;
-	[[inline]] Dimension<uint8_t> sizeInSubLevels() const noexcept;
-	[[inline]] Dimension<uint32_t> sizeInTiles() const noexcept;
-	[[inline]] Dimension<uint32_t> sizeInPixels() const noexcept;
-	[[inline]] Rectangle<uint32_t, uint32_t> getBoundingBox() const noexcept;
+	[[a::inline]] bool isOnBigMap() const noexcept;
+	[[a::inline]] static constexpr Dimension<uint8_t> tilesPerSubLevel() noexcept;
+	[[a::inline]] static constexpr Dimension<uint8_t> pixelsPerTile() noexcept;
+	[[a::inline]] static constexpr Dimension<uint16_t> pixelsPerSubLevel() noexcept;
+	[[a::inline]] Dimension<uint8_t> sizeInSubLevels() const noexcept;
+	[[a::inline]] Dimension<uint32_t> sizeInTiles() const noexcept;
+	[[a::inline]] Dimension<uint32_t> sizeInPixels() const noexcept;
+	[[a::inline]] Rectangle<uint32_t, uint32_t> getBoundingBox() const noexcept;
 	std::optional<uint16_t> getMapTileAtPosition(const TilePosition& position) noexcept;
 	uint16_t* getMapTileForEditing(const TilePosition& position) noexcept;
-	[[inline]] std::string_view getLevelNameAtPosition(const PixelPosition& position) const noexcept;
+	[[a::inline]] std::string_view getLevelNameAtPosition(const PixelPosition& position) const noexcept;
 
 public:
-	[[inline]] std::optional<size_t> getSubLevelIndex(std::string_view levelPart) const noexcept;
-	[[inline]] std::optional<PixelPosition> getSubLevelOrigin(SubLevelPtr part) const noexcept;
-	[[inline]] std::optional<MapPosition> getSubLevelPositionInMap(std::string_view levelPart) const noexcept;
-	[[inline]] SubLevelPtr getSubLevelByName(std::string_view levelPart) const noexcept;
-	[[inline]] SubLevelPtr getSubLevelAtPosition(const PixelPosition& position) const noexcept;
-	[[inline]] SubLevelPtr getSubLevelAtPosition(const TilePosition& position) const noexcept;
-	[[inline]] SubLevelPtr getSubLevelAtPosition(const MapPosition& position) const noexcept;
-	[[inline]] StaticLevelDataPtr getStaticLevelDataByName(std::string_view levelPart) const noexcept;
-	[[inline]] StaticLevelDataPtr getStaticLevelDataAtPosition(const MapPosition& mapPosition) const noexcept;
-	[[inline]] std::pair<SubLevelPtr, StaticLevelDataPtr> getSubLevelAndStaticDataAtPosition(const MapPosition& position) const noexcept;
-	[[inline]] PixelPosition convertToMapPosition(std::string_view levelPart, const LocalPixelPosition& position) const noexcept;
-	[[inline]] PixelPosition convertToMapPosition(std::string_view levelPart, const LocalWholeTilePosition& position) const noexcept;
-	[[inline]] PixelPosition convertToMapPosition(const MapPosition& mapPosition, const LocalPixelPosition& position) const noexcept;
-	[[inline]] PixelPosition convertToMapPosition(const MapPosition& mapPosition, const LocalWholeTilePosition& position) const noexcept;
+	[[a::inline]] std::optional<size_t> getSubLevelIndex(std::string_view levelPart) const noexcept;
+	[[a::inline]] std::optional<PixelPosition> getSubLevelOrigin(SubLevelPtr part) const noexcept;
+	[[a::inline]] std::optional<MapPosition> getSubLevelPositionInMap(std::string_view levelPart) const noexcept;
+	[[a::inline]] SubLevelPtr getSubLevelByName(std::string_view levelPart) const noexcept;
+	[[a::inline]] SubLevelPtr getSubLevelAtPosition(const PixelPosition& position) const noexcept;
+	[[a::inline]] SubLevelPtr getSubLevelAtPosition(const TilePosition& position) const noexcept;
+	[[a::inline]] SubLevelPtr getSubLevelAtPosition(const MapPosition& position) const noexcept;
+	[[a::inline]] StaticLevelDataPtr getStaticLevelDataByName(std::string_view levelPart) const noexcept;
+	[[a::inline]] StaticLevelDataPtr getStaticLevelDataAtPosition(const MapPosition& mapPosition) const noexcept;
+	[[a::inline]] std::pair<SubLevelPtr, StaticLevelDataPtr> getSubLevelAndStaticDataAtPosition(const MapPosition& position) const noexcept;
+	[[a::inline]] PixelPosition convertToMapPosition(std::string_view levelPart, const LocalPixelPosition& position) const noexcept;
+	[[a::inline]] PixelPosition convertToMapPosition(std::string_view levelPart, const LocalWholeTilePosition& position) const noexcept;
+	[[a::inline]] PixelPosition convertToMapPosition(const MapPosition& mapPosition, const LocalPixelPosition& position) const noexcept;
+	[[a::inline]] PixelPosition convertToMapPosition(const MapPosition& mapPosition, const LocalWholeTilePosition& position) const noexcept;
 	std::generator<SubLevelPtr> getSubLevelsInRectangle(const PixelRectangleArea& area) const noexcept;
 	std::generator<SubLevelPtr> getSubLevelsInRectangle(const WholeTileRectangleArea& area) const noexcept;
 	std::generator<SubLevelPtr> getNearbySubLevels(const PixelPosition& position, uint32_t tileDistance = 64) const noexcept;
 
 public:
-	[[inline]] auto& getPlayers() noexcept;
-	[[inline]] auto& getNPCs() noexcept;
-	[[inline]] auto& getArrows() noexcept;
-	[[inline]] auto& getBombs() noexcept;
-	[[inline]] auto& getExplosions() noexcept;
-	[[inline]] auto& getHorses() noexcept;
-	[[inline]] auto& getItems() noexcept;
+	[[a::inline]] auto& getPlayers() noexcept;
+	[[a::inline]] auto& getNPCs() noexcept;
+	[[a::inline]] auto& getArrows() noexcept;
+	[[a::inline]] auto& getBombs() noexcept;
+	[[a::inline]] auto& getExplosions() noexcept;
+	[[a::inline]] auto& getHorses() noexcept;
+	[[a::inline]] auto& getItems() noexcept;
 
-	[[inline]] const auto& getPlayers() const noexcept;
-	[[inline]] const auto& getNPCs() const noexcept;
-	[[inline]] const auto& getArrows() const noexcept;
-	[[inline]] const auto& getBombs() const noexcept;
-	[[inline]] const auto& getExplosions() const noexcept;
-	[[inline]] const auto& getHorses() const noexcept;
-	[[inline]] const auto& getItems() const noexcept;
+	[[a::inline]] const auto& getPlayers() const noexcept;
+	[[a::inline]] const auto& getNPCs() const noexcept;
+	[[a::inline]] const auto& getArrows() const noexcept;
+	[[a::inline]] const auto& getBombs() const noexcept;
+	[[a::inline]] const auto& getExplosions() const noexcept;
+	[[a::inline]] const auto& getHorses() const noexcept;
+	[[a::inline]] const auto& getItems() const noexcept;
 
 	std::generator<const LevelBaddy&> getBaddies() const noexcept;
 	std::generator<const LevelChest&> getChests() const noexcept;
@@ -244,9 +244,9 @@ public:
 	bool hasPlayers() const { return !m_players.empty(); }
 	bool isPlayerLeader(PlayerID id) const;
 	bool hasLivingBaddies() const;
-	[[inline]] bool isSparringZone(const MapPosition& mapPosition) const noexcept;
-	[[inline]] bool isNoPkZone(const MapPosition& mapPosition) const noexcept;
-	[[inline]] bool isPrivateMap() const noexcept;
+	[[a::inline]] bool isSparringZone(const MapPosition& mapPosition) const noexcept;
+	[[a::inline]] bool isNoPkZone(const MapPosition& mapPosition) const noexcept;
+	[[a::inline]] bool isPrivateMap() const noexcept;
 
 public:
 	int addPlayer(PlayerID id);

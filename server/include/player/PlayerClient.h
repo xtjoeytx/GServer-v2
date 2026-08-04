@@ -91,7 +91,7 @@ public:
 
 	bool processChat(const CString& pChat);
 
-	[[inline]] const std::string& getGroup() const;
+	[[a::inline]] const std::string& getGroup() const;
 	void setGroup(std::string_view group);
 
 	virtual double getCalculatedTileZ() const noexcept override;
@@ -130,9 +130,9 @@ public:
 	void resetLevelCache(std::string_view group);
 
 public:
-	[[inline]] bool hasSeenFile(const std::string& file) const;
-	[[inline]] void setLastChatTime(clock::time_point time);
-	[[inline]] void setLastMovementTime(clock::time_point time);
+	[[a::inline]] bool hasSeenFile(const std::string& file) const;
+	[[a::inline]] void setLastChatTime(clock::time_point time);
+	[[a::inline]] void setLastMovementTime(clock::time_point time);
 	void dropItemsOnDeath();
 
 public:

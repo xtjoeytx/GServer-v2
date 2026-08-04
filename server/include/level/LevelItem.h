@@ -85,7 +85,7 @@ struct LevelItem
 	clock::time_point modTime;
 	TimeoutGenerator timeout;
 
-	[[inline]] void constructScriptParameters();
+	[[a::inline]] void constructScriptParameters();
 	string_map<GameVariable> scriptParameters;
 };
 

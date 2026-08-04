@@ -27,7 +27,7 @@ struct LevelBomb
 	ScriptObject owner;
 	TimeoutGenerator timeout;
 
-	[[inline]] void constructScriptParameters();
+	[[a::inline]] void constructScriptParameters();
 	string_map<GameVariable> scriptParameters;
 };
 

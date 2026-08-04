@@ -157,7 +157,7 @@ public:
 public:
 	/// @brief Checks if the filesystem is empty.
 	/// @return True if the filesystem is empty, false if not.
-	[[inline]] bool empty() const noexcept;
+	[[a::inline]] bool empty() const noexcept;
 
 	/// @brief Checks if the file exists in the filesystem.
 	/// @param category The category the file must belong to.
@@ -178,7 +178,7 @@ public:
 
 	/// @brief Checks whether a folders configuration is present.
 	/// @return True if a folders configuration exists; otherwise, false.
-	[[inline]] bool hasFoldersConfig() const noexcept;
+	[[a::inline]] bool hasFoldersConfig() const noexcept;
 
 public:
 	/// @brief Finds a file path corresponding to the specified file category and file.
@@ -285,10 +285,10 @@ public:
 
 public:
 	/// @brief Returns true if we are searching the filesystem.
-	[[inline]] bool isSearchingForFiles() const;
+	[[a::inline]] bool isSearchingForFiles() const;
 
 	/// @brief Blocks the thread until files have been fully searched.
-	[[inline]] void waitUntilFilesSearched();
+	[[a::inline]] void waitUntilFilesSearched();
 
 public:
 	/// @brief An array that stores a callback function for each file category type.

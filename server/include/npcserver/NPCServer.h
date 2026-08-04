@@ -60,18 +60,18 @@ public:
 	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;
 	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id, int type) const;
 	template<class T = Player> std::shared_ptr<T> getPlayer(const std::string& account, int type) const;
-	[[inline]] std::shared_ptr<PlayerNPCServer> getPlayerNPCServer() const;
+	[[a::inline]] std::shared_ptr<PlayerNPCServer> getPlayerNPCServer() const;
 
 public:
-	[[inline]] const auto& getGlobalNPCList() const noexcept;
-	[[inline]] const auto& getClassList() const noexcept;
-	[[inline]] auto& getPlayerList() noexcept;
+	[[a::inline]] const auto& getGlobalNPCList() const noexcept;
+	[[a::inline]] const auto& getClassList() const noexcept;
+	[[a::inline]] auto& getPlayerList() noexcept;
 
 public:
-	[[inline]] void addEventToControlNPC(ScriptEventType type, ScriptObject source, string::NotInputRangeNotString auto&&... args);
-	[[inline]] void addEventToControlNPC(ScriptEventType type, ScriptObject source, string::InputRangeNotString auto&& range);
-	[[inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObject source, std::weak_ptr<Level> level, PixelPosition pos, auto&& arg1, auto&&... args);
-	[[inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObject source, std::weak_ptr<Level> level, PixelPosition pos, std::ranges::forward_range auto&& range);
+	[[a::inline]] void addEventToControlNPC(ScriptEventType type, ScriptObject source, string::NotInputRangeNotString auto&&... args);
+	[[a::inline]] void addEventToControlNPC(ScriptEventType type, ScriptObject source, string::InputRangeNotString auto&& range);
+	[[a::inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObject source, std::weak_ptr<Level> level, PixelPosition pos, auto&& arg1, auto&&... args);
+	[[a::inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObject source, std::weak_ptr<Level> level, PixelPosition pos, std::ranges::forward_range auto&& range);
 
 public:
 	void playerLogin(std::shared_ptr<Player> player);

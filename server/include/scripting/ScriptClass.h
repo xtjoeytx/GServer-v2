@@ -26,11 +26,11 @@ public:
 
 	CString getClassPacket() const;
 
-	[[inline]] Script& getScript();
-	[[inline]] const Script& getScript() const;
+	[[a::inline]] Script& getScript();
+	[[a::inline]] const Script& getScript() const;
 	ScriptClass& setScript(std::string_view classScript);
 
-	[[inline]] uint32_t getCheckSum() const;
+	[[a::inline]] uint32_t getCheckSum() const;
 
 public:
 	const std::string name;

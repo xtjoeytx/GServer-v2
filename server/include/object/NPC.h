@@ -273,7 +273,7 @@ public:
 
 public:
 	/// @brief Records the current state as the initial state of the NPC.
-	[[inline]] void recordInitialState();
+	[[a::inline]] void recordInitialState();
 
 	/// @brief Resets the NPC to its initial state.
 	void resetToInitialState();
@@ -299,18 +299,18 @@ public:
 	void hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, std::optional<ScriptEventType> damageEventType = std::nullopt, std::optional<ScriptObject> source = std::nullopt, std::optional<CarryObjectType> hitByType = std::nullopt);
 
 public:
-	[[inline]] const std::string& getWeaponName() const noexcept;
-	[[inline]] bool isCharacter() const noexcept;
-	[[inline]] bool hasShape() const noexcept;
-	[[inline]] bool hasImage() const noexcept;
-	[[inline]] bool isBlocking() const noexcept;
-	[[inline]] bool isCreated() const noexcept;
-	[[inline]] Dimension<uint16_t> getComputedShape() const noexcept;
-	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
-	[[inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
-	[[inline]] PixelPosition getGlobalPosition() const noexcept;
-	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;
-	[[inline]] TilePosition getTilePosition() const noexcept;
+	[[a::inline]] const std::string& getWeaponName() const noexcept;
+	[[a::inline]] bool isCharacter() const noexcept;
+	[[a::inline]] bool hasShape() const noexcept;
+	[[a::inline]] bool hasImage() const noexcept;
+	[[a::inline]] bool isBlocking() const noexcept;
+	[[a::inline]] bool isCreated() const noexcept;
+	[[a::inline]] Dimension<uint16_t> getComputedShape() const noexcept;
+	[[a::inline]] PixelRectangleArea getBoundingBox() const noexcept;
+	[[a::inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
+	[[a::inline]] PixelPosition getGlobalPosition() const noexcept;
+	[[a::inline]] LocalPixelPosition getLocalPosition() const noexcept;
+	[[a::inline]] TilePosition getTilePosition() const noexcept;
 	double getCalculatedTileZ() const noexcept;
 	std::string getLevelName() const;
 	std::shared_ptr<Level> getLevel() const;
@@ -324,7 +324,7 @@ public:
 	const Script& getScript() const noexcept { return m_script; }
 	std::string getClientSideScript() const;
 	std::string getJoinedClassesList() const;
-	[[inline]] std::generator<std::shared_ptr<ScriptClass>> getJoinedClasses() const;
+	[[a::inline]] std::generator<std::shared_ptr<ScriptClass>> getJoinedClasses() const;
 	bool hasJoinedClass(std::string_view className) const;
 	void setJoinedClasses(std::string_view classes);
 	void joinClass(std::string_view className);
@@ -338,14 +338,14 @@ protected:
 
 public:
 	/// @brief Records the current modification time of all properties.
-	[[inline]] void recordCurrentPropModTime();
+	[[a::inline]] void recordCurrentPropModTime();
 
 	/// @brief Constructs a PropertyContainer for NPCProp P with the given values.
 	/// @tparam P The NPCProp that determines the type of container to construct.
 	/// @param ...values The values to pass to the container's constructor.
 	/// @return A property container for the specified NPCProp P.
 	template<NPCProp P, typename... Args>
-	[[inline]] PropertyContainer auto constructPropFor(Args... values) const;
+	[[a::inline]] PropertyContainer auto constructPropFor(Args... values) const;
 
 	/// @brief Constructs a PropertyContainer for NPCProp prop with the given values.
 	/// @param prop The NPCProp that determines the type of container to construct.
@@ -356,7 +356,7 @@ public:
 	/// @tparam P The NPCProp that determines the type of container to get.
 	/// @return A property container for the specified NPCProp P.
 	template<NPCProp P>
-	[[inline]] PropertyContainer auto getProp() const;
+	[[a::inline]] PropertyContainer auto getProp() const;
 
 	/// @brief Gets the property container for NPCProp P.
 	/// @param prop The NPCProp that determines the type of container to get.
@@ -369,7 +369,7 @@ public:
 	/// @param prop A property container that contains the value to set.
 	/// @return A SetResults value indicating the outcome of the property set operation.
 	template<NPCProp P>
-	[[inline]] SetResults setProp(SetBy setBy, PropertyContainer auto prop);
+	[[a::inline]] SetResults setProp(SetBy setBy, PropertyContainer auto prop);
 
 	/// @brief Sets a property value for a player with the given values and returns the result of the operation.
 	/// @tparam P The NPCProp that determines the type of property to set.
@@ -377,7 +377,7 @@ public:
 	/// @param ...values The values to pass to the property container's constructor.
 	/// @return A SetResults value indicating the outcome of the property set operation.
 	template<NPCProp P, typename... Args>
-	[[inline]] SetResults setPropWith(SetBy setBy, Args... values);
+	[[a::inline]] SetResults setPropWith(SetBy setBy, Args... values);
 
 	/// @brief Sets a property for a player and returns the result of the operation.
 	/// @param prop The player property to set.
@@ -390,21 +390,21 @@ public:
 	/// @param ...results A list of SetResults results to send.
 	template<typename... Results>
 		requires AllSameAs<SetResults, Results...>
-	[[inline]] void sendPropsFromResults(const Results&... results);
+	[[a::inline]] void sendPropsFromResults(const Results&... results);
 
 	/// @brief Sends the results of setting properties across the network.
 	/// @param results A range of SetResults results to send.
-	[[inline]] void sendPropsFromResults(std::ranges::forward_range auto&& results);
+	[[a::inline]] void sendPropsFromResults(std::ranges::forward_range auto&& results);
 
 	/// @brief Sends the results of setting a property across the network.
 	/// @param ...results A list of SetResults results to send.
 	template<typename... Results>
 		requires AllSameAs<SetResults, Results...>
-	[[inline]] void sendPropsFromResults(PlayerPtr source, const Results&... results);
+	[[a::inline]] void sendPropsFromResults(PlayerPtr source, const Results&... results);
 
 	/// @brief Sends the results of setting properties across the network.
 	/// @param results A range of SetResults results to send.
-	[[inline]] void sendPropsFromResults(PlayerPtr source, std::ranges::forward_range auto&& results);
+	[[a::inline]] void sendPropsFromResults(PlayerPtr source, std::ranges::forward_range auto&& results);
 
 protected:
 	SetResults setProp(NPCProp prop, SetBy setBy, PropertyBase* base);
@@ -420,7 +420,7 @@ public:
 	CString getAllPropsPacket(std::optional<clock::time_point> newTime = std::nullopt) const;
 
 	template<NPCProp... Props>
-	[[inline]] CString getPropsPacketFor() const;
+	[[a::inline]] CString getPropsPacketFor() const;
 
 public:
 	void testForLinks(SetResults& result);

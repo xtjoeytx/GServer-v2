@@ -175,27 +175,27 @@ public:
 
 	// Get Properties
 	CSocket* getSocket() { return m_playerSock; }
-	[[inline]] PlayerID getId() const;
+	[[a::inline]] PlayerID getId() const;
 	clock::time_point getLastData() const { return m_lastData; }
 	CString getGuild() const { return m_guild; }
 	int getVersion() const { return m_versionId; }
 	const std::string& getVersionStr() const { return m_version; }
 	const std::string& getServerName() const { return m_serverName; }
 	const std::string& getPlatform() const { return account.platform; }
-	[[inline]] std::string_view getLanguage() const;
+	[[a::inline]] std::string_view getLanguage() const;
 	int64_t getDeviceId() const { return m_deviceId; }
 	NPCID getCarryNPC() const { return m_carryNPC; }
 	NPCID getAttachedNPC() const { return m_attachNPC; }
 	uint8_t getCarrySprite() const { return m_carrySprite; }
-	[[inline]] bool isPaused() const noexcept;
+	[[a::inline]] bool isPaused() const noexcept;
 	bool isInNoPkLevel() const noexcept;
-	[[inline]] PixelRectangleArea getBoundingBox() const noexcept;
-	[[inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
-	[[inline]] PixelPosition getGlobalPosition() const noexcept;
-	[[inline]] LocalPixelPosition getLocalPosition() const noexcept;
-	[[inline]] TilePosition getTilePosition() const noexcept;
-	[[inline]] PixelPosition getSubLevelOrigin() const noexcept;
-	[[inline]] MapPosition getMapPosition() const noexcept;
+	[[a::inline]] PixelRectangleArea getBoundingBox() const noexcept;
+	[[a::inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
+	[[a::inline]] PixelPosition getGlobalPosition() const noexcept;
+	[[a::inline]] LocalPixelPosition getLocalPosition() const noexcept;
+	[[a::inline]] TilePosition getTilePosition() const noexcept;
+	[[a::inline]] PixelPosition getSubLevelOrigin() const noexcept;
+	[[a::inline]] MapPosition getMapPosition() const noexcept;
 	virtual double getCalculatedTileZ() const noexcept;
 	virtual std::string getLevelName() const { return account.level; }
 	virtual std::shared_ptr<Level> getLevel() const;
@@ -211,14 +211,14 @@ public:
 
 public:
 	/// @brief Records the current modification time of all properties.
-	[[inline]] void recordCurrentPropModTime();
+	[[a::inline]] void recordCurrentPropModTime();
 
 	/// @brief Constructs a PropertyContainer for PlayerProp P with the given values.
 	/// @tparam P The PlayerProp that determines the type of container to construct.
 	/// @param ...values The values to pass to the container's constructor.
 	/// @return A property container for the specified PlayerProp P.
 	template<PlayerProp P, typename... Args>
-	[[inline]] PropertyContainer auto constructPropFor(Args... values) const;
+	[[a::inline]] PropertyContainer auto constructPropFor(Args... values) const;
 
 	/// @brief Constructs a PropertyContainer for PlayerProp prop with the given values.
 	/// @param prop The PlayerProp that determines the type of container to construct.
@@ -229,7 +229,7 @@ public:
 	/// @tparam P The PlayerProp that determines the type of container to get.
 	/// @return A property container for the specified PlayerProp P.
 	template<PlayerProp P>
-	[[inline]] PropertyContainer auto getProp() const;
+	[[a::inline]] PropertyContainer auto getProp() const;
 
 	/// @brief Gets the property container for PlayerProp P.
 	/// @param prop The PlayerProp that determines the type of container to get.
@@ -242,7 +242,7 @@ public:
 	/// @param prop A property container that contains the value to set.
 	/// @return A SetResults value indicating the outcome of the property set operation.
 	template<PlayerProp P>
-	[[inline]] SetResults setProp(SetBy setBy, PropertyContainer auto prop);
+	[[a::inline]] SetResults setProp(SetBy setBy, PropertyContainer auto prop);
 
 	/// @brief Sets a property for a player and returns the result of the operation.
 	/// @param prop The player property to set.
@@ -257,13 +257,13 @@ public:
 	/// @param ...values The values to pass to the property container's constructor.
 	/// @return A SetResults value indicating the outcome of the property set operation.
 	template<PlayerProp P, typename... Args>
-	[[inline]] SetResults setPropWith(SetBy setBy, Args... values);
+	[[a::inline]] SetResults setPropWith(SetBy setBy, Args... values);
 
 	/// @brief Sends the results of setting a property across the network.
 	/// @param ...results A list of SetResults results to send.
 	template<typename... Results>
 		requires AllSameAs<SetResults, Results...>
-	[[inline]] void sendPropsFromResults(const Results&... results);
+	[[a::inline]] void sendPropsFromResults(const Results&... results);
 
 	/// @brief Sends the results of setting properties across the network.
 	/// @param results A range of SetResults results to send.

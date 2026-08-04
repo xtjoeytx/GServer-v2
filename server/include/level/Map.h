@@ -94,10 +94,10 @@ public:
 	std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> getAllLevelData() const noexcept;
 
 public:
-	[[inline]] std::string getMapName() const noexcept;
-	[[inline]] bool isGmap() const noexcept;
-	[[inline]] bool isBigMap() const noexcept;
-	[[inline]] bool hasTerrain() const noexcept;
+	[[a::inline]] std::string getMapName() const noexcept;
+	[[a::inline]] bool isGmap() const noexcept;
+	[[a::inline]] bool isBigMap() const noexcept;
+	[[a::inline]] bool hasTerrain() const noexcept;
 
 public:
 	const MapType mapType;

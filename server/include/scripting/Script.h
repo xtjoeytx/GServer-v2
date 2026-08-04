@@ -40,23 +40,23 @@ public:
 		setOriginalSource(who, std::move(src));
 	}
 
-	[[inline]] Script& operator=(const Script& o) noexcept;
-	[[inline]] Script& operator=(Script&& o) noexcept;
+	[[a::inline]] Script& operator=(const Script& o) noexcept;
+	[[a::inline]] Script& operator=(Script&& o) noexcept;
 
 public:
-	[[inline]] const size_t getHash() const noexcept;
-	[[inline]] const std::string& getOriginalSource() const noexcept;
-	[[inline]] const std::string& getModifiedSource() const noexcept;
-	[[inline]] std::string_view getClientSide() const noexcept;
-	[[inline]] std::string_view getServerSide() const noexcept;
+	[[a::inline]] const size_t getHash() const noexcept;
+	[[a::inline]] const std::string& getOriginalSource() const noexcept;
+	[[a::inline]] const std::string& getModifiedSource() const noexcept;
+	[[a::inline]] std::string_view getClientSide() const noexcept;
+	[[a::inline]] std::string_view getServerSide() const noexcept;
 	const ScriptByteCode& getClientByteCode() const noexcept;
 
 public:
-	[[inline]] Script& setOriginalSource(std::string_view who, std::string&& source) noexcept;
-	[[inline]] Script& setOriginalSource(std::string_view who, const std::string& source) noexcept;
-	[[inline]] Script& setModifiedSource(const std::string& source) noexcept;
-	[[inline]] Script& setClientCompiledScript(CompiledScriptResultPtr script) noexcept;
-	[[inline]] Script& setServerCompiledScript(CompiledScriptResultPtr script) noexcept;
+	[[a::inline]] Script& setOriginalSource(std::string_view who, std::string&& source) noexcept;
+	[[a::inline]] Script& setOriginalSource(std::string_view who, const std::string& source) noexcept;
+	[[a::inline]] Script& setModifiedSource(const std::string& source) noexcept;
+	[[a::inline]] Script& setClientCompiledScript(CompiledScriptResultPtr script) noexcept;
+	[[a::inline]] Script& setServerCompiledScript(CompiledScriptResultPtr script) noexcept;
 
 public:
 	std::generator<decltype(ScriptExecutionContext::joinedClasses)::const_reference> getServerJoinedClasses() const noexcept;

@@ -205,13 +205,13 @@ public:
 	/// @tparam C The number of bytes to read. Valid values are 1, 2, 3, 4, 5, or 10.
 	/// @return An integral value whose type is deduced and corresponds to the requested size C.
 	template<size_t C>
-	[[inline]] auto readPackedIntegral();
+	[[a::inline]] auto readPackedIntegral();
 
 	/// @brief Reads an integral value.
 	/// @tparam C The number of bytes to read.
 	/// @return An integral value whose type is deduced and corresponds to the requested size C.
 	template<size_t C>
-	[[inline]] auto readIntegral();
+	[[a::inline]] auto readIntegral();
 
 	/// @brief Reads from the file until it encounters the token.
 	virtual std::vector<char> readUntil(std::string_view delimiter);

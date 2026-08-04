@@ -35,7 +35,7 @@ public:
 public:
 	void loadGuilds(const std::filesystem::path& directory);
 	void saveGuilds();
-	[[inline]] void update();
+	[[a::inline]] void update();
 
 public:
 	bool guildExists(std::string_view guildName) const;

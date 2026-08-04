@@ -52,7 +52,7 @@ public:
 
 	/// @brief Gets the default script engine.
 	/// @return The default script engine, or nullptr if no default engine is set or registered.
-	[[inline]] std::shared_ptr<IScriptEngine> getDefaultScriptEngine() const;
+	[[a::inline]] std::shared_ptr<IScriptEngine> getDefaultScriptEngine() const;
 
 public:
 	std::string defaultScriptEngine = "GS2";

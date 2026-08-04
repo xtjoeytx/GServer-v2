@@ -95,42 +95,42 @@ public:
 	/// @tparam T The type of value to retrieve. Must satisfy the `StoresInGameValue` constraint.
 	/// @return A 'std::optional{ T }' containing a reference to the stored value if it exists; otherwise, throws `std::bad_variant_access` if the type is not supported.
 	template<StoresInGameValue T>
-	[[inline]] std::optional<std::reference_wrapper<T>> get();
+	[[a::inline]] std::optional<std::reference_wrapper<T>> get();
 
 	/// @brief Retrieves the stored value of the specified type, if present.
 	/// @tparam T The type of value to retrieve. Must satisfy the `StoresInGameValue` constraint.
 	/// @return A 'std::optional{ T }' containing a reference to the stored value if it exists; otherwise, throws `std::bad_variant_access` if the type is not supported.
 	template<StoresInGameValue T>
-	[[inline]] std::optional<std::reference_wrapper<const T>> get() const;
+	[[a::inline]] std::optional<std::reference_wrapper<const T>> get() const;
 
 	/// @brief Retrieves the stored value of the specified type, if possible.  Will convert between bool and double if necessary.
 	/// @tparam T The type of value to retrieve. Must satisfy the `StoresInGameValue` constraint.
 	/// @return A 'std::optional{ T }' containing the stored value if it exists; otherwise, throws `std::bad_variant_access` if the type is not supported.
 	template<StoresInGameValue T>
-	[[inline]] const std::optional<T> getCopy() const;
+	[[a::inline]] const std::optional<T> getCopy() const;
 
 	/// @brief Sets the value of the GameValue object to the provided value, resetting any existing number, text, or array state.
 	/// @param value The new value to assign to the GameValue object. Must satisfy the StoresInGameValue concept.
 	/// @return A reference to the modified GameValue object.
-	[[inline]] GameValue& set(StoresInGameValue auto&& value);
+	[[a::inline]] GameValue& set(StoresInGameValue auto&& value);
 
 	/// @brief Assigns a value to the GameValue, overwriting the value of the passed type. Other types are not affected.
 	/// @param value The value to assign to the GameValue. Must satisfy the StoresInGameValue concept.
 	/// @return A reference to the modified GameValue object.
-	[[inline]] GameValue& assign(StoresInGameValue auto&& value);
+	[[a::inline]] GameValue& assign(StoresInGameValue auto&& value);
 
 	/// @brief Assigns values from another GameValue object to this one, overwriting the values of the specified types.
 	/// @tparam ...Types A list of types to assign from the other GameValue.
 	/// @param other The other GameValue object from which to assign values.
 	/// @return A reference to the modified GameValue object.
 	template<StoresInGameValue... Types>
-	[[inline]] GameValue& assign(const GameValue& other);
+	[[a::inline]] GameValue& assign(const GameValue& other);
 
 	/// @brief Unassigns a value type from the GameValue.
 	/// @tparam Type The value type to unassign.
 	/// @return A reference to the modified GameValue object.
 	template<StoresInGameValue Type>
-	[[inline]] GameValue& unassign();
+	[[a::inline]] GameValue& unassign();
 
 	/// @brief If the variable is an array, flattens it into a single value.
 	/// @return A GameValue object that contains the flattened value.
@@ -144,11 +144,11 @@ public:
 	/// @tparam T The type to check for. Must satisfy the `ValidGameValue` constraint.
 	/// @return True if the GameValue has a value of the specified type; otherwise, false.
 	template<StoresInGameValue T>
-	[[inline]] bool has() const;
+	[[a::inline]] bool has() const;
 
 	/// @brief Checks if the GameValue has multiple values.
 	/// @return True if the GameValue has multiple values; otherwise, false.
-	[[inline]] bool has_many() const;
+	[[a::inline]] bool has_many() const;
 
 protected:
 	std::optional<bool> m_boolean;
@@ -156,8 +156,8 @@ protected:
 	std::optional<std::string> m_text;
 	std::optional<std::variant<std::vector<double>, std::vector<ScriptObject>>> m_array;
 
-	[[inline]] GameValue& insert(const StoresInGameValue auto& value);
-	[[inline]] GameValue& insert(StoresInGameValue auto&& value);
+	[[a::inline]] GameValue& insert(const StoresInGameValue auto& value);
+	[[a::inline]] GameValue& insert(StoresInGameValue auto&& value);
 };
 
 //----------------------------
@@ -523,13 +523,13 @@ public:
 	/// @param value The value to assign.
 	/// @param index The optional index for array elements.
 	/// @return A reference to this game variable.
-	[[inline]] GameVariable& assign(StoresInGameValue auto&& value, std::optional<int64_t> index = std::nullopt);
+	[[a::inline]] GameVariable& assign(StoresInGameValue auto&& value, std::optional<int64_t> index = std::nullopt);
 
 	/// @brief Sets a value to the game variable.
 	/// @param value The value to set.
 	/// @param index The optional index for array elements.
 	/// @return A reference to this game variable.
-	[[inline]] GameVariable& set(StoresInGameValue auto& value, std::optional<int64_t> index = std::nullopt);
+	[[a::inline]] GameVariable& set(StoresInGameValue auto& value, std::optional<int64_t> index = std::nullopt);
 
 public:
 	/// @brief Gets a reference to the value of the game variable.
@@ -537,34 +537,34 @@ public:
 	/// @param index The optional index for array elements.
 	/// @return An optional reference to the value, or std::nullopt if the value does not exist.
 	template<StoresInGameValue T>
-	[[inline]] std::optional<std::reference_wrapper<T>> get(std::optional<int64_t> index = std::nullopt);
+	[[a::inline]] std::optional<std::reference_wrapper<T>> get(std::optional<int64_t> index = std::nullopt);
 
 	/// @brief Gets a copy of the value of the game variable.
 	/// @tparam T The type of the value to get.
 	/// @param index The optional index for array elements.
 	/// @return An optional copy of the value, or std::nullopt if the value does not exist.
 	template<StoresInGameValue T>
-	[[inline]] const std::optional<T> getCopy(std::optional<int64_t> index = std::nullopt) const;
+	[[a::inline]] const std::optional<T> getCopy(std::optional<int64_t> index = std::nullopt) const;
 
 public:
 	/// @brief Checks if the game variable has a value of the specified type.
 	/// @tparam T The type to check for. Must satisfy the `StoresInGameValue` constraint.
 	/// @return True if the game variable has a value of the specified type; otherwise, false.
 	template<StoresInGameValue T>
-	[[inline]] bool has() const;
+	[[a::inline]] bool has() const;
 
 public:
 	/// @brief Registers a getter function for the game variable.
 	/// @tparam T The type of the value to get.
 	/// @param getter The getter function to register.
 	template<StoresInGameValue T>
-	[[inline]] void registerGetter(func_get getter);
+	[[a::inline]] void registerGetter(func_get getter);
 
 	/// @brief Registers a setter function for the game variable.
 	/// @tparam T The type of the value to set.
 	/// @param setter The setter function to register.
 	template<StoresInGameValue T>
-	[[inline]] void registerSetter(func_set setter);
+	[[a::inline]] void registerSetter(func_set setter);
 
 public:
 	/// @brief Deserializes a variable.
@@ -589,7 +589,7 @@ public:
 	/// @brief Serializes the variable for saving.
 	/// @return A serialized string for writing to disk.
 	template<StoresInGameValue T = std::string>
-	[[inline]] std::string serialize() const;
+	[[a::inline]] std::string serialize() const;
 };
 
 //----------------------------
@@ -884,7 +884,7 @@ public:
 	/// @param setter A function that sets the value of the game variable.
 	/// @return A weak pointer to the newly added GameVariable.
 	template<StoresInGameValue T>
-	[[inline]] std::weak_ptr<GameVariable> add(std::string_view name, GameVariable::func_get getter, GameVariable::func_set setter) noexcept;
+	[[a::inline]] std::weak_ptr<GameVariable> add(std::string_view name, GameVariable::func_get getter, GameVariable::func_set setter) noexcept;
 
 	/// @brief Removes an item identified by the given name.
 	/// @param name The name of the item to remove.
@@ -916,7 +916,7 @@ public:
 	/// @param name The name of the game variable to retrieve the value for.
 	/// @return A std::optional containing the value of the game variable if it exists and is of the specified type; otherwise, an empty std::optional.
 	template<StoresInGameValue T>
-	[[inline]] std::optional<T> getValue(std::string_view name) const noexcept;
+	[[a::inline]] std::optional<T> getValue(std::string_view name) const noexcept;
 
 	/// @brief Clears all temporary variables from the store.
 	virtual void clearTemporary() noexcept;
@@ -977,7 +977,7 @@ class ScriptEventQueue
 public:
 	/// @brief Gets the underlying queue of script events.
 	/// @return The queue of script events.
-	[[inline]] std::deque<ScriptEvent>& queue();
+	[[a::inline]] std::deque<ScriptEvent>& queue();
 
 public:
 	/// @brief Determines whether a specific event exists for a given initiator.
@@ -995,13 +995,13 @@ public:
 	/// @param type The type of the script event to add.
 	/// @param initiator Who initiated the event.
 	/// @param ...args A list of additional arguments to be passed with the event.
-	[[inline]] void addEvent(ScriptEventType type, ScriptObject initiator, string::NotInputRangeNotString auto&&... args);
+	[[a::inline]] void addEvent(ScriptEventType type, ScriptObject initiator, string::NotInputRangeNotString auto&&... args);
 
 	/// @brief Adds an event to the queue with the specified type, initiator, and additional arguments.
 	/// @param type The type of the script event to add.
 	/// @param initiator Who initiated the event.
 	/// @param range A list of additional arguments to be passed with the event.
-	[[inline]] void addEvent(ScriptEventType type, ScriptObject initiator, string::InputRangeNotString auto&& range);
+	[[a::inline]] void addEvent(ScriptEventType type, ScriptObject initiator, string::InputRangeNotString auto&& range);
 
 private:
 	void addEvent(const ScriptEvent& event);

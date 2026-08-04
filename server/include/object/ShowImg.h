@@ -108,7 +108,7 @@ struct ShowImg
 	CString getAllPropsPacket(std::optional<clock::time_point> newTime = std::nullopt) const;
 	CString getModifiedPropsPacket() const;
 
-	[[inline]] void recordCurrentPropModTime();
+	[[a::inline]] void recordCurrentPropModTime();
 };
 
 // ---------------------------

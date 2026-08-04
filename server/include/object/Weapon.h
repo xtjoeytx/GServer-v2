@@ -33,7 +33,7 @@ class Player;
 class Weapon
 {
 public:
-	Weapon(LevelItemType itemType);
+	explicit Weapon(LevelItemType itemType);
 	Weapon(std::string_view name, std::string_view image, std::string_view script);
 	~Weapon() = default;
 
@@ -50,7 +50,7 @@ public:
 
 public:
 	std::string getJoinedClassesList() const;
-	[[inline]] std::generator<std::shared_ptr<ScriptClass>> getJoinedClasses();
+	[[a::inline]] std::generator<std::shared_ptr<ScriptClass>> getJoinedClasses() const;
 	void setJoinedClasses(std::string_view classes);
 	void joinClass(std::string_view className);
 	void leaveClass(std::string_view className);
@@ -89,12 +89,13 @@ using TWeaponPtr = std::shared_ptr<Weapon>;
 
 //----------------------------
 
-inline std::generator<std::shared_ptr<ScriptClass>> Weapon::getJoinedClasses()
+inline std::generator<std::shared_ptr<ScriptClass>> Weapon::getJoinedClasses() const
 {
+	// ReSharper disable once CppLocalVariableMayBeConst
 	auto filter = m_joinedClasses
 		| std::views::transform([](const auto& pair) { return pair.second.lock(); })
 		| std::views::filter([](const auto& scriptClass) { return scriptClass != nullptr; });
-	for (auto scriptClass : filter)
+	for (const auto& scriptClass : filter)
 		co_yield scriptClass;
 }
 

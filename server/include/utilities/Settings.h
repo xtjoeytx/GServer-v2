@@ -223,7 +223,7 @@ public:
 
 private:
 	template<typename T>
-	[[inline]] void trackOne(SettingCache<T>& cache);
+	[[a::inline]] void trackOne(SettingCache<T>& cache);
 
 private:
 	string_ordered_multimap<std::string> m_settings;

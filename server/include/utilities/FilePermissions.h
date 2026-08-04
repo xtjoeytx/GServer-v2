@@ -39,7 +39,7 @@ public:
 	/// @param path The path to check for access.
 	/// @param ...types The types of permissions to check (e.g., Read, Write).
 	/// @return true if the path has all the required permissions, false otherwise.
-	[[inline]] auto hasPermission(std::string_view path, auto... types) const;
+	[[a::inline]] auto hasPermission(std::string_view path, auto... types) const;
 
 	/// @brief Loads permissions from a string input.
 	/// @param input The string input containing permissions (e.g., "rw accounts/*\n-rw config/settings.php").

@@ -329,7 +329,7 @@ public:
 
 public:
 	LevelItemType rollBushItemDrop() const;
-	[[inline]] const auto& getAllowedDeathDrops() const noexcept;
+	[[a::inline]] const auto& getAllowedDeathDrops() const noexcept;
 
 public:
 	std::shared_ptr<NPC> getNPC(const NPCID id) const;
@@ -359,8 +359,8 @@ public:
 	void calculateNWTime();
 	bool isIpBanned(const CString& ip);
 	bool isStaff(const CString& accountName);
-	[[inline]] bool isKingdomsMode() const noexcept;
-	[[inline]] bool isNewWorldMode() const noexcept;
+	[[a::inline]] bool isKingdomsMode() const noexcept;
+	[[a::inline]] bool isNewWorldMode() const noexcept;
 
 public:
 	void hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source) const;
@@ -370,9 +370,9 @@ public:
 public:
 	std::string getLogDateTimeString() const;
 	void logToFile(std::filesystem::path fileName, std::string_view message, bool writeTimestamp = true) const;
-	[[inline]] void logToFile(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const;
+	[[a::inline]] void logToFile(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const;
 	void logToFileSafely(std::filesystem::path fileName, std::string_view message, bool writeTimestamp = true) const;
-	[[inline]] void logToFileSafely(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const;
+	[[a::inline]] void logToFileSafely(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const;
 
 public:
 	bool processRCChat(std::string_view message, std::weak_ptr<Player> sender = {});
@@ -433,8 +433,8 @@ public:
 	}
 
 public:
-	[[inline]] const std::vector<std::string>& getShootParams() const;
-	[[inline]] void setShootParams(std::vector<std::string>&& params);
+	[[a::inline]] const std::vector<std::string>& getShootParams() const;
+	[[a::inline]] void setShootParams(std::vector<std::string>&& params);
 
 	void setShootParams(std::ranges::forward_range auto&& params)
 		requires std::same_as<std::ranges::range_value_t<decltype(params)>, std::string>

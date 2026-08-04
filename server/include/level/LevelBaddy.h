@@ -112,7 +112,7 @@ public:
 public:
 	void setRespawn(const bool pRespawn) { m_canRespawn = pRespawn; }
 	void setImage(std::string_view image);
-	[[inline]] void setLevel(LevelPtr level);
+	[[a::inline]] void setLevel(LevelPtr level);
 
 public:
 	float getTileX() const { return position.x() / 16.0f; }
@@ -133,7 +133,7 @@ public:
 	TimeoutGenerator timeout;
 
 public:
-	[[inline]] void constructScriptParameters();
+	[[a::inline]] void constructScriptParameters();
 	string_map<GameVariable> scriptParameters;
 
 private:

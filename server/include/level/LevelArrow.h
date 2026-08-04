@@ -59,9 +59,9 @@ struct LevelArrow
 	int8_t type;
 	ScriptObject from;
 
-	[[inline]] uint8_t getPacketFrom() const;
+	[[a::inline]] uint8_t getPacketFrom() const;
 
-	[[inline]] void constructScriptParameters();
+	[[a::inline]] void constructScriptParameters();
 	string_map<GameVariable> scriptParameters;
 };
 
