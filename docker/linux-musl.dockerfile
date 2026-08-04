@@ -51,9 +51,9 @@ RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
     && apk del --purge .gserver-build-dependencies
 
 # GServer Run Environment
-FROM alpine:3.22
+FROM alpine:3.24
 USER 0
-ARG CACHE_DATE=2025-07-08
+ARG CACHE_DATE=2026-08-03
 COPY --from=build-env --chown=1001:1001 /tmp/gserver/bin /gserver
 COPY entrypoint.sh /gserver/
 RUN apk add --update libstdc++ libatomic
