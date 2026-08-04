@@ -9,7 +9,6 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
-#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -31,7 +30,7 @@ namespace preagonal::props
 
 int getServerGeneration()
 {
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	return static_cast<int>(server->Generation);
 }
 
@@ -52,7 +51,7 @@ void PropertyString::deserialize(CString& data)
 
 void PropertyString::apply(const GameValue& gameValue)
 {
-	value = std::move(gameValue.getCopy<std::string>().value_or(""s));
+	value = gameValue.getCopy<std::string>().value_or(""s);
 }
 
 std::format_context::iterator PropertyString::format(std::format_context& ctx) const
@@ -78,7 +77,7 @@ void PropertyLongString::deserialize(CString& data)
 
 CString PropertySwordPower::serialize() const
 {
-	auto powerVal = power.value_or(0);
+	const auto powerVal = power.value_or(0);
 	if (powerVal == 0)
 		return CString() >> (char)0;
 	if (powerVal > 0 && powerVal <= 4 && image.empty())
@@ -88,7 +87,7 @@ CString PropertySwordPower::serialize() const
 
 void PropertySwordPower::deserialize(CString& data)
 {
-	uint8_t powerVal = 0;
+	int8_t powerVal = 0;
 	data.readGInto(powerVal);
 	if (powerVal < 30)
 	{
@@ -97,7 +96,7 @@ void PropertySwordPower::deserialize(CString& data)
 		// For older clients, we use a default image name.
 		if (powerVal > 0 && powerVal <= 4)
 		{
-			auto server = BabyDI::Get<Server>();
+			const auto server = BabyDI::Get<Server>();
 			image = std::format("sword{}.{}", powerVal, (server->Generation != ServerGeneration::CLASSIC ? "png" : "gif"));
 		}
 		else image.clear();
@@ -107,19 +106,19 @@ void PropertySwordPower::deserialize(CString& data)
 	}
 
 	// If the power is 30 or more, its sword power + custom image.
-	powerVal = Limits::applySwordPower(powerVal - 30);
+	powerVal = Limits::applySwordPower(static_cast<int8_t>(powerVal - 30));
 	power = powerVal;
 
 	// Read the image name.
 	// If there is no extension, assume its a .gif.
 	image = data.readChars(data.readGUChar());
-	if (!image.contains("."))
+	if (!image.contains('.'))
 		image += ".gif";
 }
 
 void PropertySwordPower::apply(const GameValue& gameValue)
 {
-	image = std::move(gameValue.getCopy<std::string>().value_or(""s));
+	image = gameValue.getCopy<std::string>().value_or(""s);
 }
 
 std::format_context::iterator PropertySwordPower::format(std::format_context& ctx) const
@@ -136,7 +135,7 @@ std::format_context::iterator PropertySwordPower::format(std::format_context& ct
 
 CString PropertyShieldPower::serialize() const
 {
-	auto powerVal = power.value_or(0);
+	const auto powerVal = power.value_or(0);
 	if (powerVal == 0)
 		return CString() >> (char)0;
 	if (powerVal > 0 && powerVal <= 3 && image.empty())
@@ -146,7 +145,7 @@ CString PropertyShieldPower::serialize() const
 
 void PropertyShieldPower::deserialize(CString& data)
 {
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 
 	uint8_t powerVal = 0;
 	data.readGInto(powerVal);
@@ -176,14 +175,14 @@ void PropertyShieldPower::deserialize(CString& data)
 	// If there is no extension, assume its a .gif, for 1.x servers.
 	if (server->Generation == ServerGeneration::CLASSIC)
 	{
-		if (!image.contains("."))
+		if (!image.contains('.'))
 			image += ".gif";
 	}
 }
 
 void PropertyShieldPower::apply(const GameValue& gameValue)
 {
-	image = std::move(gameValue.getCopy<std::string>().value_or(""s));
+	image = gameValue.getCopy<std::string>().value_or(""s);
 }
 
 std::format_context::iterator PropertyShieldPower::format(std::format_context& ctx) const
@@ -210,7 +209,7 @@ CString PropertyGaniOrBowGif::serialize() const
 
 		return CString() >> (char)(10 + image.length()) << image;
 	}
-	return CString();
+	return {};
 }
 
 void PropertyGaniOrBowGif::deserialize(CString& data)
@@ -223,8 +222,7 @@ void PropertyGaniOrBowGif::deserialize(CString& data)
 	// Graal 1.411 and earlier clients used BOWGIF instead of GANI.
 	else
 	{
-		uint8_t preset = data.readGUChar();
-		if (preset < 10)
+		if (uint8_t preset = data.readGUChar(); preset < 10)
 		{
 			// If the preset is less than 10, its a bow preset.
 			bowGif = std::make_pair(std::string(), preset);
@@ -233,7 +231,7 @@ void PropertyGaniOrBowGif::deserialize(CString& data)
 		{
 			// Otherwise, its a custom bow image.
 			auto image = data.readChars(preset - 10);
-			if (!image.isEmpty() && !image.contains("."))
+			if (!image.isEmpty() && !image.contains('.'))
 				image += ".gif";
 			bowGif = std::make_pair(std::move(image), 0);
 		}
@@ -242,7 +240,7 @@ void PropertyGaniOrBowGif::deserialize(CString& data)
 
 void PropertyGaniOrBowGif::apply(const GameValue& gameValue)
 {
-	gani = std::move(gameValue.getCopy<std::string>().value_or(""s));
+	gani = gameValue.getCopy<std::string>().value_or(""s);
 }
 
 std::format_context::iterator PropertyGaniOrBowGif::format(std::format_context& ctx) const
@@ -262,7 +260,7 @@ CString PropertyHeadGif::serialize() const
 {
 	if (std::holds_alternative<uint8_t>(image))
 	{
-		auto preset = std::min(static_cast<uint8_t>(99), std::get<uint8_t>(image));
+		const auto preset = std::min(static_cast<uint8_t>(99), std::get<uint8_t>(image));
 		return CString() >> (char)preset;
 	}
 
@@ -287,12 +285,12 @@ void PropertyHeadGif::deserialize(CString& data)
 			headImage += ".gif";
 	}
 
-	image = std::move(headImage.toString());
+	image = headImage.toString();
 }
 
 void PropertyHeadGif::apply(const GameValue& gameValue)
 {
-	image = std::move(gameValue.getCopy<std::string>().value_or(""s));
+	image = gameValue.getCopy<std::string>().value_or(""s);
 }
 
 std::format_context::iterator PropertyHeadGif::format(std::format_context& ctx) const
@@ -314,20 +312,20 @@ std::format_context::iterator PropertyHeadGif::format(std::format_context& ctx) 
 
 CString PropertyEloRating::serialize() const
 {
-	auto packed = ((static_cast<uint32_t>(rating) & 0xFFF) << 9) | (static_cast<uint32_t>(deviation) & 0x1FF);
+	const auto packed = ((static_cast<uint32_t>(rating) & 0xFFF) << 9) | (static_cast<uint32_t>(deviation) & 0x1FF);
 	return CString().writeGInt(packed);
 }
 
 void PropertyEloRating::deserialize(CString& data)
 {
-	uint32_t packed = data.readGInt();
-	rating = ((packed >> 9) & 0xFFF);
-	deviation = (packed & 0x1FF);
+	const uint32_t packed = data.readGInt();
+	rating = static_cast<float>((packed >> 9) & 0xFFF);
+	deviation = static_cast<float>(packed & 0x1FF);
 }
 
 void PropertyEloRating::apply(const GameValue& gameValue)
 {
-	auto array = gameValue.get<std::vector<double>>();
+	const auto array = gameValue.get<std::vector<double>>();
 	if (!array.has_value() || array.value().get().size() != 2)
 	{
 		rating = 0;
@@ -374,7 +372,7 @@ std::format_context::iterator PropertyAttachNPC::format(std::format_context& ctx
 
 CString PropertyPixelCoordinate::serialize() const
 {
-	uint16_t val = (uint16_t)std::abs(pixelCoordinate) << 1;
+	uint16_t val = static_cast<uint16_t>(std::abs(pixelCoordinate)) << 1;
 	if (pixelCoordinate < 0)
 		val |= 0x0001;
 	return CString() >> (short)val;
@@ -382,12 +380,12 @@ CString PropertyPixelCoordinate::serialize() const
 
 void PropertyPixelCoordinate::deserialize(CString& data)
 {
-	auto len = data.readGUShort();
-	pixelCoordinate = (len >> 1);
+	const auto len = data.readGUShort();
+	pixelCoordinate = static_cast<int16_t>(len >> 1);
 
 	// If the first bit is 1, our pixelCoordinate is negative.
-	if ((uint16_t)len & 0x0001)
-		pixelCoordinate = -pixelCoordinate;
+	if (static_cast<uint16_t>(len) & 0x0001)
+		pixelCoordinate = static_cast<int16_t>(-pixelCoordinate);
 }
 
 void PropertyPixelCoordinate::apply(const GameValue& gameValue)
@@ -397,7 +395,7 @@ void PropertyPixelCoordinate::apply(const GameValue& gameValue)
 
 std::format_context::iterator PropertyPixelCoordinate::format(std::format_context& ctx) const
 {
-	return std::format_to(ctx.out(), "pixel: {} (tile: {:.2f})", pixelCoordinate, (pixelCoordinate / 16.0f));
+	return std::format_to(ctx.out(), "pixel: {} (tile: {:.2f})", pixelCoordinate, static_cast<float>(pixelCoordinate) / 16.0f);
 }
 
 // -----------------------------------------------
@@ -409,7 +407,7 @@ CString PropertyTileCoordinate::serialize() const
 
 	// Writing 223 will break the packet flow (as it will overflow to the newline char), so avoid doing that.
 	// 223 will be -11 and 224 will be -10.5.
-	uint8_t halftile = static_cast<uint8_t>(pixelCoordinate / 8);
+	auto halftile = static_cast<uint8_t>(pixelCoordinate / 8);
 	if (halftile == 223)
 		halftile = 224;
 
@@ -420,10 +418,15 @@ CString PropertyTileCoordinate::serialize() const
 void PropertyTileCoordinate::deserialize(CString& data)
 {
 	int16_t halftile = 0;
-	uint8_t read = data.readGChar();
-	if (read >= 216)
-		halftile = static_cast<int8_t>(read);
-	else halftile = read;
+	const auto read = static_cast<int8_t>(data.readGChar());
+	if (const auto uread = static_cast<uint8_t>(read); uread >= 216)
+	{
+		// Screw you clang-tidy.
+		// NOLINTNEXTLINE(bugprone-signed-char-misuse)
+		// NOLINTNEXTLINE(cert-str34-c)
+		halftile = static_cast<int16_t>(read);
+	}
+	else halftile = uread;
 
 	pixelCoordinate = static_cast<int16_t>(halftile * 8);
 }
@@ -435,7 +438,7 @@ void PropertyTileCoordinate::apply(const GameValue& gameValue)
 
 std::format_context::iterator PropertyTileCoordinate::format(std::format_context& ctx) const
 {
-	return std::format_to(ctx.out(), "tile: {:.2f} (pixel: {})", (pixelCoordinate / 16.0f), pixelCoordinate);
+	return std::format_to(ctx.out(), "tile: {:.2f} (pixel: {})", static_cast<float>(pixelCoordinate) / 16.0f, pixelCoordinate);
 }
 
 // -----------------------------------------------
@@ -448,7 +451,7 @@ CString PropertyTileCoordinateZ::serialize() const
 
 void PropertyTileCoordinateZ::deserialize(CString& data)
 {
-	pixelCoordinate = (data.readGUChar() - 50) * 16;
+	pixelCoordinate = static_cast<int16_t>((data.readGUChar() - 50) * 16);
 }
 
 void PropertyTileCoordinateZ::apply(const GameValue& gameValue)
@@ -458,7 +461,7 @@ void PropertyTileCoordinateZ::apply(const GameValue& gameValue)
 
 std::format_context::iterator PropertyTileCoordinateZ::format(std::format_context& ctx) const
 {
-	return std::format_to(ctx.out(), "tile: {:.2f} (pixel: {})", (pixelCoordinate / 16.0f), pixelCoordinate);
+	return std::format_to(ctx.out(), "tile: {:.2f} (pixel: {})", static_cast<float>(pixelCoordinate) / 16.0f, pixelCoordinate);
 }
 
 // -----------------------------------------------
@@ -477,13 +480,13 @@ CString PropertyGS1Script::serialize() const
 
 void PropertyGS1Script::deserialize(CString& data)
 {
-	auto length = data.readGUShort();
+	const auto length = data.readGUShort();
 	script = data.readChars(length);
 }
 
 void PropertyGS1Script::apply(const GameValue& gameValue)
 {
-	script = std::move(gameValue.getCopy<std::string>().value_or(""s));
+	script = gameValue.getCopy<std::string>().value_or(""s);
 }
 
 std::format_context::iterator PropertyGS1Script::format(std::format_context& ctx) const
@@ -515,7 +518,7 @@ void PropertyImagePart::deserialize(CString& data)
 
 void PropertyImagePart::apply(const GameValue& gameValue)
 {
-	auto array = gameValue.get<std::vector<double>>();
+	const auto array = gameValue.get<std::vector<double>>();
 	if (!array.has_value() || array.value().get().size() < 4)
 		return;
 
@@ -555,7 +558,7 @@ void PropertySprite::deserialize(CString& data)
 
 void PropertySprite::apply(const GameValue& gameValue)
 {
-	auto value = static_cast<uint8_t>(gameValue.getCopy<double>().value_or(0.0));
+	const auto value = static_cast<uint8_t>(gameValue.getCopy<double>().value_or(0.0));
 	sprite = value >> 2;
 	direction = value & 0b0000'0011;
 }
@@ -570,20 +573,20 @@ std::format_context::iterator PropertySprite::format(std::format_context& ctx) c
 
 CString PropertyColors::serialize() const
 {
-	size_t count = getColorCount();
-	size_t maxValue = getMaxColorValue();
+	const size_t count = getColorCount();
+	const size_t maxValue = getMaxColorValue();
 	CString result;
 	for (size_t i = 0; i < count; ++i)
 	{
-		result >> std::clamp((ValueType)values[i], static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
+		result >> std::clamp(static_cast<ValueType>(values[i]), static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
 	}
 	return result;
 }
 
 void PropertyColors::deserialize(CString& data)
 {
-	size_t count = getColorCount();
-	size_t maxValue = getMaxColorValue();
+	const size_t count = getColorCount();
+	const size_t maxValue = getMaxColorValue();
 	for (size_t i = 0; i < count; ++i)
 	{
 		if (static_cast<size_t>(data.bytesLeft()) < sizeof(ValueType))
@@ -595,14 +598,13 @@ void PropertyColors::deserialize(CString& data)
 
 void PropertyColors::apply(const GameValue& gameValue)
 {
-	auto value = gameValue.get<std::vector<double>>();
-	if (value.has_value())
+	if (const auto value = gameValue.get<std::vector<double>>(); value.has_value())
 	{
 		auto& vec = value.value().get();
 
 		// Convert all values to type T and insert into the values array.
-		size_t count = getColorCount();
-		size_t maxValue = getMaxColorValue();
+		const size_t count = getColorCount();
+		const size_t maxValue = getMaxColorValue();
 		for (size_t i = 0; i < count && i < vec.size(); ++i)
 		{
 			values[i] = std::clamp(static_cast<ValueType>(vec[i]), static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
@@ -613,7 +615,7 @@ void PropertyColors::apply(const GameValue& gameValue)
 std::format_context::iterator PropertyColors::format(std::format_context& ctx) const
 {
 	std::ostringstream out;
-	size_t count = getColorCount();
+	const size_t count = getColorCount();
 
 	for (size_t i = 0; i < count; ++i)
 	{
@@ -625,15 +627,15 @@ std::format_context::iterator PropertyColors::format(std::format_context& ctx) c
 	return std::format_to(ctx.out(), "values: [{}]", out.str());
 }
 
-int PropertyColors::getColorCount() const noexcept
+int PropertyColors::getColorCount() noexcept
 {
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	return server->isNewWorldMode() ? 8 : 5;
 }
 
-size_t PropertyColors::getMaxColorValue() const noexcept
+size_t PropertyColors::getMaxColorValue() noexcept
 {
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	size_t colorCount = CLASSICCOLORS_COUNT;
 	if (server->Generation == ServerGeneration::MODERN && server->cached.enableExBodyColors.getValue())
 		colorCount += HTMLCOLORS_COUNT;
@@ -644,28 +646,28 @@ size_t PropertyColors::getMaxColorValue() const noexcept
 
 uint8_t Limits::applyMaxHitpoints(uint8_t maxHitpoints)
 {
-	auto server = BabyDI::Get<Server>();
-	auto heartLimit = std::min(server->cached.maxHeartLimit.getValue(), 20_ui8);
+	const auto server = BabyDI::Get<Server>();
+	const auto heartLimit = std::min(server->cached.maxHeartLimit.getValue(), 20_ui8);
 	return std::clamp(maxHitpoints, 0_ui8, heartLimit);
 }
 
 int8_t Limits::applySwordPower(int8_t swordPower)
 {
-	auto server = BabyDI::Get<Server>();
-	int8_t minimum = (server->cached.enableHealingSwords.getValue() ? -(server->cached.swordPowerLimit.getValue()) : 0);
-	int8_t maximum = server->cached.swordPowerLimit.getValue();
+	const auto server = BabyDI::Get<Server>();
+	const int8_t minimum = (server->cached.enableHealingSwords.getValue() ? static_cast<int8_t>(-server->cached.swordPowerLimit.getValue()) : 0_i8);
+	const int8_t maximum = server->cached.swordPowerLimit.getValue();
 	return std::clamp(swordPower, minimum, maximum);
 }
 
 uint8_t Limits::applyShieldPower(uint8_t shieldPower)
 {
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	return std::clamp(shieldPower, 0_ui8, server->cached.shieldPowerLimit.getValue());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void collectPacketsFromResults(const PropertySendResults& results, CString& outAll, CString& outLevel, CString& outSource, PropertyContainerGetter getProp)
+void collectPacketsFromResults(const PropertySendResults& results, CString& outAll, CString& outLevel, CString& outSource, const PropertyContainerGetter& getProp)
 {
 	// The map allows us to to sort the results by increasing ID order.  If the client receives a prop it doesn't understand, it stops processing them.
 	// This ensures that all the props the client CAN read come before the ones it can't.

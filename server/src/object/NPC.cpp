@@ -1767,7 +1767,8 @@ void NPC::constructScriptParameters()
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#n"sv, std::ref(modTime[PROPID(NPCProp::NICKNAME)]), std::ref(character.nickName)});
 
 	// colors
-	for (size_t i = 0; i < character.colors.size(); ++i)
+	const size_t colorCount = m_server->isNewWorldMode() ? 8 : 5;
+	for (size_t i = 0; i < colorCount; ++i)
 		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{colorPropertyNames[i], std::ref(modTime[PROPID(NPCProp::COLORS)]), std::ref(character.colors[i])});
 
 	// gani attributes

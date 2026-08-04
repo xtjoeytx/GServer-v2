@@ -86,9 +86,6 @@ enum class ServerGeneration
 	// 1.x
 	CLASSIC = 0,
 
-	// 1.x - 2.x experimental client that was never publicly released
-	NEWWORLD,
-
 	// 2.x/3.x
 	NEWMAIN,
 
@@ -96,9 +93,20 @@ enum class ServerGeneration
 	MODERN
 };
 
-inline constexpr std::array<std::string_view, 4> ServerGenerationNames{
+enum class ServerMode
+{
+	// The normal.
+	NORMAL = 0,
+
+	// Kingdoms mode, disables lots of built-in features.
+	KINGDOMS,
+
+	// Kingdoms mode, with additional body colors.
+	NEWWORLD
+};
+
+inline constexpr std::array<std::string_view, 3> ServerGenerationNames{
 	"classic",
-	"newworld",
 	"newmain",
 	"modern",
 };
@@ -351,6 +359,7 @@ public:
 	void calculateNWTime();
 	bool isIpBanned(const CString& ip);
 	bool isStaff(const CString& accountName);
+	[[inline]] bool isKingdomsMode() const noexcept;
 	[[inline]] bool isNewWorldMode() const noexcept;
 
 public:
@@ -466,7 +475,7 @@ private:
 	std::vector<CString> m_allowedVersions, m_foldersConfig, m_ipBans;
 	std::vector<std::pair<LevelItemType, int>> m_bushDrops;
 	std::vector<LevelItemType> m_deathDrops;
-	bool m_newWorldMode = false;
+	ServerMode m_serverMode = ServerMode::NORMAL;
 
 	Settings m_adminSettings;
 	Settings m_settings;
@@ -537,9 +546,14 @@ inline std::shared_ptr<NPC> Server::getNPC(const NPCID id) const
 	return nullptr;
 }
 
+inline bool Server::isKingdomsMode() const noexcept
+{
+	return m_serverMode == ServerMode::KINGDOMS;
+}
+
 inline bool Server::isNewWorldMode() const noexcept
 {
-	return m_newWorldMode;
+	return m_serverMode == ServerMode::NEWWORLD;
 }
 
 inline void Server::logToFile(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const

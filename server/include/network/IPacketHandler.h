@@ -187,8 +187,8 @@ public:
 
 protected:
 	std::optional<CString> retrievePacketBundle(CString& buffer) const;
-	void processPacketBundle(CString& packet);
-	void parsePacketsFromBundle(CString& packet);
+	void processPacketBundle(CString& bundle);
+	void parsePacketsFromBundle(CString& bundle);
 	void parseLoginPacket(CString& buffer);
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) = 0;
 	virtual std::string_view whoAmI() const noexcept { return "(unknown);"sv; }
@@ -238,7 +238,7 @@ inline void IPacketHandler::processBuffer(CString& buffer)
 
 inline std::optional<CString> IPacketHandler::retrievePacketBundle(CString& buffer) const
 {
-	uint16_t packetSize = static_cast<uint16_t>(buffer.readShort());
+	const auto packetSize = static_cast<uint16_t>(buffer.readShort());
 	if (packetSize > buffer.length() - 2)
 		return std::nullopt;
 

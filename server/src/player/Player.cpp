@@ -190,15 +190,15 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_SHOWIMGNPC)             \
 		DO(PLO_NC_WEAPONLISTGET)       \
 		DO(PLO_UNKNOWN168)             \
-		DO(PLO_UNKNOWN169)             \
+		DO(PLO_UPGRADEURL)             \
 		DO(PLO_GHOSTMODE)              \
 		DO(PLO_BIGMAP)                 \
 		DO(PLO_MINIMAP)                \
 		DO(PLO_GHOSTTEXT)              \
 		DO(PLO_GHOSTICON)              \
 		DO(PLO_SHOOT)                  \
-		DO(PLO_DISABLECLASSICMODE)     \
-		DO(PLO_FULLSTOP2)              \
+		DO(PLO_KINGDOMSMODE)           \
+		DO(PLO_NEWWORLDMODE)           \
 		DO(PLO_SERVERWARP)             \
 		DO(PLO_RPGWINDOW)              \
 		DO(PLO_STATUSLIST)             \
@@ -689,42 +689,16 @@ bool Player::sendLogin()
 		}
 	}
 
-	// Server Signature
-	// 0x49 (73) is used to tell the client that more than eight
-	// players will be playing.
-	sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
-
-	// TODO: Don't hardcode this.
-	if (m_server->getName().findi("login") > -1)
-	{
-		sendPacket(CString() >> (char)PLO_DISABLECLASSICMODE);
-		sendPacket(CString() >> (char)PLO_GHOSTICON >> (char)1);
-	}
-
-	if (isClient())
-	{
-		// Tell the client if we have an npc-server, which disables certain features on the client (like sending NPC prop modifications).
-		// Later clients don't send this because all client-side functionality was removed.
-		// There isn't any harm in always sending it, though.
-		if (m_server->hasNPCServer())
-			sendPacket(CString() >> (char)PLO_HASNPCSERVER);
-
-		// This seems to inform the client that they have logged in.
-		sendPacket(CString() >> (char)PLO_UNKNOWN168);
-	}
-
 	// Check if the account is already in use.
-	bool isGuest = account.loadOnly && account.communityName == "guest";
-	if (!isGuest)
+	if (bool isGuest = account.loadOnly && account.communityName == "guest"; !isGuest)
 	{
-		auto& playerList = m_server->getPlayerList();
-		for (auto& [pid, player] : playerList)
+		for (auto& playerList = m_server->getPlayerList(); const auto& player : playerList | std::views::values)
 		{
 			std::string otherAccount = player->account.name;
-			PlayerID otherID = player->getId();
+			const PlayerID otherID = player->getId();
 
-			int meClient = ((m_type & PLTYPE_ANYCLIENT) ? 0 : ((m_type & PLTYPE_ANYRC) ? 1 : 2));
-			int themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? 0 : ((player->getType() & PLTYPE_ANYRC) ? 1 : 2));
+			const int meClient = ((m_type & PLTYPE_ANYCLIENT) ? 0 : ((m_type & PLTYPE_ANYRC) ? 1 : 2));
+			const int themClient = ((player->getType() & PLTYPE_ANYCLIENT) ? 0 : ((player->getType() & PLTYPE_ANYRC) ? 1 : 2));
 
 			if (string::equalsi(otherAccount, account.name) && meClient == themClient && otherID != m_id)
 			{
@@ -740,6 +714,28 @@ bool Player::sendLogin()
 				}
 			}
 		}
+	}
+
+	// Server Signature
+	// 0x49 (73) is used to tell the client that more than eight players will be playing.
+	sendPacket(CString() >> (char)PLO_SIGNATURE >> (char)73);
+
+	// Send our server mode.
+	if (m_server->isKingdomsMode())
+		sendPacket(CString() >> (char)PLO_KINGDOMSMODE);
+	else if (m_server->isNewWorldMode())
+		sendPacket(CString() >> (char)PLO_NEWWORLDMODE);
+
+	if (isClient())
+	{
+		// Tell the client if we have an npc-server, which disables certain features on the client (like sending NPC prop modifications).
+		// Later clients don't send this because all client-side functionality was removed.
+		// There isn't any harm in always sending it, though.
+		if (m_server->hasNPCServer())
+			sendPacket(CString() >> (char)PLO_HASNPCSERVER);
+
+		// This seems to inform the client that they have logged in.
+		sendPacket(CString() >> (char)PLO_UNKNOWN168);
 	}
 
 	// Tell the serverlist the player is logged in.
@@ -1087,7 +1083,7 @@ void Player::sendPrivateMessage(PlayerID from, std::string_view message)
 	// For some reason, if there are multiple lines, the client strips out the first line.
 	// If we don't start with a blank line, add one to avoid message loss.
 	// TODO: Hacky!  Figure out why this happens.
-	if (isMultiLine && !finalMessage.starts_with(",") && !finalMessage.starts_with("\"\","))
+	if (isMultiLine && !finalMessage.starts_with(',') && !finalMessage.starts_with("\"\","))
 		finalMessage = "\"\"," + finalMessage;
 
 	sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)from << finalMessage);
@@ -1288,7 +1284,8 @@ void Player::constructScriptParameters()
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#n"sv, std::ref(modTime[PROPID(PlayerProp::NICKNAME)]), std::ref(account.character.nickName)});
 
 	// colors
-	for (size_t i = 0; i < account.character.colors.size(); ++i)
+	const size_t colorCount = m_server->isNewWorldMode() ? 8 : 5;
+	for (size_t i = 0; i < colorCount; ++i)
 		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{colorPropertyNames[i], std::ref(modTime[PROPID(PlayerProp::COLORS)]), std::ref(account.character.colors[i])});
 
 	// gani attributes

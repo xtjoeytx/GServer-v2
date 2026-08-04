@@ -80,11 +80,11 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 template<class T, class R, class... Args>
-auto methodstub(T* t, R (T::*m)(Args...))
+static auto methodstub(T* t, R (T::*m)(Args...))
 {
-	return [=](auto&&... args) -> R
+	return [=]<typename... T0>(T0&&... args) -> R
 	{
-		return (t->*m)(decltype(args)(args)...);
+		return (t->*m)(T0(args)...);
 	};
 }
 
@@ -130,6 +130,7 @@ Server::Server(const CString& pName)
 	: m_animationManager(this), m_packageManager(this), m_name(pName),
 	  m_triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
 {
+	m_serverTime = 0;
 	calculateNWTime();
 
 	m_npcIdGenerator.createSegment(NPCID_GEN_LOCAL);
@@ -173,11 +174,11 @@ Server::Server(const CString& pName)
 		},
 		{});
 
-	constexpr int toHours = 60;
-	constexpr int toDays = 1440;
-	constexpr int toWeeks = 10080;
-	constexpr int toMonths = 40320;
-	constexpr int toYears = 403200;
+	constexpr uint32_t toHours = 60;
+	constexpr uint32_t toDays = 1440;
+	constexpr uint32_t toWeeks = 10080;
+	constexpr uint32_t toMonths = 40320;
+	constexpr uint32_t toYears = 403200;
 	Scripting.variables.add<double>("nwtime"sv, bindGETSIMPLE(static_cast<double>(getNWTime() % 1440), this), {});                 // minutes of the day
 	Scripting.variables.add<double>("nwmin"sv, bindGETSIMPLE(static_cast<double>(getNWTime() % 60), this), {});                    // 60 min in an hour
 	Scripting.variables.add<double>("nwhour"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / toHours) % 24), this), {});       // 24 hours in a day
@@ -541,6 +542,13 @@ int Server::init(std::string_view serverip, std::string_view serverport, std::st
 	// Load the config files.
 	int ret = loadConfigFiles();
 	if (ret) return ret;
+
+	// Set the server mode.
+	// This requires a full server restart to change, so don't cache the value.
+	if (const auto serverMode = m_settings.get("servermode").value_or("normal"s); string::equalsi(serverMode, "kingdoms"sv))
+		m_serverMode = ServerMode::KINGDOMS;
+	else if (string::equalsi(serverMode, "newworld"sv))
+		m_serverMode = ServerMode::NEWWORLD;
 
 	// Load the NPC-Server.
 	loadNPCServer();

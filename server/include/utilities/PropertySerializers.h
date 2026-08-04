@@ -705,8 +705,8 @@ struct PropertyColors : public PropertyArray<GBYTE1, 8>
 	virtual void deserialize(CString& data) override;
 	virtual void apply(const GameValue& gameValue) override;
 	virtual std::format_context::iterator format(std::format_context& ctx) const override;
-	int getColorCount() const noexcept;
-	size_t getMaxColorValue() const noexcept;
+	static int getColorCount() noexcept;
+	static size_t getMaxColorValue() noexcept;
 };
 
 // Renames these properties so they can be used inside the X-macro.
@@ -731,7 +731,7 @@ concept PropertyContainer = requires(T t, CString& c)
 using PropertySendResults = std::vector<std::pair<SetResults, std::shared_ptr<PropertyBase>>>;
 using PropertyContainerGetter = std::function<std::shared_ptr<PropertyBase>(uint8_t, SetResults::ResultFlagType&)>;
 
-void collectPacketsFromResults(const PropertySendResults& results, CString& outAll, CString& outLevel, CString& outSource, PropertyContainerGetter getProp);
+void collectPacketsFromResults(const PropertySendResults& results, CString& outAll, CString& outLevel, CString& outSource, const PropertyContainerGetter& getProp);
 
 ////////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::props

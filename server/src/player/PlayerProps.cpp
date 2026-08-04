@@ -126,7 +126,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 	auto level = player ? player->getLevel() : nullptr;
 	bool restrictedPropAllowed = !m_server->hasNPCServer() || setBy == props::SetBy::SERVER;
 
-	props::SetResults result{ .propId = { PROPID(prop) } };
+	props::SetResults result{ .propId = PROPID(prop) };
 	result.resultFlags.set(props::SetResults::sendToLevel, clientPropsSharedLocal[PROPID(prop)]);
 	result.resultFlags.set(props::SetResults::sendToSource, setBy == props::SetBy::SERVER);
 
@@ -140,7 +140,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 	{
 		case PlayerProp::NICKNAME:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -170,7 +170,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::FULLHEARTS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -189,12 +189,12 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::HALFHEARTS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
 			uint8_t power = numProp->value;
-			int8_t powerDelta = power - account.character.hitpointsInHalves;
+			auto powerDelta = static_cast<int8_t>(power - account.character.hitpointsInHalves);
 
 			if (account.character.ap < 40 && powerDelta > 0)
 				break;
@@ -211,7 +211,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::GRALATS:
 		{
-			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -223,7 +223,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::ARROWS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -233,7 +233,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::BOMBS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -243,7 +243,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::GLOVEPOWER:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -255,7 +255,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::BOMBPOWER:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -265,7 +265,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::SWORDIMAGE:
 		{
-			PropertySwordPower* swordProp = dynamic_cast<PropertySwordPower*>(base);
+			auto swordProp = dynamic_cast<PropertySwordPower*>(base);
 			if (swordProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -278,7 +278,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::SHIELDIMAGE:
 		{
-			PropertyShieldPower* shieldProp = dynamic_cast<PropertyShieldPower*>(base);
+			auto shieldProp = dynamic_cast<PropertyShieldPower*>(base);
 			if (shieldProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -291,7 +291,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::GANI:
 		{
-			PropertyGaniOrBowGif* ganiProp = dynamic_cast<PropertyGaniOrBowGif*>(base);
+			auto ganiProp = dynamic_cast<PropertyGaniOrBowGif*>(base);
 			if (ganiProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -315,8 +315,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			// Allow spin to hurt things.
 			if (account.character.gani == "spin")
 			{
-				float tX = static_cast<float>(account.character.localPixelX / 16.0f) + 1.5f;
-				float tY = static_cast<float>(account.character.localPixelY / 16.0f) + 2.0f;
+				float tX = static_cast<float>(account.character.localPixelX) / 16.0f + 1.5f;
+				float tY = static_cast<float>(account.character.localPixelY) / 16.0f + 2.0f;
 				m_server->hitObjectsAtPoint({ tX, tY + 2.0f }, account.character.swordPower, level, shared_from_this());
 				m_server->hitObjectsAtPoint({ tX, tY - 2.0f }, account.character.swordPower, level, shared_from_this());
 				m_server->hitObjectsAtPoint({ tX + 2.0f, tY }, account.character.swordPower, level, shared_from_this());
@@ -327,7 +327,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::HEADIMAGE:
 		{
-			PropertyHeadGif* headProp = dynamic_cast<PropertyHeadGif*>(base);
+			auto headProp = dynamic_cast<PropertyHeadGif*>(base);
 			if (headProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -347,12 +347,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::MESSAGE:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			bool chatChanged = (account.character.chatMessage != strProp->value);
-			if (!chatChanged)
+			if (bool chatChanged = (account.character.chatMessage != strProp->value); !chatChanged)
 				break;
 
 			account.character.chatMessage = props::Limits::apply(strProp->value, props::Limits::ChatMessageLength);
@@ -379,7 +378,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::COLORS:
 		{
-			PropertyColors* colorProp = dynamic_cast<PropertyColors*>(base);
+			auto colorProp = dynamic_cast<PropertyColors*>(base);
 			if (colorProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -392,7 +391,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::X:
 		{
-			PropertyTileCoordinate* coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
+			auto coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
 			if (coordProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -414,7 +413,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::Y:
 		{
-			PropertyTileCoordinate* coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
+			auto coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
 			if (coordProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -436,7 +435,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::Z:
 		{
-			PropertyTileCoordinateZ* zProp = dynamic_cast<PropertyTileCoordinateZ*>(base);
+			auto zProp = dynamic_cast<PropertyTileCoordinateZ*>(base);
 			if (zProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -460,7 +459,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::SPRITE:
 		{
-			PropertySprite* spriteProp = dynamic_cast<PropertySprite*>(base);
+			auto spriteProp = dynamic_cast<PropertySprite*>(base);
 			if (spriteProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -488,7 +487,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::STATUS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -540,7 +539,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::CARRYSPRITE:
 		{
-			PropertyUnsafeByte* numProp = dynamic_cast<PropertyUnsafeByte*>(base);
+			auto numProp = dynamic_cast<PropertyUnsafeByte*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -550,7 +549,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::LEVEL:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -561,7 +560,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::HORSEIMAGE:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -573,7 +572,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::HORSEBUSHES:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -583,7 +582,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::EFFECTCOLORS:
 		{
-			PropertyEffectColors* effectColorsProp = dynamic_cast<PropertyEffectColors*>(base);
+			auto effectColorsProp = dynamic_cast<PropertyEffectColors*>(base);
 			if (effectColorsProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -593,7 +592,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::CARRYNPCID:
 		{
-			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -630,7 +629,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 					[[maybe_unused]] bool isOwner = true;
 					{
 						auto& playerList = m_server->getPlayerList();
-						for (auto& [otherId, other] : playerList)
+						for (auto& other : playerList | std::views::values)
 						{
 							if (other.get() == this) continue;
 							if (other->getProp<PlayerProp::CARRYNPCID>().value == newNPCID)
@@ -662,7 +661,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 					auto dir = player->account.character.direction;
 					auto bbox = npc->getBoundingBox();
 					auto pos = player->getLocalPosition();
-					pos.translate(24 - static_cast<int16_t>(bbox.size.width()) / 2, 48 - static_cast<int16_t>(bbox.size.height()));
+					pos.translate(static_cast<int16_t>(24 - bbox.size.width() / 2), static_cast<int16_t>(48 - bbox.size.height()));
 
 					// Send the position of the NPC to other players in the level so the it will appear in the right spot after the move completes.
 					// Do not send to the player who threw it.
@@ -675,14 +674,14 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 					);
 
 					// Queue up the movement of the NPC so clients position it properly.
-					LocalPixelPosition moveDelta{ dir == 1 ? -moveDistance : dir == 3 ? moveDistance : 0, dir == 0 ? -moveDistance : dir == 2 ? moveDistance : 0 };
+					LocalPixelPosition moveDelta{ dir == 1_i16 ? -moveDistance : dir == 3 ? moveDistance : 0_i16, dir == 0 ? -moveDistance : dir == 2_i16 ? moveDistance : 0_i16 };
 					npc->addMoveToQueue(moveDelta, 0.5, ENUM(NPCMoveFlags::NOCACHE));
-					if (npc->moveQueue.size() != 0)
+					if (!npc->moveQueue.empty())
 					{
 						// Set up the WASTHROWN event to trigger after 0.5 seconds.
 						// Also, make the NPC visible again.
 						auto& move = npc->moveQueue.back();
-						move.onComplete = [snpc = npc, pid = player->getId(), server = m_server, dir]()
+						move.onComplete = [snpc = npc, pid = player->getId(), dir]()
 						{
 							std::inplace_vector<SetResults, 3> results;
 
@@ -714,7 +713,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::APCOUNTER:
 		{
-			PropertyNumeric<GBYTE2>* numProp = dynamic_cast<PropertyNumeric<GBYTE2>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE2>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -724,7 +723,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::MAGICPOINTS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -735,7 +734,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::KILLS:
 		{
-			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -746,7 +745,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::DEATHS:
 		{
-			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -763,7 +762,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::UDPPORT:
 		{
-			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -773,7 +772,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::ALIGNMENT:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -785,7 +784,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::ADDITFLAGS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -798,7 +797,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::BODYIMAGE:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -808,7 +807,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::RATING:
 		{
-			PropertyEloRating* eloProp = dynamic_cast<PropertyEloRating*>(base);
+			auto eloProp = dynamic_cast<PropertyEloRating*>(base);
 			if (eloProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -822,7 +821,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::ATTACHNPCID:
 		{
-			PropertyAttachNPC* attachProp = dynamic_cast<PropertyAttachNPC*>(base);
+			auto attachProp = dynamic_cast<PropertyAttachNPC*>(base);
 			if (attachProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -833,7 +832,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::GMAPLEVELX:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr || level == nullptr || !level->isGmap())
 				SETPROP_RETURN_ERROR;
 
@@ -855,7 +854,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::GMAPLEVELY:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr || level == nullptr || !level->isGmap())
 				SETPROP_RETURN_ERROR;
 
@@ -883,7 +882,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::LANGUAGE:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -893,7 +892,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::PLAYERLISTSTATUS:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -936,7 +935,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::GATTRIB29:
 		case PlayerProp::GATTRIB30:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -949,7 +948,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		// Windows: wind
 		case PlayerProp::OSTYPE:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -961,7 +960,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		// Example: 1252
 		case PlayerProp::TEXTCODEPAGE:
 		{
-			PropertyNumeric<GBYTE3>* numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -978,7 +977,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		// Bits 0xFFFE are the actual value.
 		case PlayerProp::X2:
 		{
-			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
+			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
 			if (pixelProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1000,7 +999,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::Y2:
 		{
-			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
+			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
 			if (pixelProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1022,7 +1021,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::Z2:
 		{
-			PropertyPixelCoordinate* pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
+			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
 			if (pixelProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1046,7 +1045,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::PLAYERLISTCATEGORY:
 		{
-			PropertyNumeric<GBYTE1>* numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1056,7 +1055,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::COMMUNITYNAME:
 		{
-			PropertyString* strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1066,7 +1065,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::UNKNOWN83:
 		{
-			PropertyNumeric<GBYTE5>* numProp = dynamic_cast<PropertyNumeric<GBYTE5>*>(base);
+			auto numProp = dynamic_cast<PropertyNumeric<GBYTE5>*>(base);
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
@@ -1100,7 +1099,7 @@ void Player::setPropsFromPacket(CString& packet, props::SetBy setBy, Player* ori
 
 	while (packet.bytesLeft() > 0)
 	{
-		PlayerProp propId = (PlayerProp)packet.readGUChar();
+		const auto propId = static_cast<PlayerProp>(packet.readGUChar());
 
 		auto prop = constructPropFor(propId);
 		prop->deserialize(packet);
@@ -1134,12 +1133,12 @@ void Player::sendPropsFromResults(PropertySendResults& results)
 
 	std::erase_if(results, [](const PropertySendResults::value_type& res)
 	{
-		return !canSendProp((PlayerProp)res.first.propId);
+		return !canSendProp(static_cast<PlayerProp>(res.first.propId));
 	});
 
 	collectPacketsFromResults(results, sendAll, sendLevel, sendSource, [this](uint8_t propId, SetResults::ResultFlagType& destinations)
 	{
-		return this->getProp((PlayerProp)propId);
+		return this->getProp(static_cast<PlayerProp>(propId));
 	});
 
 	// Send the buffers out.
@@ -1153,16 +1152,16 @@ void Player::sendPropsFromResults(PropertySendResults& results)
 		sendPacket(CString() >> (char)PLO_PLAYERPROPS << sendSource);
 }
 
-void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
+void Player::setPropsFromRCPacket(CString& packet, Player* rc)
 {
 	[[maybe_unused]] bool hadBomb = false, hadBow = false;
 	CString outPacket;
 
 	// Skip playerworld
-	pPacket.readChars(pPacket.readGUChar());
+	packet.readChars(packet.readGUChar());
 
 	// Read props from the packet.
-	CString props = pPacket.readChars(pPacket.readGUChar());
+	CString props = packet.readChars(packet.readGUChar());
 
 	// Send props out.
 	setPropsFromPacket(props, props::SetBy::SERVER, rc);
@@ -1203,10 +1202,10 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 		sendPacket(outPacket);
 
 	// Re-populate the flag list.
-	auto flagCount = pPacket.readGUShort();
+	auto flagCount = packet.readGUShort();
 	while (flagCount-- > 0)
 	{
-		CString flag = pPacket.readChars(pPacket.readGUChar());
+		CString flag = packet.readChars(packet.readGUChar());
 		std::string name = flag.readString("=").toString();
 		std::string val = flag.readString("").toString();
 
@@ -1217,24 +1216,24 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 
 	// Clear the chests and re-populate the chest list.
 	account.savedChests.clear();
-	auto chestCount = pPacket.readGUShort();
+	auto chestCount = packet.readGUShort();
 	while (chestCount > 0)
 	{
-		unsigned char len = pPacket.readGUChar();
-		uint8_t loc[2] = { pPacket.readGUChar(), pPacket.readGUChar() };
-		std::string level = pPacket.readChars(len - 2).toString();
+		const unsigned char len = packet.readGUChar();
+		const uint8_t loc[2] = { packet.readGUChar(), packet.readGUChar() };
+		std::string level = packet.readChars(len - 2).toString();
 
 		account.savedChests.insert(std::make_pair(level, LocalWholeTilePosition{ loc[0], loc[1] }));
 		--chestCount;
 	}
 
 	// Re-populate the weapons list.
-	auto weaponCount = pPacket.readGUChar();
+	auto weaponCount = packet.readGUChar();
 	while (weaponCount > 0)
 	{
-		unsigned char len = pPacket.readGUChar();
+		const unsigned char len = packet.readGUChar();
 		if (len == 0) continue;
-		CString wpn = pPacket.readChars(len);
+		CString wpn = packet.readChars(len);
 
 		// Allow the bomb through if we are actually adding it.
 		if (wpn == "bomb" || wpn == "Bomb")
@@ -1259,7 +1258,7 @@ void Player::setPropsFromRCPacket(CString& pPacket, Player* rc)
 	// Warp the player to his new location now.
 	if (isLoaded() && isClient())
 	{
-		if (auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr)
+		if (const auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr)
 			player->warp(account.level, account.character.getLocalPosition(), std::nullopt);
 	}
 }
@@ -1273,13 +1272,13 @@ CString Player::getPropsPacketFromList(const PropList& props) const
 	// Create Props
 	for (int i = 0; i < PLAYERPROP_COUNT; ++i)
 	{
-		if (!canSendProp((PlayerProp)i))
+		if (!canSendProp(static_cast<PlayerProp>(i)))
 			continue;
 
 		if (props[i])
 		{
 			DO_PACKETLOG(if (!printedHeader) { printedHeader = true; printHeader(this, "PlayerProps::getPropsPacketFromList"sv); });
-			auto prop = getProp(static_cast<PlayerProp>(i));
+			const auto prop = getProp(static_cast<PlayerProp>(i));
 			DO_PACKETLOG(printProp(this, (PlayerProp)i, prop.get()));
 			propPacket >> (char)i << prop->serialize();
 		}
@@ -1299,7 +1298,7 @@ CString Player::getPropsForRCPacket()
 	ret >> (char)4 << "main"; // worldName
 
 	// Add the props.
-	CString props = getPropsPacketFromList(clientPropsForRCView);
+	const CString props = getPropsPacketFromList(clientPropsForRCView);
 	ret >> (char)props.length() << props;
 
 	// Add the player's flags.
@@ -1337,13 +1336,13 @@ CString Player::getModifiedPropsPacket() const
 	CString result;
 	for (auto i = 0; i < PLAYERPROP_COUNT; ++i)
 	{
-		if (!canSendProp((PlayerProp)i))
+		if (!canSendProp(static_cast<PlayerProp>(i)))
 			continue;
 
 		if (modTime[i].has_value() && modTime[i] != m_savedModTime[i])
 		{
 			DO_PACKETLOG(if (!printedHeader) { printedHeader = true; printHeader(this, "PlayerProps::getPropsPacketFromList"sv); });
-			auto prop = getProp((PlayerProp)i);
+			const auto prop = getProp(static_cast<PlayerProp>(i));
 			DO_PACKETLOG(printProp(this, (PlayerProp)i, prop.get()));
 			CString data = prop->serialize();
 			result >> (char)i << data;

@@ -11,7 +11,7 @@ In clientside scripts, this will always be the player's character.
 
 `##`
 
-> introduced: ???<br>
+> introduced: ???
 
 Inserts a single `#` into the string.  It is an escape character for message codes.
 
@@ -23,7 +23,7 @@ Inserts a single `#` into the string.  It is an escape character for message cod
 
 > introduced: 1.24 or 1.25<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 The character's sword image.
 
@@ -37,7 +37,7 @@ The character's sword image.
 
 > introduced: 1.24 or 1.25<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 The character's shield image.
 
@@ -51,7 +51,7 @@ The character's shield image.
 
 > introduced: 1.24 or 1.25<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 The character's head image.
 
@@ -65,7 +65,7 @@ The character's head image.
 
 > introduced: 1.24 or 1.25<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 The character's horse image.
 
@@ -79,7 +79,7 @@ The character's horse image.
 
 > introduced: 1.24 or 1.25<br>
 permissions: [R-]<br>
-targets: player<br>
+targets: player
 
 The image of the NPC the player is carrying.
 
@@ -94,7 +94,7 @@ The image of the NPC the player is carrying.
 > introduced: 1.24 or 1.25<br>
 removed: 2.00<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 The character's bow image.
 
@@ -108,7 +108,7 @@ The character's bow image.
 
 > introduced: 1.34 [R], 1.40 [RW]<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 The character's body image.
 
@@ -122,7 +122,7 @@ The character's body image.
 
 > introduced: 1.30<br>
 permissions: [R-]<br>
-targets: player<br>
+targets: player
 
 The player's account name.
 
@@ -133,7 +133,7 @@ The player's account name.
 
 `#b`
 
-> introduced: 2.16<br>
+> introduced: 2.16
 
 Represents a line break for certain commands, like `say2`.
 
@@ -145,7 +145,7 @@ Represents a line break for certain commands, like `say2`.
 
 > introduced: 1.24 or 1.25<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 The character's chat text.
 
@@ -158,32 +158,36 @@ The character's chat text.
 
 > introduced: 1.24 or 1.25<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 `#C5 - #C7(index)`
 
 > introduced: newworld<br>
-restriction: (client) newworld<br>
+restriction: (client) New World mode<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 The character's body colors.
 
 `index` targets the character in the `players[]` or `npcs[]` array, depending on context.
 
-| Code | Body Part |
-| ---- | --------- |
-| #C0 | Skin |
-| #C1 | Coat |
-| #C2 | Sleeves |
-| #C3 | Shoes |
-| #C4 | Belt |
+| Code  | Body Part  |
+|-------|------------|
+| #C0   | Skin       |
+| #C1   | Coat       |
+| #C2   | Sleeves    |
+| #C3   | Shoes      |
+| #C4   | Belt       |
 
-| Code | Body Part |
-| ---- | --------- |
-| #C5 | Pullover |
-| #C6 | Pants |
-| #C7 | Border (outline) |
+Body colors 5-7 require the server to be set in New World mode, and require a compatible client (2.x verified).
+
+See: `serveroptions.txt` - `servermode` option.
+
+| Code  | Body Part        |
+|-------|------------------|
+| #C5   | Pullover         |
+| #C6   | Pants            |
+| #C7   | Border (outline) |
 
 ---
 ## #D
@@ -191,7 +195,7 @@ The character's body colors.
 `#D`
 
 > introduced: 2.14<br>
-restriction: 🧑 clientside<br>
+restriction: 🧑 clientside
 
 The name of the file currently being downloaded.
 Paired with the variables `downloadpos` and `downloadsize`.
@@ -202,7 +206,7 @@ Paired with the variables `downloadpos` and `downloadsize`.
 `#E`
 
 > introduced: after 2.10, before 2.17rev1, maybe 2.13rev3?<br>
-restriction: 🧑 clientside<br>
+restriction: 🧑 clientside
 
 The current emoticon being displayed by the player.
 Emoticons are displayed by holding the `CTRL` key down and pressing a key, like `A`.
@@ -214,7 +218,7 @@ When that happens, the `#E` message code will return `A`.
 `#E(string)`
 
 > introduced: (npcserver)<br>
-restriction: 💻 serverside<br>
+restriction: 💻 serverside
 
 Password hashes the given string.
 
@@ -223,7 +227,7 @@ Password hashes the given string.
 
 `#e(start_index, length, string)`
 
-> introduced: 2.02<br>
+> introduced: 2.02
 
 Extracts a substring from the given string.
 
@@ -235,7 +239,7 @@ Extracts a substring from the given string.
 > introduced: (npcserver)<br>
 restriction: 💻 serverside<br>
 permissions: [R-]<br>
-targets: player<br>
+targets: player
 
 The level of the player.
 
@@ -246,13 +250,13 @@ The level of the player.
 
 > introduced: 1.24 or 1.25<br>
 permissions: [R-]<br>
-targets: npc<br>
+targets: npc
 
 `#f(index)`
 
 > introduced: 2.12<br>
 permissions: [R-]<br>
-targets: npc<br>
+targets: npc
 
 The image of the NPC.
 
@@ -267,7 +271,7 @@ The image of the NPC.
 > introduced: (npcserver)<br>
 restriction: 💻 serverside<br>
 permissions: [R-]<br>
-targets: player<br>
+targets: player
 
 The player's account level.
 
@@ -287,7 +291,7 @@ The player's account level.
 
 > introduced: 1.24 or 1.25<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 The guild name of the character.
 
@@ -300,7 +304,7 @@ The guild name of the character.
 `#i(image, x, y, width, height)`
 
 > introduced: 2.02<br>
-restriction: 🧑 clientside<br>
+restriction: 🧑 clientside
 
 Displays an image or part of an image when used in a sign.
 
@@ -309,7 +313,7 @@ Displays an image or part of an image when used in a sign.
 
 `#I(identifier, index)`
 
-> introduced: 2.10<br>
+> introduced: 2.10
 
 Returns the string at the given index from the string list.
 
@@ -323,7 +327,7 @@ setstring test,This,is,a,test;
 
 `#K(ascii_number)`
 
-> introduced: 2.00<br>
+> introduced: 2.00
 
 Returns the character represented by the given ASCII code.
 
@@ -336,7 +340,7 @@ Returns the character represented by the given ASCII code.
 
 `#k(key_index)`
 
-> introduced: ???<br>
+> introduced: ???
 
 The description of the specified key (in client language/key assignments).
 
@@ -347,7 +351,7 @@ The description of the specified key (in client language/key assignments).
 
 > introduced: 1.24<br>
 permissions: [R-]<br>
-targets: npc<br>
+targets: npc
 
 The level of the source NPC.
 
@@ -359,7 +363,7 @@ The level of the source NPC.
 
 > introduced: 2.00<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 The gani animation of the character.
 
@@ -374,7 +378,7 @@ The gani animation of the character.
 > introduced: (npcserver)<br>
 restriction: 💻 serverside<br>
 permissions: [R-]<br>
-targets: npc<br>
+targets: npc
 
 The name of a database NPC.
 
@@ -388,7 +392,7 @@ The name of a database NPC.
 
 > introduced: 1.24 or 1.25<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 The nickname of the character.
 
@@ -399,7 +403,7 @@ The nickname of the character.
 
 `#p(index)`
 
-> introduced: 2.03<br>
+> introduced: 2.03
 
 The value of a parameter, set by something like the `triggeraction` command.
 
@@ -410,7 +414,7 @@ The value of a parameter, set by something like the `triggeraction` command.
 
 > introduced: 2.02 (1-5), 2.13 (6-9), 2.16 (10-30)<br>
 permissions: [RW]<br>
-targets: character<br>
+targets: character
 
 The gani attributes of the character.
 
@@ -422,7 +426,7 @@ The gani attributes of the character.
 `#Q(guild_name, account_name)`
 
 > introduced: (npcserver)<br>
-restriction: 💻 serverside<br>
+restriction: 💻 serverside
 
 The assigned nickname of the player in a guild.
 
@@ -431,7 +435,7 @@ The assigned nickname of the player in a guild.
 
 `#R(string,...)`
 
-> introduced: 2.19<br>
+> introduced: 2.19
 
 Randomly selects a string from the given string list.
 
@@ -441,9 +445,9 @@ Randomly selects a string from the given string list.
 `#S`
 
 > introduced: newworld<br>
-restriction: (client) newworld, 🧑 clientside<br>
+restriction: (client) New World mode, 🧑 clientside<br>
 permissions: [R-]<br>
-targets: player<br>
+targets: player
 
 The name of the player's currently selected sword.
 
@@ -452,7 +456,7 @@ The name of the player's currently selected sword.
 
 `#s(identifier)`
 
-> introduced: 1.27<br>
+> introduced: 1.27
 
 Returns the string value of the identifier.
 
@@ -461,7 +465,7 @@ Returns the string value of the identifier.
 
 `#t(index)`
 
-> introduced: 2.02<br>
+> introduced: 2.02
 
 The value of a token created by the `tokenize` or `tokenize2` commands.
 
@@ -470,7 +474,7 @@ The value of a token created by the `tokenize` or `tokenize2` commands.
 
 `#T(string)`
 
-> introduced: 2.02<br>
+> introduced: 2.02
 
 Trims the string.
 
@@ -480,7 +484,7 @@ Trims the string.
 `#U(string)`
 
 > introduced: (npcserver)<br>
-restriction: 💻 serverside<br>
+restriction: 💻 serverside
 
 Replaces the string with a translated version of it.
 
@@ -489,7 +493,7 @@ Replaces the string with a translated version of it.
 
 `#v(identifier)`
 
-> introduced: 1.24 or 1.25<br>
+> introduced: 1.24 or 1.25
 
 The value of the identifier transformed into a string.
 
@@ -501,14 +505,14 @@ The value of the identifier transformed into a string.
 > introduced: possibly 2.04<br>
 restriction: 🧑 clientside<br>
 permissions: [R-]<br>
-targets: player<br>
+targets: player
 
 `#W(index)`
 
 > introduced: 2.04<br>
 restriction: 🧑 clientside<br>
 permissions: [R-]<br>
-targets: player<br>
+targets: player
 
 The image of the player's currently selected weapon.
 
@@ -522,14 +526,14 @@ The image of the player's currently selected weapon.
 > introduced: 1.24 or 1.25<br>
 restriction: 🧑 clientside<br>
 permissions: [R-]<br>
-targets: player<br>
+targets: player
 
 `#w(index)`
 
 > introduced: 2.04<br>
 restriction: 🧑 clientside<br>
 permissions: [R-]<br>
-targets: player<br>
+targets: player
 
 The name of the player's currently selected weapon.
 
