@@ -3,14 +3,13 @@
 
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <ranges>
 #include <string_view>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <CString.h>
 
 #include <level/LevelItem.h>
 #include <scripting/Script.h>
@@ -33,34 +32,35 @@ class Player;
 class Weapon
 {
 public:
-	explicit Weapon(LevelItemType itemType);
-	Weapon(std::string_view name, std::string_view image, std::string_view script);
+	explicit Weapon(const LevelItemType itemType);
+	Weapon(const std::string_view name, const std::string_view image, const std::string_view script);
 	~Weapon() = default;
 
 public:
-	static std::shared_ptr<Weapon> loadWeapon(const CString& pWeapon);
+	static std::shared_ptr<Weapon> loadWeapon(const std::filesystem::path& fileName);
 
 public:
 	bool saveWeapon();
-	Weapon& updateWeapon(std::string_view image, std::string_view script);
+	Weapon& updateWeapon(const std::string_view newImage, const std::string_view newScript);
 
 public:
-	void registerWeaponWithPlayer(std::shared_ptr<Player> player) const;
-	void sendByteCodeToPlayer(std::shared_ptr<Player> player) const;
+	void registerWeaponWithPlayer(const std::shared_ptr<Player>& player) const;
+	void sendByteCodeToPlayer(const std::shared_ptr<Player>& player) const;
 
 public:
 	std::string getJoinedClassesList() const;
 	[[a::inline]] std::generator<std::shared_ptr<ScriptClass>> getJoinedClasses() const;
 	void setJoinedClasses(std::string_view classes);
-	void joinClass(std::string_view className);
-	void leaveClass(std::string_view className);
+	void joinClass(const std::string_view className);
+	void leaveClass(const std::string_view className);
 
 protected:
 	std::string getClientSideScript() const;
+	void calculateHeaderChecksum();
 	void updateScriptClass(ScriptClass* scriptClass);
 
 public:
-	void executeEvents(ScriptEventQueue& events, ScriptObject source) const;
+	void executeEvents(ScriptEventQueue& events, const ScriptObject& source) const;
 
 public:
 	bool isDefault() const { return (m_weaponDefault != LevelItemType::INVALID); }
@@ -78,7 +78,7 @@ protected:
 	Server* m_server;
 	LevelItemType m_weaponDefault;
 	Script m_script;
-	uint32_t m_checksum;
+	uint32_t m_checksum = 0;
 	std::string m_desKey;
 	std::string m_header;
 	std::string m_headerWithCRC;
@@ -104,7 +104,7 @@ inline std::generator<std::shared_ptr<ScriptClass>> Weapon::getJoinedClasses() c
 namespace source
 {
 /// @brief Creates a ScriptObject from a Weapon by hashing the weapon's name.
-ScriptObject FromWeapon(WeaponPtr weapon);
+ScriptObject FromWeapon(const WeaponPtr& weapon);
 } // end namespace source
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -38,14 +38,14 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-Weapon::Weapon(LevelItemType itemType)
-	: name(LevelItem::getItemName(itemType)), modTime(clock::now()), m_weaponDefault(itemType), m_checksum(0)
+Weapon::Weapon(const LevelItemType itemType)
+	: name(LevelItem::getItemName(itemType)), modTime(clock::now()), m_weaponDefault(itemType)
 {
 	m_server = BabyDI::Get<Server>();
 	assert(m_server != nullptr);
 }
 
-Weapon::Weapon(std::string_view name, std::string_view image, std::string_view script)
+Weapon::Weapon(const std::string_view name, const std::string_view image, const std::string_view script)
 	: name(name), modTime(clock::now()), m_weaponDefault(LevelItemType::INVALID)
 {
 	m_server = BabyDI::Get<Server>();
@@ -55,99 +55,43 @@ Weapon::Weapon(std::string_view name, std::string_view image, std::string_view s
 
 //----------------------------
 
-std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
+std::shared_ptr<Weapon> Weapon::loadWeapon(const std::filesystem::path& fileName)
 {
 	// Calculated file name.
 	// Non-alphanumeric characters are encoded as %000.
 
-	// File Path
-	auto fileName = std::filesystem::path{ "weapons" } / pWeapon.toString();
-
-	// Load File
-	CString fileData;
-	if (!fileData.load(fileName.string()))
+	const auto server = BabyDI::Get<Server>();
+	const auto file = server->getFileSystem().openi(fs::FileCategory::WEAPON, std::format("weapon{}.txt", fileName.string()));
+	if (!file->opened())
 		return nullptr;
 
-	fileData.removeAllI("\r");
-
-	// Grab some information.
-	bool has_scriptend = fileData.find("SCRIPTEND") != -1;
-	bool found_scriptend = false;
-
-	// Parse header
-	CString headerLine = fileData.readString("\n");
-	if (headerLine != "GRAWP001")
+	if (const auto header = file->readLine(); header != "GRAWP001")
 		return nullptr;
 
-	// Definitions
-	std::string weaponName, weaponImage, weaponScript;
-
-	// Parse File
-	while (fileData.bytesLeft())
-	{
-		CString curLine = fileData.readString("\n");
-
-		// Find Command
-		CString curCommand = curLine.readString();
-
-		// Parse Line
-		if (curCommand == "REALNAME")
-		{
-			weaponName = curLine.readString("").toString();
-		}
-		else if (curCommand == "IMAGE")
-			weaponImage = curLine.readString("").toString();
-		else if (curCommand == "BYTECODE")
-		{
-			/*
-			CString fileName = curLine.readString("");
-
-			byteCodeData.load(CString() << "weapon_bytecode/" << fileName);
-			if (!byteCodeData.isEmpty())
-				byteCodeFile = fileName.toString();
-			*/
-		}
-		else if (curCommand == "SCRIPT")
-		{
-			do {
-				curLine = fileData.readString("\n");
-				if (curLine == "SCRIPTEND")
-				{
-					found_scriptend = true;
-					break;
-				}
-
-				weaponScript.append(curLine.text()).append("\n");
-			}
-			while (fileData.bytesLeft());
-		}
-	}
+	const auto weaponName = file->readConfigLine("REALNAME", " "sv);
+	const auto weaponImage = file->readConfigLine("IMAGE", " "sv);
+	const auto weaponScript = file->readConfigSection("SCRIPT", "SCRIPTEND");
 
 	// Valid Weapon Name?
-	if (weaponName.empty())
+	if (!weaponName.has_value() || weaponName->empty())
 		return nullptr;
 
-	// Give a warning if our weapon was malformed.
-	if (has_scriptend && !found_scriptend)
-	{
-		log::printLine(log::server, "WARNING: Weapon {} is malformed.", weaponName);
-		log::printLine(log::server, "SCRIPTEND needs to be on its own line.");
-	}
-
 	// Create the weapon.
-	auto weapon = std::make_shared<Weapon>(weaponName, weaponImage, weaponScript);
+	auto weapon = std::make_shared<Weapon>(weaponName.value(), weaponImage.value_or(""s), weaponScript.value_or(""s));
+
+	// Check for script limits.
+	if (const auto& script = weapon->getScript(); script.getClientByteCode().empty() && script.getClientSide().length() > 0x705F)
+		log::printLine(log::server, "WARNING: Clientside script of weapon ({}) exceeds the limit of 28767 bytes.", *weaponName);
 
 	// Set the mod time to the file mod time.
 	weapon->modTime = fs::getFileModTime(fileName);
 
 	// Check if we need to rename the file.
-	auto expectedFileName = fs::getHTMLEscapedFileName(std::format("weapon{}.txt", weapon->name)).string();
-	auto currentFileName = fs::getANSIFileName(pWeapon.toString());
+	const auto expectedFileName = fs::getHTMLEscapedFileName(std::format("weapon{}.txt", weapon->name)).string();
+	const auto currentFileName = fs::getANSIFileName(fileName);
 	if (expectedFileName != currentFileName)
 	{
-		auto server = BabyDI::Get<Server>();
-		auto fileData = server->getFileSystemServer().infoi(fs::FileCategory::WEAPON, currentFileName);
-		if (fileData != nullptr)
+		if (const auto fileData = server->getFileSystemServer().infoi(fs::FileCategory::WEAPON, currentFileName); fileData != nullptr)
 		{
 			auto indent = log::server.indent();
 			if (server->getFileSystemServer().rename(*fileData, expectedFileName))
@@ -156,15 +100,6 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const CString& pWeapon)
 				log::printLine(log::server, "** Failed to rename weapon file [{}] to [{}]", currentFileName, expectedFileName);
 		}
 	}
-
-	// Give a warning if both a script and a bytecode was found.
-	/*
-	if (!weaponScript.empty() && !byteCodeData.isEmpty())
-	{
-		log::printLine(log::server, "WARNING: Weapon {} includes both script and bytecode.  Using bytecode.", weapon->name);
-		weaponScript.clear();
-	}
-	*/
 
 	/*
 	* TODO(Nalin): Figure out how to reimplement this.
@@ -193,8 +128,8 @@ bool Weapon::saveWeapon()
 	//if (!m_bytecodeFile.empty())
 	//	return false;
 
-	auto fileName = fs::getHTMLEscapedFileName(std::format("weapon{}.txt", name));
-	auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::WEAPON, fileName, true);
+	const auto fileName = fs::getHTMLEscapedFileName(std::format("weapon{}.txt", name));
+	const auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::WEAPON, fileName, true);
 	if (!file)
 		return false;
 
@@ -208,53 +143,29 @@ bool Weapon::saveWeapon()
 	const auto& originalSource = m_script.getOriginalSource();
 	if (!originalSource.empty())
 	{
-		std::string_view source{ originalSource };
+		const std::string_view source{ originalSource };
 		file->writeLine("SCRIPT"sv);
 		file->writeLines(string::split(source, "\r\n"sv, false));
 		file->writeLine("SCRIPTEND"sv);
 	}
 	file->close();
 
+	calculateHeaderChecksum();
+
+	// Queue the created event.
+	scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
+
 	return true;
 }
 
-Weapon& Weapon::updateWeapon(std::string_view image, std::string_view script)
+Weapon& Weapon::updateWeapon(const std::string_view newImage, const std::string_view newScript)
 {
 	setJoinedClasses("");
-	m_script = std::move(Script{ name, script });
-	this->image = image;
+	m_script = Script{name, newScript};
+	this->image = newImage;
 	modTime = clock::now();
 
-	// Set the cryptographic key to be the script's hash.
-	// This will become the DES encryption key the client will use the encrypt the bytecode.
-	string::string_hash hash{};
-	uint64_t scriptHash = static_cast<uint64_t>(hash(script));
-
-	// Package the key into two GYBTE5's.
-	uint32_t* hashBytes = reinterpret_cast<uint32_t*>(&scriptHash);
-	CString key = CString() >> (long long)(hashBytes[0]) >> (long long)(hashBytes[1]);
-	m_desKey = key.toString();
-
-	// CRC32 checksum.
-	m_checksum = crc32(0L, Z_NULL, 0);
-	m_checksum = crc32(m_checksum, (const uint8_t*)script.data(), script.length());
-
-	// Create the header.
-	// [GBYTE2 length_header_and_bytecode]
-	// [STRING type,name,[0/1 save_to_disk],[GBYTE[10] desKey]]
-	std::vector<std::string> headerParts =
-	{
-		"weapon",
-		name,
-		"1",
-		m_desKey
-	};
-	m_header = string::toCSV(headerParts);
-
-	// Header with CRC32.
-	CString crc32{ (long long)m_checksum };
-	headerParts.push_back(crc32.toString());
-	m_headerWithCRC = string::toCSV(headerParts);
+	calculateHeaderChecksum();
 
 	// Queue the created event.
 	scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
@@ -264,7 +175,7 @@ Weapon& Weapon::updateWeapon(std::string_view image, std::string_view script)
 
 //----------------------------
 
-void Weapon::registerWeaponWithPlayer(std::shared_ptr<Player> player) const
+void Weapon::registerWeaponWithPlayer(const std::shared_ptr<Player>& player) const
 {
 	if (isDefault())
 	{
@@ -276,31 +187,35 @@ void Weapon::registerWeaponWithPlayer(std::shared_ptr<Player> player) const
 	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)name.length() << name >> (char)NPCProp::IMAGE >> (char)image.length() << image;
 
 	// Classic weapons.
-	if (m_server->Generation != ServerGeneration::MODERN && m_script.getClientByteCode().empty())
+	if (m_script.getClientByteCode().empty() && player->getVersion() <= CLVER_5_07)
 	{
-		std::string script = getClientSideScript();
+		const std::string script = getClientSideScript();
 		weaponPacket >> (char)NPCProp::SCRIPT >> (short)script.length() << script;
 		player->sendPacket(weaponPacket);
 	}
 	// If we have bytecode, send the weapon headers.
-	else
+	else if (m_server->Generation == ServerGeneration::MODERN)
 	{
-		auto classes = getJoinedClassesList();
-		weaponPacket >> (char)NPCProp::CLASS >> (short)classes.length() << classes;
-		player->sendPacket(weaponPacket);
+		const auto classes = getJoinedClassesList();
+		if (!classes.empty())
+		{
+			weaponPacket >> (char)NPCProp::CLASS >> (short)classes.length() << classes;
+			player->sendPacket(weaponPacket);
+		}
 
 		// Tell the client the load the script.
-		player->sendPacket(CString() >> (char)PLO_LOADSCRIPT << m_headerWithCRC);
+		if (!m_headerWithCRC.empty())
+			player->sendPacket(CString() >> (char)PLO_LOADSCRIPT << m_headerWithCRC);
 	}
 }
 
-void Weapon::sendByteCodeToPlayer(std::shared_ptr<Player> player) const
+void Weapon::sendByteCodeToPlayer(const std::shared_ptr<Player>& player) const
 {
 	// Send the bytecode.
 	if (const auto& bytecode = m_script.getClientByteCode(); !bytecode.empty())
 	{
-		const char* bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
-		std::string_view bytecodeView(bytecodePtr, bytecode.size());
+		const auto bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
+		const std::string_view bytecodeView(bytecodePtr, bytecode.size());
 		player->sendPacket(CString() >> (char)PLO_NPCWEAPONSCRIPT >> (short)m_header.length() << m_header << bytecodeView);
 	}
 }
@@ -311,12 +226,12 @@ std::string Weapon::getJoinedClassesList() const
 {
 	bool hasExpired = false;
 	std::string result;
-	for (const auto& [handle, classPtr] : m_joinedClasses)
+	for (const auto& classPtr : m_joinedClasses | std::views::values)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
 			result += scriptClass->name;
-			result += ",";
+			result += ',';
 		}
 		else hasExpired = true;
 	}
@@ -325,7 +240,7 @@ std::string Weapon::getJoinedClassesList() const
 	// If we have expired, clear them out.
 	if (hasExpired)
 	{
-		std::erase_if(m_joinedClasses, [this](const decltype(m_joinedClasses)::value_type& pair) { return pair.second.expired(); });
+		std::erase_if(m_joinedClasses, [](const decltype(m_joinedClasses)::value_type& pair) { return pair.second.expired(); });
 	}
 
 	return result;
@@ -359,7 +274,7 @@ void Weapon::setJoinedClasses(std::string_view classes)
 	}
 }
 
-void Weapon::joinClass(std::string_view className)
+void Weapon::joinClass(const std::string_view className)
 {
 	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
 	if (it != m_joinedClasses.end())
@@ -380,7 +295,7 @@ void Weapon::joinClass(std::string_view className)
 	}
 }
 
-void Weapon::leaveClass(std::string_view className)
+void Weapon::leaveClass(const std::string_view className)
 {
 	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
 	if (it == m_joinedClasses.end())
@@ -389,7 +304,7 @@ void Weapon::leaveClass(std::string_view className)
 	if (!m_server->hasNPCServer())
 		return;
 
-	if (auto scriptClass = it->second.lock(); scriptClass != nullptr)
+	if (const auto scriptClass = it->second.lock(); scriptClass != nullptr)
 		scriptClass->onScriptModified.unsubscribe(it->first);
 
 	m_joinedClasses.erase(it);
@@ -399,19 +314,54 @@ void Weapon::leaveClass(std::string_view className)
 std::string Weapon::getClientSideScript() const
 {
 	std::string result{ m_script.getClientSide() };
-	for (const auto& [handle, classPtr] : m_joinedClasses)
+	for (const auto& classPtr : m_joinedClasses | std::views::values)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
-			const auto& clientSide = scriptClass->getScript().getClientSide();
-			if (!clientSide.empty())
+			if (const auto& clientSide = scriptClass->getScript().getClientSide(); !clientSide.empty())
 			{
-				result += "\xa7";
+				result += '\xa7';
 				result += clientSide;
 			}
 		}
 	}
 	return result;
+}
+
+void Weapon::calculateHeaderChecksum()
+{
+	const auto& script = m_script.getOriginalSource();
+
+	// Set the cryptographic key to be the script's hash.
+	// This will become the DES encryption key the client will use the encrypt the bytecode.
+	constexpr string::string_hash hash{};
+	auto scriptHash = static_cast<uint64_t>(hash(script));
+
+	// Package the key into two GYBTE5's.
+	const auto hashBytes = reinterpret_cast<uint32_t*>(&scriptHash);
+	const CString key = CString() >> (long long)(hashBytes[0]) >> (long long)(hashBytes[1]);
+	m_desKey = key.toString();
+
+	// CRC32 checksum.
+	m_checksum = crc32(0L, Z_NULL, 0);
+	m_checksum = crc32(m_checksum, reinterpret_cast<const uint8_t*>(script.data()), script.length());
+
+	// Create the header.
+	// [GBYTE2 length_header_and_bytecode]
+	// [STRING type,name,[0/1 save_to_disk],[GBYTE[10] desKey]]
+	std::vector<std::string> headerParts =
+	{
+		"weapon",
+		name,
+		"1",
+		m_desKey
+	};
+	m_header = string::toCSV(headerParts);
+
+	// Header with CRC32.
+	const CString crc32{static_cast<long long>(m_checksum)};
+	headerParts.push_back(crc32.toString());
+	m_headerWithCRC = string::toCSV(headerParts);
 }
 
 void Weapon::updateScriptClass(ScriptClass* scriptClass)
@@ -421,14 +371,14 @@ void Weapon::updateScriptClass(ScriptClass* scriptClass)
 
 //----------------------------
 
-void Weapon::executeEvents(ScriptEventQueue& events, ScriptObject source) const
+void Weapon::executeEvents(ScriptEventQueue& events, const ScriptObject& source) const
 {
 	if (events.queue().empty())
 		return;
 
 	m_script.executeEvents(events, source);
 
-	for (auto& [handle, scriptClassPtr] : m_joinedClasses)
+	for (auto& scriptClassPtr : m_joinedClasses | std::views::values)
 	{
 		if (auto scriptClass = scriptClassPtr.lock(); scriptClass != nullptr)
 			scriptClass->getScript().executeEvents(events, source);
@@ -439,7 +389,7 @@ void Weapon::executeEvents(ScriptEventQueue& events, ScriptObject source) const
 
 //----------------------------
 
-ScriptObject source::FromWeapon(WeaponPtr weapon)
+ScriptObject source::FromWeapon(const WeaponPtr& weapon)
 {
 	size_t hash = string::string_hash{}(weapon->name);
 	return std::make_pair(hash, ScriptObjectType::WEAPON);
