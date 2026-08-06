@@ -28,7 +28,7 @@ enum class ScriptExecutionType
 class IScriptEngine
 {
 public:
-	virtual ~IScriptEngine() {};
+	virtual ~IScriptEngine() = default;
 
 public:
 	virtual std::string_view getEngineName() = 0;

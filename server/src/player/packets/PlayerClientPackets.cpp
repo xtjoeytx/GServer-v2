@@ -1496,9 +1496,9 @@ HandlePacketResult PlayerClient::msgPLI_UPDATEGANI(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_UPDATESCRIPT(CString& pPacket)
 {
-	CString weaponName = pPacket.readString("");
+	const CString weaponName = pPacket.readString("");
 
-	if (auto weaponObj = m_server->getWeapon(weaponName.toString()); weaponObj != nullptr)
+	if (const auto weaponObj = m_server->getWeapon(weaponName.toString()); weaponObj != nullptr)
 		weaponObj->sendByteCodeToPlayer(shared_from_this());
 
 	return HandlePacketResult::Handled;
@@ -1514,24 +1514,24 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 		return HandlePacketResult::Handled;
 
 	auto npcServer = m_server->getNPCServer();
-	if (auto classObj = npcServer->getClass(className).lock(); classObj != nullptr)
+	if (const auto classObj = npcServer->getClass(className); classObj != nullptr)
 	{
 		if (classObj->getCheckSum() == checkSum)
 			return HandlePacketResult::Handled;
 
-		CString classPacket = classObj->getClassPacket();
+		const CString classPacket = classObj->getClassPacket();
 		sendPacket(CString() >> (char)PLO_RAWDATA >> (int)classPacket.length());
 		sendPacket(classPacket);
 	}
 	else
 	{
 		std::vector<CString> headerData;
-		headerData.push_back("class");
-		headerData.push_back(className);
-		headerData.push_back('1');
-		headerData.push_back(CString() >> (long long)0 >> (long long)0);
-		headerData.push_back(CString() >> (long long)0);
-		CString gstr = utilities::retokenizeCStringArray(headerData);
+		headerData.emplace_back("class");
+		headerData.emplace_back(className);
+		headerData.emplace_back('1');
+		headerData.emplace_back(CString() >> (long long)0 >> (long long)0);
+		headerData.emplace_back(CString() >> (long long)0);
+		const CString gstr = utilities::retokenizeCStringArray(headerData);
 
 		// Should technically be PLO_LOADSCRIPT but for some reason the client breaks player.join() scripts
 		// if a weapon decides to request an class that doesnt exist on the server. This seems to fix it by

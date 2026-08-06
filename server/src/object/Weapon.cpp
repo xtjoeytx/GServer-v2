@@ -101,18 +101,6 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const std::filesystem::path& fileName
 		}
 	}
 
-	/*
-	* TODO(Nalin): Figure out how to reimplement this.
-	if (!byteCodeData.isEmpty())
-	{
-		auto byteCodeDataPtr = reinterpret_cast<uint8_t*>(byteCodeData.text());
-		std::vector<uint8_t> bytecode{ byteCodeDataPtr, byteCodeDataPtr + byteCodeData.length() };
-		auto clientByteCode = std::make_shared<ScriptByteCode>(std::move(bytecode));
-		weapon->m_source.setClientByteCode(clientByteCode);
-		weapon->m_bytecodeFile = byteCodeFile;
-	}
-	*/
-
 	return weapon;
 }
 
@@ -162,7 +150,7 @@ Weapon& Weapon::updateWeapon(const std::string_view newImage, const std::string_
 {
 	setJoinedClasses("");
 	m_script = Script{name, newScript};
-	this->image = newImage;
+	image = newImage;
 	modTime = clock::now();
 
 	calculateHeaderChecksum();
@@ -265,7 +253,7 @@ void Weapon::setJoinedClasses(std::string_view classes)
 			continue;
 
 		className = string::trim(className);
-		if (auto scriptClass = m_server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+		if (const auto scriptClass = m_server->getNPCServer()->getClass(className); scriptClass != nullptr)
 		{
 			auto handle = scriptClass->onScriptModified.subscribe(std::bind(&Weapon::updateScriptClass, this, std::placeholders::_1));
 			m_joinedClasses.emplace_back(handle, scriptClass);
@@ -283,7 +271,7 @@ void Weapon::joinClass(const std::string_view className)
 	if (!m_server->hasNPCServer())
 		return;
 
-	if (auto scriptClass = m_server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+	if (const auto scriptClass = m_server->getNPCServer()->getClass(className); scriptClass != nullptr)
 	{
 		auto handle = scriptClass->onScriptModified.subscribe(std::bind(&Weapon::updateScriptClass, this, std::placeholders::_1));
 		m_joinedClasses.emplace_back(handle, scriptClass);

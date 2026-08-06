@@ -371,7 +371,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	if (!m_server->getNPCServer()->getNPCByName(npcName).expired())
+	if (m_server->getNPCServer()->getNPCByName(npcName) != nullptr)
 	{
 		m_server->sendToNC("Error adding database npc: NPC name already exists");
 		return HandlePacketResult::Handled;
@@ -436,7 +436,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_CLASSEDIT(CString& pPacket)
 
 	// {112}{class}
 	CString className = pPacket.readString("");
-	if (auto classObj = m_server->getNPCServer()->getClass(className.text()).lock(); classObj != nullptr)
+	if (const auto classObj = m_server->getNPCServer()->getClass(className.text()); classObj != nullptr)
 		sendPacket(CString() >> (char)PLO_NC_CLASSGET >> (char)className.length() << className << string::toCSV(classObj->getScript().getOriginalSource()));
 
 	return HandlePacketResult::Handled;
@@ -455,10 +455,10 @@ HandlePacketResult PlayerNC::msgPLI_NC_CLASSADD(CString& pPacket)
 
 	// {113}{CHAR name length}{name}{GSTRING script}
 	std::string className = pPacket.readChars(pPacket.readGUChar()).toString();
-	auto classCode = string::join(string::fromCSV(pPacket.readString("").toString()), "\n"sv);
+	const auto classCode = string::join(string::fromCSV(pPacket.readString("").toString()), "\n"sv);
 
 	bool hasClass = false;
-	if (auto classObj = m_server->getNPCServer()->getClass(className).lock(); classObj != nullptr)
+	if (const auto classObj = m_server->getNPCServer()->getClass(className); classObj != nullptr)
 	{
 		hasClass = true;
 		classObj->setScript(classCode);
@@ -473,7 +473,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_CLASSADD(CString& pPacket)
 	}
 
 	// Logging
-	std::string logMsg = std::format("Script {} {} by {}", className, (!hasClass ? "added" : "updated"), account.name);
+	const std::string logMsg = std::format("Script {} {} by {}", className, (!hasClass ? "added" : "updated"), account.name);
 	log::printLine(log::npc, logMsg);
 	m_server->sendToNC(logMsg);
 

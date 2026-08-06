@@ -30,12 +30,12 @@ class Script
 {
 public:
 	Script() = default;
-	Script(std::string_view who, const std::string& src) noexcept : Script(who, std::move(std::string{ src })) {}
-	Script(std::string_view who, std::string_view src) noexcept : Script(who, std::move(std::string{ src })) {}
+	Script(const std::string_view who, const std::string& src) noexcept : Script(who, std::string{ src }) {}
+	Script(const std::string_view who, const std::string_view src) noexcept : Script(who, std::string{ src }) {}
 	Script(const Script& o) noexcept { *this = o; }
 	Script(Script&& o) noexcept { *this = std::move(o); }
 
-	Script(std::string_view who, std::string&& src) noexcept
+	Script(const std::string_view who, std::string&& src) noexcept
 	{
 		setOriginalSource(who, std::move(src));
 	}
@@ -44,12 +44,12 @@ public:
 	[[a::inline]] Script& operator=(Script&& o) noexcept;
 
 public:
-	[[a::inline]] const size_t getHash() const noexcept;
-	[[a::inline]] const std::string& getOriginalSource() const noexcept;
-	[[a::inline]] const std::string& getModifiedSource() const noexcept;
-	[[a::inline]] std::string_view getClientSide() const noexcept;
-	[[a::inline]] std::string_view getServerSide() const noexcept;
-	const ScriptByteCode& getClientByteCode() const noexcept;
+	[[a::inline]] [[nodiscard]] size_t getHash() const noexcept;
+	[[a::inline]] [[nodiscard]] const std::string& getOriginalSource() const noexcept;
+	[[a::inline]] [[nodiscard]] const std::string& getModifiedSource() const noexcept;
+	[[a::inline]] [[nodiscard]] std::string_view getClientSide() const noexcept;
+	[[a::inline]] [[nodiscard]] std::string_view getServerSide() const noexcept;
+	[[nodiscard]] const ScriptByteCode& getClientByteCode() const noexcept;
 
 public:
 	[[a::inline]] Script& setOriginalSource(std::string_view who, std::string&& source) noexcept;
@@ -59,7 +59,7 @@ public:
 	[[a::inline]] Script& setServerCompiledScript(CompiledScriptResultPtr script) noexcept;
 
 public:
-	std::generator<decltype(ScriptExecutionContext::joinedClasses)::const_reference> getServerJoinedClasses() const noexcept;
+	[[nodiscard]] std::generator<decltype(ScriptExecutionContext::joinedClasses)::const_reference> getServerJoinedClasses() const noexcept;
 
 public:
 	void executeEvents(ScriptContainer& container, ScriptObject source) const;
@@ -87,13 +87,16 @@ private:
 
 //----------------------------
 
-inline const size_t Script::getHash() const noexcept
+inline size_t Script::getHash() const noexcept
 {
 	return m_hash;
 }
 
 inline Script& Script::operator=(const Script& o) noexcept
 {
+	if (this == &o)
+		return *this;
+
 	m_who = o.m_who;
 	m_original_source = o.m_original_source;
 	m_modified_source = o.m_modified_source;
@@ -106,11 +109,14 @@ inline Script& Script::operator=(const Script& o) noexcept
 
 inline Script& Script::operator=(Script&& o) noexcept
 {
+	if (this == &o)
+		return *this;
+
 	m_who = std::move(o.m_who);
 	m_original_source = std::move(o.m_original_source);
 	m_modified_source = std::move(o.m_modified_source);
-	m_clientside = std::move(o.m_clientside);
-	m_serverside = std::move(o.m_serverside);
+	m_clientside = o.m_clientside;
+	m_serverside = o.m_serverside;
 	m_client_script = std::move(o.m_client_script);
 	m_server_script = std::move(o.m_server_script);
 	m_hash = o.m_hash;
@@ -139,7 +145,7 @@ inline std::string_view Script::getServerSide() const noexcept
 
 //----------------------------
 
-inline Script& Script::setOriginalSource(std::string_view who, std::string&& source) noexcept
+inline Script& Script::setOriginalSource(const std::string_view who, std::string&& source) noexcept
 {
 	m_who = who;
 	m_original_source = std::move(source);
@@ -147,7 +153,7 @@ inline Script& Script::setOriginalSource(std::string_view who, std::string&& sou
 	return setModifiedSource(m_original_source);
 }
 
-inline Script& Script::setOriginalSource(std::string_view who, const std::string& source) noexcept
+inline Script& Script::setOriginalSource(const std::string_view who, const std::string& source) noexcept
 {
 	m_who = who;
 	m_original_source = source;
@@ -157,7 +163,7 @@ inline Script& Script::setOriginalSource(std::string_view who, const std::string
 
 inline Script& Script::setModifiedSource(const std::string& source) noexcept
 {
-	m_modified_source = std::move(minify(source));
+	m_modified_source = minify(source);
 	split(m_modified_source);
 	compileScript();
 	return *this;
@@ -165,13 +171,13 @@ inline Script& Script::setModifiedSource(const std::string& source) noexcept
 
 inline Script& Script::setClientCompiledScript(CompiledScriptResultPtr script) noexcept
 {
-	m_client_script = script;
+	m_client_script = std::move(script);
 	return *this;
 }
 
 inline Script& Script::setServerCompiledScript(CompiledScriptResultPtr script) noexcept
 {
-	m_server_script = script;
+	m_server_script = std::move(script);
 	return *this;
 }
 

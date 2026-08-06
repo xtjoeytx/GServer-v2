@@ -140,8 +140,8 @@ struct ShootPacketWrapper
 	std::string gani;
 	std::string shootParams;
 
-	CString constructShootV1() const;
-	CString constructShootV2() const;
+	[[nodiscard]] CString constructShootV1() const;
+	[[nodiscard]] CString constructShootV2() const;
 };
 
 //----------------------------
@@ -151,17 +151,17 @@ class Player : public CSocketStub, public IPacketHandler, public std::enable_sha
 {
 public:
 	// Required by CSocketStub.
-	virtual bool onRecv() override;
-	virtual bool onSend() override;
-	virtual bool onRegister() override { return true; }
-	virtual void onUnregister() override;
-	virtual SOCKET getSocketHandle() override { return m_playerSock->getHandle(); }
-	virtual bool canRecv() override;
-	virtual bool canSend() override;
+	[[nodiscard]] bool onRecv() override;
+	[[nodiscard]] bool onSend() override;
+	[[nodiscard]] bool onRegister() override { return true; }
+	void onUnregister() override;
+	[[nodiscard]] SOCKET getSocketHandle() override { return m_playerSock->getHandle(); }
+	[[nodiscard]] bool canRecv() override;
+	[[nodiscard]] bool canSend() override;
 
 	// Constructor - Deconstructor
 	Player(CSocket* pSocket, PlayerID pId);
-	virtual ~Player();
+	~Player() override;
 	virtual void cleanup();
 
 	// Main methods.
@@ -174,7 +174,7 @@ public:
 	virtual bool sendLogin();
 
 	// Get Properties
-	CSocket* getSocket() { return m_playerSock; }
+	CSocket* getSocket() const { return m_playerSock; }
 	[[a::inline]] PlayerID getId() const;
 	clock::time_point getLastData() const { return m_lastData; }
 	CString getGuild() const { return m_guild; }
@@ -203,11 +203,11 @@ public:
 	// Set Properties
 	void setNick(CString pNickName, bool force = false);
 	void setId(PlayerID pId);
-	void setLoaded(bool loaded) { this->m_loaded = loaded; }
-	void setServerName(CString& tmpServerName) { m_serverName = tmpServerName; }
+	void setLoaded(const bool loaded) { this->m_loaded = loaded; }
+	void setServerName(const CString& tmpServerName) { m_serverName = tmpServerName; }
 	void setChat(const CString& pChat);
-	void setDeviceId(int64_t newDeviceId) { m_deviceId = newDeviceId; }
-	void setCarryNPC(NPCID id) { m_carryNPC = id; }
+	void setDeviceId(const int64_t newDeviceId) { m_deviceId = newDeviceId; }
+	void setCarryNPC(const NPCID id) { m_carryNPC = id; }
 
 public:
 	/// @brief Records the current modification time of all properties.
@@ -215,15 +215,15 @@ public:
 
 	/// @brief Constructs a PropertyContainer for PlayerProp P with the given values.
 	/// @tparam P The PlayerProp that determines the type of container to construct.
-	/// @param ...values The values to pass to the container's constructor.
+	/// @param values The values to pass to the container's constructor.
 	/// @return A property container for the specified PlayerProp P.
 	template<PlayerProp P, typename... Args>
-	[[a::inline]] PropertyContainer auto constructPropFor(Args... values) const;
+	[[a::inline]] static PropertyContainer auto constructPropFor(Args... values);
 
 	/// @brief Constructs a PropertyContainer for PlayerProp prop with the given values.
 	/// @param prop The PlayerProp that determines the type of container to construct.
 	/// @return A shared pointer to the constructed property's base class.
-	std::shared_ptr<PropertyBase> constructPropFor(PlayerProp prop) const;
+	static std::shared_ptr<PropertyBase> constructPropFor(PlayerProp prop) ;
 
 	/// @brief Gets the property container for PlayerProp P.
 	/// @tparam P The PlayerProp that determines the type of container to get.
@@ -249,18 +249,18 @@ public:
 	/// @param base A shared pointer to the base property value to assign.
 	/// @param setBy Indicates who is setting the property.
 	/// @return A SetResults value indicating the outcome of the property set operation.
-	SetResults setProp(PlayerProp prop, SetBy setBy, std::shared_ptr<PropertyBase> base);
+	SetResults setProp(PlayerProp prop, SetBy setBy, const std::shared_ptr<PropertyBase>& base);
 
 	/// @brief Sets a property value for a player with the given values and returns the result of the operation.
 	/// @tparam P The PlayerProp that determines the type of property to set.
 	/// @param setBy Specifies who is setting the property.
-	/// @param ...values The values to pass to the property container's constructor.
+	/// @param values The values to pass to the property container's constructor.
 	/// @return A SetResults value indicating the outcome of the property set operation.
 	template<PlayerProp P, typename... Args>
 	[[a::inline]] SetResults setPropWith(SetBy setBy, Args... values);
 
 	/// @brief Sends the results of setting a property across the network.
-	/// @param ...results A list of SetResults results to send.
+	/// @param results A list of SetResults results to send.
 	template<typename... Results>
 		requires AllSameAs<SetResults, Results...>
 	[[a::inline]] void sendPropsFromResults(const Results&... results);
@@ -302,9 +302,9 @@ public:
 	string_map<GameVariable> scriptParameters;
 
 public:
-	bool deleteFlag(std::string_view flagName, const SetBy setBy);
-	bool setFlag(std::string_view flagPair, const SetBy setBy);
-	bool setFlag(std::string_view flagName, std::optional<std::string> flagValue, const SetBy setBy);
+	bool deleteFlag(std::string_view flagName, SetBy setBy);
+	bool setFlag(std::string_view flagPair, SetBy setBy);
+	bool setFlag(std::string_view flagName, std::optional<std::string> flagValue, SetBy setBy);
 
 public:
 	virtual void setPosition(const PixelPosition& position);
@@ -338,8 +338,8 @@ public:
 	bool isLoaded() const { return m_loaded; }
 	bool isGuest() const { return account.loadOnly && account.communityName == "guest"; }
 	int getType() const { return m_type; }
-	void setType(int val) { m_type = val; }
-	void setExternal(bool val) { m_isExternal = val; }
+	void setType(const int val) { m_type = val; }
+	void setExternal(const bool val) { m_isExternal = val; }
 
 	bool addWeapon(LevelItemType defaultWeapon);
 	bool addWeapon(std::string_view name);
@@ -378,8 +378,8 @@ protected:
 	void sendPropsFromResults(PropertySendResults& results);
 
 protected:
-	virtual std::string_view whoAmI() const noexcept override { return account.name; }
-	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
+	std::string_view whoAmI() const noexcept override { return account.name; }
+	HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
 
 public:
 	// Packet-Functions
@@ -564,7 +564,7 @@ inline LocalPixelPosition Player::getLocalPosition() const noexcept
 inline TilePosition Player::getTilePosition() const noexcept
 {
 	auto pos = account.character.getTilePosition();
-	pos.z() = getCalculatedTileZ();
+	pos.z() = static_cast<float>(getCalculatedTileZ());
 	return pos;
 }
 
@@ -580,12 +580,12 @@ inline MapPosition Player::getMapPosition() const noexcept
 
 inline bool Player::inChatChannel(const std::string& channel) const
 {
-	return m_channelList.find(channel) != m_channelList.end();
+	return m_channelList.contains(channel);
 }
 
 inline bool Player::addChatChannel(const std::string& channel)
 {
-	auto res = m_channelList.insert(channel);
+	const auto res = m_channelList.insert(channel);
 	return res.second;
 }
 
@@ -698,7 +698,7 @@ inline void Player::recordCurrentPropModTime()
 //----------------------------
 
 template<PlayerProp P, typename... Args>
-PropertyContainer auto Player::constructPropFor(Args... values) const
+PropertyContainer auto Player::constructPropFor(Args... values)
 {
 	FOR_LIST_OF_PLAYER_PROPS(RETURN_CONSTRUCTPROPSFOR_CONSTEXPR);
 	throw std::invalid_argument("Invalid PlayerProp type in constructPropFor");
@@ -712,13 +712,13 @@ PropertyContainer auto Player::getProp() const
 }
 
 template<PlayerProp P>
-SetResults Player::setProp(SetBy setBy, PropertyContainer auto prop)
+SetResults Player::setProp(const SetBy setBy, PropertyContainer auto prop)
 {
 	return setProp(P, setBy, &prop);
 }
 
 template<PlayerProp P, typename... Args>
-SetResults Player::setPropWith(SetBy setBy, Args... values)
+SetResults Player::setPropWith(const SetBy setBy, Args... values)
 {
 	return setProp<P>(setBy, constructPropFor<P>(values...));
 }

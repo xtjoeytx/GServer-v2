@@ -67,7 +67,7 @@ void NPCServer::initialize()
 	m_npcServerPlayer = std::make_shared<PlayerNPCServer>(nullptr, NPCServerPlayerID);
 	m_npcServerPlayer->setType(PLTYPE_NPCSERVER);
 
-	auto& settings = m_server->getSettings();
+	const auto& settings = m_server->getSettings();
 	auto& account = m_npcServerPlayer->account;
 
 	// TODO(Nalin): The settings manager sees `NICK ` nodes as valid, so it doesn't get a default!  We need to redo settings.
@@ -109,13 +109,13 @@ void NPCServer::initialize()
 		m_firstNPCSave = false;
 }
 
-void NPCServer::setRemoteIp(std::string_view host)
+void NPCServer::setRemoteIp(const std::string_view host)
 {
 	if (string::equalsi(m_server->getAdminSettings().get<std::string>("ns_ip").value_or("auto"), "auto"sv))
 		m_ncHost = host;
 }
 
-void NPCServer::sendNCLoginToPlayer(std::shared_ptr<Player> player)
+void NPCServer::sendNCLoginToPlayer(const std::shared_ptr<Player>& player)
 {
 	// RC's only!
 	if (!player->isRC() || !player->account.hasRight(PLPERM_NPCCONTROL))
@@ -123,7 +123,7 @@ void NPCServer::sendNCLoginToPlayer(std::shared_ptr<Player> player)
 
 	// Grab NPCServer & Send
 	// If the player is connecting from the same IP as the NPC server, use that IP.
-	const std::string connectString = std::format("{},{}", (player->account.ipAddress == m_npcServerPlayer->getSocket()->getLocalIp() ? player->account.ipAddress : m_ncHost), m_ncPort);
+	const std::string connectString = std::format("{},{}", (player->account.ipAddress == CSocket::getLocalIp() ? player->account.ipAddress : m_ncHost), m_ncPort);
 	log::printLine(log::server, "-- Sending NPC-Server connection info to '{}': {}", player->account.name, connectString);
 
 	player->sendPacket(CString() >> (char)PLO_NPCSERVERADDR >> (short)m_npcServerPlayer->getId() << connectString);
@@ -131,7 +131,7 @@ void NPCServer::sendNCLoginToPlayer(std::shared_ptr<Player> player)
 
 //----------------------------
 
-void NPCServer::update(TimeoutGenerator::time_point currentTime)
+void NPCServer::update(const TimeoutGenerator::time_point currentTime)
 {
 	// If we are sleeping, don't process updates.
 	if (m_sleeping)
@@ -149,7 +149,7 @@ void NPCServer::update(TimeoutGenerator::time_point currentTime)
 	m_timedSave.update(currentTime);
 }
 
-void NPCServer::run(TimeoutGenerator::time_delta delta)
+void NPCServer::run(const TimeoutGenerator::time_delta delta)
 {
 	//auto profile = log::Profile(log::server, "NPCServer::run");
 	m_frameStartTime = clock::now();
@@ -178,7 +178,7 @@ void NPCServer::run(TimeoutGenerator::time_delta delta)
 	}
 
 	// Save all player prop mod times.
-	for (auto& player : m_playerList | std::views::values)
+	for (const auto& player : m_playerList | std::views::values)
 	{
 		player->recordCurrentPropModTime();
 	}
@@ -270,7 +270,7 @@ void NPCServer::loadClasses()
 		CString scriptData;
 		scriptData.load(info->file.string());
 
-		auto scriptClass = std::make_shared<ScriptClass>(className, scriptData.text());
+		const auto scriptClass = std::make_shared<ScriptClass>(className, scriptData.text());
 		scriptClass->modTime = info->getModTime();
 		m_classList[className] = scriptClass;
 
@@ -302,7 +302,7 @@ void NPCServer::saveNPCs()
 	}
 
 	log::printLine(log::server, "Saving NPCs.");
-	for (const auto& [npcId, npcPtr] : m_globalNPCList)
+	for (const auto& npcPtr : m_globalNPCList | std::views::values)
 	{
 		if (auto npc = npcPtr.lock(); npc != nullptr)
 			m_server->getNPCLoader().saveNPC(npc);
@@ -311,13 +311,13 @@ void NPCServer::saveNPCs()
 
 //////////////////////////////////////////////////////////////////////////////
 
-void NPCServer::playerLogin(std::shared_ptr<Player> player)
+void NPCServer::playerLogin(const std::shared_ptr<Player>& player)
 {
 	m_playerList[player->getId()] = player;
 	m_sleeping = false;
 }
 
-void NPCServer::playerLogout(std::shared_ptr<Player> player)
+void NPCServer::playerLogout(const std::shared_ptr<Player>& player)
 {
 	m_deletedPlayers.insert(player);
 	addEventToControlNPC(ScriptEventType::PLAYERLOGOUT, source::FromPlayer(player->getId()));
@@ -338,28 +338,28 @@ std::shared_ptr<NPC> NPCServer::getNPC(const NPCID id) const
 	return m_server->getNPC(id);
 }
 
-std::weak_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
+std::shared_ptr<NPC> NPCServer::getNPCByName(const std::string& name)
 {
 	for (const auto& npc : m_globalNPCList | std::views::values)
 	{
 		if (auto npcptr = npc.lock(); npcptr != nullptr)
 		{
 			if (string::equalsi(name, npcptr->name))
-				return npc;
+				return npcptr;
 		}
 	}
 
-	return {};
+	return nullptr;
 }
 
-std::shared_ptr<NPC> NPCServer::addNPC(std::string_view image, std::string_view script, std::shared_ptr<Level> level, const TilePosition& location, std::string_view type)
+std::shared_ptr<NPC> NPCServer::addNPC(const std::string_view image, const std::string_view script, const std::shared_ptr<Level>& level, const TilePosition& location, const std::string_view type)
 {
 	auto npc = m_server->addNPC(image, script, location.x(), location.y(), level, NPCStorageType::DATABASE, true, type);
 	m_globalNPCList[npc->id] = npc;
 	return npc;
 }
 
-std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, const TilePosition& location)
+std::shared_ptr<NPC> NPCServer::addNPC(const std::string_view name, const NPCID id, const std::string_view type, const std::string_view scripter, const std::shared_ptr<Level>& level, const TilePosition& location)
 {
 	NPCPtr npc = nullptr;
 
@@ -368,7 +368,7 @@ std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::str
 	else
 		npc = std::make_shared<NPC>(id, NPCStorageType::DATABASE);
 
-	auto pixelPosition = toPixelPosition(location);
+	const auto pixelPosition = toPixelPosition(location);
 	auto localPixelPosition = toLocalPixelPosition(pixelPosition);
 	auto mapPosition = toMapPosition(pixelPosition);
 
@@ -393,7 +393,7 @@ std::shared_ptr<NPC> NPCServer::addNPC(std::string_view name, NPCID id, std::str
 
 	if (type != NPCTYPE_LOCAL)
 	{
-		CString props = npc->getPropsPacketFor<NPCProp::NAME, NPCProp::TYPE, NPCProp::LEVEL>();
+		const CString props = npc->getPropsPacketFor<NPCProp::NAME, NPCProp::TYPE, NPCProp::LEVEL>();
 		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)npc->id << props);
 	}
 
@@ -406,32 +406,29 @@ std::shared_ptr<NPC> NPCServer::addNPCFromFile(const std::filesystem::path& file
 	auto npc = npcLoader.loadNPC(filePath);
 	if (npc)
 	{
-		auto fileName = fs::getANSIFileName(filePath);
-		auto npcName = fileName.substr(3, fileName.length() - 7); // Remove npc and .txt
-
 		npc->scripting.events.addEvent(ScriptEventType::INITIALIZED, source::FromServer());
 		if (npc->scriptType != NPCTYPE_LOCAL)
 		{
 			m_globalNPCList[npc->id] = npc;
 
-			CString props = npc->getPropsPacketFor<NPCProp::NAME, NPCProp::TYPE, NPCProp::LEVEL>();
+			const CString props = npc->getPropsPacketFor<NPCProp::NAME, NPCProp::TYPE, NPCProp::LEVEL>();
 			m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCADD >> (int)npc->id << props);
 		}
 	}
 	return npc;
 }
 
-void NPCServer::deleteNPC(NPCID id)
+void NPCServer::deleteNPC(const NPCID id)
 {
 	m_deletedNPCs.insert(id);
 }
 
-void NPCServer::unloadNPC(NPCID id)
+void NPCServer::unloadNPC(const NPCID id)
 {
 	m_unloadedNPCs.insert(id);
 }
 
-void NPCServer::processControlNPCs()
+void NPCServer::processControlNPCs() const
 {
 	for (auto& [id, npc] : m_server->getNPCList())
 	{
@@ -501,23 +498,23 @@ void NPCServer::processUnloadedNPCs()
 
 //----------------------------
 
-bool NPCServer::hasClass(std::string_view name) const
+bool NPCServer::hasClass(const std::string_view name) const
 {
-	return m_classList.find(name) != m_classList.end();
+	return m_classList.contains(name);
 }
 
-std::weak_ptr<ScriptClass> NPCServer::getClass(std::string_view name) const
+std::shared_ptr<ScriptClass> NPCServer::getClass(const std::string_view name) const
 {
-	auto classIter = m_classList.find(name);
+	const auto classIter = m_classList.find(name);
 	if (classIter == m_classList.end())
-		return {};
+		return nullptr;
 
 	return classIter->second;
 }
 
-bool NPCServer::deleteClass(std::string_view className)
+bool NPCServer::deleteClass(const std::string_view className)
 {
-	auto classIter = m_classList.find(className);
+	const auto classIter = m_classList.find(className);
 	if (classIter == m_classList.end())
 		return false;
 
@@ -529,9 +526,9 @@ bool NPCServer::deleteClass(std::string_view className)
 	return true;
 }
 
-std::shared_ptr<ScriptClass> NPCServer::addClass(std::string_view className, std::string_view classCode)
+std::shared_ptr<ScriptClass> NPCServer::addClass(const std::string_view className, const std::string_view classCode)
 {
-	auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::SCRIPTCLASS, std::format("{}.txt", className), true);
+	const auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::SCRIPTCLASS, std::format("{}.txt", className), true);
 	if (!file) return nullptr;
 
 	const auto& filePath = file->filePath();
@@ -561,16 +558,16 @@ std::shared_ptr<ScriptClass> NPCServer::loadClass(const std::filesystem::path& f
 	return scriptClass;
 }
 
-void NPCServer::updateClass(std::string_view className, std::string_view classCode)
+void NPCServer::updateClass(const std::string_view className, const std::string_view classCode)
 {
-	auto it = m_classList.find(className);
+	const auto it = m_classList.find(className);
 	if (it == m_classList.end())
 		return;
 
-	auto& scriptClass = it->second;
+	const auto& scriptClass = it->second;
 	scriptClass->setScript(classCode);
 
-	auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::SCRIPTCLASS, std::format("{}.txt", className), true);
+	const auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::SCRIPTCLASS, std::format("{}.txt", className), true);
 	if (!file) return;
 
 	const auto& filePath = file->filePath();
@@ -585,12 +582,12 @@ void NPCServer::updateClass(std::string_view className, std::string_view classCo
 
 //----------------------------
 
-void NPCServer::showImage(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view image) const
+void NPCServer::showImage(const std::shared_ptr<NPC>& npc, const uint8_t index, const PixelPosition& position, const std::string_view image) const
 {
 	if (index > 199)
 		return;
 
-	auto level = npc->getLevel();
+	const auto level = npc->getLevel();
 	if (level == nullptr)
 		return;
 
@@ -598,12 +595,12 @@ void NPCServer::showImage(std::shared_ptr<NPC> npc, uint8_t index, const PixelPo
 	npc->addShowImg(index, std::move(showimg));
 }
 
-void NPCServer::showText(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view text, std::string_view font, std::string_view style) const
+void NPCServer::showText(const std::shared_ptr<NPC>& npc, const uint8_t index, const PixelPosition& position, const std::string_view text, const std::string_view font, const std::string_view style) const
 {
 	if (index > 199 || text.empty())
 		return;
 
-	auto level = npc->getLevel();
+	const auto level = npc->getLevel();
 	if (level == nullptr)
 		return;
 
@@ -611,12 +608,12 @@ void NPCServer::showText(std::shared_ptr<NPC> npc, uint8_t index, const PixelPos
 	npc->addShowImg(index, std::move(showimg));
 }
 
-void NPCServer::showGani(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view animation, uint8_t direction) const
+void NPCServer::showGani(const std::shared_ptr<NPC>& npc, const uint8_t index, const PixelPosition& position, const std::string_view animation, const uint8_t direction) const
 {
 	if (index > 199)
 		return;
 
-	auto level = npc->getLevel();
+	const auto level = npc->getLevel();
 	if (level == nullptr)
 		return;
 
@@ -624,12 +621,12 @@ void NPCServer::showGani(std::shared_ptr<NPC> npc, uint8_t index, const PixelPos
 	npc->addShowImg(index, std::move(showimg));
 }
 
-void NPCServer::showPoly(std::shared_ptr<NPC> npc, uint8_t index, uint8_t dimensions, const std::vector<double>& points) const
+void NPCServer::showPoly(const std::shared_ptr<NPC>& npc, const uint8_t index, const uint8_t dimensions, const std::vector<double>& points) const
 {
 	if (index > 199 || dimensions < 2 || dimensions > 3)
 		return;
 
-	auto level = npc->getLevel();
+	const auto level = npc->getLevel();
 	if (level == nullptr)
 		return;
 
@@ -637,16 +634,16 @@ void NPCServer::showPoly(std::shared_ptr<NPC> npc, uint8_t index, uint8_t dimens
 	npc->addShowImg(index, std::move(showimg));
 }
 
-void NPCServer::changeShowImgColors(std::shared_ptr<NPC> npc, uint8_t index, float red, float green, float blue, float alpha) const
+void NPCServer::changeShowImgColors(const std::shared_ptr<NPC>& npc, const uint8_t index, const float red, const float green, const float blue, const float alpha) const
 {
 	if (index > 199)
 		return;
 
-	auto level = npc->getLevel();
+	const auto level = npc->getLevel();
 	if (level == nullptr)
 		return;
 
-	auto iter = npc->showImgList.find(index);
+	const auto iter = npc->showImgList.find(index);
 	if (iter == std::end(npc->showImgList))
 		return;
 
@@ -660,16 +657,16 @@ void NPCServer::changeShowImgColors(std::shared_ptr<NPC> npc, uint8_t index, flo
 	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(m_frameStartTime), npc->getGlobalPosition(), level);
 }
 
-void NPCServer::changeShowImgMode(std::shared_ptr<NPC> npc, uint8_t index, uint8_t drawMode) const
+void NPCServer::changeShowImgMode(const std::shared_ptr<NPC>& npc, const uint8_t index, const uint8_t drawMode) const
 {
 	if (index > 199)
 		return;
 
-	auto level = npc->getLevel();
+	const auto level = npc->getLevel();
 	if (level == nullptr)
 		return;
 
-	auto iter = npc->showImgList.find(index);
+	const auto iter = npc->showImgList.find(index);
 	if (iter == std::end(npc->showImgList))
 		return;
 
@@ -680,16 +677,16 @@ void NPCServer::changeShowImgMode(std::shared_ptr<NPC> npc, uint8_t index, uint8
 	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(m_frameStartTime), npc->getGlobalPosition(), level);
 }
 
-void NPCServer::changeShowImgPart(std::shared_ptr<NPC> npc, uint8_t index, const ImagePartRectangle& imagePart) const
+void NPCServer::changeShowImgPart(const std::shared_ptr<NPC>& npc, const uint8_t index, const ImagePartRectangle& imagePart) const
 {
 	if (index > 199)
 		return;
 
-	auto level = npc->getLevel();
+	const auto level = npc->getLevel();
 	if (level == nullptr)
 		return;
 
-	auto iter = npc->showImgList.find(index);
+	const auto iter = npc->showImgList.find(index);
 	if (iter == std::end(npc->showImgList))
 		return;
 
@@ -700,16 +697,16 @@ void NPCServer::changeShowImgPart(std::shared_ptr<NPC> npc, uint8_t index, const
 	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(m_frameStartTime), npc->getGlobalPosition(), level);
 }
 
-void NPCServer::changeShowImgLayer(std::shared_ptr<NPC> npc, uint8_t index, uint8_t layer) const
+void NPCServer::changeShowImgLayer(const std::shared_ptr<NPC>& npc, const uint8_t index, const uint8_t layer) const
 {
 	if (index > 199)
 		return;
 
-	auto level = npc->getLevel();
+	const auto level = npc->getLevel();
 	if (level == nullptr)
 		return;
 
-	auto iter = npc->showImgList.find(index);
+	const auto iter = npc->showImgList.find(index);
 	if (iter == std::end(npc->showImgList))
 		return;
 
@@ -720,16 +717,16 @@ void NPCServer::changeShowImgLayer(std::shared_ptr<NPC> npc, uint8_t index, uint
 	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(m_frameStartTime), npc->getGlobalPosition(), level);
 }
 
-void NPCServer::changeShowImgZoom(std::shared_ptr<NPC> npc, uint8_t index, float zoom) const
+void NPCServer::changeShowImgZoom(const std::shared_ptr<NPC>& npc, const uint8_t index, const float zoom) const
 {
 	if (index > 199)
 		return;
 
-	auto level = npc->getLevel();
+	const auto level = npc->getLevel();
 	if (level == nullptr)
 		return;
 
-	auto iter = npc->showImgList.find(index);
+	const auto iter = npc->showImgList.find(index);
 	if (iter == std::end(npc->showImgList))
 		return;
 
@@ -740,7 +737,7 @@ void NPCServer::changeShowImgZoom(std::shared_ptr<NPC> npc, uint8_t index, float
 	m_server->sendPacketToNearby(CString() >> (char)PLO_SHOWIMGNPC >> (int)npc->id >> (char)(index + 10) << showimg.getAllPropsPacket(m_frameStartTime), npc->getGlobalPosition(), level);
 }
 
-void NPCServer::hideImages(std::shared_ptr<NPC> npc, uint8_t index, std::optional<uint8_t> endIndex) const
+void NPCServer::hideImages(const std::shared_ptr<NPC>& npc, const uint8_t index, const std::optional<uint8_t> endIndex) const
 {
 	if (index > 199)
 		return;
@@ -753,9 +750,9 @@ void NPCServer::hideImages(std::shared_ptr<NPC> npc, uint8_t index, std::optiona
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tileset::TileType NPCServer::getTileType(uint16_t tile, std::shared_ptr<Level> level) const noexcept
+tileset::TileType NPCServer::getTileType(const uint16_t tile, const std::shared_ptr<Level>& level) const noexcept
 {
-	auto tilesetType = m_server->getTilesetTypeForLevel(level);
+	const auto tilesetType = m_server->getTilesetTypeForLevel(level);
 	return m_server->getTileTypeForTile(tilesetType, tile);
 }
 

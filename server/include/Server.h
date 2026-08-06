@@ -185,16 +185,16 @@ class Server : public CSocketStub
 
 public:
 	// Required by CSocketStub.
-	bool onRecv();
-	bool onSend() { return true; }
-	bool onRegister() { return true; }
-	void onUnregister() { return; }
-	SOCKET getSocketHandle() { return m_playerSock.getHandle(); }
-	bool canRecv() { return true; }
-	bool canSend() { return false; }
+	bool onRecv() override;
+	bool onSend() override { return true; }
+	bool onRegister() override { return true; }
+	void onUnregister() override {}
+	SOCKET getSocketHandle() override { return m_playerSock.getHandle(); }
+	bool canRecv() override { return true; }
+	bool canSend() override { return false; }
 
-	Server(const CString& pName);
-	virtual ~Server();
+	explicit Server(const CString& pName);
+	~Server() override;
 	void operator()();
 	void cleanup();
 	void restart();
@@ -269,6 +269,7 @@ public:
 public:
 	/// @brief Gets a stubbed level with the given name (a stubbed level is not yet loaded).
 	/// @param levelName The name of the level.
+	/// @param groupName The name of the group the level belongs to (if any).
 	/// @return A shared pointer to a Level.
 	std::shared_ptr<Level> getStubbedLevel(std::string_view levelName, std::string_view groupName = ""sv);
 
@@ -312,18 +313,19 @@ public:
 
 	/// @brief Finds the appropriate gmap that contains the given level, given the level's name and taking into account singleplayer or group maps.
 	/// @param levelName The name of the level.
+	/// @param player The player to use as a hint for which gmap to return (since the level might be instanced for that player).
 	/// @return A shared pointer to a Level.
 	std::shared_ptr<Level> findGmapForLevel(std::string_view levelName, std::shared_ptr<Player> player) noexcept;
 
 	/// @brief Gets the tileset type for the given level.
-	/// @param levelName The name of the level.
+	/// @param level The level.
 	/// @return A TilesetType enum value.
 	tileset::TilesetType getTilesetTypeForLevel(std::shared_ptr<Level> level) const noexcept;
 	tileset::TilesetType getTilesetTypeForLevel(std::shared_ptr<const Level> level) const noexcept;
 
 	/// @brief Gets the tile type at the given index for the given tileset.
 	/// @param tileset The tileset type.
-	/// @param index The tile index.
+	/// @param tile The tile index.
 	/// @return The TileType enum value.
 	tileset::TileType getTileTypeForTile(tileset::TilesetType tileset, uint16_t tile) const noexcept;
 
@@ -332,15 +334,15 @@ public:
 	[[a::inline]] const auto& getAllowedDeathDrops() const noexcept;
 
 public:
-	std::shared_ptr<NPC> getNPC(const NPCID id) const;
+	std::shared_ptr<NPC> getNPC(NPCID id) const;
 	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCStorageType storageType, bool sendToPlayers = false, std::string_view type = {});
 	std::shared_ptr<NPC> addNPC(NPCPtr npc, bool sendToPlayers = false);
-	bool deleteNPC(const NPCID id, const bool eraseFromLevel = true);
-	bool deleteNPC(const std::shared_ptr<NPC>& npc, const bool eraseFromLevel = true);
+	bool deleteNPC(NPCID id, bool eraseFromLevel = true);
+	bool deleteNPC(const std::shared_ptr<NPC>& npc, bool eraseFromLevel = true);
 
 public:
-	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;
-	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id, int type) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(PlayerID id) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(PlayerID id, int type) const;
 	template<class T = Player> std::shared_ptr<T> getPlayer(const CString& account, int type) const;
 
 	bool addPlayer(PlayerPtr player, PlayerID id = USHRT_MAX);
@@ -378,8 +380,8 @@ public:
 	bool processRCChat(std::string_view message, std::weak_ptr<Player> sender = {});
 
 public:
-	void sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender = {});
-	void sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender = {});
+	void sendToRC(const CString& pMessage, const std::weak_ptr<Player>& pSender = {});
+	void sendToNC(const CString& pMessage, const std::weak_ptr<Player>& pSender = {});
 	void sendTriggerAction(PlayerID toPlayerId, NPCID fromNpcId, const LocalPixelPosition& localPosition, std::string_view action, std::string_view params) const;
 	void sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, const PixelPosition& position, std::string_view action, std::string_view params) const;
 
@@ -406,10 +408,10 @@ public:
 	void updateClassForPlayers(std::shared_ptr<ScriptClass> scriptClass);
 
 public:
-	bool hasNPCServer() const { return m_playerList.find(NPCServerPlayerID) != m_playerList.end(); }
+	bool hasNPCServer() const { return m_playerList.contains(NPCServerPlayerID); }
 	std::shared_ptr<NPCServer> getNPCServer() const { return m_npcServer; }
 
-	void queueNPCEventLocal(LevelPtr level, ScriptEventType type, ScriptObject source, auto&&... args)
+	void queueNPCEventLocal(const LevelPtr& level, ScriptEventType type, ScriptObject source, auto&&... args)
 	{
 		if (!hasNPCServer()) return;
 		if (level == nullptr) return;
@@ -420,14 +422,14 @@ public:
 		}
 	}
 
-	void queueNPCEvent(LevelPtr level, const PixelPosition& position, ScriptEventType type, ScriptObject source, auto&&... args)
+	void queueNPCEvent(const LevelPtr& level, const PixelPosition& position, ScriptEventType type, ScriptObject source, auto&&... args)
 	{
 		if (!hasNPCServer()) return;
 		if (level == nullptr) return;
-		auto eventDistance = cached.eventDistance.getValue();
-		for (auto npcid : level->findInRangeNPCsByDistance(position, eventDistance))
+		const auto eventDistance = cached.eventDistance.getValue();
+		for (const auto npcid : level->findInRangeNPCsByDistance(position, eventDistance))
 		{
-			if (auto npc = getNPC(npcid); npc)
+			if (const auto npc = getNPC(npcid); npc)
 				npc->scripting.events.addEvent(type, source, std::forward<decltype(args)>(args)...);
 		}
 	}
@@ -521,7 +523,7 @@ private:
 
 	// Trigger dispatcher
 	TriggerDispatcher m_triggerActionDispatcher;
-	void createTriggerCommands(TriggerDispatcher::Builder cmdBuilder);
+	void createTriggerCommands(TriggerDispatcher::Builder builder);
 
 	std::vector<std::string> m_shootParams;
 
@@ -539,8 +541,7 @@ inline const auto& Server::getAllowedDeathDrops() const noexcept
 
 inline std::shared_ptr<NPC> Server::getNPC(const NPCID id) const
 {
-	auto iter = m_npcList.find(id);
-	if (iter != std::end(m_npcList))
+	if (auto iter = m_npcList.find(id); iter != std::end(m_npcList))
 		return iter->second;
 
 	return nullptr;
@@ -576,7 +577,7 @@ inline void Server::logToFileSafely(std::filesystem::path fileName, string::Inpu
 	}
 }
 
-inline void Server::sendToRC(const CString& pMessage, std::weak_ptr<Player> pSender)
+inline void Server::sendToRC(const CString& pMessage, const std::weak_ptr<Player>& pSender)
 {
 	std::string_view message = pMessage.toStringView();
 	message = string::retrieveLine(message);
@@ -585,7 +586,7 @@ inline void Server::sendToRC(const CString& pMessage, std::weak_ptr<Player> pSen
 		sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << message, pSender);
 }
 
-inline void Server::sendToNC(const CString& pMessage, std::weak_ptr<Player> pSender)
+inline void Server::sendToNC(const CString& pMessage, const std::weak_ptr<Player>& pSender)
 {
 	std::string_view message = pMessage.toStringView();
 	message = string::retrieveLine(message);
@@ -620,7 +621,7 @@ inline std::shared_ptr<T> Server::getPlayer(const PlayerID id, int type) const
 template<class T>
 inline std::shared_ptr<T> Server::getPlayer(const CString& account, int type) const
 {
-	for (const auto& [id, player] : m_playerList)
+	for (const auto& player : m_playerList | std::views::values)
 	{
 		// Check if its the type of player we are looking for
 		if (!player || !(player->getType() & type))

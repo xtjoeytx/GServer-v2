@@ -39,12 +39,12 @@ public:
 	using callback_type = std::function<void(thread_context&, promise_type&)>;
 
 public:
-	CompiledWithCallbackThreadJob(callback_type callback)
+	explicit CompiledWithCallbackThreadJob(callback_type callback)
 		: m_fn(std::move(callback))
 	{
 	}
 
-	void run(thread_context& th_context, promise_type& promise)
+	void run(thread_context& th_context, promise_type& promise) const
 	{
 		m_fn(th_context, promise);
 	}
@@ -76,7 +76,7 @@ public:
 	using user_callback_type = std::function<void(const CompilerResponse&)>;
 
 	GS2ScriptManager();
-	~GS2ScriptManager() {}
+	~GS2ScriptManager() = default;
 
 	std::future<CompilerResponse> compileScript(const std::string& script, user_callback_type finishedCb = {});
 	void runQueue();

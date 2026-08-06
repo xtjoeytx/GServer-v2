@@ -792,7 +792,7 @@ void NPC::setJoinedClasses(std::string_view classes)
 			continue;
 
 		className = string::trim(className);
-		if (auto scriptClass = m_server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+		if (const auto scriptClass = m_server->getNPCServer()->getClass(className); scriptClass != nullptr)
 		{
 			auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
 			m_joinedClasses.emplace_back(handle, scriptClass);
@@ -821,7 +821,7 @@ void NPC::joinClass(std::string_view className)
 	if (!m_server->hasNPCServer())
 		return;
 
-	if (auto scriptClass = m_server->getNPCServer()->getClass(className).lock(); scriptClass != nullptr)
+	if (const auto scriptClass = m_server->getNPCServer()->getClass(className); scriptClass != nullptr)
 	{
 		auto handle = scriptClass->onScriptModified.subscribe(std::bind(&NPC::updateScriptClass, this, std::placeholders::_1));
 		m_joinedClasses.emplace_back(handle, scriptClass);
@@ -897,26 +897,28 @@ void NPC::updateScriptClass(ScriptClass* scriptClass)
 
 //----------------------------
 
-std::shared_ptr<PropertyBase> NPC::constructPropFor(NPCProp prop) const
+std::shared_ptr<PropertyBase> NPC::constructPropFor(const NPCProp prop)
 {
 	switch (prop)
 	{
 #define GENERATE_CONSTRUCTPROPFOR_CASE(prop, type, ...) \
 	case prop: return std::make_shared<type>();
 		FOR_LIST_OF_NPC_PROPS(GENERATE_CONSTRUCTPROPFOR_CASE);
+		default:;
 	}
 	throw std::invalid_argument("Invalid NPCProp type in constructPropFor");
 }
 
 //----------------------------
 
-std::shared_ptr<PropertyBase> NPC::getProp(NPCProp prop) const
+std::shared_ptr<PropertyBase> NPC::getProp(const NPCProp prop) const
 {
 	switch (prop)
 	{
 #define GENERATE_GETPROP_CASE(prop, type, ...) \
 	case prop: return std::make_shared<type>(__VA_ARGS__);
 		FOR_LIST_OF_NPC_PROPS(GENERATE_GETPROP_CASE);
+		default:;
 	}
 
 	throw std::invalid_argument("Invalid NPCProp type in getProp");
@@ -924,15 +926,14 @@ std::shared_ptr<PropertyBase> NPC::getProp(NPCProp prop) const
 
 //----------------------------
 
-SetResults NPC::setProp(NPCProp prop, SetBy setBy, std::shared_ptr<PropertyBase> base)
+SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, const std::shared_ptr<PropertyBase>& base)
 {
-	PropertyBase* basePtr = base.get();
-	if (basePtr != nullptr)
+	if (PropertyBase* basePtr = base.get(); basePtr != nullptr)
 		return setProp(prop, setBy, basePtr);
 	throw std::invalid_argument("setProp called with nullptr base pointer.");
 }
 
-SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
+SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* base)
 {
 	auto levelPtr = getLevel();
 	bool canUpdatePosition = !m_blockPositionUpdates || setBy == props::SetBy::SERVER;
@@ -983,9 +984,9 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			// If the image is being set and it is empty or "-", and we don't have a shape, make us invisible.
 			// This will prevent the NPC from being seen as an obstacle in serverside checks.
 			if (!hasImage() && !hasShape())
-				visFlags &= ~(uint8_t)NPCVisFlags::VISIBLE;
+				visFlags &= ~static_cast<uint8_t>(NPCVisFlags::VISIBLE);
 			else
-				visFlags |= (uint8_t)NPCVisFlags::VISIBLE;
+				visFlags |= static_cast<uint8_t>(NPCVisFlags::VISIBLE);
 
 			// If we had a visibility change, send it.
 			if (visFlags != oldVisFlags)
@@ -1181,8 +1182,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			if (character.gani == "spin")
 			{
 				auto self = m_server->getNPC(id);
-				float tX = static_cast<float>(character.localPixelX / 16.0f) + 1.5f;
-				float tY = static_cast<float>(character.localPixelY / 16.0f) + 2.0f;
+				float tX = (static_cast<float>(character.localPixelX) / 16.0f) + 1.5f;
+				float tY = (static_cast<float>(character.localPixelY) / 16.0f) + 2.0f;
 				m_server->hitObjectsAtPoint({tX, tY + 2.0f}, character.swordPower, m_currentLevel, self);
 				m_server->hitObjectsAtPoint({tX, tY - 2.0f}, character.swordPower, m_currentLevel, self);
 				m_server->hitObjectsAtPoint({tX + 2.0f, tY}, character.swordPower, m_currentLevel, self);
@@ -1542,6 +1543,8 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 			testForTouch(result);
 			break;
 		}
+
+		default:;
 	}
 
 	// If we are sending other ids, we need to update the mod time for them too.
@@ -1556,7 +1559,7 @@ SetResults NPC::setProp(NPCProp prop, SetBy setBy, PropertyBase* base)
 
 //----------------------------
 
-void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr source) const
+void NPC::sendPropsFromSendResults(PropertySendResults& results, const PlayerPtr& source) const
 {
 	CString sendAll, sendLevel, sendSource;
 
@@ -1587,14 +1590,14 @@ void NPC::sendPropsFromSendResults(PropertySendResults& results, PlayerPtr sourc
 
 //----------------------------
 
-void NPC::setPropsFromPacket(CString& packet, PlayerPtr source)
+void NPC::setPropsFromPacket(CString& packet, const PlayerPtr& source)
 {
 	try
 	{
 		DO_PACKETLOG(log::printBlock(log::networkdump, "NPC::setPropsFromPacket:\n"));
 
 		PropertySendResults results;
-		auto setBy = (source != nullptr ? SetBy::CLIENT : SetBy::SERVER);
+		const auto setBy = (source != nullptr ? SetBy::CLIENT : SetBy::SERVER);
 
 		while (packet.bytesLeft() > 0)
 		{
@@ -1687,7 +1690,7 @@ CString NPC::getAllPropsPacket(std::optional<clock::time_point> newTime) const
 	DO_PACKETLOG(log::printBlock(log::networkdump, "NPC::getAllPropsPacket:\n"));
 
 	CString retVal;
-	int pmax = NPCPROP_COUNT;
+	constexpr auto pmax = NPCPROP_COUNT;
 
 	for (int i = 0; i < pmax; i++)
 	{
@@ -1778,12 +1781,12 @@ void NPC::constructScriptParameters()
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
 		"x"sv,
 		[this](std::optional<size_t>) -> GameValueVariantForGetter { return (double)character.getTilePosition().x(); },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				auto globalPosition = character.getGlobalPosition();
-				globalPosition.x() = value->get() * 16;
+				globalPosition.x() = static_cast<int32_t>(value->get() * 16);
 				character.localPixelX = toLocalPixelPosition(globalPosition).x();
 				moveQueue.clear();
 
@@ -1808,12 +1811,12 @@ void NPC::constructScriptParameters()
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
 		"y"sv,
 		[this](std::optional<size_t>) -> GameValueVariantForGetter { return character.getTilePosition().y(); },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				auto globalPosition = character.getGlobalPosition();
-				globalPosition.y() = value->get() * 16;
+				globalPosition.y() = static_cast<int32_t>(value->get() * 16);
 				character.localPixelY = toLocalPixelPosition(globalPosition).y();
 				moveQueue.clear();
 
@@ -1844,7 +1847,7 @@ void NPC::constructScriptParameters()
 				string::toNumber(character.headImage.substr(4), headSet);
 			return static_cast<double>(headSet);
 		},
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
 			static double noHeadSet = -1.0;
 			static auto noHeadRef = std::ref(noHeadSet);
@@ -1852,7 +1855,7 @@ void NPC::constructScriptParameters()
 			if (value == nullptr)
 				value = &noHeadRef;
 
-			auto headSet = std::clamp(static_cast<int>(value->get()), -1, 99);
+			const auto headSet = std::clamp(static_cast<int>(value->get()), -1, 99);
 			if (headSet != -1)
 			{
 				character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::CLASSIC ? "gif" : "png"));
@@ -1865,9 +1868,9 @@ void NPC::constructScriptParameters()
 		"sprite"sv,
 		[this](std::optional<size_t>) -> GameValueVariantForGetter {
 			return static_cast<double>(character.sprite); },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				character.sprite = static_cast<uint8_t>(value->get());
 				if (character.sprite >= 4 && m_server->Generation != ServerGeneration::CLASSIC)
@@ -1882,9 +1885,9 @@ void NPC::constructScriptParameters()
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
 		"dir"sv,
 		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(character.direction); },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				character.direction = std::clamp(static_cast<uint8_t>(value->get()), 0_ui8, 3_ui8);
 				modTime[PROPID(NPCProp::SPRITE)] = m_server->getFrameStartTime();
@@ -1895,11 +1898,11 @@ void NPC::constructScriptParameters()
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
 		"hurtdx"sv,
 		[this](std::optional<size_t>) -> GameValueVariantForGetter { return character.hurtPushDeltaInHalfPixels[0] / 32.0; },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
-				auto clampedValue = std::clamp(value->get(), -1.0, 1.0);
+				const auto clampedValue = std::clamp(value->get(), -1.0, 1.0);
 				character.hurtPushDeltaInHalfPixels[0] = static_cast<int8_t>(clampedValue * 32);
 				modTime[PROPID(NPCProp::HURTDXDY)] = m_server->getFrameStartTime();
 			}
@@ -1909,11 +1912,11 @@ void NPC::constructScriptParameters()
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
 		"hurtdy"sv,
 		[this](std::optional<size_t>) -> GameValueVariantForGetter { return character.hurtPushDeltaInHalfPixels[1] / 32.0; },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
-				auto clampedValue = std::clamp(value->get(), -1.0, 1.0);
+				const auto clampedValue = std::clamp(value->get(), -1.0, 1.0);
 				character.hurtPushDeltaInHalfPixels[1] = static_cast<int8_t>(clampedValue * 32);
 				modTime[PROPID(NPCProp::HURTDXDY)] = m_server->getFrameStartTime();
 			}
@@ -1926,7 +1929,7 @@ void NPC::constructScriptParameters()
 
 void NPC::testForLinks(SetResults& result)
 {
-	auto levelPtr = getLevel();
+	const auto levelPtr = getLevel();
 	if (levelPtr == nullptr) return;
 
 	// The NPC changed their position.
@@ -1942,7 +1945,7 @@ void NPC::testForLinks(SetResults& result)
 	auto informNPCWarped = [&]()
 	{
 		// Tell NCs about our new position.
-		CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::LEVEL << getProp<NPCProp::LEVEL>().serialize();
+		const CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::LEVEL << getProp<NPCProp::LEVEL>().serialize();
 		m_server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
 
 		// Set our level prop.
@@ -1962,8 +1965,8 @@ void NPC::testForLinks(SetResults& result)
 	// Clamp NPC to the level.
 	auto clampToLevel = [&]()
 	{
-		auto clampedX = std::clamp(character.localPixelX, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
-		auto clampedY = std::clamp(character.localPixelY, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
+		const auto clampedX = std::clamp(character.localPixelX, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
+		const auto clampedY = std::clamp(character.localPixelY, static_cast<int16_t>(0), static_cast<int16_t>(61 * 16));
 		if (clampedX != character.localPixelX || clampedY != character.localPixelY)
 		{
 			character.localPixelX = clampedX;
@@ -1975,10 +1978,10 @@ void NPC::testForLinks(SetResults& result)
 	// Gmaps are treated as one large map, and so level npcs can freely walk across maps (source: post=1193766)
 	if (levelPtr->isGmap())
 	{
-		uint8_t computedMapX = character.localPixelX / 1024;
-		uint8_t computedMapY = character.localPixelY / 1024;
-		uint8_t computedLocalX = character.localPixelX % 1024;
-		uint8_t computedLocalY = character.localPixelY % 1024;
+		const uint8_t computedMapX = character.localPixelX / 1024;
+		const uint8_t computedMapY = character.localPixelY / 1024;
+		const auto computedLocalX = static_cast<int16_t>(character.localPixelX % 1024);
+		const auto computedLocalY = static_cast<int16_t>(character.localPixelY % 1024);
 
 		// We test the NPC's x/y position to see if they walked out of the bounds of the current level.
 		// If they did, alter their map location.
@@ -2004,9 +2007,9 @@ void NPC::testForLinks(SetResults& result)
 		return;
 
 	// Test for links.
-	static Position<int> touchTest[] = {{2, 1}, {0, 2}, {2, 4}, {3, 2}};
-	TilePosition testPos = character.getTilePosition().translate(touchTest[character.direction].x(), touchTest[character.direction].y());
-	if (auto linkTouched = levelPtr->getLink(testPos); linkTouched.has_value())
+	static Position<float> touchTest[] = {{2, 1}, {0, 2}, {2, 4}, {3, 2}};
+	const TilePosition testPos = character.getTilePosition().translate(touchTest[character.direction].x(), touchTest[character.direction].y());
+	if (const auto linkTouched = levelPtr->getLink(testPos); linkTouched.has_value())
 	{
 		auto& destLevelName = linkTouched.value()->getDestinationLevel();
 		const auto& currentMap = levelPtr->getMap();
@@ -2016,12 +2019,12 @@ void NPC::testForLinks(SetResults& result)
 			return;
 
 		// Check if we have the level.
-		LevelPtr destLevel = m_server->getLoadedLevel(destLevelName, levelPtr);
+		const LevelPtr destLevel = m_server->getLoadedLevel(destLevelName, levelPtr);
 		if (destLevel == nullptr)
 			return;
 
 		// Get the sub-level for the destination level.
-		SubLevelPtr destSubLevel = destLevel->getSubLevelByName(destLevelName);
+		const SubLevelPtr destSubLevel = destLevel->getSubLevelByName(destLevelName);
 		if (destSubLevel == nullptr)
 			return;
 
@@ -2260,7 +2263,7 @@ std::vector<std::string> NPC::getVariableDump() const
 			result.emplace_back(std::format("{}.vars[{}]: {}", npcname, flag, variable->getCopy<double>().value_or(0.0)));
 		if (variable->value.has<std::vector<double>>())
 		{
-			auto values = variable->get<std::vector<double>>();
+			const auto values = variable->get<std::vector<double>>();
 			if (values.has_value() && !values.value().get().empty())
 			{
 				auto valuesAsStrings = values.value().get() | std::views::transform([](const double& val)

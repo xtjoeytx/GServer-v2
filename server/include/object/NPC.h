@@ -210,10 +210,10 @@ enum class NPCStorageType
 	DATABASE
 };
 
-inline constexpr std::string_view NPCTYPE_LOCAL = "LOCALN"sv;
-inline constexpr std::string_view NPCTYPE_OBJECT = "OBJECT"sv;
-inline constexpr std::string_view NPCTYPE_ITEM = "ITEM"sv;
-inline constexpr std::string_view NPCTYPE_CONTROL = "CONTROL"sv;
+inline constexpr auto NPCTYPE_LOCAL = "LOCALN"sv;
+inline constexpr auto NPCTYPE_OBJECT = "OBJECT"sv;
+inline constexpr auto NPCTYPE_ITEM = "ITEM"sv;
+inline constexpr auto NPCTYPE_CONTROL = "CONTROL"sv;
 
 //----------------------------
 
@@ -241,22 +241,22 @@ struct NPCMove
 	/// @brief Callback function to execute when the movement is complete.
 	std::function<void()> onComplete;
 
-	static const int cacheNearbyMovement = 0; // Value: 1
-	static const int appendMovement = 1;      // Value: 2
-	static const int blockCheck = 2;          // Value: 4
-	static const int informWhenDone = 3;      // Value: 8
-	static const int applyDirection = 4;      // Value: 16
+	static constexpr int cacheNearbyMovement = 0; // Value: 1
+	static constexpr int appendMovement = 1;      // Value: 2
+	static constexpr int blockCheck = 2;          // Value: 4
+	static constexpr int informWhenDone = 3;      // Value: 8
+	static constexpr int applyDirection = 4;      // Value: 16
 
 	/// @brief Returns the current interpolated pixel position based on elapsed time.
 	/// @return A PixelPosition representing the current position interpolated between the origin and destination, based on the elapsed time.
-	PixelPosition getCurrentPosition() const noexcept
+	[[nodiscard]] PixelPosition getCurrentPosition() const noexcept
 	{
 		if (elapsed >= duration)
 			return destination;
 
-		double percent = static_cast<double>(elapsed.count()) / duration.count();
-		auto lerpX = std::lerp(origin.x(), destination.x(), percent);
-		auto lerpY = std::lerp(origin.y(), destination.y(), percent);
+		const double percent = static_cast<double>(elapsed.count()) / static_cast<double>(duration.count());
+		const auto lerpX = std::lerp(origin.x(), destination.x(), percent);
+		const auto lerpY = std::lerp(origin.y(), destination.y(), percent);
 		return {static_cast<int32_t>(lerpX), static_cast<int32_t>(lerpY)};
 	}
 };
@@ -342,15 +342,15 @@ public:
 
 	/// @brief Constructs a PropertyContainer for NPCProp P with the given values.
 	/// @tparam P The NPCProp that determines the type of container to construct.
-	/// @param ...values The values to pass to the container's constructor.
+	/// @param values The values to pass to the container's constructor.
 	/// @return A property container for the specified NPCProp P.
 	template<NPCProp P, typename... Args>
-	[[a::inline]] PropertyContainer auto constructPropFor(Args... values) const;
+	[[a::inline]] static PropertyContainer auto constructPropFor(Args... values);
 
 	/// @brief Constructs a PropertyContainer for NPCProp prop with the given values.
 	/// @param prop The NPCProp that determines the type of container to construct.
 	/// @return A shared pointer to the constructed property's base class.
-	std::shared_ptr<PropertyBase> constructPropFor(NPCProp prop) const;
+	static std::shared_ptr<PropertyBase> constructPropFor(NPCProp prop) ;
 
 	/// @brief Gets the property container for NPCProp P.
 	/// @tparam P The NPCProp that determines the type of container to get.
@@ -374,7 +374,7 @@ public:
 	/// @brief Sets a property value for a player with the given values and returns the result of the operation.
 	/// @tparam P The NPCProp that determines the type of property to set.
 	/// @param setBy Specifies who is setting the property. Defaults to SetBy::CLIENT.
-	/// @param ...values The values to pass to the property container's constructor.
+	/// @param values The values to pass to the property container's constructor.
 	/// @return A SetResults value indicating the outcome of the property set operation.
 	template<NPCProp P, typename... Args>
 	[[a::inline]] SetResults setPropWith(SetBy setBy, Args... values);
@@ -384,10 +384,10 @@ public:
 	/// @param setBy Indicates who is setting the property. Defaults to SetBy::CLIENT.
 	/// @param base A shared pointer to the base property value to assign.
 	/// @return A SetResults value indicating the outcome of the property set operation.
-	SetResults setProp(NPCProp prop, SetBy setBy, std::shared_ptr<PropertyBase> base);
+	SetResults setProp(NPCProp prop, SetBy setBy, const std::shared_ptr<PropertyBase>& base);
 
 	/// @brief Sends the results of setting a property across the network.
-	/// @param ...results A list of SetResults results to send.
+	/// @param results A list of SetResults results to send.
 	template<typename... Results>
 		requires AllSameAs<SetResults, Results...>
 	[[a::inline]] void sendPropsFromResults(const Results&... results);
@@ -397,24 +397,26 @@ public:
 	[[a::inline]] void sendPropsFromResults(std::ranges::forward_range auto&& results);
 
 	/// @brief Sends the results of setting a property across the network.
-	/// @param ...results A list of SetResults results to send.
+	/// @param source The player that is the source of the property change.
+	/// @param results A list of SetResults results to send.
 	template<typename... Results>
 		requires AllSameAs<SetResults, Results...>
-	[[a::inline]] void sendPropsFromResults(PlayerPtr source, const Results&... results);
+	[[a::inline]] void sendPropsFromResults(const PlayerPtr& source, const Results&... results);
 
 	/// @brief Sends the results of setting properties across the network.
+	/// @param source The player that is the source of the property change.
 	/// @param results A range of SetResults results to send.
-	[[a::inline]] void sendPropsFromResults(PlayerPtr source, std::ranges::forward_range auto&& results);
+	[[a::inline]] void sendPropsFromResults(const PlayerPtr& source, std::ranges::forward_range auto&& results);
 
 protected:
 	SetResults setProp(NPCProp prop, SetBy setBy, PropertyBase* base);
-	void sendPropsFromSendResults(PropertySendResults& results, PlayerPtr source = nullptr) const;
+	void sendPropsFromSendResults(PropertySendResults& results, const PlayerPtr& source = nullptr) const;
 
 public:
 	/// @brief Sets properties from a packet string.
 	/// @param packet A packet that contains property data.
 	/// @param source Indicates who is setting the properties.
-	void setPropsFromPacket(CString& packet, PlayerPtr source = nullptr);
+	void setPropsFromPacket(CString& packet, const PlayerPtr& source = nullptr);
 
 	CString getModifiedPropsPacket() const;
 	CString getAllPropsPacket(std::optional<clock::time_point> newTime = std::nullopt) const;
@@ -668,7 +670,7 @@ inline TilePosition NPC::getTilePosition() const noexcept
 //----------------------------
 
 template<NPCProp P, typename... Args>
-PropertyContainer auto NPC::constructPropFor(Args... values) const
+PropertyContainer auto NPC::constructPropFor(Args... values)
 {
 	FOR_LIST_OF_NPC_PROPS(RETURN_CONSTRUCTPROPSFOR_CONSTEXPR);
 	throw std::invalid_argument("Invalid NPCProp type in constructPropFor");
@@ -682,13 +684,13 @@ PropertyContainer auto NPC::getProp() const
 }
 
 template<NPCProp P>
-SetResults NPC::setProp(SetBy setBy, PropertyContainer auto prop)
+SetResults NPC::setProp(const SetBy setBy, PropertyContainer auto prop)
 {
 	return setProp(P, setBy, &prop);
 }
 
 template<NPCProp P, typename... Args>
-SetResults NPC::setPropWith(SetBy setBy, Args... values)
+SetResults NPC::setPropWith(const SetBy setBy, Args... values)
 {
 	return setProp<P>(setBy, constructPropFor<P>(values...));
 }
@@ -717,19 +719,19 @@ void NPC::sendPropsFromResults(std::ranges::forward_range auto&& results)
 
 template<typename... Results>
 	requires AllSameAs<SetResults, Results...>
-void NPC::sendPropsFromResults(PlayerPtr source, const Results&... results)
+void NPC::sendPropsFromResults(const PlayerPtr& source, const Results&... results)
 {
 	PropertySendResults send_results;
 	(send_results.emplace_back(results, nullptr), ...);
 	sendPropsFromSendResults(send_results, source);
 }
 
-void NPC::sendPropsFromResults(PlayerPtr source, std::ranges::forward_range auto&& results)
+void NPC::sendPropsFromResults(const PlayerPtr& source, std::ranges::forward_range auto&& results)
 {
 	PropertySendResults send_results;
-	auto results_range = results | std::views::transform([](const SetResults& results)
+	auto results_range = results | std::views::transform([](const SetResults& sr)
 	{
-		return std::make_pair(results, nullptr);
+		return std::make_pair(sr, nullptr);
 	});
 	for (const auto& r : results_range)
 		send_results.emplace_back(r);

@@ -16,7 +16,6 @@
 #include <utility>
 #include <vector>
 
-#include <BabyDI.h>
 #include <level/Level.h>
 #include <level/LevelTileTypes.h>
 #include <npcserver/PlayerNPCServer.h>
@@ -51,14 +50,14 @@ public:
 public:
 	void initialize();
 	void setRemoteIp(std::string_view host);
-	void sendNCLoginToPlayer(std::shared_ptr<Player> player);
+	void sendNCLoginToPlayer(const std::shared_ptr<Player>& player);
 
 public:
 	void update(TimeoutGenerator::time_point currentTime = precise_clock::now());
 
 public:
-	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id) const;
-	template<class T = Player> std::shared_ptr<T> getPlayer(const PlayerID id, int type) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(PlayerID id) const;
+	template<class T = Player> std::shared_ptr<T> getPlayer(PlayerID id, int type) const;
 	template<class T = Player> std::shared_ptr<T> getPlayer(const std::string& account, int type) const;
 	[[a::inline]] std::shared_ptr<PlayerNPCServer> getPlayerNPCServer() const;
 
@@ -68,20 +67,20 @@ public:
 	[[a::inline]] auto& getPlayerList() noexcept;
 
 public:
-	[[a::inline]] void addEventToControlNPC(ScriptEventType type, ScriptObject source, string::NotInputRangeNotString auto&&... args);
-	[[a::inline]] void addEventToControlNPC(ScriptEventType type, ScriptObject source, string::InputRangeNotString auto&& range);
-	[[a::inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObject source, std::weak_ptr<Level> level, PixelPosition pos, auto&& arg1, auto&&... args);
-	[[a::inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObject source, std::weak_ptr<Level> level, PixelPosition pos, std::ranges::forward_range auto&& range);
+	[[a::inline]] void addEventToControlNPC(ScriptEventType type, const ScriptObject& source, string::NotInputRangeNotString auto&&... args);
+	[[a::inline]] void addEventToControlNPC(ScriptEventType type, const ScriptObject& source, string::InputRangeNotString auto&& range);
+	[[a::inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, const ScriptObject& source, const std::weak_ptr<Level>& level, const PixelPosition& pos, auto&& arg1, auto&&... args);
+	[[a::inline]] size_t addEventToLevelNPCsAtPosition(ScriptEventType type, const ScriptObject& source, const std::weak_ptr<Level>& level, const PixelPosition& pos, std::ranges::forward_range auto&& range);
 
 public:
-	void playerLogin(std::shared_ptr<Player> player);
-	void playerLogout(std::shared_ptr<Player> player);
+	void playerLogin(const std::shared_ptr<Player>& player);
+	void playerLogout(const std::shared_ptr<Player>& player);
 
 public:
-	std::shared_ptr<NPC> getNPC(const NPCID id) const;
-	std::weak_ptr<NPC> getNPCByName(const std::string& name);
-	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, std::shared_ptr<Level> level, const TilePosition& location, std::string_view type = NPCTYPE_LOCAL);
-	std::shared_ptr<NPC> addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, std::shared_ptr<Level> level, const TilePosition& location);
+	std::shared_ptr<NPC> getNPC(NPCID id) const;
+	std::shared_ptr<NPC> getNPCByName(const std::string& name);
+	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, const std::shared_ptr<Level>& level, const TilePosition& location, std::string_view type = NPCTYPE_LOCAL);
+	std::shared_ptr<NPC> addNPC(std::string_view name, NPCID id, std::string_view type, std::string_view scripter, const std::shared_ptr<Level>& level, const TilePosition& location);
 	std::shared_ptr<NPC> addNPCFromFile(const std::filesystem::path& filePath);
 	void deleteNPC(NPCID id);
 	void unloadNPC(NPCID id);
@@ -90,33 +89,33 @@ public:
 
 public:
 	bool hasClass(std::string_view name) const;
-	std::weak_ptr<ScriptClass> getClass(std::string_view name) const;
+	std::shared_ptr<ScriptClass> getClass(std::string_view name) const;
 	std::shared_ptr<ScriptClass> addClass(std::string_view className, std::string_view classCode);
 	std::shared_ptr<ScriptClass> loadClass(const std::filesystem::path& filePath);
 	bool deleteClass(std::string_view className);
 	void updateClass(std::string_view className, std::string_view classCode);
 
 public:
-	void showImage(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view image) const;
-	void showText(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view text, std::string_view font = {}, std::string_view style = {}) const;
-	void showGani(std::shared_ptr<NPC> npc, uint8_t index, const PixelPosition& position, std::string_view animation, uint8_t direction) const;
-	void showPoly(std::shared_ptr<NPC> npc, uint8_t index, uint8_t dimensions, const std::vector<double>& points) const;
-	void changeShowImgColors(std::shared_ptr<NPC> npc, uint8_t index, float red, float green, float blue, float alpha) const;
-	void changeShowImgMode(std::shared_ptr<NPC> npc, uint8_t index, uint8_t drawMode) const;
-	void changeShowImgPart(std::shared_ptr<NPC> npc, uint8_t index, const ImagePartRectangle& imagePart) const;
-	void changeShowImgLayer(std::shared_ptr<NPC> npc, uint8_t index, uint8_t layer) const;
-	void changeShowImgZoom(std::shared_ptr<NPC> npc, uint8_t index, float zoom) const;
-	void hideImages(std::shared_ptr<NPC> npc, uint8_t index, std::optional<uint8_t> endIndex = std::nullopt) const;
+	void showImage(const std::shared_ptr<NPC>& npc, uint8_t index, const PixelPosition& position, std::string_view image) const;
+	void showText(const std::shared_ptr<NPC>& npc, uint8_t index, const PixelPosition& position, std::string_view text, std::string_view font = {}, std::string_view style = {}) const;
+	void showGani(const std::shared_ptr<NPC>& npc, uint8_t index, const PixelPosition& position, std::string_view animation, uint8_t direction) const;
+	void showPoly(const std::shared_ptr<NPC>& npc, uint8_t index, uint8_t dimensions, const std::vector<double>& points) const;
+	void changeShowImgColors(const std::shared_ptr<NPC>& npc, uint8_t index, float red, float green, float blue, float alpha) const;
+	void changeShowImgMode(const std::shared_ptr<NPC>& npc, uint8_t index, uint8_t drawMode) const;
+	void changeShowImgPart(const std::shared_ptr<NPC>& npc, uint8_t index, const ImagePartRectangle& imagePart) const;
+	void changeShowImgLayer(const std::shared_ptr<NPC>& npc, uint8_t index, uint8_t layer) const;
+	void changeShowImgZoom(const std::shared_ptr<NPC>& npc, uint8_t index, float zoom) const;
+	void hideImages(const std::shared_ptr<NPC>& npc, uint8_t index, std::optional<uint8_t> endIndex = std::nullopt) const;
 
 public:
-	tileset::TileType getTileType(uint16_t tile, std::shared_ptr<Level> level) const noexcept;
+	tileset::TileType getTileType(uint16_t tile, const std::shared_ptr<Level>& level) const noexcept;
 
 public:
 	ScriptSystem scripting;
 
 private:
 	void run(TimeoutGenerator::time_delta delta);
-	void processControlNPCs();
+	void processControlNPCs() const;
 	void processDeletedNPCs();
 	void processUnloadedNPCs();
 	void processDeletedPlayers();
@@ -159,7 +158,7 @@ inline std::shared_ptr<T> NPCServer::getPlayer(const PlayerID id) const
 		return std::dynamic_pointer_cast<T>(m_npcServerPlayer);
 	}
 
-	auto iter = m_playerList.find(id);
+	const auto iter = m_playerList.find(id);
 	if (iter == std::end(m_playerList))
 		return nullptr;
 
@@ -180,9 +179,9 @@ inline std::shared_ptr<T> NPCServer::getPlayer(const PlayerID id, int type) cons
 }
 
 template<class T>
-inline std::shared_ptr<T> NPCServer::getPlayer(const std::string& account, int type) const
+inline std::shared_ptr<T> NPCServer::getPlayer(const std::string& account, const int type) const
 {
-	for (const auto& [id, player] : m_playerList)
+	for (const auto& player : m_playerList | std::views::values)
 	{
 		// Check if its the type of player we are looking for
 		if (!player || !(player->getType() & type))
@@ -221,27 +220,27 @@ inline auto& NPCServer::getPlayerList() noexcept
 	return m_playerList;
 }
 
-inline void NPCServer::addEventToControlNPC(ScriptEventType type, ScriptObject source, string::NotInputRangeNotString auto&&... args)
+inline void NPCServer::addEventToControlNPC(const ScriptEventType type, const ScriptObject& source, string::NotInputRangeNotString auto&&... args)
 {
-	for (auto& [id, npcPtr] : m_globalNPCList)
+	for (auto& npcPtr : m_globalNPCList | std::views::values)
 	{
 		if (auto npc = npcPtr.lock(); npc != nullptr && npc->scriptType == NPCTYPE_CONTROL)
 			npc->scripting.events.addEvent(type, source, args...);
 	}
 }
 
-inline void NPCServer::addEventToControlNPC(ScriptEventType type, ScriptObject source, string::InputRangeNotString auto&& range)
+inline void NPCServer::addEventToControlNPC(const ScriptEventType type, const ScriptObject& source, string::InputRangeNotString auto&& range)
 {
-	for (auto& [id, npcPtr] : m_globalNPCList)
+	for (auto& npcPtr : m_globalNPCList | std::views::values)
 	{
 		if (auto npc = npcPtr.lock(); npc != nullptr && npc->scriptType == NPCTYPE_CONTROL)
 			npc->scripting.events.addEvent(type, source, std::forward<decltype(range)>(range));
 	}
 }
 
-inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObject source, std::weak_ptr<Level> level, PixelPosition pos, auto&& arg1, auto&&... args)
+inline size_t NPCServer::addEventToLevelNPCsAtPosition(const ScriptEventType type, const ScriptObject& source, const std::weak_ptr<Level>& level, const PixelPosition& pos, auto&& arg1, auto&&... args)
 {
-	auto levelPtr = level.lock();
+	const auto levelPtr = level.lock();
 	if (levelPtr == nullptr)
 		return 0;
 
@@ -265,9 +264,9 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, Scr
 	return count;
 }
 
-inline size_t NPCServer::addEventToLevelNPCsAtPosition(ScriptEventType type, ScriptObject source, std::weak_ptr<Level> level, PixelPosition pos, std::ranges::forward_range auto&& range)
+inline size_t NPCServer::addEventToLevelNPCsAtPosition(const ScriptEventType type, const ScriptObject& source, const std::weak_ptr<Level>& level, const PixelPosition& pos, std::ranges::forward_range auto&& range)
 {
-	auto levelPtr = level.lock();
+	const auto levelPtr = level.lock();
 	if (levelPtr == nullptr)
 		return 0;
 

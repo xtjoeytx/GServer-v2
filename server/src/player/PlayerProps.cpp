@@ -87,24 +87,26 @@ static bool canSendProp(PlayerProp prop)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::shared_ptr<PropertyBase> Player::constructPropFor(PlayerProp prop) const
+std::shared_ptr<PropertyBase> Player::constructPropFor(const PlayerProp prop)
 {
 	switch (prop)
 	{
 #define GENERATE_CONSTRUCTPROPFOR_CASE(prop, type, ...) case prop: return std::make_shared<type>();
 		FOR_LIST_OF_PLAYER_PROPS(GENERATE_CONSTRUCTPROPFOR_CASE);
+		default:;
 	}
 	throw std::invalid_argument("Invalid PlayerProp type in constructPropFor");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::shared_ptr<PropertyBase> Player::getProp(PlayerProp prop) const
+std::shared_ptr<PropertyBase> Player::getProp(const PlayerProp prop) const
 {
 	switch (prop)
 	{
 #define GENERATE_GETPROP_CASE(prop, type, ...) case prop: return std::make_shared<type>( __VA_ARGS__ );
 		FOR_LIST_OF_PLAYER_PROPS(GENERATE_GETPROP_CASE);
+		default:;
 	}
 
 	throw std::invalid_argument("Invalid PlayerProp type in getProp");
@@ -112,10 +114,9 @@ std::shared_ptr<PropertyBase> Player::getProp(PlayerProp prop) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SetResults Player::setProp(PlayerProp prop, SetBy setBy, std::shared_ptr<PropertyBase> base)
+SetResults Player::setProp(const PlayerProp prop, const SetBy setBy, const std::shared_ptr<PropertyBase>& base)
 {
-	PropertyBase* basePtr = base.get();
-	if (basePtr != nullptr)
+	if (PropertyBase* basePtr = base.get(); basePtr != nullptr)
 		return setProp(prop, setBy, basePtr);
 	throw std::invalid_argument("setProp called with nullptr base pointer.");
 }
@@ -755,8 +756,6 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		}
 
 		case PlayerProp::ONLINESECONDS:
-			break;
-
 		case PlayerProp::IPADDR:
 			break;
 
@@ -875,8 +874,6 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		}
 
 		case PlayerProp::JOINLEAVELVL:
-			break;
-
 		case PlayerProp::DISCONNECT:
 			break;
 
@@ -1049,7 +1046,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (numProp == nullptr)
 				SETPROP_RETURN_ERROR;
 
-			m_playerListCategory = (PlayerListCategory)numProp->value;
+			m_playerListCategory = static_cast<PlayerListCategory>(numProp->value);
 			break;
 		}
 
@@ -1145,7 +1142,7 @@ void Player::sendPropsFromResults(PropertySendResults& results)
 	if (sendAll.length() > 0)
 		m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << sendAll, { m_id });
 
-	if (auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr && sendLevel.length() > 0)
+	if (const auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr && sendLevel.length() > 0)
 		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << sendLevel, player->getGlobalPosition(), player->getLevel(), { m_id });
 
 	if (sendSource.length() > 0)

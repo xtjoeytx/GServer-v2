@@ -326,7 +326,7 @@ Server::Server(const CString& pName)
 			if (npcName.starts_with("npc") && npcName.ends_with(".txt"))
 				npcName = npcName.substr(3, npcName.size() - 7); // Remove npc and .txt
 
-			if (auto npc = m_npcServer->getNPCByName(npcName).lock(); npc != nullptr)
+			if (const auto npc = m_npcServer->getNPCByName(npcName); npc != nullptr)
 			{
 				log::printLine(log::server, "NPC deleted from filesystem: [{}] {}", npc->id, npc->name);
 				m_npcServer->deleteNPC(npc->id);
@@ -380,7 +380,6 @@ Server::Server(const CString& pName)
 
 		if (events.test(fs::FileEvent::Deleted))
 		{
-			auto className = file.file.stem().string();
 			if (m_npcServer->deleteClass(className))
 			{
 				sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_CLASSDELETE << className);
@@ -390,11 +389,10 @@ Server::Server(const CString& pName)
 		if (events.test(fs::FileEvent::Added))
 		{
 			// Class already exists so it was added by NC.
-			if (auto existingClass = m_npcServer->getClass(className); !existingClass.expired())
+			if (const auto existingClass = m_npcServer->getClass(className); existingClass != nullptr)
 				return;
 
-			auto className = file.file.stem().string();
-			if (auto scriptClass = m_npcServer->loadClass(file.file); scriptClass != nullptr)
+			if (const auto scriptClass = m_npcServer->loadClass(file.file); scriptClass != nullptr)
 			{
 				sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_CLASSADD << className);
 				logMsg = std::format("Class added to filesystem: {}", className);
@@ -403,8 +401,8 @@ Server::Server(const CString& pName)
 		if (events.test(fs::FileEvent::Modified))
 		{
 			// Class mod time matches the file mod time?  Then NC modified it, not the FS.
-			auto fileModTime = fs::getFileModTime(file.file);
-			if (auto existingClass = m_npcServer->getClass(className).lock(); existingClass && existingClass->modTime == fileModTime)
+			const auto fileModTime = fs::getFileModTime(file.file);
+			if (const auto existingClass = m_npcServer->getClass(className); existingClass != nullptr && existingClass->modTime == fileModTime)
 				return;
 
 			fs::File script{file.file};
@@ -422,8 +420,8 @@ Server::Server(const CString& pName)
 	{
 		if (events.test(fs::FileEvent::Modified))
 		{
-			auto translationManager = BabyDI::Get<ITranslationManager>();
-			translationManager->reloadTranslation(file.file);
+			if (const auto translationManager = BabyDI::Get<ITranslationManager>(); translationManager != nullptr)
+				translationManager->reloadTranslation(file.file);
 		}
 	};
 	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::WEAPON)] = [this](fs::FileEventCollection events, fs::FileData& file)

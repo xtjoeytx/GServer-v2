@@ -162,26 +162,26 @@ class ScriptEngineGS1 : public IScriptEngine
 {
 public:
 	ScriptEngineGS1();
-	virtual ~ScriptEngineGS1() override {}
+	~ScriptEngineGS1() override = default;
 
 public:
-	virtual std::string_view getEngineName() override { return "GS1"sv; }
-	virtual ScriptEngineMode getExecutionMode() override { return ScriptEngineMode::DIRECT; }
-	virtual ScriptExecutionType getExecutionType() override { return ScriptExecutionType::INTERPRETED; }
+	std::string_view getEngineName() override { return "GS1"sv; }
+	ScriptEngineMode getExecutionMode() override { return ScriptEngineMode::DIRECT; }
+	ScriptExecutionType getExecutionType() override { return ScriptExecutionType::INTERPRETED; }
 
 public:
-	virtual CompiledScriptResult compileScript(std::string_view who, std::string_view script) override;
-	virtual bool reset() override { return false; }
+	CompiledScriptResult compileScript(std::string_view who, std::string_view script) override;
+	bool reset() override { return false; }
 
 public:
-	virtual bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
-	virtual bool execute(ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context) override;
-	virtual bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
-	virtual bool executeFunction(std::string_view function, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context) override;
+	bool execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
+	bool execute(ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context) override;
+	bool executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context) override;
+	bool executeFunction(std::string_view function, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context) override;
 
 public:
-	virtual std::optional<double> processMathExpression(std::string_view expression, ScriptObject source) override;
-	virtual std::optional<std::string> processStringExpression(std::string_view expression, ScriptObject source) override;
+	std::optional<double> processMathExpression(std::string_view expression, ScriptObject source) override;
+	std::optional<std::string> processStringExpression(std::string_view expression, ScriptObject source) override;
 
 protected:
 	bool prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context, NPCPtr& npc, LevelPtr& level);

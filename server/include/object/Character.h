@@ -51,24 +51,24 @@ struct Character
 	std::string bowImage{ "bow1.png" };
 	std::string ganiAttributes[30];
 
-	LocalPixelPosition getLocalPosition() const noexcept
+	[[nodiscard]] LocalPixelPosition getLocalPosition() const noexcept
 	{
-		return { localPixelX, localPixelY, localPixelZ };
+		return {localPixelX, localPixelY, localPixelZ};
 	}
 
-	PixelPosition getGlobalPosition() const noexcept
+	[[nodiscard]] PixelPosition getGlobalPosition() const noexcept
 	{
-		return { static_cast<int32_t>((mapX * 1024) + localPixelX), static_cast<int32_t>((mapY * 1024) + localPixelY), static_cast<int32_t>(localPixelZ) };
+		return {static_cast<int32_t>((mapX * 1024) + localPixelX), static_cast<int32_t>((mapY * 1024) + localPixelY), static_cast<int32_t>(localPixelZ)};
 	}
 
-	TilePosition getTilePosition() const noexcept
+	[[nodiscard]] TilePosition getTilePosition() const noexcept
 	{
-		return { static_cast<float>((mapX * 64) + (localPixelX / 16.0f)), static_cast<float>((mapY * 64) + (localPixelY / 16.0f)), static_cast<float>(localPixelZ / 16.0f) };
+		return {static_cast<float>((mapX * 64) + (localPixelX / 16.0f)), static_cast<float>((mapY * 64) + (localPixelY / 16.0f)), static_cast<float>(localPixelZ) / 16.0f};
 	}
 
-	MapPosition getMapPosition() const noexcept
+	[[nodiscard]] MapPosition getMapPosition() const noexcept
 	{
-		return { mapX, mapY, 0 };
+		return {mapX, mapY, 0};
 	}
 };
 
@@ -142,7 +142,7 @@ inline std::string_view getClassicColorName(ClassicColors color)
 		{ ClassicColors::TRANSPARENT, "transparent"sv },
 	};
 
-	if (colorNames.find(color) != colorNames.end())
+	if (colorNames.contains(color))
 		return colorNames.at(color);
 
 	return {};
@@ -463,7 +463,7 @@ inline std::string_view getHTMLColorName(HTMLColors color)
 		{ HTMLColors::YELLOWGREEN, "yellowgreen"sv },
 	};
 
-	if (colorNames.find(color) != colorNames.end())
+	if (colorNames.contains(color))
 		return colorNames.at(color);
 
 	return {};

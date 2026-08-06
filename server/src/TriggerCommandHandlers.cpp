@@ -27,9 +27,7 @@ namespace preagonal
 
 void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 {
-	//auto& dispatcher = m_triggerActionDispatcher;
-
-	builder.registerCommand("serverside", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("serverside", [&](const Player* player, std::vector<std::string>& triggerData)
 	{
 		if (!hasNPCServer())
 			return false;
@@ -38,13 +36,13 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		{
 			// triggeraction 0,0,serverside,weaponname,params...;
 			// Triggers on a player's weapons.
-			if (auto weapon = getWeapon(triggerData[1]); weapon != nullptr)
+			if (const auto weapon = getWeapon(triggerData[1]); weapon != nullptr)
 				weapon->scripting.events.addEvent(ScriptEventType::TRIGGERACTION, source::FromPlayer(player->getId()), "serverside"s, string::toCSV(triggerData | std::views::drop(2)));
 		}
 		return true;
 	});
 
-	builder.registerCommand("servernpc", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("servernpc", [&](const Player* player, std::vector<std::string>& triggerData)
 	{
 		if (!hasNPCServer())
 			return false;
@@ -52,9 +50,9 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		if (triggerData.size() >= 2)
 		{
 			// triggeraction 0,0,servernpc,npcname,params...;
-			if (auto npcServer = getNPCServer(); npcServer != nullptr)
+			if (const auto npcServer = getNPCServer(); npcServer != nullptr)
 			{
-				if (auto npc = npcServer->getNPCByName(triggerData[1]).lock(); npc != nullptr)
+				if (const auto npc = npcServer->getNPCByName(triggerData[1]); npc != nullptr)
 					npc->scripting.events.addEvent(ScriptEventType::TRIGGERACTION, source::FromPlayer(player->getId()), "serverside"s, string::toCSV(triggerData | std::views::drop(2)));
 			}
 		}
@@ -67,36 +65,38 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		const auto& serverList = listServer.getServerList();
 
 		CString actionData("clientside,-Serverlist_v4,updateservers,");
-		for (auto& serverData : serverList)
-			actionData << CString(serverData.first).gtokenize() << "," << CString(serverData.second) << ",";
+		for (const auto& [serverName, serverID] : serverList)
+			actionData << CString(serverName).gtokenize() << "," << CString(serverID) << ",";
 
 		player->sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)0 >> (char)0 >> (char)0 << actionData);
 		return true;
 	});
 
 	// Weapon management
-	builder.registerCommand("gr.addweapon", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.addweapon", [&](Player* player, const std::vector<std::string>& triggerData)
 	{
 		if (!cached.enableTriggerhackWeapons.getValue())
 			return false;
 
 		for (size_t i = 1; i < triggerData.size(); ++i)
 			player->addWeapon(string::trim(triggerData[i]));
+
 		return true;
 	});
 
-	builder.registerCommand("gr.deleteweapon", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.deleteweapon", [&](Player* player, const std::vector<std::string>& triggerData)
 	{
 		if (!cached.enableTriggerhackWeapons.getValue())
 			return false;
 
 		for (size_t i = 1; i < triggerData.size(); ++i)
 			player->deleteWeapon(string::trim(triggerData[i]));
+
 		return true;
 	});
 
 	// Guild management
-	builder.registerCommand("gr.addguildmember", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.addguildmember", [&](Player* player, const std::vector<std::string>& triggerData)
 	{
 		if (!cached.enableTriggerhackGuilds.getValue())
 			return false;
@@ -108,14 +108,14 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 		if (!guild.isEmpty() && !account.isEmpty())
 		{
-			auto guildManager = BabyDI::Get<GuildManager>();
-			guildManager->addPlayerToGuild(guild, account, nick);
+			if (const auto guildManager = BabyDI::Get<GuildManager>(); guildManager != nullptr)
+				guildManager->addPlayerToGuild(guild, account, nick);
 		}
 
 		return true;
 	});
 
-	builder.registerCommand("gr.removeguildmember", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.removeguildmember", [&](Player* player, const std::vector<std::string>& triggerData)
 	{
 		if (!cached.enableTriggerhackGuilds.getValue())
 			return false;
@@ -127,16 +127,18 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 		if (!guild.isEmpty() && !account.isEmpty())
 		{
-			auto guildManager = BabyDI::Get<GuildManager>();
-			if (nickName.isEmpty())
-				guildManager->removePlayerEntirelyFromGuild(guild, account);
-			else guildManager->removePlayerFromGuild(guild, account, nickName);
+			if (const auto guildManager = BabyDI::Get<GuildManager>(); guildManager != nullptr)
+			{
+				if (nickName.isEmpty())
+					guildManager->removePlayerEntirelyFromGuild(guild, account);
+				else guildManager->removePlayerFromGuild(guild, account, nickName);
+			}
 		}
 
 		return true;
 	});
 
-	builder.registerCommand("gr.removeguild", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.removeguild", [&](Player* player, const std::vector<std::string>& triggerData)
 	{
 		if (!cached.enableTriggerhackGuilds.getValue())
 			return false;
@@ -146,8 +148,8 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 
 		if (!guild.isEmpty())
 		{
-			auto guildManager = BabyDI::Get<GuildManager>();
-			guildManager->deleteGuild(guild);
+			if (const auto guildManager = BabyDI::Get<GuildManager>(); guildManager != nullptr)
+				guildManager->deleteGuild(guild);
 
 			// Remove the guild from all players.
 			for (auto& [pid, p] : getPlayerList())
@@ -164,7 +166,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		return true;
 	});
 
-	builder.registerCommand("gr.setguild", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.setguild", [&](Player* player, const std::vector<std::string>& triggerData)
 	{
 		if (!cached.enableTriggerhackGuilds.getValue())
 			return false;
@@ -189,9 +191,9 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 	});
 
 	// Group levels
-	builder.registerCommand("gr.setgroup", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.setgroup", [&](Player* player, const std::vector<std::string>& triggerData)
 	{
-		if (auto client = dynamic_cast<PlayerClient*>(player); cached.enableTriggerhackGroups.getValue() && client != nullptr)
+		if (const auto client = dynamic_cast<PlayerClient*>(player); cached.enableTriggerhackGroups.getValue() && client != nullptr)
 		{
 			client->setGroup(triggerData.size() >= 2 ? triggerData[1] : ""s);
 			return true;
@@ -199,9 +201,9 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		return false;
 	});
 
-	builder.registerCommand("gr.setlevelgroup", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.setlevelgroup", [&](Player* player, const std::vector<std::string>& triggerData)
 	{
-		if (auto client = dynamic_cast<PlayerClient*>(player); cached.enableTriggerhackGroups.getValue() && client != nullptr)
+		if (const auto client = dynamic_cast<PlayerClient*>(player); cached.enableTriggerhackGroups.getValue() && client != nullptr)
 		{
 			for (const auto& id : client->getLevel()->getPlayers())
 			{
@@ -213,11 +215,11 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 		return false;
 	});
 
-	builder.registerCommand("gr.setplayergroup", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.setplayergroup", [&](Player* player, const std::vector<std::string>& triggerData)
 	{
 		if (cached.enableTriggerhackGroups.getValue() && triggerData.size() >= 2)
 		{
-			if (auto client = getPlayer<PlayerClient>(triggerData[1], PLTYPE_ANYCLIENT); client != nullptr)
+			if (const auto client = getPlayer<PlayerClient>(triggerData[1], PLTYPE_ANYCLIENT); client != nullptr)
 				client->setGroup(triggerData.size() >= 3 ? triggerData[2] : ""s);
 			return true;
 		}
@@ -225,60 +227,60 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 	});
 
 	// RC triggers
-	builder.registerCommand("gr.rcchat", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.rcchat", [&](Player* player, const std::vector<std::string>& triggerData)
 	{
 		if (!cached.enableTriggerhackRC.getValue())
 			return false;
 
-		auto p = getPlayer(player->getId());
+		const auto p = getPlayer(player->getId());
+		if (p == nullptr)
+			return false;
 
 		CString msg;
 		for (size_t i = 1; i < triggerData.size(); ++i)
 			msg << triggerData[i] << ",";
+
 		sendToRC(msg, p);
 		return true;
 	});
 
 	// Level triggers
-	builder.registerCommand("gr.npc.move", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.npc.move", [&](Player* player, const std::vector<std::string>& triggerData)
 	{
 		if (!cached.enableTriggerhackLevels.getValue() || triggerData.size() != 6)
 			return false;
 
-		unsigned int id = string::toNumber(triggerData[1]);
-		int dx = string::toNumber(triggerData[2]);
-		int dy = string::toNumber(triggerData[3]);
-		float duration = string::toFloat(triggerData[4]);
-		int options = string::toNumber(triggerData[5]);
+		const auto id = string::toNumber<NPCID>(triggerData[1]);
+		const int dx = string::toNumber(triggerData[2]);
+		const int dy = string::toNumber(triggerData[3]);
+		const float duration = string::toFloat(triggerData[4]);
+		const int options = string::toNumber(triggerData[5]);
 
-		auto npc = getNPC(id);
-		if (npc)
+		if (const auto npc = getNPC(id); npc)
 		{
 			CString packet;
-			packet >> (char)(npc->character.localPixelX / 8.0f) >> (char)(npc->character.localPixelY / 8.0f);
+			packet >> (char)(static_cast<float>(npc->character.localPixelX) / 8.0f) >> (char)(static_cast<float>(npc->character.localPixelY) / 8.0f);
 			packet >> (char)((dx * 2) + 100) >> (char)((dy * 2) + 100);
 			packet >> (short)(duration / 0.05f);
 			packet >> (char)options;
 			sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)id << packet, npc->character.getGlobalPosition(), npc->getLevel());
 
-			npc->character.localPixelX += dx * 16;
-			npc->character.localPixelY += dy * 16;
-			//npc->setPropsFromPacket(CString() >> (char)NPCPROP_X >> (char)((npc->getX() + dx) * 2) >> (char)NPCPROP_Y >> (char)((npc->getY() + dy) * 2));
+			npc->character.localPixelX = static_cast<int16_t>(npc->character.localPixelX + dx * 16);
+			npc->character.localPixelY = static_cast<int16_t>(npc->character.localPixelY + dy * 16);
 		}
 		return true;
 	});
 
-	builder.registerCommand("gr.npc.setpos", [&](Player* player, std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.npc.setpos", [&](Player* player, const std::vector<std::string>& triggerData)
 	{
 		if (!cached.enableTriggerhackLevels.getValue() || triggerData.size() != 4)
 			return false;
 
-		unsigned int id = string::toNumber(triggerData[1]);
-		float x = string::toFloat(triggerData[2]);
-		float y = string::toFloat(triggerData[3]);
+		const auto id = string::toNumber<NPCID>(triggerData[1]);
+		const float x = string::toFloat(triggerData[2]);
+		const float y = string::toFloat(triggerData[3]);
 
-		auto npc = getNPC(id);
-		if (npc)
+		if (const auto npc = getNPC(id);npc)
 		{
 			npc->character.localPixelX = static_cast<int16_t>(x * 16.0);
 			npc->character.localPixelY = static_cast<int16_t>(y * 16.0);

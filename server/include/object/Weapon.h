@@ -32,8 +32,8 @@ class Player;
 class Weapon
 {
 public:
-	explicit Weapon(const LevelItemType itemType);
-	Weapon(const std::string_view name, const std::string_view image, const std::string_view script);
+	explicit Weapon(LevelItemType itemType);
+	Weapon(std::string_view name, std::string_view image, std::string_view script);
 	~Weapon() = default;
 
 public:
@@ -41,7 +41,7 @@ public:
 
 public:
 	bool saveWeapon();
-	Weapon& updateWeapon(const std::string_view newImage, const std::string_view newScript);
+	Weapon& updateWeapon(std::string_view newImage, std::string_view newScript);
 
 public:
 	void registerWeaponWithPlayer(const std::shared_ptr<Player>& player) const;
@@ -51,28 +51,28 @@ public:
 	std::string getJoinedClassesList() const;
 	[[a::inline]] std::generator<std::shared_ptr<ScriptClass>> getJoinedClasses() const;
 	void setJoinedClasses(std::string_view classes);
-	void joinClass(const std::string_view className);
-	void leaveClass(const std::string_view className);
-
-protected:
-	std::string getClientSideScript() const;
-	void calculateHeaderChecksum();
-	void updateScriptClass(ScriptClass* scriptClass);
+	void joinClass(std::string_view className);
+	void leaveClass(std::string_view className);
 
 public:
 	void executeEvents(ScriptEventQueue& events, const ScriptObject& source) const;
 
 public:
-	bool isDefault() const { return (m_weaponDefault != LevelItemType::INVALID); }
-	LevelItemType getWeaponId() const { return m_weaponDefault; }
-	Script& getScript() { return m_script; }
-	const Script& getScript() const { return m_script; }
+	[[a::inline]] bool isDefault() const noexcept;
+	[[a::inline]] LevelItemType getWeaponId() const noexcept;
+	[[a::inline]] Script& getScript() noexcept;
+	[[a::inline]] const Script& getScript() const noexcept;
 
 public:
 	const std::string name;
 	std::string image;
 	clock::time_point modTime;
 	ScriptContainer scripting;
+
+protected:
+	std::string getClientSideScript() const;
+	void calculateHeaderChecksum();
+	void updateScriptClass(ScriptClass* scriptClass);
 
 protected:
 	Server* m_server;
@@ -97,6 +97,26 @@ inline std::generator<std::shared_ptr<ScriptClass>> Weapon::getJoinedClasses() c
 		| std::views::filter([](const auto& scriptClass) { return scriptClass != nullptr; });
 	for (const auto& scriptClass : filter)
 		co_yield scriptClass;
+}
+
+inline bool Weapon::isDefault() const noexcept
+{
+	return (m_weaponDefault != LevelItemType::INVALID);
+}
+
+inline LevelItemType Weapon::getWeaponId() const noexcept
+{
+	return m_weaponDefault;
+}
+
+inline Script& Weapon::getScript() noexcept
+{
+	return m_script;
+}
+
+inline const Script& Weapon::getScript() const noexcept
+{
+	return m_script;
 }
 
 //----------------------------

@@ -138,7 +138,7 @@ static std::string performClientSideJoinHack(std::string_view code)
 	{
 		for (const auto& className : joins)
 		{
-			if (auto classObject = server->getNPCServer()->getClass(className).lock(); classObject != nullptr)
+			if (auto classObject = server->getNPCServer()->getClass(className); classObject != nullptr)
 			{
 				if (result.back() != '\n')
 					result += '\n';

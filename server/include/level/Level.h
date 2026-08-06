@@ -75,15 +75,15 @@ struct StaticLevelData
 	std::vector<double> heights;
 	EventDispatcher<std::shared_ptr<StaticLevelData>> onDataRefreshed;
 	//
-	static void reload(std::shared_ptr<StaticLevelData> staticData);
+	static void reload(const std::shared_ptr<StaticLevelData>& staticData);
 	//
 	std::optional<std::string> getChestFormattedForSave(LevelChest* chest) const;
-	void sendBoardToPlayer(std::shared_ptr<Player> player) const;
-	void sendBoardLayersToPlayer(std::shared_ptr<Player> player) const;
-	void sendBoardLayerToPlayer(std::shared_ptr<Player> player, size_t layer) const;
-	void sendChestsToPlayer(std::shared_ptr<Player> player) const;
-	void sendLinksToPlayer(std::shared_ptr<Player> player, bool onlyMapLinks) const;
-	void sendSignsToPlayer(std::shared_ptr<Player> player) const;
+	void sendBoardToPlayer(const std::shared_ptr<Player>& player) const;
+	void sendBoardLayersToPlayer(const std::shared_ptr<Player>& player) const;
+	void sendBoardLayerToPlayer(const std::shared_ptr<Player>& player, size_t layer) const;
+	void sendChestsToPlayer(const std::shared_ptr<Player>& player) const;
+	void sendLinksToPlayer(const std::shared_ptr<Player>& player, bool onlyMapLinks) const;
+	void sendSignsToPlayer(const std::shared_ptr<Player>& player) const;
 };
 using StaticLevelDataPtr = std::shared_ptr<StaticLevelData>;
 
@@ -106,19 +106,19 @@ struct SubLevel
 	bool isOnBigMap = false;
 	EventHandle staticDataRefreshedHandle;
 	//
-	PixelRectangleArea clipRectangleToPart(const PixelRectangleArea& area) const noexcept;
-	WholeTileRectangleArea clipRectangleToPart(const WholeTileRectangleArea& area) const noexcept;
+	[[nodiscard]] PixelRectangleArea clipRectangleToPart(const PixelRectangleArea& area) const noexcept;
+	[[nodiscard]] WholeTileRectangleArea clipRectangleToPart(const WholeTileRectangleArea& area) const noexcept;
 	//
-	std::optional<LevelTiles*> getTiles() noexcept;
-	std::optional<const LevelTiles*> getTiles() const noexcept;
-	std::optional<LevelTiles::TileArray*> getTiles(size_t layer) noexcept;
-	std::optional<const LevelTiles::TileArray*> getTiles(size_t layer) const noexcept;
-	double getHeightAt(const LocalPixelPosition& position) const noexcept;
-	void sendBoardToPlayer(std::shared_ptr<Player> player) const;
-	void sendBoardLayersToPlayer(std::shared_ptr<Player> player) const;
-	void sendBoardLayerToPlayer(std::shared_ptr<Player> player, size_t layer) const;
-	void sendBoardHeightsToPlayer(std::shared_ptr<Player> player) const;
-	void sendBoardChangesToPlayer(std::shared_ptr<Player> player, std::optional<clock::time_point> time) const;
+	[[nodiscard]] std::optional<LevelTiles*> getTiles() noexcept;
+	[[nodiscard]] std::optional<const LevelTiles*> getTiles() const noexcept;
+	[[nodiscard]] std::optional<LevelTiles::TileArray*> getTiles(size_t layer) noexcept;
+	[[nodiscard]] std::optional<const LevelTiles::TileArray*> getTiles(size_t layer) const noexcept;
+	[[nodiscard]] double getHeightAt(const LocalPixelPosition& position) const noexcept;
+	void sendBoardToPlayer(const std::shared_ptr<Player>& player) const;
+	void sendBoardLayersToPlayer(const std::shared_ptr<Player>& player) const;
+	void sendBoardLayerToPlayer(const std::shared_ptr<Player>& player, size_t layer) const;
+	void sendBoardHeightsToPlayer(const std::shared_ptr<Player>& player) const;
+	void sendBoardChangesToPlayer(const std::shared_ptr<Player>& player, std::optional<clock::time_point> time) const;
 };
 using SubLevelPtr = std::shared_ptr<SubLevel>;
 
@@ -134,14 +134,14 @@ public:
 
 public:
 	static std::shared_ptr<Level> createLevel(std::string_view levelName = ""sv);
-	static std::shared_ptr<Level> clone(LevelPtr level, std::string_view name);
+	static std::shared_ptr<Level> clone(const LevelPtr& level, std::string_view name);
 
 public:
 	bool loaded = false;
-	bool reload(std::string_view levelName);
-	bool reload(const MapPosition& position);
-	void reload(StaticLevelDataPtr staticData);
-	bool saveLevel(const MapPosition& mapPosition, std::string_view filename);
+	bool reload(std::string_view level) const;
+	bool reload(const MapPosition& position) const;
+	void reload(const StaticLevelDataPtr& staticData);
+	bool saveLevel(const MapPosition& mapPosition, std::string_view filename) const;
 
 public:
 	void doTimedEvents();
@@ -154,7 +154,7 @@ private:
 	precise_clock::duration m_frameEventDuration = precise_clock::duration::zero();
 
 public:
-	[[a::inline]] void setMap(std::shared_ptr<Map> map);
+	[[a::inline]] void setMap(const std::shared_ptr<Map>& map) const;
 	[[a::inline]] auto getMap() const noexcept;
 	bool isGmap() const noexcept;
 	[[a::inline]] bool isOnBigMap() const noexcept;
@@ -165,13 +165,13 @@ public:
 	[[a::inline]] Dimension<uint32_t> sizeInTiles() const noexcept;
 	[[a::inline]] Dimension<uint32_t> sizeInPixels() const noexcept;
 	[[a::inline]] Rectangle<uint32_t, uint32_t> getBoundingBox() const noexcept;
-	std::optional<uint16_t> getMapTileAtPosition(const TilePosition& position) noexcept;
-	uint16_t* getMapTileForEditing(const TilePosition& position) noexcept;
+	std::optional<uint16_t> getMapTileAtPosition(const TilePosition& position) const noexcept;
+	uint16_t* getMapTileForEditing(const TilePosition& position) const noexcept;
 	[[a::inline]] std::string_view getLevelNameAtPosition(const PixelPosition& position) const noexcept;
 
 public:
 	[[a::inline]] std::optional<size_t> getSubLevelIndex(std::string_view levelPart) const noexcept;
-	[[a::inline]] std::optional<PixelPosition> getSubLevelOrigin(SubLevelPtr part) const noexcept;
+	[[a::inline]] static std::optional<PixelPosition> getSubLevelOrigin(const SubLevelPtr& part) noexcept;
 	[[a::inline]] std::optional<MapPosition> getSubLevelPositionInMap(std::string_view levelPart) const noexcept;
 	[[a::inline]] SubLevelPtr getSubLevelByName(std::string_view levelPart) const noexcept;
 	[[a::inline]] SubLevelPtr getSubLevelAtPosition(const PixelPosition& position) const noexcept;
@@ -217,28 +217,26 @@ public:
 	size_t getSignCount() const noexcept;
 
 public:
-	std::optional<LevelTiles::TileArray*> getTiles(const MapPosition& mapLevel, size_t layer = 0) noexcept;
-	std::optional<const LevelTiles::TileArray*> getTiles(const MapPosition& mapLevel, size_t layer = 0) const noexcept;
-	std::optional<LevelTiles::TileArray*> getTiles(std::string_view levelPart, size_t layer = 0) noexcept;
-	std::optional<const LevelTiles::TileArray*> getTiles(std::string_view levelPart, size_t layer = 0) const noexcept;
+	std::optional<LevelTiles::TileArray*> getTiles(const MapPosition& mapLevel, size_t layer = 0) const noexcept;
+	std::optional<LevelTiles::TileArray*> getTiles(std::string_view levelPart, size_t layer = 0) const noexcept;
 
 public:
 	bool hasTerrain() const noexcept;
 	double getHeightAt(const PixelPosition& position) const noexcept;
 
 public:
-	void sendBoardToPlayer(std::shared_ptr<Player> player) const;
-	void sendBoardLayersToPlayer(std::shared_ptr<Player> player) const;
-	void sendBoardHeightsToPlayer(std::shared_ptr<Player> player) const;
-	void sendBoardChangesToPlayer(std::shared_ptr<Player> player, std::optional<clock::time_point> time) const;
+	void sendBoardToPlayer(const std::shared_ptr<Player>& player) const;
+	void sendBoardLayersToPlayer(const std::shared_ptr<Player>& player) const;
+	void sendBoardHeightsToPlayer(const std::shared_ptr<Player>& player) const;
+	void sendBoardChangesToPlayer(const std::shared_ptr<Player>& player, std::optional<clock::time_point> time) const;
 	//
-	void sendChestsToPlayer(std::shared_ptr<Player> player) const;
-	void sendLinksToPlayer(std::shared_ptr<Player> player, bool onlyMapLinks) const;
-	void sendSignsToPlayer(std::shared_ptr<Player> player) const;
+	void sendChestsToPlayer(const std::shared_ptr<Player>& player) const;
+	void sendLinksToPlayer(const std::shared_ptr<Player>& player, bool onlyMapLinks) const;
+	void sendSignsToPlayer(const std::shared_ptr<Player>& player) const;
 	//
-	void sendBaddiesToPlayer(std::shared_ptr<Player> player) const;
-	void sendHorsesToPlayer(std::shared_ptr<Player> player) const;
-	void sendNPCsToPlayer(std::shared_ptr<Player> player, std::optional<clock::time_point> time) const;
+	void sendBaddiesToPlayer(const std::shared_ptr<Player>& player) const;
+	void sendHorsesToPlayer(const std::shared_ptr<Player>& player) const;
+	void sendNPCsToPlayer(const std::shared_ptr<Player>& player, std::optional<clock::time_point> time) const;
 
 public:
 	bool hasPlayers() const { return !m_players.empty(); }
@@ -253,21 +251,21 @@ public:
 	void removePlayer(PlayerID id);
 
 public:
-	bool addNPC(std::shared_ptr<NPC> npc);
+	bool addNPC(const std::shared_ptr<NPC>& npc);
 	bool addNPC(NPCID npcId);
-	void removeNPC(std::shared_ptr<NPC> npc);
+	void removeNPC(const std::shared_ptr<NPC>& npc);
 	void removeNPC(NPCID npcId);
 
 public:
 	bool alterBoard(CString& tileData, const WholeTileRectangleArea& area, Player* player, bool forceRespawn = false, bool allowRespawn = true, bool sendToPlayers = false);
 	void applyBoardChangeFromScriptTiles(const WholeTileRectangleArea& area, bool forceRespawn = false, bool allowRespawn = true);
-	void saveBoardChangeFromScriptTiles(const WholeTileRectangleArea& area);
+	void saveBoardChangeFromScriptTiles(const WholeTileRectangleArea& area) const;
 	void updateBoard(const TileRectangleArea& area) noexcept;
 	void updateBoard2(const TileRectangleArea& area) noexcept;
 
 public:
-	LevelArrow* addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObject from);
-	LevelArrow* addArrow(const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, ScriptObject from);
+	LevelArrow* addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, const ScriptObject& from);
+	LevelArrow* addArrow(const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, const ScriptObject& from);
 	bool removeArrow(uint8_t index);
 	std::optional<LevelArrow*> getArrow(size_t index) noexcept;
 
@@ -275,10 +273,10 @@ public:
 	LevelBaddy* addBaddy(const LocalPixelPosition& position, BaddyType type);
 	LevelBaddy* putNewBaddy(const LocalPixelPosition& position, BaddyType type);
 	LevelBaddy* putNewBaddy(const LocalPixelPosition& position, BaddyType type, uint8_t power, std::string_view image = {});
-	bool removeBaddy(uint8_t pId);
-	bool removeAllBaddies();
-	std::optional<LevelBaddy*> getBaddyById(uint8_t id) noexcept;
-	std::optional<LevelBaddy*> getAliveBaddyByIndex(size_t index) noexcept;
+	bool removeBaddy(uint8_t pId) const;
+	bool removeAllBaddies() const;
+	std::optional<LevelBaddy*> getBaddyById(uint8_t id) const noexcept;
+	std::optional<LevelBaddy*> getAliveBaddyByIndex(size_t index) const noexcept;
 
 public:
 	LevelBomb* addBomb(inform_client_t, const PixelPosition& position, uint8_t power);
@@ -295,9 +293,9 @@ public:
 	std::optional<const LevelChest*> getChest(const MapPosition& mapPosition, const LocalWholeTilePosition& position) const noexcept;
 
 public:
-	void addExplosion(inform_client_t, const PixelPosition& position, ScriptObject from, uint8_t radius, uint8_t power);
-	void addExplosion(const PixelPosition& position, ScriptObject from, uint8_t radius, uint8_t power);
-	void addSpyFire(const PixelPosition& position, ScriptObject from, uint8_t direction, uint8_t length, uint8_t power);
+	void addExplosion(inform_client_t, const PixelPosition& position, const ScriptObject& from, uint8_t radius, uint8_t power);
+	void addExplosion(const PixelPosition& position, const ScriptObject& from, uint8_t radius, uint8_t power);
+	void addSpyFire(const PixelPosition& position, const ScriptObject& from, uint8_t direction, uint8_t length, uint8_t power);
 	LevelExplosion* addExplosionPart(const PixelPosition& position, uint8_t direction, uint8_t power);
 	bool removeExplosion(size_t index);
 	bool removeExplosion(const PixelPosition& position);
@@ -325,10 +323,10 @@ public:
 	std::optional<const LevelLink*> getLink(const TilePosition& position, bool excludeOverworld = false) const noexcept;
 
 public:
-	LevelShoot* addShoot(LevelShoot* existingShoot);
-	LevelShoot* addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObject from);
-	LevelShoot* addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, ScriptObject from);
-	LevelShoot* addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, ScriptObject from);
+	LevelShoot* addShoot(const LevelShoot* existingShoot);
+	LevelShoot* addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, const ScriptObject& from);
+	LevelShoot* addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, const ScriptObject& from);
+	LevelShoot* addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, const ScriptObject& from);
 	bool removeShoot(uint8_t index);
 	LevelShoot* getShoot(uint8_t index) const;
 
@@ -336,10 +334,10 @@ public:
 	std::optional<const LevelSign*> getSign(size_t index) const noexcept;
 
 public:
-	void addThrownItem(const TilePosition& position, uint8_t direction, CarryObjectSprite item, ScriptObject from);
+	void addThrownItem(const TilePosition& position, uint8_t direction, CarryObjectSprite item, const ScriptObject& from);
 
 public:
-	bool moveShoot(LevelShoot* shoot, int iterations);
+	bool moveShoot(LevelShoot* shoot, int iterations) const;
 	bool moveArrow(LevelArrow* arrow, int iterations);
 	bool moveThrownItem(size_t index, int iterations);
 
@@ -411,7 +409,7 @@ using LevelPtr = std::shared_ptr<Level>;
 
 //----------------------------
 
-inline void Level::setMap(std::shared_ptr<Map> map)
+inline void Level::setMap(const std::shared_ptr<Map>& map) const
 {
 	m_map = map;
 }
@@ -483,7 +481,7 @@ inline std::string_view Level::getLevelNameAtPosition(const PixelPosition& posit
 
 //----------------------------
 
-inline std::optional<size_t> Level::getSubLevelIndex(std::string_view levelPart) const noexcept
+inline std::optional<size_t> Level::getSubLevelIndex(const std::string_view levelPart) const noexcept
 {
 	if (!isGmap())
 	{
@@ -498,7 +496,7 @@ inline std::optional<size_t> Level::getSubLevelIndex(std::string_view levelPart)
 	return std::nullopt;
 }
 
-inline std::optional<PixelPosition> Level::getSubLevelOrigin(SubLevelPtr part) const noexcept
+inline std::optional<PixelPosition> Level::getSubLevelOrigin(const SubLevelPtr& part) noexcept
 {
 	if (part == nullptr || !part->mapPosition.has_value())
 		return std::nullopt;
@@ -507,7 +505,7 @@ inline std::optional<PixelPosition> Level::getSubLevelOrigin(SubLevelPtr part) c
 	return PixelPosition{ static_cast<int32_t>(part->mapPosition.value().x()) * pixelPerPart.width(), static_cast<int32_t>(part->mapPosition.value().y()) * pixelPerPart.height(), 0};
 }
 
-inline std::optional<MapPosition> Level::getSubLevelPositionInMap(std::string_view levelPart) const noexcept
+inline std::optional<MapPosition> Level::getSubLevelPositionInMap(const std::string_view levelPart) const noexcept
 {
 	if (!isGmap())
 	{
@@ -522,7 +520,7 @@ inline std::optional<MapPosition> Level::getSubLevelPositionInMap(std::string_vi
 	return std::nullopt;
 }
 
-inline SubLevelPtr Level::getSubLevelByName(std::string_view levelPart) const noexcept
+inline SubLevelPtr Level::getSubLevelByName(const std::string_view levelPart) const noexcept
 {
 	if (auto index = getSubLevelIndex(levelPart); index.has_value() && index.value() < m_levelParts.size())
 		return m_levelParts[index.value()];
@@ -533,10 +531,10 @@ inline SubLevelPtr Level::getSubLevelByName(std::string_view levelPart) const no
 inline SubLevelPtr Level::getSubLevelAtPosition(const PixelPosition& position) const noexcept
 {
 	if (!isGmap())
-		return m_levelParts.size() > 0 ? m_levelParts[0] : nullptr;
+		return !m_levelParts.empty() ? m_levelParts[0] : nullptr;
 
-	auto mapPosition = position / 1024;
-	auto index = static_cast<size_t>(mapPosition.y()) * m_map->size.width() + mapPosition.x();
+	const auto mapPosition = position / 1024;
+	const auto index = static_cast<size_t>(mapPosition.y()) * m_map->size.width() + mapPosition.x();
 	if (index < m_levelParts.size())
 		return m_levelParts[index];
 	return nullptr;
@@ -545,29 +543,29 @@ inline SubLevelPtr Level::getSubLevelAtPosition(const PixelPosition& position) c
 inline SubLevelPtr Level::getSubLevelAtPosition(const TilePosition& position) const noexcept
 {
 	if (!isGmap())
-		return m_levelParts.size() > 0 ? m_levelParts[0] : nullptr;
+		return !m_levelParts.empty() ? m_levelParts[0] : nullptr;
 
-	auto mapPosition = position / 64;
-	auto index = static_cast<size_t>(mapPosition.y()) * m_map->size.width() + static_cast<size_t>(mapPosition.x());
+	const auto mapPosition = position / 64;
+	const auto index = static_cast<size_t>(mapPosition.y()) * m_map->size.width() + static_cast<size_t>(mapPosition.x());
 	if (index < m_levelParts.size())
 		return m_levelParts[index];
 	return nullptr;
 }
 
-inline SubLevelPtr Level::getSubLevelAtPosition(const MapPosition& mapPosition) const noexcept
+inline SubLevelPtr Level::getSubLevelAtPosition(const MapPosition& position) const noexcept
 {
 	if (!isGmap())
-		return m_levelParts.size() > 0 ? m_levelParts[0] : nullptr;
+		return !m_levelParts.empty() ? m_levelParts[0] : nullptr;
 
-	auto index = static_cast<size_t>(mapPosition.y()) * m_map->size.width() + static_cast<size_t>(mapPosition.x());
+	const auto index = static_cast<size_t>(position.y()) * m_map->size.width() + static_cast<size_t>(position.x());
 	if (index < m_levelParts.size())
 		return m_levelParts[index];
 	return nullptr;
 }
 
-inline StaticLevelDataPtr Level::getStaticLevelDataByName(std::string_view levelPart) const noexcept
+inline StaticLevelDataPtr Level::getStaticLevelDataByName(const std::string_view levelPart) const noexcept
 {
-	auto levelPartData = getSubLevelByName(levelPart);
+	const auto levelPartData = getSubLevelByName(levelPart);
 	if (levelPartData != nullptr)
 		return levelPartData->staticData.lock();
 	return nullptr;
@@ -575,7 +573,7 @@ inline StaticLevelDataPtr Level::getStaticLevelDataByName(std::string_view level
 
 inline StaticLevelDataPtr Level::getStaticLevelDataAtPosition(const MapPosition& mapPosition) const noexcept
 {
-	auto levelPartData = getSubLevelAtPosition(mapPosition);
+	const auto levelPartData = getSubLevelAtPosition(mapPosition);
 	if (levelPartData != nullptr)
 		return levelPartData->staticData.lock();
 	return nullptr;
@@ -593,7 +591,7 @@ inline std::pair<SubLevelPtr, StaticLevelDataPtr> Level::getSubLevelAndStaticDat
 	return { nullptr, nullptr };
 }
 
-inline PixelPosition Level::convertToMapPosition(std::string_view levelPart, const LocalPixelPosition& position) const noexcept
+inline PixelPosition Level::convertToMapPosition(const std::string_view levelPart, const LocalPixelPosition& position) const noexcept
 {
 	if (isGmap())
 	{
@@ -604,9 +602,9 @@ inline PixelPosition Level::convertToMapPosition(std::string_view levelPart, con
 	return { position.x(), position.y(), position.z() };
 }
 
-inline PixelPosition Level::convertToMapPosition(std::string_view levelPart, const LocalWholeTilePosition& position) const noexcept
+inline PixelPosition Level::convertToMapPosition(const std::string_view levelPart, const LocalWholeTilePosition& position) const noexcept
 {
-	auto mapPosition = getSubLevelPositionInMap(levelPart).value_or(MapPosition{});
+	const auto mapPosition = getSubLevelPositionInMap(levelPart).value_or(MapPosition{});
 	return convertToMapPosition(mapPosition, position);
 }
 
@@ -706,14 +704,14 @@ inline const auto& Level::getItems() const noexcept
 
 inline bool Level::isSparringZone(const MapPosition& mapPosition) const noexcept
 {
-	if (auto subLevel = getSubLevelAtPosition(mapPosition); subLevel != nullptr)
+	if (const auto subLevel = getSubLevelAtPosition(mapPosition); subLevel != nullptr)
 		return subLevel->isSparringZone;
 	return false;
 }
 
 inline bool Level::isNoPkZone(const MapPosition& mapPosition) const noexcept
 {
-	if (auto subLevel = getSubLevelAtPosition(mapPosition); subLevel != nullptr)
+	if (const auto subLevel = getSubLevelAtPosition(mapPosition); subLevel != nullptr)
 		return subLevel->isNoPkZone;
 	return false;
 }
@@ -728,7 +726,7 @@ inline bool Level::isPrivateMap() const noexcept
 namespace source
 {
 /// @brief Creates a ScriptObject from a Level by hashing the level's name.
-ScriptObject FromLevel(LevelPtr level);
+ScriptObject FromLevel(const LevelPtr& level);
 } // end namespace source
 
 ///////////////////////////////////////////////////////////////////////////////
