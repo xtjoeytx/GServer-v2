@@ -25,12 +25,8 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-PlayerLogin::PlayerLogin(CSocket* pSocket, PlayerID pId)
+PlayerLogin::PlayerLogin(CSocket* pSocket, const PlayerID pId)
 	: Player(pSocket, pId)
-{
-}
-
-PlayerLogin::~PlayerLogin()
 {
 }
 
@@ -95,7 +91,7 @@ HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 
 	// Remove ourselves from the server.
 	// We need to null our socket to avoid being passed data by the socket manager.
-	auto self = shared_from_this();
+	const auto self = shared_from_this();
 	m_server->swapPlayer(self, player);
 	m_playerSock = nullptr;
 

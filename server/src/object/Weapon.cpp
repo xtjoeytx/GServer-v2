@@ -61,8 +61,8 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const std::filesystem::path& fileName
 	// Non-alphanumeric characters are encoded as %000.
 
 	const auto server = BabyDI::Get<Server>();
-	const auto file = server->getFileSystem().openi(fs::FileCategory::WEAPON, std::format("weapon{}.txt", fileName.string()));
-	if (!file->opened())
+	const auto file = server->getFileSystemServer().openi(fs::FileCategory::WEAPON, fileName.string());
+	if (file == nullptr || !file->opened())
 		return nullptr;
 
 	if (const auto header = file->readLine(); header != "GRAWP001")
@@ -84,7 +84,7 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const std::filesystem::path& fileName
 		log::printLine(log::server, "WARNING: Clientside script of weapon ({}) exceeds the limit of 28767 bytes.", *weaponName);
 
 	// Set the mod time to the file mod time.
-	weapon->modTime = fs::getFileModTime(fileName);
+	weapon->modTime = fs::getFileModTime(file->filePath());
 
 	// Check if we need to rename the file.
 	const auto expectedFileName = fs::getHTMLEscapedFileName(std::format("weapon{}.txt", weapon->name)).string();

@@ -22,15 +22,15 @@ class PlayerLogin : public Player
 {
 public:
 	PlayerLogin(CSocket* pSocket, PlayerID pId);
-	virtual ~PlayerLogin() override;
+	~PlayerLogin() override = default;
 
 public:
-	virtual bool onRecv() override;
-	virtual void onUnregister() override {}
+	bool onRecv() override;
+	void onUnregister() override {}
 
 protected:
-	virtual std::string_view whoAmI() const noexcept override;
-	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
+	std::string_view whoAmI() const noexcept override;
+	HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
 
 public:
 	HandlePacketResult msgLoginPacket(CString& pPacket);
