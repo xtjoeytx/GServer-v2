@@ -30,7 +30,7 @@ protected:
 
 public:
 	IdGenerator() { createSegment(T(0)); }
-	IdGenerator(T startId) { createSegment(startId); }
+	explicit IdGenerator(T startId) { createSegment(startId); }
 
 	// Create a new segment starting at the specified ID.
 	bool createSegment(T startId)

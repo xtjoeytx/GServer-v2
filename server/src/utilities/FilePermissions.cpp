@@ -16,7 +16,7 @@ namespace preagonal
 constexpr auto FOLDER_SEPARATOR = "/"sv;
 const std::regex WILDCARD_REGEX(R"(\*)");
 
-bool FilePermissions::hasPermission(std::string_view path, FilePermissions::Type type) const
+bool FilePermissions::hasPermission(const std::string_view path, const FilePermissions::Type type) const
 {
 	for (const auto& perm : negativePermissions)
 	{
@@ -24,6 +24,7 @@ bool FilePermissions::hasPermission(std::string_view path, FilePermissions::Type
 			return false;
 	}
 
+	// NOLINTNEXTLINE(*-use-anyofallof)
 	for (const auto& perm : permissions)
 	{
 		if (perm.flags.test(type) && match(path, perm))
@@ -33,14 +34,14 @@ bool FilePermissions::hasPermission(std::string_view path, FilePermissions::Type
 	return false;
 }
 
-void FilePermissions::addPermission(std::string_view permissionString)
+void FilePermissions::addPermission(const std::string_view permissionString)
 {
 	Permission permission{};
 	std::vector<std::string> segments;
 
 	for (size_t idx = 0; idx < permissionString.length(); idx++)
 	{
-		char ch = permissionString[idx];
+		const char ch = permissionString[idx];
 		if (ch == 'r')
 			permission.flags.set(Type::Read);
 		else if (ch == 'w')
@@ -67,7 +68,7 @@ void FilePermissions::addPermission(std::string_view permissionString)
 	}
 }
 
-void FilePermissions::loadPermissions(std::string_view permissionStr)
+void FilePermissions::loadPermissions(const std::string_view permissionStr)
 {
 	permissions.clear();
 	negativePermissions.clear();
@@ -76,9 +77,9 @@ void FilePermissions::loadPermissions(std::string_view permissionStr)
 		addPermission(string::trim(str));
 }
 
-bool FilePermissions::match(std::string_view path, const FilePermissions::Permission& permission)
+bool FilePermissions::match(const std::string_view path, const FilePermissions::Permission& permission)
 {
-	auto segments = string::splitToVector(path, FOLDER_SEPARATOR, false);
+	const auto segments = string::splitToVector(path, FOLDER_SEPARATOR, false);
 	if (segments.empty() || segments.size() != permission.segments.size())
 		return false;
 

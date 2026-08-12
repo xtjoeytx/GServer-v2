@@ -167,6 +167,7 @@ static std::string performClientSideJoinHack(std::string_view code)
 
 //----------------------------
 
+// NOLINTNEXTLINE(*-no-recursion)
 std::generator<decltype(ScriptExecutionContext::joinedClasses)::const_reference> Script::getServerJoinedClasses() const noexcept
 {
 	if (m_server_script == nullptr)
@@ -200,12 +201,12 @@ const ScriptByteCode& Script::getClientByteCode() const noexcept
 	return empty;
 }
 
-void Script::executeEvents(ScriptContainer& container, ScriptObject source) const
+void Script::executeEvents(ScriptContainer& container, const ScriptObject& source) const
 {
 	executeEvents(container.events, source);
 }
 
-void Script::executeEvents(ScriptEventQueue& events, ScriptObject source) const
+void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source) const
 {
 	if (m_server_script == nullptr || m_server_script->engine == nullptr)
 		return;
@@ -253,19 +254,19 @@ void Script::executeEvents(ScriptEventQueue& events, ScriptObject source) const
 	}
 }
 
-void Script::executeEvents(clear_container_t, ScriptContainer& container, ScriptObject source) const
+void Script::executeEvents(clear_container_t, ScriptContainer& container, const ScriptObject& source) const
 {
 	executeEvents(container, source);
 	container.events.queue().clear();
 }
 
-void Script::executeEvents(clear_container_t, ScriptEventQueue& events, ScriptObject source) const
+void Script::executeEvents(clear_container_t, ScriptEventQueue& events, const ScriptObject& source) const
 {
 	executeEvents(events, source);
 	events.queue().clear();
 }
 
-bool Script::runUserDefinedFunction(std::string_view functionName, ScriptEvent& event, ScriptObject source) const
+bool Script::runUserDefinedFunction(const std::string_view functionName, ScriptEvent& event, const ScriptObject& source) const
 {
 	if (m_server_script == nullptr || m_server_script->engine == nullptr)
 		return false;

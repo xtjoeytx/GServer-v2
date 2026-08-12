@@ -63,7 +63,7 @@ struct Character
 
 	[[nodiscard]] TilePosition getTilePosition() const noexcept
 	{
-		return {static_cast<float>((mapX * 64) + (localPixelX / 16.0f)), static_cast<float>((mapY * 64) + (localPixelY / 16.0f)), static_cast<float>(localPixelZ) / 16.0f};
+		return {static_cast<float>(mapX * 64) + (static_cast<float>(localPixelX) / 16.0f), static_cast<float>(mapY * 64) + (static_cast<float>(localPixelY) / 16.0f), static_cast<float>(localPixelZ) / 16.0f};
 	}
 
 	[[nodiscard]] MapPosition getMapPosition() const noexcept
@@ -307,7 +307,7 @@ enum class HTMLColors : uint8_t
 };
 constexpr size_t HTMLCOLORS_COUNT = static_cast<size_t>(HTMLColors::COUNT);
 
-inline std::string_view getHTMLColorName(HTMLColors color)
+inline std::string_view getHTMLColorName(const HTMLColors color)
 {
 	static const std::unordered_map<HTMLColors, std::string_view> colorNames =
 	{

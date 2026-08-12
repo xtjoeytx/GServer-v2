@@ -1,6 +1,7 @@
 #include <cassert>
 #include <chrono>
 #include <memory>
+#include <utility>
 
 #include <CString.h>
 #include <IEnums.h>
@@ -17,8 +18,8 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-LevelBoardChange::LevelBoardChange(std::shared_ptr<Level> level, const LocalWholeTileRectangleArea& area, const CString& tiles, const CString& oldTiles, std::chrono::seconds respawnTime)
-	: area(area), m_level(level), m_newTiles(tiles), m_oldTiles(oldTiles)
+LevelBoardChange::LevelBoardChange(const std::shared_ptr<Level>& level, const LocalWholeTileRectangleArea& area, CString tiles, CString oldTiles, const std::chrono::seconds respawnTime)
+	: area(area), m_level(level), m_newTiles(std::move(tiles)), m_oldTiles(std::move(oldTiles))
 {
 	m_server = BabyDI::Get<Server>();
 	assert(m_server != nullptr);
@@ -29,7 +30,7 @@ LevelBoardChange::LevelBoardChange(std::shared_ptr<Level> level, const LocalWhol
 		m_timeout.runOnceFor(respawnTime);
 }
 
-LevelBoardChange::LevelBoardChange(std::shared_ptr<Level> level, const MapPosition& mapPosition, const LocalWholeTileRectangleArea& area, const CString& tiles, const CString& oldTiles, std::chrono::seconds respawnTime)
+LevelBoardChange::LevelBoardChange(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalWholeTileRectangleArea& area, const CString& tiles, const CString& oldTiles, const std::chrono::seconds respawnTime)
 	: LevelBoardChange(level, area, tiles, oldTiles, respawnTime)
 {
 	m_mapPosition = mapPosition;
@@ -50,10 +51,10 @@ void LevelBoardChange::update(const precise_clock::time_point& time)
 
 void LevelBoardChange::sendToPlayersOnLevel() const
 {
-	if (auto level = m_level.lock(); level != nullptr)
+	if (const auto level = m_level.lock(); level != nullptr)
 	{
 		if (!level->isGmap())
-			m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOARDMODIFY << getPropsForSingleLevel(), { 0, 0 }, level);
+			m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOARDMODIFY << getPropsForSingleLevel(), {0, 0}, level);
 		else
 		{
 			m_server->sendPacketToNearby(CString() >> (char)PLO_BOARDMODIFY2 << getPropsForMapClassic(), toPixelPosition(m_mapPosition.value(), area.position), level, {});
@@ -85,7 +86,7 @@ CString LevelBoardChange::getPropsForMapClassic() const
 	// {186}{CHAR mapX}{CHAR mapY}{CHAR layer +64}{CHAR tileX}{CHAR tileY}{CHAR width}{CHAR height}{tiles}
 
 	if (m_level.expired() || !m_mapPosition.has_value())
-		return CString();
+		return {};
 
 	const auto& [mapX, mapY, _] = m_mapPosition.value();
 	if (layer == 0) [[likely]]
@@ -105,10 +106,7 @@ CString LevelBoardChange::getPropsForMapNewMain() const
 
 void LevelBoardChange::swapTiles()
 {
-	CString temp = m_newTiles;
-	m_newTiles = m_oldTiles;
-	m_oldTiles = temp;
-
+	std::swap(m_newTiles, m_oldTiles);
 	modTime = m_server->getFrameStartTime();
 }
 

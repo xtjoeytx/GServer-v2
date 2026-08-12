@@ -48,9 +48,9 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCGET(CString& pPacket)
 	// 5/26/2019 - confirmed, this is the npc-server pinging the gserver.
 	if (pPacket.bytesLeft())
 	{
-		NPCID npcId = pPacket.readGUInt();
+		const NPCID npcId = pPacket.readGUInt();
 
-		auto npc = m_server->getNPC(npcId);
+		const auto npc = m_server->getNPC(npcId);
 		if (npc != nullptr)
 		{
 			auto dump = npc->getVariableDump();
@@ -69,15 +69,15 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCDELETE(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	NPCID npcId = pPacket.readGUInt();
-	auto npc = m_server->getNPC(npcId);
+	const NPCID npcId = pPacket.readGUInt();
+	const auto npc = m_server->getNPC(npcId);
 
 	if (npc != nullptr && npc->storageType == NPCStorageType::DATABASE)
 	{
 		m_server->getNPCServer()->deleteNPC(npcId);
 		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCDELETE >> (int)npcId);
 
-		std::string logMsg = std::format("NPC {} deleted by {}", npc->name, account.name);
+		const std::string logMsg = std::format("NPC {} deleted by {}", npc->name, account.name);
 		log::printLine(log::npc, logMsg);
 		m_server->sendToNC(logMsg);
 	}
@@ -93,16 +93,16 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCRESET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	NPCID npcId = pPacket.readGUInt();
+	const NPCID npcId = pPacket.readGUInt();
 
-	auto npc = m_server->getNPC(npcId);
+	const auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr && npc->storageType == NPCStorageType::DATABASE)
 	{
 		m_server->sendPacketToAll(CString() >> (char)PLO_NPCDEL >> (int)npcId);
 		npc->resetToInitialState();
 		npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
 
-		std::string logMsg = std::format("NPC script of {} reset by {}", npc->name, account.name);
+		const std::string logMsg = std::format("NPC script of {} reset by {}", npc->name, account.name);
 		log::printLine(log::npc, logMsg);
 		m_server->sendToNC(logMsg);
 	}
@@ -119,11 +119,11 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCSCRIPTGET(CString& pPacket)
 	}
 
 	// {160}{INT id}{GSTRING script}
-	NPCID npcId = pPacket.readGUInt();
-	auto npc = m_server->getNPC(npcId);
+	const NPCID npcId = pPacket.readGUInt();
+	const auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr)
 	{
-		std::string tokenizedScript = string::toCSV(npc->getScript().getOriginalSource(), "\n");
+		const std::string tokenizedScript = string::toCSV(npc->getScript().getOriginalSource(), "\n");
 		sendPacket(CString() >> (char)PLO_NC_NPCSCRIPT >> (int)npcId << tokenizedScript);
 	}
 
@@ -138,19 +138,19 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCWARP(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	NPCID npcId = pPacket.readGUInt();
-	PropertyTileCoordinate tileX{pPacket.readGUChar() / 2.0f};
-	PropertyTileCoordinate tileY{pPacket.readGUChar() / 2.0f};
-	std::string npcLevel = pPacket.readString("").trimI().toString();
+	const NPCID npcId = pPacket.readGUInt();
+	PropertyTileCoordinate tileX{static_cast<float>(pPacket.readGUChar()) / 2.0f};
+	PropertyTileCoordinate tileY{static_cast<float>(pPacket.readGUChar()) / 2.0f};
+	const std::string npcLevel = pPacket.readString("").trimI().toString();
 
-	auto npc = m_server->getNPC(npcId);
+	const auto npc = m_server->getNPC(npcId);
 	if (npc == nullptr)
 		return HandlePacketResult::Handled;
 
 	// Warping to a different level entirely.
 	if (npcLevel != npc->getLevelName())
 	{
-		if (auto newLevel = m_server->getLoadedLevel(npcLevel, npc->getLevel()); newLevel != nullptr)
+		if (const auto newLevel = m_server->getLoadedLevel(npcLevel, npc->getLevel()); newLevel != nullptr)
 			npc->warp(newLevel, {tileX.pixelCoordinate, tileY.pixelCoordinate});
 	}
 	// Changing position in the current level.
@@ -175,8 +175,8 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCFLAGSGET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	NPCID npcId = pPacket.readGUInt();
-	auto npc = m_server->getNPC(npcId);
+	const NPCID npcId = pPacket.readGUInt();
+	const auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr)
 	{
 		std::vector<std::string> flagList;
@@ -202,20 +202,20 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	NPCID npcId = pPacket.readGUInt();
-	CString npcScript = pPacket.readString("").guntokenize();
+	const NPCID npcId = pPacket.readGUInt();
+	const CString npcScript = pPacket.readString("").guntokenize();
 
 	// TODO: Validate permissions
 
-	auto npc = m_server->getNPC(npcId);
+	const auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr)
 	{
-		auto lastUpdateTime = npc->lastUpdateTime;
+		const auto lastUpdateTime = npc->lastUpdateTime;
 
 		npc->setScript(npcScript.toStringView());
 		npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
 
-		std::string logMsg = std::format("NPC script of {} updated by {}", npc->name, account.name);
+		const std::string logMsg = std::format("NPC script of {} updated by {}", npc->name, account.name);
 		log::printLine(log::npc, logMsg);
 		m_server->sendToNC(logMsg);
 
@@ -233,9 +233,9 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	NPCID npcId = pPacket.readGUInt();
+	const NPCID npcId = pPacket.readGUInt();
 
-	if (auto npc = m_server->getNPC(npcId); npc != nullptr)
+	if (const auto npc = m_server->getNPC(npcId); npc != nullptr)
 	{
 		std::vector<std::string> addedFlags;
 		std::vector<std::string> updatedFlags;
@@ -251,9 +251,9 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 			// Ignore temporary variables and non-flag variables.
 			if (auto storeFlag = it->second; storeFlag != nullptr && storeFlag->lifetime == variables::Lifetime::PERMANENT && storeFlag->value.testAsFlag())
 			{
-				auto flagBeingSet = std::ranges::find_if(incomingFlags, [&storeFlagName](std::string& flag)
+				auto flagBeingSet = std::ranges::find_if(incomingFlags, [&storeFlagName](const std::string& flag)
 				{
-					auto incomingFlagValue = string::retrieveLine(flag, '=');
+					const auto incomingFlagValue = string::retrieveLine(flag, '=');
 					return incomingFlagValue == storeFlagName;
 				});
 
@@ -272,7 +272,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 				if (auto existingValueWrap = it->second->get<std::string>(); existingValueWrap.has_value())
 				{
 					auto& existingValue = existingValueWrap.value().get();
-					auto equalPos = flagBeingSet->find('=');
+					const auto equalPos = flagBeingSet->find('=');
 					std::string flagValue{string::trimMutate(flagBeingSet->substr(equalPos + 1))};
 
 					// It was modified!
@@ -300,8 +300,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 		// Add new flags.
 		for (std::string_view flag : incomingFlags)
 		{
-			auto equalPos = flag.find('=');
-			if (equalPos == std::string::npos)
+			if (const auto equalPos = flag.find('='); equalPos == std::string::npos)
 			{
 				npc->scripting.variables.add(flag, GameValue{true});
 				addedFlags.emplace_back(std::format("flag added:\t{}", flag));
@@ -320,22 +319,22 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCFLAGSSET(CString& pPacket)
 
 		// Announce changes.
 		// clang-format off
-		CString updateMsg = std::format("NPC flags of {} updated by {}", npc->name, account.name);
+		const CString updateMsg = std::format("NPC flags of {} updated by {}", npc->name, account.name);
 		m_server->sendToNC(updateMsg);
 		log::printLine(log::npc, updateMsg);
 		if (!addedFlags.empty())
 		{
-			std::ranges::for_each(addedFlags, [&](std::string& message) { m_server->sendToNC(message); });
+			std::ranges::for_each(addedFlags, [&](const std::string& message) { m_server->sendToNC(message); });
 			log::printLine(log::npc, string::join(addedFlags, "\n"sv));
 		}
 		if (!updatedFlags.empty())
 		{
-			std::ranges::for_each(updatedFlags, [&](std::string& message) { m_server->sendToNC(message); });
+			std::ranges::for_each(updatedFlags, [&](const std::string& message) { m_server->sendToNC(message); });
 			log::printLine(log::npc, string::join(updatedFlags, "\n"sv));
 		}
 		if (!deletedFlags.empty())
 		{
-			std::ranges::for_each(deletedFlags, [&](std::string& message) { m_server->sendToNC(message); });
+			std::ranges::for_each(deletedFlags, [&](const std::string& message) { m_server->sendToNC(message); });
 			log::printLine(log::npc, string::join(deletedFlags, "\n"sv));
 		}
 		// clang-format on
@@ -355,13 +354,13 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 	if (!m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
-	auto packetData = pPacket.readString("").toString();
-	auto npcData = string::fromCSV(packetData);
-	auto& npcName = npcData[0];
-	auto npcId = string::toNumber<NPCID>(npcData[1]);
-	auto& npcType = npcData[2];
-	auto& npcScripter = npcData[3];
-	auto& npcLevel = npcData[4];
+	const auto packetData = pPacket.readString("").toString();
+	const auto npcData = string::fromCSV(packetData);
+	const auto& npcName = npcData[0];
+	const auto npcId = string::toNumber<NPCID>(npcData[1]);
+	const auto& npcType = npcData[2];
+	const auto& npcScripter = npcData[3];
+	const auto& npcLevel = npcData[4];
 	auto npcX = string::toFloat(npcData[5]);
 	auto npcY = string::toFloat(npcData[6]);
 
@@ -383,7 +382,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 	{
 		if (level = m_server->findGmapForLevel(npcLevel, nullptr); level != nullptr)
 		{
-			if (auto map = level->getMap(); map != nullptr)
+			if (const auto map = level->getMap(); map != nullptr)
 			{
 				auto position = map->getLevelPosition(npcLevel).value_or(MapPosition{0, 0});
 				npcX += static_cast<float>(position.x()) * Level::tilesPerSubLevel().width();
@@ -407,7 +406,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	auto newNPC = m_server->getNPCServer()->addNPC(npcName, npcId, npcType, npcScripter, level, {npcX, npcY});
+	const auto newNPC = m_server->getNPCServer()->addNPC(npcName, npcId, npcType, npcScripter, level, {npcX, npcY});
 	if (newNPC != nullptr)
 	{
 		// Persist NPC
@@ -415,7 +414,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCADD(CString& pPacket)
 		m_server->getNPCLoader().saveNPC(newNPC);
 
 		// Logging
-		std::string logMsg = std::format("NPC {} added by {}", newNPC->name, account.name);
+		const std::string logMsg = std::format("NPC {} added by {}", newNPC->name, account.name);
 		log::printLine(log::npc, logMsg);
 		m_server->sendToNC(logMsg);
 	}
@@ -520,20 +519,20 @@ HandlePacketResult PlayerNC::msgPLI_NC_LOCALNPCSGET(CString& pPacket)
 	}
 
 	// {114}{level}
-	CString level = pPacket.readString("");
+	const CString level = pPacket.readString("");
 	if (level.isEmpty())
 		return HandlePacketResult::Handled;
 
-	if (auto npcLevel = m_server->getLoadedLevelNoHint(level.toString()); npcLevel != nullptr)
+	if (const auto npcLevel = m_server->getLoadedLevelNoHint(level.toString()); npcLevel != nullptr)
 	{
 		CString npcDump;
 		// Variables dump from level mapname (level.nw)
 		npcDump << "Variables dump from level " << npcLevel->levelName << "\n";
 
-		for (auto npcId : npcLevel->getNPCs())
+		for (const auto npcId : npcLevel->getNPCs())
 		{
 			// clang-format off
-			auto npc = m_server->getNPC(npcId);
+			const auto npc = m_server->getNPC(npcId);
 			npcDump << "\n" << string::join(npc->getVariableDump(), "\n") << "\n";
 			// clang-format on
 		}
@@ -578,8 +577,8 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONGET(CString& pPacket)
 	}
 
 	// {116}{weapon}
-	CString weaponName = pPacket.readString("");
-	auto weapon = m_server->getWeapon(weaponName.toString());
+	const CString weaponName = pPacket.readString("");
+	const auto weapon = m_server->getWeapon(weaponName.toString());
 	if (weapon == nullptr || weapon->isDefault())
 	{
 		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_RC_CHAT << account.name << " prob: weapon " << weaponName << " doesn't exist");
@@ -587,7 +586,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONGET(CString& pPacket)
 	}
 
 	std::string script = weapon->getScript().getOriginalSource();
-	std::replace(script.begin(), script.end(), '\n', '\xa7');
+	std::ranges::replace(script, '\n', '\xa7');
 
 	// clang-format off
 	if (getVersion() < NCVER_2_1)
@@ -623,12 +622,12 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONADD(CString& pPacket)
 	std::string weaponImage = pPacket.readChars(pPacket.readGUChar()).toString();
 	std::string weaponCode = pPacket.readString("").toString();
 
-	std::replace(weaponCode.begin(), weaponCode.end(), '\xa7', '\n');
+	std::ranges::replace(weaponCode, '\xa7', '\n');
 
 	CString actionTaken;
 
 	// Find Weapon
-	auto weaponObj = m_server->getWeapon(weaponName);
+	const auto weaponObj = m_server->getWeapon(weaponName);
 	if (weaponObj != nullptr)
 	{
 		// default weapon, don't update!
@@ -646,10 +645,9 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONADD(CString& pPacket)
 	else
 	{
 		// add weapon
-		auto weapon = std::make_shared<Weapon>(weaponName, std::move(weaponImage), std::move(weaponCode));
+		const auto weapon = std::make_shared<Weapon>(weaponName, std::move(weaponImage), std::move(weaponCode));
 		weapon->saveWeapon();
-		bool success = m_server->NC_AddWeapon(weapon);
-		if (success)
+		if (m_server->NC_AddWeapon(weapon) == true)
 			actionTaken = "added";
 	}
 
@@ -677,7 +675,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONDELETE(CString& pPacket)
 	}
 
 	// {118}{weapon}
-	CString weaponName = pPacket.readString("");
+	const CString weaponName = pPacket.readString("");
 
 	bool deleted = false;
 	CString logMsg;
@@ -713,11 +711,10 @@ HandlePacketResult PlayerNC::msgPLI_NC_LEVELLISTGET(CString& pPacket)
 	// Start our packet.
 	CString ret;
 
-	auto& levelList = m_server->getLevelList();
-	if (!levelList.empty())
+	if (const auto& levelList = m_server->getLevelList(); !levelList.empty())
 	{
-		for (const auto& level : levelList)
-			ret << level.second->levelName << "\n";
+		for (const auto& level : levelList | std::views::values)
+			ret << level->levelName << "\n";
 	}
 
 	sendPacket(CString() >> (char)PLO_NC_LEVELLIST << ret.gtokenize());

@@ -18,7 +18,6 @@
 #include <random>
 #include <ranges>
 #include <set>
-#include <string.h>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -126,8 +125,8 @@ void ExternalServerCachedSettings::bind(Server* server)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Server::Server(const CString& pName)
-	: m_animationManager(this), m_packageManager(this), m_name(pName),
+Server::Server(CString pName)
+	: m_animationManager(this), m_packageManager(this), m_name(std::move(pName)),
 	  m_triggerActionDispatcher(methodstub(this, &Server::createTriggerCommands))
 {
 	m_serverTime = 0;
@@ -145,8 +144,8 @@ Server::Server(const CString& pName)
 	// clang-format off
 	auto playerFilter = std::views::filter([](auto& kvp)
 	{
-		bool isClient = dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr;
-		bool isRC = dynamic_cast<PlayerRC*>(kvp.second.get()) != nullptr;
+		const bool isClient = dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr;
+		const bool isRC = dynamic_cast<PlayerRC*>(kvp.second.get()) != nullptr;
 		return (isClient || isRC) && kvp.second->getId() != 0;
 	});
 
@@ -158,7 +157,7 @@ Server::Server(const CString& pName)
 		[this, playerFilter](std::optional<int64_t> index) -> GameValueVariantForGetter
 		{
 			if (!hasNPCServer()) return 0.0;
-			auto size = std::ranges::distance(getNPCServer()->getPlayerList() | playerFilter);
+			const auto size = std::ranges::distance(getNPCServer()->getPlayerList() | playerFilter);
 			return static_cast<double>(size);
 		},
 		{});
@@ -168,7 +167,7 @@ Server::Server(const CString& pName)
 			if (!hasNPCServer()) return std::vector<ScriptObject>{};
 			auto playerObjects = getNPCServer()->getPlayerList()
 				| playerFilter
-				| std::views::transform([](auto& kvp) { return ScriptObject{ std::make_pair((size_t)kvp.first, ScriptObjectType::PLAYER) }; });
+				| std::views::transform([](auto& kvp) { return ScriptObject{ std::make_pair(static_cast<size_t>(kvp.first), ScriptObjectType::PLAYER) }; });
 
 			return std::vector<ScriptObject>{std::ranges::begin(playerObjects), std::ranges::end(playerObjects)};
 		},
@@ -189,24 +188,24 @@ Server::Server(const CString& pName)
 	Scripting.variables.add<double>("nwyear"sv, bindGETSIMPLE(static_cast<double>((getNWTime() / toYears) + 1000), this), {});     // Years start at 1000
 
 	GameVariable groundHeightsVar{.name = "groundheights"};
-	groundHeightsVar.registerGetter<double>([this](std::optional<int64_t> index) -> GameValueVariantForGetter
+	groundHeightsVar.registerGetter<double>([this](const std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
-		if (!index.has_value() || index.value() < 0 || index.value() >= (int64_t)groundHeights.size())
+		if (!index.has_value() || index.value() < 0 || index.value() >= static_cast<int64_t>(groundHeights.size()))
 			return 0.0;
 		return groundHeights.at(index.value());
 	});
 	groundHeightsVar.registerGetter<std::vector<double>>(bindGETSIMPLE((std::vector<double>{groundHeights.begin(), groundHeights.end()}), this));
-	groundHeightsVar.registerSetter<double>([this](GameValueVariantForSetter& value, std::optional<int64_t> index)
+	groundHeightsVar.registerSetter<double>([this](const GameValueVariantForSetter& value, const std::optional<int64_t> index)
 	{
-		if (!index.has_value() || index.value() < 0 || index.value() >= (int64_t)groundHeights.size())
+		if (!index.has_value() || index.value() < 0 || index.value() >= static_cast<int64_t>(groundHeights.size()))
 			return;
-		if (auto wrap = std::get_if<std::reference_wrapper<double>>(&value); wrap != nullptr)
+		if (const auto wrap = std::get_if<std::reference_wrapper<double>>(&value); wrap != nullptr)
 			groundHeights.at(index.value()) = wrap->get();
 	});
-	groundHeightsVar.registerSetter<std::vector<double>>([this](GameValueVariantForSetter& value, std::optional<int64_t> index)
+	groundHeightsVar.registerSetter<std::vector<double>>([this](const GameValueVariantForSetter& value, std::optional<int64_t> index)
 	{
 		groundHeights.fill(0.0);
-		if (auto wrap = std::get_if<std::reference_wrapper<std::vector<double>>>(&value); wrap != nullptr)
+		if (const auto wrap = std::get_if<std::reference_wrapper<std::vector<double>>>(&value); wrap != nullptr)
 		{
 			for (size_t i = 0; i < std::min(groundHeights.size(), wrap->get().size()); ++i)
 				groundHeights[i] = wrap->get()[i];
@@ -216,11 +215,14 @@ Server::Server(const CString& pName)
 	// clang-format on
 
 	// Timed events.
-	m_timedEvents1s.callbackIterations = std::bind(&Server::doTimedEvents, this, std::placeholders::_1);
+	m_timedEvents1s.callbackIterations = [this](const int iterations)
+	{
+		doTimedEvents(iterations);
+	};
 	m_timedSave1m.callbackIterations = [this](int)
 	{
 		saveServerFlags();
-		if (auto guild = BabyDI::Get<GuildManager>(); guild != nullptr)
+		if (const auto guild = BabyDI::Get<GuildManager>(); guild != nullptr)
 			guild->saveGuilds();
 	};
 	m_timedNWTime5s.callbackIterations = [this](int)
@@ -286,11 +288,11 @@ Server::Server(const CString& pName)
 		});
 	};
 
-	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::CONFIG)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::CONFIG)] = [this](const fs::FileEventCollection events, const fs::FileData& file)
 	{
 		if (events.test(fs::FileEvent::Modified))
 		{
-			auto fileName = fs::getANSIFileName(file.file);
+			const auto fileName = fs::getANSIFileName(file.file);
 			if (fileName == "serveroptions.txt")
 			{
 				loadSettings();
@@ -315,7 +317,7 @@ Server::Server(const CString& pName)
 				loadWordFilter();
 		}
 	};
-	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::NPC)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::NPC)] = [this](const fs::FileEventCollection events, const fs::FileData& file)
 	{
 		if (!hasNPCServer())
 			return;
@@ -335,10 +337,10 @@ Server::Server(const CString& pName)
 		if (events.test(fs::FileEvent::Added))
 		{
 			auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
-			if (auto npc = m_npcServer->addNPCFromFile(file.file); npc != nullptr)
+			if (const auto npc = m_npcServer->addNPCFromFile(file.file); npc != nullptr)
 			{
 				// TODO: Generic prop sending function NPCs.
-				CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket();
+				const CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket();
 				sendPacketToNearby(packet, npc->getGlobalPosition(), npc->getLevel());
 
 				log::printLine(log::server, "NPC added to filesystem: [{}] {}", npc->id, file.file.stem().generic_string());
@@ -347,30 +349,30 @@ Server::Server(const CString& pName)
 		if (events.test(fs::FileEvent::Modified))
 		{
 			fs::File npcFile{file.file};
-			auto id = string::toNumber<NPCID>(npcFile.readConfigLine("ID", " ").value_or("0"));
+			const auto id = string::toNumber<NPCID>(npcFile.readConfigLine("ID", " ").value_or("0"));
 			if (id == 0)
 				return;
 
-			auto npc = getNPC(id);
+			const auto npc = getNPC(id);
 			if (npc == nullptr || npc->lastSaveTime == file.getModTime()) return;
 			npc->lastSaveTime = file.getModTime();
 
 			// TODO: Ability to serialize all the attributes from the file and send changed ones.
 
-			auto script = npcFile.readConfigSection("NPCSCRIPT", "NPCSCRIPTEND");
+			const auto script = npcFile.readConfigSection("NPCSCRIPT", "NPCSCRIPTEND");
 			if (script.has_value())
 			{
 				npc->setScript(script.value());
 				npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
 				npc->sendScriptUpdatesToLevel(file.getModTime());
 
-				std::string logMsg = std::format("NPC script updated on filesystem: [{}] {}", npc->id, npc->name);
+				const std::string logMsg = std::format("NPC script updated on filesystem: [{}] {}", npc->id, npc->name);
 				log::printLine(log::npc, logMsg);
 				sendToNC(logMsg);
 			}
 		}
 	};
-	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::SCRIPTCLASS)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::SCRIPTCLASS)] = [this](const fs::FileEventCollection events, const fs::FileData& file)
 	{
 		if (!hasNPCServer())
 			return;
@@ -416,7 +418,7 @@ Server::Server(const CString& pName)
 			sendToNC(logMsg);
 		}
 	};
-	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::TRANSLATION)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::TRANSLATION)] = [](const fs::FileEventCollection events, const fs::FileData& file)
 	{
 		if (events.test(fs::FileEvent::Modified))
 		{
@@ -424,23 +426,23 @@ Server::Server(const CString& pName)
 				translationManager->reloadTranslation(file.file);
 		}
 	};
-	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::WEAPON)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::WEAPON)] = [this](const fs::FileEventCollection events, const fs::FileData& file)
 	{
 		if (events.test(fs::FileEvent::Deleted))
 		{
 			auto weaponName = fs::getANSIFileName(fs::getHTMLEscapedFileName(file.file.stem())).substr(6);
 			if (NC_DelWeapon(weaponName))
 			{
-				auto logMsg = std::format("Weapon deleted from filesystem: {}", weaponName);
+				const auto logMsg = std::format("Weapon deleted from filesystem: {}", weaponName);
 				log::printLine(log::npc, logMsg);
 				sendToNC(logMsg);
 			}
 		}
 		if (events.test(fs::FileEvent::Modified))
 		{
-			auto fileName = fs::getANSIFileName(file.file);
-			auto newWeapon = Weapon::loadWeapon(fileName);
-			if (auto weapon = getWeapon(newWeapon->name); weapon)
+			const auto fileName = fs::getANSIFileName(file.file);
+			const auto newWeapon = Weapon::loadWeapon(fileName);
+			if (const auto weapon = getWeapon(newWeapon->name); weapon)
 			{
 				if (weapon->name != newWeapon->name)
 				{
@@ -457,7 +459,7 @@ Server::Server(const CString& pName)
 		}
 	};
 
-	m_fsWorld.categoryEventCallback[ENUM(fs::FileCategory::LEVEL)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	m_fsWorld.categoryEventCallback[ENUM(fs::FileCategory::LEVEL)] = [this](const fs::FileEventCollection events, const fs::FileData& file)
 	{
 		if (events.test(fs::FileEvent::Deleted))
 		{
@@ -466,15 +468,15 @@ Server::Server(const CString& pName)
 		}
 		if (events.test(fs::FileEvent::Modified))
 		{
-			auto fileName = fs::getANSIFileName(file.file);
-			if (auto l = getCachedLevelData(fileName); l)
+			const auto fileName = fs::getANSIFileName(file.file);
+			if (const auto l = getCachedLevelData(fileName); l)
 				StaticLevelData::reload(l);
 		}
 	};
-	m_fsWorld.categoryEventCallback[ENUM(fs::FileCategory::FILE)] = [this](fs::FileEventCollection events, fs::FileData& file)
+	m_fsWorld.categoryEventCallback[ENUM(fs::FileCategory::FILE)] = [this](const fs::FileEventCollection events, const fs::FileData& file)
 	{
-		auto fileName = fs::getANSIFileName(file.file);
-		auto ext = file.file.extension();
+		const auto fileName = fs::getANSIFileName(file.file);
+		const auto ext = file.file.extension();
 		if (events.test(fs::FileEvent::Deleted))
 		{
 			if (ext == ".gupd")
@@ -494,12 +496,12 @@ Server::Server(const CString& pName)
 					m_animationManager.deleteResource(fileName);
 
 					// reload the resource to compile the bytecode again
-					if (auto findAni = m_animationManager.findOrAddResource(fileName); findAni)
+					if (const auto findAni = m_animationManager.findOrAddResource(fileName); findAni)
 						bytecodePacket << findAni->getBytecodePacket();
 				}
 
 				// Send the update packet to any v4+ clients that have seen this file
-				CString updatePacket = CString() >> (char)PLO_UPDATEPACKAGEISUPDATED << fileName;
+				const CString updatePacket = CString() >> (char)PLO_UPDATEPACKAGEISUPDATED << fileName;
 				for (const auto& [pid, pl] : players_of_type<PlayerClient>(m_playerList))
 				{
 					if (pl->hasSeenFile(fileName))
@@ -529,7 +531,7 @@ Server::~Server()
 #endif
 }
 
-int Server::init(std::string_view serverip, std::string_view serverport, std::string_view localip, std::string_view serverinterface)
+int Server::init(const std::string_view serverip, const std::string_view serverport, const std::string_view localip, const std::string_view serverinterface)
 {
 	// Register the server start time.
 	m_serverStartTime = std::chrono::system_clock::now();
@@ -585,7 +587,7 @@ int Server::init(std::string_view serverip, std::string_view serverport, std::st
 
 	// Start listening on the player socket.
 	log::printLine(log::server, "Initializing player listen socket.");
-	if (m_playerSock.init((oInter.empty() ? 0 : oInter.data()), m_settings.get<std::string>("serverport").value_or(""s).c_str()))
+	if (m_playerSock.init((oInter.empty() ? nullptr : oInter.data()), m_settings.get<std::string>("serverport").value_or(""s).c_str()))
 	{
 		log::printLine(log::server, "** [Error] Could not initialize listening socket.");
 		return ERR_LISTEN;
@@ -648,8 +650,7 @@ void Server::operator()()
 			running = false;
 
 			cleanup();
-			int ret = init(m_overrideIp, m_overridePort, m_overrideLocalIp, m_overrideInterface);
-			if (ret != 0)
+			if (init(m_overrideIp, m_overridePort, m_overrideLocalIp, m_overrideInterface) != 0)
 				break;
 
 			// We are back up and running!
@@ -664,7 +665,7 @@ void Server::operator()()
 void Server::cleanup()
 {
 	// Save translations.
-	if (auto translationManager = BabyDI::Get<ITranslationManager>(); translationManager != nullptr)
+	if (const auto translationManager = BabyDI::Get<ITranslationManager>(); translationManager != nullptr)
 		translationManager->saveTranslations();
 
 	// Save server flags.
@@ -681,7 +682,7 @@ void Server::cleanup()
 	{
 		return pair.second;
 	});
-	std::vector<PlayerPtr> deletePlayers{std::ranges::begin(players), std::ranges::end(players)};
+	const std::vector<PlayerPtr> deletePlayers{std::ranges::begin(players), std::ranges::end(players)};
 	for (auto& player : deletePlayers)
 	{
 		player->sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Server is shutting down.");
@@ -748,11 +749,11 @@ bool Server::doMain()
 	auto tasks = startingTasks;
 	for (size_t i = 0; i < tasks;)
 	{
-		auto& task = m_scheduledTasks.at(i);
-		if (task.first < diff)
+		auto& [duration, func] = m_scheduledTasks.at(i);
+		if (duration < diff)
 		{
 			// Execute the task.
-			task.second();
+			func();
 
 			// Swap the finished task with end, then decrement the number of tasks.
 			// We just want to erase the finished tasks at the end for efficiency.
@@ -763,11 +764,11 @@ bool Server::doMain()
 		}
 		else
 		{
-			task.first -= diff;
+			duration -= diff;
 			++i;
 		}
 	}
-	m_scheduledTasks.erase(m_scheduledTasks.begin() + tasks, m_scheduledTasks.begin() + startingTasks);
+	m_scheduledTasks.erase(m_scheduledTasks.begin() + static_cast<std::ptrdiff_t>(tasks), m_scheduledTasks.begin() + static_cast<std::ptrdiff_t>(startingTasks));
 
 	return true;
 }
@@ -777,7 +778,7 @@ bool Server::doTimedEvents(int)
 	// File system events.
 	m_fsServer.update();
 	m_fsWorld.update();
-	if (auto guildManager = BabyDI::Get<GuildManager>(); guildManager != nullptr)
+	if (const auto guildManager = BabyDI::Get<GuildManager>(); guildManager != nullptr)
 		guildManager->update();
 
 	// Do serverlist events.
@@ -795,7 +796,7 @@ bool Server::doTimedEvents(int)
 					deletePlayers.push_back(player);
 			}
 		}
-		std::ranges::for_each(deletePlayers, [this](PlayerPtr& player)
+		std::ranges::for_each(deletePlayers, [this](const PlayerPtr& player)
 		{
 			deletePlayer(player);
 		});
@@ -822,7 +823,7 @@ bool Server::onRecv()
 		return true;
 
 	// Create the new player.
-	auto newPlayer = std::make_shared<PlayerLogin>(newSock, USHRT_MAX);
+	const auto newPlayer = std::make_shared<PlayerLogin>(newSock, USHRT_MAX);
 
 	// Add the player to the server
 	if (!addPlayer(newPlayer))
@@ -840,7 +841,7 @@ void Server::loadAllFolders()
 {
 	m_fsWorld.reset();
 	m_fsWorld.bind("world");
-	if (auto sharefolder = m_settings.get<std::string>("sharefolder"); sharefolder.has_value() && !sharefolder->empty())
+	if (const auto sharefolder = m_settings.get<std::string>("sharefolder"); sharefolder.has_value() && !sharefolder->empty())
 	{
 		auto folders = string::split(sharefolder.value(), ","sv);
 		m_fsWorld.bind(folders);
@@ -856,8 +857,7 @@ void Server::loadFolderConfig()
 	for (auto& configLine : m_foldersConfig)
 	{
 		// No comments.
-		int cLoc = -1;
-		if ((cLoc = configLine.find("#")) != -1)
+		if (const int cLoc = configLine.find("#"); cLoc != -1)
 			configLine.removeI(cLoc);
 		configLine.trimI();
 		if (configLine.length() == 0) continue;
@@ -867,7 +867,7 @@ void Server::loadFolderConfig()
 		auto world = std::filesystem::path{"world"};
 		auto config = std::filesystem::path{configLine.readString("").trimI().toStringView()};
 
-		fs::FileCategory typeEnum = fs::FileCategory::ALL;
+		auto typeEnum = fs::FileCategory::ALL;
 		if (string::equalsi(type, "file"sv))
 			typeEnum = fs::FileCategory::FILE;
 		else if (string::equalsi(type, "level"sv))
@@ -961,8 +961,8 @@ void Server::prepareSettings()
 	// Generation.
 	m_generationString.onUpdate = [this](const std::optional<std::string>& newValue, const std::optional<std::string>& oldValue)
 	{
-		auto generation = string::toLower(newValue.value());
-		if (auto it = std::ranges::find(ServerGenerationNames, generation); it != std::ranges::end(ServerGenerationNames))
+		const auto generation = string::toLower(newValue.value());
+		if (const auto it = std::ranges::find(ServerGenerationNames, generation); it != std::ranges::end(ServerGenerationNames))
 			Generation = static_cast<ServerGeneration>(std::distance(ServerGenerationNames.begin(), it));
 		else
 			log::printLine(log::server, "** [Error] Invalid generation specified in settings: '{}'.", newValue.value_or("(blank)"));
@@ -998,8 +998,7 @@ void Server::prepareSettings()
 			std::string itemType = string::toLower(curItem);
 			string::trimMutate(itemType);
 
-			LevelItemType item = LevelItem::getItemId(itemType);
-			if (item != LevelItemType::INVALID)
+			if (const auto item = LevelItem::getItemId(itemType); item != LevelItemType::INVALID)
 				m_deathDrops.push_back(item);
 		}
 	};
@@ -1033,7 +1032,7 @@ void Server::loadSettings()
 	m_settings.load("serveroptions.txt");
 
 	// Send our ServerHQ info in case we got changed the staffonly setting.
-	getServerList().sendServerHQ();
+	if (running) getServerList().sendServerHQ();
 }
 
 void Server::loadAdminSettings()
@@ -1057,26 +1056,26 @@ void Server::loadAllowedVersions()
 	if (versions.contains("[generation-range]"))
 	{
 		const auto& generation = ServerGenerationNames.at(static_cast<size_t>(Generation));
-		if (auto line = versions.find(generation); line != -1)
+		if (const auto line = versions.find(generation); line != -1)
 		{
-			if (auto sep = versions.find("=", line); sep != -1)
+			if (const auto sep = versions.find("=", line); sep != -1)
 			{
 				versions.setRead(sep + 1);
-				std::string versionRange = string::trimMutate(versions.readString("\n").toString());
+				const std::string versionRange = string::trimMutate(versions.readString("\n").toString());
 
 				std::vector<std::string> formattedVersions;
 				for (const auto& version : string::split(versionRange, ","sv))
 				{
 					m_allowedVersions.emplace_back(version);
-					auto rangeParts = string::splitToVector(version, ":"sv);
+					const auto rangeParts = string::splitToVector(version, ":"sv);
 					if (rangeParts.size() == 1)
 					{
 						formattedVersions.emplace_back(getVersionString(rangeParts[0], PLTYPE_ANYCLIENT));
 					}
 					else if (rangeParts.size() == 2)
 					{
-						int startId = getVersionID(rangeParts[0]);
-						int endId = getVersionID(rangeParts[1]);
+						const int startId = getVersionID(rangeParts[0]);
+						const int endId = getVersionID(rangeParts[1]);
 						if (startId != 0 && endId != 0)
 							formattedVersions.emplace_back(std::format("{} - {}", getVersionString(rangeParts[0], PLTYPE_ANYCLIENT), getVersionString(rangeParts[1], PLTYPE_ANYCLIENT)));
 					}
@@ -1097,15 +1096,14 @@ void Server::loadAllowedVersions()
 			if (!m_allowedVersionString.isEmpty())
 				m_allowedVersionString << ", ";
 
-			int loc = allowedVersion.find(":");
-			if (loc == -1)
+			if (const int loc = allowedVersion.find(":"); loc == -1)
 				m_allowedVersionString << getVersionString(allowedVersion, PLTYPE_ANYCLIENT);
 			else
 			{
-				CString s = allowedVersion.subString(0, loc);
-				CString f = allowedVersion.subString(loc + 1);
-				int vid = getVersionID(s);
-				int vid2 = getVersionID(f);
+				const CString s = allowedVersion.subString(0, loc);
+				const CString f = allowedVersion.subString(loc + 1);
+				const int vid = getVersionID(s);
+				const int vid2 = getVersionID(f);
 				if (vid != -1 && vid2 != -1)
 					m_allowedVersionString << getVersionString(s, PLTYPE_ANYCLIENT) << " - " << getVersionString(f, PLTYPE_ANYCLIENT);
 			}
@@ -1146,7 +1144,7 @@ void Server::loadWorldFileSystem()
 
 void Server::loadServerFlags()
 {
-	if (auto file = m_fsServer.openi(fs::FileCategory::CONFIG, "serverflags.txt"); file && file->opened())
+	if (const auto file = m_fsServer.openi(fs::FileCategory::CONFIG, "serverflags.txt"); file && file->opened())
 	{
 		std::unordered_map<std::string, std::string, string::string_hash, std::equal_to<>> flagMap;
 		for (const auto& line : file->readAllLines())
@@ -1159,7 +1157,7 @@ void Server::loadServerFlags()
 				flagMap.try_emplace(std::string{flagPair}, std::string{});
 			else
 			{
-				auto sep = flagPair.find('=');
+				const auto sep = flagPair.find('=');
 				std::string_view flagKey = string::trimRight(flagPair.substr(0, sep));
 				std::string_view flagValue = string::trimLeft(flagPair.substr(sep + 1));
 				flagMap.try_emplace(std::string{flagKey}, std::string{flagValue});
@@ -1167,12 +1165,12 @@ void Server::loadServerFlags()
 		}
 
 		std::vector<std::string> removedFlags;
-		bool hasNS = hasNPCServer();
+		const bool hasNS = hasNPCServer();
 
 		// Iterate through all the server flags finding deleted flags and sending changes.
 		for (auto& [flag, value] : Scripting.variables.store | variables::serializable)
 		{
-			auto search = flagMap.find(flag);
+			const auto search = flagMap.find(flag);
 
 			// The server variable is not in the map, so it was deleted.
 			if (search == flagMap.end())
@@ -1252,7 +1250,7 @@ void Server::loadTranslations() const
 	log::print(log::server, "Loading translations: ");
 
 	// If our translation manager already exists, save the translations first.
-	if (auto translationManager = BabyDI::Get<ITranslationManager>(); translationManager != nullptr)
+	if (const auto translationManager = BabyDI::Get<ITranslationManager>(); translationManager != nullptr)
 		translationManager->saveTranslations();
 
 	BabyDI_RELEASE(ITranslationManager);
@@ -1280,7 +1278,7 @@ void Server::loadWordFilter()
 	m_wordFilter.load(CString() << "config/rules.txt");
 }
 
-void Server::loadMaps(bool print)
+void Server::loadMaps(const bool print)
 {
 	assert(m_levelList.empty() && "Levels should be loaded after maps.");
 
@@ -1296,7 +1294,7 @@ void Server::loadMaps(bool print)
 		try
 		{
 			auto mapName = string::trim(gmapName);
-			if (bool hasExtension = mapName.ends_with(".gmap"); hasExtension)
+			if (const bool hasExtension = mapName.ends_with(".gmap"); hasExtension)
 			{
 				auto gmap = std::make_unique<Map>(is_gmap, mapName);
 				m_mapList.push_back(std::move(gmap));
@@ -1369,7 +1367,7 @@ int Server::loadServerObjects()
 	return 0;
 }
 
-void Server::loadWeapons(bool print)
+void Server::loadWeapons(const bool print)
 {
 	auto indent = log::server.indent();
 	{
@@ -1386,7 +1384,7 @@ void Server::loadWeapons(bool print)
 			if (weapon == nullptr) continue;
 
 			// Check if the weapon exists.
-			if (m_weaponList.find(weapon->name) == m_weaponList.end())
+			if (!m_weaponList.contains(weapon->name))
 			{
 				m_weaponList[weapon->name] = weapon;
 				if (print) log::print(log::server, weapon->name);
@@ -1394,8 +1392,7 @@ void Server::loadWeapons(bool print)
 			else
 			{
 				// If the weapon exists, and the version on disk is newer, reload it.
-				auto& w = m_weaponList[weapon->name];
-				if (w->modTime < weapon->modTime)
+				if (const auto& w = m_weaponList[weapon->name]; w->modTime < weapon->modTime)
 				{
 					m_weaponList[weapon->name] = weapon;
 					updateWeaponForPlayers(weapon);
@@ -1425,7 +1422,7 @@ void Server::loadWeapons(bool print)
 	}
 }
 
-void Server::loadMapLevels()
+void Server::loadMapLevels() const
 {
 	auto indent = log::server.indent();
 	{
@@ -1437,16 +1434,16 @@ void Server::loadMapLevels()
 
 void Server::saveServerFlags()
 {
-	if (auto file = m_fsServer.openiForWriting(fs::FileCategory::CONFIG, "serverflags.txt"); file && file->opened())
+	if (const auto file = m_fsServer.openiForWriting(fs::FileCategory::CONFIG, "serverflags.txt"); file && file->opened())
 	{
 		file->clear();
-		for (auto& [flag, value] : Scripting.variables.store)
+		for (const auto& value : Scripting.variables.store | std::views::values)
 		{
-			if (auto serialized = value->serializeModern(flag); serialized.has_value())
+			if (auto serialized = value->serializeModern(); serialized.has_value())
 				file->writeLine(serialized.value());
 		}
 	}
-	if (auto info = m_fsServer.infoi(fs::FileCategory::CONFIG, "serverflags.txt"); info != nullptr)
+	if (const auto info = m_fsServer.infoi(fs::FileCategory::CONFIG, "serverflags.txt"); info != nullptr)
 		info->refreshModTime();
 }
 
@@ -1460,7 +1457,7 @@ void Server::saveWeapons()
 		std::filesystem::path weaponFile{std::format("weapon{}.txt", weaponName)};
 		clock::time_point mod{clock::time_point::min()};
 
-		auto fileData = m_fsServer.info(fs::FileCategory::WEAPON, weaponFile);
+		const auto fileData = m_fsServer.info(fs::FileCategory::WEAPON, weaponFile);
 		if (fileData != nullptr)
 			mod = fileData->getModTime();
 
@@ -1474,9 +1471,9 @@ void Server::saveWeapons()
 	}
 }
 
-void Server::performMigrations() const
+void Server::performMigrations()
 {
-	std::filesystem::path defaultaccount = std::filesystem::path("accounts") / "defaultaccount.txt";
+	const std::filesystem::path defaultaccount = std::filesystem::path("accounts") / "defaultaccount.txt";
 
 	// If we have defaultaccount.txt, rename to (defaultaccount).txt.
 	if (std::filesystem::exists(defaultaccount))
@@ -1491,7 +1488,7 @@ void Server::performMigrations() const
 
 /////////////////////////////////////////////////////
 
-std::shared_ptr<Level> Server::getStubbedLevel(std::string_view levelName, std::string_view groupName)
+std::shared_ptr<Level> Server::getStubbedLevel(const std::string_view levelName, const std::string_view groupName)
 {
 	if (levelName.empty())
 		return nullptr;
@@ -1506,7 +1503,7 @@ std::shared_ptr<Level> Server::getStubbedLevel(std::string_view levelName, std::
 	lowerCaseLevel += string::toLower(levelName);
 
 	// Check to see if the level exists and has a value.
-	auto existing = m_levelList.find(lowerCaseLevel);
+	const auto existing = m_levelList.find(lowerCaseLevel);
 	if (existing != m_levelList.end() && existing->second != nullptr)
 		return existing->second;
 
@@ -1524,7 +1521,7 @@ std::shared_ptr<Level> Server::getStubbedLevel(std::string_view levelName, std::
 	return level;
 }
 
-std::shared_ptr<Level> Server::getLoadedLevelNoHint(std::string_view levelName)
+std::shared_ptr<Level> Server::getLoadedLevelNoHint(const std::string_view levelName)
 {
 	if (levelName.empty())
 		return nullptr;
@@ -1548,7 +1545,7 @@ std::shared_ptr<Level> Server::getLoadedLevelNoHint(std::string_view levelName)
 	return nullptr;
 }
 
-std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, std::shared_ptr<Player> player)
+std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, const std::shared_ptr<Player>& player)
 {
 	if (levelName.empty())
 		return nullptr;
@@ -1557,7 +1554,7 @@ std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, std::s
 
 	if (player != nullptr)
 	{
-		auto findGroupLevel = [&](std::string_view mask, std::string_view groupName, std::string_view groupLevelName) -> LevelPtr
+		auto findGroupLevel = [&](const std::string_view mask, const std::string_view groupName, const std::string_view groupLevelName) -> LevelPtr
 		{
 			if (string::match<true>(levelName, string::trim(mask)))
 			{
@@ -1583,19 +1580,19 @@ std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, std::s
 		};
 
 		auto spGroup = std::format("sp.{}", player->account.name);
-		auto& mpGroup = player->account.groupName;
-		auto spMapName = string::toLower(std::format("{}.{}", spGroup, levelName));
-		auto groupMapName = string::toLower(std::format("{}.{}", player->account.groupName, levelName));
+		const auto& mpGroup = player->account.groupName;
+		const auto spMapName = string::toLower(std::format("{}.{}", spGroup, levelName));
+		const auto groupMapName = string::toLower(std::format("{}.{}", player->account.groupName, levelName));
 
 		// Check if this level matches the list of singleplayer levels.
 		if (!m_singleplayerLevels.getValue().empty())
 		{
 			for (const auto& singleplayerLevel : m_singleplayerLevels.getValue())
 			{
-				if (auto level = findGroupLevel(singleplayerLevel, spGroup, spMapName); level != nullptr)
+				if (const auto spLevel = findGroupLevel(singleplayerLevel, spGroup, spMapName); spLevel != nullptr)
 				{
-					level->isSinglePlayer = true;
-					return level;
+					spLevel->isSinglePlayer = true;
+					return spLevel;
 				}
 			}
 		}
@@ -1606,10 +1603,10 @@ std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, std::s
 		{
 			for (const auto& groupmap : m_groupmaps.getValue())
 			{
-				if (auto level = findGroupLevel(groupmap, mpGroup, groupMapName); level != nullptr)
+				if (auto groupLevel = findGroupLevel(groupmap, mpGroup, groupMapName); groupLevel != nullptr)
 				{
-					level->isGroupMap = true;
-					return level;
+					groupLevel->isGroupMap = true;
+					return groupLevel;
 				}
 			}
 		}
@@ -1648,7 +1645,7 @@ std::shared_ptr<StaticLevelData> Server::getCachedLevelData(std::string_view lev
 		return nullptr;
 
 	std::string lowerCaseLevel = string::toLower(levelName);
-	if (auto it = m_cachedLevelDataList.find(lowerCaseLevel); it != m_cachedLevelDataList.end())
+	if (const auto it = m_cachedLevelDataList.find(lowerCaseLevel); it != m_cachedLevelDataList.end())
 		return it->second;
 
 	auto levelData = LevelLoader::loadStaticData(levelName);
@@ -1658,7 +1655,7 @@ std::shared_ptr<StaticLevelData> Server::getCachedLevelData(std::string_view lev
 
 std::shared_ptr<Map> Server::findMap(std::string_view mapName) const noexcept
 {
-	auto foundMap = std::ranges::find_if(m_mapList, [&mapName](const auto& map)
+	const auto foundMap = std::ranges::find_if(m_mapList, [&mapName](const auto& map)
 	{
 		return map->getMapName() == mapName;
 	});
@@ -1669,7 +1666,7 @@ std::shared_ptr<Map> Server::findMap(std::string_view mapName) const noexcept
 
 std::shared_ptr<Map> Server::findMapForLevel(std::string_view levelName) const noexcept
 {
-	auto foundMap = std::ranges::find_if(m_mapList, [&levelName](const auto& map)
+	const auto foundMap = std::ranges::find_if(m_mapList, [&levelName](const auto& map)
 	{
 		return map->hasLevel(levelName);
 	});
@@ -1680,7 +1677,7 @@ std::shared_ptr<Map> Server::findMapForLevel(std::string_view levelName) const n
 
 std::shared_ptr<Map> Server::findMapForLevel(MapType mapType, std::string_view levelName) const noexcept
 {
-	auto foundMap = std::ranges::find_if(m_mapList, [&mapType, &levelName](const auto& map)
+	const auto foundMap = std::ranges::find_if(m_mapList, [&mapType, &levelName](const auto& map)
 	{
 		return map->mapType == mapType && map->hasLevel(levelName);
 	});
@@ -1689,14 +1686,14 @@ std::shared_ptr<Map> Server::findMapForLevel(MapType mapType, std::string_view l
 	return nullptr;
 }
 
-std::shared_ptr<Level> Server::findGmapForLevel(std::string_view levelName, std::shared_ptr<Player> player) noexcept
+std::shared_ptr<Level> Server::findGmapForLevel(const std::string_view levelName, const std::shared_ptr<Player>& player) noexcept
 {
 	LevelPtr returnLevel = nullptr;
 
 	// If this is the gmap itself, find it directly.
 	if (levelName.ends_with(".gmap"sv))
 	{
-		if (auto it = m_levelList.find(levelName); it != m_levelList.end())
+		if (const auto it = m_levelList.find(levelName); it != m_levelList.end())
 			return it->second;
 	}
 
@@ -1727,7 +1724,7 @@ std::shared_ptr<Level> Server::findGmapForLevel(std::string_view levelName, std:
 	return returnLevel;
 }
 
-tileset::TilesetType Server::getTilesetTypeForLevel(std::shared_ptr<Level> level) const noexcept
+tileset::TilesetType Server::getTilesetTypeForLevel(const std::shared_ptr<Level>& level) const noexcept
 {
 	if (level == nullptr)
 		return tileset::TilesetType::CLASSIC;
@@ -1751,12 +1748,12 @@ tileset::TilesetType Server::getTilesetTypeForLevel(std::shared_ptr<Level> level
 	return tileset::TilesetType::CLASSIC;
 }
 
-tileset::TilesetType Server::getTilesetTypeForLevel(std::shared_ptr<const Level> level) const noexcept
+tileset::TilesetType Server::getTilesetTypeForLevel(const std::shared_ptr<const Level>& level) const noexcept
 {
 	return getTilesetTypeForLevel(std::const_pointer_cast<Level>(level));
 }
 
-tileset::TileType Server::getTileTypeForTile(tileset::TilesetType tileset, uint16_t tile) const noexcept
+tileset::TileType Server::getTileTypeForTile(const tileset::TilesetType tileset, const uint16_t tile) noexcept
 {
 	// Terrain tileset uses non-blocking for all tiles.
 	if (tileset == tileset::TilesetType::TERRAIN)
@@ -1799,17 +1796,17 @@ LevelItemType Server::rollBushItemDrop() const
 
 /////////////////////////////////////////////////////
 
-std::shared_ptr<Weapon> Server::getWeapon(std::string_view name)
+std::shared_ptr<Weapon> Server::getWeapon(const std::string_view name)
 {
-	auto iter = m_weaponList.find(name);
+	const auto iter = m_weaponList.find(name);
 	if (iter == std::end(m_weaponList))
 		return nullptr;
 	return iter->second;
 }
 
-std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCStorageType storageType, bool sendToPlayers, std::string_view type)
+std::shared_ptr<NPC> Server::addNPC(const std::string_view image, const std::string_view script, const float x, const float y, const std::weak_ptr<Level>& level, NPCStorageType storageType, const bool sendToPlayers, const std::string_view type)
 {
-	LevelPtr levelPtr = level.lock();
+	const LevelPtr levelPtr = level.lock();
 	if (storageType == NPCStorageType::LEVEL && levelPtr == nullptr)
 		return nullptr;
 
@@ -1820,7 +1817,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 
 	// Create the NPC.
 	NPCID newId = m_npcIdGenerator.getAvailableId(startId);
-	auto newNPC = std::make_shared<NPC>(newId, storageType);
+	const auto newNPC = std::make_shared<NPC>(newId, storageType);
 
 	// Set the script type.
 	if (!type.empty())
@@ -1838,7 +1835,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 		newNPC->setLevel(levelPtr);
 
 		// If the level is a gmap, set the modTime on the map position props.
-		if (auto map = levelPtr->getMap(); map && map->isGmap())
+		if (const auto map = levelPtr->getMap(); map && map->isGmap())
 		{
 			auto mapPosition = toMapPosition(TilePosition{x, y});
 			newNPC->character.mapX = mapPosition.x();
@@ -1856,7 +1853,7 @@ std::shared_ptr<NPC> Server::addNPC(std::string_view image, std::string_view scr
 	return addNPC(newNPC, sendToPlayers);
 }
 
-std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
+std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, const bool sendToPlayers)
 {
 	// Add the NPC to the list.
 	m_npcList.insert(std::make_pair(npc->id, npc));
@@ -1884,7 +1881,7 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 			level->addNPC(npc);
 	}
 
-	bool isPrivateMap = level != nullptr && level->isPrivateMap();
+	const bool isPrivateMap = level != nullptr && level->isPrivateMap();
 
 	// Synchronize the group name of the NPC.
 	if (isPrivateMap && npc->groupName != level->groupMapName)
@@ -1900,7 +1897,7 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 			isPrivateMap ? "." : "",
 			string::removeExtension(npc->level), m_serverTime
 		);
-		auto count = std::ranges::count_if(m_npcList, [&npcNamePrefix](const auto& pair)
+		const auto count = std::ranges::count_if(m_npcList, [&npcNamePrefix](const auto& pair)
 		{
 			return pair.second->name.starts_with(npcNamePrefix);
 		});
@@ -1931,7 +1928,7 @@ std::shared_ptr<NPC> Server::addNPC(NPCPtr npc, bool sendToPlayers)
 	// Send the NPC's props to everybody in range.
 	if (sendToPlayers)
 	{
-		CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket();
+		const CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket();
 		sendPacketToNearby(packet, npc->getGlobalPosition(), npc->getLevel());
 	}
 
@@ -1967,7 +1964,7 @@ bool Server::deleteNPC(const std::shared_ptr<NPC>& npc, const bool eraseFromLeve
 		// Tell the clients to delete the NPC.
 		const std::string levelName = npc->getLevelName();
 
-		auto lastLevelChange = npc->modTime[PROPID(NPCProp::LEVEL)];
+		const auto lastLevelChange = npc->modTime[PROPID(NPCProp::LEVEL)];
 		for (auto& p : m_playerList | std::views::values)
 		{
 			std::optional<clock::time_point> lastEntered = std::nullopt;
@@ -1991,7 +1988,7 @@ bool Server::deleteNPC(const std::shared_ptr<NPC>& npc, const bool eraseFromLeve
 	return true;
 }
 
-bool Server::addPlayer(PlayerPtr player, PlayerID id)
+bool Server::addPlayer(const PlayerPtr& player, PlayerID id)
 {
 	assert(player);
 
@@ -2006,7 +2003,7 @@ bool Server::addPlayer(PlayerPtr player, PlayerID id)
 	return true;
 }
 
-bool Server::deletePlayer(PlayerPtr player)
+bool Server::deletePlayer(const PlayerPtr& player)
 {
 	if (player == nullptr)
 		return true;
@@ -2020,7 +2017,7 @@ bool Server::deletePlayer(PlayerPtr player)
 
 		// Leave the level.
 		// If we have an NPC-Server, we want to keep the level reference around until the NPC-Server has processed the player logout.
-		if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr)
+		if (const auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr)
 			client->leaveLevel(hasNPCServer());
 
 		// Add the player to the set of players to delete.
@@ -2037,7 +2034,7 @@ bool Server::deletePlayer(PlayerPtr player)
 	return true;
 }
 
-bool Server::swapPlayer(PlayerPtr old_player, PlayerPtr new_player)
+bool Server::swapPlayer(const PlayerPtr& old_player, const PlayerPtr& new_player)
 {
 	if (old_player == nullptr || new_player == nullptr)
 		return false;
@@ -2066,15 +2063,15 @@ bool Server::swapPlayer(PlayerPtr old_player, PlayerPtr new_player)
 	return true;
 }
 
-void Server::recordPlayerLoggedIn(PlayerPtr player)
+void Server::recordPlayerLoggedIn(const PlayerPtr& player)
 {
 	// Tell the serverlist that the player connected.
 	getServerList().addPlayer(player);
 }
 
-bool Server::warpPlayerToSafePlace(PlayerID playerId) const
+bool Server::warpPlayerToSafePlace(const PlayerID playerId) const
 {
-	auto player = getPlayer<PlayerClient>(playerId);
+	const auto player = getPlayer<PlayerClient>(playerId);
 	if (player == nullptr) return false;
 
 	// Try unstick me level.
@@ -2092,8 +2089,9 @@ void Server::calculateNWTime()
 	m_serverTime = static_cast<uint32_t>((time(nullptr) - 981048814) / 5);
 }
 
-bool Server::isIpBanned(const CString& ip)
+bool Server::isIpBanned(const CString& ip) const
 {
+	// NOLINTNEXTLINE(*-use-anyofallof)
 	for (const auto& ipBan : m_ipBans)
 	{
 		if (ip.match(ipBan))
@@ -2103,12 +2101,13 @@ bool Server::isIpBanned(const CString& ip)
 	return false;
 }
 
-bool Server::isStaff(const CString& accountName)
+bool Server::isStaff(const CString& accountName) const
 {
 	const auto& staffList = m_staffList.get();
 	if (!staffList.has_value())
 		return false;
 
+	// NOLINTNEXTLINE(*-use-anyofallof)
 	for (const auto& account : staffList.value())
 	{
 		if (string::equalsi(accountName.toStringView(), account))
@@ -2127,7 +2126,7 @@ std::string Server::getLogDateTimeString() const
 		// Non-standard, but make it at least a LITTLE easier to read these dumb logs.
 		buffer[0] = '\n';
 
-		std::time_t curTime = std::time(nullptr);
+		const std::time_t curTime = std::time(nullptr);
 		std::strncpy(buffer + 1, std::ctime(&curTime), 31);
 		buffer[32] = '\0';
 
@@ -2144,12 +2143,12 @@ std::string Server::getLogDateTimeString() const
 #endif
 
 		std::string result{std::format(log::TimestampLong, localtime)};
-		result += " ";
+		result += ' ';
 		return result;
 	}
 }
 
-void Server::logToFile(std::filesystem::path fileName, std::string_view message, bool writeTimestamp) const
+void Server::logToFile(const std::filesystem::path& fileName, std::string_view message, const bool writeTimestamp) const
 {
 	const std::filesystem::path logPath{"logs"};
 
@@ -2163,7 +2162,7 @@ void Server::logToFile(std::filesystem::path fileName, std::string_view message,
 	file.writeLine(message);
 }
 
-void Server::logToFileSafely(std::filesystem::path fileName, std::string_view message, bool writeTimestamp) const
+void Server::logToFileSafely(const std::filesystem::path& fileName, std::string_view message, const bool writeTimestamp) const
 {
 	const std::filesystem::path logPath{"logs"};
 
@@ -2181,7 +2180,7 @@ void Server::logToFileSafely(std::filesystem::path fileName, std::string_view me
 	Server: Server Flag Management
 */
 
-std::optional<std::string> Server::getFlag(std::string_view flagName) const
+std::optional<std::string> Server::getFlag(const std::string_view flagName) const
 {
 	const auto flagVal = Scripting.variables.get(flagName);
 	if (const auto flag = flagVal.lock(); flag != nullptr)
@@ -2189,7 +2188,7 @@ std::optional<std::string> Server::getFlag(std::string_view flagName) const
 	return std::nullopt;
 }
 
-bool Server::deleteFlag(std::string_view flagName, bool sendToPlayers)
+bool Server::deleteFlag(const std::string_view flagName, const bool sendToPlayers)
 {
 	if (m_dontAddServerFlags.getValue())
 		return false;
@@ -2204,18 +2203,18 @@ bool Server::deleteFlag(std::string_view flagName, bool sendToPlayers)
 	return false;
 }
 
-bool Server::setFlag(std::string_view flagPair, bool sendToPlayers)
+bool Server::setFlag(std::string_view flagPair, const bool sendToPlayers)
 {
 	if (!flagPair.contains('='))
 		return setFlag(flagPair, std::nullopt, sendToPlayers);
 
-	auto separator = flagPair.find('=');
-	auto flagName = string::trim(flagPair.substr(0, separator));
-	auto flagValue = string::trim(flagPair.substr(separator + 1));
+	const auto separator = flagPair.find('=');
+	const auto flagName = string::trim(flagPair.substr(0, separator));
+	const auto flagValue = string::trim(flagPair.substr(separator + 1));
 	return setFlag(flagName, std::string{flagValue}, sendToPlayers);
 }
 
-bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagValue, bool pSendToPlayers)
+bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagValue, const bool sendToPlayers)
 {
 	// Function to crop flags.
 	auto cropFlag = [this, &flagName](std::string& value)
@@ -2226,10 +2225,10 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	};
 
 	// Alter the flag if it exists.
-	auto existing = Scripting.variables.get(flagName).lock();
+	const auto existing = Scripting.variables.get(flagName).lock();
 	if (existing != nullptr)
 	{
-		bool hasExistingString = existing->value.has<std::string>() && !existing->value.get<std::string>().value().get().empty();
+		const bool hasExistingString = existing->value.has<std::string>() && !existing->value.get<std::string>().value().get().empty();
 
 		// If flagValue is not provided, we are coming from a 'set' call, which applies a boolean true/false.
 		// If the existing value contains a string, exit, as containing a string means the flag is already true.
@@ -2262,7 +2261,7 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	}
 
 	// And share it.
-	if (pSendToPlayers && (!hasNPCServer() || flagName.starts_with("serverr.")))
+	if (sendToPlayers && (!hasNPCServer() || flagName.starts_with("serverr.")))
 	{
 		if (!flagValue.has_value())
 			sendPacketToAll(CString() >> (char)PLO_FLAGSET << flagName);
@@ -2272,21 +2271,21 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	return true;
 }
 
-void Server::hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source) const
+void Server::hitObjectsAtPoint(const TilePosition& pos, const int8_t power, const std::weak_ptr<Level>& level, const PlayerPtr& source) const
 {
 	// Client ignores if not within 2 tiles in both X/Y.
 	sendPacketToNearby(CString() >> (char)PLO_HITOBJECTS >> (short)source->getId() >> (char)power >> (char)(pos.x() * 2) >> (char)(pos.y() * 2), toPixelPosition(pos), level.lock());
 }
 
-void Server::hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, NPCPtr source) const
+void Server::hitObjectsAtPoint(const TilePosition& pos, const int8_t power, const std::weak_ptr<Level>& level, const NPCPtr& source) const
 {
 	// Client ignores if not within 2 tiles in both X/Y.
 	sendPacketToNearby(CString() >> (char)PLO_HITOBJECTS >> (short)0 >> (char)power >> (char)(pos.x() * 2) >> (char)(pos.y() * 2) >> (int)source->id, toPixelPosition(pos), level.lock());
 }
 
-void Server::hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source) const
+void Server::hitPlayer(const PlayerID playerId, const int8_t power, const float fromX, const float fromY, const std::shared_ptr<NPC>& source) const
 {
-	auto player = getPlayer(playerId);
+	const auto player = getPlayer(playerId);
 	if (player == nullptr)
 		return;
 
@@ -2298,7 +2297,7 @@ void Server::hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY
 	auto dy = tilePosition.y() - fromY;
 
 	// Normalize the direction vector.
-	float length = std::sqrt(dx * dx + dy * dy);
+	const float length = std::sqrt(dx * dx + dy * dy);
 	if (!DoubleIsZero(dx))
 		dx /= length;
 	if (!DoubleIsZero(dy))
@@ -2309,40 +2308,40 @@ void Server::hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY
 	dy *= 4;
 
 	// Pixel position.
-	auto encodedDX = static_cast<uint8_t>(static_cast<int16_t>(dx * 16) + 64);
-	auto encodedDY = static_cast<uint8_t>(static_cast<int16_t>(dy * 16) + 64);
+	const auto encodedDX = static_cast<uint8_t>(static_cast<int16_t>(dx * 16) + 64);
+	const auto encodedDY = static_cast<uint8_t>(static_cast<int16_t>(dy * 16) + 64);
 
 	// Send the final packet.
 	player->sendPacket(CString() >> (char)PLO_HURTPLAYER >> (short)0 >> (char)(encodedDX) >> (char)(encodedDY) >> (char)power >> (int)source->id);
 }
 
-void Server::sendTriggerAction(PlayerID toPlayerId, NPCID fromNpcId, const LocalPixelPosition& localPosition, std::string_view action, std::string_view params) const
+void Server::sendTriggerAction(const PlayerID toPlayerId, const NPCID fromNpcId, const LocalPixelPosition& localPosition, const std::string_view action, const std::string_view params) const
 {
-	auto player = getPlayer(toPlayerId);
+	const auto player = getPlayer(toPlayerId);
 	if (player == nullptr)
 		return;
 
-	CString packet = CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)fromNpcId >> (char)(localPosition.x() / 8.0f) >> (char)(localPosition.y() / 8.0f) << action << "," << params;
+	const CString packet = CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)fromNpcId >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) << action << "," << params;
 	player->sendPacket(packet);
 }
 
-void Server::sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, const PixelPosition& position, std::string_view action, std::string_view params) const
+void Server::sendTriggerAction(const LevelPtr& toLevel, const NPCID fromNpcId, const PixelPosition& position, const std::string_view action, const std::string_view params) const
 {
 	if (toLevel == nullptr)
 		return;
 
 	auto localPosition = toLocalPixelPosition(position);
-	CString packet = CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)fromNpcId >> (char)(localPosition.x() / 8.0f) >> (char)(localPosition.y() / 8.0f) << action << "," << params;
+	const CString packet = CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)fromNpcId >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) << action << "," << params;
 	sendPacketToNearby(packet, position, toLevel);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool Server::processRCChat(std::string_view message, std::weak_ptr<Player> sender)
+bool Server::processRCChat(std::string_view message, const std::weak_ptr<Player>& sender)
 {
 	auto player = sender.lock();
 
-	std::string_view who = "Server"sv;
+	auto who = "Server"sv;
 	if (player != nullptr)
 		who = player->account.character.nickName;
 
@@ -2389,7 +2388,7 @@ bool Server::processRCChat(std::string_view message, std::weak_ptr<Player> sende
 			{
 				sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << player->account.name << " updated level: " << level->levelName);
 				log::printLine(log::rc, "{} updated level: {}", player->account.name, level->levelName);
-				level->reload(l);
+				(void)level->reload(l);
 			}
 		}
 		return true;
@@ -2399,8 +2398,7 @@ bool Server::processRCChat(std::string_view message, std::weak_ptr<Player> sende
 	{
 		log::print(log::rc, "{} updated all the levels", player->account.name);
 		int count = 0;
-		auto& levels = getLevelList();
-		for (auto& [name, level] : levels)
+		for (auto& levels = getLevelList(); auto& level : levels | std::views::values)
 		{
 			level->reload(MapPosition{});
 			++count;
@@ -2525,35 +2523,35 @@ bool Server::processRCChat(std::string_view message, std::weak_ptr<Player> sende
 			auto fileInfo = fileInfoPtr.lock();
 			if (fileInfo == nullptr) continue;
 
-			CString fileName = fs::getANSIFileName(fileInfo->file);
+			const CString fileName = fs::getANSIFileName(fileInfo->file);
 			if (fileName.match(search))
 			{
 				categories.clear();
 				if (fileInfo->categories.test(ENUM(fs::FileCategory::FILE)))
-					categories.push_back("file");
+					categories.emplace_back("file");
 				if (fileInfo->categories.test(ENUM(fs::FileCategory::LEVEL)))
-					categories.push_back("level");
+					categories.emplace_back("level");
 				if (fileInfo->categories.test(ENUM(fs::FileCategory::HEAD)))
-					categories.push_back("head");
+					categories.emplace_back("head");
 				if (fileInfo->categories.test(ENUM(fs::FileCategory::BODY)))
-					categories.push_back("body");
+					categories.emplace_back("body");
 				if (fileInfo->categories.test(ENUM(fs::FileCategory::SWORD)))
-					categories.push_back("sword");
+					categories.emplace_back("sword");
 				if (fileInfo->categories.test(ENUM(fs::FileCategory::SHIELD)))
-					categories.push_back("shield");
+					categories.emplace_back("shield");
 
 				found[fileName] = string::join(categories);
 			}
 		}
 
 		// Return a list of files found.
-		for (auto i = found.begin(); i != found.end(); ++i)
+		for (auto & [filename, category] : found)
 		{
-			player->sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: File found (" << search << "): " << i->first << " [" << i->second << "]");
+			player->sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: File found (" << search << "): " << filename << " [" << category << "]");
 		}
 
 		// No files found.
-		if (found.size() == 0)
+		if (found.empty())
 			player->sendPacket(CString() >> (char)PLO_RC_CHAT << "Server: No files found matching: " << search);
 
 		return true;
@@ -2582,7 +2580,7 @@ bool Server::processRCChat(std::string_view message, std::weak_ptr<Player> sende
 	if (words[0] == "/generatetranslationstubs" && words.size() == 1)
 	{
 		auto translationManager = BabyDI::Get<ITranslationManager>();
-		auto count = translationManager->generateAllLanguageStubs();
+		const auto count = translationManager->generateAllLanguageStubs();
 		if (count != 0)
 			sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << player->account.name << std::format(" generated stubs for {} languages.", count));
 		else sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << "Server: " << player->account.name << " tried to generate language stubs, but there was a failure.");
@@ -2654,7 +2652,7 @@ bool Server::processRCChat(std::string_view message, std::weak_ptr<Player> sende
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Server::sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude, const PlayerPredicate& sendIf) const
 {
 	for (auto& [id, player] : m_playerList)
 	{
@@ -2669,15 +2667,14 @@ void Server::sendPacketToAll(const CString& packet, const std::set<PlayerID>& ex
 	}
 }
 
-void Server::sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer) const
+void Server::sendPacketToType(const int who, const CString& pPacket, const std::weak_ptr<Player>& pPlayer) const
 {
-	auto p = pPlayer.lock();
 	if (!running) return;
-
+	const auto p = pPlayer.lock();
 	sendPacketToType(who, pPacket, p.get());
 }
 
-void Server::sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const
+void Server::sendPacketToType(const int who, const CString& pPacket, const Player* pPlayer) const
 {
 	if (!running) return;
 	for (auto& [id, player] : m_playerList)
@@ -2687,13 +2684,13 @@ void Server::sendPacketToType(int who, const CString& pPacket, Player* pPlayer) 
 	}
 }
 
-void Server::sendPacketToOneLevelPart(const CString& packet, const PixelPosition& position, LevelPtr level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToOneLevelPart(const CString& packet, const PixelPosition& position, const LevelPtr& level, const std::set<PlayerID>& exclude, const PlayerPredicate& sendIf) const
 {
-	auto mapPosition = toMapPosition(position);
+	const auto mapPosition = toMapPosition(position);
 	sendPacketToOneLevelPart(packet, level, mapPosition, exclude, sendIf);
 }
 
-void Server::sendPacketToOneLevelPart(const CString& packet, LevelPtr level, const MapPosition& mapPosition, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToOneLevelPart(const CString& packet, const LevelPtr& level, const MapPosition& mapPosition, const std::set<PlayerID>& exclude, const PlayerPredicate& sendIf) const
 {
 	for (const auto& id : level->findPlayersInLevelPart(mapPosition))
 	{
@@ -2703,7 +2700,7 @@ void Server::sendPacketToOneLevelPart(const CString& packet, LevelPtr level, con
 	}
 }
 
-void Server::sendPacketToNearby(const CString& packet, const PixelPosition& position, LevelPtr level, const std::set<PlayerID>& exclude, PlayerPredicate sendIf) const
+void Server::sendPacketToNearby(const CString& packet, const PixelPosition& position, const LevelPtr& level, const std::set<PlayerID>& exclude, const PlayerPredicate& sendIf) const
 {
 	if (!running || level == nullptr) return;
 
@@ -2716,7 +2713,7 @@ void Server::sendPacketToNearby(const CString& packet, const PixelPosition& posi
 		{
 			// Are we on the same level?
 			// Levels on a gmap are the same level and thus this would be false.
-			bool sameLevel = level->levelName == player->getLevelName();
+			const bool sameLevel = level->levelName == player->getLevelName();
 
 			// TODO: Enable nearby data for bigmaps again.
 			// The current problem is that the NPC-Server will send modified NPC props to players when they don't know about the NPC yet, which breaks the NPCs.
@@ -2735,7 +2732,7 @@ void Server::sendPacketToNearby(const CString& packet, const PixelPosition& posi
 	}
 }
 
-void Server::sendPacketToLevelAndPastVisitorsAfter(StaticLevelData* level, clock::time_point modTime, const CString& packet) const
+void Server::sendPacketToLevelAndPastVisitorsAfter(const StaticLevelData* level, const clock::time_point modTime, const CString& packet) const
 {
 	if (!running) return;
 	for (const auto& [id, player] : players_of_type<PlayerClient>(m_playerList))
@@ -2753,7 +2750,7 @@ void Server::sendPacketToLevelAndPastVisitorsAfter(StaticLevelData* level, clock
 /*
 	NPC-Server Functionality
 */
-bool Server::NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj)
+bool Server::NC_AddWeapon(const std::shared_ptr<Weapon>& pWeaponObj)
 {
 	if (pWeaponObj == nullptr)
 		return false;
@@ -2762,10 +2759,10 @@ bool Server::NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj)
 	return true;
 }
 
-bool Server::NC_DelWeapon(std::string_view pWeaponName)
+bool Server::NC_DelWeapon(const std::string_view pWeaponName)
 {
 	// Definitions
-	auto weaponObj = getWeapon(pWeaponName);
+	const auto weaponObj = getWeapon(pWeaponName);
 	if (!weaponObj || weaponObj->isDefault())
 		return false;
 
@@ -2787,13 +2784,13 @@ bool Server::NC_DelWeapon(std::string_view pWeaponName)
 	return true;
 }
 
-void Server::updateWeaponForPlayers(Weapon* weapon)
+void Server::updateWeaponForPlayers(const Weapon* weapon)
 {
 	if (weapon == nullptr)
 		return;
 
 	// Update Weapons
-	for (auto& [id, player] : m_playerList)
+	for (auto& player : m_playerList | std::views::values)
 	{
 		if (!player->isClient())
 			continue;
@@ -2806,20 +2803,20 @@ void Server::updateWeaponForPlayers(Weapon* weapon)
 	}
 }
 
-void Server::updateWeaponForPlayers(std::shared_ptr<Weapon> weapon)
+void Server::updateWeaponForPlayers(const std::shared_ptr<Weapon>& weapon)
 {
 	updateWeaponForPlayers(weapon.get());
 }
 
 // TODO(Nalin): This should probably be in the NPCServer class.
-void Server::updateClassForPlayers(std::shared_ptr<ScriptClass> scriptClass)
+void Server::updateClassForPlayers(const std::shared_ptr<ScriptClass>& scriptClass)
 {
-	CString classPacket = scriptClass->getClassPacket();
+	const CString classPacket = scriptClass->getClassPacket();
 	if (classPacket.isEmpty())
 		return;
 
 	// Update players.
-	for (auto& [id, player] : m_playerList)
+	for (auto& player : m_playerList | std::views::values)
 	{
 		if (!player->isClient())
 			continue;
@@ -2831,13 +2828,13 @@ void Server::updateClassForPlayers(std::shared_ptr<ScriptClass> scriptClass)
 
 //----------------------------
 
-void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level) const
+void Server::sendShootToOneLevel(const LevelShoot* shoot, const std::shared_ptr<Level>& level) const
 {
 	if (shoot == nullptr || level == nullptr)
 		return;
 
-	float pi = std::numbers::pi_v<float>;
-	float halfpi = pi / 2;
+	constexpr float pi = std::numbers::pi_v<float>;
+	constexpr float halfpi = pi / 2;
 
 	ShootPacketWrapper newPacket{};
 	newPacket.source = (shoot->from.second == ScriptObjectType::NPC ? shoot->from.first : 0);
@@ -2851,8 +2848,8 @@ void Server::sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level
 	newPacket.gani = shoot->gani;
 	newPacket.shootParams = string::toCSV(getShootParams());
 
-	CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)0 << newPacket.constructShootV1();
-	CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)0 << newPacket.constructShootV2();
+	const CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)0 << newPacket.constructShootV1();
+	const CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)0 << newPacket.constructShootV2();
 
 	sendPacketToNearby(oldPacketBuf, newPacket.position, level, {0}, [](const auto pl)
 	{

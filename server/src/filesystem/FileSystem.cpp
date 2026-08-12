@@ -61,14 +61,14 @@ void FileSystem::addFoldersConfigEntry(FileCategory category, const std::filesys
 	preferred.make_preferred();
 
 	// Add the glob to our folders config category.
-	size_t categoryIndex = static_cast<size_t>(category);
+	const auto categoryIndex = static_cast<size_t>(category);
 	m_foldersConfig[categoryIndex].insert(preferred);
 
 	// Apply the glob to any tracked files.
-	for (auto& fileData : m_files)
+	for (auto& val : m_files | std::views::values)
 	{
-		if (string::match(fileData.second->file.native(), preferred.native()))
-			fileData.second->categories.set(categoryIndex);
+		if (string::match(val->file.native(), preferred.native()))
+			val->categories.set(categoryIndex);
 	}
 }
 
@@ -116,7 +116,7 @@ void FileSystem::bind(const std::filesystem::path& directory)
 
 void FileSystem::bindSingleFile(const std::filesystem::path& file)
 {
-	std::filesystem::directory_entry fileInfo{file};
+	const std::filesystem::directory_entry fileInfo{file};
 	if (!fileInfo.exists())
 		return;
 
@@ -169,7 +169,7 @@ void FileSystem::defaultWatchCallback(uint32_t id, const std::filesystem::path& 
 				{
 					// Check for no change in mod time.
 					// Sometimes a modify event can get spawned multiple times.
-					auto fileModTime = std::filesystem::last_write_time(dir / file);
+					const auto fileModTime = std::filesystem::last_write_time(dir / file);
 					if (iter->second->modifiedTime == fileModTime)
 						return;
 
@@ -201,8 +201,7 @@ void FileSystem::defaultWatchCallback(uint32_t id, const std::filesystem::path& 
 			if (e.test(FileEvent::Renamed))
 			{
 				DEBUGPRINT("[FS] Existing file renamed: {} -> {}", oldFile.string(), file.string());
-				auto oldIter = m_files.find(oldFile.filename());
-				if (oldIter != m_files.end())
+				if (const auto oldIter = m_files.find(oldFile.filename()); oldIter != m_files.end())
 				{
 					// Make a copy of the data that is going to be deleted so we can pass it to the event callback.
 					deletedData = *oldIter->second;
@@ -309,15 +308,14 @@ bool FileSystem::has(FileCategory category, const std::filesystem::path& file) c
 		return true;
 
 	// If we don't have a folders config, skip the category test.
-	bool skipTest = !hasFoldersConfig();
+	const bool skipTest = !hasFoldersConfig();
 
 	// Check if our file is saved in the file system list.
 	{
 		std::scoped_lock guard{m_file_mutex};
-		auto iter = m_files.find(file);
-		if (iter != m_files.end())
+		if (const auto iter = m_files.find(file); iter != m_files.end())
 		{
-			if (iter->second != nullptr && (skipTest || iter->second->categories.test((size_t)category)))
+			if (iter->second != nullptr && (skipTest || iter->second->categories.test(static_cast<size_t>(category))))
 				return true;
 		}
 	}
@@ -333,7 +331,7 @@ bool FileSystem::has(const std::filesystem::path& file) const noexcept
 	// Check if our file is saved in the file system list.
 	{
 		std::scoped_lock guard{m_file_mutex};
-		if (auto iter = m_files.find(file); iter != m_files.end())
+		if (const auto iter = m_files.find(file); iter != m_files.end())
 			return true;
 	}
 
@@ -345,14 +343,14 @@ bool FileSystem::hasi(FileCategory category, const std::filesystem::path& file) 
 	if (std::filesystem::exists(file))
 		return true;
 
-	bool skipTest = !hasFoldersConfig();
-	auto fileName = file.string();
+	const bool skipTest = !hasFoldersConfig();
+	const auto fileName = file.string();
 
 	// Check if our file is saved in the file system list.
 	std::scoped_lock guard{m_file_mutex};
-	for (auto& [filePath, info] : m_files)
+	for (auto& [filePath, info] : m_files) // NOLINT(*-use-anyofallof)
 	{
-		if (string::equalsi(filePath.string(), fileName) && (skipTest || info->categories.test((size_t)category)))
+		if (string::equalsi(filePath.string(), fileName) && (skipTest || info->categories.test(static_cast<size_t>(category))))
 			return true;
 	}
 
@@ -361,23 +359,23 @@ bool FileSystem::hasi(FileCategory category, const std::filesystem::path& file) 
 
 //----------------------------
 
-std::filesystem::path FileSystem::find(FileCategory category, const std::filesystem::path& file) const noexcept
+std::filesystem::path FileSystem::find(const FileCategory category, const std::filesystem::path& file) const noexcept
 {
-	if (auto fileInfo = info(category, file); fileInfo != nullptr)
+	if (const auto fileInfo = info(category, file); fileInfo != nullptr)
 		return fileInfo->file;
 
 	return std::filesystem::path{};
 }
 
-std::filesystem::path FileSystem::findi(FileCategory category, const std::filesystem::path& file) const noexcept
+std::filesystem::path FileSystem::findi(const FileCategory category, const std::filesystem::path& file) const noexcept
 {
 	std::scoped_lock guard{m_file_mutex};
 
-	bool skipTest = !hasFoldersConfig();
-	auto fileName = file.string();
+	const bool skipTest = !hasFoldersConfig();
+	const auto fileName = file.string();
 	for (auto& [key, value] : m_files)
 	{
-		if ((skipTest || value->categories.test((size_t)category)) && string::equalsi(key.string(), fileName))
+		if ((skipTest || value->categories.test(static_cast<size_t>(category))) && string::equalsi(key.string(), fileName))
 			return value->file;
 	}
 	return std::filesystem::path{};
@@ -385,15 +383,15 @@ std::filesystem::path FileSystem::findi(FileCategory category, const std::filesy
 
 //----------------------------
 
-FileData* FileSystem::info(FileCategory category, const std::filesystem::path& file) const
+FileData* FileSystem::info(const FileCategory category, const std::filesystem::path& file) const
 {
 	std::scoped_lock guard{m_file_mutex};
 
-	bool skipTest = !hasFoldersConfig();
+	const bool skipTest = !hasFoldersConfig();
 	auto iter = m_files.find(file);
 	while (iter != m_files.end())
 	{
-		if (skipTest || iter->second->categories.test((size_t)category))
+		if (skipTest || iter->second->categories.test(static_cast<size_t>(category)))
 			return iter->second.get();
 		++iter;
 	}
@@ -414,30 +412,30 @@ std::vector<FileDataWeakPtr> FileSystem::info(const std::filesystem::path& file)
 	return result;
 };
 
-std::vector<FileDataWeakPtr> FileSystem::info(FileCategory category) const
+std::vector<FileDataWeakPtr> FileSystem::info(const FileCategory category) const
 {
 	std::scoped_lock guard{m_file_mutex};
 	std::vector<FileDataWeakPtr> result;
 
-	bool skipTest = !hasFoldersConfig();
-	for (auto& fileData : m_files)
+	const bool skipTest = !hasFoldersConfig();
+	for (const auto& file : m_files | std::views::values)
 	{
-		if (skipTest || fileData.second->categories.test((size_t)category))
-			result.push_back(fileData.second);
+		if (skipTest || file->categories.test(static_cast<size_t>(category)))
+			result.push_back(file);
 	}
 
 	return result;
 }
 
-FileData* FileSystem::infoi(FileCategory category, const std::filesystem::path& file) const
+FileData* FileSystem::infoi(const FileCategory category, const std::filesystem::path& file) const
 {
 	std::scoped_lock guard{m_file_mutex};
 
-	bool skipTest = !hasFoldersConfig();
-	auto fileName = file.string();
+	const bool skipTest = !hasFoldersConfig();
+	const auto fileName = file.string();
 	for (auto& [key, value] : m_files)
 	{
-		if ((skipTest || value->categories.test((size_t)category)) && string::equalsi(key.string(), fileName))
+		if ((skipTest || value->categories.test(static_cast<size_t>(category))) && string::equalsi(key.string(), fileName))
 			return value.get();
 	}
 	return nullptr;
@@ -448,7 +446,7 @@ std::vector<FileDataWeakPtr> FileSystem::infoi(const std::filesystem::path& file
 	std::scoped_lock guard{m_file_mutex};
 	std::vector<FileDataWeakPtr> result;
 
-	auto fileName = file.string();
+	const auto fileName = file.string();
 	for (auto& [key, value] : m_files)
 	{
 		if (string::equalsi(key.string(), fileName))
@@ -460,7 +458,7 @@ std::vector<FileDataWeakPtr> FileSystem::infoi(const std::filesystem::path& file
 
 //----------------------------
 
-std::shared_ptr<File> FileSystem::open(FileCategory category, const std::filesystem::path& file) const
+std::shared_ptr<File> FileSystem::open(const FileCategory category, const std::filesystem::path& file) const
 {
 	// Check if the file exists in the native file system and file is a direct path.
 	if (std::filesystem::exists(file))
@@ -471,7 +469,7 @@ std::shared_ptr<File> FileSystem::open(FileCategory category, const std::filesys
 	}
 
 	// Check if the file exists in the native file system and file is a filename we want to find.
-	if (auto fileData = info(category, file); fileData != nullptr)
+	if (const auto fileData = info(category, file); fileData != nullptr)
 	{
 		if (auto f = std::make_shared<File>(fileData->file); f->opened())
 			return f;
@@ -487,13 +485,13 @@ std::vector<std::shared_ptr<File>> FileSystem::open(const std::filesystem::path&
 	// Check if the file exists in the native file system and file is a direct path.
 	if (std::filesystem::exists(file))
 	{
-		auto f = std::make_shared<File>();
+		const auto f = std::make_shared<File>();
 		f->setFilePath(file);
 		result.push_back(f);
 		return result;
 	}
 
-	for (auto& [fileName, fileData] : m_files)
+	for (const auto& fileName : m_files | std::views::keys)
 	{
 		auto f = std::make_shared<File>();
 		f->setFilePath(fileName);
@@ -503,7 +501,7 @@ std::vector<std::shared_ptr<File>> FileSystem::open(const std::filesystem::path&
 	return result;
 }
 
-std::shared_ptr<File> FileSystem::open(const FileData& fileData) const
+std::shared_ptr<File> FileSystem::open(const FileData& fileData)
 {
 	if (std::filesystem::exists(fileData.file))
 	{
@@ -514,7 +512,7 @@ std::shared_ptr<File> FileSystem::open(const FileData& fileData) const
 	return nullptr;
 }
 
-std::shared_ptr<File> FileSystem::openi(FileCategory category, const std::filesystem::path& file) const
+std::shared_ptr<File> FileSystem::openi(const FileCategory category, const std::filesystem::path& file) const
 {
 	// Check if the file exists in the native file system and file is a direct path.
 	if (std::filesystem::exists(file))
@@ -525,7 +523,7 @@ std::shared_ptr<File> FileSystem::openi(FileCategory category, const std::filesy
 	}
 
 	// Check if the file exists in the native file system and file is a filename we want to find.
-	if (auto fileData = infoi(category, file); fileData != nullptr)
+	if (const auto fileData = infoi(category, file); fileData != nullptr)
 	{
 		if (auto f = std::make_shared<File>(fileData->file); f->opened())
 			return f;
@@ -536,7 +534,7 @@ std::shared_ptr<File> FileSystem::openi(FileCategory category, const std::filesy
 
 //----------------------------
 
-std::shared_ptr<FileIO> FileSystem::openForWriting(FileCategory category, const std::filesystem::path& file, bool createNew) const
+std::shared_ptr<FileIO> FileSystem::openForWriting(const FileCategory category, const std::filesystem::path& file, const bool createNew) const
 {
 	FileIOPtr result = nullptr;
 
@@ -547,7 +545,7 @@ std::shared_ptr<FileIO> FileSystem::openForWriting(FileCategory category, const 
 	// Check if the file exists in the native file system and file is a filename we want to find.
 	if (result == nullptr)
 	{
-		if (auto fileData = info(category, file); fileData != nullptr)
+		if (const auto fileData = info(category, file); fileData != nullptr)
 			result = std::make_shared<FileIO>(fileData->file);
 	}
 
@@ -563,7 +561,7 @@ std::shared_ptr<FileIO> FileSystem::openForWriting(FileCategory category, const 
 
 	// Create the new file.
 	auto directories = getManagedDirectories(category);
-	auto first = directories.begin();
+	const auto first = directories.begin();
 	if (first == directories.end())
 		return nullptr;
 
@@ -577,13 +575,13 @@ std::vector<std::shared_ptr<FileIO>> FileSystem::openForWriting(const std::files
 	// Check if the file exists in the native file system and file is a direct path.
 	if (std::filesystem::exists(file))
 	{
-		auto f = std::make_shared<FileIO>();
+		const auto f = std::make_shared<FileIO>();
 		f->setFilePath(file);
 		result.push_back(f);
 		return result;
 	}
 
-	for (auto& [fileName, fileData] : m_files)
+	for (const auto& fileName : m_files | std::views::keys)
 	{
 		auto f = std::make_shared<FileIO>();
 		f->setFilePath(fileName);
@@ -593,7 +591,7 @@ std::vector<std::shared_ptr<FileIO>> FileSystem::openForWriting(const std::files
 	return result;
 }
 
-std::shared_ptr<FileIO> FileSystem::openForWriting(const FileData& fileData) const
+std::shared_ptr<FileIO> FileSystem::openForWriting(const FileData& fileData)
 {
 	if (std::filesystem::exists(fileData.file))
 	{
@@ -604,7 +602,7 @@ std::shared_ptr<FileIO> FileSystem::openForWriting(const FileData& fileData) con
 	return nullptr;
 }
 
-std::shared_ptr<FileIO> FileSystem::openiForWriting(FileCategory category, const std::filesystem::path& file, bool createNew) const
+std::shared_ptr<FileIO> FileSystem::openiForWriting(const FileCategory category, const std::filesystem::path& file, const bool createNew) const
 {
 	FileIOPtr result = nullptr;
 
@@ -615,7 +613,7 @@ std::shared_ptr<FileIO> FileSystem::openiForWriting(FileCategory category, const
 	// Check if the file exists in the native file system and file is a filename we want to find.
 	if (result == nullptr)
 	{
-		if (auto fileData = infoi(category, file); fileData != nullptr)
+		if (const auto fileData = infoi(category, file); fileData != nullptr)
 			result = std::make_shared<FileIO>(fileData->file);
 	}
 
@@ -631,7 +629,7 @@ std::shared_ptr<FileIO> FileSystem::openiForWriting(FileCategory category, const
 
 	// Create the new file.
 	auto directories = getManagedDirectories(category);
-	auto first = directories.begin();
+	const auto first = directories.begin();
 	if (first == directories.end())
 		return nullptr;
 
@@ -647,8 +645,7 @@ void FileSystem::addExisting(FileCategory category, const std::filesystem::path&
 
 	std::scoped_lock guard{m_file_mutex};
 
-	auto files = m_files.find(fullFilePath.filename());
-	if (files != m_files.end())
+	if (const auto files = m_files.find(fullFilePath.filename()); files != m_files.end())
 		return;
 
 	auto entry = std::make_unique<FileData>();
@@ -663,7 +660,7 @@ void FileSystem::addExisting(FileCategory category, const std::filesystem::path&
 
 //----------------------------
 
-FileData* FileSystem::rename(const FileData& fileData, std::filesystem::path newFileName)
+FileData* FileSystem::rename(const FileData& fileData, const std::filesystem::path& newFileName)
 {
 	if (!std::filesystem::exists(fileData.file))
 		return nullptr;
@@ -716,9 +713,9 @@ std::generator<const std::filesystem::path&> FileSystem::getManagedDirectories()
 		co_yield dir;
 }
 
-std::generator<const std::filesystem::path&> FileSystem::getManagedDirectories(FileCategory category) const
+std::generator<const std::filesystem::path&> FileSystem::getManagedDirectories(const FileCategory category) const
 {
-	bool skipTest = !hasFoldersConfig();
+	const bool skipTest = !hasFoldersConfig();
 	if (skipTest || category == FileCategory::ALL)
 	{
 		for (const auto& dir : getManagedDirectories())
@@ -734,7 +731,7 @@ std::generator<const std::filesystem::path&> FileSystem::getManagedDirectories(F
 
 //----------------------------
 
-void FileSystem::assignCategoriesToFileData(FileData& fileData)
+void FileSystem::assignCategoriesToFileData(FileData& fileData) const
 {
 	fileData.categories.set(ENUM(FileCategory::ALL));
 

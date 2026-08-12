@@ -29,9 +29,10 @@ namespace preagonal::gs1::grammar
 class GS1ErrorListener : public antlr4::BaseErrorListener
 {
 public:
-	GS1ErrorListener(std::string_view process, std::string_view name) : m_process(process), m_name(name) {}
+	GS1ErrorListener(const std::string_view process, const std::string_view name) : m_process(process), m_name(name) {}
 
-	void syntaxError(antlr4::Recognizer* recognizer, antlr4::Token* offendingSymbol, size_t line, size_t charPositionInLine, const std::string& msg, std::exception_ptr e) override
+private:
+	void syntaxError(antlr4::Recognizer* recognizer, antlr4::Token* offendingSymbol, size_t line, const size_t charPositionInLine, const std::string& msg, std::exception_ptr e) override
 	{
 		std::vector<std::pair<uint8_t, std::string>> logbatch;
 		logbatch.emplace_back(0_ui8, std::format("* GS1 script {} failed for '{}':", m_process, m_name));

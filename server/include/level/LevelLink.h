@@ -23,33 +23,32 @@ class Server;
 class LevelLink
 {
 public:
-	// constructor - destructor
 	LevelLink() = default;
-	LevelLink(const std::vector<CString>& pLink);
+	explicit LevelLink(const std::vector<CString>& pLink);
 	LevelLink(const Rectangle<uint8_t, uint8_t>& coordinates, std::string_view destinationX, std::string_view destinationY, std::string_view destinationLevel);
 
-	// functions
-	CString getLinkStr() const;
+public:
+	[[nodiscard]] CString getLinkStr() const;
 	void parseLinkStr(const std::vector<CString>& pLink);
 
 public:
-	[[a::inline]] const Rectangle<uint8_t, uint8_t>& getBoundingBox() const;
+	[[nodiscard]] [[a::inline]] const Rectangle<uint8_t, uint8_t>& getBoundingBox() const;
 	[[a::inline]] void setX(uint8_t posX = 0);
 	[[a::inline]] void setY(uint8_t posY = 0);
 	[[a::inline]] void setWidth(uint8_t width = 0);
 	[[a::inline]] void setHeight(uint8_t height = 0);
 
 public:
-	LocalPixelPosition getDestinationForCharacter(Character& character, ScriptObject source) const;
-	[[a::inline]] const std::string& getDestinationLevel() const;
-	[[a::inline]] const std::string& getDestinationX() const;
-	[[a::inline]] const std::string& getDestinationY() const;
+	[[nodiscard]] LocalPixelPosition getDestinationForCharacter(const Character& character, const ScriptObject& source) const;
+	[[nodiscard]] [[a::inline]] const std::string& getDestinationLevel() const;
+	[[nodiscard]] [[a::inline]] const std::string& getDestinationX() const;
+	[[nodiscard]] [[a::inline]] const std::string& getDestinationY() const;
 	[[a::inline]] void setDestinationLevel(std::string_view level);
 	[[a::inline]] void setDestinationX(std::string_view newX);
 	[[a::inline]] void setDestinationY(std::string_view newY);
 
 public:
-	bool isProbableMapLink() const;
+	[[nodiscard]] bool isProbableMapLink() const;
 
 private:
 	Server* m_server = nullptr;
@@ -82,37 +81,37 @@ inline const Rectangle<uint8_t, uint8_t>& LevelLink::getBoundingBox() const
 	return m_boundingBox;
 }
 
-inline void LevelLink::setDestinationLevel(std::string_view level)
+inline void LevelLink::setDestinationLevel(const std::string_view level)
 {
 	m_destinationLevel = level;
 }
 
-inline void LevelLink::setDestinationX(std::string_view newX)
+inline void LevelLink::setDestinationX(const std::string_view newX)
 {
 	m_destinationX = newX;
 }
 
-inline void LevelLink::setDestinationY(std::string_view newY)
+inline void LevelLink::setDestinationY(const std::string_view newY)
 {
 	m_destinationY = newY;
 }
 
-inline void LevelLink::setX(uint8_t posX)
+inline void LevelLink::setX(const uint8_t posX)
 {
 	m_boundingBox.position.x() = posX;
 }
 
-inline void LevelLink::setY(uint8_t posY)
+inline void LevelLink::setY(const uint8_t posY)
 {
 	m_boundingBox.position.y() = posY;
 }
 
-inline void LevelLink::setWidth(uint8_t width)
+inline void LevelLink::setWidth(const uint8_t width)
 {
 	m_boundingBox.size.width() = width;
 }
 
-inline void LevelLink::setHeight(uint8_t height)
+inline void LevelLink::setHeight(const uint8_t height)
 {
 	m_boundingBox.size.height() = height;
 }

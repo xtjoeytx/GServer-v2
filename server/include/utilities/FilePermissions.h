@@ -31,18 +31,18 @@ public:
 
 	/// @brief Checks if a given file path has the required permissions.
 	/// @param path The path were checking for access
-	/// @param Type The type of permission were checking for (e.g. Read or Write)
+	/// @param type The type of permission were checking for (e.g. Read or Write)
 	/// @return true if the path has the required permission, false otherwise.
-	bool hasPermission(std::string_view path, Type type) const;
+	[[nodiscard]] bool hasPermission(std::string_view path, Type type) const;
 
 	/// @brief Checks if a given file path has the required permissions for multiple types.
 	/// @param path The path to check for access.
-	/// @param ...types The types of permissions to check (e.g., Read, Write).
+	/// @param types The types of permissions to check (e.g., Read, Write).
 	/// @return true if the path has all the required permissions, false otherwise.
 	[[a::inline]] auto hasPermission(std::string_view path, auto... types) const;
 
 	/// @brief Loads permissions from a string input.
-	/// @param input The string input containing permissions (e.g., "rw accounts/*\n-rw config/settings.php").
+	/// @param permissionString The string input containing permissions (e.g., "rw accounts/*\n-rw config/settings.php").
 	void loadPermissions(std::string_view permissionString);
 
 private:

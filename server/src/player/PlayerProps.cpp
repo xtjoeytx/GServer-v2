@@ -629,8 +629,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				{
 					[[maybe_unused]] bool isOwner = true;
 					{
-						auto& playerList = m_server->getPlayerList();
-						for (auto& other : playerList | std::views::values)
+						for (auto& other : m_server->getPlayerList() | std::views::values)
 						{
 							if (other.get() == this) continue;
 							if (other->getProp<PlayerProp::CARRYNPCID>().value == newNPCID)
@@ -1090,7 +1089,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Player::setPropsFromPacket(CString& packet, props::SetBy setBy, Player* originator)
+void Player::setPropsFromPacket(CString& packet, const props::SetBy setBy, const Player* originator)
 {
 	PropertySendResults results;
 
@@ -1111,7 +1110,7 @@ void Player::setPropsFromPacket(CString& packet, props::SetBy setBy, Player* ori
 		sendPropsFromResults(results);
 }
 
-bool Player::checkPropSetAccess(PlayerProp prop, SetBy setBy, Player* originator) const
+bool Player::checkPropSetAccess(const PlayerProp prop, SetBy setBy, const Player* originator) const
 {
 	// Admin check on changing gralats.
 	if (prop == PlayerProp::GRALATS && originator != nullptr)
@@ -1140,16 +1139,16 @@ void Player::sendPropsFromResults(PropertySendResults& results)
 
 	// Send the buffers out.
 	if (sendAll.length() > 0)
-		m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << sendAll, { m_id });
+		m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << sendAll, { m_id });
 
 	if (const auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr && sendLevel.length() > 0)
-		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)this->m_id << sendLevel, player->getGlobalPosition(), player->getLevel(), { m_id });
+		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << sendLevel, player->getGlobalPosition(), player->getLevel(), {m_id});
 
 	if (sendSource.length() > 0)
 		sendPacket(CString() >> (char)PLO_PLAYERPROPS << sendSource);
 }
 
-void Player::setPropsFromRCPacket(CString& packet, Player* rc)
+void Player::setPropsFromRCPacket(CString& packet, const Player* rc)
 {
 	[[maybe_unused]] bool hadBomb = false, hadBow = false;
 	CString outPacket;
@@ -1203,12 +1202,12 @@ void Player::setPropsFromRCPacket(CString& packet, Player* rc)
 	while (flagCount-- > 0)
 	{
 		CString flag = packet.readChars(packet.readGUChar());
-		std::string name = flag.readString("=").toString();
-		std::string val = flag.readString("").toString();
+		const auto flagView = flag.toStringView();
+		const auto& [name, val] = string::extractConfigParts(flagView, '=');
 
 		if (val.empty())
 			setFlag(name, std::nullopt, SetBy::SERVER);
-		else setFlag(name, val, SetBy::SERVER);
+		else setFlag(name, std::string{val}, SetBy::SERVER);
 	}
 
 	// Clear the chests and re-populate the chest list.
@@ -1217,10 +1216,10 @@ void Player::setPropsFromRCPacket(CString& packet, Player* rc)
 	while (chestCount > 0)
 	{
 		const unsigned char len = packet.readGUChar();
-		const uint8_t loc[2] = { packet.readGUChar(), packet.readGUChar() };
+		const uint8_t loc[2] = {packet.readGUChar(), packet.readGUChar()};
 		std::string level = packet.readChars(len - 2).toString();
 
-		account.savedChests.insert(std::make_pair(level, LocalWholeTilePosition{ loc[0], loc[1] }));
+		account.savedChests.insert(std::make_pair(level, LocalWholeTilePosition{loc[0], loc[1]}));
 		--chestCount;
 	}
 
@@ -1306,7 +1305,7 @@ CString Player::getPropsForRCPacket()
 		if (auto computedFlag = account.variables.serializeModern(flag); computedFlag.has_value())
 		{
 			++flagCount;
-			flags >> (char)(std::min((size_t)223, computedFlag.value().length())) << computedFlag.value().substr(0, 223);
+			flags >> (char)(std::min(static_cast<size_t>(223), computedFlag.value().length())) << computedFlag.value().substr(0, 223);
 		}
 	}
 	ret >> (short)flagCount << flags;

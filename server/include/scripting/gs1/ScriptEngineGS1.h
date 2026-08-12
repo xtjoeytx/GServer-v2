@@ -161,7 +161,7 @@ struct GS1ScriptWrapper
 class ScriptEngineGS1 : public IScriptEngine
 {
 public:
-	ScriptEngineGS1();
+	ScriptEngineGS1() = default;
 	~ScriptEngineGS1() override = default;
 
 public:
@@ -184,8 +184,8 @@ public:
 	std::optional<std::string> processStringExpression(std::string_view expression, ScriptObject source) override;
 
 protected:
-	bool prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context, NPCPtr& npc, LevelPtr& level);
-	void cleanup(GS1ScriptWrapper& wrapper);
+	static bool prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, NPCPtr& npc, LevelPtr& level);
+	static void cleanup(GS1ScriptWrapper& wrapper);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

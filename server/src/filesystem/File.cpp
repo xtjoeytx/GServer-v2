@@ -35,7 +35,7 @@ namespace preagonal::fs
 ///////////////////////////////////////////////////////////////////////////////
 
 template<size_t C>
-auto readGPacked(std::istream& stream) -> std::conditional_t<C <= 2, std::conditional_t<C == 1, uint8_t, uint16_t>, uint32_t>
+static auto readGPacked(std::istream& stream) -> std::conditional_t<C <= 2, std::conditional_t<C == 1, uint8_t, uint16_t>, uint32_t>
 {
 	using ReturnType = std::conditional_t<C <= 2, std::conditional_t<C == 1, uint8_t, uint16_t>, uint32_t>;
 	ReturnType result = 0;
@@ -62,16 +62,13 @@ std::filesystem::path getHTMLEscapedFileName(const std::filesystem::path& file)
 	using ST = std::filesystem::path::string_type;
 	using VT = std::filesystem::path::value_type;
 
-	std::function<size_t(const ST&, size_t)> findFirstNotOfAlphaNumeric;
-	std::function<void(ST&, VT)> writeEncoded;
-
-	findFirstNotOfAlphaNumeric = [](const ST& native, size_t pos) -> size_t
+	const std::function<size_t(const ST&, size_t)> findFirstNotOfAlphaNumeric = [](const ST& native, const size_t pos) -> size_t
 	{
 		return native.find_first_not_of(TO_PLATFORM_STRING("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789."), pos);
 	};
-	writeEncoded = [](ST& result, VT ch)
+	const std::function<void(ST&, VT)> writeEncoded = [](ST& result, const VT ch)
 	{
-		result += std::format(TO_PLATFORM_STRING("{:03}"), (uint32_t)ch);
+		result += std::format(TO_PLATFORM_STRING("{:03}"), static_cast<uint32_t>(ch));
 	};
 
 	auto& native = file.native();
@@ -99,29 +96,28 @@ std::filesystem::path getHTMLUnescapedFileName(const std::filesystem::path& file
 	using Traits = std::remove_cvref_t<ST>::traits_type;
 	using SVT = std::basic_string_view<Elem, Traits>;
 
-	std::function<size_t(const ST&, size_t)> findFirstEscaped;
 	std::function<void(ST&, SVT)> writeDecoded;
 
-	findFirstEscaped = [](const ST& native, size_t pos) -> size_t
+	const std::function<size_t(const ST&, size_t)> findFirstEscaped = [](const ST& native, const size_t pos) -> size_t
 	{
-		return native.find_first_of(TO_PLATFORM_STRING("%"), pos);
+		return native.find_first_of(TO_PLATFORM_STRING(L'%'), pos);
 	};
 
 #ifdef PLATFORM_WINDOWS
-	writeDecoded = [](ST& result, SVT code)
+	writeDecoded = [](ST& result, const SVT code)
 	{
 		// We are in a wchar_t system, so first convert to ANSI so we can use string::toNumber.
-		result += string::toNumber(ztd::text::transcode(code, ztd::text::wide_utf16, ztd::text::windows_1252, ztd::text::replacement_handler));
+		result += string::toNumber<Elem>(ztd::text::transcode(code, ztd::text::wide_utf16, ztd::text::windows_1252, ztd::text::replacement_handler));
 	};
 #else
-	writeDecoded = [](ST& result, SVT code)
+	writeDecoded = [](ST& result, const SVT code)
 	{
-		result += string::toNumber(code);
+		result += string::toNumber<Elem>(code);
 	};
 #endif
 
 	auto& native = file.native();
-	SVT code{native};
+	const SVT code{native};
 
 	ST result;
 	size_t oldpos = 0, pos = 0;
@@ -159,7 +155,7 @@ bool File::open()
 	// We failed to open the file.
 	if (!fstream->is_open())
 	{
-		std::string error{strerror(errno)};
+		const std::string error{strerror(errno)};
 		log::printLine(log::server, "** File '{}' read error: {}", m_file.string(), error);
 	}
 
@@ -179,11 +175,11 @@ void File::close()
 std::vector<char> File::read()
 {
 	if (!opened() || finishedReading())
-		return std::vector<char>();
+		return {};
 
 	// Seek to the end and get the file size.
 	m_inputStream->seekg(0, std::ios::end);
-	auto size = m_inputStream->tellg();
+	const auto size = m_inputStream->tellg();
 
 	// Seek to the start and read into the vector.
 	std::vector<char> result(static_cast<size_t>(size));
@@ -192,19 +188,19 @@ std::vector<char> File::read()
 	return result;
 }
 
-std::vector<char> File::read(std::size_t count)
+std::vector<char> File::read(const std::size_t count)
 {
 	if (!opened() || finishedReading())
-		return std::vector<char>();
+		return {};
 
 	std::vector<char> result(count);
-	m_inputStream->read(result.data(), count);
-	auto amount = m_inputStream->gcount();
+	m_inputStream->read(result.data(), static_cast<std::streamsize>(count));
+	const auto amount = m_inputStream->gcount();
 	result.resize(static_cast<size_t>(amount));
 	return result;
 }
 
-std::string File::readChars(std::size_t count)
+std::string File::readChars(const std::size_t count)
 {
 	if (!opened() || finishedReading())
 		return std::string{};
@@ -225,11 +221,11 @@ std::string File::readGString()
 	if (!opened() || finishedReading())
 		return std::string{};
 
-	size_t length = readPackedIntegral<1>();
+	const size_t length = readPackedIntegral<1>();
 	return readChars(length);
 }
 
-std::vector<char> File::readUntil(std::string_view delimiter)
+std::vector<char> File::readUntil(const std::string_view delimiter)
 {
 	if (delimiter.empty())
 		return read();
@@ -240,7 +236,7 @@ std::vector<char> File::readUntil(std::string_view delimiter)
 	{
 		constexpr size_t bufferSize = 4096;
 		char buffer[bufferSize];
-		char delim = delimiter[0];
+		const char delim = delimiter[0];
 
 		do
 		{
@@ -248,7 +244,7 @@ std::vector<char> File::readUntil(std::string_view delimiter)
 			m_inputStream->get(buffer, bufferSize, delim);
 
 			// Append what we read to the result.
-			auto count = m_inputStream->gcount();
+			const auto count = m_inputStream->gcount();
 			result.insert(result.end(), buffer, buffer + count);
 
 			// If the next character is the start of our delimiter, check if the full delimiter is there.
@@ -256,7 +252,7 @@ std::vector<char> File::readUntil(std::string_view delimiter)
 			{
 				for (size_t i = 0; i < delimiter.length(); ++i)
 				{
-					buffer[i] = m_inputStream->get();
+					buffer[i] = static_cast<char>(m_inputStream->get());
 					if (finishedReading() || m_inputStream->peek() != delimiter[i + 1])
 					{
 						// We didn't find the full delimiter, add what we read to the result and continue.
@@ -279,7 +275,7 @@ std::vector<char> File::readUntil(std::string_view delimiter)
 std::string File::readAsString()
 {
 	if (!opened() || finishedReading())
-		return std::string();
+		return {};
 
 	std::stringstream s;
 	s << m_inputStream->rdbuf();
@@ -289,7 +285,7 @@ std::string File::readAsString()
 std::string File::readLine()
 {
 	if (!opened() || finishedReading())
-		return std::string();
+		return {};
 
 	std::string result;
 	std::getline(*m_inputStream, result);
@@ -315,11 +311,11 @@ std::optional<std::string> File::readConfigLine(std::string_view key, std::strin
 		std::getline(*m_inputStream, line);
 		if (string::trimLeft(line).starts_with(key))
 		{
-			auto sep = line.find(separator);
+			const auto sep = line.find(separator);
 			setStreamPosition(0);
 
 			if (sep == std::string::npos)
-				return std::string{};
+				return {};
 
 			std::string value{string::trim(line.substr(sep + separator.length()))};
 			return value;
@@ -330,7 +326,7 @@ std::optional<std::string> File::readConfigLine(std::string_view key, std::strin
 	return std::nullopt;
 }
 
-std::optional<std::string> File::readConfigSection(std::string_view startKey, std::string_view endKey)
+std::optional<std::string> File::readConfigSection(const std::string_view startKey, const std::string_view endKey)
 {
 	if (!opened())
 		return std::nullopt;
@@ -371,26 +367,25 @@ std::generator<std::string> File::readAllLines()
 	}
 }
 
-std::generator<std::string> File::readLinesUntilSectionEnd(std::string_view endKey)
+std::generator<std::string> File::readLinesUntilSectionEnd(const std::string_view endKey)
 {
-	std::string result;
 	while (!finishedReading())
 	{
-		result = readLine();
+		std::string result = readLine();
 		if (string::trim(result) == endKey)
 			break;
 		co_yield result;
 	}
 }
 
-size_t File::readIntoBuffer(uint8_t* buffer, size_t count)
+size_t File::readIntoBuffer(uint8_t* buffer, const size_t count)
 {
 	if (!opened() || finishedReading())
 		return 0;
 
-	auto as_char = reinterpret_cast<char*>(buffer);
-	m_inputStream->read(as_char, count);
-	auto amount = m_inputStream->gcount();
+	const auto as_char = reinterpret_cast<char*>(buffer);
+	m_inputStream->read(as_char, static_cast<std::streamsize>(count));
+	const auto amount = m_inputStream->gcount();
 	return static_cast<size_t>(amount);
 }
 
@@ -415,7 +410,7 @@ File& File::setStreamPosition(const std::streamoff& offset, const std::ios_base:
 
 bool File::opened() const
 {
-	if (auto inputStream = dynamic_cast<std::ifstream*>(m_inputStream); inputStream != nullptr)
+	if (const auto inputStream = dynamic_cast<std::ifstream*>(m_inputStream); inputStream != nullptr)
 		return inputStream->is_open();
 	return false;
 }
@@ -431,7 +426,7 @@ bool File::finishedReading() const
 
 static void removeNullTermination(std::span<const char>& input)
 {
-	if (input.size() != 0 && input.back() == '\0')
+	if (!input.empty() && input.back() == '\0')
 		input = input.subspan(0, input.size() - 1);
 }
 
@@ -440,7 +435,7 @@ bool FileIO::open()
 	return open(false);
 }
 
-bool FileIO::open(bool truncate)
+bool FileIO::open(const bool truncate)
 {
 	// We want to write into a temp file and move it over the original when done, so record the file name of the temp file.
 	m_tempFile = m_file;
@@ -475,12 +470,12 @@ bool FileIO::open(bool truncate)
 	// We failed to open the file.
 	if (!fstream->is_open())
 	{
-		std::string error{strerror(errno)};
+		const std::string error{strerror(errno)};
 		log::printLine(log::server, "** File '{}' read error: {}", m_tempFile.string(), error);
 	}
 
 	m_outputStreamHandle = std::move(fstream);
-	auto outputStream = m_outputStreamHandle.get();
+	const auto outputStream = m_outputStreamHandle.get();
 	m_inputStream = dynamic_cast<std::istream*>(outputStream);
 
 	return true;
@@ -518,7 +513,7 @@ FileIO& FileIO::clear()
 	return *this;
 }
 
-FileIO& FileIO::write(std::span<const uint8_t> buffer)
+FileIO& FileIO::write(const std::span<const uint8_t> buffer)
 {
 	if (!opened())
 		return *this;
@@ -614,7 +609,7 @@ FileIO& FileIO::flush()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileSimpleIO::open(bool truncate)
+bool FileSimpleIO::open(const bool truncate)
 {
 	if (m_outputStreamHandle)
 		m_outputStreamHandle->close();
@@ -641,12 +636,12 @@ bool FileSimpleIO::open(bool truncate)
 	// We failed to open the file.
 	if (!fstream->is_open())
 	{
-		std::string error{ strerror(errno) };
+		const std::string error{strerror(errno)};
 		log::printLine(log::server, "** File '{}' read error: {}", m_file.string(), error);
 	}
 
 	m_outputStreamHandle = std::move(fstream);
-	auto outputStream = m_outputStreamHandle.get();
+	const auto outputStream = m_outputStreamHandle.get();
 	m_inputStream = dynamic_cast<std::istream*>(outputStream);
 
 	return true;
@@ -657,7 +652,7 @@ void FileSimpleIO::close()
 	if (m_outputStreamHandle)
 		m_outputStreamHandle->close();
 
-	File::close();
+	FileIO::close();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

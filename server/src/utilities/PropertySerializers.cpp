@@ -644,14 +644,14 @@ size_t PropertyColors::getMaxColorValue() noexcept
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint8_t Limits::applyMaxHitpoints(uint8_t maxHitpoints)
+uint8_t Limits::applyMaxHitpoints(const uint8_t maxHitpoints)
 {
 	const auto server = BabyDI::Get<Server>();
 	const auto heartLimit = std::min(server->cached.maxHeartLimit.getValue(), 20_ui8);
 	return std::clamp(maxHitpoints, 0_ui8, heartLimit);
 }
 
-int8_t Limits::applySwordPower(int8_t swordPower)
+int8_t Limits::applySwordPower(const int8_t swordPower)
 {
 	const auto server = BabyDI::Get<Server>();
 	const int8_t minimum = (server->cached.enableHealingSwords.getValue() ? static_cast<int8_t>(-server->cached.swordPowerLimit.getValue()) : 0_i8);
@@ -659,7 +659,7 @@ int8_t Limits::applySwordPower(int8_t swordPower)
 	return std::clamp(swordPower, minimum, maximum);
 }
 
-uint8_t Limits::applyShieldPower(uint8_t shieldPower)
+uint8_t Limits::applyShieldPower(const uint8_t shieldPower)
 {
 	const auto server = BabyDI::Get<Server>();
 	return std::clamp(shieldPower, 0_ui8, server->cached.shieldPowerLimit.getValue());

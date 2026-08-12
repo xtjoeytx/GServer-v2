@@ -16,7 +16,7 @@ public:
 
 public:
 	DelphiRandomDeviceIntegral() : m_seed(1) {}
-	DelphiRandomDeviceIntegral(result_type seed) : m_seed(seed) {}
+	explicit DelphiRandomDeviceIntegral(const result_type seed) : m_seed(seed) {}
 
 	static constexpr result_type min()
 	{
@@ -48,7 +48,7 @@ public:
 
 public:
 	DelphiRandomDeviceReal() : m_seed(1) {}
-	DelphiRandomDeviceReal(result_type seed) : m_seed(seed) {}
+	explicit DelphiRandomDeviceReal(const result_type seed) : m_seed(static_cast<uint32_t>(seed)) {}
 
 	static constexpr result_type min()
 	{
@@ -64,7 +64,7 @@ public:
 	result_type operator()()
 	{
 		m_seed = (m_seed * 0x8088405 + 1) & 0xFFFFFFFF;
-		return std::ldexp((long double)m_seed, -32);
+		return std::ldexp(static_cast<long double>(m_seed), -32);
 	}
 
 private:

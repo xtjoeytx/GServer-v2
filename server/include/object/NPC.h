@@ -279,24 +279,24 @@ public:
 	void resetToInitialState();
 
 public:
-	bool warp(LevelPtr level, const PixelPosition& position);
-	void setLevel(LevelPtr level);
+	bool warp(const LevelPtr& level, const PixelPosition& position);
+	void setLevel(const LevelPtr& level);
 	void addShowImg(uint8_t index, ShowImg&& showImg);
 	CString getShowImagesPacket(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendShowImagesToPlayer(PlayerPtr player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
+	void sendShowImagesToPlayer(const PlayerPtr& player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
 	void sendAllShowImagesToLevel(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
 	void addMoveToQueue(const LocalPixelPosition& moveDelta, float durationInSeconds, uint8_t options);
 	void processMoveQueue(std::chrono::milliseconds deltaTime);
 	std::pair<CString, CString> getMoveQueuePacketData(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendMoveQueueToPlayer(PlayerPtr player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendMoveQueueToLevel(LevelPtr level, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendMoveQueueToLevel(LevelPtr level, const std::pair<CString, CString>& queue) const noexcept;
-	void sendMoveQueueUpdatesToLevel(LevelPtr level) noexcept;
+	void sendMoveQueueToPlayer(const PlayerPtr& player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
+	void sendMoveQueueToLevel(const LevelPtr& level, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
+	void sendMoveQueueToLevel(const LevelPtr& level, const std::pair<CString, CString>& queue) const noexcept;
+	void sendMoveQueueUpdatesToLevel(const LevelPtr& level) noexcept;
 	void refreshModTimes(clock::time_point modTime) noexcept;
 
 public:
-	void hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEventType = std::nullopt, std::optional<ScriptObject> source = std::nullopt, std::optional<CarryObjectType> hitByType = std::nullopt);
-	void hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, std::optional<ScriptEventType> damageEventType = std::nullopt, std::optional<ScriptObject> source = std::nullopt, std::optional<CarryObjectType> hitByType = std::nullopt);
+	void hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEventType = std::nullopt, const std::optional<ScriptObject>& source = std::nullopt, std::optional<CarryObjectType> hitByType = std::nullopt);
+	void hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, std::optional<ScriptEventType> damageEventType = std::nullopt, const std::optional<ScriptObject>& source = std::nullopt, std::optional<CarryObjectType> hitByType = std::nullopt);
 
 public:
 	[[a::inline]] const std::string& getWeaponName() const noexcept;
@@ -317,7 +317,7 @@ public:
 	std::vector<std::string> getVariableDump() const;
 
 public:
-	void executeEvents(ScriptEventQueue& events, ScriptObject source) const;
+	void executeEvents(ScriptEventQueue& events, const ScriptObject& source) const;
 	void setScript(const Script& script);
 	void setScript(std::string_view script);
 	Script& getScript() noexcept { return m_script; }
@@ -446,7 +446,7 @@ public:
 	float hurtY = 0.0f;
 	bool noPlayerOnWall = false;
 	bool allowServerDamageReactions = false;
-	std::array<uint8_t, 10> saves;
+	std::array<uint8_t, 10> saves{};
 	std::chrono::milliseconds timeout = 0ms;
 	NPCWarpRestrictions warpRestrictions = NPCWarpRestrictions::ALLOWED;
 	std::array<std::optional<clock::time_point>, NPCPROP_COUNT> modTime;
@@ -512,6 +512,7 @@ inline bool NPC::isCreated() const noexcept
 inline std::generator<std::shared_ptr<ScriptClass>> NPC::getJoinedClasses() const
 {
 	// clang-format off
+	// ReSharper disable once CppLocalVariableMayBeConst
 	auto filter = m_joinedClasses
 		| std::views::transform([](const auto& pair) { return pair.second.lock(); })
 		| std::views::filter([](const auto& scriptClass) { return scriptClass != nullptr; });

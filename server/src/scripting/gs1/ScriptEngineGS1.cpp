@@ -45,21 +45,20 @@ namespace preagonal::gs1
 {
 ////////////////////////////////////////////////////////////////////////////////
 
-static std::string determineEventName(ScriptEvent& event)
+static std::string determineEventName(const ScriptEvent& event)
 {
-	auto knownEventIter = eventFlagMap.find(event.type);
-	if (knownEventIter != eventFlagMap.end())
+	if (const auto knownEventIter = eventFlagMap.find(event.type); knownEventIter != eventFlagMap.end())
 		return std::string{knownEventIter->second};
 
 	if (event.type == ScriptEventType::CUSTOM || event.type == ScriptEventType::TRIGGERACTION)
 	{
 		std::string action;
-		if (auto* actionStr = std::any_cast<std::string>(&event.args[0]); actionStr != nullptr)
+		if (const auto* actionStr = std::any_cast<std::string>(&event.args[0]); actionStr != nullptr)
 			action = *actionStr;
-		else if (auto* actionStr = std::any_cast<const char*>(&event.args[0]); actionStr != nullptr)
-			action = *actionStr;
-		else if (auto* actionStr = std::any_cast<std::string_view>(&event.args[0]); actionStr != nullptr)
-			action = std::string(*actionStr);
+		else if (const auto* actionChars = std::any_cast<const char*>(&event.args[0]); actionChars != nullptr)
+			action = *actionChars;
+		else if (const auto* actionStrView = std::any_cast<std::string_view>(&event.args[0]); actionStrView != nullptr)
+			action = std::string(*actionStrView);
 
 		return std::format("{}{}", (event.type == ScriptEventType::TRIGGERACTION ? "action" : ""), action);
 	}
@@ -69,7 +68,7 @@ static std::string determineEventName(ScriptEvent& event)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-PlayerPtr getPlayerFromSource(const ScriptObject& source, std::optional<int64_t> index)
+PlayerPtr getPlayerFromSource(const ScriptObject& source, const std::optional<int64_t> index)
 {
 	if (source.second != ScriptObjectType::PLAYER)
 		return nullptr;
@@ -78,15 +77,15 @@ PlayerPtr getPlayerFromSource(const ScriptObject& source, std::optional<int64_t>
 	if (index.value_or(0) == -1)
 		return nullptr;
 
-	auto server = BabyDI::Get<Server>();
-	auto npcserver = server->getNPCServer();
+	const auto server = BabyDI::Get<Server>();
+	const auto npcserver = server->getNPCServer();
 	if (auto player = npcserver->getPlayer(source.first); player != nullptr)
 	{
 		if (index.has_value() && index.value() >= 0)
 		{
-			if (auto level = server->getLoadedLevel(player->account.level, player); level != nullptr && index.value() < (int64_t)level->getPlayers().size())
+			if (const auto level = server->getLoadedLevel(player->account.level, player); level != nullptr && index.value() < (int64_t)level->getPlayers().size())
 			{
-				auto& mapPlayers = level->getPlayers();
+				const auto& mapPlayers = level->getPlayers();
 				player = server->getPlayer(mapPlayers[index.value()]);
 			}
 		}
@@ -96,26 +95,26 @@ PlayerPtr getPlayerFromSource(const ScriptObject& source, std::optional<int64_t>
 	return nullptr;
 }
 
-PlayerClientPtr getPlayerClientFromSource(const ScriptObject& source, std::optional<int64_t> index)
+PlayerClientPtr getPlayerClientFromSource(const ScriptObject& source, const std::optional<int64_t> index)
 {
-	auto player = getPlayerFromSource(source, index);
+	const auto player = getPlayerFromSource(source, index);
 	if (auto client = std::dynamic_pointer_cast<PlayerClient>(player); client != nullptr)
 		return client;
 	return nullptr;
 }
 
-NPCPtr getNPCFromSource(const ScriptObject& source, std::optional<int64_t> index)
+NPCPtr getNPCFromSource(const ScriptObject& source, const std::optional<int64_t> index)
 {
 	if (source.second != ScriptObjectType::NPC)
 		return nullptr;
 
-	auto server = BabyDI::Get<Server>();
-	auto npcserver = server->getNPCServer();
+	const auto server = BabyDI::Get<Server>();
+	const auto npcserver = server->getNPCServer();
 	if (auto npc = npcserver->getNPC(source.first); npc != nullptr)
 	{
 		if (index.has_value() && index.value() >= 0)
 		{
-			if (auto level = npc->getLevel(); level != nullptr && index.value() < (int64_t)level->getNPCs().size())
+			if (const auto level = npc->getLevel(); level != nullptr && index.value() < static_cast<int64_t>(level->getNPCs().size()))
 			{
 				auto& mapNPCs = level->getNPCs();
 				auto iter = mapNPCs.begin();
@@ -133,10 +132,9 @@ PlayerOrNPC getPlayerOrNPCFromSource(const ScriptObject& source, std::optional<i
 {
 	if (source.second == ScriptObjectType::SERVER)
 		return std::nullopt;
-
 	if (source.second == ScriptObjectType::PLAYER)
 		return getPlayerFromSource(source, index);
-	else if (source.second == ScriptObjectType::NPC)
+	if (source.second == ScriptObjectType::NPC)
 		return getNPCFromSource(source, index);
 
 	return std::nullopt;
@@ -149,12 +147,12 @@ Character* getCharacterFromSource(const ScriptObject& source, std::optional<int6
 
 	if (source.second == ScriptObjectType::PLAYER)
 	{
-		if (auto player = getPlayerFromSource(source, index); player != nullptr)
+		if (const auto player = getPlayerFromSource(source, index); player != nullptr)
 			return &player->account.character;
 	}
 	else if (source.second == ScriptObjectType::NPC)
 	{
-		if (auto npc = getNPCFromSource(source, index); npc != nullptr)
+		if (const auto npc = getNPCFromSource(source, index); npc != nullptr)
 			return &npc->character;
 	}
 
@@ -163,7 +161,7 @@ Character* getCharacterFromSource(const ScriptObject& source, std::optional<int6
 
 ////////////////////////////////////////////////////////////////////////////////
 
-GS1ScriptWrapper::GS1ScriptWrapper(std::string_view who, std::string_view script)
+GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string_view script)
 {
 	errorListenerLexer = std::make_shared<GS1ErrorListener>("lexing", who);
 	errorListenerParser = std::make_shared<GS1ErrorListener>("parsing", who);
@@ -205,10 +203,6 @@ GS1ScriptWrapper::GS1ScriptWrapper(std::string_view who, std::string_view script
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ScriptEngineGS1::ScriptEngineGS1()
-{
-}
-
 CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::string_view script)
 {
 	ScriptExecutionContext result{.engine = this};
@@ -227,7 +221,7 @@ CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::s
 
 //----------------------------
 
-bool ScriptEngineGS1::prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context, NPCPtr& npc, LevelPtr& level)
+bool ScriptEngineGS1::prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, NPCPtr& npc, LevelPtr& level)
 {
 	auto& [source_id, source_type] = source;
 	if (source_type != ScriptObjectType::NPC && source_type != ScriptObjectType::WEAPON)
@@ -286,7 +280,7 @@ bool ScriptEngineGS1::prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, std
 	setNPCFlags(event, wrapper.variables, npc);
 	setLevelFlags(wrapper.variables, npc, level);
 	setWeaponFlags(event, source, wrapper.variables);
-	setOtherFlags(event, source, wrapper.variables, npc, player, level);
+	setOtherFlags(event, source, wrapper.variables, player, level);
 
 	// Set variables.
 	setNPCVariables(wrapper.variables, npc);
@@ -299,7 +293,7 @@ bool ScriptEngineGS1::prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, std
 
 //----------------------------
 
-bool ScriptEngineGS1::execute(ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context)
+bool ScriptEngineGS1::execute(ScriptEvent& event, const ScriptObject source, const CompiledScriptResultPtr context)
 {
 	return execute(event, nullptr, source, context);
 }
@@ -335,7 +329,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, std::vector<ScriptEventType>* 
 		}
 	}
 
-	if (!prepare(*wrapper, event, additionalEventTypes, source, context, npc, level))
+	if (!prepare(*wrapper, event, additionalEventTypes, source, npc, level))
 		return false;
 
 	// If this is a control-NPC, temporarily adjust the level it lives in.
@@ -391,12 +385,12 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, std::vector<ScriptEventType>* 
 	return true;
 }
 
-bool ScriptEngineGS1::executeFunction(std::string_view function, ScriptEvent& event, ScriptObject source, CompiledScriptResultPtr context)
+bool ScriptEngineGS1::executeFunction(const std::string_view function, ScriptEvent& event, const ScriptObject source, const CompiledScriptResultPtr context)
 {
 	return executeFunction(function, event, nullptr, source, context);
 }
 
-bool ScriptEngineGS1::executeFunction(std::string_view function, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, CompiledScriptResultPtr context)
+bool ScriptEngineGS1::executeFunction(const std::string_view function, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, const ScriptObject source, const CompiledScriptResultPtr context)
 {
 	if (context == nullptr)
 		return false;
@@ -406,14 +400,14 @@ bool ScriptEngineGS1::executeFunction(std::string_view function, ScriptEvent& ev
 		return false;
 
 	// Check if we have the function.
-	auto userFunction = wrapper->parser->userFunctions.find(std::string{function});
+	const auto userFunction = wrapper->parser->userFunctions.find(std::string{function});
 	if (userFunction == wrapper->parser->userFunctions.end())
 		return false;
 
 	NPCPtr npc = nullptr;
 	LevelPtr level = nullptr;
 
-	if (!prepare(*wrapper, event, additionalEventTypes, source, context, npc, level))
+	if (!prepare(*wrapper, event, additionalEventTypes, source, npc, level))
 		return false;
 
 	try
@@ -438,7 +432,7 @@ bool ScriptEngineGS1::executeFunction(std::string_view function, ScriptEvent& ev
 
 //----------------------------
 
-std::optional<double> ScriptEngineGS1::processMathExpression(std::string_view expression, ScriptObject source)
+std::optional<double> ScriptEngineGS1::processMathExpression(const std::string_view expression, const ScriptObject source)
 {
 	if (expression.empty())
 		return std::nullopt;
@@ -451,7 +445,7 @@ std::optional<double> ScriptEngineGS1::processMathExpression(std::string_view ex
 	visitor.flagStore.store.clear();
 	variableStore.store.clear();
 
-	ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source};
+	const ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source};
 
 	const auto server = BabyDI::Get<Server>();
 	const auto npcserver = server->getNPCServer();
@@ -486,7 +480,7 @@ std::optional<double> ScriptEngineGS1::processMathExpression(std::string_view ex
 	return std::nullopt;
 }
 
-std::optional<std::string> ScriptEngineGS1::processStringExpression(std::string_view expression, ScriptObject source)
+std::optional<std::string> ScriptEngineGS1::processStringExpression(const std::string_view expression, const ScriptObject source)
 {
 	if (expression.empty())
 		return std::nullopt;
@@ -498,7 +492,7 @@ std::optional<std::string> ScriptEngineGS1::processStringExpression(std::string_
 	visitor.pushSource(source);
 	visitor.flagStore.store.clear();
 
-	ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source};
+	const ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source};
 
 	const auto server = BabyDI::Get<Server>();
 	const auto npcserver = server->getNPCServer();

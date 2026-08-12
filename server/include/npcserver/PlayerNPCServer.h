@@ -23,20 +23,20 @@ class PlayerNPCServer : public Player
 {
 public:
 	PlayerNPCServer(CSocket* pSocket, PlayerID pId);
-	virtual ~PlayerNPCServer() override;
+	~PlayerNPCServer() override = default;
 
 public:
-	virtual bool onRecv() override;
-	virtual void onUnregister() override;
+	bool onRecv() override;
+	void onUnregister() override;
 
 public:
-	virtual void sendPrivateMessage(PlayerID from, std::string_view message) override;
+	void sendPrivateMessage(PlayerID from, std::string_view message) override;
 
 public:
 	std::string privateMessage;
 
 protected:
-	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
+	HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
 
 public:
 	//HandlePacketResult msgLoginPacket(CString& pPacket);

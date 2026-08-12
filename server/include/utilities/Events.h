@@ -17,7 +17,7 @@ class EventHandleBase;
 class EventDispatcherBase
 {
 public:
-	EventDispatcherBase();
+	EventDispatcherBase() = default;
 	virtual ~EventDispatcherBase();
 
 	/// @brief Unsubscribes a handler from the event dispatcher.
@@ -28,7 +28,7 @@ public:
 	/// @brief Unsubscribes a handler from the event dispatcher.
 	/// @param handle The handle to the event handler to unsubscribe. The handle should have been returned by a previous call to subscribe().
 	/// @return True if the handler was successfully unsubscribed, false if the handler was not found or if the handle was invalid.
-	bool unsubscribe(std::shared_ptr<EventHandleBase> handle);
+	bool unsubscribe(const std::shared_ptr<EventHandleBase>& handle);
 
 	/// @brief Unsubscribes all handlers from the event dispatcher.
 	void unsubscribeAll();
@@ -57,13 +57,13 @@ template<typename... A>
 class EventHandleImpl : public EventHandleBase
 {
 public:
-	EventHandleImpl(EventDispatcherBase* dispatcher, size_t id, std::function<void(A...)> callback)
+	EventHandleImpl(EventDispatcherBase* dispatcher, const size_t id, std::function<void(A...)> callback)
 		: EventHandleBase(dispatcher, id), m_callback(callback) {};
 
-	~EventHandleImpl() {};
+	~EventHandleImpl() override = default;
 
 	/// @brief Dispatches the event to the subscribed handler.
-	/// @param ...args The arguments to pass to the event handler.
+	/// @param args The arguments to pass to the event handler.
 	void dispatch(A... args)
 	{
 		if (m_callback)
@@ -82,23 +82,23 @@ typedef std::shared_ptr<EventHandleBase> EventHandle;
 //----------------------------
 
 /// @brief Dispatches events to subscribed handlers.
-/// @tparam ...A The types of the arguments that will be passed to the event handlers when an event is posted.
+/// @tparam A The types of the arguments that will be passed to the event handlers when an event is posted.
 template<typename... A>
 class EventDispatcher : public EventDispatcherBase
 {
 public:
-	EventDispatcher() {};
-	virtual ~EventDispatcher() {};
+	EventDispatcher() = default;
+	~EventDispatcher() override = default;
 
 	/// @brief Posts an event to all subscribed handlers.
-	/// @param ...args The arguments to pass to the event handlers.
+	/// @param args The arguments to pass to the event handlers.
 	void post(A... args)
 	{
 		m_isPosting = true;
 
 		for (auto itr = m_eventHandlers.begin(); itr != m_eventHandlers.end();)
 		{
-			auto current = itr++;
+			const auto current = itr++;
 			auto basePtr = current->second.lock();
 			if (!basePtr)
 			{
@@ -142,10 +142,10 @@ private:
 	/// @brief Flushes pending subscriptions that were added while an event was being posted.
 	void flushPendingSubscriptions()
 	{
-		for (auto& pendingHandler : m_pendingEventHandlers)
+		for (auto& [id, handle] : m_pendingEventHandlers)
 		{
-			if (auto ptr = pendingHandler.second.lock(); ptr)
-				m_eventHandlers[pendingHandler.first] = pendingHandler.second;
+			if (const auto ptr = handle.lock(); ptr)
+				m_eventHandlers[id] = handle;
 		}
 
 		m_pendingEventHandlers.clear();

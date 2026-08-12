@@ -17,12 +17,12 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-LevelItemType LevelItem::getItemId(signed char itemId)
+LevelItemType LevelItem::getItemId(const signed char itemId)
 {
-	if (itemId < 0 || (size_t)itemId >= ItemNames.size())
+	if (itemId < 0 || static_cast<size_t>(itemId) >= ItemNames.size())
 		return LevelItemType::INVALID;
 
-	return LevelItemType(itemId);
+	return ENUM<LevelItemType>(itemId);
 }
 
 LevelItemType LevelItem::getItemId(const std::string& pItemName)
@@ -31,26 +31,25 @@ LevelItemType LevelItem::getItemId(const std::string& pItemName)
 	for (unsigned int i = 0; i < ItemNames.size(); ++i)
 	{
 		if (ItemNames[i] == pItemName)
-			return LevelItemType(i);
+			return ENUM<LevelItemType>(static_cast<int>(i));
 	}
 
 	// Try by ID.
-	uint32_t itemId = 0;
-	if (string::toNumber(pItemName, itemId) && itemId < ItemNames.size())
-		return LevelItemType(itemId);
+	if (uint32_t itemId = 0; string::toNumber(pItemName, itemId) && itemId < ItemNames.size())
+		return ENUM<LevelItemType>(static_cast<int>(itemId));
 
 	// Bad item.
 	return LevelItemType::INVALID;
 }
 
-std::string LevelItem::getItemName(LevelItemType itemId)
+std::string LevelItem::getItemName(const LevelItemType itemId)
 {
-	size_t id = LevelItem::getItemTypeId(itemId);
+	const size_t id = LevelItem::getItemTypeId(itemId);
 	if (id >= ItemNames.size()) return {};
 	return std::string(ItemNames[id]);
 }
 
-CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
+CString LevelItem::getItemPlayerProp(const LevelItemType itemType, Player* player)
 {
 	switch (itemType)
 	{
@@ -59,7 +58,7 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 		case LevelItemType::REDRUPEE:   // redrupee
 		case LevelItemType::GOLDRUPEE:  // goldrupee
 		{
-			int rupeeCount = player->account.character.gralats;
+			auto rupeeCount = player->account.character.gralats;
 			if (itemType == LevelItemType::GOLDRUPEE)
 				rupeeCount += 100;
 			else if (itemType == LevelItemType::REDRUPEE)
@@ -69,25 +68,25 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 			else
 				rupeeCount += 1;
 
-			rupeeCount = std::clamp(rupeeCount, 0, 9999999);
+			rupeeCount = std::clamp(rupeeCount, 0_ui32, 9999999_ui32);
 			return CString() >> (char)PlayerProp::GRALATS >> (int)rupeeCount;
 		}
 
 		case LevelItemType::BOMBS: // bombs
 		{
-			int bombCount = std::clamp(player->account.character.bombs + 5, 0, 99);
+			const auto bombCount = std::clamp(player->account.character.bombs + 5, 0, 99);
 			return CString() >> (char)PlayerProp::BOMBS >> (char)bombCount;
 		}
 
 		case LevelItemType::DARTS: // darts
 		{
-			int arrowCount = std::clamp(player->account.character.arrows + 5, 0, 99);
+			const auto arrowCount = std::clamp(player->account.character.arrows + 5, 0, 99);
 			return CString() >> (char)PlayerProp::ARROWS >> (char)arrowCount;
 		}
 
 		case LevelItemType::HEART: // heart
 		{
-			uint8_t newPower = std::clamp(player->account.character.hitpointsInHalves + 2, 0, player->account.maxHitpoints * 2);
+			const auto newPower = std::clamp(player->account.character.hitpointsInHalves + 2, 0, player->account.maxHitpoints * 2);
 			return CString() >> (char)PlayerProp::HALFHEARTS >> (char)(newPower);
 		}
 
@@ -107,8 +106,7 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 		case LevelItemType::SUPERBOMB: // superbomb
 		case LevelItemType::JOLTBOMB:  // joltbomb
 		{
-			// TODO: Change to versions <1.2 once the version stuff is fixed up.
-			if (const auto server = BabyDI::Get<Server>(); server != nullptr && server->Generation == ServerGeneration::CLASSIC && player->getVersion() < CLVER_1_25)
+			if (const auto server = BabyDI::Get<Server>(); server != nullptr && server->Generation == ServerGeneration::CLASSIC && player->getVersion() < CLVER_1_20)
 			{
 				auto bombPower = player->account.character.bombPower;
 				if (itemType == LevelItemType::BOMB && bombPower < 1)
@@ -130,8 +128,7 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 		case LevelItemType::FIREBLAST: // fireblast
 		case LevelItemType::NUKESHOT:  // nukeshot
 		{
-			// TODO: Change to versions <1.2 once the version stuff is fixed up.
-			if (const auto server = BabyDI::Get<Server>(); server != nullptr && server->Generation == ServerGeneration::CLASSIC && player->getVersion() < CLVER_1_25)
+			if (const auto server = BabyDI::Get<Server>(); server != nullptr && server->Generation == ServerGeneration::CLASSIC && player->getVersion() < CLVER_1_20)
 			{
 				auto bowPower = player->account.character.bowPower;
 				if (itemType == LevelItemType::BOW && bowPower < 1)
@@ -154,7 +151,7 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 		case LevelItemType::MIRRORSHIELD: // mirrorshield
 		case LevelItemType::LIZARDSHIELD: // lizardshield
 		{
-			int newShieldPower = 1;
+			uint8_t newShieldPower = 1;
 			if (itemType == LevelItemType::LIZARDSHIELD)
 				newShieldPower = 3;
 			else if (itemType == LevelItemType::MIRRORSHIELD)
@@ -171,21 +168,21 @@ CString LevelItem::getItemPlayerProp(LevelItemType itemType, Player* player)
 		case LevelItemType::LIZARDSWORD: // lizardsword
 		case LevelItemType::GOLDENSWORD: // goldensword
 		{
-			char swordPower = (char)player->account.character.swordPower;
+			auto swordPower = player->account.character.swordPower;
 			if (itemType == LevelItemType::GOLDENSWORD) swordPower = 4;
 			else if (itemType == LevelItemType::LIZARDSWORD)
-				swordPower = (swordPower < 3 ? 3 : swordPower);
+				swordPower = static_cast<int8_t>(swordPower < 3 ? 3 : swordPower);
 			else if (itemType == LevelItemType::BATTLEAXE)
-				swordPower = (swordPower < 2 ? 2 : swordPower);
+				swordPower = static_cast<int8_t>(swordPower < 2 ? 2 : swordPower);
 			else
-				swordPower = (swordPower < 1 ? 1 : swordPower);
+				swordPower = static_cast<int8_t>(swordPower < 1 ? 1 : swordPower);
 
 			return CString() >> (char)PlayerProp::SWORDIMAGE >> (char)swordPower;
 		}
 
 		case LevelItemType::FULLHEART: // fullheart
 		{
-			char heartMax = std::clamp(player->account.maxHitpoints + 1, 0, 20); // Hard limit of 20 hearts.
+			const auto heartMax = std::clamp(player->account.maxHitpoints + 1, 0, 20); // Hard limit of 20 hearts.
 			return CString() >> (char)PlayerProp::FULLHEARTS >> (char)heartMax >> (char)PlayerProp::HALFHEARTS >> (char)(heartMax * 2);
 		}
 

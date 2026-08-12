@@ -50,8 +50,8 @@ public:
 protected:
 	BabyDI_INJECT(Server, m_server);
 
-	std::string handleGS2Error(const GS2CompilerError& error);
-	void reportScriptException(const std::string& error_message);
+	static std::string handleGS2Error(const GS2CompilerError& error);
+	static void reportScriptException(const std::string& error_message);
 
 	GS2ScriptManager m_scriptManager;
 };

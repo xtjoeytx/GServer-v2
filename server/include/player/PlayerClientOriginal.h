@@ -24,18 +24,21 @@ class PlayerClientOriginal : public PlayerClient
 {
 public:
 	PlayerClientOriginal(CSocket* pSocket, PlayerID pId);
-	virtual ~PlayerClientOriginal();
+	~PlayerClientOriginal() override = default;
 
 public:
 	// Forcibly move a player (the client doesn't know it is transitioning levels).
-	virtual bool warp(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
+	bool warp(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime) override;
+	using Player::warp;
 
 	// Place the player in a new level (the client knows it is transitioning levels).
-	virtual bool enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
+	bool enterLevel(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime) override;
 	using Player::enterLevel;
 
-	virtual bool sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
-	virtual bool sendDynamicLevelData(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
+	using Player::leaveLevel;
+
+	bool sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<clock::time_point> clientCachedTime) override;
+	bool sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime) override;
 
 protected:
 	bool m_firstLevel = false;

@@ -225,7 +225,7 @@ constexpr std::array<std::string_view, 204> serverSideCommands =
 */
 
 class GS1Visitor;
-void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view commandName);
+void processBuiltInCommand(GS1Visitor* visitor, const antlr4::tree::ParseTree* node, std::string_view commandName);
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::gs1::grammar

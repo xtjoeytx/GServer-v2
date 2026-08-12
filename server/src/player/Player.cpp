@@ -14,7 +14,6 @@
 #include <span>
 #include <string_view>
 #include <string>
-#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -259,8 +258,8 @@ CString ShootPacketWrapper::constructShootV2() const
 	packet.writeGShort(position.x());
 	packet.writeGShort(position.y());
 	packet.writeGShort(position.z());
-	packet.writeChar(offsetx + 32);
-	packet.writeChar(offsety + 32);
+	packet.writeChar(static_cast<int8_t>(offsetx + 32));
+	packet.writeChar(static_cast<int8_t>(offsety + 32));
 	packet.writeGChar(sangle);
 	packet.writeGChar(sanglez);
 	packet.writeGChar(power);
@@ -305,7 +304,7 @@ HandlePacketResult Player::handlePacket(std::optional<uint8_t> id, CString& pack
 
 	try
 	{
-		auto handle = id.has_value() ? PacketHandlers[id.value()] : &Player::msgPLI_NULL;
+		const auto handle = id.has_value() ? PacketHandlers[id.value()] : &Player::msgPLI_NULL;
 		return (this->*handle)(packet);
 	}
 	catch (const std::exception& e)
@@ -322,7 +321,7 @@ HandlePacketResult Player::handlePacket(std::optional<uint8_t> id, CString& pack
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Player::Player(CSocket* pSocket, PlayerID pId)
+Player::Player(CSocket* pSocket, const PlayerID pId)
 	: m_playerSock(pSocket), m_id(pId), m_fileQueue(pSocket)
 {
 	m_server = BabyDI::Get<Server>();
@@ -331,12 +330,13 @@ Player::Player(CSocket* pSocket, PlayerID pId)
 
 	account.variables.defaultLifetime = variables::Lifetime::PERMANENT;
 
-	srand((unsigned int)time(0));
+	// NOLINTNEXTLINE(*-msc51-cpp)
+	srand(static_cast<unsigned int>(time(nullptr)));
 }
 
 Player::~Player()
 {
-	cleanup();
+	Player::cleanup();
 }
 
 void Player::cleanup()
@@ -397,10 +397,10 @@ bool Player::onRecv()
 
 	// Grab the data from the socket and put it into our receive buffer.
 	unsigned int size = 0;
-	char* data = m_playerSock->getData(&size);
+	const char* data = m_playerSock->getData(&size);
 	if (size != 0)
 	{
-		m_recvBuffer.write(data, size);
+		m_recvBuffer.write(data, static_cast<int>(size));
 #if defined(WOLFSSL_ENABLED)
 		if (this->m_playerSock->webSocket)
 			if (webSocketFixIncomingPacket(m_recvBuffer) < 0) return true;
@@ -475,7 +475,7 @@ bool Player::doTimedEvents()
 	return true;
 }
 
-void Player::disconnect(std::string_view message)
+void Player::disconnect(const std::string_view message)
 {
 	if (!message.empty())
 	{
@@ -488,7 +488,7 @@ void Player::disconnect(std::string_view message)
 	m_server->deletePlayer(shared_from_this());
 }
 
-void Player::sendPacket(CString pPacket, bool appendNL)
+void Player::sendPacket(CString pPacket, const bool appendNL)
 {
 	// empty buffer?
 	if (pPacket.isEmpty())
@@ -525,15 +525,15 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 {
 	// Add the filename to the list of known files so we can resend the file
 	// to the client if it gets changed after it was originally sent
-	if (auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); isClient() && client != nullptr)
+	if (const auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); isClient() && client != nullptr)
 	{
 		client->m_knownFiles.insert(fs::getANSIFileName(file));
 	}
 
-	auto& filesystem = m_server->getFileSystem();
+	const auto& filesystem = m_server->getFileSystem();
 	std::string filename = fs::getANSIFileName(file);
 
-	auto sendFailure = [this, &filename](std::string_view message) -> bool
+	auto sendFailure = [this, &filename](const std::string_view message) -> bool
 	{
 		if (!message.empty())
 			log::printLine(log::server, "[WARNING] {}: {}", message, filename);
@@ -544,31 +544,31 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 	std::vector<char> fileData;
 
 	// Get the file mod time.
-	time_t modTime = 0;
+	time_t fileModTime = 0;
 
 	// Find the file.
 	if (std::filesystem::exists(file))
 	{
 		fs::File openedFile{file};
-		fileData = std::move(openedFile.read());
-		modTime = clock::to_time_t(toSystemClock(std::filesystem::last_write_time(file)));
+		fileData = openedFile.read();
+		fileModTime = clock::to_time_t(toSystemClock(std::filesystem::last_write_time(file)));
 	}
 	else
 	{
-		auto info = filesystem.infoi(fs::FileCategory::ALL, file.filename());
+		const auto info = filesystem.infoi(fs::FileCategory::ALL, file.filename());
 		if (info == nullptr)
 			return {sendFailure("File not found when trying to send to player"), false};
 
 		// Open the file and read the data.
 		{
-			auto openedFile = info->openFile();
+			const auto openedFile = info->openFile();
 			if (openedFile == nullptr)
 				return {sendFailure("File failed to load"), false};
 
-			fileData = std::move(openedFile->read());
+			fileData = openedFile->read();
 		}
 
-		modTime = clock::to_time_t(info->getModTime());
+		fileModTime = clock::to_time_t(info->getModTime());
 	}
 
 	// Warn for very large files.  These are the cause of many bug reports.
@@ -579,7 +579,7 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 	// If not, we need to send it as a big file.
 	// 1 (PLO_FILE) + 5 (modTime) + 1 (file.length()) + file.length() + 1 (\n)
 	bool isBigFile = false;
-	size_t packetLength = (size_t)1 + 5 + 1 + filename.length() + 1;
+	size_t packetLength = static_cast<size_t>(1) + 5 + 1 + filename.length() + 1;
 	if (fileData.size() > 32000)
 		isBigFile = true;
 
@@ -605,19 +605,19 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 	while (!fileDataSpan.empty())
 	{
 		int sendSize = std::clamp((int)fileDataSpan.size(), 0, 32000);
-		if (isClient() && m_versionId < CLVER_2_14) sendSize = fileData.size();
+		if (isClient() && m_versionId < CLVER_2_14) sendSize = static_cast<int>(fileDataSpan.size());
 
 		// Older client versions didn't send the modTime.
 		if (isClient() && m_versionId < CLVER_2_1)
 		{
 			// We don't add a \n to the end of the packet, so subtract 1 from the packet length.
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength - 1 + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)}, false);
+			sendPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)} << "\n", false);
 		}
 		else
 		{
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (long long)modTime >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)} << "\n", false);
+			sendPacket(CString() >> (char)PLO_FILE >> (long long)fileModTime >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)} << "\n", false);
 		}
 
 		fileDataSpan = fileDataSpan.subspan(sendSize);
@@ -762,13 +762,13 @@ void Player::exchangeMyPropsWithOthers()
 	CString myRCProps;
 	myRCProps >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name >> (char)PlayerProp::LEVEL << getProp<PlayerProp::LEVEL>().serialize() >> (char)PlayerProp::PLAYERLISTSTATUS << getProp<PlayerProp::PLAYERLISTSTATUS>().serialize() >> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize() >> (char)PlayerProp::COMMUNITYNAME << getProp<PlayerProp::COMMUNITYNAME>().serialize();
 
-	CString toOthers = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id;
-	CString joinLevel = CString() >> (char)PlayerProp::JOINLEAVELVL >> (char)1;
-	CString myClientProps = (isClient() ? getPropsPacketFromList(loginPropsClientOthers) : getPropsPacketFromList(loginPropsRC));
+	const CString toOthers = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id;
+	const CString joinLevel = CString() >> (char)PlayerProp::JOINLEAVELVL >> (char)1;
+	const CString myClientProps = (isClient() ? getPropsPacketFromList(loginPropsClientOthers) : getPropsPacketFromList(loginPropsRC));
 
 	CString rcsOnline;
 	auto& playerList = m_server->getPlayerList();
-	for (const auto& [pid, player] : playerList)
+	for (const auto& player : playerList | std::views::values)
 	{
 		if (player.get() == this) continue;
 
@@ -776,7 +776,7 @@ void Player::exchangeMyPropsWithOthers()
 		if (player->isNC()) continue;
 
 		// Send the other player my props.
-		bool sameLevel = (player->account.level == account.level);
+		const bool sameLevel = (player->account.level == account.level);
 		if (player->isClient())
 			player->sendPacket(CString() << toOthers << (sameLevel ? joinLevel : "") << myClientProps);
 		else
@@ -807,8 +807,9 @@ void Player::exchangeMyPropsWithOthers()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Player::isAdminIp()
+bool Player::isAdminIp() const
 {
+	// NOLINTNEXTLINE(*-use-anyofallof)
 	for (const auto& ipMask : account.adminIpRange)
 	{
 		if (string::match(std::string_view{account.ipAddress}, std::string_view{ipMask}))
@@ -817,18 +818,18 @@ bool Player::isAdminIp()
 	return false;
 }
 
-bool Player::isStaff()
+bool Player::isStaff() const
 {
 	return m_server->isStaff(account.name);
 }
 
-bool Player::isJailed()
+bool Player::isJailed() const
 {
 	if (!m_server->cached.jailLevels)
 		return false;
 
 	const auto& levels = m_server->cached.jailLevels.getValue();
-	auto jailed = std::ranges::find_if(levels, [this](const std::string& level)
+	const auto jailed = std::ranges::find_if(levels, [this](const std::string& level)
 	{
 		return string::equalsi(account.level, string::trim(level));
 	});
@@ -847,7 +848,7 @@ bool Player::isInNoPkLevel() const noexcept
 {
 	if (account.level.empty())
 		return false;
-	if (auto level = getLevel(); level != nullptr && level->isNoPkZone(account.character.getMapPosition()))
+	if (const auto level = getLevel(); level != nullptr && level->isNoPkZone(account.character.getMapPosition()))
 		return true;
 	return false;
 }
@@ -861,17 +862,16 @@ std::shared_ptr<Level> Player::getLevel() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Player::setNick(CString pNickName, bool force)
+void Player::setNick(const CString& pNickName, const bool force)
 {
 	auto desiredNickname = string::trim(pNickName.toStringView());
 	std::string prefix, guildName;
 
 	// Determine the guild, if one was supplied.
-	auto guildStart = desiredNickname.find('(');
+	const auto guildStart = desiredNickname.find('(');
 	if (guildStart != std::string_view::npos)
 	{
-		auto guildEnd = desiredNickname.find(')', guildStart);
-		if (guildEnd == std::string_view::npos)
+		if (const auto guildEnd = desiredNickname.find(')', guildStart); guildEnd == std::string_view::npos)
 			guildName = desiredNickname.substr(guildStart + 1);
 		else
 			guildName = desiredNickname.substr(guildStart + 1, guildEnd - guildStart - 1);
@@ -950,7 +950,7 @@ void Player::setChat(const CString& pChat)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Player::deleteFlag(std::string_view flagName, const SetBy setBy)
+bool Player::deleteFlag(const std::string_view flagName, const SetBy setBy)
 {
 	if (setBy == SetBy::SERVER)
 		sendPacket(CString() >> (char)PLO_FLAGDEL << flagName);
@@ -962,13 +962,13 @@ bool Player::setFlag(std::string_view flagPair, const SetBy setBy)
 	if (!flagPair.contains('='))
 		return setFlag(flagPair, std::nullopt, setBy);
 
-	auto separator = flagPair.find('=');
-	auto flagName = string::trim(flagPair.substr(0, separator));
-	auto flagValue = string::trim(flagPair.substr(separator + 1));
+	const auto separator = flagPair.find('=');
+	const auto flagName = string::trim(flagPair.substr(0, separator));
+	const auto flagValue = string::trim(flagPair.substr(separator + 1));
 	return setFlag(flagName, std::string{flagValue}, setBy);
 }
 
-bool Player::setFlag(std::string_view flagName, std::optional<std::string> flagValue, const SetBy setBy)
+bool Player::setFlag(const std::string_view flagName, const std::optional<std::string>& flagValue, const SetBy setBy)
 {
 	if (!flagValue.has_value())
 	{
@@ -981,10 +981,9 @@ bool Player::setFlag(std::string_view flagName, std::optional<std::string> flagV
 		if (setBy == SetBy::SERVER)
 			sendPacket(CString() >> (char)PLO_FLAGSET << flagName << "=" << flagValue.value());
 
-		std::string flag{flagName};
 		if (flagValue.value().empty())
-			return deleteFlag(flag, setBy);
-		account.variables.add(flag, flagValue.value());
+			return deleteFlag(flagName, setBy);
+		account.variables.add(flagName, flagValue.value());
 	}
 	return true;
 }
@@ -1007,13 +1006,13 @@ bool Player::addWeapon(LevelItemType defaultWeapon)
 	return this->addWeapon(weapon);
 }
 
-bool Player::addWeapon(std::string_view name)
+bool Player::addWeapon(const std::string_view name)
 {
-	auto weapon = m_server->getWeapon(name);
+	const auto weapon = m_server->getWeapon(name);
 	return this->addWeapon(weapon);
 }
 
-bool Player::addWeapon(std::shared_ptr<Weapon> weapon)
+bool Player::addWeapon(const std::shared_ptr<Weapon>& weapon)
 {
 	if (weapon == nullptr) return false;
 
@@ -1030,19 +1029,19 @@ bool Player::addWeapon(std::shared_ptr<Weapon> weapon)
 	return true;
 }
 
-bool Player::deleteWeapon(LevelItemType defaultWeapon)
+bool Player::deleteWeapon(const LevelItemType defaultWeapon)
 {
-	auto weapon = m_server->getWeapon(LevelItem::getItemName(defaultWeapon));
+	const auto weapon = m_server->getWeapon(LevelItem::getItemName(defaultWeapon));
 	return this->deleteWeapon(weapon);
 }
 
-bool Player::deleteWeapon(std::string_view name)
+bool Player::deleteWeapon(const std::string_view name)
 {
-	auto weapon = m_server->getWeapon(name);
+	const auto weapon = m_server->getWeapon(name);
 	return this->deleteWeapon(weapon);
 }
 
-bool Player::deleteWeapon(std::shared_ptr<Weapon> weapon)
+bool Player::deleteWeapon(const std::shared_ptr<Weapon>& weapon)
 {
 	if (weapon == nullptr) return false;
 
@@ -1060,23 +1059,23 @@ bool Player::deleteWeapon(std::shared_ptr<Weapon> weapon)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string Player::translate(std::string_view key) const
+std::string Player::translate(const std::string_view key) const
 {
-	auto translationManager = BabyDI::Get<ITranslationManager>();
+	const auto translationManager = BabyDI::Get<ITranslationManager>();
 	return std::string{translationManager->getText(getLanguage(), key)};
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Player::sendPrivateMessage(PlayerID from, std::string_view message)
+void Player::sendPrivateMessage(const PlayerID from, const std::string_view message)
 {
 	if (message.empty())
 		return;
 
 	// TODO: This is really hacky.  More effort into reverse engineering private messages is required.
-	bool isMultiLine = true; // message.find('\n') != std::string_view::npos || message.find("#b") != std::string_view::npos;
+	constexpr bool isMultiLine = true; // message.find('\n') != std::string_view::npos || message.find("#b") != std::string_view::npos;
 
-	auto convertedMessage = string::replace(message, "\n", "#b");
+	const auto convertedMessage = string::replace(message, "\n", "#b");
 	auto lines = string::splitByString(convertedMessage, "#b"sv, false);
 	auto finalMessage = string::toCSV(lines, true);
 
@@ -1097,7 +1096,7 @@ void Player::setPosition(const PixelPosition& position)
 	account.character.localPixelX = localPosition.x();
 	account.character.localPixelY = localPosition.y();
 
-	if (auto level = getLevel(); level != nullptr && level->isGmap())
+	if (const auto level = getLevel(); level != nullptr && level->isGmap())
 	{
 		auto mapPosition = toMapPosition(position);
 		account.character.mapX = mapPosition.x();
@@ -1105,21 +1104,21 @@ void Player::setPosition(const PixelPosition& position)
 	}
 }
 
-bool Player::warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime)
+bool Player::warp(const std::string_view levelName, const PixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
 {
-	if (auto level = m_server->getLoadedLevel(levelName, shared_from_this()); level != nullptr)
+	if (const auto level = m_server->getLoadedLevel(levelName, shared_from_this()); level != nullptr)
 		return enterLevel(level, position, clientCachedTime);
 	return false;
 }
 
-bool Player::warp(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime)
+bool Player::warp(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
 {
 	return enterLevel(level, position, clientCachedTime);
 }
 
-bool Player::enterLevel(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime)
+bool Player::enterLevel(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
 {
-	auto localPosition = toLocalPixelPosition(position);
+	const auto localPosition = toLocalPixelPosition(position);
 	auto mapPosition = toMapPosition(position);
 
 	// Sanity check.
@@ -1129,9 +1128,9 @@ bool Player::enterLevel(std::shared_ptr<Level> level, const PixelPosition& posit
 	return enterLevel(level, mapPosition, localPosition, clientCachedTime);
 }
 
-bool Player::enterLevel(std::shared_ptr<Level> level, const MapPosition& mapPosition, const LocalPixelPosition& position, std::optional<clock::time_point> clientCachedTime)
+bool Player::enterLevel(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalPixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
 {
-	auto now = m_server->getFrameStartTime();
+	const auto now = m_server->getFrameStartTime();
 
 	// If we are already on the level, set the position and abort.
 	if (account.level == level->levelName)
@@ -1166,7 +1165,7 @@ bool Player::enterLevel(std::shared_ptr<Level> level, const MapPosition& mapPosi
 	return enterLevel(level, clientCachedTime);
 }
 
-bool Player::enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime)
+bool Player::enterLevel(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime)
 {
 	return true;
 }
@@ -1186,22 +1185,22 @@ bool Player::leaveLevel(bool keepLevelReference)
 	return true;
 }
 
-bool Player::leaveSubLevel(std::shared_ptr<SubLevel> subLevel)
+bool Player::leaveSubLevel(const std::shared_ptr<SubLevel>& subLevel)
 {
 	return true;
 }
 
-bool Player::sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime)
+bool Player::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<clock::time_point> clientCachedTime)
 {
 	return true;
 }
 
-bool Player::sendDynamicLevelData(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime)
+bool Player::sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime)
 {
 	return true;
 }
 
-bool Player::sendNearbyObjects(std::shared_ptr<Level> level)
+bool Player::sendNearbyObjects(const std::shared_ptr<Level>& level)
 {
 	return true;
 }
@@ -1214,26 +1213,26 @@ void Player::constructScriptParameters()
 		return;
 
 	// clang-format off
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"id"sv, std::nullopt, std::ref(m_id)});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"hurtpower"sv, std::nullopt, std::ref(account.character.hurtDeltaInHalves)});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"attachid"sv, std::nullopt, std::ref(m_attachNPC)});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"lastdead"sv, std::nullopt, std::ref(lastDeadTime)});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"logintime"sv, std::nullopt, std::ref(loginTime)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "id"sv, .modTime = std::nullopt, .value = std::ref(m_id)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "hurtpower"sv, .modTime = std::nullopt, .value = std::ref(account.character.hurtDeltaInHalves)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "attachid"sv, .modTime = std::nullopt, .value = std::ref(m_attachNPC)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "lastdead"sv, .modTime = std::nullopt, .value = std::ref(lastDeadTime)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "logintime"sv, .modTime = std::nullopt, .value = std::ref(loginTime)});
 
 	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"attachtype"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return m_attachNPC == 0 ? 0.0 : 1.0; }
+		.name = "attachtype"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return m_attachNPC == 0 ? 0.0 : 1.0; }
 	});
 
 	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"saysnumber"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter
+		.name = "saysnumber"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter
 		{
 			// If we have an NPC-Server, we can process the chat message as a math expression and return the result.
 			if (m_server->hasNPCServer())
 			{
-				auto npcServer = m_server->getNPCServer();
-				if (auto engine = npcServer->scripting.getDefaultScriptEngine(); engine != nullptr)
+				const auto npcServer = m_server->getNPCServer();
+				if (const auto engine = npcServer->scripting.getDefaultScriptEngine(); engine != nullptr)
 				{
 					// Retrieve up to the first space.
 					auto line = string::retrieveLine(std::string_view{ account.character.chatMessage }, ' ');
@@ -1253,54 +1252,54 @@ void Player::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"trial"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return isGuest() ? 1.0 : 0.0; }
+		.name = "trial"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return isGuest() ? 1.0 : 0.0; }
 	});
 
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"z"sv, std::ref(modTime[PROPID(PlayerProp::Z2)]), std::ref(account.character.localPixelZ), 16});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hearts"sv, std::ref(modTime[PROPID(PlayerProp::HALFHEARTS)]), std::ref(account.character.hitpointsInHalves), 2});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hp"sv, std::ref(modTime[PROPID(PlayerProp::HALFHEARTS)]), std::ref(account.character.hitpointsInHalves), 2});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"fullhearts"sv, std::ref(modTime[PROPID(PlayerProp::FULLHEARTS)]), std::ref(account.maxHitpoints)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"maxhp"sv, std::ref(modTime[PROPID(PlayerProp::FULLHEARTS)]), std::ref(account.maxHitpoints)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"mp"sv, std::ref(modTime[PROPID(PlayerProp::MAGICPOINTS)]), std::ref(account.character.mp)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"ap"sv, std::ref(modTime[PROPID(PlayerProp::ALIGNMENT)]), std::ref(account.character.ap)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"rupees"sv, std::ref(modTime[PROPID(PlayerProp::GRALATS)]), std::ref(account.character.gralats)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"gralats"sv, std::ref(modTime[PROPID(PlayerProp::GRALATS)]), std::ref(account.character.gralats)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"bombs"sv, std::ref(modTime[PROPID(PlayerProp::BOMBS)]), std::ref(account.character.bombs)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"darts"sv, std::ref(modTime[PROPID(PlayerProp::ARROWS)]), std::ref(account.character.arrows)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"bombpower"sv, std::ref(modTime[PROPID(PlayerProp::BOMBPOWER)]), std::ref(account.character.bombPower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"glovepower"sv, std::ref(modTime[PROPID(PlayerProp::GLOVEPOWER)]), std::ref(account.character.glovePower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"swordpower"sv, std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), std::ref(account.character.swordPower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"shieldpower"sv, std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), std::ref(account.character.shieldPower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"shootpower"sv, std::ref(modTime[PROPID(PlayerProp::GANI)]), std::ref(account.character.bowPower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#1"sv, std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), std::ref(account.character.swordImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#2"sv, std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), std::ref(account.character.shieldImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#3"sv, std::ref(modTime[PROPID(PlayerProp::HEADIMAGE)]), std::ref(account.character.headImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#5"sv, std::ref(modTime[PROPID(PlayerProp::HORSEIMAGE)]), std::ref(account.character.horseImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#7"sv, std::ref(modTime[PROPID(PlayerProp::GANI)]), std::ref(account.character.bowImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#8"sv, std::ref(modTime[PROPID(PlayerProp::BODYIMAGE)]), std::ref(account.character.bodyImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#c"sv, std::ref(modTime[PROPID(PlayerProp::MESSAGE)]), std::ref(account.character.chatMessage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#m"sv, std::ref(modTime[PROPID(PlayerProp::GANI)]), std::ref(account.character.gani)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#n"sv, std::ref(modTime[PROPID(PlayerProp::NICKNAME)]), std::ref(account.character.nickName)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{.name = "z"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::Z2)]), .value = std::ref(account.character.localPixelZ), .factor = 16});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{.name = "hearts"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HALFHEARTS)]), .value = std::ref(account.character.hitpointsInHalves), .factor = 2});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{.name = "hp"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HALFHEARTS)]), .value = std::ref(account.character.hitpointsInHalves), .factor = 2});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "fullhearts"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::FULLHEARTS)]), .value = std::ref(account.maxHitpoints)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "maxhp"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::FULLHEARTS)]), .value = std::ref(account.maxHitpoints)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "mp"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::MAGICPOINTS)]), .value = std::ref(account.character.mp)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "ap"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::ALIGNMENT)]), .value = std::ref(account.character.ap)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "rupees"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GRALATS)]), .value = std::ref(account.character.gralats)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "gralats"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GRALATS)]), .value = std::ref(account.character.gralats)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "bombs"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::BOMBS)]), .value = std::ref(account.character.bombs)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "darts"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::ARROWS)]), .value = std::ref(account.character.arrows)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "bombpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::BOMBPOWER)]), .value = std::ref(account.character.bombPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "glovepower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GLOVEPOWER)]), .value = std::ref(account.character.glovePower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "swordpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), .value = std::ref(account.character.swordPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "shieldpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), .value = std::ref(account.character.shieldPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "shootpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.bowPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#1"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), .value = std::ref(account.character.swordImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#2"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), .value = std::ref(account.character.shieldImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#3"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HEADIMAGE)]), .value = std::ref(account.character.headImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#5"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HORSEIMAGE)]), .value = std::ref(account.character.horseImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#7"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.bowImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#8"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::BODYIMAGE)]), .value = std::ref(account.character.bodyImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#c"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::MESSAGE)]), .value = std::ref(account.character.chatMessage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#m"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.gani)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#n"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::NICKNAME)]), .value = std::ref(account.character.nickName)});
 
 	// colors
 	const size_t colorCount = m_server->isNewWorldMode() ? 8 : 5;
 	for (size_t i = 0; i < colorCount; ++i)
-		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{colorPropertyNames[i], std::ref(modTime[PROPID(PlayerProp::COLORS)]), std::ref(account.character.colors[i])});
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = colorPropertyNames[i], .modTime = std::ref(modTime[PROPID(PlayerProp::COLORS)]), .value = std::ref(account.character.colors[i])});
 
 	// gani attributes
 	for (size_t i = 0; i < 30; ++i)
-		bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{ganiAttributePropertyNames[i], std::ref(modTime[GaniAttributePropList[i]]), std::ref(account.character.ganiAttributes[i])});
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = ganiAttributePropertyNames[i], .modTime = std::ref(modTime[GaniAttributePropList[i]]), .value = std::ref(account.character.ganiAttributes[i])});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"x"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return (double)account.character.getTilePosition().x(); },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "x"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return (double)account.character.getTilePosition().x(); },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				auto globalPosition = account.character.getGlobalPosition();
-				globalPosition.x() = value->get() * 16;
+				globalPosition.x() = static_cast<int32_t>(value->get() * 16);
 				account.character.localPixelX = toLocalPixelPosition(globalPosition).x();
 
 				// Update the location props.
@@ -1309,9 +1308,9 @@ void Player::constructScriptParameters()
 				modTime[PROPID(PlayerProp::X2)] = now;
 
 				// Fix the map position if applicable.
-				if (auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
+				if (const auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
 				{
-					if (auto mapX = toMapPosition(globalPosition).x(); mapX != account.character.mapX)
+					if (const auto mapX = toMapPosition(globalPosition).x(); mapX != account.character.mapX)
 					{
 						account.character.mapX = mapX;
 						modTime[PROPID(PlayerProp::GMAPLEVELX)] = now;
@@ -1322,14 +1321,14 @@ void Player::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"y"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return account.character.getTilePosition().y(); },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "y"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return account.character.getTilePosition().y(); },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				auto globalPosition = account.character.getGlobalPosition();
-				globalPosition.y() = value->get() * 16;
+				globalPosition.y() = static_cast<int32_t>(value->get() * 16);
 				account.character.localPixelY = toLocalPixelPosition(globalPosition).y();
 
 				// Update the location props.
@@ -1338,9 +1337,9 @@ void Player::constructScriptParameters()
 				modTime[PROPID(PlayerProp::Y2)] = now;
 
 				// Fix the map position if applicable.
-				if (auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
+				if (const auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
 				{
-					if (auto mapY = toMapPosition(globalPosition).y(); mapY != account.character.mapY)
+					if (const auto mapY = toMapPosition(globalPosition).y(); mapY != account.character.mapY)
 					{
 						account.character.mapY = mapY;
 						modTime[PROPID(PlayerProp::GMAPLEVELY)] = now;
@@ -1351,15 +1350,15 @@ void Player::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"headset"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter
+		.name = "headset"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter
 		{
 			int headSet = -1;
 			if (account.character.headImage.starts_with("head"))
 				string::toNumber(account.character.headImage.substr(4), headSet);
 			return static_cast<double>(headSet);
 		},
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
 			static double noHeadSet = -1.0;
 			static auto noHeadRef = std::ref(noHeadSet);
@@ -1367,8 +1366,7 @@ void Player::constructScriptParameters()
 			if (value == nullptr)
 				value = &noHeadRef;
 
-			auto headSet = std::clamp(static_cast<int>(value->get()), -1, 99);
-			if (headSet != -1)
+			if (auto headSet = std::clamp(static_cast<int>(value->get()), -1, 99); headSet != -1)
 			{
 				account.character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::CLASSIC ? "gif" : "png"));
 				modTime[PROPID(PlayerProp::HEADIMAGE)] = m_server->getFrameStartTime();
@@ -1377,11 +1375,11 @@ void Player::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"sprite"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.character.sprite); },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "sprite"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.character.sprite); },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				account.character.sprite = static_cast<uint8_t>(value->get());
 				if (account.character.sprite >= 4 && m_server->Generation != ServerGeneration::CLASSIC)
@@ -1394,11 +1392,11 @@ void Player::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"dir"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.character.direction); },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "dir"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.character.direction); },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				account.character.direction = std::clamp(static_cast<uint8_t>(value->get()), 0_ui8, 3_ui8);
 				modTime[PROPID(PlayerProp::SPRITE)] = m_server->getFrameStartTime();
@@ -1407,11 +1405,11 @@ void Player::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"kills"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.kills); },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "kills"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.kills); },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				if (!m_server->getSettings().get<bool>("dontchangekills").value_or(false))
 					account.kills = static_cast<uint32_t>(std::max(0.0, value->get()));
@@ -1420,11 +1418,11 @@ void Player::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"deaths"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.deaths); },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "deaths"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.deaths); },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				if (!m_server->getSettings().get<bool>("dontchangekills").value_or(false))
 					account.deaths = static_cast<uint32_t>(std::max(0.0, value->get()));
@@ -1433,21 +1431,21 @@ void Player::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"rating"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.eloRating); },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "rating"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.eloRating); },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
-				account.eloRating = static_cast<uint32_t>(std::max(0.0, value->get()));
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+				account.eloRating = static_cast<float>(std::max(0.0, value->get()));
 		}
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"ratingd"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.eloDeviation); },
-		[this](GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "ratingd"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.eloDeviation); },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
-			if (auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
 				if (!m_server->getSettings().get<bool>("dontupdateratingd").value_or(false))
 					account.eloDeviation = static_cast<float>(std::clamp(value->get(), 0.0, 350.0));
@@ -1456,7 +1454,7 @@ void Player::constructScriptParameters()
 	});
 
 	// GR extensions.
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"carrysprite"sv, std::ref(modTime[PROPID(PlayerProp::CARRYSPRITE)]), std::ref(m_carrySprite)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "carrysprite"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::CARRYSPRITE)]), .value = std::ref(m_carrySprite)});
 
 	// clang-format on
 }
@@ -1469,8 +1467,8 @@ void Player::constructScriptParameters()
 HandlePacketResult Player::msgPLI_NULL(CString& pPacket)
 {
 	pPacket.setRead(0);
-	printf("Unknown Player Packet: %u (%s)\n", (unsigned int)pPacket.readGUChar(), pPacket.text() + 1);
-	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", (unsigned char)((pPacket.text())[i]));
+	printf("Unknown Player Packet: %u (%s)\n", static_cast<unsigned int>(pPacket.readGUChar()), pPacket.text() + 1);
+	for (int i = 0; i < pPacket.length(); ++i) printf("%02x ", static_cast<unsigned char>((pPacket.text())[i]));
 	printf("\n");
 
 	// If we are getting a whole bunch of invalid packets, something went wrong.  Disconnect the player.
@@ -1552,13 +1550,13 @@ HandlePacketResult Player::msgWebSocketInit(CString& pPacket)
 
 int Player::getVersionIDByVersion(const CString& versionInput) const
 {
-	if (isClient()) return getVersionID(versionInput);
-	else if (isNC())
+	if (isClient())
+		return getVersionID(versionInput);
+	if (isNC())
 		return getNCVersionID(versionInput);
-	else if (isRC())
+	if (isRC())
 		return getRCVersionID(versionInput);
-	else
-		return CLVER_UNKNOWN;
+	return CLVER_UNKNOWN;
 }
 
 HandlePacketResult Player::msgPLI_PLAYERPROPS(CString& pPacket)
@@ -1576,8 +1574,7 @@ HandlePacketResult Player::msgPLI_TOALL(CString& pPacket)
 	CString message = pPacket.readString(pPacket.readGUChar());
 
 	// Word filter.
-	int filter = m_server->getWordFilter().apply(this, message, FILTER_CHECK_TOALL);
-	if (filter & FILTER_ACTION_WARN)
+	if (const int filter = m_server->getWordFilter().apply(this, message, FILTER_CHECK_TOALL); filter & FILTER_ACTION_WARN)
 	{
 		setChat(message);
 		return HandlePacketResult::Handled;
@@ -1588,8 +1585,8 @@ HandlePacketResult Player::msgPLI_TOALL(CString& pPacket)
 		if (pid == m_id) continue;
 
 		// See if the player is allowing toalls.
-		auto flags = player->getProp<PlayerProp::ADDITFLAGS>().value;
-		if (flags & PLFLAG_NOTOALL) continue;
+		if (const auto flags = player->getProp<PlayerProp::ADDITFLAGS>().value; flags & PLFLAG_NOTOALL)
+			continue;
 
 		player->sendPacket(CString() >> (char)PLO_TOALL >> (short)m_id >> (char)message.length() << message);
 	}
@@ -1599,18 +1596,17 @@ HandlePacketResult Player::msgPLI_TOALL(CString& pPacket)
 HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 {
 	// Check if the player is in a jailed level.
-	bool jailed = isJailed();
+	const bool jailed = isJailed();
 
 	// Get the players this message was addressed to.
 	std::vector<PlayerID> pmPlayers;
-	auto pmPlayerCount = pPacket.readGUShort();
+	const auto pmPlayerCount = pPacket.readGUShort();
 	for (auto i = 0; i < pmPlayerCount; ++i)
 		pmPlayers.push_back(static_cast<PlayerID>(pPacket.readGUShort()));
 
 	// Grab the message.
 	CString pmMessage = pPacket.readString("");
-	int messageLimit = 1024;
-	if (pmMessage.length() > messageLimit)
+	if (constexpr int messageLimit = 1024; pmMessage.length() > messageLimit)
 	{
 		sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE << "Server message:\xa7There is a message limit of " << CString((int)messageLimit) << " characters.");
 		return HandlePacketResult::Handled;
@@ -1620,8 +1616,7 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	pmMessage.guntokenizeI();
 	if (isClient())
 	{
-		int filter = m_server->getWordFilter().apply(this, pmMessage, FILTER_CHECK_PM);
-		if (filter & FILTER_ACTION_WARN)
+		if (const int filter = m_server->getWordFilter().apply(this, pmMessage, FILTER_CHECK_PM); filter & FILTER_ACTION_WARN)
 		{
 			sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE << "Word Filter:\xa7Your PM could not be sent because it was caught by the word filter.");
 			return HandlePacketResult::Handled;
@@ -1629,10 +1624,10 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 	}
 
 	// Construct our message.
-	std::string constructedMessage = std::format("#b{}:#b{}", pmPlayerCount > 1 ? "Mass message" : "Private message", pmMessage.replaceAll("\n", "#b").toString());
+	const std::string constructedMessage = std::format("#b{}:#b{}", pmPlayerCount > 1 ? "Mass message" : "Private message", pmMessage.replaceAll("\n", "#b").toString());
 
 	// Send the message out.
-	for (auto pmPlayerId : pmPlayers)
+	for (const auto pmPlayerId : pmPlayers)
 	{
 		if (pmPlayerId >= PLAYERID_GEN_EXTERNAL)
 		{
@@ -1671,8 +1666,7 @@ HandlePacketResult Player::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 
 HandlePacketResult Player::msgPLI_PACKETCOUNT(CString& pPacket)
 {
-	unsigned short count = pPacket.readGUShort();
-	if (count != PacketCount || PacketCount > 10000)
+	if (const unsigned short count = pPacket.readGUShort(); count != PacketCount || PacketCount > 10000)
 	{
 		log::printLine(log::server, "Warning - Player {} had an invalid packet count.", account.name);
 	}
@@ -1699,8 +1693,8 @@ HandlePacketResult Player::msgPLI_PROFILEGET(CString& pPacket)
 
 HandlePacketResult Player::msgPLI_PROFILESET(CString& pPacket)
 {
-	CString acc = pPacket.readChars(pPacket.readGUChar());
-	if (acc != account.name) return HandlePacketResult::Handled;
+	if (const CString acc = pPacket.readChars(pPacket.readGUChar()); acc != account.name)
+		return HandlePacketResult::Handled;
 
 	// Old gserver would send the packet ID with pPacket so, for
 	// backwards compatibility, do that here.

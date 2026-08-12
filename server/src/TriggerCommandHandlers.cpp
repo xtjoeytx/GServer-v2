@@ -227,7 +227,7 @@ void Server::createTriggerCommands(TriggerDispatcher::Builder builder)
 	});
 
 	// RC triggers
-	builder.registerCommand("gr.rcchat", [&](Player* player, const std::vector<std::string>& triggerData)
+	builder.registerCommand("gr.rcchat", [&](const Player* player, const std::vector<std::string>& triggerData)
 	{
 		if (!cached.enableTriggerhackRC.getValue())
 			return false;

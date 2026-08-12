@@ -15,12 +15,12 @@ namespace BabyDI
 	struct ProvisionMeta
 	{
 		template<typename T>
-		ProvisionMeta(T* underlying) : provision((void*)underlying){};
+		ProvisionMeta(T* underlying) : provision(static_cast<void*>(underlying)) {};
 
 		template<typename T>
 		void Release()
 		{
-			delete reinterpret_cast<T*>(provision);
+			delete static_cast<T*>(provision);
 		}
 
 		void* provision;
@@ -28,13 +28,13 @@ namespace BabyDI
 
 	struct InjectMetaBase
 	{
-		virtual ~InjectMetaBase(){};
+		virtual ~InjectMetaBase() = default;
 
-		virtual bool MatchesType(size_t typeHash) const = 0;
+		[[nodiscard]] virtual bool MatchesType(size_t typeHash) const = 0;
 		virtual void Provide(void* provision) = 0;
 		virtual bool ProvideIfMatch(size_t typeHash, void* provision) = 0;
 
-		virtual const char* const GetInterfaceName() const = 0;
+		[[nodiscard]] virtual const char* GetInterfaceName() const = 0;
 	};
 
 	struct InjectionRepository
@@ -50,19 +50,16 @@ namespace BabyDI
 			auto typeHash = typeid(T).hash_code();
 
 			// Insert this provision into a map so we can retrieve it manually later
-			if (m_provisions.find(typeHash) == m_provisions.end())
+			if (!m_provisions.contains(typeHash))
 			{
-				m_provisions[typeHash] = std::unique_ptr<ProvisionMeta>(new ProvisionMeta((void*)provision));
+				m_provisions[typeHash] = std::make_unique<ProvisionMeta>(static_cast<void*>(provision));
 			}
 
 			// Seek out any unprovided injection spots and inject this provision
 			m_injections.erase(
-				std::remove_if(m_injections.begin(), m_injections.end(),
-							   [&](auto& meta)
-							   {
-								   return meta->ProvideIfMatch(typeHash, provision);
-							   }),
-				m_injections.end());
+				std::remove_if(m_injections.begin(), m_injections.end(), [&](auto& meta) { return meta->ProvideIfMatch(typeHash, provision); }),
+				m_injections.end()
+				);
 
 			return provision;
 		}
@@ -70,15 +67,15 @@ namespace BabyDI
 		template<typename T>
 		static void Release()
 		{
-			auto typeHash = typeid(T).hash_code();
+			const auto typeHash = typeid(T).hash_code();
 
 			// Find the provision in the provision map.
-			auto itr = m_provisions.find(typeHash);
+			const auto itr = m_provisions.find(typeHash);
 			if (itr == m_provisions.end())
 				return;
 
 			// Seek out all injections and nullify them.
-			for (auto& meta: m_injections)
+			for (const auto& meta: m_injections)
 			{
 				if (meta->MatchesType(typeHash))
 				{
@@ -110,13 +107,11 @@ namespace BabyDI
 		*/
 
 		template<typename T>
-		static T* Get(size_t hash)
+		static T* Get(const size_t hash)
 		{
-			auto itr = m_provisions.find(hash);
-
-			if (itr != m_provisions.end())
+			if (const auto itr = m_provisions.find(hash); itr != m_provisions.end())
 			{
-				return (T*)itr->second->provision;
+				return static_cast<T*>(itr->second->provision);
 			}
 			else
 			{
@@ -136,22 +131,21 @@ namespace BabyDI
 			::BabyDI::InjectionRepository::AddInjectMeta(this);
 		}
 
-		bool MatchesType(size_t typeHash) const override
+		[[nodiscard]] bool MatchesType(const size_t typeHash) const override
 		{
 			return typeid(T).hash_code() == typeHash;
 		}
 
 		void Provide(void* address) override
 		{
-			*m_injectAddress = (T*)address;
+			*m_injectAddress = static_cast<T*>(address);
 		}
 
-		bool ProvideIfMatch(size_t typeHash, void* address) override
+		bool ProvideIfMatch(const size_t typeHash, void* address) override
 		{
 			if (MatchesType(typeHash))
 			{
 				Provide(address);
-
 				return true;
 			}
 			else
@@ -160,7 +154,7 @@ namespace BabyDI
 			}
 		}
 
-		const char* const GetInterfaceName() const override
+		[[nodiscard]] const char* GetInterfaceName() const override
 		{
 			return m_interfaceName;
 		}

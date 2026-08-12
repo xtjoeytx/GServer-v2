@@ -20,16 +20,16 @@ namespace preagonal
 class PlayerNC : public Player
 {
 public:
-	PlayerNC(CSocket* pSocket, PlayerID pId) : Player(pSocket, pId) {}
-	virtual ~PlayerNC() {}
+	PlayerNC(CSocket* pSocket, const PlayerID pId) : Player(pSocket, pId) {}
+	~PlayerNC() override = default;
 	//virtual void cleanup() override;
 
 public:
-	virtual bool handleLogin(CString& pPacket) override;
-	virtual bool sendLogin() override;
+	bool handleLogin(CString& pPacket) override;
+	bool sendLogin() override;
 
 protected:
-	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
+	HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
 
 public:
 	HandlePacketResult msgPLI_RC_CHAT(CString& pPacket);

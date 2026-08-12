@@ -109,6 +109,14 @@
       "inherits": [ "Debug", "Target Linux" ]
     },
     {
+      "name": "Linux Debug (Packet Logging)",
+      "inherits": "Linux Debug",
+      "binaryDir": "${sourceDir}/build/debug-packetlog",
+      "cacheVariables": {
+        "PACKET_LOGGING": true
+      }
+    },
+    {
       "name": "Release MINGW",
       "inherits": "Release",
       "cacheVariables": {

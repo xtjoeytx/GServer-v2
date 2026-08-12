@@ -5,7 +5,6 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
-#include <iterator>
 #include <string_view>
 #include <string>
 #include <unordered_map>
@@ -69,9 +68,9 @@ struct Account
 	uint16_t apCounter = 0;
 	uint32_t onlineSeconds = 0;
 	std::string ipAddress;
-	std::string platform{ "win" };
+	std::string platform{"win"};
 	uint16_t codePage = 1252;
-	std::string language{ "English" };
+	std::string language{"English"};
 	std::string groupName;
 	uint32_t kills = 0;
 	uint32_t deaths = 0;
@@ -95,19 +94,19 @@ struct Account
 	std::string lastFolderAccessed;
 
 	[[a::inline]] bool hasRight(uint32_t right) const;
-	[[a::inline]] bool hasChest(std::string_view level, const LocalWholeTilePosition& position) const;
+	[[a::inline]] bool hasChest(std::string_view levelName, const LocalWholeTilePosition& position) const;
 	[[a::inline]] bool hasWeapon(std::string_view weapon) const;
 };
 
-inline bool Account::hasRight(uint32_t right) const
+inline bool Account::hasRight(const uint32_t right) const
 {
 	return (adminRights & right);
 }
 
-inline bool Account::hasChest(std::string_view level, const LocalWholeTilePosition& position) const
+inline bool Account::hasChest(const std::string_view levelName, const LocalWholeTilePosition& position) const
 {
-	auto range = savedChests.equal_range(level.data());
-	for (auto& i = range.first; i != range.second; ++i)
+	auto [start, end] = savedChests.equal_range(levelName.data());
+	for (auto& i = start; i != end; ++i)
 	{
 		if (i->second == position)
 			return true;
@@ -115,7 +114,7 @@ inline bool Account::hasChest(std::string_view level, const LocalWholeTilePositi
 	return false;
 }
 
-inline bool Account::hasWeapon(std::string_view weapon) const
+inline bool Account::hasWeapon(const std::string_view weapon) const
 {
 	return std::ranges::find_if(weapons, [&weapon](const auto& w) { return string::equalsi(w, weapon); }) != std::ranges::end(weapons);
 }

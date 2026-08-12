@@ -15,9 +15,9 @@ namespace preagonal
 class FlatFileNPCLoader : public INPCLoader
 {
 public:
-	virtual NPCPtr loadNPC(std::string_view npcName) noexcept override;
-	virtual NPCPtr loadNPC(const std::filesystem::path& filePath) noexcept override;
-	virtual bool saveNPC(NPCPtr npc) noexcept override;
+	NPCPtr loadNPC(std::string_view npcName) noexcept override;
+	NPCPtr loadNPC(const std::filesystem::path& filePath) noexcept override;
+	bool saveNPC(NPCPtr npc) noexcept override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

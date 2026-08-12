@@ -46,10 +46,10 @@ enum class TimestampMode
 };
 
 /// @brief Timestamp format: short. Example: [12:34 PM]
-inline constexpr std::string_view TimestampShort = "[{0:%I}:{0:%M} {0:%p}]"sv;
+inline constexpr auto TimestampShort = "[{0:%I}:{0:%M} {0:%p}]"sv;
 
 /// @brief Timestamp format: long. Example: [2024-01-01 12:34:56]
-inline constexpr std::string_view TimestampLong = "[{0:%F} {0:%T}]"sv;
+inline constexpr auto TimestampLong = "[{0:%F} {0:%T}]"sv;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -59,7 +59,7 @@ struct IndentAbsolute_t { explicit IndentAbsolute_t() = default; };
 inline constexpr IndentAbsolute_t IndentAbsolute{};
 
 /// @brief Indentation helper for logging.
-class Log;
+struct Log;
 struct Indent
 {
 	Indent(Log* log, uint8_t level);
@@ -125,21 +125,21 @@ struct Log
 
 	/// @brief Creates an RAII indentation object.
 	/// @param levels The number of indentation levels to add.
-	Indent indent(uint8_t levels = 1)
+	Indent indent(const uint8_t levels = 1)
 	{
-		return Indent(this, levels);
+		return {this, levels};
 	}
 
 	/// @brief Creates an RAII indentation object on an absolute indentation level.
 	/// @param level The absolute indentation level.
 	Indent indent_absolute(uint8_t level)
 	{
-		return Indent(IndentAbsolute, this, level);
+		return {IndentAbsolute, this, level};
 	}
 
 	/// @brief Creates a unique pointer to an RAII indentation object.
 	/// @param levels The number of indentation levels to add.
-	std::unique_ptr<Indent> indent_ptr(uint8_t levels = 1)
+	std::unique_ptr<Indent> indent_ptr(const uint8_t levels = 1)
 	{
 		return std::make_unique<Indent>(this, levels);
 	}
@@ -163,12 +163,12 @@ inline Log networkdump{ .filename = std::filesystem::path{ "logs" } / "networkdu
 ///////////////////////////////////////////////////////////////////////////////
 
 /// @brief Prints a message to the log file and console.
-/// @tparam ...Args The types of the arguments to format.
+/// @tparam Args The types of the arguments to format.
 /// @param log The log instance.
 /// @param fmt The format string.
-/// @param ...args The arguments to format.
+/// @param args The arguments to format.
 template <typename ...Args>
-void print(Log& log, std::string_view fmt, const Args&... args)
+void print(Log& log, const std::string_view fmt, const Args&... args)
 {
 	std::lock_guard lock(log.mutex);
 
@@ -178,7 +178,7 @@ void print(Log& log, std::string_view fmt, const Args&... args)
 	std::ostringstream text;
 
 	// Add the section prefix.
-	if (log.atLineStart && log.indentLevel == 0 && !log.sectionPrefix.empty() && fmt.length() > 0 && fmt != "\n")
+	if (log.atLineStart && log.indentLevel == 0 && !log.sectionPrefix.empty() && !fmt.empty() && fmt != "\n")
 		text << log.sectionPrefix;
 
 	// Add the indentation whitespace.
@@ -199,7 +199,7 @@ void print(Log& log, std::string_view fmt, const Args&... args)
 
 	// Get the resultant string.
 	// If empty, don't log anything.
-	auto s = text.str();
+	const auto s = text.str();
 	if (s.size() <= spaces)
 		return;
 
@@ -237,12 +237,12 @@ void print(Log& log, std::string_view fmt, const Args&... args)
 }
 
 /// @brief Prints a message to the log file and console and terminates the line.
-/// @tparam ...Args The types of the arguments to format.
+/// @tparam Args The types of the arguments to format.
 /// @param log The log instance.
 /// @param fmt The format string.
-/// @param ...args The arguments to format.
+/// @param args The arguments to format.
 template <typename ...Args>
-void printLine(Log& log, std::string_view fmt, const Args&... args)
+void printLine(Log& log, const std::string_view fmt, const Args&... args)
 {
 	std::lock_guard lock(log.mutex);
 
@@ -254,12 +254,12 @@ void printLine(Log& log, std::string_view fmt, const Args&... args)
 }
 
 /// @brief Prints a message to the log file preventing trailing newlines from starting a new line.
-/// @tparam ...Args The types of the arguments to format.
+/// @tparam Args The types of the arguments to format.
 /// @param log The log instance.
 /// @param fmt The format string.
-/// @param ...args The arguments to format.
+/// @param args The arguments to format.
 template <typename ...Args>
-void printBlock(Log& log, std::string_view fmt, const Args&... args)
+void printBlock(Log& log, const std::string_view fmt, const Args&... args)
 {
 	std::lock_guard lock(log.mutex);
 
@@ -309,7 +309,7 @@ void batch(Log& log, RangeOf<std::pair<uint8_t, std::string>> auto&& range)
 /// @param log The log instance.
 /// @param message The message to log if the assertion fails.
 /// @param location The source location of the assertion. Defaults to the current source location.
-inline void debug_assert(bool condition, Log& log, std::string_view message, const std::source_location location = std::source_location::current())
+inline void debug_assert(const bool condition, Log& log, const std::string_view message, const std::source_location location = std::source_location::current())
 {
 	if (!condition)
 		printLine(log, "[WARN][ASSERT] {} ({}:{})", message, location.file_name(), location.line());
@@ -319,7 +319,7 @@ inline void debug_assert(bool condition, Log& log, std::string_view message, con
 /// @param condition The condition to check.
 /// @param message The message to log if the assertion fails.
 /// @param location The source location of the assertion. Defaults to the current source location.
-inline void debug_assert(bool condition, std::string_view message, const std::source_location location = std::source_location::current())
+inline void debug_assert(const bool condition, const std::string_view message, const std::source_location location = std::source_location::current())
 {
 	if (!condition)
 		printLine(log::server, "[WARN][ASSERT] {} ({}:{})", message, location.file_name(), location.line());
@@ -334,15 +334,15 @@ struct Profile
 	/// @param log A reference to the Log object used for output.
 	/// @param message A description of the operation being profiled.
 	/// @param format The format string for the profiling output.
-	Profile(Log& log, std::string_view message, std::string_view format = "[Profile] {} took {:0.6} ms.")
+	Profile(Log& log, const std::string_view message, const std::string_view format = "[Profile] {} took {:0.6} ms.")
 		: m_log(log), m_message(message), m_format(format), m_start(precise_clock::now())
 	{}
 
 	~Profile() noexcept
 	{
-		auto end = precise_clock::now();
-		auto duration_ns = duration_nano_double(end - m_start);
-		auto duration_ms = std::chrono::duration_cast<duration_milli_double>(duration_ns);
+		const auto end = precise_clock::now();
+		const auto duration_ns = duration_nano_double(end - m_start);
+		const auto duration_ms = std::chrono::duration_cast<duration_milli_double>(duration_ns);
 		printLine(m_log, m_format, m_message, duration_ms.count());
 	}
 
@@ -359,7 +359,7 @@ struct Profile
 template <>
 struct std::formatter<CString> : std::formatter<std::string>
 {
-	auto format(const CString& str, std::format_context& ctx) const
+	static auto format(const CString& str, std::format_context& ctx)
 	{
 		return std::format_to(ctx.out(), "{}", std::string_view{ str.text(), static_cast<size_t>(str.length()) });
 	}

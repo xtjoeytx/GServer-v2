@@ -186,12 +186,12 @@ public:
 	void processBuffer(CString& buffer);
 
 protected:
-	std::optional<CString> retrievePacketBundle(CString& buffer) const;
+	static std::optional<CString> retrievePacketBundle(CString& buffer) ;
 	void processPacketBundle(CString& bundle);
 	void parsePacketsFromBundle(CString& bundle);
 	void parseLoginPacket(CString& buffer);
 	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) = 0;
-	virtual std::string_view whoAmI() const noexcept { return "(unknown);"sv; }
+	[[nodiscard]] virtual std::string_view whoAmI() const noexcept { return "(unknown);"sv; }
 
 public:
 	CEncryption Encryption;
@@ -236,7 +236,7 @@ inline void IPacketHandler::processBuffer(CString& buffer)
 	}
 }
 
-inline std::optional<CString> IPacketHandler::retrievePacketBundle(CString& buffer) const
+inline std::optional<CString> IPacketHandler::retrievePacketBundle(CString& buffer)
 {
 	const auto packetSize = static_cast<uint16_t>(buffer.readShort());
 	if (packetSize > buffer.length() - 2)
@@ -280,7 +280,7 @@ inline void IPacketHandler::processPacketBundle(CString& bundle)
 	else if (Encryption.getGen() >= ENCRYPT_GEN_5)
 	{
 		// Find the compression type and remove it.
-		int pType = bundle.readChar();
+		const auto pType = bundle.readChar();
 		bundle.removeI(0, 1);
 
 		// Decrypt the bundle.
@@ -306,7 +306,7 @@ inline void IPacketHandler::parsePacketsFromBundle(CString& bundle)
 		if (m_nextIsRaw)
 		{
 			m_nextIsRaw = false;
-			curPacket = bundle.readChars(m_rawPacketSize);
+			curPacket = bundle.readChars(static_cast<int>(m_rawPacketSize));
 
 			// The client and RC versions above 1.1 append a \n to the end of the packet.
 			// Remove it now.
@@ -339,7 +339,7 @@ inline void IPacketHandler::parsePacketsFromBundle(CString& bundle)
 		}
 
 #ifdef PACKETLOGGING
-		std::string_view who = whoAmI();
+		const std::string_view who = whoAmI();
 		log::printLine(log::networkdump, "> In Packet from {}: [{}] {} ({} bytes)", who, (uint32_t)id, InputPacketNamesArray[id], curPacket.length());
 		log::print(log::networkdump, "{}", curPacket.text());
 		if (curPacket[curPacket.length() - 1] != '\n')
@@ -370,7 +370,7 @@ inline void IPacketHandler::parseLoginPacket(CString& buffer)
 	auto packet = buffer.readString("\n");
 
 #ifdef PACKETLOGGING
-	std::string_view who = whoAmI();
+	const std::string_view who = whoAmI();
 	log::printLine(log::networkdump, "> Login Packet from {} ({} bytes)", who, packet.length());
 	log::print(log::networkdump, "{}", packet.text());
 	if (packet[packet.length() - 1] != '\n')

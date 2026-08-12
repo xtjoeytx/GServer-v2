@@ -54,13 +54,13 @@ public:
 	bool compareChecksum(uint32_t check) const;
 
 	//! Load an UpdatePackage from the filesystem
-	//! \param fileSystem FileSystem where the package file could be located
+	//! \param server pointer to the server instance, used to access the filesystem
 	//! \param name filename of the package (ex: base_package.gupd)
 	//! \return UpdatePackage if it was successfully loaded, otherwise a nullopt
 	static std::optional<UpdatePackage> load(Server* const server, const std::string& name);
 
 	//! Reload the UpdatePackage from the filesystem
-	//! \param fileSystem CFileSystem where the package file could be located
+	//! \param server pointer to the server instance, used to access the filesystem
 	//! \return UpdatePackage if it was successfully loaded, otherwise a nullopt
 	void reload(Server* const server);
 
@@ -106,7 +106,7 @@ inline uint32_t UpdatePackage::getPackageSize() const
 	return m_packageSize;
 }
 
-inline bool UpdatePackage::compareChecksum(uint32_t check) const
+inline bool UpdatePackage::compareChecksum(const uint32_t check) const
 {
 	return m_checksum == check;
 }

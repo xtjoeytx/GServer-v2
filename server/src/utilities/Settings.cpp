@@ -22,11 +22,11 @@ namespace preagonal
 
 void Settings::load(const std::filesystem::path& file)
 {
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	if (server == nullptr)
 		throw std::runtime_error("Failed to get server instance in Settings::load.");
 
-	auto serveroptions = server->getFileSystemServer().openi(fs::FileCategory::CONFIG, file);
+	const auto serveroptions = server->getFileSystemServer().openi(fs::FileCategory::CONFIG, file);
 	if (serveroptions == nullptr)
 	{
 		log::printLine(log::server, "[ERROR] Failed to load {}, the file may be missing or malformed.", file.string());
@@ -43,11 +43,11 @@ void Settings::load(const std::filesystem::path& file)
 		if (line.empty() || line.starts_with('#'))
 			continue;
 
-		auto sep = line.find('=');
+		const auto sep = line.find('=');
 		if (sep == std::string_view::npos)
 			continue;
 
-		auto comment = line.find('#');
+		const auto comment = line.find('#');
 		auto key = string::trim(line.substr(0, sep));
 		auto value = string::trim(line.substr(sep + 1, comment - sep));
 
@@ -67,9 +67,9 @@ void Settings::load(const std::filesystem::path& file)
 	}
 
 	// Find any deleted settings by walking through the old settings and checking if they are in the new settings.
-	for (const auto& [key, value] : oldSettings)
+	for (const auto& key : oldSettings | std::views::keys)
 	{
-		if (m_settings.find(key) == m_settings.end())
+		if (!m_settings.contains(key))
 			settingWasChanged.insert(key);
 	}
 

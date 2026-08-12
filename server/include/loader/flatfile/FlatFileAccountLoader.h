@@ -26,11 +26,11 @@ public:
 	bool saveAccount(const Account& account) override;
 
 public:
-	bool checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const override;
+	[[nodiscard]] bool checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const override;
 
 protected:
-	flagPair decomposeFlag(const std::string& flag) const;
-	chestPair decomposeChest(const std::string& chest) const;
+	[[nodiscard]] static flagPair decomposeFlag(const std::string& flag);
+	[[nodiscard]] static chestPair decomposeChest(const std::string& chest);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

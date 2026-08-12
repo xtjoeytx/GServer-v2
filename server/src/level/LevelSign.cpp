@@ -18,8 +18,8 @@ static CString encodeSignCode(CString& pText);
 static CString encodeSign(const CString& pSignText);
 static CString decodeSignCode(CString pText);
 
-const CString signText = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-						 "0123456789!?-.,#>()#####\"####':/~&### <####;\n";
+const CString signCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+							   "0123456789!?-.,#>()#####\"####':/~&### <####;\n";
 const CString signSymbols = "ABXYudlrhxyz#4.";
 const int ctablen[] = {1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1};
 const int ctabindex[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 17};
@@ -28,7 +28,7 @@ const int ctab[] = {91, 92, 93, 94, 77, 78, 79, 80, 74, 75, 71, 72, 73, 86, 86, 
 CString encodeSignCode(CString& pText)
 {
 	CString retVal;
-	int txtLen = pText.length();
+	const int txtLen = pText.length();
 	for (int i = 0; i < txtLen; i++)
 	{
 		char letter = pText[i];
@@ -38,33 +38,32 @@ CString encodeSignCode(CString& pText)
 			if (i < txtLen)
 			{
 				letter = pText[i];
-				int code = signSymbols.find(letter);
-				if (code != -1)
+				if (const int code = signSymbols.find(letter); code != -1)
 				{
 					for (int ii = 0; ii < ctablen[code]; ii++)
-						retVal.writeGChar((char)ctab[ctabindex[code] + ii]);
+						retVal.writeGChar(static_cast<char>(ctab[ctabindex[code] + ii]));
 					continue;
 				}
-				else
-					letter = pText[--i];
+
+				letter = pText[--i];
 			}
 		}
 
-		int code = signText.find(letter);
+		int code = signCharacters.find(letter);
 		if (letter == '#') code = 86;
 		if (code != -1)
-			retVal.writeGChar((char)code);
+			retVal.writeGChar(static_cast<char>(code));
 		else
 		{
 			if (letter != '\r')
 			{
 				// Write the character code directly into the sign.
 				retVal >> (char)86 >> (char)10 >> (char)69; // #K(
-				CString scode((int)letter);
-				for (int i = 0; i < scode.length(); ++i)
+				CString scode(static_cast<int>(letter));
+				for (int j = 0; j < scode.length(); ++j)
 				{
-					int c = signText.find(scode[i]);
-					if (scode != -1) retVal.writeGChar((char)c);
+					const int c = signCharacters.find(scode[j]);
+					if (scode != -1) retVal.writeGChar(static_cast<char>(c));
 				}
 				retVal >> (char)70; // )
 			}
@@ -76,10 +75,10 @@ CString encodeSignCode(CString& pText)
 CString decodeSignCode(CString pText)
 {
 	CString retVal;
-	int txtLen = pText.length();
+	const int txtLen = pText.length();
 	for (int i = 0; i < txtLen; i++)
 	{
-		unsigned char letter = pText.readGUChar();
+		const unsigned char letter = pText.readGUChar();
 		bool isCode = false;
 		int codeID = -1;
 		for (int j = 0; j < 16; ++j) // ctab length
@@ -107,7 +106,7 @@ CString decodeSignCode(CString pText)
 				retVal << "#" << signSymbols[codeIndex];
 		}
 		else
-			retVal << signText[letter];
+			retVal << signCharacters[letter];
 	}
 	retVal.removeAllI("#K(13)");
 	return retVal;
@@ -122,13 +121,13 @@ CString encodeSign(const CString& pSignText)
 	return retVal;
 }
 
-LevelSign::LevelSign(const LocalWholeTilePosition& position, std::string_view signText, bool signTextIsEncoded)
+LevelSign::LevelSign(const LocalWholeTilePosition& position, const std::string_view signText, const bool signTextIsEncoded)
 	: position(position)
 {
 	setText(signText, signTextIsEncoded);
 }
 
-CString LevelSign::getSignPacket(Player* pPlayer) const
+CString LevelSign::getSignPacket(const Player* player) const
 {
 	CString outText;
 
@@ -137,12 +136,12 @@ CString LevelSign::getSignPacket(Player* pPlayer) const
 	outText.writeGChar(position.y());
 
 	// Write the text to the packet.
-	outText.write(pPlayer ? encodeSign(pPlayer->translate(text)) : encodedText);
+	outText.write(player ? encodeSign(player->translate(text)) : encodedText);
 
 	return outText;
 }
 
-void LevelSign::setText(std::string_view signText, bool signTextIsEncoded)
+void LevelSign::setText(const std::string_view signText, const bool signTextIsEncoded)
 {
 	if (signTextIsEncoded)
 	{
@@ -155,7 +154,7 @@ void LevelSign::setText(std::string_view signText, bool signTextIsEncoded)
 		text = signText;
 	}
 
-	if (auto translations = BabyDI::Get<ITranslationManager>(); translations != nullptr)
+	if (const auto translations = BabyDI::Get<ITranslationManager>(); translations != nullptr)
 		translations->registerOriginalText(string::replace(text, "\n"sv, "#b"sv));
 }
 

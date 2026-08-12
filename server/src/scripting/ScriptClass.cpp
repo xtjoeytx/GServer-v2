@@ -17,8 +17,8 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-ScriptClass::ScriptClass(std::string_view className, std::string_view classScript)
-	: name(className)
+ScriptClass::ScriptClass(const std::string_view className, const std::string_view classScript)
+	: name(className), m_checksum(0)
 {
 	setScript(classScript);
 }
@@ -28,17 +28,17 @@ ScriptClass& ScriptClass::setScript(std::string_view classScript)
 	m_script = { name, classScript };
 
 	// Set the cryptographic key to be the script's hash.
-	string::string_hash hash{};
-	uint64_t scriptHash = static_cast<uint64_t>(hash(classScript));
+	constexpr string::string_hash hash{};
+	auto scriptHash = static_cast<uint64_t>(hash(classScript));
 
 	// Package the key into two GYBTE5's.
-	uint32_t* hashBytes = reinterpret_cast<uint32_t*>(&scriptHash);
-	CString key = CString() >> (long long)(hashBytes[0]) >> (long long)(hashBytes[1]);
+	const auto hashBytes = reinterpret_cast<uint32_t*>(&scriptHash);
+	const CString key = CString() >> (long long)(hashBytes[0]) >> (long long)(hashBytes[1]);
 	m_desKey = key.toString();
 
 	// CRC32 checksum.
 	m_checksum = crc32(0L, Z_NULL, 0);
-	m_checksum = crc32(m_checksum, (const uint8_t*)classScript.data(), classScript.length());
+	m_checksum = crc32(m_checksum, reinterpret_cast<const uint8_t*>(classScript.data()), classScript.length());
 
 	// Create the header.
 	// [GBYTE2 length_header_and_bytecode]
@@ -67,8 +67,8 @@ CString ScriptClass::getClassPacket() const
 {
 	if (const auto& bytecode = m_script.getClientByteCode(); !bytecode.empty())
 	{
-		const char* bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
-		std::string_view bytecodeView(bytecodePtr, bytecode.size());
+		const auto bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
+		const std::string_view bytecodeView(bytecodePtr, bytecode.size());
 
 		return CString() >> (char)PLO_LOADSCRIPT >> (char)m_header.length() << m_header << bytecodeView;
 	}

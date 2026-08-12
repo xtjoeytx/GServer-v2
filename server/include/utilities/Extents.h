@@ -34,7 +34,7 @@ struct Position
 {
 	using ValueType = T;
 
-	static constexpr Position<T> playerDirectionVector(uint8_t direction)
+	static constexpr Position<T> playerDirectionVector(const uint8_t direction)
 	{
 		switch (direction)
 		{
@@ -54,9 +54,11 @@ struct Position
 	constexpr Position() : data{ T{}, T{}, T{} } {}
 	constexpr Position(T x, T y) : data{ x, y, T{} } {}
 	constexpr Position(T x, T y, T z) : data{ x, y, z } {}
-	constexpr Position(const Position<T>& other) : data{ other.data } {}
+	constexpr Position(const Position<T>& other) = default;
 
 	template<typename O>
+	// ReSharper disable once CppNonExplicitConvertingConstructor
+	// NOLINTNEXTLINE(*-explicit-constructor)
 	constexpr Position(const Position<O>& other) : data{ T{ other.data[0] }, T{ other.data[1] }, T{ other.data[2] } } {}
 
 	constexpr bool operator==(const Position<T>& other) const
@@ -82,9 +84,9 @@ struct Position
 	constexpr T& x() { return data[0]; }
 	constexpr T& y() { return data[1]; }
 	constexpr T& z() { return data[2]; }
-	constexpr const T& x() const { return data[0]; }
-	constexpr const T& y() const { return data[1]; }
-	constexpr const T& z() const { return data[2]; }
+	[[nodiscard]] constexpr const T& x() const { return data[0]; }
+	[[nodiscard]] constexpr const T& y() const { return data[1]; }
+	[[nodiscard]] constexpr const T& z() const { return data[2]; }
 
 	constexpr Position<T>& translate(T dx, T dy)
 	{
@@ -109,13 +111,13 @@ struct Position
 		return *this;
 	}
 
-	Position<T> translate(T dx, T dy) const
+	[[nodiscard]] Position<T> translate(T dx, T dy) const
 	{
 		Position<T> result{ *this };
 		result.translate(dx, dy);
 		return result;
 	}
-	Position<T> translate(T dx, T dy, T dz) const
+	[[nodiscard]] Position<T> translate(T dx, T dy, T dz) const
 	{
 		Position<T> result{ *this };
 		result.translate(dx, dy, dz);
@@ -130,12 +132,12 @@ struct Position
 		return result;
 	}
 
-	T length2D() const
+	[[nodiscard]] T length2D() const
 	{
 		return static_cast<T>(std::sqrt(data[0] * data[0] + data[1] * data[1]));
 	}
 
-	T length3D() const
+	[[nodiscard]] T length3D() const
 	{
 		return static_cast<T>(std::sqrt(data[0] * data[0] + data[1] * data[1] + data[2] * data[2]));
 	}
@@ -217,9 +219,11 @@ struct Dimension
 	constexpr Dimension(T width, T height) requires PixelBasedPosition<T> : data{ width, height, T{48} } {}
 	constexpr Dimension(T width, T height) requires TileBasedPosition<T> : data{ width, height, T{3} } {}
 	constexpr Dimension(T width, T height, T length) : data{ width, height, length } {}
-	constexpr Dimension(const Dimension<T>& other) : data{ other.data } {}
+	constexpr Dimension(const Dimension<T>& other) = default;
 
 	template<typename O>
+	// ReSharper disable once CppNonExplicitConvertingConstructor
+	// NOLINTNEXTLINE(*-explicit-constructor)
 	constexpr Dimension(const Dimension<O>& other) : data{ T{ other.data[0] }, T{ other.data[1] }, T{ other.data[2] } } {}
 
 	constexpr bool operator==(const Dimension<T>& other) const
@@ -245,9 +249,9 @@ struct Dimension
 	constexpr T& width() { return data[0]; }
 	constexpr T& height() { return data[1]; }
 	constexpr T& length() { return data[2]; }
-	constexpr const T& width() const { return data[0]; }
-	constexpr const T& height() const { return data[1]; }
-	constexpr const T& length() const { return data[2]; }
+	[[nodiscard]] constexpr const T& width() const { return data[0]; }
+	[[nodiscard]] constexpr const T& height() const { return data[1]; }
+	[[nodiscard]] constexpr const T& length() const { return data[2]; }
 
 	std::array<T, 3> data;
 };
@@ -258,16 +262,16 @@ struct Dimension
 template<typename P, typename S>
 struct Rectangle
 {
-	constexpr Rectangle() {}
+	constexpr Rectangle() = default;
 	constexpr Rectangle(Position<P> position, Dimension<S> size) : position(position), size(size) {}
 
-	constexpr P left() const noexcept { return position.x(); }
-	constexpr P right() const noexcept { return position.x() + size.width(); }
-	constexpr P top() const noexcept { return position.y(); }
-	constexpr P bottom() const noexcept { return position.y() + size.height(); }
-	constexpr P ground() const noexcept { return position.z(); }
-	constexpr P sky() const noexcept { return position.z() + size.length(); }
-	constexpr Position<P> center() const noexcept { return { position.x() + static_cast<P>(size.width() / (S)2), position.y() + static_cast<P>(size.height() / (S)2) }; }
+	[[nodiscard]] constexpr P left() const noexcept { return position.x(); }
+	[[nodiscard]] constexpr P right() const noexcept { return position.x() + size.width(); }
+	[[nodiscard]] constexpr P top() const noexcept { return position.y(); }
+	[[nodiscard]] constexpr P bottom() const noexcept { return position.y() + size.height(); }
+	[[nodiscard]] constexpr P ground() const noexcept { return position.z(); }
+	[[nodiscard]] constexpr P sky() const noexcept { return position.z() + size.length(); }
+	[[nodiscard]] constexpr Position<P> center() const noexcept { return { position.x() + static_cast<P>(size.width() / static_cast<S>(2)), position.y() + static_cast<P>(size.height() / static_cast<S>(2)) }; }
 
 	Position<P> position{};
 	Dimension<S> size{};
@@ -343,8 +347,8 @@ inline Position<T> translatePosition(const Position<T>& position, const Position
 inline constexpr PixelPosition toPixelPosition(const PixelPosition& origin, std::floating_point auto x, std::floating_point auto y)
 {
 	// Enforce half tile increments.  We will never have a float position that isn't a half tile.
-	int32_t halfTileX = static_cast<int32_t>(x * 2);
-	int32_t halfTileY = static_cast<int32_t>(y * 2);
+	const auto halfTileX = static_cast<int32_t>(x * 2);
+	const auto halfTileY = static_cast<int32_t>(y * 2);
 	return PixelPosition{ static_cast<int32_t>(origin.x() + (halfTileX * 8)), static_cast<int32_t>(origin.y() + (halfTileY * 8)), static_cast<int32_t>(origin.z()) };
 }
 
@@ -376,8 +380,8 @@ inline constexpr PixelPosition toPixelPosition(const PixelPosition& origin, cons
 inline constexpr LocalPixelPosition toLocalPixelPosition(std::floating_point auto x, std::floating_point auto y)
 {
 	// Enforce half tile increments.  We will never have a float position that isn't a half tile.
-	int16_t halfTileX = static_cast<int16_t>(x * 2);
-	int16_t halfTileY = static_cast<int16_t>(y * 2);
+	const auto halfTileX = static_cast<int16_t>(x * 2);
+	const auto halfTileY = static_cast<int16_t>(y * 2);
 	return LocalPixelPosition{ static_cast<int16_t>((halfTileX * 8) % 1024), static_cast<int16_t>((halfTileY * 8) % 1024) };
 }
 
@@ -432,9 +436,9 @@ inline constexpr LocalWholeTilePosition toLocalWholeTilePosition(const Position<
 	// Pixels to local whole tiles.
 	if constexpr (std::same_as<Type, int16_t> || std::same_as<Type, int32_t>)
 	{
-		auto x = static_cast<int32_t>((position.x() % 1024) / 16);
-		auto y = static_cast<int32_t>((position.y() % 1024) / 16);
-		auto z = static_cast<int32_t>(position.z() / 16);
+		const auto x = static_cast<int32_t>((position.x() % 1024) / 16);
+		const auto y = static_cast<int32_t>((position.y() % 1024) / 16);
+		const auto z = static_cast<int32_t>(position.z() / 16);
 		return LocalWholeTilePosition{ static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(z) };
 	}
 	// Same coordinates.
@@ -445,17 +449,17 @@ inline constexpr LocalWholeTilePosition toLocalWholeTilePosition(const Position<
 	// Tiles to local whole tiles.
 	else if constexpr (std::same_as<Type, float>)
 	{
-		auto x = static_cast<int32_t>(position.x() + std::numeric_limits<float>::epsilon());
-		auto y = static_cast<int32_t>(position.y() + std::numeric_limits<float>::epsilon());
-		auto z = static_cast<int32_t>(position.z() + std::numeric_limits<float>::epsilon());
+		const auto x = static_cast<int32_t>(position.x() + std::numeric_limits<float>::epsilon());
+		const auto y = static_cast<int32_t>(position.y() + std::numeric_limits<float>::epsilon());
+		const auto z = static_cast<int32_t>(position.z() + std::numeric_limits<float>::epsilon());
 		return LocalWholeTilePosition{ static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z) };
 	}
 	// Whole tiles to local whole tiles.
 	else if constexpr (std::same_as<Type, uint16_t>)
 	{
-		auto x = static_cast<int32_t>(position.x());
-		auto y = static_cast<int32_t>(position.y());
-		auto z = static_cast<int32_t>(position.z());
+		const auto x = static_cast<int32_t>(position.x());
+		const auto y = static_cast<int32_t>(position.y());
+		const auto z = static_cast<int32_t>(position.z());
 		return LocalWholeTilePosition{ static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z) };
 	}
 	// Just convert the units.
@@ -471,9 +475,9 @@ inline constexpr WholeTilePosition toWholeTilePosition(const Position<Type>& pos
 	// Pixels to whole tiles.
 	if constexpr (std::same_as<Type, int16_t> || std::same_as<Type, int32_t>)
 	{
-		auto x = static_cast<uint16_t>(position.x() / 16);
-		auto y = static_cast<uint16_t>(position.y() / 16);
-		auto z = static_cast<uint16_t>(position.z() / 16);
+		const auto x = static_cast<uint16_t>(position.x() / 16);
+		const auto y = static_cast<uint16_t>(position.y() / 16);
+		const auto z = static_cast<uint16_t>(position.z() / 16);
 		return WholeTilePosition{ static_cast<uint16_t>(x), static_cast<uint16_t>(y), static_cast<uint16_t>(z) };
 	}
 	// Same coordinates.
@@ -484,9 +488,9 @@ inline constexpr WholeTilePosition toWholeTilePosition(const Position<Type>& pos
 	// Tiles to whole tiles.
 	else if constexpr (std::same_as<Type, float>)
 	{
-		auto x = static_cast<int32_t>(position.x() + std::numeric_limits<float>::epsilon());
-		auto y = static_cast<int32_t>(position.y() + std::numeric_limits<float>::epsilon());
-		auto z = static_cast<int32_t>(position.z() + std::numeric_limits<float>::epsilon());
+		const auto x = static_cast<int32_t>(position.x() + std::numeric_limits<float>::epsilon());
+		const auto y = static_cast<int32_t>(position.y() + std::numeric_limits<float>::epsilon());
+		const auto z = static_cast<int32_t>(position.z() + std::numeric_limits<float>::epsilon());
 		return WholeTilePosition{ static_cast<uint16_t>(x), static_cast<uint16_t>(y), static_cast<uint16_t>(z) };
 	}
 	// Just convert the units.
@@ -515,7 +519,7 @@ inline constexpr MapPosition toMapPosition(const WholeTilePosition& position)
 
 inline constexpr PixelRectangleArea toPixelRectangleArea(const TileRectangleArea& rect)
 {
-	Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width() * 16), static_cast<uint16_t>(rect.size.height() * 16), static_cast<uint16_t>(rect.size.length() * 16) };
+	const Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width() * 16), static_cast<uint16_t>(rect.size.height() * 16), static_cast<uint16_t>(rect.size.length() * 16) };
 	return PixelRectangleArea{ toPixelPosition(rect.position), size };
 }
 
@@ -525,7 +529,7 @@ inline constexpr PixelRectangleArea toPixelRectangleArea(const MapPosition& orig
 	// Same coordinates.
 	if constexpr (std::same_as<P, int32_t>)
 	{
-		Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width()), static_cast<uint16_t>(rect.size.height()), static_cast<uint16_t>(rect.size.length()) };
+		const Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width()), static_cast<uint16_t>(rect.size.height()), static_cast<uint16_t>(rect.size.length()) };
 		return PixelRectangleArea{ rect.position, size };
 	}
 	// Tiles to pixels.
@@ -536,13 +540,13 @@ inline constexpr PixelRectangleArea toPixelRectangleArea(const MapPosition& orig
 	// Local tiles to pixels.
 	else if constexpr (std::same_as<P, uint8_t>)
 	{
-		Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width() * 16), static_cast<uint16_t>(rect.size.height() * 16), static_cast<uint16_t>(rect.size.length() * 16) };
+		const Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width() * 16), static_cast<uint16_t>(rect.size.height() * 16), static_cast<uint16_t>(rect.size.length() * 16) };
 		return PixelRectangleArea{ toPixelPosition(origin, rect.position), size };
 	}
 	// Just convert the units.
 	else
 	{
-		Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width()), static_cast<uint16_t>(rect.size.height()), static_cast<uint16_t>(rect.size.length()) };
+		const Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width()), static_cast<uint16_t>(rect.size.height()), static_cast<uint16_t>(rect.size.length()) };
 		return PixelRectangleArea{ toPixelPosition(origin, rect.position), size };
 	}
 }
@@ -553,7 +557,7 @@ inline constexpr LocalWholeTileRectangleArea toLocalWholeTileRectangleArea(const
 	// Same coordinates.
 	if constexpr (std::same_as<P, uint8_t>)
 	{
-		Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
+		const Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
 		return LocalWholeTileRectangleArea{ rect.position, size };
 	}
 
@@ -597,13 +601,13 @@ inline constexpr LocalWholeTileRectangleArea toLocalWholeTileRectangleArea(const
 	// Just convert the units.
 	else
 	{
-		Position<uint8_t> pos{ static_cast<uint8_t>(rect.position.x()), static_cast<uint8_t>(rect.position.y()), static_cast<uint8_t>(rect.position.z()) };
-		Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
+		const Position<uint8_t> pos{ static_cast<uint8_t>(rect.position.x()), static_cast<uint8_t>(rect.position.y()), static_cast<uint8_t>(rect.position.z()) };
+		const Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
 		return LocalWholeTileRectangleArea{ pos, size };
 	}
 
-	LocalWholeTilePosition pos{ static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z) };
-	Dimension<uint8_t> size{ static_cast<uint8_t>(width), static_cast<uint8_t>(height), static_cast<uint8_t>(length) };
+	const LocalWholeTilePosition pos{ static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z) };
+	const Dimension<uint8_t> size{ static_cast<uint8_t>(width), static_cast<uint8_t>(height), static_cast<uint8_t>(length) };
 	return LocalWholeTileRectangleArea{ pos, size };
 }
 
@@ -613,7 +617,7 @@ inline constexpr LocalWholeTileRectangleArea clipLocalWholeTileRectangleArea(con
 	// Same coordinates.
 	if constexpr (std::same_as<P, uint8_t>)
 	{
-		Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
+		const Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
 		return LocalWholeTileRectangleArea{ rect.position, size };
 	}
 
@@ -623,7 +627,7 @@ inline constexpr LocalWholeTileRectangleArea clipLocalWholeTileRectangleArea(con
 	int32_t width;
 	int32_t height;
 	int32_t length;
-	PixelPosition pixelOrigin = PixelPosition{ static_cast<int32_t>(origin.x()) * 1024, static_cast<int32_t>(origin.y()) * 1024, 0 };
+	const auto pixelOrigin = PixelPosition{ static_cast<int32_t>(origin.x()) * 1024, static_cast<int32_t>(origin.y()) * 1024, 0 };
 
 	// Tiles to local whole tiles.
 	if constexpr (std::same_as<P, float>)
@@ -658,8 +662,8 @@ inline constexpr LocalWholeTileRectangleArea clipLocalWholeTileRectangleArea(con
 	// Just convert the units.
 	else
 	{
-		Position<uint8_t> pos{ static_cast<uint8_t>(rect.position.x()), static_cast<uint8_t>(rect.position.y()), static_cast<uint8_t>(rect.position.z()) };
-		Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
+		const Position<uint8_t> pos{ static_cast<uint8_t>(rect.position.x()), static_cast<uint8_t>(rect.position.y()), static_cast<uint8_t>(rect.position.z()) };
+		const Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
 		return LocalWholeTileRectangleArea{ pos, size };
 	}
 
@@ -683,8 +687,8 @@ inline constexpr LocalWholeTileRectangleArea clipLocalWholeTileRectangleArea(con
 	if (x + width > 64) width = 64 - x;
 	if (y + height > 64) height = 64 - y;
 
-	LocalWholeTilePosition pos{ static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(z) };
-	Dimension<uint8_t> size{ static_cast<uint8_t>(width), static_cast<uint8_t>(height), static_cast<uint8_t>(length) };
+	const LocalWholeTilePosition pos{ static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(z) };
+	const Dimension<uint8_t> size{ static_cast<uint8_t>(width), static_cast<uint8_t>(height), static_cast<uint8_t>(length) };
 	return LocalWholeTileRectangleArea{ pos, size };
 }
 
@@ -695,8 +699,8 @@ inline constexpr WholeTileRectangleArea toWholeTileRectangleArea(const PixelRect
 
 inline constexpr WholeTileRectangleArea toWholeTileRectangleArea(const TileRectangleArea& rect)
 {
-	auto width = static_cast<uint8_t>(rect.size.width() + std::numeric_limits<float>::epsilon());
-	auto height = static_cast<uint8_t>(rect.size.height() + std::numeric_limits<float>::epsilon());
+	const auto width = static_cast<uint8_t>(rect.size.width() + std::numeric_limits<float>::epsilon());
+	const auto height = static_cast<uint8_t>(rect.size.height() + std::numeric_limits<float>::epsilon());
 	return WholeTileRectangleArea{ toWholeTilePosition(rect.position), Dimension<uint8_t>(width, height) };
 }
 
@@ -867,24 +871,24 @@ namespace std
 
 // Position
 template<typename T>
-class tuple_size<preagonal::Position<T>> : public std::integral_constant<size_t, 3> {};
+struct tuple_size<preagonal::Position<T>> : public std::integral_constant<size_t, 3> {};
 
 template<size_t I, typename T>
-class tuple_element<I, preagonal::Position<T>> { public: using type = T; };
+struct tuple_element<I, preagonal::Position<T>> { public: using type = T; };
 
 // Dimension
 template<typename T>
-class tuple_size<preagonal::Dimension<T>> : public std::integral_constant<size_t, 3> {};
+struct tuple_size<preagonal::Dimension<T>> : public std::integral_constant<size_t, 3> {};
 
 template<size_t I, typename T>
-class tuple_element<I, preagonal::Dimension<T>> { public: using type = T; };
+struct tuple_element<I, preagonal::Dimension<T>> { public: using type = T; };
 
 // Rectangle
 template<typename P, typename D>
-class tuple_size<preagonal::Rectangle<P, D>> : public std::integral_constant<size_t, 2> {};
+struct tuple_size<preagonal::Rectangle<P, D>> : public std::integral_constant<size_t, 2> {};
 
 template<size_t I, typename P, typename D>
-class tuple_element<I, preagonal::Rectangle<P, D>> : conditional<I == 0, P, D>
+struct tuple_element<I, preagonal::Rectangle<P, D>> : conditional<I == 0, P, D>
 {
 	static_assert(I < 2, "Index out of bounds for tuple_element<Rectangle>");
 };
@@ -917,6 +921,8 @@ std::tuple_element_t<I, preagonal::Rectangle<P, D>>& get(preagonal::Rectangle<P,
 		return rect.position;
 	else if constexpr (I == 1)
 		return rect.size;
+
+	return {};
 }
 
 template <size_t I, typename P, typename D>
@@ -928,6 +934,8 @@ std::tuple_element_t<I, preagonal::Rectangle<P, D>>&& get(const preagonal::Recta
 		return rect.position;
 	else if constexpr (I == 1)
 		return rect.size;
+
+	return {};
 }
 
 ////////////////////////////////////////////////////////////////////////////////

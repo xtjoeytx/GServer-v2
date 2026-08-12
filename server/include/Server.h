@@ -193,7 +193,7 @@ public:
 	bool canRecv() override { return true; }
 	bool canSend() override { return false; }
 
-	explicit Server(const CString& pName);
+	explicit Server(CString pName);
 	~Server() override;
 	void operator()();
 	void cleanup();
@@ -204,7 +204,7 @@ public:
 	bool doMain();
 
 	// Server Configuration
-	void performMigrations() const;
+	static void performMigrations() ;
 	int loadConfigFiles();
 	void prepareSettings();
 	void loadSettings();
@@ -217,11 +217,11 @@ public:
 	void loadTranslations() const;
 	void loadWordFilter();
 	void loadServerFlags();
-	void loadGuilds();
+	static void loadGuilds();
 	void loadMaps(bool print = false);
 	int loadServerObjects();
 	void loadWeapons(bool print = false);
-	void loadMapLevels();
+	void loadMapLevels() const;
 
 	// Folder Configuration
 	void loadAllFolders();
@@ -237,21 +237,28 @@ public:
 	//void reportScriptException(const std::string& error_message);
 
 public:
+	const auto& getAllowedVersionString() const { return m_allowedVersionString; }
+	const auto& getAllowedVersions() const { return m_allowedVersions; }
+	const auto& getFrameStartTime() const { return m_frameStartTime; }
+	const auto& getFrameStartTimeHighPrecision() const { return m_frameStartTimeHighPrecision; }
+	const auto& getMapList() const { return m_mapList; }
+	const auto& getNWTime() const { return m_serverTime; }
 	const auto& getName() const { return m_name; }
 	const auto& getServerMessage() const { return m_serverMessage; }
-	const auto& getAllowedVersionString() const { return m_allowedVersionString; }
-	const auto& getNWTime() const { return m_serverTime; }
-	auto& getFileSystem() { return m_fsWorld; }
-	auto& getFileSystemServer() { return m_fsServer; }
-	auto& getAccountLoader() { return *m_accountLoader; }
+	const auto& getServerStartTime() const { return m_serverStartTime; }
+
+public:
+	auto& getAccountLoader() const { return *m_accountLoader; }
 	auto& getAdminSettings() { return m_adminSettings; }
 	auto& getAnimationManager() { return m_animationManager; }
-	auto& getLevelList() { return m_levelList; }
+	auto& getFileSystem() { return m_fsWorld; }
+	auto& getFileSystemServer() { return m_fsServer; }
 	auto& getGmapLevelList() { return m_gmapLevels; }
-	auto& getNPCList() { return m_npcList; }
-	auto& getNPCLoader() { return *m_npcLoader; }
-	auto& getPackageManager() { return m_packageManager; }
+	auto& getLevelList() { return m_levelList; }
 	auto& getNPCIdGenerator() { return m_npcIdGenerator; }
+	auto& getNPCList() { return m_npcList; }
+	auto& getNPCLoader() const { return *m_npcLoader; }
+	auto& getPackageManager() { return m_packageManager; }
 	auto& getPlayerIdGenerator() { return m_playerIdGenerator; }
 	auto& getPlayerList() { return m_playerList; }
 	auto& getServerList() { return m_serverlist; }
@@ -260,11 +267,6 @@ public:
 	auto& getTriggerDispatcher() { return m_triggerActionDispatcher; }
 	auto& getWeaponList() { return m_weaponList; }
 	auto& getWordFilter() { return m_wordFilter; }
-	const auto& getAllowedVersions() const { return m_allowedVersions; }
-	const auto& getFrameStartTime() const { return m_frameStartTime; }
-	const auto& getFrameStartTimeHighPrecision() const { return m_frameStartTimeHighPrecision; }
-	const auto& getMapList() const { return m_mapList; }
-	const auto& getServerStartTime() const { return m_serverStartTime; }
 
 public:
 	/// @brief Gets a stubbed level with the given name (a stubbed level is not yet loaded).
@@ -282,7 +284,7 @@ public:
 	/// @param levelName The name of the level.
 	/// @param player The player to get the level for (since the level might be instanced for that player).
 	/// @return A shared pointer to a Level.
-	std::shared_ptr<Level> getLoadedLevel(std::string_view levelName, std::shared_ptr<Player> player);
+	std::shared_ptr<Level> getLoadedLevel(std::string_view levelName, const std::shared_ptr<Player>& player);
 
 	/// @brief Gets a fully loaded level with the given name, using the a level as a hint.
 	/// @param levelName The name of the level.
@@ -315,19 +317,19 @@ public:
 	/// @param levelName The name of the level.
 	/// @param player The player to use as a hint for which gmap to return (since the level might be instanced for that player).
 	/// @return A shared pointer to a Level.
-	std::shared_ptr<Level> findGmapForLevel(std::string_view levelName, std::shared_ptr<Player> player) noexcept;
+	std::shared_ptr<Level> findGmapForLevel(std::string_view levelName, const std::shared_ptr<Player>& player) noexcept;
 
 	/// @brief Gets the tileset type for the given level.
 	/// @param level The level.
 	/// @return A TilesetType enum value.
-	tileset::TilesetType getTilesetTypeForLevel(std::shared_ptr<Level> level) const noexcept;
-	tileset::TilesetType getTilesetTypeForLevel(std::shared_ptr<const Level> level) const noexcept;
+	tileset::TilesetType getTilesetTypeForLevel(const std::shared_ptr<Level>& level) const noexcept;
+	tileset::TilesetType getTilesetTypeForLevel(const std::shared_ptr<const Level>& level) const noexcept;
 
 	/// @brief Gets the tile type at the given index for the given tileset.
 	/// @param tileset The tileset type.
 	/// @param tile The tile index.
 	/// @return The TileType enum value.
-	tileset::TileType getTileTypeForTile(tileset::TilesetType tileset, uint16_t tile) const noexcept;
+	static tileset::TileType getTileTypeForTile(tileset::TilesetType tileset, uint16_t tile) noexcept;
 
 public:
 	LevelItemType rollBushItemDrop() const;
@@ -335,7 +337,7 @@ public:
 
 public:
 	std::shared_ptr<NPC> getNPC(NPCID id) const;
-	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, float x, float y, std::weak_ptr<Level> level, NPCStorageType storageType, bool sendToPlayers = false, std::string_view type = {});
+	std::shared_ptr<NPC> addNPC(std::string_view image, std::string_view script, float x, float y, const std::weak_ptr<Level>& level, NPCStorageType storageType, bool sendToPlayers = false, std::string_view type = {});
 	std::shared_ptr<NPC> addNPC(NPCPtr npc, bool sendToPlayers = false);
 	bool deleteNPC(NPCID id, bool eraseFromLevel = true);
 	bool deleteNPC(const std::shared_ptr<NPC>& npc, bool eraseFromLevel = true);
@@ -345,10 +347,10 @@ public:
 	template<class T = Player> std::shared_ptr<T> getPlayer(PlayerID id, int type) const;
 	template<class T = Player> std::shared_ptr<T> getPlayer(const CString& account, int type) const;
 
-	bool addPlayer(PlayerPtr player, PlayerID id = USHRT_MAX);
-	bool deletePlayer(PlayerPtr player);
-	bool swapPlayer(PlayerPtr old_player, PlayerPtr new_player);
-	void recordPlayerLoggedIn(PlayerPtr player);
+	bool addPlayer(const PlayerPtr& player, PlayerID id = USHRT_MAX);
+	bool deletePlayer(const PlayerPtr& player);
+	bool swapPlayer(const PlayerPtr& old_player, const PlayerPtr& new_player);
+	void recordPlayerLoggedIn(const PlayerPtr& player);
 	bool warpPlayerToSafePlace(PlayerID playerId) const;
 
 public:
@@ -359,53 +361,53 @@ public:
 
 public:
 	void calculateNWTime();
-	bool isIpBanned(const CString& ip);
-	bool isStaff(const CString& accountName);
+	bool isIpBanned(const CString& ip) const;
+	bool isStaff(const CString& accountName) const;
 	[[a::inline]] bool isKingdomsMode() const noexcept;
 	[[a::inline]] bool isNewWorldMode() const noexcept;
 
 public:
-	void hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, PlayerPtr source) const;
-	void hitObjectsAtPoint(const TilePosition& pos, int8_t power, std::weak_ptr<Level> level, NPCPtr source) const;
-	void hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, std::shared_ptr<NPC> source) const;
+	void hitObjectsAtPoint(const TilePosition& pos, int8_t power, const std::weak_ptr<Level>& level, const PlayerPtr& source) const;
+	void hitObjectsAtPoint(const TilePosition& pos, int8_t power, const std::weak_ptr<Level>& level, const NPCPtr& source) const;
+	void hitPlayer(PlayerID playerId, int8_t power, float fromX, float fromY, const std::shared_ptr<NPC>& source) const;
 
 public:
 	std::string getLogDateTimeString() const;
-	void logToFile(std::filesystem::path fileName, std::string_view message, bool writeTimestamp = true) const;
+	void logToFile(const std::filesystem::path& fileName, std::string_view message, bool writeTimestamp = true) const;
 	[[a::inline]] void logToFile(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const;
-	void logToFileSafely(std::filesystem::path fileName, std::string_view message, bool writeTimestamp = true) const;
+	void logToFileSafely(const std::filesystem::path& fileName, std::string_view message, bool writeTimestamp = true) const;
 	[[a::inline]] void logToFileSafely(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const;
 
 public:
-	bool processRCChat(std::string_view message, std::weak_ptr<Player> sender = {});
+	bool processRCChat(std::string_view message, const std::weak_ptr<Player>& sender = {});
 
 public:
 	void sendToRC(const CString& pMessage, const std::weak_ptr<Player>& pSender = {});
 	void sendToNC(const CString& pMessage, const std::weak_ptr<Player>& pSender = {});
 	void sendTriggerAction(PlayerID toPlayerId, NPCID fromNpcId, const LocalPixelPosition& localPosition, std::string_view action, std::string_view params) const;
-	void sendTriggerAction(LevelPtr toLevel, NPCID fromNpcId, const PixelPosition& position, std::string_view action, std::string_view params) const;
+	void sendTriggerAction(const LevelPtr& toLevel, NPCID fromNpcId, const PixelPosition& position, std::string_view action, std::string_view params) const;
 
 public:
 	using PlayerPredicate = std::function<bool(const Player*)>;
-	void sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToType(int who, const CString& pPacket, std::weak_ptr<Player> pPlayer = {}) const;
-	void sendPacketToType(int who, const CString& pPacket, Player* pPlayer) const;
-	void sendPacketToOneLevelPart(const CString& packet, const PixelPosition& position, LevelPtr level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToOneLevelPart(const CString& packet, LevelPtr level, const MapPosition& mapPosition, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToNearby(const CString& packet, const PixelPosition& position, LevelPtr level, const std::set<PlayerID>& exclude = {}, PlayerPredicate sendIf = nullptr) const;
-	void sendPacketToLevelAndPastVisitorsAfter(StaticLevelData* level, clock::time_point modTime, const CString& packet) const;
+	void sendPacketToAll(const CString& packet, const std::set<PlayerID>& exclude = {}, const PlayerPredicate& sendIf = nullptr) const;
+	void sendPacketToType(int who, const CString& pPacket, const std::weak_ptr<Player>& pPlayer = {}) const;
+	void sendPacketToType(int who, const CString& pPacket, const Player* pPlayer) const;
+	void sendPacketToOneLevelPart(const CString& packet, const PixelPosition& position, const LevelPtr& level, const std::set<PlayerID>& exclude = {}, const PlayerPredicate& sendIf = nullptr) const;
+	void sendPacketToOneLevelPart(const CString& packet, const LevelPtr& level, const MapPosition& mapPosition, const std::set<PlayerID>& exclude = {}, const PlayerPredicate& sendIf = nullptr) const;
+	void sendPacketToNearby(const CString& packet, const PixelPosition& position, const LevelPtr& level, const std::set<PlayerID>& exclude = {}, const PlayerPredicate& sendIf = nullptr) const;
+	void sendPacketToLevelAndPastVisitorsAfter(const StaticLevelData* level, clock::time_point modTime, const CString& packet) const;
 
 public:
-	void sendShootToOneLevel(LevelShoot* shoot, std::shared_ptr<Level> level) const;
+	void sendShootToOneLevel(const LevelShoot* shoot, const std::shared_ptr<Level>& level) const;
 
 public:
 	// Weapon Management
 	std::shared_ptr<Weapon> getWeapon(std::string_view name);
-	bool NC_AddWeapon(std::shared_ptr<Weapon> pWeaponObj);
+	bool NC_AddWeapon(const std::shared_ptr<Weapon>& pWeaponObj);
 	bool NC_DelWeapon(std::string_view pWeaponName);
-	void updateWeaponForPlayers(Weapon* weapon);
-	void updateWeaponForPlayers(std::shared_ptr<Weapon> weapon);
-	void updateClassForPlayers(std::shared_ptr<ScriptClass> scriptClass);
+	void updateWeaponForPlayers(const Weapon* weapon);
+	void updateWeaponForPlayers(const std::shared_ptr<Weapon>& weapon);
+	void updateClassForPlayers(const std::shared_ptr<ScriptClass>& scriptClass);
 
 public:
 	bool hasNPCServer() const { return m_playerList.contains(NPCServerPlayerID); }
@@ -541,7 +543,7 @@ inline const auto& Server::getAllowedDeathDrops() const noexcept
 
 inline std::shared_ptr<NPC> Server::getNPC(const NPCID id) const
 {
-	if (auto iter = m_npcList.find(id); iter != std::end(m_npcList))
+	if (const auto iter = m_npcList.find(id); iter != std::end(m_npcList))
 		return iter->second;
 
 	return nullptr;
@@ -598,7 +600,7 @@ inline void Server::sendToNC(const CString& pMessage, const std::weak_ptr<Player
 template<class T>
 inline std::shared_ptr<T> Server::getPlayer(const PlayerID id) const
 {
-	auto iter = m_playerList.find(id);
+	const auto iter = m_playerList.find(id);
 	if (iter == std::end(m_playerList))
 		return nullptr;
 

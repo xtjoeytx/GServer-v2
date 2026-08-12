@@ -29,12 +29,8 @@ HandlePacketResult PlayerNPCServer::handlePacket(std::optional<uint8_t> id, CStr
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PlayerNPCServer::PlayerNPCServer(CSocket* pSocket, PlayerID pId)
+PlayerNPCServer::PlayerNPCServer(CSocket* pSocket, const PlayerID pId)
 	: Player(pSocket, pId)
-{
-}
-
-PlayerNPCServer::~PlayerNPCServer()
 {
 }
 
@@ -51,14 +47,14 @@ void PlayerNPCServer::onUnregister()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PlayerNPCServer::sendPrivateMessage(PlayerID from, std::string_view message)
+void PlayerNPCServer::sendPrivateMessage(const PlayerID from, std::string_view message)
 {
 	static const std::array<std::string_view, 2> privateMessageHeaders{
 		"#bPrivate message:#b"sv,
 		"#bMass message:#b"sv,
 	};
 
-	if (auto player = m_server->getPlayer(from); player != nullptr)
+	if (const auto player = m_server->getPlayer(from); player != nullptr)
 	{
 		if (!privateMessage.empty())
 			player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)m_id << player->translate(privateMessage));

@@ -93,7 +93,7 @@ template<typename T>
 	requires std::same_as<T, GS1ScriptValue> || std::same_as<T, GameVariable*> || std::same_as<T, GameVariable> || std::same_as<T, GameValue> || std::same_as<T, ScriptObject>
 static std::any makeGS1ScriptValue(T&& value)
 {
-	return std::make_any<GS1ScriptValue>(std::move(value));
+	return std::make_any<GS1ScriptValue>(std::forward<T>(value));
 }
 
 static std::optional<size_t> getSymbolType(antlr4::tree::ParseTree* tree)
@@ -105,7 +105,7 @@ static std::optional<size_t> getSymbolType(antlr4::tree::ParseTree* tree)
 		tree = tree->children[0];
 
 	// Find the symbol type if this is a TerminalNode.
-	if (auto* node = dynamic_cast<antlr4::tree::TerminalNode*>(tree); node != nullptr)
+	if (const auto* node = dynamic_cast<antlr4::tree::TerminalNode*>(tree); node != nullptr)
 		return node->getSymbol()->getType();
 
 	return std::nullopt;
@@ -117,9 +117,9 @@ static std::generator<Script*> getJoinedClassesFromSource(ScriptObject source)
 	switch (source.second)
 	{
 		case ScriptObjectType::NPC:
-			if (auto npc = server->getNPC(source.first); npc != nullptr)
+			if (const auto npc = server->getNPC(source.first); npc != nullptr)
 			{
-				for (ScriptClassPtr scriptClass : npc->getJoinedClasses())
+				for (const ScriptClassPtr& scriptClass : npc->getJoinedClasses())
 					co_yield &scriptClass->getScript();
 			}
 			break;
@@ -127,16 +127,18 @@ static std::generator<Script*> getJoinedClassesFromSource(ScriptObject source)
 		case ScriptObjectType::WEAPON:
 		{
 			auto& weaponList = server->getWeaponList();
-			if (auto it = weaponList.find(source.first); it != weaponList.end())
+			if (const auto it = weaponList.find(source.first); it != weaponList.end())
 			{
-				for (ScriptClassPtr scriptClass : it->second->getJoinedClasses())
+				for (const ScriptClassPtr& scriptClass : it->second->getJoinedClasses())
 					co_yield &scriptClass->getScript();
 			}
 		}
+
+		default:;
 	}
 }
 
-static GameVariableStore* getGameVariableStoreFromSource(ScriptObject source)
+static GameVariableStore* getGameVariableStoreFromSource(const ScriptObject& source)
 {
 	static GameVariableStore invalidStore;
 
@@ -144,17 +146,17 @@ static GameVariableStore* getGameVariableStoreFromSource(ScriptObject source)
 	switch (source.second)
 	{
 		case ScriptObjectType::PLAYER:
-			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
+			if (const auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
 				return &player->account.variables;
 			break;
 		case ScriptObjectType::NPC:
-			if (auto npc = server->getNPC(source.first); npc != nullptr)
+			if (const auto npc = server->getNPC(source.first); npc != nullptr)
 				return &npc->scripting.variables;
 			break;
 		case ScriptObjectType::WEAPON:
 		{
 			auto& weaponList = server->getWeaponList();
-			if (auto it = weaponList.find(source.first); it != weaponList.end())
+			if (const auto it = weaponList.find(source.first); it != weaponList.end())
 				return &it->second->scripting.variables;
 			log::printLine(log::script, "Could not find weapon source.");
 			return &invalidStore;
@@ -162,13 +164,14 @@ static GameVariableStore* getGameVariableStoreFromSource(ScriptObject source)
 		case ScriptObjectType::LEVEL:
 		{
 			auto& levelList = server->getLevelList();
-			if (auto it = levelList.find(source.first); it != levelList.end())
+			if (const auto it = levelList.find(source.first); it != levelList.end())
 				return &it->second->scripting.variables;
 			log::printLine(log::script, "Could not find level source.");
 			return &invalidStore;
 		}
 		case ScriptObjectType::SERVER:
 			return &server->Scripting.variables;
+		default:;
 	}
 	return nullptr;
 }
@@ -183,7 +186,7 @@ static GS1ScriptValue getGS1ScriptValueFromAny(std::any& value)
 ///////////////////////////////////////////////////////////////////////////////
 // Static member functions.
 
-double GS1Visitor::getColorValueFromString(std::string_view colorString)
+double GS1Visitor::getColorValueFromString(const std::string_view colorString)
 {
 	auto it = std::ranges::find(colorNames, colorString);
 	if (it == colorNames.end())
@@ -194,59 +197,59 @@ double GS1Visitor::getColorValueFromString(std::string_view colorString)
 
 GameVariable* GS1Visitor::getGameVariable(std::any& value)
 {
-	if (auto gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
+	if (const auto gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
 		return getGameVariable(*gs1ScriptValue);
-	if (auto gameVariable = std::any_cast<GameVariable*>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::any_cast<GameVariable*>(&value); gameVariable != nullptr)
 		return *gameVariable;
-	if (auto gameVariable = std::any_cast<GameVariable>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::any_cast<GameVariable>(&value); gameVariable != nullptr)
 		return gameVariable;
 	return nullptr;
 }
 
 GameVariable* GS1Visitor::getGameVariable(GS1ScriptValue& value)
 {
-	if (auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
 		return *gameVariable;
-	if (auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
 		return gameVariable;
 	return nullptr;
 }
 
 const GameVariable* GS1Visitor::getGameVariable(const std::any& value)
 {
-	if (auto gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
+	if (const auto gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
 		return getGameVariable(*gs1ScriptValue);
-	if (auto gameVariable = std::any_cast<GameVariable*>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::any_cast<GameVariable*>(&value); gameVariable != nullptr)
 		return *gameVariable;
-	if (auto gameVariable = std::any_cast<GameVariable>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::any_cast<GameVariable>(&value); gameVariable != nullptr)
 		return gameVariable;
 	return nullptr;
 }
 
 const GameVariable* GS1Visitor::getGameVariable(const GS1ScriptValue& value)
 {
-	if (auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
 		return *gameVariable;
-	if (auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
 		return gameVariable;
 	return nullptr;
 }
 
 std::optional<ScriptObject> GS1Visitor::getScriptObject(std::any& value)
 {
-	if (auto scriptObject = std::any_cast<ScriptObject>(&value); scriptObject != nullptr)
+	if (const auto scriptObject = std::any_cast<ScriptObject>(&value); scriptObject != nullptr)
 		return *scriptObject;
 	return getScriptValueAsCopy<ScriptObject>(value);
 }
 
 std::optional<ScriptObject> GS1Visitor::getScriptObject(GS1ScriptValue& value)
 {
-	if (auto scriptObject = std::get_if<ScriptObject>(&value); scriptObject != nullptr)
+	if (const auto scriptObject = std::get_if<ScriptObject>(&value); scriptObject != nullptr)
 		return *scriptObject;
 	return getScriptValueAsCopy<ScriptObject>(value);
 }
 
-std::optional<ScriptObject> GS1Visitor::getScriptObject(GameVariable& value)
+std::optional<ScriptObject> GS1Visitor::getScriptObject(const GameVariable& value)
 {
 	return value.getCopy<ScriptObject>();
 }
@@ -264,7 +267,7 @@ bool GS1Visitor::isScriptObject(const GS1ScriptValue& value)
 ///////////////////////////////////////////////////////////////////////////////
 // Public member functions.
 
-std::optional<ScriptObject> GS1Visitor::findNearestScriptObjectSourceFromStack(ScriptObjectType type) const
+std::optional<ScriptObject> GS1Visitor::findNearestScriptObjectSourceFromStack(const ScriptObjectType type) const
 {
 	for (const auto& source : sourceStack())
 	{
@@ -274,7 +277,7 @@ std::optional<ScriptObject> GS1Visitor::findNearestScriptObjectSourceFromStack(S
 	return std::nullopt;
 }
 
-GameVariableStore* GS1Visitor::findGameVariableStoreFromStack(ScriptObjectType type, int skip) const
+GameVariableStore* GS1Visitor::findGameVariableStoreFromStack(const ScriptObjectType type, int skip) const
 {
 	std::optional<ScriptObject> foundSource;
 
@@ -296,7 +299,7 @@ GameVariableStore* GS1Visitor::findGameVariableStoreFromStack(ScriptObjectType t
 	return nullptr;
 }
 
-GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
+GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type) const
 {
 	GameVariableStore* store = nullptr;
 	int skip = 0;
@@ -323,30 +326,30 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 			break;
 		case ENUM(StorageType::LEVEL):
 		{
-			auto* server = BabyDI::Get<Server>();
 			auto pair = getPlayerOrNPCFromSource(m_originalSource);
 			if (!pair.has_value())
 				return nullptr;
 
 			// clang-format off
 			const auto picker = visit_functions{
-				[&server](PlayerPtr& player) -> LevelPtr
+				[this](const PlayerPtr& player) -> LevelPtr
 				{
 					return server->getLoadedLevel(player->account.level, player);
 				},
-				[&server](NPCPtr& npc) -> LevelPtr
+				[](const NPCPtr& npc) -> LevelPtr
 				{
 					return npc->getLevel();
 				}
 			};
 			// clang-format on
 
-			auto level = std::visit(picker, pair.value());
+			const auto level = std::visit(picker, pair.value());
 			return &level->scripting.variables;
 		}
 		case ENUM(StorageType::LOCAL):
 		case ENUM(StorageType::TEMP):
 			return builtInStore;
+		default:;
 	}
 
 	return store;
@@ -356,23 +359,22 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type)
 
 std::shared_ptr<Level> GS1Visitor::findCurrentLevel() const
 {
-	auto* server = BabyDI::Get<Server>();
-	auto testSource = [server](const ScriptObject& source) -> std::shared_ptr<Level>
+	auto testSource = [this](const ScriptObject& source) -> std::shared_ptr<Level>
 	{
 		if (source.second == ScriptObjectType::NPC)
 		{
-			if (auto npc = server->getNPC(source.first); npc != nullptr)
+			if (const auto npc = server->getNPC(source.first); npc != nullptr)
 				return npc->getLevel();
 		}
 		else if (source.second == ScriptObjectType::PLAYER)
 		{
-			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
+			if (const auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
 				return server->getLoadedLevel(player->account.level, player);
 		}
 		else if (source.second == ScriptObjectType::LEVEL)
 		{
 			auto& levelList = server->getLevelList();
-			if (auto level = levelList.find(source.first); level != levelList.end())
+			if (const auto level = levelList.find(source.first); level != levelList.end())
 				return level->second;
 		}
 		return nullptr;
@@ -388,12 +390,11 @@ std::shared_ptr<Level> GS1Visitor::findCurrentLevel() const
 
 std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<StaticLevelData>> GS1Visitor::findCurrentLevelData() const
 {
-	auto* server = BabyDI::Get<Server>();
-	auto testSource = [server](const ScriptObject& source) -> std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<StaticLevelData>>
+	auto testSource = [this](const ScriptObject& source) -> std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<StaticLevelData>>
 	{
 		if (source.second == ScriptObjectType::NPC)
 		{
-			if (auto npc = server->getNPC(source.first); npc != nullptr)
+			if (const auto npc = server->getNPC(source.first); npc != nullptr)
 			{
 				if (auto level = npc->getLevel(); level != nullptr)
 				{
@@ -404,7 +405,7 @@ std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<St
 		}
 		else if (source.second == ScriptObjectType::PLAYER)
 		{
-			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
+			if (const auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
 			{
 				if (auto level = server->getLoadedLevel(player->account.level, player); level != nullptr)
 				{
@@ -416,7 +417,7 @@ std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<St
 		else if (source.second == ScriptObjectType::LEVEL)
 		{
 			auto& levelList = server->getLevelList();
-			if (auto level = levelList.find(source.first); level != levelList.end())
+			if (const auto level = levelList.find(source.first); level != levelList.end())
 				return std::make_tuple(level->second, nullptr, nullptr);
 		}
 		return std::make_tuple(nullptr, nullptr, nullptr);
@@ -432,65 +433,67 @@ std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<St
 
 //--
 
-GameVariable* GS1Visitor::getGameVariableFromSource(const ScriptObject& source, std::string_view identifier) const
+GameVariable* GS1Visitor::getGameVariableFromSource(const ScriptObject& source, const std::string_view identifier) const
 {
 	switch (source.second)
 	{
 		case ScriptObjectType::NPC:
-			if (auto npc = server->getNPC(source.first); npc != nullptr)
+			if (const auto npc = server->getNPC(source.first); npc != nullptr)
 				return getScriptParameter(*npc, identifier);
 			break;
 		case ScriptObjectType::PLAYER:
-			if (auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
+			if (const auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
 				return getScriptParameter(*player, identifier);
 			break;
+		default:;
 	}
 
-	auto level = findCurrentLevel();
+	const auto level = findCurrentLevel();
 	if (level == nullptr)
 		return nullptr;
 
 	switch (source.second)
 	{
 		case ScriptObjectType::BADDY:
-			if (auto baddy = level->getBaddyById(source.first); baddy.has_value())
+			if (const auto baddy = level->getBaddyById(source.first); baddy.has_value())
 				return getScriptParameter(*baddy.value(), identifier);
 			break;
 		case ScriptObjectType::BOMB:
-			if (auto bomb = level->getBomb(source.first); bomb.has_value())
+			if (const auto bomb = level->getBomb(source.first); bomb.has_value())
 				return getScriptParameter(*bomb.value(), identifier);
 			break;
 		case ScriptObjectType::ARROW:
-			if (auto arrow = level->getArrow(source.first); arrow.has_value())
+			if (const auto arrow = level->getArrow(source.first); arrow.has_value())
 				return getScriptParameter(*arrow.value(), identifier);
 			break;
 		case ScriptObjectType::ITEM:
-			if (auto item = level->getItem(source.first); item.has_value())
+			if (const auto item = level->getItem(source.first); item.has_value())
 				return getScriptParameter(*item.value(), identifier);
 			break;
 		case ScriptObjectType::EXPLOSION:
-			if (auto explo = level->getExplosion(source.first); explo.has_value())
+			if (const auto explo = level->getExplosion(source.first); explo.has_value())
 				return getScriptParameter(*explo.value(), identifier);
 			break;
 		case ScriptObjectType::HORSE:
-			if (auto horse = level->getHorse(source.first); horse.has_value())
+			if (const auto horse = level->getHorse(source.first); horse.has_value())
 				return getScriptParameter(*horse.value(), identifier);
 			break;
 		case ScriptObjectType::SIGN:
-			if (auto sign = level->getSign(source.first); sign.has_value())
+			if (const auto sign = level->getSign(source.first); sign.has_value())
 				return getScriptParameter(*sign.value(), identifier);
 			break;
+		default:;
 	}
 
 	return nullptr;
 }
 
-GameVariable* GS1Visitor::getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type)
+GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view identifier, const std::optional<size_t> type)
 {
 	// If we have a specific storage type, try to get the store for it.
 	if (type.has_value())
 	{
-		if (auto store = getGameVariableStoreForStorageType(type.value()); store != nullptr)
+		if (const auto store = getGameVariableStoreForStorageType(type.value()); store != nullptr)
 			return store->getOrAdd(identifier).lock().get();
 	}
 
@@ -505,7 +508,7 @@ GameVariable* GS1Visitor::getGameVariableFromStorage(std::string_view identifier
 	auto checkStore = [&](const ScriptObject& source) -> std::optional<GameVariable*>
 	{
 		auto* store = getGameVariableStoreFromSource(source);
-		bool storeHasIdentifier = store != nullptr && store->contains(identifier);
+		const bool storeHasIdentifier = store != nullptr && store->contains(identifier);
 
 		// First, if we have a storage type, get directly from the variable store.
 		if (type.has_value() && storeHasIdentifier)
@@ -523,17 +526,17 @@ GameVariable* GS1Visitor::getGameVariableFromStorage(std::string_view identifier
 	};
 
 	// Next, look in the current source's store.
-	if (auto result = checkStore(getCurrentSource()); result.has_value())
+	if (const auto result = checkStore(getCurrentSource()); result.has_value())
 		return result.value();
 
 	// Now look in the original source's store.
-	if (auto result = checkStore(getOriginalSource()); result.has_value())
+	if (const auto result = checkStore(getOriginalSource()); result.has_value())
 		return result.value();
 
 	// Lastly, look at the initiator's store.
 	if (m_event->initiator != getOriginalSource())
 	{
-		if (auto result = checkStore(m_event->initiator); result.has_value())
+		if (const auto result = checkStore(m_event->initiator); result.has_value())
 			return result.value();
 	}
 
@@ -548,59 +551,57 @@ GameValue GS1Visitor::translateSourceText(antlr4::tree::ParseTree* node, std::st
 	// TODO: We should cache this somewhere.
 
 	if (node == nullptr)
-		return std::string{};
+		return GameValue{std::string{}};
 	if (m_parser == nullptr)
-		return node->getText();
+		return GameValue{node->getText()};
 
 	// Get the compound string context.
-	auto compoundStringContext = walkToContext<GS1Parser::CompoundStringContext>(node);
+	const auto compoundStringContext = walkToContext<GS1Parser::CompoundStringContext>(node);
 	if (compoundStringContext == nullptr)
-		return node->getText();
+		return GameValue{node->getText()};
 
 	// Get the raw text of the compound string.
 	std::string raw;
-	auto* tokenStream = m_parser->getTokenStream();
-	if (tokenStream != nullptr)
-		raw = std::move(tokenStream->getText(compoundStringContext->getSourceInterval()));
+	if (auto* tokenStream = m_parser->getTokenStream(); tokenStream != nullptr)
+		raw = tokenStream->getText(compoundStringContext->getSourceInterval());
 
 	// If the text is empty or consists solely of whitespace, just evaluate the original string without translating.
 	if (string::empty_or_whitespace(raw))
-		return node->getText();
+		return GameValue{node->getText()};
 
 	return translateSourceText(raw, language);
 }
 
-GameValue GS1Visitor::translateSourceText(std::string_view sourceText, std::string_view language)
+GameValue GS1Visitor::translateSourceText(const std::string_view sourceText, const std::string_view language)
 {
 	// TODO: We should cache this somewhere.
 
 	// Get the translation manager.
 	// If we don't have one, just evaluate the original string.
-	auto translationManager = BabyDI::Get<ITranslationManager>();
 	if (translationManager == nullptr)
-		return std::string{sourceText};
+		return GameValue{std::string{sourceText}};
 
 	// Translate the raw string.
-	auto translated = translationManager->getText(language, string::trim(sourceText));
+	const auto translated = translationManager->getText(language, string::trim(sourceText));
 
 	// Reparse the translated string and get the result.
 	return processStringExpression(translated);
 }
 
-GameValue GS1Visitor::processStringExpression(std::string_view expression)
+GameValue GS1Visitor::processStringExpression(const std::string_view expression)
 {
 	// If we are already reparsing string content, do not recurse.
 	if (m_reparsingStringExpression)
-		return std::string{expression};
+		return GameValue{std::string{expression}};
 
 	// Reparse the string expression and get the result.
 	SetAndRestore sar{m_reparsingStringExpression, true};
-	auto result = reparseExpression(expression, "S", [](GS1Parser& parser)
+	const auto result = reparseExpression(expression, "S", [](GS1Parser& parser)
 	{
 		return parser.compound_string();
 	});
 
-	return getScriptValueAsCopy<std::string>(result).value_or(std::string{});
+	return GameValue{getScriptValueAsCopy<std::string>(result).value_or(std::string{})};
 }
 
 GameValue GS1Visitor::processMathExpression(std::string_view expression)
@@ -611,24 +612,23 @@ GameValue GS1Visitor::processMathExpression(std::string_view expression)
 
 	// Reparse the math expression and get the result.
 	//SetAndRestore sar{m_reparsingMathExpression, true};
-	auto result = reparseExpression(std::format("({})", expression), "E", [](GS1Parser& parser)
+	const auto result = reparseExpression(std::format("({})", expression), "E", [](GS1Parser& parser)
 	{
 		return parser.primaryExpression();
 	});
 
-	return getScriptValueAsCopy<double>(result).value_or(0.0);
+	return GameValue{getScriptValueAsCopy<double>(result).value_or(0.0)};
 }
 
 //--
 
-std::vector<std::any> GS1Visitor::visitChildrenAndCollect(antlr4::tree::ParseTree* node)
+std::vector<std::any> GS1Visitor::visitChildrenAndCollect(const antlr4::tree::ParseTree* node)
 {
 	if (node == nullptr) return {};
 	std::vector<std::any> results;
-	for (size_t i = 0; i < node->children.size(); ++i)
+	for (const auto child : node->children)
 	{
-		auto ret = node->children[i]->accept(this);
-		if (ret.has_value())
+		if (auto ret = child->accept(this); ret.has_value())
 			results.emplace_back(std::move(ret));
 	}
 	return results;
@@ -644,7 +644,7 @@ std::any GS1Visitor::safeVisit(antlr4::tree::ParseTree* node)
 	return visit(node);
 }
 
-std::any GS1Visitor::reparseExpression(std::string_view expression, std::string_view lexerMode, std::function<antlr4::tree::ParseTree*(GS1Parser&)> node)
+std::any GS1Visitor::reparseExpression(std::string_view expression, const std::string_view lexerMode, const std::function<antlr4::tree::ParseTree*(GS1Parser&)>& node)
 {
 	GS1ErrorListener errorListenerLexer("lexing", who);
 	GS1ErrorListener errorListenerParser("parsing", who);
@@ -679,7 +679,7 @@ std::any GS1Visitor::reparseExpression(std::string_view expression, std::string_
 	return tree->accept(this);
 }
 
-void GS1Visitor::setCurrentPlayerVariables(std::optional<ScriptObject> source)
+void GS1Visitor::setCurrentPlayerVariables(const std::optional<ScriptObject>& source) const
 {
 	if (!source.has_value() || source.value().second != ScriptObjectType::PLAYER)
 	{
@@ -687,7 +687,7 @@ void GS1Visitor::setCurrentPlayerVariables(std::optional<ScriptObject> source)
 		return;
 	}
 
-	auto player = server->getNPCServer()->getPlayer(source.value().first);
+	const auto player = server->getNPCServer()->getPlayer(source.value().first);
 	if (player == nullptr)
 		return;
 
@@ -704,7 +704,7 @@ void GS1Visitor::setCurrentPlayerVariables(std::optional<ScriptObject> source)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GS1Visitor::execute(const ScriptEvent& event, ScriptObject source, GS1Parser& parser, ScriptExecutionContext& context, antlr4::tree::ParseTree* startNode)
+void GS1Visitor::execute(const ScriptEvent& event, const ScriptObject& source, GS1Parser& parser, ScriptExecutionContext& context, antlr4::tree::ParseTree* startNode)
 {
 	scriptContext = &context;
 
@@ -772,7 +772,7 @@ void GS1Visitor::execute(const ScriptEvent& event, ScriptObject source, GS1Parse
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GS1Visitor::reportError(std::string_view message, antlr4::tree::ParseTree* node, bool abort)
+void GS1Visitor::reportError(std::string_view message, antlr4::tree::ParseTree* node, const bool abort)
 {
 	std::vector<std::pair<uint8_t, std::string>> logbatch;
 
@@ -786,8 +786,7 @@ void GS1Visitor::reportError(std::string_view message, antlr4::tree::ParseTree* 
 	log::batch(log::script, logbatch);
 
 	// Send the log messages to the server.
-	auto server = BabyDI::Get<Server>();
-	std::ranges::for_each(logbatch, [&server](const auto& kvp)
+	std::ranges::for_each(logbatch, [this](const auto& kvp)
 	{
 		server->sendToNC(kvp.second);
 	});
@@ -799,7 +798,7 @@ void GS1Visitor::reportError(std::string_view message, antlr4::tree::ParseTree* 
 
 std::any GS1Visitor::visitProgram(GS1Parser::ProgramContext* ctx)
 {
-	for (auto node : ctx->children)
+	for (const auto node : ctx->children)
 		node->accept(this);
 
 	return {};
@@ -1009,8 +1008,7 @@ std::any GS1Visitor::visitStatementUserFunctionCall(GS1Parser::StatementUserFunc
 		throw std::runtime_error("GS1Visitor is missing the link to the parser");
 
 	auto identifier = context->compound_identifier()->getText();
-	auto function = m_parser->userFunctions.find(identifier);
-	if (function != m_parser->userFunctions.end())
+	if (const auto function = m_parser->userFunctions.find(identifier); function != m_parser->userFunctions.end())
 	{
 		try
 		{
@@ -1024,7 +1022,7 @@ std::any GS1Visitor::visitStatementUserFunctionCall(GS1Parser::StatementUserFunc
 
 	// Try to call the function in our joined classes.
 	ScriptEvent eventCopy = *m_event;
-	for (auto script : getJoinedClassesFromSource(m_originalSource))
+	for (const auto script : getJoinedClassesFromSource(m_originalSource))
 	{
 		if (script->runUserDefinedFunction(identifier, eventCopy, m_originalSource))
 			return {};
@@ -1074,15 +1072,15 @@ std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentCont
 	if (results.size() != 2 || context->children.size() != 3)
 		throw std::runtime_error("AssignmentOperation is not a binary expression");
 
-	auto op = getSymbolType(context->children[1]);
+	const auto op = getSymbolType(context->children[1]);
 	if (!op.has_value())
 		throw std::runtime_error("AssignmentOperation has no operation");
 
 	// Do the vector assignment operation separately as everything else runs on doubles.
 	if (op.value() == GS1Parser::OP_ASSIGN && scriptValueContains<std::vector<double>>(results[1]))
 	{
-		auto left = getGameVariable(results[0]);
-		auto right = getScriptValueAs<std::vector<double>>(results[1]);
+		const auto left = getGameVariable(results[0]);
+		const auto right = getScriptValueAs<std::vector<double>>(results[1]);
 		if (!left || !right)
 			throw std::runtime_error("AssignmentOperation is not a vector expression");
 
@@ -1090,7 +1088,7 @@ std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentCont
 		return {};
 	}
 
-	auto left = getGameVariable(results[0]);
+	const auto left = getGameVariable(results[0]);
 	auto right = getScriptValueAsCopy<double>(results[1]).value_or(0.0);
 
 	// Special case for assigning a value to "timeout", which erases any existing sleep call stack.
@@ -1101,7 +1099,7 @@ std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentCont
 		m_sleepCurrentSource.clear();
 	}
 
-	double leftD = left->getCopy<double>().value_or(0.0);
+	const double leftD = left->getCopy<double>().value_or(0.0);
 
 	// Perform the operation.
 	switch (op.value())
@@ -1127,6 +1125,7 @@ std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentCont
 		case GS1Parser::OP_ASSIGN_POW:
 			left->assign(std::pow(leftD, right), left->index);
 			break;
+		default:;
 	}
 
 	// Assignment operations are statements and can't be used inside expressions.
@@ -1143,7 +1142,7 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	std::vector<double> values;
-	for (auto& be : context->exponentiationExpression())
+	for (const auto& be : context->exponentiationExpression())
 		values.emplace_back(getScriptValueAsCopy<double>(visit(be)).value_or(0.0));
 
 	std::any right_any;
@@ -1151,8 +1150,8 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 		right_any = visit(context->primaryExpression());
 	else right_any = visit(context->range_literal());
 
-	auto right_range = std::any_cast<std::pair<std::any, std::any>>(&right_any);
-	auto right_vector = getScriptValueAs<std::vector<double>>(right_any);
+	const auto right_range = std::any_cast<std::pair<std::any, std::any>>(&right_any);
+	const auto right_vector = getScriptValueAs<std::vector<double>>(right_any);
 
 	size_t range_op_left = GS1Parser::TOKEN_PIPE;
 	size_t range_op_right = GS1Parser::TOKEN_PIPE;
@@ -1170,8 +1169,8 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 	{
 		if (right_range != nullptr)
 		{
-			double first = getScriptValueAsCopy<double>(right_range->first).value_or(0.0);
-			double second = getScriptValueAsCopy<double>(right_range->second).value_or(0.0);
+			const double first = getScriptValueAsCopy<double>(right_range->first).value_or(0.0);
+			const double second = getScriptValueAsCopy<double>(right_range->second).value_or(0.0);
 			bool test_left = false, test_right = false;
 			if (first < second)
 			{
@@ -1183,7 +1182,7 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 				test_left = (range_op_left == GS1Parser::TOKEN_PIPE) ? (first >= check) : (first > check);
 				test_right = (range_op_right == GS1Parser::TOKEN_PIPE) ? (check >= second) : (check > second);
 			}
-			bool in_range = test_left && test_right;
+			const bool in_range = test_left && test_right;
 			range_met = range_met && in_range;
 		}
 		else
@@ -1208,8 +1207,8 @@ std::any GS1Visitor::visitExpressionTernary(GS1Parser::ExpressionTernaryContext*
 	for (size_t i = 1; i < context->children.size(); i += 4)
 	{
 		if (getScriptValueAsCopy<bool>(result).value_or(false))
-			result = std::move(visit(context->children[i + 1]));
-		else result = std::move(visit(context->children[i + 3]));
+			result = visit(context->children[i + 1]);
+		else result = visit(context->children[i + 3]);
 	}
 	return result;
 }
@@ -1219,12 +1218,12 @@ std::any GS1Visitor::visitExpressionLogicOr(GS1Parser::ExpressionLogicOrContext*
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	auto left = getScriptValueAsCopy<bool>(visit(context->logicalAndExpression(0))).value_or(false);
+	const auto left = getScriptValueAsCopy<bool>(visit(context->logicalAndExpression(0))).value_or(false);
 	if (left) return makeGS1ScriptValue(true);
 
 	for (size_t i = 2; i < context->children.size(); i += 2)
 	{
-		auto right = getScriptValueAsCopy<bool>(visit(context->children[i])).value_or(false);
+		const auto right = getScriptValueAsCopy<bool>(visit(context->children[i])).value_or(false);
 		if (right) return makeGS1ScriptValue(true);
 	}
 
@@ -1236,12 +1235,12 @@ std::any GS1Visitor::visitExpressionLogicAnd(GS1Parser::ExpressionLogicAndContex
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	auto left = getScriptValueAsCopy<bool>(visit(context->equalityExpression(0))).value_or(false);
+	const auto left = getScriptValueAsCopy<bool>(visit(context->equalityExpression(0))).value_or(false);
 	if (!left) return makeGS1ScriptValue(false);
 
 	for (size_t i = 2; i < context->children.size(); i += 2)
 	{
-		auto right = getScriptValueAsCopy<bool>(visit(context->children[i])).value_or(false);
+		const auto right = getScriptValueAsCopy<bool>(visit(context->children[i])).value_or(false);
 		if (!right) return makeGS1ScriptValue(false);
 	}
 
@@ -1253,7 +1252,7 @@ std::any GS1Visitor::visitExpressionEquality(GS1Parser::ExpressionEqualityContex
 	if (context->children.size() < 3)
 		return visitChildren(context);
 
-	auto op = getSymbolType(context->children[1]);
+	const auto op = getSymbolType(context->children[1]);
 	if (!op.has_value())
 		throw std::runtime_error("ExpressionEquality does not have an operator");
 
@@ -1265,8 +1264,8 @@ std::any GS1Visitor::visitExpressionEquality(GS1Parser::ExpressionEqualityContex
 	// Vector comparison checks.
 	if (scriptValueContains<std::vector<double>>(first) && scriptValueContains<std::vector<double>>(second))
 	{
-		auto left_vector = getScriptValueAs<std::vector<double>>(first);
-		auto right_vector = getScriptValueAs<std::vector<double>>(second);
+		const auto left_vector = getScriptValueAs<std::vector<double>>(first);
+		const auto right_vector = getScriptValueAs<std::vector<double>>(second);
 		if (!left_vector.has_value() || !right_vector.has_value())
 			throw std::runtime_error("ExpressionEquality has no left-hand side or right-hand side vector value");
 
@@ -1277,12 +1276,13 @@ std::any GS1Visitor::visitExpressionEquality(GS1Parser::ExpressionEqualityContex
 				return makeGS1ScriptValue(left_vector.value().get() == right_vector.value().get());
 			case GS1Parser::OP_NOTEQ:
 				return makeGS1ScriptValue(left_vector.value().get() != right_vector.value().get());
+			default:;
 		}
 	}
 
 	// Scalar comparison checks.
-	auto left = getScriptValueAsCopy<double>(first).value_or(0.0);
-	auto right = getScriptValueAsCopy<double>(second).value_or(0.0);
+	const auto left = getScriptValueAsCopy<double>(first).value_or(0.0);
+	const auto right = getScriptValueAsCopy<double>(second).value_or(0.0);
 
 	// Do the comparison.
 	switch (op.value())
@@ -1292,6 +1292,7 @@ std::any GS1Visitor::visitExpressionEquality(GS1Parser::ExpressionEqualityContex
 			return makeGS1ScriptValue(DoublesAreSame(left, right));
 		case GS1Parser::OP_NOTEQ:
 			return makeGS1ScriptValue(!DoublesAreSame(left, right));
+		default:;
 	}
 
 	throw std::runtime_error("ExpressionEquality has an unknown operator");
@@ -1304,12 +1305,12 @@ std::any GS1Visitor::visitExpressionRelational(GS1Parser::ExpressionRelationalCo
 
 	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
-	auto op = getSymbolType(context->children[1]);
+	const auto op = getSymbolType(context->children[1]);
 	if (!op.has_value())
 		throw std::runtime_error("ExpressionRelational does not have an operator");
 
-	auto left = getScriptValueAsCopy<double>(visit(context->children[0])).value_or(0.0);
-	auto right = getScriptValueAsCopy<double>(visit(context->children[2])).value_or(0.0);
+	const auto left = getScriptValueAsCopy<double>(visit(context->children[0])).value_or(0.0);
+	const auto right = getScriptValueAsCopy<double>(visit(context->children[2])).value_or(0.0);
 
 	// Do the comparison.
 	switch (op.value())
@@ -1322,6 +1323,7 @@ std::any GS1Visitor::visitExpressionRelational(GS1Parser::ExpressionRelationalCo
 			return makeGS1ScriptValue(left <= right);
 		case GS1Parser::OP_GREAT_EQ:
 			return makeGS1ScriptValue(left >= right);
+		default:;
 	}
 
 	throw std::runtime_error("ExpressionRelational has an unknown operator");
@@ -1344,7 +1346,7 @@ std::any GS1Visitor::visitExpressionAdditive(GS1Parser::ExpressionAdditiveContex
 
 		// Check if the right side is a literal for a small optimization.
 		double right = 0.0;
-		auto child = context->children[i + 1];
+		const auto child = context->children[i + 1];
 		if (child->getTreeType() == antlr4::tree::ParseTreeType::TERMINAL)
 		{
 			literal = child->getText();
@@ -1383,7 +1385,7 @@ std::any GS1Visitor::visitExpressionMultiplicative(GS1Parser::ExpressionMultipli
 
 		// Check if the right side is a literal for a small optimization.
 		double right = 0.0;
-		auto child = context->children[i + 1];
+		const auto child = context->children[i + 1];
 		if (child->getTreeType() == antlr4::tree::ParseTreeType::TERMINAL)
 		{
 			literal = child->getText();
@@ -1417,11 +1419,10 @@ std::any GS1Visitor::visitExpressionExponentiation(GS1Parser::ExpressionExponent
 	double result = getScriptValueAsCopy<double>(visit(context->children[0])).value_or(0.0);
 	for (size_t i = 1; i < context->children.size(); i += 2)
 	{
-		auto op = getSymbolType(context->children[i]);
-		if (!op.has_value())
+		if (auto op = getSymbolType(context->children[i]); !op.has_value())
 			continue;
 
-		auto right = getScriptValueAsCopy<double>(visit(context->children[i + 1])).value_or(0.0);
+		const auto right = getScriptValueAsCopy<double>(visit(context->children[i + 1])).value_or(0.0);
 		result = std::pow(result, right);
 	}
 
@@ -1430,7 +1431,7 @@ std::any GS1Visitor::visitExpressionExponentiation(GS1Parser::ExpressionExponent
 
 std::any GS1Visitor::visitExpressionUnary(GS1Parser::ExpressionUnaryContext* context)
 {
-	auto op = getSymbolType(context->children[0]);
+	const auto op = getSymbolType(context->children[0]);
 	if (!op.has_value())
 		throw std::runtime_error("ExpressionUnary does not have an operator");
 
@@ -1448,7 +1449,7 @@ std::any GS1Visitor::visitExpressionUnary(GS1Parser::ExpressionUnaryContext* con
 
 std::any GS1Visitor::visitExpressionPostfix(GS1Parser::ExpressionPostfixContext* context)
 {
-	auto op = getSymbolType(context->children[1]);
+	const auto op = getSymbolType(context->children[1]);
 	if (!op.has_value())
 		throw std::runtime_error("ExpressionPostfix has no operation");
 
@@ -1514,7 +1515,7 @@ std::any GS1Visitor::visitIdentifierAccess(GS1Parser::IdentifierAccessContext* c
 		RECOVERABLE_PARSE_ERROR(std::format("Identifier did not contain a script object: {}.", context->children[0]->getText()), 0.0);
 
 	size_t pos = 1;
-	size_t identifierCount = context->identifier_value().size();
+	const size_t identifierCount = context->identifier_value().size();
 
 	// Iterate through the identifier values, adjusting our current source object as we go.
 	do
@@ -1523,7 +1524,7 @@ std::any GS1Visitor::visitIdentifierAccess(GS1Parser::IdentifierAccessContext* c
 		// We don't need to keep it on the stack so pop it after we're done.
 		m_currentSource.push_back(objectSource.value());
 		{
-			first = std::move(visit(context->identifier_value(pos++)));
+			first = visit(context->identifier_value(pos++));
 		}
 		m_currentSource.pop_back();
 
@@ -1548,11 +1549,11 @@ std::any GS1Visitor::visitIdentifierAccess(GS1Parser::IdentifierAccessContext* c
 std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* context)
 {
 	auto identifier_any = visit(context->compound_identifier());
-	auto identifier = std::any_cast<std::string>(&identifier_any);
+	const auto identifier = std::any_cast<std::string>(&identifier_any);
 	if (identifier == nullptr)
 		throw std::runtime_error("IdentifierValue has no valid compound_identifier");
 
-	auto expressions = context->expression();
+	const auto expressions = context->expression();
 	std::optional<int64_t> index = std::nullopt;
 
 	// Identify the storage type based on the identifier name.
@@ -1562,16 +1563,16 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 	// Since tiles[x,y] is a unique case, we encode the index with the X/Y.
 	if (*identifier == "tiles" && expressions.size() == 2)
 	{
-		auto param1 = visit(expressions[0]);
-		auto param2 = visit(expressions[1]);
-		auto x = static_cast<int32_t>(std::max(0.0, getScriptValueAsCopy<double>(param1).value_or(0.0)));
-		auto y = static_cast<int32_t>(std::max(0.0, getScriptValueAsCopy<double>(param2).value_or(0.0)));
+		const auto param1 = visit(expressions[0]);
+		const auto param2 = visit(expressions[1]);
+		const auto x = static_cast<int32_t>(std::max(0.0, getScriptValueAsCopy<double>(param1).value_or(0.0)));
+		const auto y = static_cast<int32_t>(std::max(0.0, getScriptValueAsCopy<double>(param2).value_or(0.0)));
 		index = (static_cast<int64_t>(x) << 32) | (static_cast<int64_t>(y) & 0xFFFFFFFF);
 	}
 	else if (expressions.size() == 1)
 	{
 		// Get the array index.
-		auto expression_any = visit(expressions[0]);
+		const auto expression_any = visit(expressions[0]);
 		index = static_cast<int64_t>(getScriptValueAsCopy<double>(expression_any).value_or(0.0));
 	}
 
@@ -1581,7 +1582,7 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 		// Timeout is annoying, so make sure we are not doing something that needs the NPC timeout.
 		if (*identifier != "timeout" || !expectingTimeoutAsVariable)
 		{
-			if (auto flag = flagStore.get(*identifier).lock(); flag != nullptr)
+			if (const auto flag = flagStore.get(*identifier).lock(); flag != nullptr)
 				return makeGS1ScriptValue(flag->getCopy<bool>().value_or(false));
 		}
 	}
@@ -1607,10 +1608,10 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 		if (index.has_value())
 		{
 			if (index.value() < 0)
-				return makeGS1ScriptValue(GameVariable{.value = 0.0});
+				return makeGS1ScriptValue(GameVariable{.value{0.0}});
 
 			size_t fixedIndex = static_cast<size_t>(std::max(0_i64, index.value()));
-			if (auto val = variable->get<double>(index); val.has_value() && !variable->index.has_value())
+			if (const auto val = variable->get<double>(index); val.has_value() && !variable->index.has_value())
 			{
 				// Construct a new GameVariable that wraps around the reference.
 				return makeGS1ScriptValue(helpers::wrapReferenceIntoGameVariable(val.value()));
@@ -1628,7 +1629,7 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 	}
 
 	// Return a default value if the identifier is not found.
-	return makeGS1ScriptValue(GameVariable{.value = 0.0});
+	return makeGS1ScriptValue(GameVariable{.value{0.0}});
 }
 
 std::any GS1Visitor::visitCompoundIdentifier(GS1Parser::CompoundIdentifierContext* context)
@@ -1640,14 +1641,14 @@ std::any GS1Visitor::visitCompoundIdentifier(GS1Parser::CompoundIdentifierContex
 	SetAndRestore sar{expectingFlag, false};
 
 	bool hasReservedConstant = false;
-	auto reservedConstants = context->RESERVEDCONSTANTS();
+	auto reserved = context->RESERVEDCONSTANTS();
 
 	for (auto& tree : context->children)
 	{
 		// Check for reserved constants.
 		// Variables like 'pi' are not allowed, but 'this.pi' would be.
 		// So flag that we had a reserved constant so we can check if it is allowed after the full compound identifier is formed.
-		if (std::ranges::contains(reservedConstants, tree))
+		if (std::ranges::contains(reserved, tree))
 		{
 			hasReservedConstant = true;
 			compoundIdentifier.append(tree->getText());
@@ -1678,14 +1679,14 @@ std::any GS1Visitor::visitCompoundString(GS1Parser::CompoundStringContext* conte
 {
 	std::string compoundString;
 
-	for (auto& tree : context->children)
+	for (const auto& tree : context->children)
 	{
 		if (tree->getTreeType() == antlr4::tree::ParseTreeType::TERMINAL)
 			compoundString.append(tree->getText());
 		else
 		{
 			auto piece = tree->accept(this);
-			if (auto gs1Val = std::any_cast<GS1ScriptValue>(&piece); gs1Val != nullptr)
+			if (const auto gs1Val = std::any_cast<GS1ScriptValue>(&piece); gs1Val != nullptr)
 			{
 				// If this is a GameVariable and the results size is 1, just return the piece.
 				if ((std::holds_alternative<GameVariable*>(*gs1Val) || std::holds_alternative<GameVariable>(*gs1Val)) && context->children.size() == 1)
@@ -1720,12 +1721,12 @@ std::any GS1Visitor::visitMessageCode(GS1Parser::MessageCodeContext* context)
 	catch (const unimplemented_error& e)
 	{
 		reportError(e.what(), context, false);
-		return GS1ScriptValue{""s};
+		return GS1ScriptValue{GameValue{""s}};
 	}
 	catch (const std::logic_error& e)
 	{
 		reportError(e.what(), context, false);
-		return GS1ScriptValue{""s};
+		return GS1ScriptValue{GameValue{""s}};
 	}
 	catch (const std::exception& e)
 	{
@@ -1757,14 +1758,14 @@ std::any GS1Visitor::visitLiteral(GS1Parser::LiteralContext* context)
 {
 	if (context->LITERAL() != nullptr)
 	{
-		auto text = context->LITERAL()->getText();
+		const auto text = context->LITERAL()->getText();
 		if (text == "true") return makeGS1ScriptValue(true);
 		if (text == "false") return makeGS1ScriptValue(false);
 		return makeGS1ScriptValue(std::stod(text));
 	}
-	else if (auto reserved = context->RESERVEDCONSTANTS(); reserved != nullptr)
+	else if (const auto reserved = context->RESERVEDCONSTANTS(); reserved != nullptr)
 	{
-		auto text = reserved->getText();
+		const auto text = reserved->getText();
 		if (string::equalsi(text, "allstats"sv))
 			return makeGS1ScriptValue(static_cast<double>(0xFFFF));
 		if (string::equalsi(text, "allfeatures"sv))
@@ -1789,7 +1790,7 @@ std::any GS1Visitor::visitArrayLiteral(GS1Parser::ArrayLiteralContext* context)
 	size_t valueIndex = 0;
 	for (size_t i = 0; i < context->children.size() && i < maximumArraySize; ++i)
 	{
-		auto child = context->children[i];
+		const auto child = context->children[i];
 		if (auto symbol = getSymbolType(child); symbol.has_value())
 		{
 			if (*symbol == GS1Parser::TOKEN_COMMA)
@@ -1819,7 +1820,7 @@ std::any GS1Visitor::visitArrayLiteral(GS1Parser::ArrayLiteralContext* context)
 
 std::any GS1Visitor::visitItemLiteral(GS1Parser::ItemLiteralContext* context)
 {
-	auto text = context->ITEM()->getText();
+	const auto text = context->ITEM()->getText();
 	auto it = std::ranges::find(ItemNames, text);
 	if (it == ItemNames.end())
 		it = ItemNames.begin();
@@ -1829,7 +1830,7 @@ std::any GS1Visitor::visitItemLiteral(GS1Parser::ItemLiteralContext* context)
 
 std::any GS1Visitor::visitCarryLiteral(GS1Parser::CarryLiteralContext* context)
 {
-	auto text = context->CARRY()->getText();
+	const auto text = context->CARRY()->getText();
 	auto it = std::ranges::find(carryNames, text);
 	if (it == carryNames.end())
 		it = carryNames.begin();
@@ -1840,8 +1841,8 @@ std::any GS1Visitor::visitCarryLiteral(GS1Parser::CarryLiteralContext* context)
 std::any GS1Visitor::visitDirectionLiteral(GS1Parser::DirectionLiteralContext* context)
 {
 	ptrdiff_t index = 0;
-	auto text = context->DIRECTION()->getText();
-	if (auto it = std::ranges::find(directionNames, text); it != directionNames.end())
+	const auto text = context->DIRECTION()->getText();
+	if (const auto it = std::ranges::find(directionNames, text); it != directionNames.end())
 		index = std::distance(directionNames.begin(), it);
 	else
 	{
@@ -1854,7 +1855,7 @@ std::any GS1Visitor::visitDirectionLiteral(GS1Parser::DirectionLiteralContext* c
 
 std::any GS1Visitor::visitGenderLiteral(GS1Parser::GenderLiteralContext* context)
 {
-	auto text = context->GENDER()->getText();
+	const auto text = context->GENDER()->getText();
 	auto it = std::ranges::find(genderNames, text);
 	if (it == genderNames.end())
 		it = genderNames.begin();
@@ -1869,7 +1870,7 @@ std::any GS1Visitor::visitColorLiteral(GS1Parser::ColorLiteralContext* context)
 
 std::any GS1Visitor::visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context)
 {
-	auto text = context->BADDY()->getText();
+	const auto text = context->BADDY()->getText();
 	auto it = std::ranges::find(BaddyNames, text);
 	if (it == BaddyNames.end())
 		it = BaddyNames.begin();
@@ -1887,10 +1888,10 @@ std::any GS1Visitor::visitPrimaryExpression(GS1Parser::PrimaryExpressionContext*
 	if (context->children.size() == 1)
 		return visitChildren(context);
 
-	if (auto expression = context->expression(); expression != nullptr)
+	if (const auto expression = context->expression(); expression != nullptr)
 		return visit(expression);
 
-	if (auto messageCode = context->messagecode_string(); messageCode != nullptr)
+	if (const auto messageCode = context->messagecode_string(); messageCode != nullptr)
 		return visit(messageCode);
 
 	throw std::runtime_error("primaryExpression was unhandled");

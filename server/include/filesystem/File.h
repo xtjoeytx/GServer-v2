@@ -30,7 +30,7 @@ namespace preagonal
 /// @param chars Pointer to the character array representing the string literal.
 /// @param length The length of the string literal.
 /// @return A std::filesystem::path::string_type constructed from the given character array.
-constexpr std::filesystem::path::string_type operator""_pv(const char* chars, size_t length)
+constexpr std::filesystem::path::string_type operator""_pv(const char* chars, const size_t length)
 {
 	return std::filesystem::path::string_type{chars, chars + length};
 }
@@ -65,14 +65,15 @@ class File
 public:
 	File() = default;
 
-	File(const std::filesystem::path& file, std::unique_ptr<std::ifstream>&& stream)
-		: m_file(file), m_inputStreamHandle(std::move(stream))
+	File(std::filesystem::path file, std::unique_ptr<std::ifstream>&& stream)
+		: m_file(std::move(file)), m_inputStreamHandle(std::move(stream))
 	{
 	}
 
-	File(const std::filesystem::path& file) : m_file(file)
+	explicit File(std::filesystem::path file)
+		: m_file(std::move(file))
 	{
-		open();
+		File::open();
 	}
 
 	File(File&& other) noexcept
@@ -84,7 +85,7 @@ public:
 
 	virtual ~File()
 	{
-		close();
+		File::close();
 	}
 
 public:
@@ -93,7 +94,7 @@ public:
 	bool operator==(const File& other) = delete;
 
 public:
-	virtual File& operator=(File&& other) noexcept
+	File& operator=(File&& other) noexcept
 	{
 		std::swap(m_file, other.m_file);
 		std::swap(m_inputStreamHandle, other.m_inputStreamHandle);
@@ -102,20 +103,23 @@ public:
 	}
 
 public:
+	// ReSharper disable once CppNonExplicitConversionOperator
 	/// @brief Converts directly into an istream.
-	virtual operator std::istream&()
+	operator std::istream&() const // NOLINT(*-explicit-constructor)
 	{
 		return *m_inputStream;
 	}
 
+	// ReSharper disable once CppNonExplicitConversionOperator
 	/// @brief Converts directly into a shared pointer to the istream.
-	virtual operator std::istream*()
+	operator std::istream*() const // NOLINT(*-explicit-constructor)
 	{
 		return m_inputStream;
 	}
 
+	// ReSharper disable once CppNonExplicitConversionOperator
 	/// @brief Returns if this is a valid file.
-	virtual operator bool() const
+	operator bool() const // NOLINT(*-explicit-constructor)
 	{
 		return opened();
 	}
@@ -130,12 +134,12 @@ public:
 
 	/// @brief Tells us if the file is opened.
 	/// @return If the file is opened or not.
-	virtual bool opened() const;
+	[[nodiscard]] virtual bool opened() const;
 
 public:
 	/// @brief Reads the position indicator of the file.
 	/// @return The position indicator.
-	virtual std::streampos getStreamPosition() const;
+	[[nodiscard]] virtual std::streampos getStreamPosition() const;
 
 	/// @brief Sets the position indicator of the file.
 	/// @param position The position in the file.
@@ -144,18 +148,25 @@ public:
 	/// @brief Sets the position indicator of the file.
 	/// @param offset The offset for our new read position.
 	/// @param origin Where we calculate the offset from.
-	virtual File& setStreamPosition(const std::streamoff& offset, const std::ios_base::seekdir origin = std::ios_base::beg);
+	virtual File& setStreamPosition(const std::streamoff& offset, const std::ios_base::seekdir origin);
+
+	/// @brief Sets the position indicator of the file.
+	/// @param offset The offset for our new read position.
+	File& setStreamPosition(const std::streamoff& offset)
+	{
+		return setStreamPosition(offset, std::ios_base::beg);
+	}
 
 	/// @brief Gets the file size.
 	/// @return The file size.
-	virtual uintmax_t size() const
+	[[nodiscard]] virtual uintmax_t size() const
 	{
 		return std::filesystem::file_size(m_file);
 	}
 
 	/// @brief Gets the path to the file.
 	/// @return The path to the file.
-	const std::filesystem::path& filePath() const
+	[[nodiscard]] const std::filesystem::path& filePath() const
 	{
 		return m_file;
 	}
@@ -170,7 +181,7 @@ public:
 
 	/// @brief Gets the file modified time.
 	/// @return The file modified time.
-	virtual std::filesystem::file_time_type modifiedTime() const
+	[[nodiscard]] virtual std::filesystem::file_time_type modifiedTime() const
 	{
 		try
 		{
@@ -205,13 +216,13 @@ public:
 	/// @tparam C The number of bytes to read. Valid values are 1, 2, 3, 4, 5, or 10.
 	/// @return An integral value whose type is deduced and corresponds to the requested size C.
 	template<size_t C>
-	[[a::inline]] auto readPackedIntegral();
+	[[a::inline]] auto readPackedIntegral() const;
 
 	/// @brief Reads an integral value.
 	/// @tparam C The number of bytes to read.
 	/// @return An integral value whose type is deduced and corresponds to the requested size C.
 	template<size_t C>
-	[[a::inline]] auto readIntegral();
+	[[a::inline]] auto readIntegral() const;
 
 	/// @brief Reads from the file until it encounters the token.
 	virtual std::vector<char> readUntil(std::string_view delimiter);
@@ -226,8 +237,17 @@ public:
 
 	/// @brief Reads the value of a configuration entry for a given key and seeks back to the beginning of the file.
 	/// @param key The key identifying the configuration entry to read.
+	/// @param separator The separator used to split the key and value in the configuration line. Defaults to "=".
 	/// @return The value associated with the specified key as a string, or a std::nullopt if it doesn't exist.
-	virtual std::optional<std::string> readConfigLine(std::string_view key, std::string_view separator = "="sv);
+	virtual std::optional<std::string> readConfigLine(std::string_view key, std::string_view separator);
+
+	/// @brief Reads the value of a configuration entry for a given key and seeks back to the beginning of the file.
+	/// @param key The key identifying the configuration entry to read.
+	/// @return The value associated with the specified key as a string, or a std::nullopt if it doesn't exist.
+	std::optional<std::string> readConfigLine(const std::string_view key)
+	{
+		return readConfigLine(key, "="sv);
+	}
 
 	/// @brief Reads a configuration section between the specified start and end keys and seeks back to the beginning of the file.
 	/// @param startKey The key indicating the start of the configuration section to read.
@@ -240,7 +260,7 @@ public:
 	std::generator<std::string> readAllLines();
 
 	/// @brief Returns a generator that yields lines until it reaches the end key.
-	/// @param endToken A string that, when encountered at the start of a line, ends the read.
+	/// @param endKey A string that, when encountered at the start of a line, ends the read.
 	/// @return A generator that produces each line as a std::string.
 	std::generator<std::string> readLinesUntilSectionEnd(std::string_view endKey);
 
@@ -252,7 +272,7 @@ public:
 
 	/// @brief Tells us if we finished reading the file.
 	/// @return If we finished reading the file or not.
-	virtual bool finishedReading() const;
+	[[nodiscard]] virtual bool finishedReading() const;
 
 protected:
 	std::filesystem::path m_file;
@@ -265,7 +285,7 @@ using FilePtr = std::shared_ptr<File>;
 //----------------------------
 
 template<size_t C>
-inline auto File::readPackedIntegral()
+inline auto File::readPackedIntegral() const
 {
 	using Type = std::conditional_t<C == 1, uint8_t,
 		std::conditional_t<C == 2, uint16_t,
@@ -281,7 +301,7 @@ inline auto File::readPackedIntegral()
 	if (!opened() || finishedReading())
 		return result;
 
-	auto readAndApply = [&](size_t N)
+	auto readAndApply = [&](const size_t N)
 	{
 		m_inputStream->read(&byte, 1);
 		result |= (static_cast<Type>(static_cast<uint8_t>(byte - 32)) << ((N - 1) * 7));
@@ -310,7 +330,7 @@ inline auto File::readPackedIntegral()
 }
 
 template<size_t C>
-inline auto File::readIntegral()
+inline auto File::readIntegral() const
 {
 	static_assert(C == 1 || C == 2 || C == 4 || C == 8, "Unsupported integral size for readIntegral.");
 
@@ -320,7 +340,7 @@ inline auto File::readIntegral()
 		std::conditional_t<C == 8, uint64_t, void>>>>;
 
 	if (!opened() || finishedReading())
-		return (Type)0;
+		return static_cast<Type>(0);
 
 	Type value = 0;
 	m_inputStream->read(reinterpret_cast<char*>(&value), sizeof(value));
@@ -345,16 +365,16 @@ public:
 		m_file = file;
 	}
 
-	FileIO(const std::filesystem::path& file)
+	explicit FileIO(const std::filesystem::path& file)
 	{
 		m_file = file;
-		open();
+		FileIO::open();
 	}
 
-	FileIO(const std::filesystem::path& file, bool truncate)
+	FileIO(const std::filesystem::path& file, const bool truncate)
 	{
 		m_file = file;
-		open(truncate);
+		FileIO::open(truncate);
 	}
 
 	FileIO(FileIO&& other) noexcept
@@ -365,9 +385,9 @@ public:
 		std::swap(m_outputStreamHandle, other.m_outputStreamHandle);
 	}
 
-	virtual ~FileIO()
+	~FileIO() override
 	{
-		close();
+		FileIO::close();
 	}
 
 public:
@@ -376,13 +396,6 @@ public:
 	bool operator==(const FileIO& other) = delete;
 
 public:
-	virtual File& operator=(File&& other) noexcept override
-	{
-		if (auto fileIO = dynamic_cast<FileIO*>(&other))
-			std::swap(m_outputStreamHandle, fileIO->m_outputStreamHandle);
-		return File::operator=(std::move(other));
-	}
-
 	FileIO& operator=(FileIO&& other) noexcept
 	{
 		std::swap(m_file, other.m_file);
@@ -396,14 +409,16 @@ public:
 	using File::operator std::istream*;
 	using File::operator bool;
 
+	// ReSharper disable once CppNonExplicitConversionOperator
 	/// @brief Converts directly into an fstream.
-	operator std::fstream&() const
+	operator std::fstream&() const // NOLINT(*-explicit-constructor)
 	{
-		return *(m_outputStreamHandle.get());
+		return *(m_outputStreamHandle);
 	}
 
+	// ReSharper disable once CppNonExplicitConversionOperator
 	/// @brief Converts directly into a shared pointer to the istream.
-	operator std::fstream*() const
+	operator std::fstream*() const // NOLINT(*-explicit-constructor)
 	{
 		return m_outputStreamHandle.get();
 	}
@@ -411,14 +426,14 @@ public:
 public:
 	/// @brief Opens the file.
 	/// @return If the file was successfully opened.
-	virtual bool open() override;
+	bool open() override;
 
 	/// @brief Closes the file.
-	virtual void close() override;
+	void close() override;
 
 	/// @brief Tells us if the file is opened.
 	/// @return If the file is opened or not.
-	virtual bool opened() const override;
+	[[nodiscard]] bool opened() const override;
 
 public:
 	/// @brief Clears the contents of the file.
@@ -489,16 +504,16 @@ class FileSimpleIO : public FileIO
 public:
 	using FileIO::FileIO;
 
-	FileSimpleIO(const std::filesystem::path& file)
+	explicit FileSimpleIO(const std::filesystem::path& file)
 	{
 		m_file = file;
-		open(false);
+		FileSimpleIO::open(false);
 	}
 
-	FileSimpleIO(const std::filesystem::path& file, bool truncate)
+	FileSimpleIO(const std::filesystem::path& file, const bool truncate)
 	{
 		m_file = file;
-		open(truncate);
+		FileSimpleIO::open(truncate);
 	}
 
 public:
@@ -525,10 +540,10 @@ public:
 
 public:
 	/// @brief Closes the file.
-	virtual void close() override;
+	void close() override;
 
 protected:
-	virtual bool open(bool truncate) override;
+	bool open(bool truncate) override;
 };
 
 using FileSimpleIOPtr = std::shared_ptr<FileSimpleIO>;

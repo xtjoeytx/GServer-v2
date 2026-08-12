@@ -34,7 +34,7 @@ UPNP::~UPNP()
 #endif
 }
 
-bool UPNP::initialize(std::string_view localIp, std::string_view port)
+bool UPNP::initialize(const std::string_view localIp, const std::string_view port)
 {
 	if (localIp.empty())
 	{
@@ -100,7 +100,7 @@ void UPNP::discover()
 #endif
 }
 
-void UPNP::addPortForward(std::string_view address, std::string_view port)
+void UPNP::addPortForward(const std::string_view address, std::string_view port)
 {
 #ifdef ENABLE_UPNP
 	if (m_urls.controlURL == nullptr || m_urls.controlURL[0] == '\0')
@@ -113,7 +113,7 @@ void UPNP::addPortForward(std::string_view address, std::string_view port)
 		char intClient[16] = { 0 };
 		char intPort[6] = { 0 };
 		char desc[80] = { 0 };
-		int r2 = UPNP_GetSpecificPortMappingEntry(m_urls.controlURL, m_data.first.servicetype, port.data(), "TCP", "", intClient, intPort, desc, nullptr, nullptr);
+		const int r2 = UPNP_GetSpecificPortMappingEntry(m_urls.controlURL, m_data.first.servicetype, port.data(), "TCP", "", intClient, intPort, desc, nullptr, nullptr);
 		if (r2 == 0 && std::string_view{ desc }.find("Graal GServer") != std::string_view::npos)
 		{
 			log::printLine(log::server, "[UPnP] Found existing port mapping on port {} likely created by us.", port);

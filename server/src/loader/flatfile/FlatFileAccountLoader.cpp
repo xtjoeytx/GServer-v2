@@ -38,8 +38,9 @@ namespace preagonal
 
 // Helper to avoid having to write uint8_t everywhere.
 const auto& toByte = static_cast<uint8_t (*)(std::string_view)>(string::toNumber);
+const auto& toSByte = static_cast<int8_t (*)(std::string_view)>(string::toNumber);
 
-static bool setIfEmpty(std::string& str, std::string_view value, std::string_view defaultValue = {})
+static bool setIfEmpty(std::string& str, const std::string_view value, const std::string_view defaultValue = {})
 {
 	if (!str.empty())
 		return false;
@@ -60,26 +61,25 @@ static void writeLine(std::string& output, const std::string& section, const aut
 
 ///////////////////////////////////////////////////////////////////////////////
 
-flagPair FlatFileAccountLoader::decomposeFlag(const std::string& flag) const
+flagPair FlatFileAccountLoader::decomposeFlag(const std::string& flag)
 {
-	auto server = BabyDI::Get<Server>();
-	flagPair result;
-	auto sep = flag.find('=');
-	result = (sep == std::string::npos) ? std::make_pair(flag, "") : std::make_pair(flag.substr(0, sep), flag.substr(sep + 1));
+	const auto server = BabyDI::Get<Server>();
+	const auto sep = flag.find('=');
+	flagPair result = (sep == std::string::npos) ? std::make_pair(flag, "") : std::make_pair(flag.substr(0, sep), flag.substr(sep + 1));
 	if (server->cached.enableFlagCropping.getValue())
 	{
 		// If cropflags is enabled, crop the flag to 223 characters.
 		// Subtract the length of the flag name and the = character from 223 to determine the space left for the flag value.
-		int fixedLength = result.first.length() < 223 ? static_cast<size_t>(223 - 1) - result.first.length() : 0;
+		const int fixedLength = result.first.length() < 223 ? (223 - 1) - static_cast<int>(result.first.length()) : 0;
 		result.second = result.second.substr(0, fixedLength);
 	}
 	return result;
 }
 
-chestPair FlatFileAccountLoader::decomposeChest(const std::string& chest) const
+chestPair FlatFileAccountLoader::decomposeChest(const std::string& chest)
 {
 	chestPair result;
-	auto tokens = string::splitToVector(chest, ":"sv);
+	const auto tokens = string::splitToVector(chest, ":"sv);
 	if (tokens.size() == 3)
 	{
 		result.second.x() = string::toNumber<uint8_t>(tokens[0]);
@@ -89,7 +89,7 @@ chestPair FlatFileAccountLoader::decomposeChest(const std::string& chest) const
 	return result;
 }
 
-bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& account)
+bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Account& account)
 {
 	auto server = BabyDI::Get<Server>();
 
@@ -166,7 +166,7 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 		else if (section == "SHIELDP")
 			account.character.shieldPower = toByte(val);
 		else if (section == "SWORDP")
-			account.character.swordPower = toByte(val);
+			account.character.swordPower = toSByte(val);
 		else if (section == "BOMBP")
 			account.character.bombPower = toByte(val);
 		else if (section == "BOWP")
@@ -223,8 +223,7 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 		// CODEPAGE - ignore
 		else if (section == "FLAG")
 		{
-			auto variable = GameVariable::deserialize(i.toString());
-			if (variable.has_value())
+			if (auto variable = GameVariable::deserialize(i.toString()); variable.has_value())
 				account.variables.add(std::move(variable.value()));
 		}
 		else if (section.starts_with("ATTR"))
@@ -265,13 +264,13 @@ bool FlatFileAccountLoader::loadAccount(std::string_view accountName, Account& a
 	if (string::equalsi(accountName, "guest"sv))
 	{
 		account.loadOnly = true;
-		srand((unsigned int)time(0));
+		srand(static_cast<unsigned int>(time(nullptr)));
 
 		// Try to create a unique account number.
 		while (true)
 		{
 			int v = (rand() * rand()) % 9999999;
-			if (server->getPlayer("pc:" + CString(v).subString(0, 6), PLTYPE_ANYPLAYER) == 0)
+			if (server->getPlayer("pc:" + CString(v).subString(0, 6), PLTYPE_ANYPLAYER) == nullptr)
 			{
 				account.name = std::format("pc:{:6}", v);
 				break;
@@ -336,13 +335,13 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	if (!account.groupName.empty())
 		writeLine(newFile, "GROUPNAME", account.groupName);
 
-	writeLine(newFile, "X", account.character.localPixelX / 16.0f);
-	writeLine(newFile, "Y", account.character.localPixelY / 16.0f);
-	writeLine(newFile, "Z", account.character.localPixelZ / 16.0f, 0.0f);
+	writeLine(newFile, "X", static_cast<float>(account.character.localPixelX) / 16.0f);
+	writeLine(newFile, "Y", static_cast<float>(account.character.localPixelY) / 16.0f);
+	writeLine(newFile, "Z", static_cast<float>(account.character.localPixelZ) / 16.0f, 0.0f);
 	writeLine(newFile, "MAPX", account.character.mapX);
 	writeLine(newFile, "MAPY", account.character.mapY);
 	writeLine(newFile, "MAXHP", account.maxHitpoints);
-	writeLine(newFile, "HP", account.character.hitpointsInHalves / 2.0f);
+	writeLine(newFile, "HP", static_cast<float>(account.character.hitpointsInHalves) / 2.0f);
 	writeLine(newFile, "ANI", account.character.gani);
 	writeLine(newFile, "SPRITE", (account.character.sprite << 2 | account.character.direction), 2);
 	writeLine(newFile, "GRALATS", account.character.gralats);
@@ -367,12 +366,12 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "MP", account.character.mp, 0_ui8);
 	writeLine(newFile, "AP", account.character.ap);
 	writeLine(newFile, "APCOUNTER", account.apCounter, 0_ui8);
-	writeLine(newFile, "ONSECS", account.onlineSeconds, (uint32_t)0);
-	writeLine(newFile, "KILLS", account.kills, (uint32_t)0);
-	writeLine(newFile, "DEATHS", account.deaths, (uint32_t)0);
+	writeLine(newFile, "ONSECS", account.onlineSeconds, static_cast<uint32_t>(0));
+	writeLine(newFile, "KILLS", account.kills, static_cast<uint32_t>(0));
+	writeLine(newFile, "DEATHS", account.deaths, static_cast<uint32_t>(0));
 	writeLine(newFile, "RATING", account.eloRating, 1500.0f);
 	writeLine(newFile, "DEVIATION", account.eloDeviation, 350.0f);
-	writeLine(newFile, "LASTSPARTIME", clock::to_time_t(account.lastSparTime), (time_t)0);
+	writeLine(newFile, "LASTSPARTIME", clock::to_time_t(account.lastSparTime), static_cast<time_t>(0));
 	writeLine(newFile, "IP", account.ipAddress);
 	writeLine(newFile, "LANGUAGE", account.language, "English"sv); // TODO: Also accept "en" and other two-character language codes.
 	writeLine(newFile, "PLATFORM", account.platform);
@@ -404,7 +403,7 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "BANLENGTH", account.banLength, "");
 	writeLine(newFile, "COMMENTS", account.comments, "");
 	writeLine(newFile, "EMAIL", account.email, "");
-	writeLine(newFile, "LOCALRIGHTS", account.adminRights, (uint32_t)0);
+	writeLine(newFile, "LOCALRIGHTS", account.adminRights, static_cast<uint32_t>(0));
 	writeLine(newFile, "IPRANGE", string::join(account.adminIpRange), "");
 	writeLine(newFile, "LOADONLY", account.loadOnly ? 1 : 0, 0);
 
@@ -422,8 +421,7 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 		accountPath = std::filesystem::path{"accounts"} / accountFileName;
 
 	// Save the account now.
-	fs::FileIO writer(accountPath, true);
-	if (writer.opened())
+	if (fs::FileIO writer(accountPath, true); writer.opened())
 	{
 		writer.write(newFile);
 	}
@@ -435,7 +433,7 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	return true;
 }
 
-bool FlatFileAccountLoader::checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const
+bool FlatFileAccountLoader::checkSearchConditions(const std::string_view account, const std::vector<std::string>& searches) const
 {
 	constexpr std::array<std::string_view, 6> conditions = {">=", "<=", "!=", "=", ">", "<"};
 
@@ -473,7 +471,7 @@ bool FlatFileAccountLoader::checkSearchConditions(std::string_view account, cons
 
 		// Check if the search value is a number.
 		float searchValueNumber = 0.0f;
-		bool searchValueIsNumber = string::toFloat(searchValue, searchValueNumber);
+		const bool searchValueIsNumber = string::toFloat(searchValue, searchValueNumber);
 
 		// Search for all matching sections.
 		bool matched = false;
@@ -481,8 +479,8 @@ bool FlatFileAccountLoader::checkSearchConditions(std::string_view account, cons
 		while (pos < file.length() && (pos = string::findi(file, searchSection, pos)) != std::string::npos)
 		{
 			// Get the value for this line.
-			auto start = file.find(' ', pos);
-			auto end = file.find('\n', start);
+			const auto start = file.find(' ', pos);
+			const auto end = file.find('\n', start);
 			std::string fileValue;
 			{
 				std::string_view value_view(file.data() + start + 1, end - start - 1);
@@ -490,8 +488,7 @@ bool FlatFileAccountLoader::checkSearchConditions(std::string_view account, cons
 			}
 
 			// Check if the value is a number.
-			float valueNum = 0.0f;
-			if (string::toFloat(fileValue, valueNum) && searchValueIsNumber)
+			if (float valueNum = 0.0f; string::toFloat(fileValue, valueNum) && searchValueIsNumber)
 			{
 				switch (condition)
 				{
@@ -513,6 +510,7 @@ bool FlatFileAccountLoader::checkSearchConditions(std::string_view account, cons
 					case 5:
 						matched |= valueNum < searchValueNumber;
 						break;
+					default:;
 				}
 			}
 			else
@@ -537,6 +535,7 @@ bool FlatFileAccountLoader::checkSearchConditions(std::string_view account, cons
 					case 5:
 						matched |= string::comparei(fileValue, searchValue) < 0;
 						break;
+					default:;
 				}
 			}
 

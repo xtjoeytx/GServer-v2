@@ -21,46 +21,46 @@ char bypass[] = {
 	'\n',
 };
 
-static bool isUpper(char c)
+static bool isUpper(const char c)
 {
 	return (c >= 65 && c <= 90);
 }
 
-static bool isLower(char c)
+static bool isLower(const char c)
 {
 	return (c >= 97 && c <= 122);
 }
 
-static char toLower(char c)
+static char toLower(const char c)
 {
 	if (c >= 65 && c <= 90)
-		return c + 32;
+		return static_cast<char>(c + 32);
 	return c;
 }
 
-[[maybe_unused]] static char toUpper(char c)
+[[maybe_unused]] static char toUpper(const char c)
 {
 	if (c >= 97 && c <= 122)
-		return c - 32;
+		return static_cast<char>(c - 32);
 	return c;
 }
 
 void WordFilter::load(const CString& file)
 {
 	// If we have rules, delete them.
-	if (m_rules.size() != 0)
+	if (!m_rules.empty())
 		m_rules.clear();
 
 	// Load the file.
 	std::vector<CString> f = CString::loadToken(file, "\n", true);
-	if (f.size() == 0) return;
+	if (f.empty()) return;
 
 	// Parse the file.
-	for (std::vector<CString>::iterator i = f.begin(); i != f.end(); ++i)
+	for (auto i = f.begin(); i != f.end(); ++i)
 	{
 		CString word = *i;
 		std::vector<CString> wordParts = word.tokenize();
-		if (wordParts.size() == 0) continue;
+		if (wordParts.empty()) continue;
 
 		if (wordParts[0] == "RULE")
 		{
@@ -70,7 +70,7 @@ void WordFilter::load(const CString& file)
 			{
 				CString word2 = *i;
 				std::vector<CString> wordParts2 = word2.tokenize();
-				if (wordParts2.size() == 0)
+				if (wordParts2.empty())
 				{
 					++i;
 					continue;
@@ -101,7 +101,7 @@ void WordFilter::load(const CString& file)
 						if (wordParts2[1].find("%") != -1)
 						{
 							rule->precisionPercentage = true;
-							wordParts2[1].removeAll("%");
+							wordParts2[1].removeAllI("%");
 						}
 						else
 							rule->precisionPercentage = false;
@@ -165,7 +165,7 @@ void WordFilter::load(const CString& file)
 
 int WordFilter::apply(const Player* player, CString& chat, int check)
 {
-	if (chat.isEmpty() || m_rules.size() == 0 || check == 0) return 0;
+	if (chat.isEmpty() || m_rules.empty() || check == 0) return 0;
 
 	CString out = chat;
 	CString warnmessage;
@@ -182,9 +182,9 @@ int WordFilter::apply(const Player* player, CString& chat, int check)
 		if (rule->wordPosition != FILTER_POSITION_PART)
 		{
 			// Loop through each word of the chat.
-			for (std::vector<CString>::iterator j = chatWords.begin(); j != chatWords.end(); ++j)
+			for (auto& chatWord : chatWords)
 			{
-				CString* word = &(*j);
+				CString* word = &chatWord;
 
 				// If we are checking for a full word and the words aren't the same length, go to the next word.
 				if (rule->wordPosition == FILTER_POSITION_FULL && word->length() != rule->match.length()) continue;
@@ -217,7 +217,7 @@ int WordFilter::apply(const Player* player, CString& chat, int check)
 
 				// Check and see if we hit the limit.
 				if (rule->precisionPercentage == false && wordsMatched < rule->precision) continue;
-				if (rule->precisionPercentage == true && rule->precision > (int)(((float)wordsMatched / (float)rule->match.length()) * 100)) continue;
+				if (rule->precisionPercentage == true && rule->precision > static_cast<int>((static_cast<float>(wordsMatched) / static_cast<float>(rule->match.length())) * 100)) continue;
 
 				// Add the word to the list of words found.
 				wordsFound.push_back(*word);
@@ -262,9 +262,9 @@ int WordFilter::apply(const Player* player, CString& chat, int check)
 					if (wordpos + chatpos == wordStart)
 					{
 						bool found = false;
-						for (size_t b = 0; b < sizeof(bypass); ++b)
+						for (char bypassWord : bypass)
 						{
-							if (chat[wordpos + chatpos] == bypass[b])
+							if (chat[wordpos + chatpos] == bypassWord)
 							{
 								failed = true;
 								found = true;
@@ -278,12 +278,12 @@ int WordFilter::apply(const Player* player, CString& chat, int check)
 					while (true)
 					{
 						bool found = false;
-						for (size_t b = 0; b < sizeof(bypass); ++b)
+						for (char bypassWord : bypass)
 						{
-							if (chat[wordpos + chatpos] == bypass[b])
+							if (chat[wordpos + chatpos] == bypassWord)
 							{
 								found = true;
-								word << bypass[b];
+								word << bypassWord;
 								++wordpos;
 							}
 						}
@@ -317,7 +317,7 @@ int WordFilter::apply(const Player* player, CString& chat, int check)
 
 				// Check and see if we hit the limit.
 				if (rule->precisionPercentage == false && wordsMatched < rule->precision) continue;
-				if (rule->precisionPercentage == true && rule->precision > (int)(((float)wordsMatched / (float)rule->match.length()) * 100)) continue;
+				if (rule->precisionPercentage == true && rule->precision > static_cast<int>((static_cast<float>(wordsMatched) / static_cast<float>(rule->match.length())) * 100)) continue;
 
 				// Trim the word.
 				word.trimI();
@@ -354,12 +354,12 @@ int WordFilter::apply(const Player* player, CString& chat, int check)
 WordFilterActions:
 
 	// If no words were found, exit now.
-	if (wordsFound.size() == 0) return 0;
+	if (wordsFound.empty()) return 0;
 
 	// Assemble a list of the bad words.
 	CString badwords;
-	for (std::vector<CString>::iterator i = wordsFound.begin(); i != wordsFound.end(); ++i)
-		badwords << *i << ", ";
+	for (auto& word : wordsFound)
+		badwords << word << ", ";
 	badwords.removeI(badwords.length() - 2);
 
 	// Apply an action based on the word.

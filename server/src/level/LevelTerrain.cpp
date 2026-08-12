@@ -20,9 +20,9 @@ void generateTerrain(LevelTerrain& levelTerrain, const MapTerrain& mapTerrain, c
 	constexpr size_t topRowStart = 0;
 	constexpr size_t bottomRowStart = static_cast<size_t>(65) * 64;
 
-	size_t column = mapPosition[0];
-	size_t row = mapPosition[1];
-	size_t gridWidth = gridDimension[0];
+	const size_t column = mapPosition[0];
+	const size_t row = mapPosition[1];
+	const size_t gridWidth = gridDimension[0];
 	[[maybe_unused]] size_t gridHeight = gridDimension[1];
 
 	auto& heightmap = levelTerrain.heightmap;
@@ -32,10 +32,10 @@ void generateTerrain(LevelTerrain& levelTerrain, const MapTerrain& mapTerrain, c
 	// Copy in the border heights for the tile.
 	for (size_t tile = 0; tile < 65; ++tile)
 	{
-		auto indexTop = (column * 64) + tile + ((gridWidth * 64 + 1) * row);
-		auto indexBottom = ((row + 1) * (gridWidth * 64 + 1)) + (column * 64) + tile;
-		auto indexLeft = ((row * 64 + tile) * (gridWidth + 1)) + column;
-		auto indexRight = ((row * 64 + tile) * (gridWidth + 1)) + column + 1;
+		const auto indexTop = (column * 64) + tile + ((gridWidth * 64 + 1) * row);
+		const auto indexBottom = ((row + 1) * (gridWidth * 64 + 1)) + (column * 64) + tile;
+		const auto indexLeft = ((row * 64 + tile) * (gridWidth + 1)) + column;
+		const auto indexRight = ((row * 64 + tile) * (gridWidth + 1)) + column + 1;
 
 		heightmap[topRowStart + tile] = mapTerrain.gridBorderTileHeightsXAxis[indexTop];
 		heightmap[bottomRowStart + tile] = mapTerrain.gridBorderTileHeightsXAxis[indexBottom];
@@ -58,31 +58,33 @@ void generateTerrain(LevelTerrain& levelTerrain, const MapTerrain& mapTerrain, c
 		applyHeightOverrides(levelTerrain);
 }
 
-void floodFillHeights(LevelTerrainWorker& terrain, uint32_t rowWidth, double chaos, double height, size_t bottom, size_t right, size_t top, size_t left)
+// NOLINTNEXTLINE(*-no-recursion)
+void floodFillHeights(LevelTerrainWorker& terrain, const uint32_t rowWidth, const double chaos, const double height, const size_t bottom, const size_t right, const size_t top, const size_t left)
 {
 	auto& heightmap = *terrain.heightmap;
 	if ((right - left) > 1 || (bottom - top) > 1)
 	{
-		size_t midpointX = static_cast<size_t>(std::abs((left + right) / 2.0));
-		size_t midpointY = static_cast<size_t>(std::abs((top + bottom) / 2.0));
+		const auto midpointX = (left + right) / 2;
+		const auto midpointY = (top + bottom) / 2;
 
-		auto randomValue = terrain.random();
+		const auto randomValue = terrain.random();
 
-		size_t index = midpointY * rowWidth + midpointX;
+		const size_t index = midpointY * rowWidth + midpointX;
 		heightmap[index] = ((heightmap[top * rowWidth + left] + heightmap[bottom * rowWidth + right]) / 2.0)
-			+ ((randomValue - 0.5) * 2.0 * height);
+			+ static_cast<double>((randomValue - 0.5) * 2.0 * height);
 
 		floodFillHeights(terrain, rowWidth, chaos, height * chaos, midpointY, midpointX, top, left);
 		floodFillHeights(terrain, rowWidth, chaos, height * chaos, bottom, right, midpointY, midpointX);
 	}
 }
 
-void floodFillQuadrant(LevelTerrainWorker& terrain, uint32_t rowWidth, double chaos, double height, size_t bottom, size_t right, size_t top, size_t left)
+// NOLINTNEXTLINE(*-no-recursion)
+void floodFillQuadrant(LevelTerrainWorker& terrain, const uint32_t rowWidth, const double chaos, const double height, const size_t bottom, const size_t right, const size_t top, const size_t left)
 {
 	if ((right - left) > 1 || (bottom - top) > 1)
 	{
-		size_t midpointX = static_cast<size_t>(std::abs((left + right) / 2.0));
-		size_t midpointY = static_cast<size_t>(std::abs((top + bottom) / 2.0));
+		const auto midpointX = (left + right) / 2;
+		const auto midpointY = (top + bottom) / 2;
 
 		floodFillHeights(terrain, rowWidth, chaos, height, midpointY, right, midpointY, left);					// middle row
 		floodFillHeights(terrain, rowWidth, chaos, height * chaos, midpointY, midpointX, top, midpointX);		// middle column top-half
@@ -103,44 +105,44 @@ void applyHeightOverrides(LevelTerrain& levelTerrain)
 	{
 		for (int64_t x = 0; x < 9; ++x)
 		{
-			size_t tileIndex = (y * 8) * 65 + (x * 8);
-			auto overrideHeight = levelTerrain.levelHeightOverrides[y * 9 + x];
+			const size_t tileIndex = (y * 8) * 65 + (x * 8);
+			const auto overrideHeight = levelTerrain.levelHeightOverrides[y * 9 + x];
 			if (!DoublesAreSame(levelTerrain.heightmap[tileIndex], overrideHeight))
 			{
-				auto tileX = x * 8;
-				auto tileY = y * 8;
+				const auto tileX = x * 8;
+				const auto tileY = y * 8;
 
 				// Calculate the base delta step.
 				// Each row away from the origin will have a smaller base change applied to it.
-				auto deltaStep = (overrideHeight - levelTerrain.heightmap[tileIndex]) / 8;
+				const auto deltaStep = (overrideHeight - levelTerrain.heightmap[tileIndex]) / 8;
 
 				// Constrain the limits to the level.
 				auto top = tileY;
 				auto bottom = tileY;
 				if (tileY >= 8) top -= 7;
-				if (tileY <= ((int64_t)64 - 8)) bottom += 7;
+				if (tileY <= (static_cast<int64_t>(64) - 8)) bottom += 7;
 
 				// A height override affects a 15x15 area centered on the override tile.
 				// Determine how much change should be applied to each row, then adjust all the tiles in that row.
-				for (size_t row = top; row <= (size_t)bottom; ++row)
+				for (size_t row = top; row <= static_cast<size_t>(bottom); ++row)
 				{
-					auto rowDelta = 8 - std::abs((int64_t)row - tileY);
-					applyHeightOverrideOnRow(levelTerrain, deltaStep * rowDelta, tileX, row);
+					const auto rowDelta = 8 - std::abs(static_cast<int64_t>(row) - tileY);
+					applyHeightOverrideOnRow(levelTerrain, deltaStep * static_cast<double>(rowDelta), tileX, row);
 				}
 			}
 		}
 	}
 }
 
-void applyHeightOverrideOnRow(LevelTerrain& levelTerrain, double deltaHeight, size_t tileX, size_t tileY)
+void applyHeightOverrideOnRow(LevelTerrain& levelTerrain, const double deltaHeight, const size_t tileX, const size_t tileY)
 {
-	auto deltaStep = deltaHeight / 8.0;
+	const auto deltaStep = deltaHeight / 8.0;
 
 	// Tiles to the left of the origin.
 	if (tileX >= 8)
 	{
 		for (size_t index = 1; index < 8; ++index)
-			levelTerrain.heightmap[tileY * 65 + (tileX - 8) + index] += (deltaStep * index);
+			levelTerrain.heightmap[tileY * 65 + (tileX - 8) + index] += (deltaStep * static_cast<double>(index));
 	}
 
 	// The origin.
@@ -150,7 +152,7 @@ void applyHeightOverrideOnRow(LevelTerrain& levelTerrain, double deltaHeight, si
 	if (tileY < 64)
 	{
 		for (size_t index = 1; index < 8; ++index)
-			levelTerrain.heightmap[tileY * 65 + tileX + index] += (deltaStep * (8 - index));
+			levelTerrain.heightmap[tileY * 65 + tileX + index] += (deltaStep * static_cast<double>(8 - index));
 	}
 }
 

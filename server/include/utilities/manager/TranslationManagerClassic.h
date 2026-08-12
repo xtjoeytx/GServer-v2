@@ -27,24 +27,24 @@ public:
 	};
 
 public:
-	virtual ~TranslationManagerClassic() override {}
+	~TranslationManagerClassic() override = default;
 
 public:
-	virtual void loadTranslations(const std::filesystem::path& directory) override;
-	virtual void reloadTranslation(const std::filesystem::path& filePath) override;
-	virtual void saveTranslation(std::string_view domain) override;
-	virtual void saveTranslations() override;
-	virtual std::tuple<std::string_view, size_t, size_t> syncLanguageWithOriginal(std::string_view language) override;
-	virtual std::generator<std::tuple<std::string_view, size_t, size_t>> syncAllLanguagesWithOriginal() override;
-	virtual size_t generateAllLanguageStubs() override;
-	virtual void registerOriginalText(std::string_view key) override;
+	void loadTranslations(const std::filesystem::path& directory) override;
+	void reloadTranslation(const std::filesystem::path& filePath) override;
+	void saveTranslation(std::string_view domain) override;
+	void saveTranslations() override;
+	std::tuple<std::string_view, size_t, size_t> syncLanguageWithOriginal(std::string_view language) override;
+	std::generator<std::tuple<std::string_view, size_t, size_t>> syncAllLanguagesWithOriginal() override;
+	size_t generateAllLanguageStubs() override;
+	void registerOriginalText(std::string_view key) override;
 
 protected:
 	void loadDomain(const std::filesystem::path& filePath);
-	std::string generateHash(std::string_view key) const;
+	static std::string generateHash(std::string_view key);
 
 public:
-	virtual std::string_view getText(std::string_view language, std::string_view key) override;
+	std::string_view getText(std::string_view language, std::string_view key) override;
 
 protected:
 	std::unordered_map<std::string, TranslationMap, string::string_hash, string::string_hash_equal> m_domains;

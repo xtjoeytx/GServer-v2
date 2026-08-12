@@ -94,22 +94,15 @@ HandlePacketResult PlayerRC::handlePacket(std::optional<uint8_t> id, CString& pa
 {
 	static PacketHandleArray PacketHandlers = GeneratePacketHandlers();
 
-	auto handle = id.has_value() ? PacketHandlers[id.value()] : nullptr;
+	const auto handle = id.has_value() ? PacketHandlers[id.value()] : nullptr;
 	if (handle == nullptr)
 		return Player::handlePacket(id, packet);
 
-	auto result = (this->*handle)(packet);
+	const auto result = (this->*handle)(packet);
 	if (result == HandlePacketResult::Bubble)
 		return Player::handlePacket(id, packet);
 
 	return result;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PlayerRC::cleanup()
-{
-	Player::cleanup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -152,7 +145,7 @@ bool PlayerRC::handleLogin(CString& pPacket)
 	// Newer RC clients have an encryption key.
 	if (Encryption.getGen() > ENCRYPT_GEN_3)
 	{
-		m_encryptionKey = (unsigned char)pPacket.readGChar();
+		m_encryptionKey = static_cast<unsigned char>(pPacket.readGChar());
 
 		Encryption.reset(m_encryptionKey);
 		if (Encryption.getGen() > ENCRYPT_GEN_3)
@@ -165,11 +158,11 @@ bool PlayerRC::handleLogin(CString& pPacket)
 
 	// Read Account & Password
 	account.name = pPacket.readChars(pPacket.readGUChar()).toString();
-	CString password = pPacket.readChars(pPacket.readGUChar());
+	const CString password = pPacket.readChars(pPacket.readGUChar());
 
 	// Client Identity: win,"",02e2465a2bf38f8a115f6208e9938ac8,ff144a9abb9eaff4b606f0336d6d8bc5,"6.2 9200 "
 	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
-	CString identity = pPacket.readString("");
+	const CString identity = pPacket.readString("");
 
 	{
 		auto indent = log::server.indent();
@@ -225,7 +218,7 @@ bool PlayerRC::sendLogin()
 	account.character.headImage = m_server->getSettings().get<std::string>("staffhead").value_or("head25.png");
 
 	// Send the RC join message to the RC.
-	std::vector<CString> rcmessage = CString::loadToken("config/rcmessage.txt", "\n", true);
+	const std::vector<CString> rcmessage = CString::loadToken("config/rcmessage.txt", "\n", true);
 	for (const auto& i : rcmessage)
 		sendPacket(CString() >> (char)PLO_RC_CHAT << i);
 
@@ -237,34 +230,27 @@ bool PlayerRC::sendLogin()
 
 	// Send out what guilds should be placed in the Staff section of the playerlist.
 	CString guildPacket = CString() >> (char)PLO_STAFFGUILDS;
-	for (const auto& guild : string::split(settings.get<std::string>("staffguilds").value_or(""), ","sv))
-		guildPacket << "\"" << string::trim(guild) << "\",";
-	sendPacket(guildPacket.remove(guildPacket.length() - 1, 1));
+	guildPacket << string::toCSV(string::split(settings.get<std::string>("staffguilds").value_or(""), ","sv) | range::string_trim);
+	sendPacket(guildPacket);
 
 	// Send out the server's available status list options.
 	{
 		// graal doesn't quote these
 		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-		for (const auto& status : m_server->cached.playerStatusList.getValue())
-			pliconPacket << string::trim(status) << ",";
-
-		sendPacket(pliconPacket.remove(pliconPacket.length() - 1, 1));
+		pliconPacket << string::join(m_server->cached.playerStatusList.getValue() | range::string_trim, ","sv);
+		sendPacket(pliconPacket);
 	}
 
-	// This comes after status icons for RC
+	// This comes after status icons for RC.
+	// 20 MB (in bytes).
 	sendPacket(CString() >> (char)PLO_RC_MAXUPLOADFILESIZE >> (long long)(1048576 * 20));
-
-	// Then during iterating the playerlist to send players to the rc client, it sends addplayer followed by rc chat per person.
-	// TODO: Was this unimplemented?
 
 	// Exchange props with everybody on the server.
 	exchangeMyPropsWithOthers();
 
 	// If we are an RC, announce the list of currently logged in RCs.
-	CString rcsOnline;
-	for (const auto& [pid, player] : players_of_type<PlayerRC>(m_server->getPlayerList()))
-		rcsOnline << (rcsOnline.isEmpty() ? "" : ", ") << player->account.name;
-	if (!rcsOnline.isEmpty())
+	const auto rcsOnline = string::join(players_of_type<PlayerRC>(m_server->getPlayerList()) | std::views::values | std::views::transform([](const auto& rc) { return rc->account.name; }), ", "sv);
+	if (!rcsOnline.empty())
 		sendPacket(CString() >> (char)PLO_RC_CHAT << "Currently online: " << rcsOnline);
 
 	// Queue up the login event.

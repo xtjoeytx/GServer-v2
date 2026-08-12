@@ -49,8 +49,8 @@ inline constexpr int16_t arrowSpeedInPixelsPer50ms = 16;
 
 struct LevelArrow
 {
-	float getTileX() const { return position.x() / 16.0f; }
-	float getTileY() const { return position.y() / 16.0f; }
+	float getTileX() const { return static_cast<float>(position.x()) / 16.0f; }
+	float getTileY() const { return static_cast<float>(position.y()) / 16.0f; }
 
 	PixelPosition startPosition;
 	PixelPosition position;
@@ -77,15 +77,15 @@ inline uint8_t LevelArrow::getPacketFrom() const
 inline void LevelArrow::constructScriptParameters()
 {
 	// clang-format off
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"x"sv, std::nullopt, std::ref(position.x()), 16});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"y"sv, std::nullopt, std::ref(position.y()), 16});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"dx"sv, std::nullopt, std::ref(speed.x()), 16});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"dy"sv, std::nullopt, std::ref(speed.y()), 16});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"dir"sv, std::nullopt, std::ref(direction)});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"type"sv, std::nullopt, std::ref(type)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{.name = "x"sv, .modTime = std::nullopt, .value = std::ref(position.x()), .factor = 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{.name = "y"sv, .modTime = std::nullopt, .value = std::ref(position.y()), .factor = 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{.name = "dx"sv, .modTime = std::nullopt, .value = std::ref(speed.x()), .factor = 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{.name = "dy"sv, .modTime = std::nullopt, .value = std::ref(speed.y()), .factor = 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "dir"sv, .modTime = std::nullopt, .value = std::ref(direction)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "type"sv, .modTime = std::nullopt, .value = std::ref(type)});
 	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"type"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return from.second == ScriptObjectType::PLAYER ? 1.0 : 0.0; }
+		.name = "type"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return from.second == ScriptObjectType::PLAYER ? 1.0 : 0.0; }
 	});
 	// clang-format on
 }

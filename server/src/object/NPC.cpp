@@ -92,8 +92,8 @@ constexpr std::array<std::string_view, NPCPROP_COUNT> npcPropNames =
 
 //----------------------------
 
-NPC::NPC(NPCID id, NPCStorageType storageType)
-	: id(id), storageType(storageType), m_savedModTime()
+NPC::NPC(const NPCID id, const NPCStorageType storageType)
+	: id(id), storageType(storageType)
 {
 	m_server = BabyDI::Get<Server>();
 	assert(m_server != nullptr);
@@ -154,13 +154,13 @@ void NPC::resetToInitialState()
 	moveQueue.clear();
 
 	// Warp.
-	if (auto initialLevel = m_server->getStubbedLevel(m_initialLevel); initialLevel != nullptr)
+	if (const auto initialLevel = m_server->getStubbedLevel(m_initialLevel); initialLevel != nullptr)
 		warp(initialLevel, character.getGlobalPosition());
 }
 
 //----------------------------
 
-bool NPC::warp(LevelPtr level, const PixelPosition& position)
+bool NPC::warp(const LevelPtr& level, const PixelPosition& position)
 {
 	if (level == nullptr)
 		return false;
@@ -200,7 +200,7 @@ bool NPC::warp(LevelPtr level, const PixelPosition& position)
 	return true;
 }
 
-void NPC::setLevel(LevelPtr level)
+void NPC::setLevel(const LevelPtr& level)
 {
 	if (level == nullptr)
 		return;
@@ -214,7 +214,7 @@ void NPC::setLevel(LevelPtr level)
 
 //----------------------------
 
-void NPC::addShowImg(uint8_t index, ShowImg&& showImg)
+void NPC::addShowImg(const uint8_t index, ShowImg&& showImg)
 {
 	if (index > 199)
 		return;
@@ -239,10 +239,10 @@ CString NPC::getShowImagesPacket(std::optional<clock::time_point> modTime) const
 	return packet;
 }
 
-void NPC::sendShowImagesToPlayer(PlayerPtr player, std::optional<clock::time_point> modTime) const noexcept
+void NPC::sendShowImagesToPlayer(const PlayerPtr& player, std::optional<clock::time_point> modTime) const noexcept
 {
 	// Only start sending showimg packets when the NPC gains showimgs.
-	if (!m_hadShowImgs && showImgList.size() == 0)
+	if (!m_hadShowImgs && showImgList.empty())
 		return;
 
 	m_hadShowImgs = true;
@@ -253,7 +253,7 @@ void NPC::sendShowImagesToPlayer(PlayerPtr player, std::optional<clock::time_poi
 void NPC::sendAllShowImagesToLevel(std::optional<clock::time_point> modTime) const noexcept
 {
 	// Only start sending showimg packets when the NPC gains showimgs.
-	if (!m_hadShowImgs && showImgList.size() == 0)
+	if (!m_hadShowImgs && showImgList.empty())
 		return;
 
 	m_hadShowImgs = true;
@@ -263,7 +263,7 @@ void NPC::sendAllShowImagesToLevel(std::optional<clock::time_point> modTime) con
 
 //----------------------------
 
-void NPC::addMoveToQueue(const LocalPixelPosition& moveDelta, float durationInSeconds, uint8_t options)
+void NPC::addMoveToQueue(const LocalPixelPosition& moveDelta, const float durationInSeconds, const uint8_t options)
 {
 	NPCMove move{.duration = std::chrono::duration_cast<std::chrono::milliseconds>(duration_seconds_double{durationInSeconds}), .modTime = m_server->getFrameStartTime()};
 
@@ -291,9 +291,9 @@ void NPC::addMoveToQueue(const LocalPixelPosition& moveDelta, float durationInSe
 	{
 		// If the distance to go from the current position to the end of our new movement is over 5,
 		// finish all the movements.
-		auto currentTilePosition = getTilePosition();
-		auto destinationTilePosition = toTilePosition(move.destination);
-		auto distance = std::hypot(destinationTilePosition.x() - currentTilePosition.x(), destinationTilePosition.y() - currentTilePosition.y());
+		const auto currentTilePosition = getTilePosition();
+		const auto destinationTilePosition = toTilePosition(move.destination);
+		const auto distance = std::hypot(destinationTilePosition.x() - currentTilePosition.x(), destinationTilePosition.y() - currentTilePosition.y());
 		finishAllMovements = distance > 5.0f;
 	}
 
@@ -397,7 +397,7 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 					boundingBox.position.translate(8, 16);
 
 				// Check for wall collision.
-				bool isOnWall = levelPtr->isOnWall2(boundingBox);
+				const bool isOnWall = levelPtr->isOnWall2(boundingBox);
 				if (isOnWall)
 					movementFinished = true;
 			}
@@ -438,13 +438,13 @@ std::pair<CString, CString> NPC::getMoveQueuePacketData(std::optional<clock::tim
 		if (modTime.has_value() && move.modTime < modTime.value())
 			continue;
 
-		auto durationLeftInSeconds = std::chrono::duration_cast<duration_seconds_double>(move.duration - move.elapsed);
-		auto timeIn50msIncrements = static_cast<uint16_t>(durationLeftInSeconds.count() / 0.05f);
+		const auto durationLeftInSeconds = std::chrono::duration_cast<duration_seconds_double>(move.duration - move.elapsed);
+		const auto timeIn50msIncrements = static_cast<uint16_t>(durationLeftInSeconds.count() / 0.05f);
 
-		auto currentPosition = move.getCurrentPosition();
-		auto dx = static_cast<int16_t>(move.destination.x() - currentPosition.x());
-		auto dy = static_cast<int16_t>(move.destination.y() - currentPosition.y());
-		auto localPosition = toLocalPixelPosition(currentPosition);
+		const auto currentPosition = move.getCurrentPosition();
+		const auto dx = static_cast<int16_t>(move.destination.x() - currentPosition.x());
+		const auto dy = static_cast<int16_t>(move.destination.y() - currentPosition.y());
+		const auto localPosition = toLocalPixelPosition(currentPosition);
 
 		// Client versions 2.3+ support the new move packet.
 		{
@@ -459,10 +459,10 @@ std::pair<CString, CString> NPC::getMoveQueuePacketData(std::optional<clock::tim
 			result.second >> (char)move.options.to_ulong();
 		}
 		{
-			uint8_t posX = static_cast<uint8_t>(localPosition.x() / 8.0f);
-			uint8_t posY = static_cast<uint8_t>(localPosition.y() / 8.0f);
-			auto moveDX = static_cast<int8_t>((dx / 8) + 100);
-			auto moveDY = static_cast<int8_t>((dy / 8) + 100);
+			const auto posX = static_cast<uint8_t>(localPosition.x() / 8);
+			const auto posY = static_cast<uint8_t>(localPosition.y() / 8);
+			const auto moveDX = static_cast<int8_t>((dx / 8) + 100);
+			const auto moveDY = static_cast<int8_t>((dy / 8) + 100);
 
 			result.first >> (char)posX >> (char)posY;
 			result.first >> (char)moveDX >> (char)moveDY;
@@ -474,7 +474,7 @@ std::pair<CString, CString> NPC::getMoveQueuePacketData(std::optional<clock::tim
 	return result;
 }
 
-void NPC::sendMoveQueueToPlayer(PlayerPtr player, std::optional<clock::time_point> modTime) const noexcept
+void NPC::sendMoveQueueToPlayer(const PlayerPtr& player, std::optional<clock::time_point> modTime) const noexcept
 {
 	if (moveQueue.empty())
 		return;
@@ -489,7 +489,7 @@ void NPC::sendMoveQueueToPlayer(PlayerPtr player, std::optional<clock::time_poin
 		player->sendPacket(CString() >> (char)PLO_MOVE2 >> (int)id << move2);
 }
 
-void NPC::sendMoveQueueToLevel(LevelPtr level, std::optional<clock::time_point> modTime) const noexcept
+void NPC::sendMoveQueueToLevel(const LevelPtr& level, std::optional<clock::time_point> modTime) const noexcept
 {
 	if (moveQueue.empty())
 		return;
@@ -497,7 +497,7 @@ void NPC::sendMoveQueueToLevel(LevelPtr level, std::optional<clock::time_point> 
 	sendMoveQueueToLevel(level, getMoveQueuePacketData(modTime));
 }
 
-void NPC::sendMoveQueueToLevel(LevelPtr level, const std::pair<CString, CString>& queue) const noexcept
+void NPC::sendMoveQueueToLevel(const LevelPtr& level, const std::pair<CString, CString>& queue) const noexcept
 {
 	if (queue.first.isEmpty())
 		return;
@@ -513,9 +513,9 @@ void NPC::sendMoveQueueToLevel(LevelPtr level, const std::pair<CString, CString>
 	});
 }
 
-void NPC::sendMoveQueueUpdatesToLevel(LevelPtr level) noexcept
+void NPC::sendMoveQueueUpdatesToLevel(const LevelPtr& level) noexcept
 {
-	auto result = getMoveQueuePacketData(lastMoveQueueSentTime);
+	const auto result = getMoveQueuePacketData(lastMoveQueueSentTime);
 	lastMoveQueueSentTime = m_server->getFrameStartTime();
 	sendMoveQueueToLevel(level, result);
 }
@@ -533,16 +533,16 @@ void NPC::refreshModTimes(clock::time_point modTime) noexcept
 
 double NPC::getCalculatedTileZ() const noexcept
 {
-	auto level = getLevel();
-	if (level == nullptr || !level->hasTerrain())
+	const auto levelPtr = getLevel();
+	if (levelPtr == nullptr || !levelPtr->hasTerrain())
 		return character.localPixelZ / 16.0;
 
 	PixelPosition testPosition = character.getGlobalPosition();
 	if (isCharacter())
 		testPosition.translate(24, 48);
 
-	auto terrainHeight = level->getHeightAt(testPosition);
-	auto currentZ = character.localPixelZ / 16.0;
+	const auto terrainHeight = levelPtr->getHeightAt(testPosition);
+	const auto currentZ = character.localPixelZ / 16.0;
 	return std::max(terrainHeight, currentZ);
 }
 
@@ -554,7 +554,7 @@ std::string NPC::getLevelName() const
 	if (scriptType == NPCTYPE_CONTROL)
 		return level;
 
-	if (auto levelPtr = getLevel(); levelPtr != nullptr)
+	if (const auto levelPtr = getLevel(); levelPtr != nullptr)
 		return levelPtr->levelName;
 
 	return level;
@@ -571,7 +571,7 @@ std::shared_ptr<Level> NPC::getLevel() const
 
 //----------------------------
 
-void NPC::hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEventType, std::optional<ScriptObject> source, std::optional<CarryObjectType> hitByType)
+void NPC::hurt(const int8_t damageInHalves, const std::optional<ScriptEventType> damageEventType, const std::optional<ScriptObject>& source, const std::optional<CarryObjectType> hitByType)
 {
 	// Adjust the NPC's HP.
 	if (allowServerDamageReactions && isCharacter())
@@ -586,7 +586,7 @@ void NPC::hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEvent
 	}
 }
 
-void NPC::hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, std::optional<ScriptEventType> damageEventType, std::optional<ScriptObject> source, std::optional<CarryObjectType> hitByType)
+void NPC::hurtAndPush(const int8_t damageInHalves, const PixelPosition& pushOrigin, const std::optional<ScriptEventType> damageEventType, const std::optional<ScriptObject>& source, const std::optional<CarryObjectType> hitByType)
 {
 	if (allowServerDamageReactions && isCharacter())
 	{
@@ -632,7 +632,7 @@ void NPC::hurtAndPush(int8_t damageInHalves, const PixelPosition& pushOrigin, st
 
 //----------------------------
 
-void NPC::executeEvents(ScriptEventQueue& events, ScriptObject source) const
+void NPC::executeEvents(ScriptEventQueue& events, const ScriptObject& source) const
 {
 	if (events.queue().empty())
 		return;
@@ -654,10 +654,10 @@ void NPC::setScript(const Script& script)
 	m_script = script;
 
 	// TODO: Optimize this.  We need a better way to track joined classes and to assign them to the NPC.
-	auto classes = string::join(m_script.getServerJoinedClasses() | std::views::keys);
+	const auto classes = string::join(m_script.getServerJoinedClasses() | std::views::keys);
 	setJoinedClasses(classes);
 
-	auto clientside = m_script.getClientSide();
+	const auto clientside = m_script.getClientSide();
 
 	// Check for position update blocking.
 	if (m_server->hasNPCServer() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
@@ -672,13 +672,13 @@ void NPC::setScript(const Script& script)
 		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (!image.empty() ? image : std::to_string(id)));
 }
 
-void NPC::setScript(std::string_view script)
+void NPC::setScript(const std::string_view script)
 {
 	//auto profile = log::Profile(log::server, "NPC::setScript");
 
 	// Set the script.
 	setJoinedClasses("");
-	m_script = std::move(Script{name, script});
+	m_script = Script{name, script};
 	modTime[PROPID(NPCProp::SCRIPT)] = m_server->getFrameStartTime();
 
 	// Check if we have joined classes already (due to a cached script).
@@ -713,7 +713,7 @@ void NPC::setScript(std::string_view script)
 
 	// Just a little warning for people who don't know.
 	if (m_script.getClientByteCode().empty() && m_script.getClientSide().length() > 0x705F)
-		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (image.length() != 0 ? image : std::to_string(id)));
+		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (!image.empty() ? image : std::to_string(id)));
 }
 
 std::string NPC::getClientSideScript() const
@@ -723,8 +723,7 @@ std::string NPC::getClientSideScript() const
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
-			const auto& clientSide = scriptClass->getScript().getClientSide();
-			if (!clientSide.empty())
+			if (const auto& clientSide = scriptClass->getScript().getClientSide(); !clientSide.empty())
 			{
 				result += '\xa7';
 				result += clientSide;
@@ -743,7 +742,7 @@ std::string NPC::getJoinedClassesList() const
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
 			result += scriptClass->name;
-			result += ",";
+			result += ',';
 		}
 		else hasExpired = true;
 	}
@@ -762,8 +761,9 @@ std::string NPC::getJoinedClassesList() const
 	return result;
 }
 
-bool NPC::hasJoinedClass(std::string_view className) const
+bool NPC::hasJoinedClass(const std::string_view className) const
 {
+	// NOLINTNEXTLINE(*-use-anyofallof)
 	for (const auto& classPtr : m_joinedClasses | std::views::values)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr && scriptClass->name == className)
@@ -868,7 +868,7 @@ void NPC::leaveClass(std::string_view className)
 	m_joinedClasses.erase(it);
 }
 
-void NPC::sendScriptUpdatesToLevel(clock::time_point when) const
+void NPC::sendScriptUpdatesToLevel(const clock::time_point when) const
 {
 	if (const auto npclevel = getLevel(); npclevel != nullptr)
 	{
@@ -876,7 +876,7 @@ void NPC::sendScriptUpdatesToLevel(clock::time_point when) const
 		{
 			const auto& levelName = npclevel->levelName;
 
-			CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)id;
+			const CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)id;
 			m_server->sendPacketToLevelAndPastVisitorsAfter(levelData.get(), when, packet);
 			m_server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), npclevel);
 		}
@@ -1609,13 +1609,13 @@ void NPC::setPropsFromPacket(CString& packet, const PlayerPtr& source)
 			prop->deserialize(packet);
 
 #ifdef PACKETLOGGING
-			size_t currentPos = packet.readPos();
-			CString rawData = packet.subString(oldPos, currentPos - oldPos);
+			const size_t currentPos = packet.readPos();
+			CString rawData = packet.subString(static_cast<int>(oldPos), static_cast<int>(currentPos - oldPos));
 
 			log::printBlock(log::networkdump, "  {}: {} |", npcPropNames[PROPID(propId)], prop);
-			for (size_t i = 0; i < rawData.length(); ++i)
+			for (int i = 0; i < rawData.length(); ++i)
 			{
-				log::printBlock(log::networkdump, " {:02x}", (unsigned char)rawData[i]);
+				log::printBlock(log::networkdump, " {:02x}", static_cast<unsigned char>(rawData[i]));
 			}
 			log::printBlock(log::networkdump, "\n");
 #endif
@@ -1668,8 +1668,8 @@ CString NPC::getModifiedPropsPacket() const
 				if (static_cast<NPCProp>(i) != NPCProp::SCRIPT)
 				{
 					log::printBlock(log::networkdump, " |");
-					for (size_t i = 0; i < data.length(); ++i)
-						log::printBlock(log::networkdump, " {:02x}", (unsigned char)data[i]);
+					for (int j = 0; j < data.length(); ++j)
+						log::printBlock(log::networkdump, " {:02x}", static_cast<unsigned char>(data[j]));
 				}
 				log::printBlock(log::networkdump, "\n");
 
@@ -1685,7 +1685,7 @@ CString NPC::getModifiedPropsPacket() const
 	return result;
 }
 
-CString NPC::getAllPropsPacket(std::optional<clock::time_point> newTime) const
+CString NPC::getAllPropsPacket(const std::optional<clock::time_point> newTime) const
 {
 	DO_PACKETLOG(log::printBlock(log::networkdump, "NPC::getAllPropsPacket:\n"));
 
@@ -1714,8 +1714,8 @@ CString NPC::getAllPropsPacket(std::optional<clock::time_point> newTime) const
 				if (static_cast<NPCProp>(i) != NPCProp::SCRIPT)
 				{
 					log::printBlock(log::networkdump, " |");
-					for (size_t i = 0; i < data.length(); ++i)
-						log::printBlock(log::networkdump, " {:02x}", (unsigned char)data[i]);
+					for (int j = 0; j < data.length(); ++j)
+						log::printBlock(log::networkdump, " {:02x}", static_cast<unsigned char>(data[j]));
 				}
 				log::printBlock(log::networkdump, "\n");
 
@@ -1736,52 +1736,52 @@ CString NPC::getAllPropsPacket(std::optional<clock::time_point> newTime) const
 void NPC::constructScriptParameters()
 {
 	// clang-format off
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"id"sv, std::ref(modTime[PROPID(NPCProp::ID)]), std::ref(id)});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"hurtdpower"sv, std::nullopt, std::ref(character.hurtDeltaInHalves)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "id"sv, .modTime = std::ref(modTime[PROPID(NPCProp::ID)]), .value = std::ref(id)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "hurtdpower"sv, .modTime = std::nullopt, .value = std::ref(character.hurtDeltaInHalves)});
 
 	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"width"sv, [this](std::optional<size_t>) -> GameValueVariantForGetter { return getComputedShape().width() / 16.0; }
+		.name = "width"sv, .getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return getComputedShape().width() / 16.0; }
 	});
 	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"height"sv, [this](std::optional<size_t>) -> GameValueVariantForGetter { return getComputedShape().height() / 16.0; }
+		.name = "height"sv, .getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return getComputedShape().height() / 16.0; }
 	});
 
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"z"sv, std::ref(modTime[PROPID(NPCProp::Z2)]), std::ref(character.localPixelZ), 16});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hearts"sv, std::ref(modTime[PROPID(NPCProp::HALFHEARTS)]), std::ref(character.hitpointsInHalves), 2});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{"hp"sv, std::ref(modTime[PROPID(NPCProp::HALFHEARTS)]), std::ref(character.hitpointsInHalves), 2});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"ap"sv, std::ref(modTime[PROPID(NPCProp::ALIGNMENT)]), std::ref(character.ap)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"rupees"sv, std::ref(modTime[PROPID(NPCProp::GRALATS)]), std::ref(character.gralats)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"gralats"sv, std::ref(modTime[PROPID(NPCProp::GRALATS)]), std::ref(character.gralats)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"bombs"sv, std::ref(modTime[PROPID(NPCProp::BOMBS)]), std::ref(character.bombs)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"darts"sv, std::ref(modTime[PROPID(NPCProp::ARROWS)]), std::ref(character.arrows)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"glovepower"sv, std::ref(modTime[PROPID(NPCProp::GLOVEPOWER)]), std::ref(character.glovePower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"swordpower"sv, std::ref(modTime[PROPID(NPCProp::SWORDIMAGE)]), std::ref(character.swordPower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{"shieldpower"sv, std::ref(modTime[PROPID(NPCProp::SHIELDIMAGE)]), std::ref(character.shieldPower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::TimeoutProperty{"timeout"sv, std::ref(timeout)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralArrayProperty{"save"sv, std::ref(modTime), PROPID(NPCProp::SAVE0), std::ref(saves)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#1"sv, std::ref(modTime[PROPID(NPCProp::SWORDIMAGE)]), std::ref(character.swordImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#2"sv, std::ref(modTime[PROPID(NPCProp::SHIELDIMAGE)]), std::ref(character.shieldImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#3"sv, std::ref(modTime[PROPID(NPCProp::HEADIMAGE)]), std::ref(character.headImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#5"sv, std::ref(modTime[PROPID(NPCProp::HORSEIMAGE)]), std::ref(character.horseImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#7"sv, std::ref(modTime[PROPID(NPCProp::GANI)]), std::ref(character.bowImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#8"sv, std::ref(modTime[PROPID(NPCProp::BODYIMAGE)]), std::ref(character.bodyImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#c"sv, std::ref(modTime[PROPID(NPCProp::MESSAGE)]), std::ref(character.chatMessage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#m"sv, std::ref(modTime[PROPID(NPCProp::GANI)]), std::ref(character.gani)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{"#n"sv, std::ref(modTime[PROPID(NPCProp::NICKNAME)]), std::ref(character.nickName)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{.name = "z"sv, .modTime = std::ref(modTime[PROPID(NPCProp::Z2)]), .value = std::ref(character.localPixelZ), .factor = 16});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{.name = "hearts"sv, .modTime = std::ref(modTime[PROPID(NPCProp::HALFHEARTS)]), .value = std::ref(character.hitpointsInHalves), .factor = 2});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{.name = "hp"sv, .modTime = std::ref(modTime[PROPID(NPCProp::HALFHEARTS)]), .value = std::ref(character.hitpointsInHalves), .factor = 2});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "ap"sv, .modTime = std::ref(modTime[PROPID(NPCProp::ALIGNMENT)]), .value = std::ref(character.ap)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "rupees"sv, .modTime = std::ref(modTime[PROPID(NPCProp::GRALATS)]), .value = std::ref(character.gralats)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "gralats"sv, .modTime = std::ref(modTime[PROPID(NPCProp::GRALATS)]), .value = std::ref(character.gralats)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "bombs"sv, .modTime = std::ref(modTime[PROPID(NPCProp::BOMBS)]), .value = std::ref(character.bombs)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "darts"sv, .modTime = std::ref(modTime[PROPID(NPCProp::ARROWS)]), .value = std::ref(character.arrows)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "glovepower"sv, .modTime = std::ref(modTime[PROPID(NPCProp::GLOVEPOWER)]), .value = std::ref(character.glovePower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "swordpower"sv, .modTime = std::ref(modTime[PROPID(NPCProp::SWORDIMAGE)]), .value = std::ref(character.swordPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "shieldpower"sv, .modTime = std::ref(modTime[PROPID(NPCProp::SHIELDIMAGE)]), .value = std::ref(character.shieldPower)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::TimeoutProperty{.name = "timeout"sv, .value = std::ref(timeout)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralArrayProperty{.name = "save"sv, .modTime = std::ref(modTime), .modTimeIndex0 = PROPID(NPCProp::SAVE0), .value = std::ref(saves)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#1"sv, .modTime = std::ref(modTime[PROPID(NPCProp::SWORDIMAGE)]), .value = std::ref(character.swordImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#2"sv, .modTime = std::ref(modTime[PROPID(NPCProp::SHIELDIMAGE)]), .value = std::ref(character.shieldImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#3"sv, .modTime = std::ref(modTime[PROPID(NPCProp::HEADIMAGE)]), .value = std::ref(character.headImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#5"sv, .modTime = std::ref(modTime[PROPID(NPCProp::HORSEIMAGE)]), .value = std::ref(character.horseImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#7"sv, .modTime = std::ref(modTime[PROPID(NPCProp::GANI)]), .value = std::ref(character.bowImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#8"sv, .modTime = std::ref(modTime[PROPID(NPCProp::BODYIMAGE)]), .value = std::ref(character.bodyImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#c"sv, .modTime = std::ref(modTime[PROPID(NPCProp::MESSAGE)]), .value = std::ref(character.chatMessage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#m"sv, .modTime = std::ref(modTime[PROPID(NPCProp::GANI)]), .value = std::ref(character.gani)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#n"sv, .modTime = std::ref(modTime[PROPID(NPCProp::NICKNAME)]), .value = std::ref(character.nickName)});
 
 	// colors
 	const size_t colorCount = m_server->isNewWorldMode() ? 8 : 5;
 	for (size_t i = 0; i < colorCount; ++i)
-		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{colorPropertyNames[i], std::ref(modTime[PROPID(NPCProp::COLORS)]), std::ref(character.colors[i])});
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = colorPropertyNames[i], .modTime = std::ref(modTime[PROPID(NPCProp::COLORS)]), .value = std::ref(character.colors[i])});
 
 	// gani attributes
 	for (size_t i = 0; i < 30; ++i)
-		bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{ganiAttributePropertyNames[i], std::ref(modTime[NPCGaniAttrPackets[i]]), std::ref(character.ganiAttributes[i])});
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = ganiAttributePropertyNames[i], .modTime = std::ref(modTime[NPCGaniAttrPackets[i]]), .value = std::ref(character.ganiAttributes[i])});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"x"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return (double)character.getTilePosition().x(); },
-		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "x"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return (double)character.getTilePosition().x(); },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
 			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
@@ -1809,9 +1809,9 @@ void NPC::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"y"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return character.getTilePosition().y(); },
-		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "y"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return character.getTilePosition().y(); },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
 			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
@@ -1839,15 +1839,15 @@ void NPC::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"headset"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter
+		.name = "headset"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter
 		{
 			int headSet = -1;
 			if (character.headImage.starts_with("head"))
 				string::toNumber(character.headImage.substr(4), headSet);
 			return static_cast<double>(headSet);
 		},
-		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
 			static double noHeadSet = -1.0;
 			static auto noHeadRef = std::ref(noHeadSet);
@@ -1865,10 +1865,10 @@ void NPC::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"sprite"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter {
+		.name = "sprite"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter {
 			return static_cast<double>(character.sprite); },
-		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
 			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
@@ -1883,9 +1883,9 @@ void NPC::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"dir"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(character.direction); },
-		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "dir"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(character.direction); },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
 			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
@@ -1896,9 +1896,9 @@ void NPC::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"hurtdx"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return character.hurtPushDeltaInHalfPixels[0] / 32.0; },
-		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "hurtdx"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return character.hurtPushDeltaInHalfPixels[0] / 32.0; },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
 			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{
@@ -1910,9 +1910,9 @@ void NPC::constructScriptParameters()
 	});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
-		"hurtdy"sv,
-		[this](std::optional<size_t>) -> GameValueVariantForGetter { return character.hurtPushDeltaInHalfPixels[1] / 32.0; },
-		[this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		.name = "hurtdy"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return character.hurtPushDeltaInHalfPixels[1] / 32.0; },
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
 		{
 			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
 			{

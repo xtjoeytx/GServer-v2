@@ -46,7 +46,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSGET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	auto settings = m_server->getFileSystemServer().openi(fs::FileCategory::CONFIG, "serveroptions.txt");
+	const auto settings = m_server->getFileSystemServer().openi(fs::FileCategory::CONFIG, "serveroptions.txt");
 	auto options = string::toCSV(settings->readAllLines());
 
 	// RC will automatically add a newline after the last line, so remove the newline if it exists to prevent an extra blank line from showing up in RC.
@@ -70,7 +70,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	auto& settings = m_server->getSettings();
+	const auto& settings = m_server->getSettings();
 	CString options = pPacket.readString("");
 
 	// RC will trim the end of the string, so if the last character is not a comma, add it back in.
@@ -104,7 +104,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 	}
 
 	// Save settings.
-	if (auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::CONFIG, "serveroptions.txt"); file != nullptr)
+	if (const auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::CONFIG, "serveroptions.txt"); file != nullptr)
 	{
 		file->clear();
 		file->write(options.toStringView());
@@ -114,9 +114,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSSET(CString& pPacket)
 	log::printLine(log::rc, "{} has updated the server options.", account.name);
 
 	// Send RC Information
-	CString outPacket = CString() >> (char)PLO_RC_CHAT << account.name << " has updated the server options.";
-	auto& playerList = m_server->getPlayerList();
-	for (auto& [pid, player] : playerList)
+	const CString outPacket = CString() >> (char)PLO_RC_CHAT << account.name << " has updated the server options.";
+	for (auto& player : m_server->getPlayerList() | std::views::values)
 	{
 		if (player->getType() & PLTYPE_ANYRC)
 		{
@@ -139,9 +138,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERCONFIGGET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	if (auto file = m_server->getFileSystemServer().open(fs::FileCategory::CONFIG, "foldersconfig.txt"); file != nullptr)
+	if (const auto file = m_server->getFileSystemServer().open(fs::FileCategory::CONFIG, "foldersconfig.txt"); file != nullptr)
 	{
-		auto foldersConfig = string::toCSV(file->readAllLines());
+		const auto foldersConfig = string::toCSV(file->readAllLines());
 		sendPacket(CString() >> (char)PLO_RC_FOLDERCONFIGGET << foldersConfig);
 	}
 
@@ -161,10 +160,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERCONFIGSET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	if (auto file = m_server->getFileSystemServer().openForWriting(fs::FileCategory::CONFIG, "foldersconfig.txt"); file != nullptr)
+	if (const auto file = m_server->getFileSystemServer().openForWriting(fs::FileCategory::CONFIG, "foldersconfig.txt"); file != nullptr)
 	{
 		file->clear();
-		CString folders = pPacket.readString("");
+		const CString folders = pPacket.readString("");
 		file->writeLines(string::fromCSV(folders.toStringView()));
 	}
 
@@ -207,7 +206,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSSET(CString& pPacket)
 {
 	// Deprecated?
 
-	auto p = m_server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
+	const auto p = m_server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
 	if (p == nullptr) return HandlePacketResult::Handled;
 
 	if (isClient() || (p->account.name != account.name && !account.hasRight(PLPERM_SETATTRIBUTES)) || (p->account.name == account.name && !account.hasRight(PLPERM_SETSELFATTRIBUTES)))
@@ -232,7 +231,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSSET(CString& pPacket)
 
 HandlePacketResult PlayerRC::msgPLI_RC_DISCONNECTPLAYER(CString& pPacket)
 {
-	auto p = m_server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
+	const auto p = m_server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
 	if (p == nullptr) return HandlePacketResult::Handled;
 
 	if (isClient() || !account.hasRight(PLPERM_DISCONNECT))
@@ -255,6 +254,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_DISCONNECTPLAYER(CString& pPacket)
 		disconnectMessage << " for the following reason: " << reason;
 	else
 		disconnectMessage << ".";
+
 	p->sendPacket(CString() >> (char)PLO_DISCMESSAGE << disconnectMessage);
 	m_server->deletePlayer(p);
 	return HandlePacketResult::Handled;
@@ -269,12 +269,12 @@ HandlePacketResult PlayerRC::msgPLI_RC_UPDATELEVELS(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	unsigned short levelCount = pPacket.readGUShort();
+	const unsigned short levelCount = pPacket.readGUShort();
 	for (int i = 0; i < levelCount; ++i)
 	{
 		auto levelName = pPacket.readChars(pPacket.readGUChar()).toString();
 		auto level = m_server->getLoadedLevelNoHint(levelName);
-		if (level) level->reload(levelName);
+		if (level) (void)level->reload(levelName);
 	}
 	return HandlePacketResult::Handled;
 }
@@ -301,7 +301,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PRIVADMINMESSAGE(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	auto p = m_server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
+	const auto p = m_server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
 	if (p == nullptr) return HandlePacketResult::Handled;
 
 	p->sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE << "Admin " << account.name << ":\xa7" << pPacket.readString(""));
@@ -356,12 +356,12 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 	}
 
 	// Open the serverflags.txt file.
-	if (auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::CONFIG, "serverflags.txt", true); file && file->opened())
+	if (const auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::CONFIG, "serverflags.txt", true); file && file->opened())
 	{
 		file->clear();
 
 		// Read the flags and store them in the file.
-		uint16_t count = pPacket.readGUShort();
+		const uint16_t count = pPacket.readGUShort();
 		for (auto i = 0; i < count; ++i)
 		{
 			std::string flagPair = string::trimMutate(pPacket.readChars(pPacket.readGUChar()).toString());
@@ -383,11 +383,11 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTADD(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	std::string acc = pPacket.readChars(pPacket.readGUChar()).toString();
-	std::string pass = pPacket.readChars(pPacket.readGUChar()).toString();
-	std::string email = pPacket.readChars(pPacket.readGUChar()).toString();
-	bool banned = (pPacket.readGUChar() != 0);
-	bool onlyLoad = (pPacket.readGUChar() != 0);
+	const std::string acc = pPacket.readChars(pPacket.readGUChar()).toString();
+	const std::string pass = pPacket.readChars(pPacket.readGUChar()).toString();
+	const std::string email = pPacket.readChars(pPacket.readGUChar()).toString();
+	const bool banned = (pPacket.readGUChar() != 0);
+	const bool onlyLoad = (pPacket.readGUChar() != 0);
 	pPacket.readGUChar(); // Admin level, deprecated.
 
 	Account newAccount;
@@ -422,7 +422,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTDEL(CString& pPacket)
 	}
 
 	// Get the account.
-	auto fileInfo = m_server->getFileSystemServer().infoi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc));
+	const auto fileInfo = m_server->getFileSystemServer().infoi(fs::FileCategory::ACCOUNT, std::format("{}.txt", acc));
 	if (fileInfo == nullptr)
 		return HandlePacketResult::Handled;
 
@@ -449,7 +449,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 	}
 
 	CString name = pPacket.readChars(pPacket.readGUChar());
-	std::string conditions = pPacket.readChars(pPacket.readGUChar()).toString();
+	const std::string conditions = pPacket.readChars(pPacket.readGUChar()).toString();
 
 	// Fix up name searching.
 	name.replaceAllI("%", "*");
@@ -479,7 +479,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTLISTGET(CString& pPacket)
 
 HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSGET2(CString& pPacket)
 {
-	auto p = m_server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
+	const auto p = m_server->getPlayer(pPacket.readGUShort(), PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER);
 	if (p == nullptr) return HandlePacketResult::Handled;
 
 	if (isClient() || !account.hasRight(PLPERM_VIEWATTRIBUTES))
@@ -547,8 +547,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 	}
 
 	// Save RC stuff.
-	std::vector<std::string> adminip = p->account.adminIpRange;
-	uint32_t rights = p->account.adminRights;
+	const auto adminip = p->account.adminIpRange;
+	const auto rights = p->account.adminRights;
 	std::vector<std::string> folders;
 	std::ranges::copy(p->account.folderList, std::back_inserter(folders));
 
@@ -672,13 +672,13 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	std::string pass = pPacket.readChars(pPacket.readGUChar()).toString();
-	std::string email = pPacket.readChars(pPacket.readGUChar()).toString();
-	bool banned = (pPacket.readGUChar() != 0 ? true : false);
-	bool loadOnly = (pPacket.readGUChar() != 0 ? true : false);
+	const std::string pass = pPacket.readChars(pPacket.readGUChar()).toString();
+	const std::string email = pPacket.readChars(pPacket.readGUChar()).toString();
+	const bool banned = (pPacket.readGUChar() != 0 ? true : false);
+	const bool loadOnly = (pPacket.readGUChar() != 0 ? true : false);
 	pPacket.readGUChar();                    // admin level
 	pPacket.readChars(pPacket.readGUChar()); // world
-	std::string banreason = pPacket.readChars(pPacket.readGUChar()).toString();
+	const std::string banreason = pPacket.readChars(pPacket.readGUChar()).toString();
 
 	// Get player.
 	auto p = m_server->getPlayer(acc, PLTYPE_ANYCLIENT);
@@ -703,15 +703,13 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 	m_server->getAccountLoader().saveAccount(p->account);
 
 	// If the account is currently on RC, reload it.
-	if (auto pRC = m_server->getPlayer(acc, PLTYPE_ANYRC); pRC)
-	{
+	if (const auto pRC = m_server->getPlayer(acc, PLTYPE_ANYRC); pRC)
 		m_server->getAccountLoader().loadAccount(acc.toStringView(), pRC->account);
-	}
 
 	// If the player was just now banned, kick him off the server.
 	if (account.hasRight(PLPERM_BAN) && banned && p->getId() != 0)
 	{
-		auto reason = string::join(string::fromCSV(banreason), std::string_view{"\r"});
+		const auto reason = string::join(string::fromCSV(banreason), std::string_view{"\r"});
 
 		p->setLoaded(false);
 		p->sendPacket(CString() >> (char)PLO_DISCMESSAGE << account.name << " has banned you.  Reason: " << reason);
@@ -740,7 +738,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	CString message = pPacket.readString("");
+	const CString message = pPacket.readString("");
 	if (!m_server->processRCChat(message.toStringView(), shared_from_this()))
 		m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.character.nickName << ": " << message);
 
@@ -756,14 +754,14 @@ HandlePacketResult PlayerRC::msgPLI_RC_WARPPLAYER(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	auto p = m_server->getPlayer<PlayerClient>(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
+	const auto p = m_server->getPlayer<PlayerClient>(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
 	if (p == nullptr) return HandlePacketResult::Handled;
 
 	Position<int16_t> pos = {static_cast<int16_t>(pPacket.readGChar() * 8), static_cast<int16_t>(pPacket.readGChar() * 8)};
 	CString wLevel = pPacket.readString("");
 	p->warp(wLevel, pos);
 
-	log::printLine(log::rc, "{} has warped {} to {} ({:.2f}, {:.2f})", account.name, p->account.name, wLevel.text(), pos.x() / 16.0f, pos.y() / 16.0f);
+	log::printLine(log::rc, "{} has warped {} to {} ({:.2f}, {:.2f})", account.name, p->account.name, wLevel.text(), static_cast<float>(pos.x()) / 16.0f, static_cast<float>(pos.y()) / 16.0f);
 	return HandlePacketResult::Handled;
 }
 
@@ -793,10 +791,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 	}
 
 	// Get the folder list.
-	auto folders = string::toCSV(p->account.folderList);
+	const auto folders = string::toCSV(p->account.folderList);
 
 	// Send the packet.
-	auto adminIp = string::join(p->account.adminIpRange);
+	const auto adminIp = string::join(p->account.adminIpRange);
 	sendPacket(CString() >> (char)PLO_RC_PLAYERRIGHTSGET >> (char)acc.length() << acc >> (long long)p->account.adminRights >> (char)adminIp.size() << adminIp >> (short)folders.length() << folders);
 
 	return HandlePacketResult::Handled;
@@ -883,7 +881,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 		{
 			if (!(n_adminRights & PLPERM_NPCCONTROL))
 			{
-				if (auto pNC = m_server->getPlayer(acc, PLTYPE_ANYNC); pNC)
+				if (const auto pNC = m_server->getPlayer(acc, PLTYPE_ANYNC); pNC)
 					pNC->disconnect();
 			}
 			else if (m_server->hasNPCServer())
@@ -957,15 +955,13 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 			return HandlePacketResult::Handled;
 	}
 
-	CString comment = pPacket.readString("");
+	const CString comment = pPacket.readString("");
 	p->account.comments = comment.toStringView();
 	m_server->getAccountLoader().saveAccount(p->account);
 
 	// If the account is currently on RC, reload it.
-	if (auto pRC = m_server->getPlayer(acc, PLTYPE_ANYRC); pRC)
-	{
+	if (const auto pRC = m_server->getPlayer(acc, PLTYPE_ANYRC); pRC)
 		m_server->getAccountLoader().loadAccount(acc.toStringView(), pRC->account);
-	}
 
 	log::printLine(log::rc, "{} has set the comments of {}", account.name, acc.text());
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has set the comments of " << acc);
@@ -1027,17 +1023,15 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 			return HandlePacketResult::Handled;
 	}
 
-	bool banned = (pPacket.readGUChar() == 0 ? false : true);
-	CString reason = pPacket.readString("");
+	const bool banned = (pPacket.readGUChar() != 0);
+	const CString reason = pPacket.readString("");
 	p->account.banned = banned;
 	p->account.banReason = reason.toStringView();
 	m_server->getAccountLoader().saveAccount(p->account);
 
 	// If the account is currently on RC, reload it.
-	if (auto pRC = m_server->getPlayer(acc, PLTYPE_ANYRC); pRC)
-	{
+	if (const auto pRC = m_server->getPlayer(acc, PLTYPE_ANYRC); pRC)
 		m_server->getAccountLoader().loadAccount(acc.toStringView(), pRC->account);
-	}
 
 	// If the player was just now banned, kick him off the server.
 	if (banned && p->getId() != 0)
@@ -1061,7 +1055,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 	}
 
 	// If the player has no folder rights, don't open the File Browser.
-	if (account.folderList.size() == 0)
+	if (account.folderList.empty())
 		return HandlePacketResult::Handled;
 
 	// Get folder list to send to the client.
@@ -1073,19 +1067,18 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 
 	// Create a folder map.
 	std::map<CString, CString> folderMap;
-	for (auto i = account.folderList.begin(); i != account.folderList.end(); ++i)
+	for (auto& f : account.folderList)
 	{
 		CString rights("r");
 		CString wild("*");
-		CString folder(*i);
+		CString folder(f);
 		rights = folder.readString(" ").trim().toLower();
 		folder.removeI(0, folder.readPos());
 		folder.replaceAllI("\\", "/");
 		folder.trimI();
 		if (folder[folder.length() - 1] != '/')
 		{
-			int pos = folder.findl('/');
-			if (pos != -1)
+			if (int pos = folder.findl('/'); pos != -1)
 			{
 				wild = folder.subString(pos + 1);
 				folder.removeI(pos + 1);
@@ -1095,7 +1088,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 	}
 
 	// See if we can use our lastFolder.  If we can't, use the first folder.
-	if (folderMap.find(account.lastFolderAccessed) == folderMap.end())
+	if (!folderMap.contains(account.lastFolderAccessed))
 		account.lastFolderAccessed = folderMap.begin()->first.toStringView();
 
 	// We want to end with a path separator.
@@ -1110,9 +1103,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_START(CString& pPacket)
 	std::vector<CString> wildcards = folderMap[account.lastFolderAccessed].tokenize("\n");
 	for (auto i = wildcards.begin(); i != wildcards.end(); ++i)
 	{
-		CString rights = (*i).readString(":");
-		CString wildcard = (*i).readString("");
-		(*i).setRead(0);
+		CString rights = i->readString(":");
+		CString wildcard = i->readString("");
+		i->setRead(0);
 		for (auto& dirEntry : dirs)
 		{
 			if (!dirEntry.is_regular_file()) continue;
@@ -1157,8 +1150,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 		folder.trimI();
 		if (folder[folder.length() - 1] != '/')
 		{
-			int pos = folder.findl('/');
-			if (pos != -1)
+			if (int pos = folder.findl('/'); pos != -1)
 			{
 				wild = folder.subString(pos + 1);
 				folder.removeI(pos + 1);
@@ -1169,7 +1161,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 
 	// See if newFolder is part of the folder map.
 	// If it isn't, return.
-	if (folderMap.find(newFolder) == folderMap.end())
+	if (!folderMap.contains(newFolder))
 		return HandlePacketResult::Handled;
 	else
 		account.lastFolderAccessed = newFolder.toStringView();
@@ -1190,9 +1182,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_CD(CString& pPacket)
 	std::vector<CString> wildcards = folderMap[account.lastFolderAccessed].tokenize("\n");
 	for (auto i = wildcards.begin(); i != wildcards.end(); ++i)
 	{
-		CString rights = (*i).readString(":");
-		CString wildcard = (*i).readString("");
-		(*i).setRead(0);
+		CString rights = i->readString(":");
+		CString wildcard = i->readString("");
+		i->setRead(0);
 		for (auto& dirEntry : dirs)
 		{
 			if (!dirEntry.is_regular_file()) continue;
@@ -1234,9 +1226,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 	}
 
 	// Send file.
-	std::filesystem::path file{pPacket.readString("").toString()};
-	std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
-	CString checkFile = (lastFolderAccessed / file).generic_string();
+	const std::filesystem::path file{pPacket.readString("").toString()};
+	const std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
+	const CString checkFile = (lastFolderAccessed / file).generic_string();
 
 	// Don't let us download/view important files.
 	if (!account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
@@ -1267,10 +1259,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	std::filesystem::path file{pPacket.readChars(pPacket.readGUChar()).toString()};
-	std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
-	CString fileData = pPacket.subString(pPacket.readPos());
-	CString checkFile = (lastFolderAccessed / file).generic_string();
+	const std::filesystem::path file{pPacket.readChars(pPacket.readGUChar()).toString()};
+	const std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
+	const CString fileData = pPacket.subString(pPacket.readPos());
+	const CString checkFile = (lastFolderAccessed / file).generic_string();
 
 	// Check if this is a protected file.
 	bool isProtected = false;
@@ -1305,10 +1297,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 	}
 
 	// See if we are uploading a large file or not.
-	if (m_rcLargeFiles.find(file) == m_rcLargeFiles.end())
+	if (!m_rcLargeFiles.contains(file))
 	{
 		// Normal file. Save it and display our message.
-		fileData.save(checkFile);
+		(void)fileData.save(checkFile);
 
 		log::printLine(log::rc, "{} uploaded file {}", account.name, file.generic_string());
 		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Uploaded file " << file.generic_string());
@@ -1330,13 +1322,13 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	std::filesystem::path dir{pPacket.readChars(pPacket.readGUChar()).toString()};
-	std::filesystem::path file{pPacket.readString("").toString()};
-	std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
+	const std::filesystem::path dir{pPacket.readChars(pPacket.readGUChar()).toString()};
+	const std::filesystem::path file{pPacket.readString("").toString()};
+	const std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
 
 	// Assemble destination and source.
-	auto destination = dir / file;
-	auto source = lastFolderAccessed / file;
+	const auto destination = dir / file;
+	const auto source = lastFolderAccessed / file;
 
 	// Don't let us move important files.
 	for (const auto& importantFile : ImportantFiles)
@@ -1372,10 +1364,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 	}
 
 	CString file = pPacket.readString("");
-	std::filesystem::path filePath = std::filesystem::path{account.lastFolderAccessed} / file.toStringView();
+	const std::filesystem::path filePath = std::filesystem::path{account.lastFolderAccessed} / file.toStringView();
 
 	// Don't let us delete important files.
-	CString checkFile = filePath.generic_string();
+	const CString checkFile = filePath.generic_string();
 	for (const auto& file : ImportantFiles)
 	{
 		if (checkFile == file)
@@ -1438,12 +1430,12 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 	CString f1 = pPacket.readChars(pPacket.readGUChar());
 	CString f2 = pPacket.readChars(pPacket.readGUChar());
 
-	std::filesystem::path oldPath = std::filesystem::path{account.lastFolderAccessed} / f1.toStringView();
-	std::filesystem::path newPath = std::filesystem::path{account.lastFolderAccessed} / f2.toStringView();
+	const std::filesystem::path oldPath = std::filesystem::path{account.lastFolderAccessed} / f1.toStringView();
+	const std::filesystem::path newPath = std::filesystem::path{account.lastFolderAccessed} / f2.toStringView();
 
 	// Don't let us rename/overwrite important files.
-	CString checkFile1 = oldPath.generic_string();
-	CString checkFile2 = newPath.generic_string();
+	const CString checkFile1 = oldPath.generic_string();
+	const CString checkFile2 = newPath.generic_string();
 	for (const auto& file : ImportantFiles)
 	{
 		if (checkFile1 == file || checkFile2 == file)
@@ -1503,7 +1495,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILESTART(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	std::filesystem::path file{pPacket.readString("").toString()};
+	const std::filesystem::path file{pPacket.readString("").toString()};
 	m_rcLargeFiles[file] = CString();
 
 	return HandlePacketResult::Handled;
@@ -1517,11 +1509,11 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	std::filesystem::path file{pPacket.readString("").toString()};
-	std::filesystem::path filePath = std::filesystem::path{account.lastFolderAccessed} / file;
+	const std::filesystem::path file{pPacket.readString("").toString()};
+	const std::filesystem::path filePath = std::filesystem::path{account.lastFolderAccessed} / file;
 
 	// Save the file.
-	m_rcLargeFiles[file].save(filePath.string());
+	(void)m_rcLargeFiles[file].save(filePath.string());
 
 	// Remove the data from memory.
 	for (auto it = m_rcLargeFiles.begin(); it != m_rcLargeFiles.end(); ++it)
@@ -1541,7 +1533,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 
 HandlePacketResult PlayerRC::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 {
-	std::filesystem::path folder{pPacket.readString("").toString()};
+	const std::filesystem::path folder{pPacket.readString("").toString()};
 	if (isClient())
 	{
 		log::printLine(log::rc, "[Hack] {} attempted to delete a folder through the File Browser: {}", account.name, folder.generic_string());
@@ -1568,8 +1560,8 @@ HandlePacketResult PlayerRC::msgPLI_NPCSERVERQUERY(CString& pPacket)
 		return HandlePacketResult::Handled;
 
 	// Read Packet Data
-	[[maybe_unused]] PlayerID pid = static_cast<PlayerID>(pPacket.readGUShort());
-	CString message = pPacket.readString("");
+	[[maybe_unused]] auto pid = static_cast<PlayerID>(pPacket.readGUShort());
+	const CString message = pPacket.readString("");
 
 	// Enact upon the message.
 	if (message == "location")

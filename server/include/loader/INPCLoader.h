@@ -14,6 +14,9 @@ namespace preagonal
 class INPCLoader
 {
 public:
+	virtual ~INPCLoader() = default;
+
+public:
 	virtual NPCPtr loadNPC(std::string_view npcName) noexcept = 0;
 	virtual NPCPtr loadNPC(const std::filesystem::path& filePath) noexcept = 0;
 	virtual bool saveNPC(NPCPtr npc) noexcept = 0;

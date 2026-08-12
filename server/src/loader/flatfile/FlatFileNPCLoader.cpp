@@ -35,8 +35,8 @@ static constexpr std::array<uint8_t, 30> attrPackets = {36, 37, 38, 39, 40, 44, 
 
 NPCPtr FlatFileNPCLoader::loadNPC(std::string_view npcName) noexcept
 {
-	auto server = BabyDI::Get<Server>();
-	auto fileInfo = server->getFileSystemServer().info(fs::FileCategory::NPC, std::format("npc{}.txt", npcName));
+	const auto server = BabyDI::Get<Server>();
+	const auto fileInfo = server->getFileSystemServer().info(fs::FileCategory::NPC, std::format("npc{}.txt", npcName));
 	if (fileInfo == nullptr)
 		return nullptr;
 
@@ -52,8 +52,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	if (file == nullptr)
 		return nullptr;
 
-	std::string header = string::trimMutate(file->readLine());
-	if (header != "GRNPC001")
+	if (std::string header = string::trimMutate(file->readLine()); header != "GRNPC001")
 		return nullptr;
 
 	auto npcNameFromFile = filePath.stem().string();
@@ -450,8 +449,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	auto currentFileName = fs::getANSIFileName(filePath);
 	if (expectedFileName != currentFileName)
 	{
-		auto fileData = server->getFileSystemServer().infoi(fs::FileCategory::NPC, currentFileName);
-		if (fileData != nullptr)
+		if (auto fileData = server->getFileSystemServer().infoi(fs::FileCategory::NPC, currentFileName); fileData != nullptr)
 		{
 			auto indent = log::server.indent();
 			if (server->getFileSystemServer().rename(*fileData, expectedFileName))
@@ -483,7 +481,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 			file->writeConfigLine(key, value);
 	};
 
-	auto level = npc->getLevel();
+	const auto level = npc->getLevel();
 
 	// Get the draw layer number.
 	int layer = 0;
@@ -602,8 +600,8 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		file->writeLine("MALE 0");
 	// ---
 
-	if (!std::ranges::empty(NPCSaveProps | std::views::filter([&npc](NPCProp prop) { return npc->modTime[PROPID(prop)].has_value(); })))
-		file->writeConfigLine("SAVEARR", string::toCSV(npc->saves | std::views::transform([](uint8_t x) { return string::to_string(x); })));
+	if (!std::ranges::empty(NPCSaveProps | std::views::filter([&npc](const NPCProp prop) { return npc->modTime[PROPID(prop)].has_value(); })))
+		file->writeConfigLine("SAVEARR", string::toCSV(npc->saves | std::views::transform([](const uint8_t x) { return string::to_string(x); })));
 
 	for (int i = 0; i < 30; i++)
 	{
@@ -617,8 +615,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 		// Serialize the variable entirely.
 		if (server->Generation == ServerGeneration::MODERN)
 		{
-			auto var = npc->scripting.variables.serializeModern(flag);
-			if (var.has_value())
+			if (auto var = npc->scripting.variables.serializeModern(flag); var.has_value())
 				file->writeConfigLine("FLAG", var.value());
 		}
 		else

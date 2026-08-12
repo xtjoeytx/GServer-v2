@@ -21,7 +21,7 @@ public:
 		cmd_map_type& m_builderCommands;
 
 	public:
-		Builder(cmd_map_type& cmds) : m_builderCommands(cmds) {}
+		explicit Builder(cmd_map_type& cmds) : m_builderCommands(cmds) {}
 
 		void registerCommand(key_type key, fn_type fn)
 		{
@@ -29,8 +29,8 @@ public:
 		}
 	};
 
-	CommandDispatcher() {}
-	CommandDispatcher(std::function<void(Builder)> initfn)
+	CommandDispatcher() = default;
+	explicit CommandDispatcher(std::function<void(Builder)> initfn)
 	{
 		initfn(Builder(m_commands));
 	}

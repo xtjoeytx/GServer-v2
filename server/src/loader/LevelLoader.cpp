@@ -99,13 +99,13 @@ GSERVL01
 
 constexpr int MAX_TILE_COUNT = 64 * 64; // 4096 tiles per level.
 
-static constexpr int getBase64Position(char c)
+static constexpr int getBase64Position(const char c)
 {
 	if (c >= 'a')
 		return 26 + (c - 'a');
-	else if (c >= 'A')
+	if (c >= 'A')
 		return (c - 'A');
-	else if (c >= '0' && c <= '9')
+	if (c >= '0' && c <= '9')
 		return 52 + (c - '0');
 
 	switch (c)
@@ -114,6 +114,7 @@ static constexpr int getBase64Position(char c)
 			return 52 + 10;
 		case '/':
 			return 52 + 11;
+		default:;
 	}
 
 	return 0;
@@ -130,21 +131,21 @@ LevelPtr LevelLoader::loadLevel(const std::filesystem::path& levelName)
 	return nullptr;
 }
 
-bool LevelLoader::loadLevelInto(const std::filesystem::path& levelName, LevelPtr level)
+bool LevelLoader::loadLevelInto(const std::filesystem::path& levelName, const LevelPtr& level)
 {
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	level->levelName = fs::getANSIFileName(levelName);
 
 	// Normal level loading (just one sub-level).
-	bool isGmap = string::ends_withi(level->levelName, ".gmap"sv);
+	const bool isGmap = string::ends_withi(level->levelName, ".gmap"sv);
 	if (!isGmap)
 	{
-		auto levelData = server->getCachedLevelData(level->levelName);
+		const auto levelData = server->getCachedLevelData(level->levelName);
 		if (levelData == nullptr)
 			return false;
 
 		// Check if this level belongs to a bigmap.
-		if (auto map = server->findMapForLevel(MapType::BIGMAP, level->levelName); map != nullptr)
+		if (const auto map = server->findMapForLevel(MapType::BIGMAP, level->levelName); map != nullptr)
 			level->setMap(map);
 
 		level->m_filePath = levelData->filePath;
@@ -153,9 +154,9 @@ bool LevelLoader::loadLevelInto(const std::filesystem::path& levelName, LevelPtr
 		loadStaticDataNPCs(level, std::nullopt, levelData);
 
 		// Bind listeners for level data changes.
-		auto handle = levelData->onDataRefreshed.subscribe([weakSelf = std::weak_ptr<Level>(level)](StaticLevelDataPtr staticData)
+		const auto handle = levelData->onDataRefreshed.subscribe([weakSelf = std::weak_ptr<Level>(level)](const StaticLevelDataPtr& staticData)
 		{
-			if (auto self = weakSelf.lock(); self != nullptr)
+			if (const auto self = weakSelf.lock(); self != nullptr)
 				self->reload(staticData);
 		});
 		level->m_levelParts.front()->staticDataRefreshedHandle = handle;
@@ -172,7 +173,7 @@ bool LevelLoader::loadLevelInto(const std::filesystem::path& levelName, LevelPtr
 	}
 
 	// Find the map for the gmap level.
-	auto map = server->findMap(level->levelName);
+	const auto map = server->findMap(level->levelName);
 	if (map == nullptr)
 		return false;
 
@@ -186,14 +187,14 @@ bool LevelLoader::loadLevelInto(const std::filesystem::path& levelName, LevelPtr
 		if (levelData == nullptr)
 			continue;
 
-		auto index = static_cast<size_t>(levelPos.y()) * map->size.width() + levelPos.x();
+		const auto index = static_cast<size_t>(levelPos.y()) * map->size.width() + levelPos.x();
 		level->m_levelParts[index] = attachStaticDataToLevel(level, levelPos, levelData);
 		loadStaticDataNPCs(level, levelPos, levelData);
 
 		// Bind listeners for level data changes.
-		auto handle = levelData->onDataRefreshed.subscribe([weakSelf = std::weak_ptr<Level>(level)](StaticLevelDataPtr staticData)
+		const auto handle = levelData->onDataRefreshed.subscribe([weakSelf = std::weak_ptr<Level>(level)](const StaticLevelDataPtr& staticData)
 		{
-			if (auto self = weakSelf.lock(); self != nullptr)
+			if (const auto self = weakSelf.lock(); self != nullptr)
 				self->reload(staticData);
 		});
 		level->m_levelParts[index]->staticDataRefreshedHandle = handle;
@@ -210,7 +211,7 @@ StaticLevelDataPtr LevelLoader::loadStaticData(const std::filesystem::path& leve
 	auto data = std::make_shared<StaticLevelData>();
 
 	// Find the level file.
-	auto levelString = fs::getANSIFileName(levelName);
+	const auto levelString = fs::getANSIFileName(levelName);
 	data->levelName = levelString;
 
 	// Load the data.
@@ -220,12 +221,12 @@ StaticLevelDataPtr LevelLoader::loadStaticData(const std::filesystem::path& leve
 	return nullptr;
 }
 
-bool LevelLoader::loadStaticDataInto(StaticLevelDataPtr staticLevelData)
+bool LevelLoader::loadStaticDataInto(const StaticLevelDataPtr& staticLevelData)
 {
 	auto* server = BabyDI::Get<Server>();
 	auto& fileSystem = server->getFileSystem();
 
-	auto fileInfo = fileSystem.infoi(fs::FileCategory::LEVEL, staticLevelData->levelName);
+	const auto fileInfo = fileSystem.infoi(fs::FileCategory::LEVEL, staticLevelData->levelName);
 	if (fileInfo == nullptr)
 		return false;
 
@@ -235,7 +236,7 @@ bool LevelLoader::loadStaticDataInto(StaticLevelDataPtr staticLevelData)
 		return false;
 
 	// Get the file version.
-	auto version = fileData->readChars(8);
+	const auto version = fileData->readChars(8);
 
 	// Save some level details.
 	staticLevelData->filePath = fileInfo->file;
@@ -252,7 +253,7 @@ bool LevelLoader::loadStaticDataInto(StaticLevelDataPtr staticLevelData)
 	return true;
 }
 
-SubLevelPtr LevelLoader::attachStaticDataToLevel(LevelPtr level, std::optional<MapPosition> mapPosition, StaticLevelDataPtr staticData)
+SubLevelPtr LevelLoader::attachStaticDataToLevel(const LevelPtr& level, std::optional<MapPosition> mapPosition, const StaticLevelDataPtr& staticData)
 {
 	auto subLevel = std::make_shared<SubLevel>();
 	subLevel->parentLevel = level;
@@ -294,10 +295,10 @@ SubLevelPtr LevelLoader::attachStaticDataToLevel(LevelPtr level, std::optional<M
 	if (level->isGmap())
 	{
 		// Check for map terrain.
-		if (auto map = level->getMap(); map != nullptr && !map->terrain.levelSeeds.empty())
+		if (const auto map = level->getMap(); map != nullptr && !map->terrain.levelSeeds.empty())
 		{
 			auto& terrain = subLevel->terrain.emplace();
-			auto seedIndex = mapPosition.value().y() * map->size.width() + mapPosition.value().x();
+			const auto seedIndex = mapPosition.value().y() * map->size.width() + mapPosition.value().x();
 			terrain.levelSeed = map->terrain.levelSeeds[seedIndex];
 			terrain.levelHeight = map->terrain.levelHeightDeviation;
 			terrain.levelChaos = map->terrain.levelChaos;
@@ -310,11 +311,11 @@ SubLevelPtr LevelLoader::attachStaticDataToLevel(LevelPtr level, std::optional<M
 	return subLevel;
 }
 
-void LevelLoader::loadStaticDataNPCs(LevelPtr level, std::optional<MapPosition> mapPosition, StaticLevelDataPtr staticData)
+void LevelLoader::loadStaticDataNPCs(const LevelPtr& level, std::optional<MapPosition> mapPosition, const StaticLevelDataPtr& staticData)
 {
 	// The sub-level must exist before this method gets called.
 
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 
 	// Delete existing level NPCs.
 	auto& npcs = level->getNPCs();
@@ -337,7 +338,7 @@ void LevelLoader::loadStaticDataNPCs(LevelPtr level, std::optional<MapPosition> 
 	{
 		auto& gen = server->getNPCIdGenerator();
 		auto npcId = gen.getAvailableId(NPCID_GEN_LOCAL);
-		auto npc = std::make_shared<NPC>(npcId, NPCStorageType::LEVEL);
+		const auto npc = std::make_shared<NPC>(npcId, NPCStorageType::LEVEL);
 
 		// Cached data.
 		npc->character.localPixelX = npcData.position.x();
@@ -365,7 +366,7 @@ void LevelLoader::loadStaticDataNPCs(LevelPtr level, std::optional<MapPosition> 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool LevelLoader::loadZelda(StaticLevelDataPtr levelData, std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData)
+bool LevelLoader::loadZelda(const StaticLevelDataPtr& levelData, const std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData)
 {
 	int version = -1;
 	if (fileVersion == "Z3-V1.03")
@@ -389,7 +390,7 @@ bool LevelLoader::loadZelda(StaticLevelDataPtr levelData, std::string_view fileV
 	return true;
 }
 
-bool LevelLoader::loadGraal(StaticLevelDataPtr levelData, std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData)
+bool LevelLoader::loadGraal(const StaticLevelDataPtr& levelData, const std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData)
 {
 	// Grab file version.
 	int version = -1;
@@ -437,21 +438,21 @@ bool LevelLoader::loadGraal(StaticLevelDataPtr levelData, std::string_view fileV
 	return true;
 }
 
-void LevelLoader::loadBinaryTiles(StaticLevelDataPtr levelData, fs::FilePtr& fileData, uint32_t bits, int layers)
+void LevelLoader::loadBinaryTiles(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData, const uint32_t bits, const uint8_t layers)
 {
 	for (uint8_t layer = 0; layer < layers; ++layer)
 	{
 		if (fileData->finishedReading())
 			break;
 
-		auto tiles = levelData->tiles.getOrCreateLayer(layer);
+		const auto tiles = levelData->tiles.getOrCreateLayer(layer);
 
 		uint32_t buffer = 0;
 		uint32_t read = 0;
 		uint16_t code = 0;
 		int tileReadAmount = 1;
 		int boardWriteIndex = 0;
-		bool isExtraLayer = layer != 0;
+		const bool isExtraLayer = layer != 0;
 
 		bool doubleTileRLEMode = false;
 		int32_t rleTiles[2] = { -1, -1 };
@@ -548,19 +549,19 @@ void LevelLoader::loadBinaryTiles(StaticLevelDataPtr levelData, fs::FilePtr& fil
 	}
 }
 
-void LevelLoader::loadBinaryLinks(StaticLevelDataPtr levelData, fs::FilePtr& fileData, fs::FileSystem& fileSystem)
+void LevelLoader::loadBinaryLinks(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData, const fs::FileSystem& fileSystem)
 {
 	while (!fileData->finishedReading())
 	{
 		auto line = fileData->readLine();
-		if (line.length() == 0 || line == "#") break;
+		if (line.empty() || line == "#") break;
 
 		// Assemble the level string.
 		auto splitData = string::splitToVectorView(line, " "sv);
 		if (splitData.size() < 7)
 			continue;
 
-		auto end = splitData.size();
+		const auto end = splitData.size();
 
 		// Get the positions and destinations of the link.
 		Rectangle<uint8_t, uint8_t> rect;
@@ -583,13 +584,13 @@ void LevelLoader::loadBinaryLinks(StaticLevelDataPtr levelData, fs::FilePtr& fil
 	}
 }
 
-void LevelLoader::loadBinaryBaddies(StaticLevelDataPtr levelData, fs::FilePtr& fileData, bool loadVerses)
+void LevelLoader::loadBinaryBaddies(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData, const bool loadVerses)
 {
 	while (!fileData->finishedReading())
 	{
-		int8_t x = fileData->readIntegral<1>();
-		int8_t y = fileData->readIntegral<1>();
-		int8_t type = fileData->readIntegral<1>();
+		const auto x = static_cast<int8_t>(fileData->readIntegral<1>());
+		const auto y = static_cast<int8_t>(fileData->readIntegral<1>());
+		const auto type = static_cast<int8_t>(fileData->readIntegral<1>());
 
 		// Ends with an invalid baddy.
 		if (x == -1 && y == -1 && type == -1)
@@ -599,15 +600,14 @@ void LevelLoader::loadBinaryBaddies(StaticLevelDataPtr levelData, fs::FilePtr& f
 		}
 
 		// Add the baddy.
-		LevelBaddy baddy{ toLocalPixelPosition((float)x, (float)y), (BaddyType)type, {} };
-		baddy.id = static_cast<uint8_t>(levelData->baddies.size() + 1);
+		LevelBaddy baddy{static_cast<uint8_t>(levelData->baddies.size() + 1), toLocalPixelPosition(static_cast<float>(x), static_cast<float>(y)), ENUM<BaddyType>(type), {}};
 
 		// Load the verses.
 		if (loadVerses)
 		{
 			auto verseLine = fileData->readLine();
 			auto verseParts = string::splitToVectorView(verseLine, "\\"sv);
-			for (size_t j = 0; j < std::min((size_t)3, verseParts.size()); ++j)
+			for (size_t j = 0; j < std::min(static_cast<size_t>(3), verseParts.size()); ++j)
 				baddy.verses[j] = verseParts[j];
 		}
 
@@ -615,7 +615,7 @@ void LevelLoader::loadBinaryBaddies(StaticLevelDataPtr levelData, fs::FilePtr& f
 	}
 }
 
-void LevelLoader::loadBinaryNPCs(StaticLevelDataPtr levelData, fs::FilePtr& fileData)
+void LevelLoader::loadBinaryNPCs(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData)
 {
 	int index = 0;
 	while (!fileData->finishedReading())
@@ -623,51 +623,51 @@ void LevelLoader::loadBinaryNPCs(StaticLevelDataPtr levelData, fs::FilePtr& file
 		++index;
 
 		auto line = fileData->readLine();
-		if (line.length() == 0 || line == "#") break;
+		if (line.empty() || line == "#") break;
 
 		TilePosition position;
-		position[0] = line[0] - 32;
-		position[1] = line[1] - 32;
+		position[0] = static_cast<float>(line[0] - 32);
+		position[1] = static_cast<float>(line[1] - 32);
 
 		std::string_view lineView{ line };
 		lineView.remove_prefix(2);
 
-		auto image = string::extractLine(lineView, '#');
+		const auto image = string::extractLine(lineView, '#');
 		auto code = string::replace(lineView, "\xa7", "\n");
 
-		LevelNPCTemplate npc{ .image = image, .position = toLocalPixelPosition(position) };
+		LevelNPCTemplate npc{.image = image, .position = toLocalPixelPosition(position)};
 		npc.script.setOriginalSource(std::format("{}.{}", levelData->levelName, index), code);
 		levelData->npcs.emplace_back(std::move(npc));
 	}
 }
 
-void LevelLoader::loadBinaryChests(StaticLevelDataPtr levelData, fs::FilePtr& fileData)
+void LevelLoader::loadBinaryChests(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData)
 {
 	while (!fileData->finishedReading())
 	{
 		auto line = fileData->readLine();
-		if (line.length() == 0 || line == "#") break;
+		if (line.empty() || line == "#") break;
 
-		uint8_t x = line[0] - 32;
-		uint8_t y = line[1] - 32;
-		char item = line[2] - 32;
-		char signindex = line[3] - 32;
+		const uint8_t x = line[0] - 32;
+		const uint8_t y = line[1] - 32;
+		const char item = static_cast<char>(line[2] - 32);
+		const auto signindex = static_cast<uint8_t>(line[3] - 32);
 
-		LevelChest chest{ .position = LocalWholeTilePosition{ x, y }, .item = LevelItemType(item), .sign = (uint8_t)signindex };
-		levelData->chests.emplace_back(std::move(chest));
+		LevelChest chest{.position = LocalWholeTilePosition{ x, y }, .item = ENUM<LevelItemType>(item), .sign = signindex };
+		levelData->chests.emplace_back(chest);
 	}
 }
 
-void LevelLoader::loadBinarySigns(StaticLevelDataPtr levelData, fs::FilePtr& fileData)
+void LevelLoader::loadBinarySigns(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData)
 {
 	while (!fileData->finishedReading())
 	{
 		auto line = fileData->readLine();
-		if (line.length() == 0) break;
+		if (line.empty()) break;
 
-		uint8_t x = line[0] - 32;
-		uint8_t y = line[1] - 32;
-		std::string_view text{ line };
+		const uint8_t x = line[0] - 32;
+		const uint8_t y = line[1] - 32;
+		std::string_view text{line};
 		text.remove_prefix(2);
 
 		levelData->signs.emplace_back(LocalWholeTilePosition{ x, y }, text, true);
@@ -676,7 +676,7 @@ void LevelLoader::loadBinarySigns(StaticLevelDataPtr levelData, fs::FilePtr& fil
 
 //----------------------------
 
-bool LevelLoader::loadNW(StaticLevelDataPtr levelData, std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData)
+bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData)
 {
 	std::string curLine;
 	std::vector<std::string_view> splitData;
@@ -700,10 +700,10 @@ bool LevelLoader::loadNW(StaticLevelDataPtr levelData, std::string_view fileVers
 			if (splitData.size() != 5)
 				continue;
 
-			uint8_t x = string::toNumber<uint8_t>(splitData[0]);
-			uint8_t y = string::toNumber<uint8_t>(splitData[1]);
-			uint8_t width = string::toNumber<uint8_t>(splitData[2]);
-			uint8_t layer = string::toNumber<uint8_t>(splitData[3]);
+			const auto x = string::toNumber<uint8_t>(splitData[0]);
+			const auto y = string::toNumber<uint8_t>(splitData[1]);
+			const auto width = string::toNumber<uint8_t>(splitData[2]);
+			const auto layer = string::toNumber<uint8_t>(splitData[3]);
 			if (!inRangeInclusive(x, 0, 64) || !inRangeInclusive(y, 0, 64) || width <= 0 || x + width > 64)
 				continue;
 			if (splitData[4].length() < static_cast<size_t>(width) * 2)
@@ -714,8 +714,8 @@ bool LevelLoader::loadNW(StaticLevelDataPtr levelData, std::string_view fileVers
 			{
 				char left = splitData[4].at(index * 2);
 				char top = splitData[4].at(index * 2 + 1);
-				short tile = getBase64Position(left) << 6;
-				tile += getBase64Position(top);
+				auto tile = static_cast<uint16_t>(getBase64Position(left) << 6);
+				tile = static_cast<uint16_t>(tile + getBase64Position(top));
 				if (tile == 0x3FFF)
 					tile = constants::EmptyTileInLayer;
 
@@ -727,15 +727,15 @@ bool LevelLoader::loadNW(StaticLevelDataPtr levelData, std::string_view fileVers
 			if (splitData.size() < 4)
 				continue;
 
-			LevelItemType itemType = LevelItem::getItemId(std::string{ splitData[2] });
+			LevelItemType itemType = LevelItem::getItemId(std::string{splitData[2]});
 			if (itemType != LevelItemType::INVALID)
 			{
-				uint8_t chestx = string::toNumber<uint8_t>(splitData[0]);
-				uint8_t chesty = string::toNumber<uint8_t>(splitData[1]);
+				const auto chestx = string::toNumber<uint8_t>(splitData[0]);
+				const auto chesty = string::toNumber<uint8_t>(splitData[1]);
 				char signidx = string::toNumber<char>(splitData[3]);
 
 				LevelChest chest{ .position = LocalWholeTilePosition{ chestx, chesty }, .item = itemType, .sign = (uint8_t)signidx };
-				levelData->chests.emplace_back(std::move(chest));
+				levelData->chests.emplace_back(chest);
 			}
 		}
 		else if (section == "LINK")
@@ -769,14 +769,14 @@ bool LevelLoader::loadNW(StaticLevelDataPtr levelData, std::string_view fileVers
 			if (splitData.size() != 2)
 				continue;
 
-			uint8_t x = string::toNumber<uint8_t>(splitData[0]);
-			uint8_t y = string::toNumber<uint8_t>(splitData[1]);
+			const auto x = string::toNumber<uint8_t>(splitData[0]);
+			const auto y = string::toNumber<uint8_t>(splitData[1]);
 
 			// Grab the sign code.
 			std::string text;
-			for (const auto& line : fileData->readLinesUntilSectionEnd("SIGNEND"))
+			for (const auto& signLine : fileData->readLinesUntilSectionEnd("SIGNEND"))
 			{
-				text += line;
+				text += signLine;
 				text += '\n';
 			}
 
@@ -797,8 +797,7 @@ bool LevelLoader::loadNW(StaticLevelDataPtr levelData, std::string_view fileVers
 			position[1] = string::toFloat(splitData[1]);
 			BaddyType type = LevelBaddy::getBaddyTypeFromString(std::string{ splitData[2] });
 
-			LevelBaddy baddy{ toLocalPixelPosition(position), type, {} };
-			baddy.id = static_cast<uint8_t>(levelData->baddies.size() + 1);
+			LevelBaddy baddy{static_cast<uint8_t>(levelData->baddies.size() + 1), toLocalPixelPosition(position), type, {}};
 
 			int i = 0;
 			for (const auto& verse : fileData->readLinesUntilSectionEnd("BADDYEND"))
@@ -823,7 +822,7 @@ bool LevelLoader::loadNW(StaticLevelDataPtr levelData, std::string_view fileVers
 			position[1] = string::toFloat(splitData[end - 1]);
 
 			// Remove the back 2 entries from the split data.
-			splitData.erase(splitData.begin() + (end - 2), splitData.end());
+			splitData.erase(splitData.begin() + static_cast<std::ptrdiff_t>(end - 2), splitData.end());
 
 			// Combine all the rest.
 			std::string image = string::join(splitData, " "sv);
@@ -833,9 +832,9 @@ bool LevelLoader::loadNW(StaticLevelDataPtr levelData, std::string_view fileVers
 				image.clear();
 
 			std::string code;
-			for (const auto& line : fileData->readLinesUntilSectionEnd("NPCEND"))
+			for (const auto& npcLine : fileData->readLinesUntilSectionEnd("NPCEND"))
 			{
-				code += line;
+				code += npcLine;
 				code += '\n';
 			}
 

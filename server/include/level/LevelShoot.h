@@ -63,8 +63,8 @@ struct LevelShoot
 
 inline void LevelShoot::calculateSpeeds()
 {
-	float horizSpeed = std::cos(zangle) * (powerIn44TileParts / 44.0f);
-	float vertSpeed = std::sin(zangle) * (powerIn44TileParts / 44.0f);
+	const float horizSpeed = std::cos(zangle) * (static_cast<float>(powerIn44TileParts) / 44.0f);
+	const float vertSpeed = std::sin(zangle) * (static_cast<float>(powerIn44TileParts) / 44.0f);
 	movementPerFrame.x() = std::cos(angle) * horizSpeed;
 	movementPerFrame.y() = std::sin(angle) * horizSpeed;
 	movementPerFrame.z() = vertSpeed;

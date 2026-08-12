@@ -30,7 +30,7 @@ Possible extensions:
 */
 
 class GS1Visitor;
-GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view functionName);
+GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, const antlr4::tree::ParseTree* node, std::string_view functionName);
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::gs1::grammar

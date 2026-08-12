@@ -22,14 +22,14 @@ std::vector<CString> Player::getPMServerList()
 	return m_privateMessageServerList;
 }
 
-bool Player::addPMServer(CString& option)
+bool Player::addPMServer(const CString& option)
 {
 	auto& list = m_server->getServerList();
 
 	bool PMSrvExist = false;
 	for (auto& pmServer : m_privateMessageServerList)
 	{
-		if (pmServer.text() == option)
+		if (pmServer == option)
 		{
 			PMSrvExist = true;
 			break;
@@ -39,19 +39,14 @@ bool Player::addPMServer(CString& option)
 	if (!PMSrvExist)
 	{
 		m_privateMessageServerList.push_back(option);
-		list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)m_id << CString(CString() << "GraalEngine"
-			<< "\n"
-			<< "pmserverplayers"
-			<< "\n"
-			<< option << "\n")
-			.gtokenizeI());
+		list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)m_id << string::toCSVFromPack("GraalEngine"sv, "pmserverplayers"sv, option.toStringView()));
 		return true;
 	}
 	else
 		return false;
 }
 
-bool Player::remPMServer(CString& option)
+bool Player::remPMServer(const CString& option)
 {
 	if (m_privateMessageServerList.empty())
 		return true;
@@ -76,24 +71,14 @@ bool Player::remPMServer(CString& option)
 	}
 
 	// Find the player and remove him.
-	for (auto ip = m_privateMessageServerList.begin(); ip != m_privateMessageServerList.end();)
-	{
-		//CString pl = i;
-		if ((ip)->text() == option)
-		{
-			//delete (i);
-			ip = m_privateMessageServerList.erase(ip);
-		}
-		else
-			++ip;
-	}
+	std::erase(m_privateMessageServerList, option);
 
 	return true;
 }
 
-bool Player::updatePMPlayers(CString& servername, CString& players)
+bool Player::updatePMPlayers(const CString& servername, const CString& players)
 {
-	std::vector<CString> players2 = players.tokenize("\n");
+	const auto players2 = players.tokenize("\n");
 
 	if (!m_externalPlayers.empty())
 	{
@@ -105,9 +90,9 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 			for (auto& p2 : players2)
 			{
 				CString tmpPlyr = p2.guntokenize();
-				CString account = tmpPlyr.readString("\n");
+				CString accountName = tmpPlyr.readString("\n");
 				CString nick = tmpPlyr.readString("\n");
-				if (servername == externalPlayer->getServerName() && account == externalPlayer->account.name)
+				if (servername == externalPlayer->getServerName() && accountName == externalPlayer->account.name)
 				{
 					exist2 = true;
 					externalPlayer->setNick(CString() << nick << " (on " << servername << ")");
@@ -132,18 +117,18 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 		}
 	}
 
-	for (std::vector<CString>::const_iterator i = players2.begin(); i != players2.end(); ++i)
+	for (const auto& i : players2)
 	{
-		CString tmpPlyr = (i)->guntokenize();
-		CString account = tmpPlyr.readString("\n");
-		CString nick = tmpPlyr.readString("\n");
+		CString tmpPlyr = i.guntokenize();
+		const CString accountName = tmpPlyr.readString("\n");
+		const CString nick = tmpPlyr.readString("\n");
 
 		bool exist = false;
 		if (!m_externalPlayers.empty())
 		{
-			for (auto& [externalId, externalPlayer] : m_externalPlayers)
+			for (const auto& externalPlayer : m_externalPlayers | std::views::values)
 			{
-				if (servername == externalPlayer->getServerName() && account == externalPlayer->account.name)
+				if (servername == externalPlayer->getServerName() && accountName == externalPlayer->account.name)
 				{
 					externalPlayer->setNick(CString() << nick << " (on " << servername << ")");
 					exist = true;
@@ -155,10 +140,10 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 		{
 			// Get a free id to be assigned to the new player.
 			auto newId = m_externalPlayerIdGenerator.getAvailableId();
-			auto tmpPlyr2 = std::make_shared<Player>(nullptr, newId);
+			const auto tmpPlyr2 = std::make_shared<Player>(nullptr, newId);
 			m_externalPlayers[newId] = tmpPlyr2;
-			m_server->getAccountLoader().loadAccount(account.toString(), tmpPlyr2->account);
-			tmpPlyr2->account.name = account.toString();
+			m_server->getAccountLoader().loadAccount(accountName.toString(), tmpPlyr2->account);
+			tmpPlyr2->account.name = accountName.toString();
 			tmpPlyr2->setServerName(servername);
 			tmpPlyr2->setExternal(true);
 			tmpPlyr2->setNick(CString() << nick << " (on " << servername << ")");
@@ -189,25 +174,26 @@ bool Player::updatePMPlayers(CString& servername, CString& players)
 	return true;
 }
 
-bool Player::pmExternalPlayer(CString servername, CString account, CString& pmMessage)
+bool Player::pmExternalPlayer(const CString& servername, const CString& externalAccount, const CString& pmMessage) const
 {
+	const auto output = string::toCSVFromPack(
+		servername.toStringView(),
+		std::string_view{account.name},
+		std::string_view{account.character.nickName},
+		"GraalEngine"sv,
+		"pmplayer"sv,
+		externalAccount.toStringView(),
+		pmMessage.toStringView()
+	);
+
 	auto& list = m_server->getServerList();
-	list.sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)m_id << CString(CString() << servername << "\n"
-		<< this->account.name << "\n"
-		<< this->account.character.nickName << "\n"
-		<< "GraalEngine"
-		<< "\n"
-		<< "pmplayer"
-		<< "\n"
-		<< account << "\n"
-		<< pmMessage)
-		.gtokenizeI());
+	list.sendPacket(CString() >> (char)SVO_PMPLAYER >> (short)m_id << output);
 	return true;
 }
 
-PlayerPtr Player::getExternalPlayer(const PlayerID id, bool includeRC) const
+PlayerPtr Player::getExternalPlayer(const PlayerID id, const bool includeRC) const
 {
-	auto iter = m_externalPlayers.find(id);
+	const auto iter = m_externalPlayers.find(id);
 	if (iter == std::end(m_externalPlayers)) return nullptr;
 
 	auto& externalPlayer = iter->second;
@@ -215,18 +201,17 @@ PlayerPtr Player::getExternalPlayer(const PlayerID id, bool includeRC) const
 	return externalPlayer;
 }
 
-PlayerPtr Player::getExternalPlayer(const CString& account, bool includeRC) const
+PlayerPtr Player::getExternalPlayer(const CString& externalAccountName, const bool includeRC) const
 {
-	for (auto& [externalId, externalPlayer] : m_externalPlayers)
+	for (const auto& externalPlayer : m_externalPlayers | std::views::values)
 	{
-		if (externalPlayer == 0)
+		if (externalPlayer == nullptr)
 			continue;
-
 		if (!includeRC && externalPlayer->isControlClient())
 			continue;
 
 		// Compare account names.
-		if (string::equalsi(externalPlayer->account.name, account.toString()))
+		if (string::equalsi(externalPlayer->account.name, externalAccountName.toString()))
 			return externalPlayer;
 	}
 	return nullptr;

@@ -55,14 +55,14 @@ struct FileData
 
 	/// @brief Retrieves the last modification time of the file.
 	/// @return A time_point representing the last write time of the file.
-	clock::time_point getModTime() const
+	[[nodiscard]] clock::time_point getModTime() const
 	{
 		return getFileModTime(file);
 	}
 
 	/// @brief Sets the last modification time of a file.
 	/// @param modTime The new modification time to set.
-	void setModTime(clock::time_point modTime) const
+	void setModTime(const clock::time_point modTime) const
 	{
 		std::filesystem::last_write_time(file, toFileClock(modTime));
 	}
@@ -75,21 +75,21 @@ struct FileData
 
 	/// @brief Deletes the file associated with the object.
 	/// @return true if the file was successfully deleted; false otherwise.
-	bool deleteFile() const
+	[[nodiscard]] bool deleteFile() const
 	{
 		return std::filesystem::remove(file);
 	}
 
 	/// @brief Opens the file associated with the object.
 	/// @return A shared pointer to the opened file.
-	std::shared_ptr<File> openFile() const
+	[[nodiscard]] std::shared_ptr<File> openFile() const
 	{
 		return std::make_shared<File>(file);
 	}
 
 	/// @brief Opens the file associated with the object for writing.
 	/// @return A shared pointer to the opened file.
-	std::shared_ptr<FileIO> openFileForWriting() const
+	[[nodiscard]] std::shared_ptr<FileIO> openFileForWriting() const
 	{
 		return std::make_shared<FileIO>(file);
 	}
@@ -104,7 +104,7 @@ class FileSystem
 {
 public:
 	FileSystem() = default;
-	FileSystem(const std::filesystem::path& directory);
+	explicit FileSystem(const std::filesystem::path& directory);
 	~FileSystem();
 
 	FileSystem(const FileSystem& other) = delete;
@@ -147,8 +147,8 @@ public:
 			bind(std::filesystem::path{ path });
 	}
 
-	/// @brief Binds to a directory in a non-recursive manner.
-	/// @param directory The directory to bind to.
+	/// @brief Binds to a single file.
+	/// @param file The file to bind to.
 	void bindSingleFile(const std::filesystem::path& file);
 
 	/// @brief Checks for changes to the underlying OS filesystem.  Call this every so often.
@@ -196,23 +196,28 @@ public:
 public:
 	/// @brief Returns information about the file.
 	/// @param category The category the file must belong to.
+	/// @param file The file name to retrieve information about.
 	/// @return Information about the file.
 	FileData* info(FileCategory category, const std::filesystem::path& file) const;
 
 	/// @brief Returns information about the file.
+	/// @param file The file name to retrieve information about.
 	/// @return Information about the file.
 	std::vector<FileDataWeakPtr> info(const std::filesystem::path& file) const;
 
 	/// @brief Gets a range of all files in a category.
+	/// @param category The category of files to retrieve information about.
+	/// @return A vector of weak pointers to the file data.
 	std::vector<FileDataWeakPtr> info(FileCategory category) const;
 
 	/// @brief Returns information about the file (case-insensitive).
 	/// @param category The category the file must belong to.
+	/// @param file The file name to retrieve information about.
 	/// @return Information about the file.
 	FileData* infoi(FileCategory category, const std::filesystem::path& file) const;
 
 	/// @brief Returns information about the file (case-insensitive).
-	/// @param category The category the file must belong to.
+	/// @param file The file name to retrieve information about.
 	/// @return Information about the file.
 	std::vector<FileDataWeakPtr> infoi(const std::filesystem::path& file) const;
 
@@ -231,7 +236,7 @@ public:
 	/// @brief Opens a file from the file data.
 	/// @param fileData The file data of the file to open.
 	/// @return A shared pointer to the file.
-	std::shared_ptr<File> open(const FileData& fileData) const;
+	static std::shared_ptr<File> open(const FileData& fileData);
 
 	/// @brief Opens a file by name (case-insensitive).
 	/// @param category The category the file must belong to.
@@ -255,7 +260,7 @@ public:
 	/// @brief Opens a file from the file data for writing.
 	/// @param fileData The file data of the file to open.
 	/// @return A shared pointer to the file.
-	std::shared_ptr<FileIO> openForWriting(const FileData& fileData) const;
+	static std::shared_ptr<FileIO> openForWriting(const FileData& fileData);
 
 	/// @brief Opens a file by name for writing (case-insensitive).
 	/// @param category The category the file must belong to.
@@ -267,15 +272,15 @@ public:
 public:
 	/// @brief Creates an entry for a file in the specified category.  This is used to create an entry for a file we are creating, but don't want the file watcher to process an add event.
 	/// @param category The category the file must belong to.
-	/// @param file The file name to create a stub for.
+	/// @param fullFilePath The full path of the file to create a stub for.
 	void addExisting(FileCategory category, const std::filesystem::path& fullFilePath);
 
 public:
 	/// @brief Renames a file to a new file path.
 	/// @param fileData The data structure containing information about the file to be renamed.
-	/// @param newFilePath The new path for the file.
+	/// @param newFileName The new path for the file.
 	/// @return A pointer to the updated FileData structure if the rename was successful; otherwise, nullptr.
-	FileData* rename(const FileData& fileData, std::filesystem::path newFilePath);
+	FileData* rename(const FileData& fileData, const std::filesystem::path& newFileName);
 
 public:
 	/// @brief Returns a generator that yields references to the managed directories.
@@ -296,7 +301,7 @@ public:
 
 private:
 	void defaultWatchCallback(uint32_t id, const std::filesystem::path& dir, const std::filesystem::path& file, const std::filesystem::path& oldFile, fs::FileEventCollection e);
-	void assignCategoriesToFileData(FileData& fileData);
+	void assignCategoriesToFileData(FileData& fileData) const;
 	FileCategory categoryForDirectory(const std::filesystem::path& directory) const;
 
 private:

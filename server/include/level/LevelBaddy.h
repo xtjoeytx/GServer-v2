@@ -35,6 +35,7 @@ enum class BaddyType : uint8_t
 	GOLDENWARRIOR = 7,
 	LIZARDON = 8,
 	DRAGON = 9,
+	//
 	COUNT
 };
 constexpr size_t BADDYTYPE_COUNT = static_cast<size_t>(BaddyType::COUNT);
@@ -62,6 +63,7 @@ enum class BaddyProp : uint8_t
 	VERSESIGHT = 8,
 	VERSEHURT = 9,
 	VERSEATTACK = 10,
+	//
 	COUNT
 };
 constexpr size_t BADDYPROP_COUNT = static_cast<size_t>(BaddyProp::COUNT);
@@ -81,6 +83,7 @@ enum class BaddyMode : uint8_t
 	HAREJUMP = 7,
 	OCTOSHOT = 8,
 	DEAD = 9,
+	//
 	COUNT
 };
 constexpr size_t BADDYMODE_COUNT = static_cast<size_t>(BaddyMode::COUNT);
@@ -96,13 +99,13 @@ public:
 	static BaddyType getBaddyTypeFromString(const std::string& type);
 
 public:
-	LevelBaddy(const LocalPixelPosition& position, BaddyType type, std::weak_ptr<Level> level);
+	LevelBaddy(uint8_t id, const LocalPixelPosition& position, BaddyType type, const std::weak_ptr<Level>& level);
 
 	void reset();
 	void dropItem() const;
-	bool isAlive() const { return mode != BaddyMode::DEAD; }
-	bool canRespawn() const { return m_canRespawn; }
-	bool canBeReplaced() const { return !m_canRespawn && mode == BaddyMode::DEAD; }
+	[[a::inline]] bool isAlive() const;
+	[[a::inline]] bool canRespawn() const;
+	[[a::inline]] bool canBeReplaced() const;
 
 public:
 	CString getProp(BaddyProp propId) const;
@@ -110,24 +113,24 @@ public:
 	void setPropsFromPacket(CString& pProps);
 
 public:
-	void setRespawn(const bool pRespawn) { m_canRespawn = pRespawn; }
-	void setImage(std::string_view image);
-	[[a::inline]] void setLevel(LevelPtr level);
+	[[a::inline]] void setRespawn(const bool pRespawn);
+	void setImage(std::string_view baddyImage);
+	[[a::inline]] void setLevel(const LevelPtr& level);
 
 public:
-	float getTileX() const { return position.x() / 16.0f; }
-	float getTileY() const { return position.y() / 16.0f; }
+	[[a::inline]] float getTileX() const;
+	[[a::inline]] float getTileY() const;
 
 public:
 	uint8_t id;
-	BaddyType type;
+	BaddyType type = BaddyType::GRAYSOLDIER;
 	LocalPixelPosition position;
-	BaddyMode mode;
-	uint8_t power;
-	uint8_t animation;
-	uint8_t direction;
-	uint8_t headDirection;
-	std::string image;
+	BaddyMode mode = BaddyMode::WALK;
+	uint8_t power = 2;
+	uint8_t animation = 0;
+	uint8_t direction = 2;
+	uint8_t headDirection = 2;
+	std::string image{};
 	std::vector<std::string> verses;
 
 	TimeoutGenerator timeout;
@@ -146,21 +149,51 @@ private:
 
 //----------------------------
 
-inline void LevelBaddy::setLevel(LevelPtr level)
+inline bool LevelBaddy::isAlive() const
+{
+	return mode != BaddyMode::DEAD;
+}
+
+inline bool LevelBaddy::canRespawn() const
+{
+	return m_canRespawn;
+}
+
+inline bool LevelBaddy::canBeReplaced() const
+{
+	return !m_canRespawn && mode == BaddyMode::DEAD;
+}
+
+inline void LevelBaddy::setRespawn(const bool pRespawn)
+{
+	m_canRespawn = pRespawn;
+}
+
+inline void LevelBaddy::setLevel(const LevelPtr& level)
 {
 	m_level = level;
+}
+
+inline float LevelBaddy::getTileX() const
+{
+	return static_cast<float>(position.x()) / 16.0f;
+}
+
+inline float LevelBaddy::getTileY() const
+{
+	return static_cast<float>(position.y()) / 16.0f;
 }
 
 inline void LevelBaddy::constructScriptParameters()
 {
 	// TODO: headdir
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"x"sv, std::nullopt, std::ref(position.x()), 16});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"y"sv, std::nullopt, std::ref(position.y()), 16});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"dir"sv, std::nullopt, std::ref(direction)});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"type"sv, std::nullopt, std::ref(type)});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"headdir"sv, std::nullopt, std::ref(headDirection)});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"power"sv, std::nullopt, std::ref(power)});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{"mode"sv, std::nullopt, std::ref(mode)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{.name = "x"sv, .modTime = std::nullopt, .value = std::ref(position.x()), .factor = 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{.name = "y"sv, .modTime = std::nullopt, .value = std::ref(position.y()), .factor = 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "dir"sv, .modTime = std::nullopt, .value = std::ref(direction)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "type"sv, .modTime = std::nullopt, .value = std::ref(type)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "headdir"sv, .modTime = std::nullopt, .value = std::ref(headDirection)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "power"sv, .modTime = std::nullopt, .value = std::ref(power)});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::IntegralProperty{.name = "mode"sv, .modTime = std::nullopt, .value = std::ref(mode)});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

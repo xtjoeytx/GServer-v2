@@ -20,10 +20,10 @@ namespace preagonal
 
 std::optional<GameAni> GameAni::load(Server* const server, const std::string& name)
 {
-	auto& fileSystem = server->getFileSystem();
+	const auto& fileSystem = server->getFileSystem();
 
 	// Search for the file in the filesystem
-	auto filePath = fileSystem.find(fs::FileCategory::FILE, name);
+	const auto filePath = fileSystem.find(fs::FileCategory::FILE, name);
 	if (filePath.empty())
 		return std::nullopt;
 
@@ -74,7 +74,7 @@ std::optional<GameAni> GameAni::load(Server* const server, const std::string& na
 			++i;
 			while (i != fileData.end())
 			{
-				if ((*i).find("SCRIPTEND") == 0) break;
+				if (i->find("SCRIPTEND") == 0) break;
 				code << *i << "\n";
 				++i;
 			}
@@ -97,13 +97,13 @@ std::optional<GameAni> GameAni::load(Server* const server, const std::string& na
 	if (!gameAni.m_script.empty() && server->hasNPCServer())
 	{
 		// Synchronous callback
-		if (auto result = server->getNPCServer()->scripting.getCompiledClientScript(name, gameAni.m_script); result != nullptr)
+		if (const auto result = server->getNPCServer()->scripting.getCompiledClientScript(name, gameAni.m_script); result != nullptr)
 		{
-			auto bytecode = std::any_cast<std::vector<uint8_t>>(result->script.get());
+			const auto bytecode = std::any_cast<std::vector<uint8_t>>(result->script.get());
 			if (bytecode != nullptr)
 			{
 				gameAni.m_bytecode.clear(bytecode->size());
-				gameAni.m_bytecode.write((const char*)bytecode->data(), static_cast<int>(bytecode->size()));
+				gameAni.m_bytecode.write(reinterpret_cast<const char*>(bytecode->data()), static_cast<int>(bytecode->size()));
 			}
 		}
 	}

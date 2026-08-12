@@ -53,7 +53,7 @@
 // aaaaaaaaaaa = fail
 // aaaaaaaaaaaB = fail
 // aaaaaaaaaaaBB = success
-CString _zlibFix(
+static CString zlibFix(
 	"//#CLIENTSIDE\xa7"
 	"if(playerchats) {\xa7"
 	"  this.chr = {ascii(#e(0,1,#c)),0,0,0,0};\xa7"
@@ -138,15 +138,15 @@ static PacketHandleArray GeneratePacketHandlers()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HandlePacketResult PlayerClient::handlePacket(std::optional<uint8_t> id, CString& packet)
+HandlePacketResult PlayerClient::handlePacket(const std::optional<uint8_t> id, CString& packet)
 {
 	static PacketHandleArray PacketHandlers = GeneratePacketHandlers();
 
-	auto handle = id.has_value() ? PacketHandlers[id.value()] : nullptr;
+	const auto handle = id.has_value() ? PacketHandlers[id.value()] : nullptr;
 	if (handle == nullptr)
 		return Player::handlePacket(id, packet);
 
-	auto result = (this->*handle)(packet);
+	const auto result = (this->*handle)(packet);
 	if (result == HandlePacketResult::Bubble)
 		return Player::handlePacket(id, packet);
 
@@ -155,7 +155,7 @@ HandlePacketResult PlayerClient::handlePacket(std::optional<uint8_t> id, CString
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PlayerClient::PlayerClient(CSocket* pSocket, PlayerID pId)
+PlayerClient::PlayerClient(CSocket* pSocket, const PlayerID pId)
 	: Player(pSocket, pId)
 {
 	m_lastMovement = m_lastSave = m_last1m = clock::now();
@@ -163,7 +163,7 @@ PlayerClient::PlayerClient(CSocket* pSocket, PlayerID pId)
 
 PlayerClient::~PlayerClient()
 {
-	cleanup();
+	PlayerClient::cleanup();
 }
 
 void PlayerClient::cleanup()
@@ -173,7 +173,7 @@ void PlayerClient::cleanup()
 		// Adjust carried NPC location.
 		if (m_carryNPC != 0)
 		{
-			if (auto npc = m_server->getNPC(m_carryNPC); npc)
+			if (const auto npc = m_server->getNPC(m_carryNPC); npc)
 			{
 				npc->sendPropsFromResults(
 					npc->setPropWith<NPCProp::X2>(SetBy::CLIENT, static_cast<int16_t>(account.character.localPixelX + 8)),
@@ -203,8 +203,7 @@ void PlayerClient::doMain()
 	{
 		if (!m_grMovementUpdated)
 		{
-			std::vector<CString> pack = m_grMovementPackets.tokenize("\n");
-			for (auto& i : pack)
+			for (auto& i : m_grMovementPackets.tokenize("\n"))
 				setPropsFromPacket(i, props::SetBy::CLIENT);
 		}
 		m_grMovementPackets.clear(42);
@@ -217,7 +216,7 @@ bool PlayerClient::doTimedEvents()
 	if (!Player::doTimedEvents())
 		return false;
 
-	auto currTime = m_server->getFrameStartTime();
+	const auto currTime = m_server->getFrameStartTime();
 
 	// Increase online time.
 	++account.onlineSeconds;
@@ -232,7 +231,7 @@ bool PlayerClient::doTimedEvents()
 	// Disconnect if players are inactive.
 	if (m_server->cached.enableIdleDisconnect.getValue())
 	{
-		int maxnomovement = m_server->cached.idleTimeoutSeconds.getValue();
+		const int maxnomovement = m_server->cached.idleTimeoutSeconds.getValue();
 		if (timeDifference(currTime, m_lastMovement) > std::chrono::seconds{maxnomovement} && timeDifference(currTime, m_lastChat) > std::chrono::seconds{maxnomovement})
 		{
 			log::printLine(log::server, "** [Disconnect] {}: Client has been disconnected due to inactivity.", account.name);
@@ -244,7 +243,7 @@ bool PlayerClient::doTimedEvents()
 	// Increase player AP.
 	if (m_server->cached.enableAPSystem.getValue() && !m_currentLevel.expired())
 	{
-		if (auto subLevel = getSubLevel(); subLevel != nullptr)
+		if (const auto subLevel = getSubLevel(); subLevel != nullptr)
 		{
 			if (!(account.status & PLSTATUS_PAUSED) && !subLevel->isSparringZone)
 			{
@@ -272,9 +271,8 @@ bool PlayerClient::doTimedEvents()
 
 	// Do singleplayer level events.
 	{
-		for (auto& spLevel : m_singleplayerLevels)
+		for (auto& level : m_singleplayerLevels | std::views::values)
 		{
-			auto& level = spLevel.second;
 			if (level)
 				level->doTimedEvents();
 		}
@@ -358,7 +356,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 	// Handle newer clients.
 	if (m_versionId == CLVER_UNKNOWN)
 	{
-		m_encryptionKey = (unsigned char)pPacket.readGChar();
+		m_encryptionKey = static_cast<unsigned char>(pPacket.readGChar());
 
 		Encryption.reset(m_encryptionKey);
 		if (Encryption.getGen() > ENCRYPT_GEN_3)
@@ -371,11 +369,11 @@ bool PlayerClient::handleLogin(CString& pPacket)
 
 	// Read Account & Password
 	account.name = pPacket.readChars(pPacket.readGUChar()).toString();
-	CString password = pPacket.readChars(pPacket.readGUChar());
+	const CString password = pPacket.readChars(pPacket.readGUChar());
 
 	// Client Identity: win,"",02e2465a2bf38f8a115f6208e9938ac8,ff144a9abb9eaff4b606f0336d6d8bc5,"6.2 9200 "
 	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
-	CString identity = pPacket.readString("");
+	const CString identity = pPacket.readString("");
 
 	{
 		auto indent = log::server.indent();
@@ -386,7 +384,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 		if (!identity.isEmpty())
 		{
 			log::printLine(log::server, "Identity:    {}", identity);
-			auto identityTokens = identity.tokenize(",", true);
+			const auto identityTokens = identity.tokenize(",", true);
 			account.platform = identityTokens[0];
 		}
 	}
@@ -401,7 +399,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 			{
 				CString ver1 = ver.readString(":").trim();
 				CString ver2 = ver.readString("").trim();
-				int aVersion[2] = {getVersionID(ver1), getVersionID(ver2)};
+				const int aVersion[2] = {getVersionID(ver1), getVersionID(ver2)};
 				if (m_versionId >= aVersion[0] && m_versionId <= aVersion[1])
 				{
 					allowed = true;
@@ -410,8 +408,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 			}
 			else
 			{
-				int aVersion = getVersionID(ver);
-				if (m_versionId == aVersion)
+				if (const int aVersion = getVersionID(ver); m_versionId == aVersion)
 				{
 					allowed = true;
 					break;
@@ -464,14 +461,14 @@ bool PlayerClient::sendLogin()
 		// c = sqrt( (350*350 - 50*50) / t )
 		// where t is the number of rating periods for deviation to go from 50 to 350.
 		// t = 60 days for us.
-		const float c = 44.721f;
-		auto current_time = std::chrono::system_clock::now();
-		auto time_difference = current_time - account.lastSparTime;
-		auto days = std::chrono::duration_cast<std::chrono::days>(time_difference).count();
+		constexpr float c = 44.721f;
+		const auto current_time = std::chrono::system_clock::now();
+		const auto time_difference = current_time - account.lastSparTime;
+		const auto days = std::chrono::duration_cast<std::chrono::days>(time_difference).count();
 		if (days != 0)
 		{
 			// Find the new deviation.
-			float deviate = std::min(350.0f, static_cast<float>(sqrt((account.eloDeviation * account.eloDeviation) + (c * c) * days)));
+			float deviate = std::min(350.0f, std::sqrt((account.eloDeviation * account.eloDeviation) + (c * c) * static_cast<float>(days)));
 
 			// Set the new rating.
 			account.eloDeviation = deviate;
@@ -508,7 +505,7 @@ bool PlayerClient::sendLogin()
 	}
 
 	// Send the server's flags to the player.
-	for (const auto& [flag, value] : m_server->Scripting.variables.store)
+	for (const auto& flag : m_server->Scripting.variables.store | std::views::keys)
 	{
 		if (hasNPCServer && !flag.starts_with("serverr.")) continue;
 		if (auto serialized = m_server->Scripting.variables.serializeModern(flag); serialized.has_value())
@@ -549,7 +546,7 @@ bool PlayerClient::sendLogin()
 	// Send the zlib fixing NPC to client versions 2.21 - 2.31.
 	if (m_versionId >= CLVER_2_21 && m_versionId <= CLVER_2_31)
 	{
-		sendPacket(CString() >> (char)PLO_NPCWEAPONADD >> (char)12 << "-gr_zlib_fix" >> (char)0 >> (char)0 >> (char)1 >> (short)_zlibFix.length() << _zlibFix);
+		sendPacket(CString() >> (char)PLO_NPCWEAPONADD >> (char)12 << "-gr_zlib_fix" >> (char)0 >> (char)0 >> (char)1 >> (short)zlibFix.length() << zlibFix);
 	}
 
 	// Tell the client if the server is connected to the listserver.
@@ -559,11 +556,9 @@ bool PlayerClient::sendLogin()
 	// Send the bigmap if it was set.
 	if (m_versionId >= CLVER_2_1)
 	{
-		CString bigmap = settings.get("bigmap").value_or("");
-		if (!bigmap.isEmpty())
+		if (const CString bigmap = settings.get("bigmap").value_or(""); !bigmap.isEmpty())
 		{
-			std::vector<CString> vbigmap = bigmap.tokenize(",");
-			if (vbigmap.size() == 4)
+			if (const std::vector<CString> vbigmap = bigmap.tokenize(","); vbigmap.size() == 4)
 				sendPacket(CString() >> (char)PLO_BIGMAP << vbigmap[0].trim() << "," << vbigmap[1].trim() << "," << vbigmap[2].trim() << "," << vbigmap[3].trim());
 		}
 	}
@@ -571,11 +566,9 @@ bool PlayerClient::sendLogin()
 	// Send the minimap if it was set.
 	if (m_versionId >= CLVER_2_1)
 	{
-		CString minimap = settings.get("minimap").value_or("");
-		if (!minimap.isEmpty())
+		if (const CString minimap = settings.get("minimap").value_or(""); !minimap.isEmpty())
 		{
-			std::vector<CString> vminimap = minimap.tokenize(",");
-			if (vminimap.size() == 4)
+			if (const std::vector<CString> vminimap = minimap.tokenize(","); vminimap.size() == 4)
 				sendPacket(CString() >> (char)PLO_MINIMAP << vminimap[0].trim() << "," << vminimap[1].trim() << "," << vminimap[2].trim() << "," << vminimap[3].trim());
 		}
 	}
@@ -592,19 +585,16 @@ bool PlayerClient::sendLogin()
 
 	// Send out what guilds should be placed in the Staff section of the playerlist.
 	CString guildPacket = CString() >> (char)PLO_STAFFGUILDS;
-	for (const auto& guild : string::split(settings.get("staffguilds").value_or(""), ","sv))
-		guildPacket << "\"" << string::trim(guild) << "\",";
-	sendPacket(guildPacket.remove(guildPacket.length() - 1, 1));
+	guildPacket << string::toCSV(string::split(settings.get<std::string>("staffguilds").value_or(""), ","sv) | range::string_trim);
+	sendPacket(guildPacket);
 
 	// Send out the server's available status list options.
 	if (m_versionId >= CLVER_2_1)
 	{
 		// graal doesn't quote these
 		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-		for (const auto& status : m_server->cached.playerStatusList.getValue())
-			pliconPacket << string::trim(status) << ",";
-
-		sendPacket(pliconPacket.remove(pliconPacket.length() - 1, 1));
+		pliconPacket << string::join(m_server->cached.playerStatusList.getValue() | range::string_trim, ","sv);
+		sendPacket(pliconPacket);
 	}
 
 	// Ask for processes. This causes windows v6 clients to crash
@@ -666,8 +656,7 @@ bool PlayerClient::processChat(const CString& pChat)
 			CString newName = pChat.subString(8).trim();
 
 			// Word filter.
-			int filter = m_server->getWordFilter().apply(this, newName, FILTER_CHECK_NICK);
-			if (filter & FILTER_ACTION_WARN)
+			if (const int filter = m_server->getWordFilter().apply(this, newName, FILTER_CHECK_NICK); filter & FILTER_ACTION_WARN)
 			{
 				setChat(newName);
 				return true;
@@ -679,7 +668,9 @@ bool PlayerClient::processChat(const CString& pChat)
 			sendPropsFromResults(result);
 		}
 		else
+		{
 			setChat("Wait 10 seconds before changing your nick again!");
+		}
 	}
 	else if (chatParse[0] == "sethead" && chatParse.size() == 2)
 	{
@@ -805,7 +796,10 @@ bool PlayerClient::processChat(const CString& pChat)
 		// Check to see if it is a default shield.
 		bool isDefault = false;
 		for (const auto& entry : DefaultShields)
-			if (chatParse[1].match(CString(entry.data())) == true) isDefault = true;
+		{
+			if (chatParse[1].match(CString(entry.data())) == true)
+				isDefault = true;
+		}
 
 		// Don't search for the file if it is one of the defaults.  This protects against
 		// malicious gservers.
@@ -846,8 +840,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// id: 0
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
-		signed char color = getColor(chatParse[1].toLower());
-		if (color != -1)
+		if (const signed char color = getColor(chatParse[1].toLower()); color != -1)
 		{
 			account.character.colors[ENUM(ColorSlots::SKIN)] = color;
 			setPropsFromPacket(CString() >> (char)PlayerProp::COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], props::SetBy::SERVER);
@@ -859,8 +852,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// id: 1
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
-		signed char color = getColor(chatParse[1].toLower());
-		if (color != -1)
+		if (const signed char color = getColor(chatParse[1].toLower()); color != -1)
 		{
 			account.character.colors[ENUM(ColorSlots::COAT)] = color;
 			setPropsFromPacket(CString() >> (char)PlayerProp::COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], props::SetBy::SERVER);
@@ -872,8 +864,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// id: 2
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
-		signed char color = getColor(chatParse[1].toLower());
-		if (color != -1)
+		if (const signed char color = getColor(chatParse[1].toLower()); color != -1)
 		{
 			account.character.colors[ENUM(ColorSlots::SLEEVES)] = color;
 			setPropsFromPacket(CString() >> (char)PlayerProp::COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], props::SetBy::SERVER);
@@ -885,8 +876,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// id: 3
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
-		signed char color = getColor(chatParse[1].toLower());
-		if (color != -1)
+		if (const signed char color = getColor(chatParse[1].toLower()); color != -1)
 		{
 			account.character.colors[ENUM(ColorSlots::SHOES)] = color;
 			setPropsFromPacket(CString() >> (char)PlayerProp::COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], props::SetBy::SERVER);
@@ -898,8 +888,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		// id: 4
 		if (chatParse[1].toLower() == "grey") chatParse[1] = "gray";
-		signed char color = getColor(chatParse[1].toLower());
-		if (color != -1)
+		if (const signed char color = getColor(chatParse[1].toLower()); color != -1)
 		{
 			account.character.colors[ENUM(ColorSlots::BELT)] = color;
 			setPropsFromPacket(CString() >> (char)PlayerProp::COLORS >> (char)account.character.colors[0] >> (char)account.character.colors[1] >> (char)account.character.colors[2] >> (char)account.character.colors[3] >> (char)account.character.colors[4], props::SetBy::SERVER);
@@ -912,8 +901,8 @@ bool PlayerClient::processChat(const CString& pChat)
 
 		processed = true;
 
-		bool warptoforall = m_server->getSettings().get<bool>("warptoforall").value_or(false);
-		bool warpto = m_server->getSettings().get<bool>("warpto").value_or(true);
+		const bool warptoforall = m_server->getSettings().get<bool>("warptoforall").value_or(false);
+		const bool warpto = m_server->getSettings().get<bool>("warpto").value_or(true);
 
 		// Check if warpto has been disabled for staff.
 		if (isStaff() && !warpto && !warptoforall)
@@ -978,7 +967,7 @@ bool PlayerClient::processChat(const CString& pChat)
 			if (isJailed())
 				return false;
 
-			int unstickTime = m_server->cached.unstickMeSeconds.getValue();
+			const int unstickTime = m_server->cached.unstickMeSeconds.getValue();
 			if (timeDifference(m_server->getFrameStartTime(), m_lastMovement) < std::chrono::seconds{unstickTime})
 				setChat(CString() << "Don't move for " << CString(unstickTime) << " seconds before doing '" << pChat << "'!");
 			else
@@ -995,8 +984,9 @@ bool PlayerClient::processChat(const CString& pChat)
 	else if (pChat == "update level" && account.hasRight(PLPERM_UPDATELEVEL))
 	{
 		processed = true;
+
 		if (auto level = getLevel(); level)
-			level->reload(getMapPosition());
+			(void)level->reload(getMapPosition());
 	}
 	else if (pChat == "showadmins" && m_server->getSettings().get<bool>("disableshowadmins").value_or(false) == false)
 	{
@@ -1005,8 +995,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		// Search through the player list for all RC's.
 		CString msg;
 		{
-			auto& playerList = m_server->getPlayerList();
-			for (auto& [pid, player] : playerList)
+			for (auto& playerList = m_server->getPlayerList(); auto& player : playerList | std::views::values)
 			{
 				// If an RC was found, add it to our string.
 				if (player->getType() & PLTYPE_ANYRC)
@@ -1030,12 +1019,11 @@ bool PlayerClient::processChat(const CString& pChat)
 		{
 			CString msg;
 			{
-				auto& playerList = m_server->getPlayerList();
-				for (auto& [pid, player] : playerList)
+				for (auto& playerList = m_server->getPlayerList(); auto& player : playerList | std::views::values)
 				{
 					// If our guild matches, add it to our string.
 					if (player->getGuild() == g)
-						msg << (msg.length() == 0 ? "" : ", ") << CString(player->account.character.nickName).subString(0, player->account.character.nickName.find('(')).trimI();
+						msg << (msg.length() == 0 ? "" : ", ") << CString(player->account.character.nickName).subString(0, static_cast<int>(player->account.character.nickName.find('('))).trimI();
 				}
 			}
 			if (msg.length() == 0)
@@ -1046,19 +1034,19 @@ bool PlayerClient::processChat(const CString& pChat)
 	else if (pChat == "showkills")
 	{
 		processed = true;
-		setChat(CString() << "kills: " << CString((int)account.kills));
+		setChat(CString() << "kills: " << CString(static_cast<int>(account.kills)));
 	}
 	else if (pChat == "showdeaths")
 	{
 		processed = true;
-		setChat(CString() << "deaths: " << CString((int)account.deaths));
+		setChat(CString() << "deaths: " << CString(static_cast<int>(account.deaths)));
 	}
 	else if (pChat == "showonlinetime")
 	{
 		processed = true;
-		int seconds = account.onlineSeconds % 60;
-		int minutes = (account.onlineSeconds / 60) % 60;
-		int hours = account.onlineSeconds / 3600;
+		const auto seconds = account.onlineSeconds % 60;
+		const auto minutes = (account.onlineSeconds / 60) % 60;
+		const auto hours = account.onlineSeconds / 3600;
 		CString msg;
 		if (hours != 0) msg << CString(hours) << "h ";
 		if (minutes != 0 || hours != 0) msg << CString(minutes) << "m ";
@@ -1078,13 +1066,12 @@ bool PlayerClient::processChat(const CString& pChat)
 		// Send PM to guild members.
 		int num = 0;
 		{
-			auto& playerList = m_server->getPlayerList();
-			for (auto& [pid, player] : playerList)
+			for (auto& playerList = m_server->getPlayerList(); auto& player : playerList | std::views::values)
 			{
 				// If our guild matches, send the PM.
 				if (player->getGuild() == m_guild)
 				{
-					player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)m_id << "\"\",\"Guild message:\",\"" << pm << "\"");
+					player->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)m_id << R"("","Guild message:",")" << pm << "\"");
 					++num;
 				}
 			}
@@ -1107,7 +1094,7 @@ bool PlayerClient::processChat(const CString& pChat)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PlayerClient::setGroup(std::string_view group)
+void PlayerClient::setGroup(const std::string_view group)
 {
 	// Clear any cached level data from the client that belongs to the old group.
 	if (!account.groupName.empty())
@@ -1124,13 +1111,13 @@ void PlayerClient::setGroup(std::string_view group)
 
 double PlayerClient::getCalculatedTileZ() const noexcept
 {
-	auto level = getLevel();
+	const auto level = getLevel();
 	if (level == nullptr || !level->hasTerrain())
 		return account.character.localPixelZ / 16.0;
 
-	PixelPosition testPosition = account.character.getGlobalPosition().translate(24, 48);
-	auto terrainHeight = level->getHeightAt(testPosition);
-	auto currentZ = account.character.localPixelZ / 16.0;
+	const PixelPosition testPosition = account.character.getGlobalPosition().translate(24, 48);
+	const auto terrainHeight = level->getHeightAt(testPosition);
+	const auto currentZ = account.character.localPixelZ / 16.0;
 	return std::max(terrainHeight, currentZ);
 }
 
@@ -1138,7 +1125,7 @@ double PlayerClient::getCalculatedTileZ() const noexcept
 
 std::string PlayerClient::getLevelName() const
 {
-	auto level = getLevel();
+	const auto level = getLevel();
 	if (level == nullptr)
 		return account.level;
 
@@ -1155,7 +1142,7 @@ std::shared_ptr<Level> PlayerClient::getLevel() const
 
 std::shared_ptr<SubLevel> PlayerClient::getSubLevel() const
 {
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 		return level->getSubLevelAtPosition(getMapPosition());
 
 	return nullptr;
@@ -1166,7 +1153,7 @@ std::shared_ptr<SubLevel> PlayerClient::getSubLevel() const
 void PlayerClient::setPosition(const PixelPosition& position)
 {
 	auto localPosition = toLocalPixelPosition(position);
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		std::inplace_vector<props::SetResults, 4> propResults{
 			setPropWith<PlayerProp::X2>(props::SetBy::SERVER, localPosition.x()),
@@ -1175,7 +1162,7 @@ void PlayerClient::setPosition(const PixelPosition& position)
 
 		if (level->isGmap())
 		{
-			auto destMapPosition = toMapPosition(position);
+			const auto destMapPosition = toMapPosition(position);
 			propResults.push_back(setPropWith<PlayerProp::GMAPLEVELX>(props::SetBy::SERVER, destMapPosition.x()));
 			propResults.push_back(setPropWith<PlayerProp::GMAPLEVELY>(props::SetBy::SERVER, destMapPosition.y()));
 		}
@@ -1184,10 +1171,10 @@ void PlayerClient::setPosition(const PixelPosition& position)
 	}
 }
 
-bool PlayerClient::warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClient::warp(const std::string_view levelName, const PixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
 {
 	// Find the level.
-	auto newLevel = m_server->getLoadedLevel(levelName, shared_from_this());
+	const auto newLevel = m_server->getLoadedLevel(levelName, shared_from_this());
 
 	// Check if the new level exists.
 	if (newLevel == nullptr)
@@ -1199,10 +1186,10 @@ bool PlayerClient::warp(std::string_view levelName, const PixelPosition& positio
 	// If this is a gmap and the level names don't match, fix the position of the warp.
 	if (newLevel->isGmap() && newLevel->levelName != levelName)
 	{
-		auto subLevel = newLevel->getSubLevelByName(levelName);
+		const auto subLevel = newLevel->getSubLevelByName(levelName);
 		if (subLevel != nullptr)
 		{
-			auto origin = newLevel->getSubLevelOrigin(subLevel).value_or(PixelPosition{});
+			const auto origin = Level::getSubLevelOrigin(subLevel).value_or(PixelPosition{});
 			return warp(newLevel, position.translate(origin), clientCachedTime);
 		}
 	}
@@ -1210,7 +1197,7 @@ bool PlayerClient::warp(std::string_view levelName, const PixelPosition& positio
 	return warp(newLevel, position, clientCachedTime);
 }
 
-bool PlayerClient::warp(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClient::warp(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
 {
 	// If we are warping to the same level, just update the player's location.
 	auto localPosition = toLocalPixelPosition(position);
@@ -1251,10 +1238,10 @@ bool PlayerClient::warp(std::shared_ptr<Level> level, const PixelPosition& posit
 	return enterLevel(level, clientCachedTime);
 }
 
-bool PlayerClient::enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClient::enterLevel(const std::shared_ptr<Level>& level, const std::optional<clock::time_point> clientCachedTime)
 {
-	auto currentLevel = getLevel();
-	bool sameLevel = currentLevel == level;
+	const auto currentLevel = getLevel();
+	const bool sameLevel = currentLevel == level;
 
 	// Leave the current level if we are changing levels and add ourself to the new one.
 	if (!sameLevel)
@@ -1267,7 +1254,7 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, std::optional<clock:
 	}
 
 	// Send the level now.
-	auto subLevel = level->getSubLevelAtPosition(getMapPosition());
+	const auto subLevel = level->getSubLevelAtPosition(getMapPosition());
 	bool succeed = sendStaticLevelData(subLevel->staticData.lock(), subLevel, clientCachedTime);
 	succeed = succeed && sendDynamicLevelData(level, clientCachedTime);
 
@@ -1288,7 +1275,7 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, std::optional<clock:
 	}
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
-	CString minimap = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id
+	const CString minimap = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id
 		>> (char)PlayerProp::LEVEL << getProp<PlayerProp::LEVEL>().serialize()
 		>> (char)PlayerProp::X << getProp<PlayerProp::X>().serialize()
 		>> (char)PlayerProp::Y << getProp<PlayerProp::Y>().serialize();
@@ -1302,7 +1289,7 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, std::optional<clock:
 	}
 
 	// Update RCs.
-	CString myRCProps = CString() >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name
+	const CString myRCProps = CString() >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name
 		>> (char)PlayerProp::LEVEL << getProp<PlayerProp::LEVEL>().serialize()
 		>> (char)PlayerProp::PLAYERLISTSTATUS << getProp<PlayerProp::PLAYERLISTSTATUS>().serialize()
 		>> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize()
@@ -1312,10 +1299,10 @@ bool PlayerClient::enterLevel(std::shared_ptr<Level> level, std::optional<clock:
 	return true;
 }
 
-bool PlayerClient::leaveLevel(bool keepLevelReference)
+bool PlayerClient::leaveLevel(const bool keepLevelReference)
 {
 	// Make sure we are on a level first.
-	auto levelp = m_currentLevel.lock();
+	const auto levelp = m_currentLevel.lock();
 	if (!levelp) return true;
 	auto [subLevel, levelData] = levelp->getSubLevelAndStaticDataAtPosition(getMapPosition());
 	if (levelData == nullptr)
@@ -1328,11 +1315,11 @@ bool PlayerClient::leaveLevel(bool keepLevelReference)
 	levelp->removePlayer(m_id);
 
 	// Send PLO_ISLEADER to new level leader.
-	if (auto map = levelp->getMap(); map == nullptr || !map->isGmap())
+	if (const auto map = levelp->getMap(); map == nullptr || !map->isGmap())
 	{
-		if (auto& levelPlayerList = levelp->getPlayers(); !levelPlayerList.empty())
+		if (const auto& levelPlayerList = levelp->getPlayers(); !levelPlayerList.empty())
 		{
-			if (auto leader = m_server->getPlayer<PlayerClient>(levelPlayerList.front()); leader != nullptr)
+			if (const auto leader = m_server->getPlayer<PlayerClient>(levelPlayerList.front()); leader != nullptr)
 				leader->informPlayerIsLevelLeader();
 		}
 	}
@@ -1340,10 +1327,10 @@ bool PlayerClient::leaveLevel(bool keepLevelReference)
 	// If I am carrying an NPC, tell others the NPC left the level.
 	if (m_carryNPC != 0)
 	{
-		if (auto npc = m_server->getNPC(m_carryNPC); npc)
+		if (const auto npc = m_server->getNPC(m_carryNPC); npc)
 		{
 			levelp->removeNPC(m_carryNPC);
-			CString deletePacket = CString() >> (char)PLO_NPCDEL >> (int)m_carryNPC;
+			const CString deletePacket = CString() >> (char)PLO_NPCDEL >> (int)m_carryNPC;
 			m_server->sendPacketToLevelAndPastVisitorsAfter(levelData.get(), npc->lastUpdateTime, deletePacket);
 		}
 	}
@@ -1356,7 +1343,7 @@ bool PlayerClient::leaveLevel(bool keepLevelReference)
 		{
 			if (pid == getId()) continue;
 			if (player->getLevel() != getLevel()) continue;
-			this->sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() >> (char)PlayerProp::JOINLEAVELVL >> (char)0);
+			sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() >> (char)PlayerProp::JOINLEAVELVL >> (char)0);
 		}
 	}
 
@@ -1367,21 +1354,20 @@ bool PlayerClient::leaveLevel(bool keepLevelReference)
 	return true;
 }
 
-bool PlayerClient::leaveSubLevel(std::shared_ptr<SubLevel> subLevel)
+bool PlayerClient::leaveSubLevel(const std::shared_ptr<SubLevel>& subLevel)
 {
 	if (subLevel == nullptr) return false;
-	auto staticData = subLevel->staticData.lock();
+	const auto staticData = subLevel->staticData.lock();
 	if (staticData == nullptr) return false;
 
 	auto curTime = m_server->getFrameStartTime();
-	auto cacheLevel = [this, &curTime]<typename T>(std::vector<std::unique_ptr<CachedLevel<T>>>& cache, std::shared_ptr<T> level)
+	auto cacheLevel = [&curTime]<typename T>(std::vector<std::unique_ptr<CachedLevel<T>>>& cache, const std::shared_ptr<T>& level)
 	{
 		// Save the time we left the level for the client-side caching.
 		bool found = false;
 		for (auto& cl : cache)
 		{
-			auto cllevel = cl->level.lock();
-			if (cllevel == level)
+			if (const auto cllevel = cl->level.lock(); cllevel == level)
 			{
 				cl->lastEnteredTime = curTime;
 				found = true;
@@ -1400,7 +1386,7 @@ bool PlayerClient::leaveSubLevel(std::shared_ptr<SubLevel> subLevel)
 	std::string groupName = account.groupName;
 	if (!groupName.empty())
 	{
-		if (auto level = subLevel->parentLevel.lock(); level != nullptr && !level->isGroupMap)
+		if (const auto level = subLevel->parentLevel.lock(); level != nullptr && !level->isGroupMap)
 			groupName.clear();
 	}
 	cacheLevel(m_cachedDynamicLevels[groupName], subLevel);
@@ -1408,14 +1394,14 @@ bool PlayerClient::leaveSubLevel(std::shared_ptr<SubLevel> subLevel)
 	return true;
 }
 
-bool PlayerClient::sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<clock::time_point> clientCachedTime)
 {
 	if (staticLevelData == nullptr)
 		return false;
 
-	PlayerPtr self = shared_from_this();
+	const PlayerPtr self = shared_from_this();
 	auto levelModTime = staticLevelData->modTime;
-	auto cachedModTime = getLevelLastEnteredTime(staticLevelData.get());
+	const auto cachedModTime = getLevelLastEnteredTime(staticLevelData.get());
 	if (!clientCachedTime.has_value()) clientCachedTime = levelModTime;
 
 	bool sentBoard = false;
@@ -1480,7 +1466,7 @@ bool PlayerClient::sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLe
 	return true;
 }
 
-bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClient::sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime)
 {
 	if (level == nullptr) return false;
 
@@ -1489,8 +1475,8 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 	if (subLevel == nullptr || staticLevelData == nullptr)
 		return false;
 
-	PlayerPtr self = shared_from_this();
-	auto cachedModTime = getLevelLastEnteredTime(subLevel.get());
+	const PlayerPtr self = shared_from_this();
+	const auto cachedModTime = getLevelLastEnteredTime(subLevel.get());
 
 	// Send board changes, horses, and baddies.
 	subLevel->sendBoardChangesToPlayer(self, cachedModTime);
@@ -1514,7 +1500,7 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 	// Move the carry NPC to the new level.
 	if (m_carryNPC != 0)
 	{
-		if (auto npc = m_server->getNPC(m_carryNPC); npc)
+		if (const auto npc = m_server->getNPC(m_carryNPC); npc)
 		{
 			if (npc->level != level->levelName)
 			{
@@ -1536,7 +1522,7 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 			// Send the carry NPC props to other players.
 			if (!level->isSinglePlayer)
 			{
-				CString carryNPCProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNPC << npc->getAllPropsPacket();
+				const CString carryNPCProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNPC << npc->getAllPropsPacket();
 				m_server->sendPacketToNearby(carryNPCProps, getGlobalPosition(), level, {m_id});
 			}
 		}
@@ -1545,7 +1531,7 @@ bool PlayerClient::sendDynamicLevelData(std::shared_ptr<Level> level, std::optio
 	// Send connecting player props to players in nearby levels.
 	if (!level->isSinglePlayer)
 	{
-		CString myProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)1 << getPropsPacketFromList(loginPropsClientOthers);
+		const CString myProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)1 << getPropsPacketFromList(loginPropsClientOthers);
 		for (const auto& playerId : level->findInRangePlayersForCommunication(getGlobalPosition()))
 		{
 			if (playerId == m_id) continue;
@@ -1568,7 +1554,7 @@ void PlayerClient::checkAndInformIfLevelLeader()
 	if (m_currentLevel.expired())
 		return;
 
-	auto level = getLevel();
+	const auto level = getLevel();
 	if (level == nullptr)
 		return;
 
@@ -1607,7 +1593,7 @@ std::optional<clock::time_point> PlayerClient::getLevelLastEnteredTime(const Sub
 	if (level == nullptr)
 		return std::nullopt;
 
-	auto groupLevels = m_cachedDynamicLevels.find(group);
+	const auto groupLevels = m_cachedDynamicLevels.find(group);
 	if (groupLevels == m_cachedDynamicLevels.end())
 		return std::nullopt;
 
@@ -1625,7 +1611,7 @@ std::optional<clock::time_point> PlayerClient::getLevelLastEnteredTime(const Sub
 	return std::nullopt;
 }
 
-void PlayerClient::resetLevelCache(const StaticLevelData* level)
+void PlayerClient::resetLevelCache(const StaticLevelData* level) const
 {
 	if (level == nullptr) return;
 	for (auto& cl : m_cachedStaticLevels)
@@ -1639,16 +1625,16 @@ void PlayerClient::resetLevelCache(const StaticLevelData* level)
 	}
 }
 
-void PlayerClient::resetLevelCache(const SubLevel* level, std::string_view group)
+void PlayerClient::resetLevelCache(const SubLevel* level, const std::string_view group)
 {
 	if (level == nullptr)
 		return;
 
-	auto groupLevels = m_cachedDynamicLevels.find(group);
+	const auto groupLevels = m_cachedDynamicLevels.find(group);
 	if (groupLevels == m_cachedDynamicLevels.end())
 		return;
 
-	for (auto& cl : groupLevels->second)
+	for (const auto& cl : groupLevels->second)
 	{
 		auto cllevel = cl->level.lock();
 		if (cllevel && cllevel.get() == level)
@@ -1659,15 +1645,15 @@ void PlayerClient::resetLevelCache(const SubLevel* level, std::string_view group
 	}
 }
 
-void PlayerClient::resetLevelCache(std::string_view group)
+void PlayerClient::resetLevelCache(const std::string_view group)
 {
-	auto groupLevels = m_cachedDynamicLevels.find(group);
+	const auto groupLevels = m_cachedDynamicLevels.find(group);
 	if (groupLevels == m_cachedDynamicLevels.end())
 		return;
 
 	// Collect a list of all the NPCs in the group that need to be deleted.
 	std::unordered_set<NPCID> npcsToReset;
-	for (auto& cl : groupLevels->second)
+	for (const auto& cl : groupLevels->second)
 	{
 		if (auto subLevel = cl->level.lock(); subLevel != nullptr)
 		{
@@ -1680,7 +1666,7 @@ void PlayerClient::resetLevelCache(std::string_view group)
 	}
 
 	// Send the delete packet so the client forgets about them.
-	for (auto npcId : npcsToReset)
+	for (const auto npcId : npcsToReset)
 		sendPacket(CString() >> (char)PLO_NPCDEL >> (int)npcId);
 
 	// Finally, clear the cache for the group.
@@ -1714,7 +1700,7 @@ void PlayerClient::unfreezePlayer()
 void PlayerClient::sendRPGMessage(std::string message)
 {
 	string::replaceMutate(message, "\n", "#b");
-	auto translated = translate(message);
+	const auto translated = translate(message);
 	sendPacket(CString() >> (char)PLO_RPGWINDOW << string::toCSV(string::splitByString(translated, "#b"sv, false)));
 }
 
@@ -1756,7 +1742,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 		testBox.size.length() = std::numeric_limits<uint16_t>::max();
 	}
 
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		// Test for NPC touch.
 		bool touchedNPC = false;
@@ -1770,7 +1756,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 		}
 		if (touchedNPC)
 		{
-			auto eventDistance = m_server->cached.eventDistance.getValue();
+			const auto eventDistance = m_server->cached.eventDistance.getValue();
 			for (const auto& npcId : level->findInRangeNPCsByDistance(testBox.position, eventDistance))
 			{
 				auto intersectingNPCs = level->findIntersectingNPCsForCollision(testBox);
@@ -1784,7 +1770,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 	}
 }
 
-bool PlayerClient::testForSigns(SetResults& result, uint8_t movementDirection)
+bool PlayerClient::testForSigns(SetResults& result, const uint8_t movementDirection)
 {
 	if (!m_server->hasNPCServer() || m_server->cached.forceClientsideSigns.getValue())
 		return false;
@@ -1792,7 +1778,7 @@ bool PlayerClient::testForSigns(SetResults& result, uint8_t movementDirection)
 	// Test for signs.
 	if (account.character.direction == 0 && movementDirection == 0)
 	{
-		if (auto level = getLevel(); level != nullptr)
+		if (const auto level = getLevel(); level != nullptr)
 		{
 			for (const auto& sign : level->getSigns())
 			{
@@ -1808,7 +1794,7 @@ bool PlayerClient::testForSigns(SetResults& result, uint8_t movementDirection)
 	return false;
 }
 
-bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
+bool PlayerClient::testForLinks(SetResults& result, const uint8_t movementDirection)
 {
 	static Position<int16_t> touchTest[] = {{24, 16}, {0, 32}, {24, 56}, {48, 32}};
 
@@ -1816,43 +1802,43 @@ bool PlayerClient::testForLinks(SetResults& result, uint8_t movementDirection)
 		return false;
 
 	// If we have no level, we can't test anything!
-	auto level = getLevel();
+	const auto level = getLevel();
 	if (level == nullptr)
 		return false;
 
 	// If this is a bigmap, we forced clientside links to fix issues where the client wraps the X/Y values and ends up in weird spots.
 	// So don't check.
-	auto map = level->getMap();
+	const auto map = level->getMap();
 	if (map && map->isBigMap())
 		return false;
 
 	// Test for links.
-	PixelPosition testPos = getGlobalPosition().translate(touchTest[movementDirection].x(), touchTest[movementDirection].y());
-	TilePosition testPosTiles = toTilePosition(testPos);
-	if (auto linkTouched = level->getLink(testPosTiles, map != nullptr); linkTouched.has_value())
+	const PixelPosition testPos = getGlobalPosition().translate(touchTest[movementDirection].x(), touchTest[movementDirection].y());
+	const TilePosition testPosTiles = toTilePosition(testPos);
+	if (const auto linkTouched = level->getLink(testPosTiles, map != nullptr); linkTouched.has_value())
 	{
 		const auto& destLevelName = linkTouched.value()->getDestinationLevel();
 
 		// Check if the destination level is on the level's map.
-		if (auto destSubLevel = level->getSubLevelByName(destLevelName); destSubLevel != nullptr)
+		if (const auto destSubLevel = level->getSubLevelByName(destLevelName); destSubLevel != nullptr)
 		{
-			auto pos = linkTouched.value()->getDestinationForCharacter(account.character, source::FromPlayer(m_id));
-			auto levelData = destSubLevel->staticData.lock();
+			const auto pos = linkTouched.value()->getDestinationForCharacter(account.character, source::FromPlayer(m_id));
+			const auto levelData = destSubLevel->staticData.lock();
 			warp(level->levelName, level->convertToMapPosition(destSubLevel->mapPosition.value_or(MapPosition{0, 0}), pos), getLevelLastEnteredTime(levelData.get()));
 			return true;
 		}
 		// Level is outside of the map, so search normally.
-		else if (auto newLevel = m_server->getLoadedLevel(destLevelName, shared_from_this()); newLevel != nullptr)
+		else if (const auto newLevel = m_server->getLoadedLevel(destLevelName, shared_from_this()); newLevel != nullptr)
 		{
 			PixelPosition origin{};
 			if (newLevel->isGmap())
 			{
-				if (auto subLevel = newLevel->getSubLevelByName(destLevelName); subLevel != nullptr)
-					origin = newLevel->getSubLevelOrigin(subLevel).value_or(PixelPosition{});
+				if (const auto subLevel = newLevel->getSubLevelByName(destLevelName); subLevel != nullptr)
+					origin = Level::getSubLevelOrigin(subLevel).value_or(PixelPosition{});
 			}
 
-			auto pos = toPixelPosition(origin, linkTouched.value()->getDestinationForCharacter(account.character, source::FromPlayer(m_id)));
-			auto levelData = newLevel->getStaticLevelDataByName(destLevelName);
+			const auto pos = toPixelPosition(origin, linkTouched.value()->getDestinationForCharacter(account.character, source::FromPlayer(m_id)));
+			const auto levelData = newLevel->getStaticLevelDataByName(destLevelName);
 			warp(newLevel->levelName, pos, getLevelLastEnteredTime(levelData.get()));
 			return true;
 		}
@@ -1866,18 +1852,19 @@ void PlayerClient::dropItemsOnDeath()
 	if (!m_server->getSettings().get<bool>("dropitemsdead").value_or(true))
 		return;
 
-	auto level = getLevel();
+	const auto level = getLevel();
 	if (level == nullptr)
 		return;
 
-	auto mindeathgralats = m_server->getSettings().get<uint32_t>("mindeathgralats").value_or(1);
-	auto maxdeathgralats = m_server->getSettings().get<uint32_t>("maxdeathgralats").value_or(50);
+	const auto mindeathgralats = m_server->getSettings().get<uint32_t>("mindeathgralats").value_or(1);
+	const auto maxdeathgralats = m_server->getSettings().get<uint32_t>("maxdeathgralats").value_or(50);
 	const auto& allowedDeathDrops = m_server->getAllowedDeathDrops();
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<uint32_t> gralatDistribution(mindeathgralats, maxdeathgralats);
 	std::uniform_int_distribution<uint32_t> itemDistribution(0, 3);
+	std::uniform_int_distribution<int8_t> displacementDistribution(-4, 4);
 
 	// Determine how many gralats to remove from the account.
 	uint32_t drop_gralats = 0;
@@ -1885,8 +1872,8 @@ void PlayerClient::dropItemsOnDeath()
 		drop_gralats = std::min(gralatDistribution(gen), account.character.gralats);
 
 	// Determine how many arrows and bombs to remove from the account.
-	int drop_arrows = itemDistribution(gen);
-	int drop_bombs = itemDistribution(gen);
+	auto drop_arrows = itemDistribution(gen);
+	auto drop_bombs = itemDistribution(gen);
 	if ((drop_arrows * 5) > account.character.arrows) drop_arrows = account.character.arrows / 5;
 	if ((drop_bombs * 5) > account.character.bombs) drop_bombs = account.character.bombs / 5;
 
@@ -1903,10 +1890,10 @@ void PlayerClient::dropItemsOnDeath()
 	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::GRALATS >> (int)account.character.gralats >> (char)PlayerProp::ARROWS >> (char)account.character.arrows >> (char)PlayerProp::BOMBS >> (char)account.character.bombs);
 
 	// Check which gralats we can drop.
-	bool canDropGold = std::ranges::contains(allowedDeathDrops, LevelItemType::GOLDRUPEE);
-	bool canDropRed = std::ranges::contains(allowedDeathDrops, LevelItemType::REDRUPEE);
-	bool canDropBlue = std::ranges::contains(allowedDeathDrops, LevelItemType::BLUERUPEE);
-	bool canDropGreen = std::ranges::contains(allowedDeathDrops, LevelItemType::GREENRUPEE);
+	const bool canDropGold = std::ranges::contains(allowedDeathDrops, LevelItemType::GOLDRUPEE);
+	const bool canDropRed = std::ranges::contains(allowedDeathDrops, LevelItemType::REDRUPEE);
+	const bool canDropBlue = std::ranges::contains(allowedDeathDrops, LevelItemType::BLUERUPEE);
+	const bool canDropGreen = std::ranges::contains(allowedDeathDrops, LevelItemType::GREENRUPEE);
 	if (!canDropGold && !canDropRed && !canDropBlue && !canDropGreen)
 		drop_gralats = 0;
 
@@ -1939,40 +1926,40 @@ void PlayerClient::dropItemsOnDeath()
 			item = 0;
 		}
 
-		float pX = localTilePos.x() + 1.5f + (rand() % 8) - 2.0f;
-		float pY = localTilePos.y() + 2.0f + (rand() % 8) - 2.0f;
+		const float pX = localTilePos.x() + 1.5f + static_cast<float>(displacementDistribution(gen));
+		const float pY = localTilePos.y() + 2.0f + static_cast<float>(displacementDistribution(gen));
 
 		level->addItem(inform_client, toPixelPosition(getSubLevelOrigin(), pX, pY), static_cast<LevelItemType>(item));
 	}
 
 	// Add arrows and bombs to the level.
-	for (int i = 0; i < drop_arrows; ++i)
+	for (unsigned int i = 0; i < drop_arrows; ++i)
 	{
-		float pX = localTilePos.x() + 1.5f + (rand() % 8) - 2.0f;
-		float pY = localTilePos.y() + 2.0f + (rand() % 8) - 2.0f;
+		const float pX = localTilePos.x() + 1.5f + static_cast<float>(displacementDistribution(gen));
+		const float pY = localTilePos.y() + 2.0f + static_cast<float>(displacementDistribution(gen));
 
 		level->addItem(inform_client, toPixelPosition(getSubLevelOrigin(), pX, pY), LevelItemType::DARTS);
 	}
-	for (int i = 0; i < drop_bombs; ++i)
+	for (unsigned int i = 0; i < drop_bombs; ++i)
 	{
-		float pX = localTilePos.x() + 1.5f + (rand() % 8) - 2.0f;
-		float pY = localTilePos.y() + 2.0f + (rand() % 8) - 2.0f;
+		const float pX = localTilePos.x() + 1.5f + static_cast<float>(displacementDistribution(gen));
+		const float pY = localTilePos.y() + 2.0f + static_cast<float>(displacementDistribution(gen));
 
 		level->addItem(inform_client, toPixelPosition(getSubLevelOrigin(), pX, pY), LevelItemType::BOMBS);
 	}
 }
 
-bool PlayerClient::dropItem(const PixelPosition& position, LevelItemType item)
+bool PlayerClient::dropItem(const PixelPosition& position, const LevelItemType item)
 {
 	if (removeItem(item))
 	{
-		if (auto level = getLevel(); level && level->addItem(position, item))
+		if (const auto level = getLevel(); level && level->addItem(position, item))
 			return true;
 	}
 	return false;
 }
 
-bool PlayerClient::removeItem(LevelItemType itemType)
+bool PlayerClient::removeItem(const LevelItemType itemType)
 {
 	switch (itemType)
 	{
@@ -2079,12 +2066,14 @@ bool PlayerClient::removeItem(LevelItemType itemType)
 			}
 			return false;
 		}
+
+		default:;
 	}
 
 	return false;
 }
 
-props::SetResults PlayerClient::addItem(LevelItemType itemType, props::SetBy setBy)
+props::SetResults PlayerClient::addItem(const LevelItemType itemType, const props::SetBy setBy)
 {
 	switch (itemType)
 	{
@@ -2102,7 +2091,7 @@ props::SetResults PlayerClient::addItem(LevelItemType itemType, props::SetBy set
 
 		case LevelItemType::HEART:
 		{
-			uint8_t maxHearts = static_cast<uint8_t>(std::min(account.maxHitpoints, static_cast<uint8_t>(m_server->cached.maxHeartLimit.getValue())) * 2);
+			const uint8_t maxHearts = static_cast<uint8_t>(std::min(account.maxHitpoints, static_cast<uint8_t>(m_server->cached.maxHeartLimit.getValue())) * 2);
 			return setPropWith<PlayerProp::BOMBS>(setBy, std::min(maxHearts, static_cast<uint8_t>(account.character.hitpointsInHalves + 2)));
 		}
 
@@ -2112,12 +2101,14 @@ props::SetResults PlayerClient::addItem(LevelItemType itemType, props::SetBy set
 
 		case LevelItemType::SPINATTACK:
 			return setPropWith<PlayerProp::STATUS>(setBy, static_cast<uint8_t>(account.status | PLSTATUS_HASSPIN));
+
+		default:;
 	}
 
 	return {};
 }
 
-void PlayerClient::addItem(inform_client_t, LevelItemType itemType, props::SetBy setBy)
+void PlayerClient::addItem(inform_client_t, const LevelItemType itemType, const props::SetBy setBy)
 {
 	sendPropsFromResults(addItem(itemType, setBy));
 }

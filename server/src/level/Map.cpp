@@ -39,8 +39,8 @@ Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
 	// Get the appropriate filesystem.
 	m_server = BabyDI::Get<Server>();
 	assert(m_server != nullptr);
-	auto& fileSystem = m_server->getFileSystem();
-	auto fullFilePath = fileSystem.find(fs::FileCategory::FILE, fileName);
+	const auto& fileSystem = m_server->getFileSystem();
+	const auto fullFilePath = fileSystem.find(fs::FileCategory::FILE, fileName);
 
 	// Make sure the file exists.
 	if (fullFilePath.empty())
@@ -52,8 +52,7 @@ Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
 	Position<uint8_t> currentPosition;
 
 	// Load the levels.
-	auto fileData = CString::loadToken(fullFilePath.string());
-	for (auto& line : fileData)
+	for (auto& line : CString::loadToken(fullFilePath.string()))
 	{
 		line = line.removeAll("\r").trim();
 		if (line.isEmpty())
@@ -76,7 +75,7 @@ Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
 		++currentPosition.y();
 
 		// Calculate width/height.
-		auto currentWidth = levelList.size() - empty;
+		const auto currentWidth = levelList.size() - empty;
 		++constructSize.height();
 		if (constructSize.width() < currentWidth)
 			constructSize.width() = currentWidth;
@@ -147,8 +146,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 			{
 				if (currentPosition.y() < constructSize.height())
 				{
-					auto lines = string::fromCSV(lineView);
-					for (auto& levelName : lines)
+					for (auto& levelName : string::fromCSV(lineView))
 					{
 						if (currentPosition.x() < constructSize.width())
 						{
@@ -191,8 +189,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 			lineView = string::trim(line);
 			while (!lineView.starts_with("LOADATSTARTEND"))
 			{
-				auto lines = string::fromCSV(lineView);
-				for (auto& levelName : lines)
+				for (auto& levelName : string::fromCSV(lineView))
 					constructPreload.emplace(string::toLower(levelName));
 
 				line = file->readLine();
@@ -237,8 +234,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 			lineView = string::trim(line);
 			while (!lineView.starts_with("HEIGHTMAPEND"))
 			{
-				auto lines = string::fromCSV(lineView);
-				for (auto& height : lines)
+				for (auto& height : string::fromCSV(lineView))
 					terrainGridHeights.push_back(string::toDouble(height));
 
 				line = file->readLine();
@@ -251,8 +247,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 			lineView = string::trim(line);
 			while (!lineView.starts_with("RANDOMSEEDSEND"))
 			{
-				auto lines = string::fromCSV(lineView);
-				for (auto& seed : lines)
+				for (auto& seed : string::fromCSV(lineView))
 					constructTerrain.levelSeeds.push_back(string::toNumber<uint32_t>(seed));
 
 				line = file->readLine();
@@ -276,8 +271,8 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 			auto iter = result.rbegin();
 			while (col > 0 && iter != result.rend())
 			{
-				auto remainder = col % 26;
-				*iter = 'a' + remainder;
+				const auto remainder = col % 26;
+				*iter = static_cast<char>('a' + remainder);
 				col /= 26;
 				++iter;
 			}
@@ -291,8 +286,8 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 		// First, determine the separator between the prefix and the columns.
 		std::string_view genLevel{generatedLastLevel};
 		std::string_view levelPrefix;
-		std::string_view columnSeparator = "_"sv;
-		std::string_view rowSeparator = "-"sv;
+		auto columnSeparator = "_"sv;
+		auto rowSeparator = "-"sv;
 
 		// Generated level starts with the map name.
 		if (genLevel.starts_with(fileName.stem().string()))
@@ -316,7 +311,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 		else
 		{
 			// Find the first alphabetic character.
-			auto alphaPos = genLevel.find_first_of("abcdefghijklmnopqrstuvwxyz"sv);
+			const auto alphaPos = genLevel.find_first_of("abcdefghijklmnopqrstuvwxyz"sv);
 			if (alphaPos != std::string_view::npos)
 			{
 				columnSeparator = genLevel.substr(0, alphaPos);
@@ -326,7 +321,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 					genLevel = genLevel.substr(last);
 
 				// Find the first numeric character.
-				auto numericPos = genLevel.find_first_of("0123456789"sv);
+				const auto numericPos = genLevel.find_first_of("0123456789"sv);
 				if (numericPos != std::string_view::npos)
 					rowSeparator = genLevel.substr(0, numericPos);
 			}
@@ -404,7 +399,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	if (auto stub = m_server->getStubbedLevel(fileName.string()); stub != nullptr)
 	{
 		auto& gmapLevels = m_server->getGmapLevelList();
-		for (const auto& [levelName, levelPos] : levels)
+		for (const auto& levelName : levels | std::views::keys)
 			gmapLevels.insert({levelName, stub});
 	}
 }
@@ -419,7 +414,7 @@ void Map::loadMapLevels() const
 		{
 			if (auto level = m_server->getCachedLevelData(levelName); level != nullptr)
 			{
-				auto index = position.x() + position.y() * size.width();
+				const auto index = position.x() + position.y() * size.width();
 				levelDataByName[levelName] = level;
 				levelDataByPosition[index] = level;
 			}
@@ -435,7 +430,7 @@ void Map::loadMapLevels() const
 				if (levelIter == levels.end())
 					continue;
 
-				auto index = levelIter->second.x() + levelIter->second.y() * size.width();
+				const auto index = levelIter->second.x() + levelIter->second.y() * size.width();
 				levelDataByName[levelName] = level;
 				levelDataByPosition[index] = level;
 			}
@@ -443,38 +438,36 @@ void Map::loadMapLevels() const
 	}
 }
 
-void Map::setLevelDataLoaded(std::shared_ptr<StaticLevelData> level)
+void Map::setLevelDataLoaded(const std::shared_ptr<StaticLevelData>& level)
 {
 	forceSetLevelDataLoaded(level);
 }
 
 //----------------------------
 
-bool Map::hasLevel(std::string_view levelName) const
+bool Map::hasLevel(const std::string_view levelName) const
 {
-	auto it = levels.find(levelName);
-	return it != levels.end();
+	return levels.contains(levelName);
 }
 
-std::optional<MapPosition> Map::getLevelPosition(std::string_view levelName) const
+std::optional<MapPosition> Map::getLevelPosition(const std::string_view levelName) const
 {
-	auto it = levels.find(levelName);
-	if (it != levels.end())
+	if (const auto it = levels.find(levelName); it != levels.end())
 		return it->second;
 	return std::nullopt;
 }
 
-std::string Map::getLevelNameAt(int x, int y) const
+std::string Map::getLevelNameAt(const int x, const int y) const
 {
 	for (const auto& [levelName, levelPos] : levels)
 	{
 		if (levelPos.x() == x && levelPos.y() == y)
 			return levelName;
 	}
-	return std::string{};
+	return {};
 }
 
-std::shared_ptr<StaticLevelData> Map::getLevelDataAt(int x, int y) const
+std::shared_ptr<StaticLevelData> Map::getLevelDataAt(const int x, const int y) const
 {
 	for (const auto& [levelName, levelPos] : levels)
 	{
@@ -486,21 +479,20 @@ std::shared_ptr<StaticLevelData> Map::getLevelDataAt(int x, int y) const
 
 std::shared_ptr<StaticLevelData> Map::getLevelDataAt(const PixelPosition& globalPosition) const
 {
-	int x = static_cast<int>(std::floor(globalPosition.x() / 1024));
-	int y = static_cast<int>(std::floor(globalPosition.y() / 1024));
+	const auto x = static_cast<int>(std::floor(globalPosition.x() / 1024));
+	const auto y = static_cast<int>(std::floor(globalPosition.y() / 1024));
 	return getLevelDataAt(x, y);
 }
 
-std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> Map::getLevelDataInRange(const TilePosition& position, int syncTilesX, int syncTilesY) const noexcept
+std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> Map::getLevelDataInRange(const TilePosition& position, const int syncTilesX, const int syncTilesY) const noexcept
 {
 	Position<int16_t> searchPos{static_cast<int16_t>(position.x() / 64), static_cast<int16_t>(position.y() / 64)};
-	Dimension<uint8_t> levelSyncDistance{static_cast<uint8_t>(std::ceilf(syncTilesX / 64)), static_cast<uint8_t>(std::ceilf(syncTilesY / 64))};
-	Rectangle<int16_t, uint8_t> area{searchPos.translate(-levelSyncDistance.width(), -levelSyncDistance.height()), levelSyncDistance * 2};
+	Dimension<uint8_t> levelSyncDistance{static_cast<uint8_t>(std::ceilf(static_cast<float>(syncTilesX) / 64)), static_cast<uint8_t>(std::ceilf(static_cast<float>(syncTilesY) / 64))};
+	const Rectangle<int16_t, uint8_t> area{searchPos.translate(static_cast<int16_t>(-levelSyncDistance.width()), static_cast<int16_t>(-levelSyncDistance.height())), levelSyncDistance * 2};
 
 	for (const auto& [levelName, levelPos] : levels)
 	{
-		if (levelPos.x() >= area.left() && levelPos.x() <= area.right() &&
-			levelPos.y() >= area.top() && levelPos.y() <= area.bottom())
+		if (positionInRectangle(levelPos, area))
 		{
 			if (auto level = getLevelDataPtr(levelName, levelDataByName[levelName]); level != nullptr)
 				co_yield std::make_pair(level, levelPos);
@@ -515,7 +507,7 @@ std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> Map::ge
 		PixelPosition levelOrigin{levelPos.x() * 1024, levelPos.y() * 1024};
 		if (positionInRectangle(levelOrigin, area))
 		{
-			auto index = (levelPos.y() * size.width()) + levelPos.x();
+			const auto index = (levelPos.y() * size.width()) + levelPos.x();
 			co_yield std::make_pair(getLevelDataPtr(levelName, levelDataByPosition[index]), levelPos);
 		}
 	}
@@ -525,26 +517,26 @@ std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> Map::ge
 {
 	for (const auto& [levelName, levelPos] : levels)
 	{
-		auto index = (levelPos.y() * size.width()) + levelPos.x();
+		const auto index = (levelPos.y() * size.width()) + levelPos.x();
 		co_yield std::make_pair(getLevelDataPtr(levelName, levelDataByPosition[index]), levelPos);
 	}
 }
 
 //----------------------------
 
-void Map::forceSetLevelDataLoaded(std::shared_ptr<StaticLevelData> level) const noexcept
+void Map::forceSetLevelDataLoaded(const std::shared_ptr<StaticLevelData>& level) const noexcept
 {
-	if (auto it = levelDataByName.find(level->levelName); it != levelDataByName.end())
+	if (const auto it = levelDataByName.find(level->levelName); it != levelDataByName.end())
 		it->second = level;
 
 	if (auto position = getLevelPosition(level->levelName); position.has_value())
 	{
-		if (size_t index = position.value().x() + position.value().y() * size.width(); index < levelDataByPosition.size())
+		if (const size_t index = position.value().x() + position.value().y() * size.width(); index < levelDataByPosition.size())
 			levelDataByPosition[index] = level;
 	}
 }
 
-std::shared_ptr<StaticLevelData> Map::getLevelDataPtr(std::string_view levelName, std::weak_ptr<StaticLevelData> levelPtr) const noexcept
+std::shared_ptr<StaticLevelData> Map::getLevelDataPtr(const std::string_view levelName, const std::weak_ptr<StaticLevelData>& levelPtr) const noexcept
 {
 	if (levelName.empty())
 		return nullptr;

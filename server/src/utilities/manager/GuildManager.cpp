@@ -35,11 +35,11 @@ GuildManager::~GuildManager()
 void GuildManager::loadGuilds(const std::filesystem::path& directory)
 {
 	auto indent = log::server.indent();
-	m_filesystem.categoryEventCallback[ENUM(fs::FileCategory::FILE)] = [this](fs::FileEventCollection events, fs::FileData& fileData)
+	m_filesystem.categoryEventCallback[ENUM(fs::FileCategory::FILE)] = [this](const fs::FileEventCollection events, const fs::FileData& fileData)
 	{
 		if (events.test(fs::FileEvent::Deleted))
 		{
-			auto guildName = string::replace(fs::getANSIFileName(fileData.file.stem()).substr(5), "_"sv, " "sv);
+			const auto guildName = string::replace(fs::getANSIFileName(fileData.file.stem()).substr(5), "_"sv, " "sv);
 			m_guilds.erase(guildName);
 			log::printLine(log::server, "Guild '{}' removed from filesystem.", guildName);
 
@@ -56,12 +56,12 @@ void GuildManager::loadGuilds(const std::filesystem::path& directory)
 		}
 		if (events.test(fs::FileEvent::Added))
 		{
-			if (auto guild = loadGuild(fileData.file); guild != nullptr)
+			if (const auto guild = loadGuild(fileData.file); guild != nullptr)
 				log::printLine(log::server, "Guild '{}' loaded from filesystem.", guild->name);
 		}
 		if (events.test(fs::FileEvent::Modified))
 		{
-			if (auto guild = loadGuild(fileData.file); guild != nullptr)
+			if (const auto guild = loadGuild(fileData.file); guild != nullptr)
 				log::printLine(log::server, "Guild '{}' modified in filesystem.", guild->name);
 		}
 	};
@@ -73,14 +73,14 @@ void GuildManager::loadGuilds(const std::filesystem::path& directory)
 	for (auto info : m_filesystem.info(fs::FileCategory::FILE) | toSharedPtr)
 	{
 		if (info == nullptr) continue;
-		if (auto guild = loadGuild(info->file); guild != nullptr)
+		if (const auto guild = loadGuild(info->file); guild != nullptr)
 			log::printLine(log::server, guild->name);
 	}
 }
 
 void GuildManager::saveGuilds()
 {
-	for (auto& [guildName, guild] : m_guilds)
+	for (const auto& guildName : m_guilds | std::views::keys)
 		saveGuild(guildName);
 }
 
@@ -101,7 +101,7 @@ Guild* GuildManager::loadGuild(const std::filesystem::path& filePath)
 	std::string line;
 	while (std::getline(file, line))
 	{
-		std::string_view lineView{ line };
+		std::string_view lineView{line};
 		lineView = string::trim(lineView);
 		if (lineView.empty())
 			continue;
@@ -128,15 +128,14 @@ Guild* GuildManager::loadGuild(const std::filesystem::path& filePath)
 
 //----------------------------
 
-bool GuildManager::guildExists(std::string_view guildName) const
+bool GuildManager::guildExists(const std::string_view guildName) const
 {
-	return m_guilds.find(guildName) != m_guilds.end();
+	return m_guilds.contains(guildName);
 }
 
-bool GuildManager::verifyPlayerInGuild(std::string_view guildName, std::string_view account, std::string_view nickName) const
+bool GuildManager::verifyPlayerInGuild(const std::string_view guildName, const std::string_view account, const std::string_view nickName) const
 {
-	auto it = m_guilds.find(guildName);
-	if (it != m_guilds.end())
+	if (const auto it = m_guilds.find(guildName); it != m_guilds.end())
 	{
 		const auto& members = it->second.members;
 		auto memberIt = members.find(account);
@@ -150,10 +149,9 @@ bool GuildManager::verifyPlayerInGuild(std::string_view guildName, std::string_v
 	return false;
 }
 
-std::optional<GuildManager::string_map_pair> GuildManager::getPlayerNicknamesForGuild(std::string_view guildName, std::string_view account) const
+std::optional<GuildManager::string_map_pair> GuildManager::getPlayerNicknamesForGuild(const std::string_view guildName, const std::string_view account) const
 {
-	auto it = m_guilds.find(guildName);
-	if (it != m_guilds.end())
+	if (const auto it = m_guilds.find(guildName); it != m_guilds.end())
 	{
 		const auto& members = it->second.members;
 		return members.equal_range(account);
@@ -180,7 +178,7 @@ bool GuildManager::createGuild(std::string_view guildName)
 	}
 
 	Guild guild;
-	guild.name = std::string{ guildName };
+	guild.name = std::string{guildName};
 	guild.filePath = *directory / std::format("guild{}.txt", string::replace(guildName, " "sv, "_"sv));
 
 	std::ofstream file{ guild.filePath, std::ios::out | std::ios::trunc };
@@ -196,9 +194,9 @@ bool GuildManager::createGuild(std::string_view guildName)
 	return true;
 }
 
-bool GuildManager::deleteGuild(std::string_view guildName)
+bool GuildManager::deleteGuild(const std::string_view guildName)
 {
-	if (auto it = m_guilds.find(guildName); it != m_guilds.end())
+	if (const auto it = m_guilds.find(guildName); it != m_guilds.end())
 	{
 		std::filesystem::remove(it->second.filePath);
 		//m_guilds.erase(it);
@@ -207,9 +205,9 @@ bool GuildManager::deleteGuild(std::string_view guildName)
 	return false;
 }
 
-bool GuildManager::saveGuild(std::string_view guildName)
+bool GuildManager::saveGuild(const std::string_view guildName)
 {
-	if (auto it = m_guilds.find(guildName); it != m_guilds.end())
+	if (const auto it = m_guilds.find(guildName); it != m_guilds.end())
 	{
 		Guild& guild = it->second;
 		if (!guild.modifiedSinceLastSave)
@@ -234,7 +232,7 @@ bool GuildManager::saveGuild(std::string_view guildName)
 		guild.modifiedSinceLastSave = false;
 
 		// Update the file mod time so we don't get a file modified event.
-		if (auto fileInfo = m_filesystem.info(fs::FileCategory::FILE, guild.filePath.filename()); fileInfo != nullptr)
+		if (const auto fileInfo = m_filesystem.info(fs::FileCategory::FILE, guild.filePath.filename()); fileInfo != nullptr)
 			fileInfo->refreshModTime();
 
 		return true;
@@ -242,10 +240,9 @@ bool GuildManager::saveGuild(std::string_view guildName)
 	return false;
 }
 
-bool GuildManager::addPlayerToGuild(std::string_view guildName, std::string_view account, std::string_view nickName)
+bool GuildManager::addPlayerToGuild(const std::string_view guildName, const std::string_view account, const std::string_view nickName)
 {
-	auto it = m_guilds.find(guildName);
-	if (it != m_guilds.end())
+	if (const auto it = m_guilds.find(guildName); it != m_guilds.end())
 	{
 		it->second.members.emplace(account, nickName);
 		it->second.modifiedSinceLastSave = true;
@@ -255,7 +252,7 @@ bool GuildManager::addPlayerToGuild(std::string_view guildName, std::string_view
 	// Create the guild.
 	if (createGuild(guildName))
 	{
-		auto& newGuild = m_guilds.at(std::string{ guildName });
+		auto& newGuild = m_guilds.at(std::string{guildName});
 		newGuild.members.emplace(account, nickName);
 		newGuild.modifiedSinceLastSave = true;
 
@@ -266,34 +263,32 @@ bool GuildManager::addPlayerToGuild(std::string_view guildName, std::string_view
 	return false;
 }
 
-bool GuildManager::removePlayerFromGuild(std::string_view guildName, std::string_view account, std::string_view nickName)
+bool GuildManager::removePlayerFromGuild(const std::string_view guildName, const std::string_view account, const std::string_view nickName)
 {
-	auto it = m_guilds.find(guildName);
-	if (it != m_guilds.end())
+	if (const auto it = m_guilds.find(guildName); it != m_guilds.end())
 	{
 		auto& members = it->second.members;
-		auto membersIt = members.equal_range(account);
-		while (membersIt.first != membersIt.second)
+		auto [start, end] = members.equal_range(account);
+		while (start != end)
 		{
-			if (membersIt.first->second == nickName)
+			if (start->second == nickName)
 			{
-				members.erase(membersIt.first);
+				members.erase(start);
 				it->second.modifiedSinceLastSave = true;
 				return true;
 			}
-			++membersIt.first;
+			++start;
 		}
 	}
 	return false;
 }
 
-bool GuildManager::removePlayerEntirelyFromGuild(std::string_view guildName, std::string_view account)
+bool GuildManager::removePlayerEntirelyFromGuild(const std::string_view guildName, const std::string_view account)
 {
-	auto it = m_guilds.find(guildName);
-	if (it != m_guilds.end())
+	if (const auto it = m_guilds.find(guildName); it != m_guilds.end())
 	{
 		auto& members = it->second.members;
-		auto result = members.erase(std::string{ account });
+		const auto result = members.erase(std::string{account});
 		it->second.modifiedSinceLastSave = true;
 		return result > 0;
 	}

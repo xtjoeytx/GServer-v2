@@ -40,8 +40,8 @@ constexpr std::array<std::string_view, 9> supportedLanguages =
 	"Svenska"sv,
 };
 
-constexpr std::string_view filePrefix = "slanguage"sv;
-constexpr std::string_view originalLanguage = "Original"sv;
+constexpr auto filePrefix = "slanguage"sv;
+constexpr auto originalLanguage = "Original"sv;
 
 //----------------------------
 
@@ -71,7 +71,7 @@ void TranslationManagerClassic::loadTranslations(const std::filesystem::path& di
 			continue;
 
 		// slanguageDomain.txt
-		auto fileName = fs::getANSIFileName(entry.path());
+		const auto fileName = fs::getANSIFileName(entry.path());
 		if (!fileName.starts_with(filePrefix) || !fileName.ends_with(".txt"))
 			continue;
 
@@ -86,7 +86,7 @@ void TranslationManagerClassic::loadTranslations(const std::filesystem::path& di
 void TranslationManagerClassic::reloadTranslation(const std::filesystem::path& filePath)
 {
 	// slanguageDomain.txt
-	auto file = fs::getANSIFileName(filePath);
+	const auto file = fs::getANSIFileName(filePath);
 	if (!file.starts_with(filePrefix) || !file.ends_with(".txt"))
 		return;
 
@@ -104,7 +104,7 @@ void TranslationManagerClassic::loadDomain(const std::filesystem::path& filePath
 	// Translation file format:
 	// md5: "text"
 
-	auto lines = CString::loadToken(filePath.string(), "\n", true);
+	const auto lines = CString::loadToken(filePath.string(), "\n", true);
 	for (auto& line : lines)
 	{
 		auto str = string::trim(line.toStringView());
@@ -113,14 +113,14 @@ void TranslationManagerClassic::loadDomain(const std::filesystem::path& filePath
 		auto md5 = str.substr(0, 32);
 		if (md5.length() != 32) continue;
 
-		auto separator = str.find(':');
+		const auto separator = str.find(':');
 		if (separator == std::string_view::npos) continue;
 
 		auto start = str.find('"', separator);
 		if (start == std::string_view::npos) continue;
 		++start;
 
-		auto end = str.find('"', start);
+		const auto end = str.find('"', start);
 		if (end == std::string_view::npos) continue;
 
 		auto value = string::unescapeQuotes(str.substr(start, end - start));
@@ -130,9 +130,9 @@ void TranslationManagerClassic::loadDomain(const std::filesystem::path& filePath
 	m_domains.emplace(std::move(domain), std::move(translations));
 }
 
-void TranslationManagerClassic::saveTranslation(std::string_view domain)
+void TranslationManagerClassic::saveTranslation(const std::string_view domain)
 {
-	auto iter = m_domains.find(domain);
+	const auto iter = m_domains.find(domain);
 	if (iter == m_domains.end())
 		return;
 
@@ -141,7 +141,7 @@ void TranslationManagerClassic::saveTranslation(std::string_view domain)
 
 void TranslationManagerClassic::saveTranslations()
 {
-	for (const auto& [domain, map] : m_domains)
+	for (const auto& map : m_domains | std::views::values)
 	{
 		if (map.filename.empty())
 			continue;
@@ -150,7 +150,7 @@ void TranslationManagerClassic::saveTranslations()
 	}
 }
 
-std::tuple<std::string_view, size_t, size_t> TranslationManagerClassic::syncLanguageWithOriginal(std::string_view language)
+std::tuple<std::string_view, size_t, size_t> TranslationManagerClassic::syncLanguageWithOriginal(const std::string_view language)
 {
 	std::tuple<std::string_view, size_t, size_t> result{""sv, 0, 0};
 	constexpr size_t addIndex = 1;
@@ -239,7 +239,7 @@ std::tuple<std::string_view, size_t, size_t> TranslationManagerClassic::syncLang
 
 std::generator<std::tuple<std::string_view, size_t, size_t>> TranslationManagerClassic::syncAllLanguagesWithOriginal()
 {
-	for (const auto& [domain, map] : m_domains)
+	for (const auto& domain : m_domains | std::views::keys)
 	{
 		if (domain == originalLanguage)
 			continue;
@@ -260,49 +260,49 @@ size_t TranslationManagerClassic::generateAllLanguageStubs()
 	return count;
 }
 
-void TranslationManagerClassic::registerOriginalText(std::string_view key)
+void TranslationManagerClassic::registerOriginalText(const std::string_view key)
 {
 	auto hash = generateHash(key);
 
-	auto domain = m_domains.find(originalLanguage);
+	const auto domain = m_domains.find(originalLanguage);
 	if (domain == m_domains.end())
 		return;
 
-	if (auto line = domain->second.lines.find(key); line != domain->second.lines.end())
+	if (const auto line = domain->second.lines.find(key); line != domain->second.lines.end())
 		return;
 
 	// Not found, add to "Original" and return the key.
 	domain->second.lines.emplace(hash, key);
 }
 
-std::string_view TranslationManagerClassic::getText(std::string_view language, std::string_view key)
+std::string_view TranslationManagerClassic::getText(const std::string_view language, const std::string_view key)
 {
 	auto hash = generateHash(key);
 
-	auto findTranslation = [this](std::string_view language, std::string_view key) -> std::string*
+	auto findTranslation = [this](const std::string_view lang, const std::string_view k) -> std::string*
 	{
-		auto domain = m_domains.find(language);
+		const auto domain = m_domains.find(lang);
 		if (domain == m_domains.end())
 			return nullptr;
-		if (auto line = domain->second.lines.find(key); line != domain->second.lines.end())
+		if (const auto line = domain->second.lines.find(k); line != domain->second.lines.end())
 			return &line->second;
 		return nullptr;
 	};
 
 	// Search the target language, then "Original".
-	if (auto line = findTranslation(language, hash); line != nullptr)
+	if (const auto line = findTranslation(language, hash); line != nullptr)
 		return *line;
-	if (auto line = findTranslation(originalLanguage, hash); line != nullptr)
+	if (const auto line = findTranslation(originalLanguage, hash); line != nullptr)
 		return *line;
 
 	// Not found, add to "Original" and return the key.
-	if (auto domain = m_domains.find(originalLanguage); domain != m_domains.end())
+	if (const auto domain = m_domains.find(originalLanguage); domain != m_domains.end())
 		domain->second.lines.emplace(hash, key);
 
 	return key;
 }
 
-std::string TranslationManagerClassic::generateHash(std::string_view key) const
+std::string TranslationManagerClassic::generateHash(const std::string_view key)
 {
 	hash_state md5;
 	uint8_t output[16]{};

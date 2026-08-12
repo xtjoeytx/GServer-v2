@@ -201,7 +201,7 @@ public:
 	virtual std::shared_ptr<Level> getLevel() const;
 
 	// Set Properties
-	void setNick(CString pNickName, bool force = false);
+	void setNick(const CString& pNickName, bool force = false);
 	void setId(PlayerID pId);
 	void setLoaded(const bool loaded) { this->m_loaded = loaded; }
 	void setServerName(const CString& tmpServerName) { m_serverName = tmpServerName; }
@@ -274,12 +274,12 @@ public:
 	/// @param packet A packet that contains property data.
 	/// @param setBy Indicates who is setting the properties, either the client or server.
 	/// @param originator Who is the originator of the property set request, if applicable.
-	void setPropsFromPacket(CString& packet, SetBy setBy, Player* originator = nullptr);
+	void setPropsFromPacket(CString& packet, SetBy setBy, const Player* originator = nullptr);
 
 	/// @brief Sets properties from a remote control packet.
 	/// @param packet A packet that contains property data.
 	/// @param rc The remote control player, if applicable.
-	void setPropsFromRCPacket(CString& packet, Player* rc = nullptr);
+	void setPropsFromRCPacket(CString& packet, const Player* rc = nullptr);
 
 	/// @brief Retrieves a packet containing properties from a list of properties.
 	/// @param props A list of properties to include in the packet.
@@ -304,20 +304,30 @@ public:
 public:
 	bool deleteFlag(std::string_view flagName, SetBy setBy);
 	bool setFlag(std::string_view flagPair, SetBy setBy);
-	bool setFlag(std::string_view flagName, std::optional<std::string> flagValue, SetBy setBy);
+	bool setFlag(std::string_view flagName, const std::optional<std::string>& flagValue, SetBy setBy);
 
 public:
 	virtual void setPosition(const PixelPosition& position);
-	virtual bool warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
-	virtual bool warp(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
-	virtual bool enterLevel(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
-	virtual bool enterLevel(std::shared_ptr<Level> level, const MapPosition& mapPosition, const LocalPixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt);
-	virtual bool enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt);
-	virtual bool leaveLevel(bool keepLevelReference = false);
-	virtual bool leaveSubLevel(std::shared_ptr<SubLevel> subLevel);
-	virtual bool sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime = std::nullopt);
-	virtual bool sendDynamicLevelData(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt);
-	virtual bool sendNearbyObjects(std::shared_ptr<Level> level);
+	virtual bool warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime);
+	virtual bool warp(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime);
+	virtual bool enterLevel(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime);
+	virtual bool enterLevel(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalPixelPosition& position, std::optional<clock::time_point> clientCachedTime);
+	virtual bool enterLevel(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime);
+	virtual bool leaveLevel(bool keepLevelReference);
+	virtual bool leaveSubLevel(const std::shared_ptr<SubLevel>& subLevel);
+	virtual bool sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<clock::time_point> clientCachedTime);
+	virtual bool sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime);
+	virtual bool sendNearbyObjects(const std::shared_ptr<Level>& level);
+
+public:
+	[[a::inline]] bool warp(std::string_view levelName, const PixelPosition& position);
+	[[a::inline]] bool warp(const std::shared_ptr<Level>& level, const PixelPosition& position);
+	[[a::inline]] bool enterLevel(const std::shared_ptr<Level>& level, const PixelPosition& position);
+	[[a::inline]] bool enterLevel(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalPixelPosition& position);
+	[[a::inline]] bool enterLevel(const std::shared_ptr<Level>& level);
+	[[a::inline]] bool leaveLevel();
+	[[a::inline]] bool sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel);
+	[[a::inline]] bool sendDynamicLevelData(const std::shared_ptr<Level>& level);
 
 public:
 	// Socket-Functions
@@ -326,9 +336,9 @@ public:
 	void setReceivedBuffer(const CString& buffer) { m_recvBuffer = buffer; }
 
 	// Type of player
-	bool isAdminIp();
-	bool isStaff();
-	bool isJailed();
+	bool isAdminIp() const;
+	bool isStaff() const;
+	bool isJailed() const;
 	bool isNC() const { return (m_type & PLTYPE_ANYNC) != 0; }
 	bool isRC() const { return (m_type & PLTYPE_ANYRC) != 0; }
 	bool isClient() const { return (m_type & PLTYPE_ANYCLIENT) != 0; }
@@ -343,10 +353,10 @@ public:
 
 	bool addWeapon(LevelItemType defaultWeapon);
 	bool addWeapon(std::string_view name);
-	bool addWeapon(std::shared_ptr<Weapon> weapon);
+	bool addWeapon(const std::shared_ptr<Weapon>& weapon);
 	bool deleteWeapon(LevelItemType defaultWeapon);
 	bool deleteWeapon(std::string_view name);
-	bool deleteWeapon(std::shared_ptr<Weapon> weapon);
+	bool deleteWeapon(const std::shared_ptr<Weapon>& weapon);
 
 	std::string translate(std::string_view key) const;
 
@@ -355,16 +365,16 @@ public:
 	// Misc functions.
 	void disconnect(std::string_view message = ""sv);
 
-	bool addPMServer(CString& option);
-	bool remPMServer(CString& option);
+	bool addPMServer(const CString& option);
+	bool remPMServer(const CString& option);
 	bool inChatChannel(const std::string& channel) const;
 	bool addChatChannel(const std::string& channel);
 	bool removeChatChannel(const std::string& channel);
-	bool updatePMPlayers(CString& servername, CString& players);
-	bool pmExternalPlayer(CString servername, CString account, CString& pmMessage);
+	bool updatePMPlayers(const CString& servername, const CString& players);
+	bool pmExternalPlayer(const CString& servername, const CString& externalAccount, const CString& pmMessage) const;
 	std::vector<CString> getPMServerList();
 	std::shared_ptr<Player> getExternalPlayer(const PlayerID id, bool includeRC = true) const;
-	std::shared_ptr<Player> getExternalPlayer(const CString& account, bool includeRC = true) const;
+	std::shared_ptr<Player> getExternalPlayer(const CString& externalAccountName, bool includeRC = true) const;
 
 public:
 	Account account;
@@ -374,7 +384,7 @@ public:
 
 protected:
 	SetResults setProp(PlayerProp prop, SetBy setBy, PropertyBase* base);
-	bool checkPropSetAccess(PlayerProp prop, SetBy setBy, Player* originator) const;
+	bool checkPropSetAccess(PlayerProp prop, SetBy setBy, const Player* originator) const;
 	void sendPropsFromResults(PropertySendResults& results);
 
 protected:
@@ -496,6 +506,48 @@ protected:
 
 using PlayerPtr = std::shared_ptr<Player>;
 using PlayerWeakPtr = std::weak_ptr<Player>;
+
+//----------------------------
+
+inline bool Player::warp(const std::string_view levelName, const PixelPosition& position)
+{
+	return warp(levelName, position, std::nullopt);
+}
+
+inline bool Player::warp(const std::shared_ptr<Level>& level, const PixelPosition& position)
+{
+	return warp(level, position, std::nullopt);
+}
+
+inline bool Player::enterLevel(const std::shared_ptr<Level>& level, const PixelPosition& position)
+{
+	return enterLevel(level, position, std::nullopt);
+}
+
+inline bool Player::enterLevel(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalPixelPosition& position)
+{
+	return enterLevel(level, mapPosition, position, std::nullopt);
+}
+
+inline bool Player::enterLevel(const std::shared_ptr<Level>& level)
+{
+	return enterLevel(level, std::nullopt);
+}
+
+inline bool Player::leaveLevel()
+{
+	return leaveLevel(false);
+}
+
+inline bool Player::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel)
+{
+	return sendStaticLevelData(staticLevelData, subLevel, std::nullopt);
+}
+
+inline bool Player::sendDynamicLevelData(const std::shared_ptr<Level>& level)
+{
+	return sendDynamicLevelData(level, std::nullopt);
+}
 
 //----------------------------
 

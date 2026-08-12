@@ -81,7 +81,7 @@ public:
 
 public:
 	void loadMapLevels() const;
-	void setLevelDataLoaded(std::shared_ptr<StaticLevelData> level);
+	void setLevelDataLoaded(const std::shared_ptr<StaticLevelData>& level);
 
 public:
 	bool hasLevel(std::string_view levelName) const;
@@ -111,8 +111,8 @@ public:
 	const MapTerrain terrain;
 
 private:
-	void forceSetLevelDataLoaded(std::shared_ptr<StaticLevelData> level) const noexcept;
-	std::shared_ptr<StaticLevelData> getLevelDataPtr(std::string_view levelName, std::weak_ptr<StaticLevelData> levelPtr) const noexcept;
+	void forceSetLevelDataLoaded(const std::shared_ptr<StaticLevelData>& level) const noexcept;
+	std::shared_ptr<StaticLevelData> getLevelDataPtr(std::string_view levelName, const std::weak_ptr<StaticLevelData>& levelPtr) const noexcept;
 
 private:
 	Server* m_server;

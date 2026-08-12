@@ -25,18 +25,14 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-PlayerClientOriginal::PlayerClientOriginal(CSocket* pSocket, PlayerID pId)
+PlayerClientOriginal::PlayerClientOriginal(CSocket* pSocket, const PlayerID pId)
 	: PlayerClient(pSocket, pId)
-{
-}
-
-PlayerClientOriginal::~PlayerClientOriginal()
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool PlayerClientOriginal::warp(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClientOriginal::warp(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
 {
 	// If we are warping to the same level, just update the player's location.
 	auto localPosition = toLocalPixelPosition(position);
@@ -60,10 +56,10 @@ bool PlayerClientOriginal::warp(std::shared_ptr<Level> level, const PixelPositio
 	return enterLevel(level, clientCachedTime);
 }
 
-bool PlayerClientOriginal::enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClientOriginal::enterLevel(const std::shared_ptr<Level>& level, const std::optional<clock::time_point> clientCachedTime)
 {
-	auto currentLevel = getLevel();
-	bool sameLevel = currentLevel == level;
+	const auto currentLevel = getLevel();
+	const bool sameLevel = currentLevel == level;
 
 	// Leave the current level if we are changing levels.
 	if (!sameLevel)
@@ -80,7 +76,7 @@ bool PlayerClientOriginal::enterLevel(std::shared_ptr<Level> level, std::optiona
 	}
 
 	// Send the level now.
-	auto subLevel = level->getSubLevelAtPosition(getMapPosition());
+	const auto subLevel = level->getSubLevelAtPosition(getMapPosition());
 	bool succeed = sendStaticLevelData(subLevel->staticData.lock(), subLevel, clientCachedTime);
 	succeed = succeed && sendDynamicLevelData(level, clientCachedTime);
 
@@ -101,7 +97,7 @@ bool PlayerClientOriginal::enterLevel(std::shared_ptr<Level> level, std::optiona
 	}
 
 	// Inform everybody as to the client's new location.  This will update the minimap.
-	CString minimap = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id
+	const CString minimap = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id
 		>> (char)PlayerProp::LEVEL << getProp<PlayerProp::LEVEL>().serialize()
 		>> (char)PlayerProp::X << getProp<PlayerProp::X>().serialize()
 		>> (char)PlayerProp::Y << getProp<PlayerProp::Y>().serialize();
@@ -113,7 +109,7 @@ bool PlayerClientOriginal::enterLevel(std::shared_ptr<Level> level, std::optiona
 	}
 
 	// Update RCs.
-	CString myRCProps = CString() >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name
+	const CString myRCProps = CString() >> (char)PLO_ADDPLAYER >> (short)getId() >> (char)account.name.length() << account.name
 		>> (char)PlayerProp::LEVEL << getProp<PlayerProp::LEVEL>().serialize()
 		>> (char)PlayerProp::PLAYERLISTSTATUS << getProp<PlayerProp::PLAYERLISTSTATUS>().serialize()
 		>> (char)PlayerProp::NICKNAME << getProp<PlayerProp::NICKNAME>().serialize()
@@ -123,14 +119,14 @@ bool PlayerClientOriginal::enterLevel(std::shared_ptr<Level> level, std::optiona
 	return true;
 }
 
-bool PlayerClientOriginal::sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClientOriginal::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<clock::time_point> clientCachedTime)
 {
 	if (staticLevelData == nullptr)
 		return false;
 
-	PlayerPtr self = shared_from_this();
-	auto levelModTime = staticLevelData->modTime;
-	auto cachedModTime = getLevelLastEnteredTime(staticLevelData.get());
+	const PlayerPtr self = shared_from_this();
+	const auto levelModTime = staticLevelData->modTime;
+	const auto cachedModTime = getLevelLastEnteredTime(staticLevelData.get());
 
 	// If the player has seen this level before, don't sending anything.
 	if (cachedModTime.has_value())
@@ -178,7 +174,7 @@ bool PlayerClientOriginal::sendStaticLevelData(std::shared_ptr<StaticLevelData> 
 	return true;
 }
 
-bool PlayerClientOriginal::sendDynamicLevelData(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClientOriginal::sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime)
 {
 	if (level == nullptr) return false;
 
@@ -187,8 +183,8 @@ bool PlayerClientOriginal::sendDynamicLevelData(std::shared_ptr<Level> level, st
 	if (subLevel == nullptr || staticLevelData == nullptr)
 		return false;
 
-	PlayerPtr self = shared_from_this();
-	auto cachedModTime = getLevelLastEnteredTime(staticLevelData.get());
+	const PlayerPtr self = shared_from_this();
+	const auto cachedModTime = getLevelLastEnteredTime(staticLevelData.get());
 
 	// Send board changes, horses, and baddies.
 	subLevel->sendBoardChangesToPlayer(self, cachedModTime);
@@ -208,7 +204,7 @@ bool PlayerClientOriginal::sendDynamicLevelData(std::shared_ptr<Level> level, st
 	if (m_carryNPC != 0)
 	{
 		level->addNPC(m_carryNPC);
-		if (auto npc = m_server->getNPC(m_carryNPC); npc)
+		if (const auto npc = m_server->getNPC(m_carryNPC); npc)
 		{
 			npc->setLevel(level);
 			npc->sendPropsFromResults(
@@ -219,7 +215,7 @@ bool PlayerClientOriginal::sendDynamicLevelData(std::shared_ptr<Level> level, st
 			// Send the carry NPC props to other players.
 			// if (!level->isSingleplayer)
 			{
-				CString carryNPCProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNPC << npc->getAllPropsPacket();
+				const CString carryNPCProps = CString() >> (char)PLO_NPCPROPS >> (int)m_carryNPC << npc->getAllPropsPacket();
 				m_server->sendPacketToNearby(carryNPCProps, getGlobalPosition(), level, { m_id });
 			}
 		}
@@ -228,7 +224,7 @@ bool PlayerClientOriginal::sendDynamicLevelData(std::shared_ptr<Level> level, st
 	// Send connecting player props to players in nearby levels.
 	// if (!level->isSingleplayer)
 	{
-		CString myProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)1 << getPropsPacketFromList(loginPropsClientOthers);
+		const CString myProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)1 << getPropsPacketFromList(loginPropsClientOthers);
 		for (const auto& playerId : level->findInRangePlayersForCommunication(getGlobalPosition()))
 		{
 			if (playerId == m_id) continue;
@@ -245,8 +241,6 @@ bool PlayerClientOriginal::sendDynamicLevelData(std::shared_ptr<Level> level, st
 
 	return true;
 }
-
-///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal

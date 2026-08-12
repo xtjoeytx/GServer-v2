@@ -224,7 +224,7 @@ inline clock::time_point currentTime()
 /// @brief Converts a time_t value to a std::chrono::system_clock::time_point.
 /// @param time The time_t value to convert.
 /// @return A time_point representing the same point in time as the time_t value.
-inline clock::time_point convertFromTimeT(time_t time)
+inline clock::time_point convertFromTimeT(const time_t time)
 {
 	return clock::from_time_t(time);
 }
@@ -295,7 +295,15 @@ struct visit_functions : Ts...
 
 inline static auto toRange(AllSame auto&&... range)
 {
-	return std::array{ std::forward<decltype(range)>(range)... };
+	return std::array{std::forward<decltype(range)>(range)...};
+}
+
+template<AllSame... Ts>
+inline static auto toNonOwningRange(Ts&&... range)
+{
+	using CommonType = std::common_type_t<Ts...>;
+	CommonType arr[] = {std::forward<Ts>(range)...};
+	return std::views::counted(arr, sizeof...(Ts));
 }
 
 inline auto removeNulls = std::views::filter([](auto&& ptr) { return ptr != nullptr; });
@@ -459,7 +467,37 @@ inline constexpr CarryObjectType getCarryObjectType(const CarryObjectSprite spri
 
 ////////////////////////////////////////////////////////////////////////////////
 }; // end namespace preagonal
+////////////////////////////////////////////////////////////////////////////////
+namespace preagonal::string
+{
+////////////////////////////////////////////////////////////////////////////////
 
+/* These functions need to be here since putting them under StringUtils.h results in a cyclic dependency. */
+
+/// @brief Converts a range of strings to a single CSV-formatted string, quoting fields as needed.
+/// @param force_quoted If true, all fields will be quoted regardless of content.
+/// @param args Multiple string-like objects, of the same type, that will be concatenated together in a CSV format.
+/// @return A std::string containing the CSV-formatted representation of the input range, with fields separated by commas and quoted as necessary.
+template<StringViewIshVariant... Args>
+auto toCSVFromPack(const bool force_quoted, Args&&... args)
+{
+	auto view = preagonal::toNonOwningRange<Args...>(std::forward<Args>(args)...);
+	return toCSV(std::move(view), force_quoted);
+}
+
+/// @brief Converts a range of strings to a single CSV-formatted string, quoting fields as needed, not forcing quotes.
+/// @param args Multiple string-like objects, of the same type, that will be concatenated together in a CSV format.
+/// @return A std::string containing the CSV-formatted representation of the input range, with fields separated by commas and quoted as necessary.
+template<StringViewIshVariant... Args>
+auto toCSVFromPack(Args&&... args)
+{
+	auto view = preagonal::toNonOwningRange<Args...>(std::forward<Args>(args)...);
+	return toCSV(std::move(view), false);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+} // end namespace preagonal::string
+////////////////////////////////////////////////////////////////////////////////
 
 //----------------------------
 // Macros

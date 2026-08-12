@@ -62,11 +62,11 @@ public:
 	[[nodiscard]] std::generator<decltype(ScriptExecutionContext::joinedClasses)::const_reference> getServerJoinedClasses() const noexcept;
 
 public:
-	void executeEvents(ScriptContainer& container, ScriptObject source) const;
-	void executeEvents(ScriptEventQueue& events, ScriptObject source) const;
-	void executeEvents(clear_container_t, ScriptContainer& container, ScriptObject source) const;
-	void executeEvents(clear_container_t, ScriptEventQueue& events, ScriptObject source) const;
-	bool runUserDefinedFunction(std::string_view functionName, ScriptEvent& event, ScriptObject source) const;
+	void executeEvents(ScriptContainer& container, const ScriptObject& source) const;
+	void executeEvents(ScriptEventQueue& events, const ScriptObject& source) const;
+	void executeEvents(clear_container_t, ScriptContainer& container, const ScriptObject& source) const;
+	void executeEvents(clear_container_t, ScriptEventQueue& events, const ScriptObject& source) const;
+	bool runUserDefinedFunction(std::string_view functionName, ScriptEvent& event, const ScriptObject& source) const;
 
 public:
 	static std::string minify(const std::string& src) noexcept;

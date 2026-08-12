@@ -76,48 +76,55 @@ class PlayerClient : public Player
 
 public:
 	PlayerClient(CSocket* pSocket, PlayerID pId);
-	virtual ~PlayerClient();
-	virtual void cleanup() override;
+	~PlayerClient() override;
+	void cleanup() override;
 
 public:
 	std::shared_ptr<PlayerClient> self() { return std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); }
 
 public:
 	// Main methods.
-	virtual void doMain() override;
-	virtual bool doTimedEvents() override;
-	virtual bool handleLogin(CString& pPacket) override;
-	virtual bool sendLogin() override;
+	void doMain() override;
+	bool doTimedEvents() override;
+	bool handleLogin(CString& pPacket) override;
+	bool sendLogin() override;
 
 	bool processChat(const CString& pChat);
 
 	[[a::inline]] const std::string& getGroup() const;
 	void setGroup(std::string_view group);
 
-	virtual double getCalculatedTileZ() const noexcept override;
+	double getCalculatedTileZ() const noexcept override;
 
 	// Level manipulation
-	virtual std::string getLevelName() const override;
-	virtual std::shared_ptr<Level> getLevel() const override;
+	std::string getLevelName() const override;
+	std::shared_ptr<Level> getLevel() const override;
 	std::shared_ptr<SubLevel> getSubLevel() const;
 
 public:
 	// Set the player's position in the current level.
-	virtual void setPosition(const PixelPosition& position) override;
+	void setPosition(const PixelPosition& position) override;
 
 	// Forcibly move a player (the client doesn't know it is transitioning levels).
-	virtual bool warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
-	virtual bool warp(std::shared_ptr<Level> level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
+	bool warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime) override;
+	bool warp(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime) override;
+	using Player::warp;
 
 	// Place the player in a new level (the client knows it is transitioning levels).
-	virtual bool enterLevel(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
+	bool enterLevel(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime) override;
 	using Player::enterLevel;
 
-	virtual bool leaveLevel(bool keepLevelReference = false) override;
-	virtual bool leaveSubLevel(std::shared_ptr<SubLevel> subLevel) override;
+	bool leaveLevel(bool keepLevelReference) override;
+	using Player::leaveLevel;
 
-	virtual bool sendStaticLevelData(std::shared_ptr<StaticLevelData> staticLevelData, std::shared_ptr<SubLevel> subLevel, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
-	virtual bool sendDynamicLevelData(std::shared_ptr<Level> level, std::optional<clock::time_point> clientCachedTime = std::nullopt) override;
+	bool leaveSubLevel(const std::shared_ptr<SubLevel>& subLevel) override;
+	using Player::leaveSubLevel;
+
+	bool sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<clock::time_point> clientCachedTime) override;
+	using Player::sendStaticLevelData;
+
+	bool sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime) override;
+	using Player::sendDynamicLevelData;
 
 	void checkAndInformIfLevelLeader();
 	void informPlayerIsLevelLeader();
@@ -125,7 +132,7 @@ public:
 public:
 	std::optional<clock::time_point> getLevelLastEnteredTime(const StaticLevelData* level) const;
 	std::optional<clock::time_point> getLevelLastEnteredTime(const SubLevel* level, std::string_view group = ""sv) const;
-	void resetLevelCache(const StaticLevelData* level);
+	void resetLevelCache(const StaticLevelData* level) const;
 	void resetLevelCache(const SubLevel* level, std::string_view group = ""sv);
 	void resetLevelCache(std::string_view group);
 
@@ -149,7 +156,7 @@ public:
 	bool testForLinks(SetResults& result, uint8_t movementDirection);
 
 protected:
-	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
+	HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
 
 public:
 	HandlePacketResult msgPLI_LEVELWARP(CString& pPacket);
@@ -231,15 +238,15 @@ inline const std::string& PlayerClient::getGroup() const
 
 inline bool PlayerClient::hasSeenFile(const std::string& file) const
 {
-	return m_knownFiles.find(file) != m_knownFiles.end();
+	return m_knownFiles.contains(file);
 }
 
-inline void PlayerClient::setLastChatTime(clock::time_point time)
+inline void PlayerClient::setLastChatTime(const clock::time_point time)
 {
 	m_lastChat = time;
 }
 
-inline void PlayerClient::setLastMovementTime(clock::time_point time)
+inline void PlayerClient::setLastMovementTime(const clock::time_point time)
 {
 	m_lastMovement = time;
 	m_grMovementUpdated = true;

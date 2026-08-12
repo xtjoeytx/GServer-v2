@@ -62,8 +62,7 @@ public:
 		// so successive calls to findOrAddResource() do not keep trying to load the file
 		ResourcePtr resourcePtr;
 
-		auto newResource = std::apply(ResourceCls::load, std::tuple_cat(m_tuple, std::make_tuple(resourceName)));
-		if (newResource)
+		if (auto newResource = std::apply(ResourceCls::load, std::tuple_cat(m_tuple, std::make_tuple(resourceName))))
 			resourcePtr = std::make_shared<ResourceCls>(std::move(newResource.value()));
 
 		m_resourceMap.emplace(resourceName, resourcePtr);

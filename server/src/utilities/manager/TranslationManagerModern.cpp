@@ -28,7 +28,7 @@ void TranslationManagerModern::saveTranslations()
 
 std::tuple<std::string_view, size_t, size_t> TranslationManagerModern::syncLanguageWithOriginal(std::string_view language)
 {
-	return { "not implemented"sv, 0, 0};
+	return {"not implemented"sv, 0, 0};
 }
 
 std::generator<std::tuple<std::string_view, size_t, size_t>> TranslationManagerModern::syncAllLanguagesWithOriginal()
@@ -45,7 +45,7 @@ void TranslationManagerModern::registerOriginalText(std::string_view key)
 {
 }
 
-std::string_view TranslationManagerModern::getText(std::string_view language, std::string_view key)
+std::string_view TranslationManagerModern::getText(std::string_view language, const std::string_view key)
 {
 	return key;
 }

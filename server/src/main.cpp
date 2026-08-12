@@ -66,7 +66,7 @@ static CString getBasePath()
 
 	// Assign the path to homepath.
 	char* end = strrchr(path, '/');
-	if (end != 0)
+	if (end != nullptr)
 	{
 		*end = '\0';
 		homePath = path;
@@ -81,6 +81,8 @@ std::filesystem::path getBaseHomePath()
 	return homePath;
 }
 
+namespace
+{
 CString overrideServer;
 CString overridePort;
 CString overrideServerIp = nullptr;
@@ -88,11 +90,12 @@ CString overrideLocalIp = nullptr;
 CString overrideServerInterface = nullptr;
 CString overrideName = nullptr;
 CString overrideStaff = nullptr;
+}
 
-std::atomic_bool shutdownProgram{ false };
+std::atomic_bool shutdownProgram{false};
 
 #ifndef NOMAIN
-int main(int argc, char* argv[])
+int main(const int argc, char* argv[])
 {
 	if (parseArgs(argc, argv))
 		return 1;
@@ -105,7 +108,7 @@ int main(int argc, char* argv[])
 		signal(SIGABRT, (sighandler_t)shutdownServer);
 
 		// Seed the random number generator with the current time.
-		srand((unsigned int)time(0));
+		srand(static_cast<unsigned int>(time(nullptr)));
 
 		// Load Server Settings
 		std::string discovery_mode;
@@ -136,7 +139,7 @@ int main(int argc, char* argv[])
 		// Environment variable / command line (do similar to startupserver.txt)
 		if (!overrideServer.isEmpty())
 		{
-			bool use_env = getenv("USE_ENV");
+			const bool use_env = getenv("USE_ENV");
 			if (!found_server(use_env ? "(environment variable)" : "(command line)", overrideServer.toStringView(), cwd, cwd / "servers" / overrideServer.text()))
 				return ERR_SETTINGS;
 		}
@@ -262,7 +265,7 @@ void shutdownServer(int signal)
 	shutdownProgram = true;
 }
 
-bool parseArgs(int argc, char* argv[])
+bool parseArgs(const int argc, char* argv[])
 {
 	std::vector<CString> args;
 
@@ -281,13 +284,13 @@ bool parseArgs(int argc, char* argv[])
 	if (!use_env)
 	{
 		for (int i = 0; i < argc; ++i)
-			args.push_back(CString(argv[i]));
+			args.emplace_back(argv[i]);
 
 		for (auto i = args.begin(); i != args.end(); ++i)
 		{
-			if ((*i).find("--") == 0)
+			if (i->find("--") == 0)
 			{
-				CString key((*i).subString(2));
+				CString key(i->subString(2));
 				if (key == "help")
 				{
 					printHelp(args[0].text());
@@ -316,7 +319,7 @@ bool parseArgs(int argc, char* argv[])
 			}
 			else if ((*i)[0] == '-')
 			{
-				for (int j = 1; j < (*i).length(); ++j)
+				for (int j = 1; j < i->length(); ++j)
 				{
 					if ((*i)[j] == 'h')
 					{

@@ -753,7 +753,7 @@ void NPCServer::hideImages(const std::shared_ptr<NPC>& npc, const uint8_t index,
 tileset::TileType NPCServer::getTileType(const uint16_t tile, const std::shared_ptr<Level>& level) const noexcept
 {
 	const auto tilesetType = m_server->getTilesetTypeForLevel(level);
-	return m_server->getTileTypeForTile(tilesetType, tile);
+	return Server::getTileTypeForTile(tilesetType, tile);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

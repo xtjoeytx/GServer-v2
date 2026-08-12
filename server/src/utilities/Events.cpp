@@ -1,4 +1,5 @@
 #include <memory>
+#include <ranges>
 
 #include <utilities/Events.h>
 
@@ -13,14 +14,10 @@ EventHandleBase::~EventHandleBase()
 		m_dispatcher->unsubscribe(this);
 }
 
-EventHandleBase::EventHandleBase(EventDispatcherBase* dispatcher, size_t id)
+EventHandleBase::EventHandleBase(EventDispatcherBase* dispatcher, const size_t id)
 	: m_dispatcher(dispatcher), m_eventId(id)
 {
 };
-
-EventDispatcherBase::EventDispatcherBase()
-{
-}
 
 EventDispatcherBase::~EventDispatcherBase()
 {
@@ -33,7 +30,7 @@ bool EventDispatcherBase::unsubscribe(EventHandleBase* handle)
 		return false;
 
 	// Check if the event handle event exists
-	auto itr = m_eventHandlers.find(handle->m_eventId);
+	const auto itr = m_eventHandlers.find(handle->m_eventId);
 	if (itr == m_eventHandlers.end())
 		return false;
 
@@ -47,19 +44,18 @@ bool EventDispatcherBase::unsubscribe(EventHandleBase* handle)
 	return true;
 };
 
-bool EventDispatcherBase::unsubscribe(std::shared_ptr<EventHandleBase> handle)
+bool EventDispatcherBase::unsubscribe(const std::shared_ptr<EventHandleBase>& handle)
 {
 	if (handle)
 		return unsubscribe(handle.get());
-	else
-		return false;
+	return false;
 };
 
 void EventDispatcherBase::unsubscribeAll()
 {
-	for (auto& handler : m_eventHandlers)
+	for (auto& val : m_eventHandlers | std::views::values)
 	{
-		auto ptr = handler.second.lock();
+		auto ptr = val.lock();
 		if (ptr)
 			ptr->m_dispatcher = nullptr;
 	}

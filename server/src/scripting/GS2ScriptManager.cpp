@@ -13,7 +13,7 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-const uint32_t THREADPOOL_WORKERS = 0;
+constexpr uint32_t THREADPOOL_WORKERS = 0;
 
 GS2ScriptManager::GS2ScriptManager()
 	: m_compilerThreadPool(THREADPOOL_WORKERS)
@@ -38,7 +38,6 @@ std::future<CompilerResponse> GS2ScriptManager::queueCompileJob(const std::strin
 
 	if constexpr (THREADPOOL_WORKERS == 0)
 	{
-		std::promise<CompilerResponse> promise;
 		auto response = _context.compile(script);
 
 		if (finishedCb)
@@ -55,7 +54,7 @@ std::future<CompilerResponse> GS2ScriptManager::queueCompileJob(const std::strin
 		auto result = context.gs2context.compile(script);
 
 		// Call the user-defined callback after we insert the bytecode into the cache
-		auto completedFunc = [this, &promise, &script, &finishedCb](CompilerResponse& response)
+		auto completedFunc = [&promise, &finishedCb](CompilerResponse& response)
 		{
 			finishedCb(response);
 			promise.set_value(std::move(response));
@@ -65,7 +64,7 @@ std::future<CompilerResponse> GS2ScriptManager::queueCompileJob(const std::strin
 		auto fnData = std::make_pair(std::move(completedFunc), std::move(result));
 
 		std::scoped_lock lock(m_cbQueueLock);
-		m_cbQueue.push(std::move(fnData));
+		m_cbQueue.emplace(std::move(fnData));
 	};
 
 	// Don't use the future returned by the compiler because it is bad and horrible.

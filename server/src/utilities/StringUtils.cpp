@@ -11,7 +11,7 @@ namespace utilities
 {
 ////////////////////////////////////////////////////////////////////////////////
 
-std::string retokenizeArray(const std::vector<CString>& triggerData, int start_idx)
+std::string retokenizeArray(const std::vector<CString>& triggerData, const int start_idx)
 {
 	std::string ret;
 	for (size_t i = start_idx; i < triggerData.size(); i++)
@@ -25,7 +25,7 @@ std::string retokenizeArray(const std::vector<CString>& triggerData, int start_i
 	return ret;
 }
 
-CString retokenizeCStringArray(const std::vector<CString>& triggerData, int start_idx)
+CString retokenizeCStringArray(const std::vector<CString>& triggerData, const int start_idx)
 {
 	CString ret;
 	for (size_t i = start_idx; i < triggerData.size(); i++)

@@ -63,7 +63,7 @@ public:
 	GS1Visitor();
 
 public:
-	void execute(const ScriptEvent& event, ScriptObject source, GS1Parser& parser, ScriptExecutionContext& context, antlr4::tree::ParseTree* startNode);
+	void execute(const ScriptEvent& event, const ScriptObject& source, GS1Parser& parser, ScriptExecutionContext& context, antlr4::tree::ParseTree* startNode);
 	void reportError(std::string_view message, antlr4::tree::ParseTree* node = nullptr, bool abort = true);
 
 public:
@@ -91,7 +91,7 @@ public:
 	static const GameVariable* getGameVariable(const GS1ScriptValue& value);
 	static std::optional<ScriptObject> getScriptObject(std::any& value);
 	static std::optional<ScriptObject> getScriptObject(GS1ScriptValue& value);
-	static std::optional<ScriptObject> getScriptObject(GameVariable& value);
+	static std::optional<ScriptObject> getScriptObject(const GameVariable& value);
 	static bool isGameValue(const GS1ScriptValue& value);
 	static bool isScriptObject(const GS1ScriptValue& value);
 
@@ -119,12 +119,12 @@ public:
 	[[a::inline]] const ScriptObject& getInitiatingSource() const;
 	[[a::inline]] const ScriptObject& getCurrentSource(bool defaultToInitiator = false) const;
 	[[a::inline]] const ScriptObject& popSource();
-	[[a::inline]] const void pushSource(ScriptObject source);
+	[[a::inline]] void pushSource(ScriptObject source);
 	[[a::inline]] auto sourceStack() const;
 	[[a::inline]] bool hasSleepStack() const;
 	std::optional<ScriptObject> findNearestScriptObjectSourceFromStack(ScriptObjectType type) const;
 	GameVariableStore* findGameVariableStoreFromStack(ScriptObjectType type, int skip = 0) const;
-	GameVariableStore* getGameVariableStoreForStorageType(size_t type);
+	GameVariableStore* getGameVariableStoreForStorageType(size_t type) const;
 
 public:
 	std::shared_ptr<Level> findCurrentLevel() const;
@@ -144,7 +144,7 @@ public:
 	[[a::inline]] T* walkToContext(antlr4::tree::ParseTree* node);
 
 public:
-	std::vector<std::any> visitChildrenAndCollect(antlr4::tree::ParseTree* node);
+	std::vector<std::any> visitChildrenAndCollect(const antlr4::tree::ParseTree* node);
 
 protected:
 	GS1Parser* m_parser = nullptr;
@@ -160,56 +160,56 @@ protected:
 
 protected:
 	std::any safeVisit(antlr4::tree::ParseTree* node);
-	std::any reparseExpression(std::string_view expression, std::string_view lexerMode, std::function<antlr4::tree::ParseTree*(GS1Parser&)> node);
-	void setCurrentPlayerVariables(std::optional<ScriptObject> source);
+	std::any reparseExpression(std::string_view expression, std::string_view lexerMode, const std::function<antlr4::tree::ParseTree*(GS1Parser&)>& node);
+	void setCurrentPlayerVariables(const std::optional<ScriptObject>& source) const;
 
 public:
-	virtual std::any visitProgram(GS1Parser::ProgramContext* ctx) override;
-	virtual std::any visitBlock(GS1Parser::BlockContext* ctx) override;
+	std::any visitProgram(GS1Parser::ProgramContext* ctx) override;
+	std::any visitBlock(GS1Parser::BlockContext* ctx) override;
 	//
-	virtual std::any visitStatementIf(GS1Parser::StatementIfContext* context) override;
-	virtual std::any visitStatementFor(GS1Parser::StatementForContext* context) override;
-	virtual std::any visitStatementWhile(GS1Parser::StatementWhileContext* context) override;
-	virtual std::any visitStatementWith(GS1Parser::StatementWithContext* context) override;
-	virtual std::any visitStatementFunctionDefinition(GS1Parser::StatementFunctionDefinitionContext* context) override;
-	virtual std::any visitStatementUserFunctionCall(GS1Parser::StatementUserFunctionCallContext* context) override;
-	virtual std::any visitStatementBuiltInCommand(GS1Parser::StatementBuiltInCommandContext* context) override;
-	virtual std::any visitStatementAssignment(GS1Parser::StatementAssignmentContext* context) override;
+	std::any visitStatementIf(GS1Parser::StatementIfContext* context) override;
+	std::any visitStatementFor(GS1Parser::StatementForContext* context) override;
+	std::any visitStatementWhile(GS1Parser::StatementWhileContext* context) override;
+	std::any visitStatementWith(GS1Parser::StatementWithContext* context) override;
+	std::any visitStatementFunctionDefinition(GS1Parser::StatementFunctionDefinitionContext* context) override;
+	std::any visitStatementUserFunctionCall(GS1Parser::StatementUserFunctionCallContext* context) override;
+	std::any visitStatementBuiltInCommand(GS1Parser::StatementBuiltInCommandContext* context) override;
+	std::any visitStatementAssignment(GS1Parser::StatementAssignmentContext* context) override;
 	//
-	virtual std::any visitExpressionIn(GS1Parser::ExpressionInContext* context) override;
-	virtual std::any visitExpressionTernary(GS1Parser::ExpressionTernaryContext* context) override;
-	virtual std::any visitExpressionLogicOr(GS1Parser::ExpressionLogicOrContext* context) override;
-	virtual std::any visitExpressionLogicAnd(GS1Parser::ExpressionLogicAndContext* context) override;
-	virtual std::any visitExpressionEquality(GS1Parser::ExpressionEqualityContext* context) override;
-	virtual std::any visitExpressionRelational(GS1Parser::ExpressionRelationalContext* context) override;
-	virtual std::any visitExpressionAdditive(GS1Parser::ExpressionAdditiveContext* context) override;
-	virtual std::any visitExpressionMultiplicative(GS1Parser::ExpressionMultiplicativeContext* context) override;
-	virtual std::any visitExpressionExponentiation(GS1Parser::ExpressionExponentiationContext* context) override;
-	virtual std::any visitExpressionUnary(GS1Parser::ExpressionUnaryContext* context) override;
-	virtual std::any visitExpressionPostfix(GS1Parser::ExpressionPostfixContext* context) override;
+	std::any visitExpressionIn(GS1Parser::ExpressionInContext* context) override;
+	std::any visitExpressionTernary(GS1Parser::ExpressionTernaryContext* context) override;
+	std::any visitExpressionLogicOr(GS1Parser::ExpressionLogicOrContext* context) override;
+	std::any visitExpressionLogicAnd(GS1Parser::ExpressionLogicAndContext* context) override;
+	std::any visitExpressionEquality(GS1Parser::ExpressionEqualityContext* context) override;
+	std::any visitExpressionRelational(GS1Parser::ExpressionRelationalContext* context) override;
+	std::any visitExpressionAdditive(GS1Parser::ExpressionAdditiveContext* context) override;
+	std::any visitExpressionMultiplicative(GS1Parser::ExpressionMultiplicativeContext* context) override;
+	std::any visitExpressionExponentiation(GS1Parser::ExpressionExponentiationContext* context) override;
+	std::any visitExpressionUnary(GS1Parser::ExpressionUnaryContext* context) override;
+	std::any visitExpressionPostfix(GS1Parser::ExpressionPostfixContext* context) override;
 	//
-	virtual std::any visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallContext* context) override;
-	virtual std::any visitIdentifierAccess(GS1Parser::IdentifierAccessContext* context) override;
-	virtual std::any visitIdentifierValue(GS1Parser::IdentifierValueContext* context) override;
-	virtual std::any visitCompoundIdentifier(GS1Parser::CompoundIdentifierContext* context) override;
-	virtual std::any visitCompoundString(GS1Parser::CompoundStringContext* context) override;
-	virtual std::any visitMessageCode(GS1Parser::MessageCodeContext* context) override;
+	std::any visitBuiltInFunctionCall(GS1Parser::BuiltInFunctionCallContext* context) override;
+	std::any visitIdentifierAccess(GS1Parser::IdentifierAccessContext* context) override;
+	std::any visitIdentifierValue(GS1Parser::IdentifierValueContext* context) override;
+	std::any visitCompoundIdentifier(GS1Parser::CompoundIdentifierContext* context) override;
+	std::any visitCompoundString(GS1Parser::CompoundStringContext* context) override;
+	std::any visitMessageCode(GS1Parser::MessageCodeContext* context) override;
 	//
-	virtual std::any visitFlowReturn(GS1Parser::FlowReturnContext* context) override;
-	virtual std::any visitFlowBreak(GS1Parser::FlowBreakContext* context) override;
-	virtual std::any visitFlowContinue(GS1Parser::FlowContinueContext* context) override;
+	std::any visitFlowReturn(GS1Parser::FlowReturnContext* context) override;
+	std::any visitFlowBreak(GS1Parser::FlowBreakContext* context) override;
+	std::any visitFlowContinue(GS1Parser::FlowContinueContext* context) override;
 	//
-	virtual std::any visitLiteral(GS1Parser::LiteralContext* context) override;
-	virtual std::any visitRangeLiteral(GS1Parser::RangeLiteralContext* context) override;
-	virtual std::any visitArrayLiteral(GS1Parser::ArrayLiteralContext* context) override;
-	virtual std::any visitItemLiteral(GS1Parser::ItemLiteralContext* context) override;
-	virtual std::any visitCarryLiteral(GS1Parser::CarryLiteralContext* context) override;
-	virtual std::any visitDirectionLiteral(GS1Parser::DirectionLiteralContext* context) override;
-	virtual std::any visitGenderLiteral(GS1Parser::GenderLiteralContext* context) override;
-	virtual std::any visitColorLiteral(GS1Parser::ColorLiteralContext* context) override;
-	virtual std::any visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context) override;
+	std::any visitLiteral(GS1Parser::LiteralContext* context) override;
+	std::any visitRangeLiteral(GS1Parser::RangeLiteralContext* context) override;
+	std::any visitArrayLiteral(GS1Parser::ArrayLiteralContext* context) override;
+	std::any visitItemLiteral(GS1Parser::ItemLiteralContext* context) override;
+	std::any visitCarryLiteral(GS1Parser::CarryLiteralContext* context) override;
+	std::any visitDirectionLiteral(GS1Parser::DirectionLiteralContext* context) override;
+	std::any visitGenderLiteral(GS1Parser::GenderLiteralContext* context) override;
+	std::any visitColorLiteral(GS1Parser::ColorLiteralContext* context) override;
+	std::any visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context) override;
 	//
-	virtual std::any visitPrimaryExpression(GS1Parser::PrimaryExpressionContext* context) override;
+	std::any visitPrimaryExpression(GS1Parser::PrimaryExpressionContext* context) override;
 };
 
 //----------------------------
@@ -227,7 +227,7 @@ inline auto makeDefault() -> T
 
 //---[ STATIC ]---------------
 
-inline std::optional<size_t> GS1Visitor::getStorageTypeFromIdentifier(std::string_view identifier, std::optional<size_t> defaultValue) noexcept
+inline std::optional<size_t> GS1Visitor::getStorageTypeFromIdentifier(const std::string_view identifier, const std::optional<size_t> defaultValue) noexcept
 {
 	if (identifier.empty() || !identifier.contains('.'))
 		return defaultValue;
@@ -255,7 +255,7 @@ inline std::optional<size_t> GS1Visitor::getStorageTypeFromIdentifier(std::strin
 	return defaultValue;
 }
 
-inline void GS1Visitor::applyStorageNameToIdentifier(std::optional<size_t> storage, std::string& identifier) noexcept
+inline void GS1Visitor::applyStorageNameToIdentifier(const std::optional<size_t> storage, std::string& identifier) noexcept
 {
 	if (!storage.has_value())
 		return;
@@ -276,14 +276,15 @@ inline void GS1Visitor::applyStorageNameToIdentifier(std::optional<size_t> stora
 		case ENUM(StorageType::SERVERR):
 			identifier = std::format("serverr.{}", identifier);
 			break;
+		default:;
 	}
 }
 
 inline void GS1Visitor::stripStorageNameFromIdentifier(std::string& identifier) noexcept
 {
-	auto storage = GS1Visitor::getStorageTypeFromIdentifier(identifier);
+	const auto storage = GS1Visitor::getStorageTypeFromIdentifier(identifier);
 	if (!storage.has_value()) return;
-	auto period = identifier.find('.');
+	const auto period = identifier.find('.');
 	if (period == std::string::npos) return;
 
 	switch (storage.value())
@@ -300,19 +301,21 @@ inline void GS1Visitor::stripStorageNameFromIdentifier(std::string& identifier) 
 			if (period > 1 && identifier[period - 1] == 'o')
 				identifier.erase(period - 1, 1);
 			break;
+
+		default:;
 	}
 }
 
 template<StoresInGameValue T>
 inline bool GS1Visitor::scriptValueContains(std::any& value)
 {
-	if (auto gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
+	if (const auto gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
 		return scriptValueContains<T>(*gs1ScriptValue);
-	if (auto gameVariable = std::any_cast<GameVariable*>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::any_cast<GameVariable*>(&value); gameVariable != nullptr)
 		return (*gameVariable)->has<T>();
-	if (auto gameVariable = std::any_cast<GameVariable>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::any_cast<GameVariable>(&value); gameVariable != nullptr)
 		return gameVariable->has<T>();
-	if (auto gameValue = std::any_cast<GameValue>(&value); gameValue != nullptr)
+	if (const auto gameValue = std::any_cast<GameValue>(&value); gameValue != nullptr)
 		return gameValue->has<T>();
 	return false;
 }
@@ -320,11 +323,11 @@ inline bool GS1Visitor::scriptValueContains(std::any& value)
 template<StoresInGameValue T>
 inline bool GS1Visitor::scriptValueContains(GS1ScriptValue& value)
 {
-	if (auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
 		return (*gameVariable)->has<T>();
-	if (auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
 		return gameVariable->has<T>();
-	if (auto gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
+	if (const auto gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
 		return gameValue->has<T>();
 	return false;
 }
@@ -332,13 +335,13 @@ inline bool GS1Visitor::scriptValueContains(GS1ScriptValue& value)
 template<StoresInGameValue T>
 inline std::optional<std::reference_wrapper<T>> GS1Visitor::getScriptValueAs(std::any& value)
 {
-	if (auto gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
+	if (const auto gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
 		return getScriptValueAs<T>(*gs1ScriptValue);
-	if (auto gameVariable = std::any_cast<GameVariable*>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::any_cast<GameVariable*>(&value); gameVariable != nullptr)
 		return (*gameVariable)->get<T>();
-	if (auto gameVariable = std::any_cast<GameVariable>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::any_cast<GameVariable>(&value); gameVariable != nullptr)
 		return gameVariable->get<T>();
-	if (auto gameValue = std::any_cast<GameValue>(&value); gameValue != nullptr)
+	if (const auto gameValue = std::any_cast<GameValue>(&value); gameValue != nullptr)
 		return gameValue->get<T>();
 	return std::nullopt;
 }
@@ -346,11 +349,11 @@ inline std::optional<std::reference_wrapper<T>> GS1Visitor::getScriptValueAs(std
 template<StoresInGameValue T>
 inline std::optional<std::reference_wrapper<T>> GS1Visitor::getScriptValueAs(GS1ScriptValue& value)
 {
-	if (auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
 		return (*gameVariable)->get<T>();
-	if (auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
 		return gameVariable->get<T>();
-	if (auto gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
+	if (const auto gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
 		return gameValue->get<T>();
 	return std::nullopt;
 }
@@ -358,13 +361,13 @@ inline std::optional<std::reference_wrapper<T>> GS1Visitor::getScriptValueAs(GS1
 template<StoresInGameValue T>
 inline std::optional<T> GS1Visitor::getScriptValueAsCopy(const std::any& value)
 {
-	if (auto gs1ScriptValue = std::any_cast<const GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
+	if (const auto gs1ScriptValue = std::any_cast<const GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
 		return getScriptValueAsCopy<T>(*gs1ScriptValue);
-	if (auto gameVariable = std::any_cast<const GameVariable*>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::any_cast<const GameVariable*>(&value); gameVariable != nullptr)
 		return (*gameVariable)->getCopy<T>();
-	if (auto gameVariable = std::any_cast<const GameVariable>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::any_cast<const GameVariable>(&value); gameVariable != nullptr)
 		return gameVariable->getCopy<T>();
-	if (auto gameValue = std::any_cast<const GameValue>(&value); gameValue != nullptr)
+	if (const auto gameValue = std::any_cast<const GameValue>(&value); gameValue != nullptr)
 		return gameValue->getCopy<T>();
 	return std::nullopt;
 }
@@ -372,11 +375,11 @@ inline std::optional<T> GS1Visitor::getScriptValueAsCopy(const std::any& value)
 template<StoresInGameValue T>
 inline std::optional<T> GS1Visitor::getScriptValueAsCopy(const GS1ScriptValue& value)
 {
-	if (auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::get_if<GameVariable*>(&value); gameVariable != nullptr)
 		return (*gameVariable)->getCopy<T>();
-	if (auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
+	if (const auto gameVariable = std::get_if<GameVariable>(&value); gameVariable != nullptr)
 		return gameVariable->getCopy<T>();
-	if (auto gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
+	if (const auto gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
 		return gameValue->getCopy<T>();
 	return std::nullopt;
 }
@@ -411,7 +414,7 @@ inline const ScriptObject& GS1Visitor::popSource()
 	return getCurrentSource();
 }
 
-inline const void GS1Visitor::pushSource(ScriptObject source)
+inline void GS1Visitor::pushSource(ScriptObject source)
 {
 	m_currentSource.emplace_back(std::move(source));
 }

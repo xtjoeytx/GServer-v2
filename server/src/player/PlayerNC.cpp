@@ -59,11 +59,11 @@ HandlePacketResult PlayerNC::handlePacket(std::optional<uint8_t> id, CString& pa
 {
 	static PacketHandleArray PacketHandlers = GeneratePacketHandlers();
 
-	auto handle = id.has_value() ? PacketHandlers[id.value()] : nullptr;
+	const auto handle = id.has_value() ? PacketHandlers[id.value()] : nullptr;
 	if (handle == nullptr)
 		return Player::handlePacket(id, packet);
 
-	auto result = (this->*handle)(packet);
+	const auto result = (this->*handle)(packet);
 	if (result == HandlePacketResult::Bubble)
 		return Player::handlePacket(id, packet);
 
@@ -102,7 +102,7 @@ bool PlayerNC::handleLogin(CString& pPacket)
 	// Newer RC clients have an encryption key.
 	if (Encryption.getGen() > ENCRYPT_GEN_3)
 	{
-		m_encryptionKey = (unsigned char)pPacket.readGChar();
+		m_encryptionKey = static_cast<unsigned char>(pPacket.readGChar());
 
 		Encryption.reset(m_encryptionKey);
 		if (Encryption.getGen() > ENCRYPT_GEN_3)
@@ -115,11 +115,11 @@ bool PlayerNC::handleLogin(CString& pPacket)
 
 	// Read Account & Password
 	account.name = pPacket.readChars(pPacket.readGUChar()).toString();
-	CString password = pPacket.readChars(pPacket.readGUChar());
+	const CString password = pPacket.readChars(pPacket.readGUChar());
 
 	// Client Identity: win,"",02e2465a2bf38f8a115f6208e9938ac8,ff144a9abb9eaff4b606f0336d6d8bc5,"6.2 9200 "
 	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
-	CString identity = pPacket.readString("");
+	const CString identity = pPacket.readString("");
 
 	{
 		auto indent = log::server.indent();
@@ -130,7 +130,7 @@ bool PlayerNC::handleLogin(CString& pPacket)
 		if (!identity.isEmpty())
 		{
 			log::printLine(log::server, "Identity:    {}", identity);
-			auto identityTokens = identity.tokenize(",", true);
+			const auto identityTokens = identity.tokenize(",", true);
 			account.platform = identityTokens[0];
 		}
 	}
@@ -168,7 +168,7 @@ bool PlayerNC::sendLogin()
 			auto npc = npcPtr.lock();
 			if (npc == nullptr) continue;
 
-			CString npcPacket = CString() >> (char)PLO_NC_NPCADD >> (int)npc->id
+			const CString npcPacket = CString() >> (char)PLO_NC_NPCADD >> (int)npc->id
 				>> (char)NPCProp::NAME << npc->getProp<NPCProp::NAME>().serialize()
 				>> (char)NPCProp::TYPE << npc->getProp<NPCProp::TYPE>().serialize()
 				>> (char)NPCProp::LEVEL << npc->getProp<NPCProp::LEVEL>().serialize();

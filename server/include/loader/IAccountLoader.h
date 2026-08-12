@@ -22,7 +22,7 @@ public:
 	virtual bool saveAccount(const Account& account) = 0;
 
 public:
-	virtual bool checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const = 0;
+	[[nodiscard]] virtual bool checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

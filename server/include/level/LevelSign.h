@@ -22,11 +22,11 @@ class Player;
 struct LevelSign
 {
 	LevelSign(const LocalWholeTilePosition& position, std::string_view signText, bool signTextIsEncoded = false);
-	CString getSignPacket(Player* player = nullptr) const;
+	CString getSignPacket(const Player* player = nullptr) const;
 	void setText(std::string_view signText, bool signTextIsEncoded = false);
 
-	float getTileX() const { return (float)position.x(); }
-	float getTileY() const { return (float)position.y(); }
+	[[a::inline]] float getTileX() const;
+	[[a::inline]] float getTileY() const;
 
 	LocalWholeTilePosition position;
 	std::string text;
@@ -38,10 +38,20 @@ struct LevelSign
 
 //----------------------------
 
+inline float LevelSign::getTileX() const
+{
+	return position.x();
+}
+
+inline float LevelSign::getTileY() const
+{
+	return position.y();
+}
+
 inline void LevelSign::constructScriptParameters()
 {
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"x"sv, std::nullopt, std::ref(position.x()), 16});
-	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{"y"sv, std::nullopt, std::ref(position.y()), 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{.name = "x"sv, .modTime = std::nullopt, .value = std::ref(position.x()), .factor = 16});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::DivideByIntegralProperty{.name = "y"sv, .modTime = std::nullopt, .value = std::ref(position.y()), .factor = 16});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

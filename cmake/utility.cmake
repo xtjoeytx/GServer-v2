@@ -36,6 +36,7 @@ function(set_default_compiler_options target ISTESTTARGET)
 			-Wno-attributes
 			-Wno-narrowing
 			-Wno-switch
+			-Wno-unknown-pragmas
 		)
 	endif()
 

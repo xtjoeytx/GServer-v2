@@ -14,7 +14,9 @@
 #include <Server.h>
 #include <level/Level.h>
 #include <level/LevelBaddy.h>
+
 #include <level/LevelItem.h>
+#include <random>
 #include <scripting/ScriptTypes.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
@@ -34,7 +36,7 @@ constexpr BaddyMode baddyStartMode[baddytypes] = {
 	BaddyMode::WALK, BaddyMode::WALK, BaddyMode::WALK, BaddyMode::WALK, BaddyMode::SWAMPSHOT,
 	BaddyMode::HAREJUMP, BaddyMode::WALK, BaddyMode::WALK, BaddyMode::WALK, BaddyMode::WALK
 };
-constexpr const int baddyPower[baddytypes] = {
+constexpr int baddyPower[baddytypes] = {
 	2, 3, 4, 3, 2,
 	1, 1, 6, 12, 8
 };
@@ -52,14 +54,13 @@ BaddyType LevelBaddy::getBaddyTypeFromString(const std::string& type)
 			if (i == BADDYTYPE_COUNT)
 				i = ENUM(BaddyType::OCTOPUS);
 
-			return BaddyType(i);
+			return ENUM<BaddyType>(i);
 		}
 	}
 
 	// Try by ID.
-	uint32_t itemId = 0;
-	if (string::toNumber(type, itemId) && itemId < BADDYTYPE_COUNT)
-		return BaddyType(itemId);
+	if (uint32_t itemId = 0; string::toNumber(type, itemId) && itemId < BADDYTYPE_COUNT)
+		return ENUM<BaddyType>(itemId);
 
 	// Bad.
 	return BaddyType::GRAYSOLDIER;
@@ -67,8 +68,8 @@ BaddyType LevelBaddy::getBaddyTypeFromString(const std::string& type)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LevelBaddy::LevelBaddy(const LocalPixelPosition& position, BaddyType type, std::weak_ptr<Level> level)
-	: type(type), position(position), m_level(level), m_originalPosition(position)
+LevelBaddy::LevelBaddy(const uint8_t id, const LocalPixelPosition& position, BaddyType type, const std::weak_ptr<Level>& level)
+	: id(id), type(type), position(position), m_level(level), m_originalPosition(position)
 {
 	m_server = BabyDI::Get<Server>();
 	assert(m_server != nullptr);
@@ -91,11 +92,15 @@ void LevelBaddy::reset()
 
 void LevelBaddy::dropItem() const
 {
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution itemTypeDistribution(0, 11);
+
 	// 41.66...% chance of a green gralat.
 	// 41.66...% chance of something else.
 	// 16.66...% chance of nothing.
-	int itemId = rand() % 12;
-	LevelItemType itemType = LevelItemType::INVALID;
+	const auto itemId = itemTypeDistribution(gen);
+	auto itemType = LevelItemType::INVALID;
 
 	switch (itemId)
 	{
@@ -105,7 +110,7 @@ void LevelBaddy::dropItem() const
 		case 3: //BOMBS
 		case 4: //DARTS
 		case 5: //HEART
-			itemType = LevelItem::getItemId(itemId);
+			itemType = LevelItem::getItemId(static_cast<int8_t>(itemId));
 			break;
 
 		default:
@@ -116,12 +121,12 @@ void LevelBaddy::dropItem() const
 
 	if (itemType != LevelItemType::INVALID)
 	{
-		if (auto lvl = m_level.lock(); lvl)
-			lvl->addItem(inform_client, toPixelPosition({ 0, 0 }, position), itemType);
+		if (const auto lvl = m_level.lock(); lvl)
+			lvl->addItem(inform_client, toPixelPosition({0, 0}, position), itemType);
 	}
 }
 
-CString LevelBaddy::getProp(BaddyProp propId) const
+CString LevelBaddy::getProp(const BaddyProp propId) const
 {
 	switch (propId)
 	{
@@ -158,14 +163,16 @@ CString LevelBaddy::getProp(BaddyProp propId) const
 		case BaddyProp::VERSEHURT:
 		case BaddyProp::VERSEATTACK:
 		{
-			size_t verseId = PROPID(propId) - PROPID(BaddyProp::VERSESIGHT);
+			const size_t verseId = PROPID(propId) - PROPID(BaddyProp::VERSESIGHT);
 			if (verseId < verses.size())
 				return CString() >> (char)verses[verseId].length() << verses[verseId];
 			else
 				return CString() >> (char)0;
 		}
+
+		default:;
 	}
-	return CString();
+	return {};
 }
 
 CString LevelBaddy::getProps() const
@@ -181,7 +188,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 	int len = 0;
 	while (pProps.bytesLeft())
 	{
-		BaddyProp propId = static_cast<BaddyProp>(pProps.readGUChar());
+		const auto propId = static_cast<BaddyProp>(pProps.readGUChar());
 		switch (propId)
 		{
 			case BaddyProp::ID:
@@ -233,7 +240,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 					if (power == 1)
 					{
 						mode = BaddyMode::SWAMPSHOT;
-						m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, { 0, 0 }, m_level.lock());
+						m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, {0, 0}, m_level.lock());
 					}
 				};
 
@@ -242,7 +249,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 				{
 					if (!canRespawn()) return;
 					reset();
-					m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id << getProps(), { 0, 0 }, m_level.lock());
+					m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id << getProps(), {0, 0}, m_level.lock());
 				};
 
 				// Set baddies to dead.
@@ -255,10 +262,10 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 						timeout.runOnceFor(std::chrono::seconds(m_server->getSettings().get<uint32_t>("baddyrespawntime").value_or(60)));
 					}
 
-					if (auto level = m_level.lock(); level != nullptr)
+					if (const auto level = m_level.lock(); level != nullptr)
 					{
 						// Set the baddy as dead for all the other players in the level.
-						m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, { 0, 0 }, level);
+						m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, {0, 0}, level);
 
 						// TODO(Nalin): Record the last player who hit the baddy so we can record the source properly.
 						if (!level->hasLivingBaddies())
@@ -308,13 +315,15 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 				if (verseId < verses.size())
 					verses[verseId] = pProps.readChars(len);
 			}
+
+			default:;
 		}
 	}
 }
 
-void LevelBaddy::setImage(std::string_view image)
+void LevelBaddy::setImage(const std::string_view baddyImage)
 {
-	image = image;
+	image = baddyImage;
 	m_hasCustomImage = true;
 }
 

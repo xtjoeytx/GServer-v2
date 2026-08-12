@@ -43,7 +43,7 @@ namespace preagonal
 */
 bool ServerList::created = false;
 typedef void (ServerList::*TSLSock)(CString&);
-std::vector<TSLSock> TSLFunc(256, &ServerList::msgSVI_NULL);
+static std::vector<TSLSock> TSLFunc(256, &ServerList::msgSVI_NULL);
 
 void ServerList::createFunctions()
 {
@@ -89,15 +89,12 @@ ServerList::ServerList()
 	m_socket.setType(SOCKET_TYPE_CLIENT);
 	m_socket.setDescription("listserver");
 
+	m_server = BabyDI::Get<Server>();
 	m_lastData = m_lastTimer = m_nextConnectionAttempt = m_lastPingTime = precise_clock::now();
 
 	// Create Functions
 	if (!ServerList::created)
 		ServerList::createFunctions();
-}
-
-ServerList::~ServerList()
-{
 }
 
 /*
@@ -112,9 +109,9 @@ bool ServerList::onRecv()
 {
 	// Grab the data from the socket and put it into our receive buffer.
 	unsigned int size = 0;
-	char* data = m_socket.getData(&size);
+	const char* data = m_socket.getData(&size);
 	if (size != 0)
-		m_readBuffer.write(data, size);
+		m_readBuffer.write(data, static_cast<int>(size));
 	else if (m_socket.getState() == SOCKET_STATE_DISCONNECTED)
 		return false;
 
@@ -140,13 +137,11 @@ void ServerList::onUnregister()
 	log::printLine(log::server, "{} - Disconnected.", m_socket.getDescription());
 }
 
-bool ServerList::main(precise_clock::time_point time)
+bool ServerList::main(const precise_clock::time_point time)
 {
 	if (!getConnected())
 		return false;
 
-	// definitions
-	CString unBuffer;
 	m_readBuffer.setRead(0);
 
 	// New data.
@@ -157,12 +152,12 @@ bool ServerList::main(precise_clock::time_point time)
 	while (m_readBuffer.length() > 1)
 	{
 		// packet length
-		unsigned short len = (unsigned short)m_readBuffer.readShort();
-		if ((unsigned int)len > (unsigned int)m_readBuffer.length() - 2)
+		const auto len = static_cast<unsigned short>(m_readBuffer.readShort());
+		if (static_cast<unsigned int>(len) > static_cast<unsigned int>(m_readBuffer.length()) - 2)
 			break;
 
 		// decompress packet
-		unBuffer = m_readBuffer.readChars(len);
+		CString unBuffer = m_readBuffer.readChars(len);
 		m_readBuffer.removeI(0, len + 2);
 		unBuffer.zuncompressI();
 
@@ -177,11 +172,11 @@ bool ServerList::main(precise_clock::time_point time)
 }
 
 // Called every second by Server
-bool ServerList::doTimedEvents(precise_clock::time_point time)
+bool ServerList::doTimedEvents(const precise_clock::time_point time)
 {
 	m_lastTimer = time;
 
-	bool isConnected = getConnected();
+	const bool isConnected = getConnected();
 
 	// Send a keep-alive packet every 60 seconds.
 	// We send SVO_SETIP rather than SVO_PING because SVO_PING is actually a PONG, and the listserver uses the time between SVI_PING and SVO_PING to determine latency.
@@ -190,8 +185,8 @@ bool ServerList::doTimedEvents(precise_clock::time_point time)
 	{
 		m_lastPingTime = time;
 
-		auto& settings = m_server->getSettings();
-		CString ip(settings.get<std::string>("serverip").value_or("AUTO"s));
+		const auto& settings = m_server->getSettings();
+		const CString ip(settings.get<std::string>("serverip").value_or("AUTO"s));
 		sendPacket(CString() >> (char)SVO_SETIP >> (char)ip.length() << ip, true);
 	}
 
@@ -205,7 +200,7 @@ bool ServerList::doTimedEvents(precise_clock::time_point time)
 				if (m_connectionAttempts < 8)
 					m_connectionAttempts += 1;
 
-				auto waitTime = std::min(uint32_t(std::pow(2u, m_connectionAttempts)), 300u);
+				const auto waitTime = std::min(static_cast<uint32_t>(std::pow(2u, m_connectionAttempts)), 300u);
 				m_nextConnectionAttempt = m_lastTimer + std::chrono::seconds(waitTime);
 			}
 			else
@@ -218,7 +213,7 @@ bool ServerList::doTimedEvents(precise_clock::time_point time)
 
 bool ServerList::connectServer()
 {
-	auto& settings = m_server->getSettings();
+	const auto& settings = m_server->getSettings();
 
 	if (getConnected())
 		return true;
@@ -243,13 +238,13 @@ bool ServerList::connectServer()
 	log::printLine(log::server, "{} - Connected to {}:{}.", m_socket.getDescription(), m_socket.getRemoteIp(), m_socket.getRemotePort());
 
 	// Get Some Stuff
-	CString name(settings.get<std::string>("name").value_or(""s));
-	CString desc(settings.get<std::string>("description").value_or(""s));
-	CString language(settings.get<std::string>("language").value_or("English"s));
-	CString version(APP_VERSION);
-	CString url(settings.get<std::string>("url").value_or("http://www.graal.in/"s));
-	CString ip(settings.get<std::string>("serverip").value_or("AUTO"s));
-	CString port(settings.get<std::string>("serverport").value_or("14900"s));
+	const CString name(settings.get<std::string>("name").value_or(""s));
+	const CString desc(settings.get<std::string>("description").value_or(""s));
+	const CString language(settings.get<std::string>("language").value_or("English"s));
+	const CString version(APP_VERSION);
+	const CString url(settings.get<std::string>("url").value_or("https://www.graal.in/"s));
+	const CString ip(settings.get<std::string>("serverip").value_or("AUTO"s));
+	const CString port(settings.get<std::string>("serverport").value_or("14900"s));
 	CString localip(settings.get<std::string>("localip").value_or(""s));
 
 	// Grab the local ip.
@@ -271,7 +266,7 @@ bool ServerList::connectServer()
 	m_fileQueue.setCodec(ENCRYPT_GEN_2, 0);
 
 	// Send before SVO_NEWSERVER or else we will get an incorrect name.
-	auto& adminsettings = m_server->getAdminSettings();
+	const auto& adminsettings = m_server->getAdminSettings();
 	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings.get<std::string>("hq_password").value_or(""s));
 
 	// Send server info.
@@ -306,8 +301,7 @@ void ServerList::sendVersionConfig()
 
 	// Send allowed versions to the listserver
 	CString versionNames;
-	auto& versionList = m_server->getAllowedVersions();
-	for (const auto& version : versionList)
+	for (const auto& version : m_server->getAllowedVersions())
 	{
 		if (!versionNames.isEmpty())
 			versionNames << ",";
@@ -318,7 +312,7 @@ void ServerList::sendVersionConfig()
 	sendText(std::format("Listserver,settings,allowedversions,{}", versionNames.text()));
 }
 
-void ServerList::sendPacket(CString& pPacket, bool sendNow)
+void ServerList::sendPacket(CString& pPacket, const bool sendNow)
 {
 	// empty buffer?
 	if (pPacket.isEmpty())
@@ -339,7 +333,7 @@ void ServerList::sendPacket(CString& pPacket, bool sendNow)
 /*
 	Altering Player Information
 */
-void ServerList::addPlayer(std::shared_ptr<Player> player)
+void ServerList::addPlayer(const std::shared_ptr<Player>& player)
 {
 	assert(player != nullptr);
 
@@ -358,10 +352,9 @@ void ServerList::addPlayer(std::shared_ptr<Player> player)
 	sendPacket(dataPacket);
 }
 
-void ServerList::deletePlayer(std::shared_ptr<Player> player)
+void ServerList::deletePlayer(const std::shared_ptr<Player>& player)
 {
 	assert(player != nullptr);
-
 	sendPacket(CString() >> (char)SVO_PLYRREM >> (short)player->getId());
 }
 
@@ -371,8 +364,7 @@ void ServerList::sendPlayers()
 	sendPacket(CString() >> (char)SVO_SETPLYR);
 
 	// Adds the players to the serverlist
-	auto& playerList = m_server->getPlayerList();
-	for (auto& [id, player] : playerList)
+	for (auto& player : m_server->getPlayerList() | std::views::values)
 	{
 		if (!player->isNC() && !player->isNPCServer())
 		{
@@ -385,9 +377,8 @@ void ServerList::sendPlayers()
 void ServerList::handleText(const CString& data)
 {
 	CString dataTokenStr = data.guntokenize();
-	std::vector<CString> params = data.gCommaStrTokens();
 
-	if (params.size() >= 3)
+	if (std::vector<CString> params = data.gCommaStrTokens(); params.size() >= 3)
 	{
 		if (params[0] == "GraalEngine")
 		{
@@ -395,11 +386,10 @@ void ServerList::handleText(const CString& data)
 			{
 				if (params.size() == 6 && params[2] == "privmsg")
 				{
-					std::string channel = params[4].guntokenize().text();
-					CString tmpData = CString(",irc,privmsg,") << params[3].gtokenize() << "," << params[4].gtokenize() << "," << params[5].gtokenize();
+					const std::string channel = params[4].guntokenize().text();
+					const CString tmpData = CString(",irc,privmsg,") << params[3].gtokenize() << "," << params[4].gtokenize() << "," << params[5].gtokenize();
 
-					auto& playerList = m_server->getPlayerList();
-					for (auto& [id, pl] : playerList)
+					for (const auto& pl : m_server->getPlayerList() | std::views::values)
 					{
 						if (pl->inChatChannel(channel))
 						{
@@ -424,7 +414,7 @@ void ServerList::handleText(const CString& data)
 			{
 				if (params[1] == "Modify" && params[2] == "Server")
 				{
-					std::string serverName = params[3].guntokenize().text();
+					const std::string serverName = params[3].guntokenize().text();
 
 					for (size_t i = 4; i < params.size(); i++)
 					{
@@ -436,8 +426,7 @@ void ServerList::handleText(const CString& data)
 
 							if (key == "players")
 							{
-								int pcount = strtoint(val);
-								if (pcount < 0)
+								if (const int pcount = strtoint(val); pcount < 0)
 									m_serverListCount.erase(serverName);
 								else
 								{
@@ -469,7 +458,7 @@ void ServerList::sendText(const std::vector<CString>& stringList)
 	sendPacket(dataPacket);
 }
 
-void ServerList::sendTextForPlayer(std::shared_ptr<Player> player, const CString& data)
+void ServerList::sendTextForPlayer(const std::shared_ptr<Player>& player, const CString& data)
 {
 	assert(player != nullptr);
 
@@ -479,14 +468,17 @@ void ServerList::sendTextForPlayer(std::shared_ptr<Player> player, const CString
 	sendPacket(dataPacket);
 }
 
-void ServerList::sendLoginPacketForPlayer(std::shared_ptr<Player> player, const CString& password, const CString& identity)
+void ServerList::sendLoginPacketForPlayer(const std::shared_ptr<Player>& player, const CString& password, const CString& identity)
 {
 	sendPacket(CString() >> (char)SVO_VERIACC2 >> (char)player->account.name.length() << player->account.name >> (char)password.length() << password >> (short)player->getId() >> (char)player->getType() >> (short)identity.length() << identity);
 }
 
 void ServerList::sendServerHQ()
 {
-	auto& adminsettings = m_server->getAdminSettings();
+	if (m_server == nullptr)
+		m_server = BabyDI::Get<Server>();
+
+	const auto& adminsettings = m_server->getAdminSettings();
 	sendPacket(CString() >> (char)SVO_SERVERHQPASS << adminsettings.get<std::string>("hq_password").value_or(""s));
 	if (m_server->getSettings().get<bool>("onlystaff").value_or(false))
 		sendPacket(CString() >> (char)SVO_SERVERHQLEVEL >> (char)0);
@@ -511,10 +503,10 @@ bool ServerList::parsePacket(CString& pPacket)
 			curPacket = pPacket.readString("\n");
 
 		// read id & packet
-		unsigned char id = curPacket.readGUChar();
+		const unsigned char id = curPacket.readGUChar();
 
 		// valid packet, call function
-		(*this.*TSLFunc[id])(curPacket);
+		(this->*TSLFunc[id])(curPacket);
 	}
 
 	return true;
@@ -533,14 +525,14 @@ void ServerList::msgSVI_VERIACC(CString& pPacket)
 
 void ServerList::msgSVI_VERIGUILD(CString& pPacket)
 {
-	unsigned short playerID = pPacket.readGUShort();
-	CString nickname = pPacket.readChars(pPacket.readGUChar());
+	const unsigned short playerID = pPacket.readGUShort();
+	const CString nickname = pPacket.readChars(pPacket.readGUChar());
 
-	auto p = m_server->getPlayer(playerID, PLTYPE_ANYPLAYER);
+	const auto p = m_server->getPlayer(playerID, PLTYPE_ANYPLAYER);
 	if (p)
 	{
 		// Create the prop packet.
-		CString prop = CString() >> (char)PlayerProp::NICKNAME >> (char)nickname.length() << nickname;
+		const CString prop = CString() >> (char)PlayerProp::NICKNAME >> (char)nickname.length() << nickname;
 
 		// Assign the nickname to the player.
 		p->setNick(nickname, true);
@@ -606,26 +598,26 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 	{
 		CString val;
 
-		val = CString((int)p2->account.kills);
+		val = CString(static_cast<int>(p2->account.kills));
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->account.deaths);
+		val = CString(static_cast<int>(p2->account.deaths));
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getProp<PlayerProp::FULLHEARTS>().value);
+		val = CString(p2->getProp<PlayerProp::FULLHEARTS>().value);
 		profile >> (char)val.length() << val;
 
 		auto rating = p2->getProp<PlayerProp::RATING>();
-		val = CString((int)rating.rating) << "/" << CString((int)rating.deviation);
+		val = CString(static_cast<int>(rating.rating)) << "/" << CString(static_cast<int>(rating.deviation));
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getProp<PlayerProp::ALIGNMENT>().value);
+		val = CString(p2->getProp<PlayerProp::ALIGNMENT>().value);
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getProp<PlayerProp::GRALATS>().value);
+		val = CString(static_cast<int>(p2->getProp<PlayerProp::GRALATS>().value));
 		profile >> (char)val.length() << val;
 
-		val = CString((int)p2->getProp<PlayerProp::SWORDIMAGE>().power.value_or(1));
+		val = CString(p2->getProp<PlayerProp::SWORDIMAGE>().power.value_or(1));
 		profile >> (char)val.length() << val;
 
 		bool canSpin = ((p2->getProp<PlayerProp::STATUS>().value & PLSTATUS_HASSPIN) != 0 ? true : false);
@@ -697,8 +689,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 				// If String-Array, Get Index
 				if (pos[2] >= 0)
 				{
-					std::vector<CString> temp = val.guntokenize().tokenize("\n");
-					if ((int)temp.size() > pos[2])
+					if (std::vector<CString> temp = val.guntokenize().tokenize("\n"); static_cast<int>(temp.size()) > pos[2])
 						val = temp[pos[2]];
 				}
 			}
@@ -719,13 +710,13 @@ void ServerList::msgSVI_ERRMSG(CString& pPacket)
 
 void ServerList::msgSVI_VERIACC2(CString& pPacket)
 {
-	CString account = pPacket.readChars(pPacket.readGUChar());
-	unsigned short id = pPacket.readGUShort();
+	const CString account = pPacket.readChars(pPacket.readGUChar());
+	const unsigned short id = pPacket.readGUShort();
 	[[maybe_unused]] unsigned char type = pPacket.readGUChar();
-	CString message = pPacket.readString("");
+	const CString message = pPacket.readString("");
 
 	// Get the player.
-	auto player = m_server->getPlayer(id, PLTYPE_ANYPLAYER | PLTYPE_ANYNC);
+	const auto player = m_server->getPlayer(id, PLTYPE_ANYPLAYER | PLTYPE_ANYNC);
 	if (player == nullptr) return;
 
 	// Overwrite the player's account name with the one from the listserver.
@@ -776,9 +767,9 @@ void ServerList::msgSVI_RAWDATA(CString& pPacket)
 
 void ServerList::msgSVI_FILESTART3(CString& pPacket)
 {
-	unsigned char pTy = pPacket.readGUChar();
+	const unsigned char pTy = pPacket.readGUChar();
 	std::filesystem::path filename{"world/global/"};
-	CString blank;
+	const CString blank;
 	switch (pTy)
 	{
 		case SVF_HEAD:
@@ -793,15 +784,16 @@ void ServerList::msgSVI_FILESTART3(CString& pPacket)
 		case SVF_SHIELD:
 			filename /= "shields";
 			break;
+		default:;
 	}
 	filename /= std::format("{}.partial", pPacket.readChars(pPacket.readGUChar()).toString());
-	blank.save(filename.string());
+	(void)blank.save(filename.string());
 }
 
 void ServerList::msgSVI_FILEDATA3(CString& pPacket)
 {
-	[[maybe_unused]] unsigned char pTy = pPacket.readGUChar();
-	fs::FileCategory category = fs::FileCategory::ALL;
+	[[maybe_unused]] const unsigned char pTy = pPacket.readGUChar();
+	auto category = fs::FileCategory::ALL;
 	switch (pTy)
 	{
 		case SVF_HEAD:
@@ -816,28 +808,29 @@ void ServerList::msgSVI_FILEDATA3(CString& pPacket)
 		case SVF_SHIELD:
 			category = fs::FileCategory::SHIELD;
 			break;
+		default:;
 	}
 
-	auto filename = std::format("{}.partial", pPacket.readChars(pPacket.readGUChar()).toString());
-	auto fileData = m_server->getFileSystem().info(category, filename);
+	const auto filename = std::format("{}.partial", pPacket.readChars(pPacket.readGUChar()).toString());
+	const auto fileData = m_server->getFileSystem().info(category, filename);
 	if (fileData == nullptr) return;
 
 	CString data;
 	data.load(fileData->file.string());
 	data << pPacket.readChars(pPacket.bytesLeft()); // Read the rest of the packet.
-	data.save(fileData->file.string());
+	(void)data.save(fileData->file.string());
 }
 
 void ServerList::msgSVI_FILEEND3(CString& pPacket)
 {
-	unsigned short pid = pPacket.readGUShort();
-	unsigned char type = pPacket.readGUChar();
-	unsigned char doCompress = pPacket.readGUChar();
-	time_t modTime = pPacket.readGUInt5();
-	unsigned int fileLength = pPacket.readGUInt5();
-	CString shortName = pPacket.readString("");
+	const unsigned short pid = pPacket.readGUShort();
+	const unsigned char type = pPacket.readGUChar();
+	const unsigned char doCompress = pPacket.readGUChar();
+	const time_t modTime = pPacket.readGUInt5();
+	const unsigned int fileLength = pPacket.readGUInt5();
+	const CString shortName = pPacket.readString("");
 
-	fs::FileCategory category = fs::FileCategory::ALL;
+	auto category = fs::FileCategory::ALL;
 	switch (type)
 	{
 		case SVF_HEAD:
@@ -852,32 +845,33 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 		case SVF_SHIELD:
 			category = fs::FileCategory::SHIELD;
 			break;
+		default:;
 	}
 
-	auto fileName = std::format("{}.partial", shortName.toString());
-	auto fileData = m_server->getFileSystem().info(category, fileName);
+	const auto fileName = std::format("{}.partial", shortName.toString());
+	const auto fileData = m_server->getFileSystem().info(category, fileName);
 	if (fileData == nullptr)
 		return;
 
 	// Uncompress the file if compressed.
 	if (doCompress == 1)
 	{
-		CString fileData;
-		fileData.load(fileName);
-		fileData.zuncompressI(fileLength);
-		fileData.save(fileName);
+		CString uncompress;
+		uncompress.load(fileName);
+		uncompress.zuncompressI(fileLength);
+		(void)uncompress.save(fileName);
 	}
 
 	// Set the file mod time.
 	fileData->setModTime(clock::from_time_t(modTime));
 
 	// Rename the file.
-	auto newFileName = shortName.toString();
+	const auto newFileName = shortName.toString();
 	std::filesystem::rename(fileData->file, fileData->file.parent_path() / newFileName);
 
 	// Set the player props.
 	// TODO(joey): Confirm if we can use ANYCLIENT instead
-	if (auto p = m_server->getPlayer(pid, PLTYPE_ANYPLAYER); p)
+	if (const auto p = m_server->getPlayer(pid, PLTYPE_ANYPLAYER); p)
 	{
 		props::SetResults result;
 		switch (type)
@@ -897,14 +891,16 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 			case SVF_SHIELD:
 				result = p->setPropWith<PlayerProp::SHIELDIMAGE>(props::SetBy::SERVER, shortName.toString());
 				break;
+
+			default:;
 		}
 
 		// Send the prop.
-		uint8_t propId = result.resultPropIds.front();
-		CString prop = p->getProp((PlayerProp)propId)->serialize();
+		const uint8_t propId = result.resultPropIds.front();
+		const CString prop = p->getProp(ENUM<PlayerProp>(propId))->serialize();
 		if (result.resultFlags.test(props::SetResults::sendToAll))
 			m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop);
-		if (auto player = std::dynamic_pointer_cast<PlayerClient>(p); p && result.resultFlags.test(props::SetResults::sendToLevel))
+		if (const auto player = std::dynamic_pointer_cast<PlayerClient>(p); p && result.resultFlags.test(props::SetResults::sendToLevel))
 			m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop, player->account.character.getGlobalPosition(), player->getLevel(), {pid});
 		if (result.resultFlags.test(props::SetResults::sendToSource))
 			p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)propId << prop);
@@ -913,25 +909,25 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 
 void ServerList::msgSVI_SERVERINFO(CString& pPacket)
 {
-	int pid = pPacket.readGUShort();
-	CString serverpacket = pPacket.readString("");
+	const int pid = pPacket.readGUShort();
+	const CString serverpacket = pPacket.readString("");
 
 	// A hack to allow v5 clients to serverwarp to servers
-	auto player = m_server->getPlayer(pid, PLTYPE_ANYCLIENT);
+	const auto player = m_server->getPlayer(pid, PLTYPE_ANYCLIENT);
 	if (player && player->getVersion() >= CLVER_2_1)
 		player->sendPacket(CString() >> (char)PLO_SERVERWARP << serverpacket);
 }
 
 void ServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 {
-	unsigned short playerId = pPacket.readGUShort();
-	CString message = pPacket.readString("");
+	const unsigned short playerId = pPacket.readGUShort();
+	const CString message = pPacket.readString("");
 
 	CString data = message.guntokenize();
-	std::vector<CString> params = data.tokenize("\n");
+	const std::vector<CString> params = data.tokenize("\n");
 
 	CString weapon = data.readString("\n");
-	CString type = data.readString("\n");
+	const CString type = data.readString("\n");
 	CString option = data.readString("\n");
 	CString paramsData = data.readString("");
 
@@ -949,14 +945,12 @@ void ServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 
 					if (params[2] == "join")
 					{
-						CString channel = params[3].guntokenize();
-						if (player->addChatChannel(channel.text()))
+						if (const CString channel = params[3].guntokenize(); player->addChatChannel(channel.text()))
 							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,join," << params[3].gtokenize());
 					}
 					else if (params[2] == "part")
 					{
-						CString channel = params[3].guntokenize();
-						if (player->inChatChannel(channel.text()))
+						if (const CString channel = params[3].guntokenize(); player->inChatChannel(channel.text()))
 							player->sendPacket(CString() >> (char)PLO_SERVERTEXT << weapon << ",irc,part," << params[3].gtokenize());
 					}
 				}
@@ -1010,7 +1004,7 @@ void ServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 
 void ServerList::msgSVI_SENDTEXT(CString& pPacket)
 {
-	CString data = pPacket.readString("");
+	const CString data = pPacket.readString("");
 	handleText(data);
 }
 
@@ -1049,12 +1043,12 @@ void ServerList::msgSVI_PMPLAYER(CString& pPacket)
 
 void ServerList::msgSVI_ASSIGNPCID(CString& pPacket)
 {
-	uint16_t id = pPacket.readGUShort();
-	uint8_t type = pPacket.readGUChar();
-	CString pcId = pPacket.readChars(pPacket.readGUChar());
+	const uint16_t id = pPacket.readGUShort();
+	const uint8_t type = pPacket.readGUChar();
+	const CString pcId = pPacket.readChars(pPacket.readGUChar());
 
 	// Get the player, this should be a player who has not been loaded with the playerid of `id`
-	auto player = m_server->getPlayer(id, type);
+	const auto player = m_server->getPlayer(id, type);
 	if (!player || player->isLoaded())
 		return;
 

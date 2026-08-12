@@ -470,9 +470,9 @@ inline std::string_view Level::getLevelNameAtPosition(const PixelPosition& posit
 	if (!isGmap())
 		return levelName;
 
-	if (auto subLevel = getSubLevelAtPosition(position); subLevel != nullptr)
+	if (const auto subLevel = getSubLevelAtPosition(position); subLevel != nullptr)
 	{
-		if (auto staticData = subLevel->staticData.lock(); staticData != nullptr)
+		if (const auto staticData = subLevel->staticData.lock(); staticData != nullptr)
 			return staticData->levelName;
 	}
 
@@ -522,7 +522,7 @@ inline std::optional<MapPosition> Level::getSubLevelPositionInMap(const std::str
 
 inline SubLevelPtr Level::getSubLevelByName(const std::string_view levelPart) const noexcept
 {
-	if (auto index = getSubLevelIndex(levelPart); index.has_value() && index.value() < m_levelParts.size())
+	if (const auto index = getSubLevelIndex(levelPart); index.has_value() && index.value() < m_levelParts.size())
 		return m_levelParts[index.value()];
 
 	return nullptr;

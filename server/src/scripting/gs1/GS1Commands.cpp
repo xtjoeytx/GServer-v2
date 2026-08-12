@@ -1,3 +1,4 @@
+// ReSharper disable CppParameterMayBeConstPtrOrRef
 #include <algorithm>
 #include <any>
 #include <array>
@@ -59,173 +60,173 @@ namespace preagonal::gs1::grammar
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-using BuiltInCommandHandleFunc = void (*)(GS1Visitor*, std::string_view, const std::vector<GS1ScriptValue*>&);
+using BuiltInCommandHandleFunc = void (*)(GS1Visitor*, const std::vector<GS1ScriptValue*>&);
 using BuiltInCommandHandleMap = std::unordered_map<size_t, BuiltInCommandHandleFunc>;
 
 #if DEBUG
-static void fn_debugger(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_debugger(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 #endif
 
-static void fn_addguildmember(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_addstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_addweapon(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_attachplayertoobj(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_blockagain(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_canbecarried(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_canbepulled(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_canbepushed(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_cannotbecarried(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_cannotbepulled(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_cannotbepushed(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_cannotwarp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_canwarp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_canwarp2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_carryobject(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_changeimgcolors(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_changeimgmode(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_changeimgpart(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_changeimgvis(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_changeimgzoom(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_copylevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_copystrings(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_deletelevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_destroy(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_detachplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_disableweapons(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_dontblock(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_drawoverplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_drawovertrees(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_drawunderplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_enableweapons(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_explodebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_freezeplayer2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_hide(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_hideimg(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_hideimgs(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_hitcompu(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_hitnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_hitobjects(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_hitplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_hurt(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_join(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_lay(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_message(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_move(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_noplayeronwall(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_putbomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_putcomp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_putexplosion(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_putexplosion2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_putnpc2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_reducebombs(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_reducedarts(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_reducerupees(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_removearrow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_removebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_removecompus(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_removeexplo(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_removeguild(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_removeguildmember(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_removehorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_removeitem(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_removestring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_removeweapon(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_saveinfo(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_savelog(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_savelog2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_say(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_say2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_sendpm(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_sendrpgmessage(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_sendtonc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_sendtorc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_serverwarp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_set(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setbeltcolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setbody(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setbow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setcharani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setchargender(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_seteffect(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setgender(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_sethead(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setimg(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setimgpart(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setlevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setlevel2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setmap(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setminimap(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setplayerdir(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setplayerprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setplayerx(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setplayery(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setpm(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setshape(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setshoecolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setshootparams(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setskincolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setsleevecolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setsword(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setx(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_sety(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setz(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_shoot(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_shootarrow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_shootball(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_shootfireball(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_shootfireblast(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_shootnuke(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_show(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_showani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_showani2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_showcharacter(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_showimg(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_showimg2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_showpoly(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_showpoly2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_showstats(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_showtext(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_showtext2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_sleep(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_take2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_takehorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_takeplayercarry(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_takeplayerhorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_throwcarry(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_timershow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_tokenize(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_tokenize2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_toweapons(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_triggeraction(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_unfreezeplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_unset(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_updateboard(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_updateboard2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_updateterrain(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_warpto(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_addguildmember(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_addstring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_addweapon(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_attachplayertoobj(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_blockagain(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_callnpc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_canbecarried(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_canbepulled(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_canbepushed(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_cannotbecarried(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_cannotbepulled(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_cannotbepushed(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_cannotwarp(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_canwarp(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_canwarp2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_carryobject(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_changeimgcolors(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_changeimgmode(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_changeimgpart(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_changeimgvis(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_changeimgzoom(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_copylevel(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_copystrings(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_deletelevel(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_deletestring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_destroy(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_detachplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_disableweapons(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_dontblock(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_drawoverplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_drawovertrees(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_drawunderplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_enableweapons(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_explodebomb(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_freezeplayer2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_hide(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_hideimg(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_hideimgs(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_hitcompu(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_hitnpc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_hitobjects(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_hitplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_hurt(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_insertstring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_join(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_lay(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_lay2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_message(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_move(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_noplayeronwall(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_putbomb(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_putcomp(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_putexplosion(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_putexplosion2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_puthorse(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_putnewcomp(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_putnpc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_putnpc2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_reducebombs(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_reducedarts(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_reducerupees(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_removearrow(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_removebomb(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_removecompus(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_removeexplo(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_removeguild(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_removeguildmember(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_removehorse(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_removeitem(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_removestring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_removeweapon(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_replacestring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_saveinfo(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_savelog(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_savelog2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_say(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_say2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_sendpm(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_sendrpgmessage(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_sendtonc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_sendtorc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_serverwarp(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_set(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setani(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setarray(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setbeltcolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setbody(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setbow(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setcharani(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setchargender(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setcharprop(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setcoatcolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_seteffect(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setgender(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_sethead(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setimg(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setimgpart(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setlevel(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setlevel2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setmap(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setminimap(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setplayerdir(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setplayerprop(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setplayerx(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setplayery(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setpm(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setshape(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setshield(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setshoecolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setshootparams(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setskincolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setsleevecolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setstring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setsword(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setx(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_sety(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setz(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_shoot(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_shootarrow(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_shootball(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_shootfireball(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_shootfireblast(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_shootnuke(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_show(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_showani(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_showani2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_showcharacter(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_showimg(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_showimg2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_showpoly(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_showpoly2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_showstats(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_showtext(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_showtext2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_sleep(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_spyfire(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_take(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_take2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_takehorse(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_takeplayercarry(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_takeplayerhorse(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_throwcarry(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_timershow(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_tokenize(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_tokenize2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_toweapons(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_triggeraction(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_unfreezeplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_unset(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_updateboard(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_updateboard2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_updateterrain(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_warpto(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 // GR extensions
-static void fn_enabledamagereactions(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_disabledamagereactions(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_enabledamagereactions(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_disabledamagereactions(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 
 static BuiltInCommandHandleMap GenerateMap()
 {
-	string::string_hash hash{};
+	constexpr string::string_hash hash{};
 	BuiltInCommandHandleMap map =
 	{
 #if DEBUG
@@ -413,7 +414,7 @@ constexpr std::array<std::string_view, 2> translatableCommands =
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static std::any translateStringForPlayer(antlr4::tree::ParseTree* node, GS1Visitor* visitor, PlayerPtr player)
+static std::any translateStringForPlayer(antlr4::tree::ParseTree* node, GS1Visitor* visitor, const PlayerPtr& player)
 {
 	if (node == nullptr)
 		return std::any{};
@@ -425,7 +426,7 @@ static std::any translateStringForPlayer(antlr4::tree::ParseTree* node, GS1Visit
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, std::string_view commandName)
+void processBuiltInCommand(GS1Visitor* visitor, const antlr4::tree::ParseTree* node, const std::string_view commandName)
 {
 	static BuiltInCommandHandleMap map = GenerateMap();
 
@@ -435,8 +436,8 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 		throw std::runtime_error("processBuiltInCommand received an empty command name");
 
 	// Find the command in the map.
-	size_t hash = string::string_hash{}(commandName);
-	auto it = map.find(hash);
+	const size_t hash = string::string_hash{}(commandName);
+	const auto it = map.find(hash);
 	if (it == map.end())
 	{
 		log::printLine(log::script, "Unknown command in NPC [{}] '{}': {}", visitor->getOriginalSource().first, visitor->who, commandName);
@@ -473,7 +474,7 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 
 	// Record if we are expecting a flag for the next argument.
 	visitor->expectingFlag = (std::ranges::find(flagProcessingCommands, commandName) != std::ranges::end(flagProcessingCommands));
-	bool isTranslatable = std::ranges::contains(translatableCommands, commandName);
+	const bool isTranslatable = std::ranges::contains(translatableCommands, commandName);
 
 	std::vector<GS1ScriptValue*> arguments;
 	std::vector<std::any> keepAlive;
@@ -489,29 +490,29 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 		if (container == nullptr)
 			throw std::runtime_error("BuiltInCommand argument is not a valid GS1ScriptValue");
 
-		arguments.push_back(std::move(container));
+		arguments.push_back(container);
 	};
 
 	// Save the player pointer so we don't keep searching for it.
 	PlayerPtr playerPtr = nullptr;
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	if (isTranslatable && player.has_value())
 		playerPtr = server->getPlayer(player.value().first);
 
 	// Collect the arguments from the node.
-	for (size_t i = 0; i < node->children.size(); ++i)
+	for (const auto& child : node->children)
 	{
 		// If the command is translatable, run it through the translation process before packaging the value.
 		if (isTranslatable && visitor->expectingFlag == false && player.has_value())
 		{
-			if (auto stringContext = visitor->walkToContext(node->children[i]); stringContext != nullptr)
+			if (const auto stringContext = visitor->walkToContext(child); stringContext != nullptr)
 			{
 				makeValue(translateStringForPlayer(stringContext, visitor, playerPtr));
 				continue;
 			}
 		}
 
-		makeValue(node->children[i]->accept(visitor));
+		makeValue(child->accept(visitor));
 	}
 
 	// Unset the expecting flag.
@@ -520,7 +521,7 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 	try
 	{
 		// Execute the command.
-		it->second(visitor, commandName, arguments);
+		it->second(visitor, arguments);
 	}
 	catch (const sleep_exception&)
 	{
@@ -532,13 +533,11 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 	}
 	catch (const std::logic_error& ex)
 	{
-		auto server = BabyDI::Get<Server>();
 		log::printLine(log::npc, "[WARNING] NPC [{}] '{}', error: {}", visitor->getOriginalSource().first, visitor->who, ex.what());
 		server->sendToNC(std::format("Script problem: NPC [{}] '{}', issue: {}", visitor->getOriginalSource().first, visitor->who, ex.what()));
 	}
 	catch (const std::exception& ex)
 	{
-		auto server = BabyDI::Get<Server>();
 		log::printLine(log::npc, "[ERROR] NPC [{}] '{}', error: {}", visitor->getOriginalSource().first, visitor->who, ex.what());
 		server->sendToNC(std::format("Script error: NPC [{}] '{}', error: {}", visitor->getOriginalSource().first, visitor->who, ex.what()));
 		throw;
@@ -551,18 +550,18 @@ void processBuiltInCommand(GS1Visitor* visitor, antlr4::tree::ParseTree* node, s
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static std::optional<PixelPosition> getPositionForArrow(const ScriptObject& source, uint8_t dir)
+static std::optional<PixelPosition> getPositionForArrow(const ScriptObject& source, const uint8_t dir)
 {
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	if (source.second == ScriptObjectType::NPC)
 	{
-		if (auto npc = server->getNPC(source.first); npc != nullptr)
+		if (const auto npc = server->getNPC(source.first); npc != nullptr)
 		{
 			PixelPosition sourcePosition = npc->character.getGlobalPosition();
 			if (npc->isCharacter())
 			{
-				int16_t dX = (dir == 1 ? -24 : (dir == 3 ? 24 : 0));
-				int16_t dY = (dir == 0 ? -24 : (dir == 2 ? 24 : 0));
+				const auto dX = static_cast<int16_t>(dir == 1 ? -24 : (dir == 3 ? 24 : 0));
+				const auto dY = static_cast<int16_t>(dir == 0 ? -24 : (dir == 2 ? 24 : 0));
 				sourcePosition.translate(16 + dX, 24 + dY);
 			}
 			return sourcePosition;
@@ -575,17 +574,25 @@ static std::optional<PixelPosition> getPositionForArrow(const ScriptObject& sour
 ///////////////////////////////////////////////////////////////////////////////
 
 #if DEBUG
-void fn_debugger(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_debugger(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	const auto& sourceNPC = visitor->getOriginalSource();
-	auto sourcePlayer = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
+	const auto sourcePlayer = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
 	NPCPtr npc = nullptr;
 	PlayerPtr player = nullptr;
 	if (sourceNPC.second == ScriptObjectType::NPC)
+	{
 		npc = server->getNPC(sourceNPC.first);
+		npc->visFlags = ~npc->visFlags;
+		npc->visFlags = ~npc->visFlags;
+	}
 	if (sourcePlayer.has_value())
+	{
 		player = server->getNPCServer()->getPlayer(sourcePlayer.value().first);
+		player->PacketCount++;
+		player->PacketCount--;
+	}
 
 	//player->setPropWith<PlayerProp::ID>(SetBy::SERVER, 0_ui16);
 }
@@ -593,36 +600,35 @@ void fn_debugger(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 // addguildmember guild,account,nick;
 // Adds a player to a guild.
-void fn_addguildmember(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_addguildmember(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: addguildmember guild,account,nick");
 
-	auto guild = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
-	auto account = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(std::string{});
-	auto nick = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or(std::string{});
+	const auto guild = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
+	const auto account = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(std::string{});
+	const auto nick = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or(std::string{});
 
-	if (auto guildManager = BabyDI::Get<GuildManager>(); guildManager)
+	if (const auto guildManager = BabyDI::Get<GuildManager>(); guildManager)
 		guildManager->addPlayerToGuild(guild, account, nick);
 }
 
 // addstring list,text;
 // Adds a string to a string list.
-void fn_addstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_addstring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: addstring list,text");
 
-	if (auto listVar = GS1Visitor::getGameVariable(*arguments[0]); listVar != nullptr)
+	if (const auto listVar = GS1Visitor::getGameVariable(*arguments[0]); listVar != nullptr)
 	{
 		auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(std::string{});
 		string::wrapQuotesMutate(text);
 
-		auto list = listVar->get<std::string>();
-		if (list.has_value())
+		if (const auto list = listVar->get<std::string>(); list.has_value())
 		{
 			if (!list.value().get().empty())
-				list.value().get() += ",";
+				list.value().get() += ',';
 			list.value().get() += text;
 		}
 		else
@@ -634,48 +640,48 @@ void fn_addstring(GS1Visitor* visitor, std::string_view commandName, const std::
 
 // addweapon weaponname;
 // Adds a weapon from a database to your inventory.
-void fn_addweapon(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_addweapon(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: addweapon weaponname");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto weaponname = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto weaponname = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->addWeapon(weaponname);
 	}
 }
 
 // attachplayertoobj objecttype,id;
 // Attaches player to object (objecttype 0 = npcs, nothing else supported).
-void fn_attachplayertoobj(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_attachplayertoobj(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: attachplayertoobj objecttype,id");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto objecttype = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto id = DoubleAsIntegralFloor<NPCID>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto objecttype = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto id = DoubleAsIntegralFloor<NPCID>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::ATTACHNPCID>(SetBy::SERVER, id, objecttype);
 	}
 }
 
 // blockagain;
 // Enables collision.
-void fn_blockagain(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_blockagain(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::NOBLOCK);
+			const uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::NOBLOCK);
 			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
 		}
 	}
@@ -683,7 +689,7 @@ void fn_blockagain(GS1Visitor* visitor, std::string_view commandName, const std:
 
 // callnpc index,eventname,params;
 // Sends an event to an NPC.
-void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_callnpc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() < 2)
 		throw std::invalid_argument("invalid arguments: callnpc index,eventname,params");
@@ -692,9 +698,9 @@ void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::ve
 	if (visitor->getOriginalSource().second == ScriptObjectType::NPC)
 		sourceNPC = visitor->getOriginalSource().first;
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 
 		std::vector<std::string> eventAndParams;
 		eventAndParams.emplace_back(GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(std::string{}));
@@ -710,15 +716,15 @@ void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::ve
 			eventAndParams.insert(eventAndParams.end(), std::ranges::begin(params), std::ranges::end(params));
 		}
 
-		auto server = BabyDI::Get<Server>();
+		const auto server = BabyDI::Get<Server>();
 		if (index < level->getNPCs().size())
 		{
 			auto& mapNPCs = level->getNPCs();
 			auto iter = mapNPCs.begin();
-			std::ranges::advance(iter, index, mapNPCs.end());
+			std::ranges::advance(iter, static_cast<ptrdiff_t>(index), mapNPCs.end());
 			if (iter != mapNPCs.end())
 			{
-				if (auto npc = server->getNPC(*iter); npc != nullptr)
+				if (const auto npc = server->getNPC(*iter); npc != nullptr)
 					npc->scripting.events.addEvent(ScriptEventType::CUSTOM, source::FromNPC(sourceNPC), eventAndParams);
 			}
 		}
@@ -727,14 +733,14 @@ void fn_callnpc(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 // canbecarried;
 // Flags as carryable.
-void fn_canbecarried(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_canbecarried(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::CANBECARRIED);
+			const uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::CANBECARRIED);
 			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
 		}
 	}
@@ -742,14 +748,14 @@ void fn_canbecarried(GS1Visitor* visitor, std::string_view commandName, const st
 
 // canbepulled;
 // Flags as pullable.
-void fn_canbepulled(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_canbepulled(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::CANBEPULLED);
+			const uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::CANBEPULLED);
 			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
 		}
 	}
@@ -757,14 +763,14 @@ void fn_canbepulled(GS1Visitor* visitor, std::string_view commandName, const std
 
 // canbepushed;
 // Flags as pushable.
-void fn_canbepushed(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_canbepushed(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::CANBEPUSHED);
+			const uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::CANBEPUSHED);
 			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
 		}
 	}
@@ -772,14 +778,14 @@ void fn_canbepushed(GS1Visitor* visitor, std::string_view commandName, const std
 
 // cannotbecarried;
 // Flags as not carryable.
-void fn_cannotbecarried(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_cannotbecarried(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::CANBECARRIED);
+			const uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::CANBECARRIED);
 			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
 		}
 	}
@@ -787,14 +793,14 @@ void fn_cannotbecarried(GS1Visitor* visitor, std::string_view commandName, const
 
 // cannotbepulled;
 // Flags as not pullable.
-void fn_cannotbepulled(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_cannotbepulled(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::CANBEPULLED);
+			const uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::CANBEPULLED);
 			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
 		}
 	}
@@ -802,14 +808,14 @@ void fn_cannotbepulled(GS1Visitor* visitor, std::string_view commandName, const 
 
 // cannotbepushed;
 // Flags as not pushable.
-void fn_cannotbepushed(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_cannotbepushed(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::CANBEPUSHED);
+			const uint8_t blockFlags = npc->blockFlags & ~PROPID(NPCBlockFlags::CANBEPUSHED);
 			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
 		}
 	}
@@ -817,72 +823,72 @@ void fn_cannotbepushed(GS1Visitor* visitor, std::string_view commandName, const 
 
 // cannotwarp;
 // Flags as not warpable.
-void fn_cannotwarp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_cannotwarp(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->warpRestrictions = NPCWarpRestrictions::NOTALLOWED;
 	}
 }
 
 // canwarp;
 // Flags as being able to change levels by touching any links.
-void fn_canwarp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_canwarp(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->warpRestrictions = NPCWarpRestrictions::ALLOWED;
 	}
 }
 
 // canwarp2;
 // Flags as being able to change levels by using level-edge links.
-void fn_canwarp2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_canwarp2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->warpRestrictions = NPCWarpRestrictions::ONLYOVERWORLD;
 	}
 }
 
 // carryobject carryobjecttype;
 // Sets the carry object type of the NPC.
-void fn_carryobject(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_carryobject(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	// TODO: There is no NPC prop for the carry image type.  We may have to investigate official.
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
 		[[maybe_unused]] auto carryObjectTypeId = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr && npc->isCharacter())
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr && npc->isCharacter())
 			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, "carrystill"s);
 	}
 }
 
 // changeimgcolors index,red,green,blue,alpha;
 // Sets the RGBA colors of the showimg.
-void fn_changeimgcolors(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_changeimgcolors(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 5)
 		throw std::invalid_argument("invalid arguments: changeimgcolors index,red,green,blue,alpha");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto red = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
-			auto green = GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0);
-			auto blue = GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0);
-			auto alpha = GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0);
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto red = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+			const auto green = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+			const auto blue = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
+			const auto alpha = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0));
 
 			server->getNPCServer()->changeShowImgColors(npc, index, red, green, blue, alpha);
 		}
@@ -891,18 +897,18 @@ void fn_changeimgcolors(GS1Visitor* visitor, std::string_view commandName, const
 
 // changeimgmode index,mode;
 // Sets the drawing mode of the showimg.
-void fn_changeimgmode(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_changeimgmode(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: changeimgmode index,mode");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto mode = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto mode = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 
 			server->getNPCServer()->changeShowImgMode(npc, index, mode);
 		}
@@ -911,21 +917,21 @@ void fn_changeimgmode(GS1Visitor* visitor, std::string_view commandName, const s
 
 // changeimgpart index,x,y,width,height;
 // Sets the image part of the showimg.
-void fn_changeimgpart(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_changeimgpart(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 5)
 		throw std::invalid_argument("invalid arguments: changeimgpart index,x,y,width,height");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto x = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-			auto y = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-			auto width = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
-			auto height = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0));
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto x = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+			const auto y = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+			const auto width = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
+			const auto height = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0));
 
 			server->getNPCServer()->changeShowImgPart(npc, index, ImagePartRectangle{{x, y}, {width, height}});
 		}
@@ -934,18 +940,18 @@ void fn_changeimgpart(GS1Visitor* visitor, std::string_view commandName, const s
 
 // changeimgvis index,drawingheight;
 // Sets the layer of the showimg.
-void fn_changeimgvis(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_changeimgvis(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: changeimgvis index,drawingheight");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto drawingheight = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto drawingheight = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 
 			server->getNPCServer()->changeShowImgLayer(npc, index, drawingheight);
 		}
@@ -954,18 +960,18 @@ void fn_changeimgvis(GS1Visitor* visitor, std::string_view commandName, const st
 
 // changeimgzoom index,zoomfactor;
 // Sets the zoom of the showimg.
-void fn_changeimgzoom(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_changeimgzoom(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: changeimgzoom index,zoomfactor");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto zoomfactor = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto zoomfactor = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 
 			server->getNPCServer()->changeShowImgZoom(npc, index, zoomfactor);
 		}
@@ -974,23 +980,23 @@ void fn_changeimgzoom(GS1Visitor* visitor, std::string_view commandName, const s
 
 // copylevel oldfile,newfile;
 // Makes a copy of a level under a new file name.
-void fn_copylevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_copylevel(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: copylevel oldfile,newfile");
 
-	auto oldfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
-	auto newfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(std::string{});
+	const auto oldfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
+	const auto newfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(std::string{});
 
-	auto server = BabyDI::Get<Server>();
-	auto& fs = server->getFileSystem();
-	if (auto foundInfo = fs.infoi(fs::FileCategory::LEVEL, oldfile); foundInfo != nullptr)
+	const auto server = BabyDI::Get<Server>();
+	const auto& fs = server->getFileSystem();
+	if (const auto foundInfo = fs.infoi(fs::FileCategory::LEVEL, oldfile); foundInfo != nullptr)
 		std::filesystem::copy_file(foundInfo->file, foundInfo->file.parent_path() / newfile, std::filesystem::copy_options::overwrite_existing);
 }
 
 // copystrings fromprefix,toprefix;
 // Copies strings that start with fromprefix and replaces the prefix with toprefix.
-void fn_copystrings(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_copystrings(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: copystrings fromprefix,toprefix");
@@ -998,13 +1004,13 @@ void fn_copystrings(GS1Visitor* visitor, std::string_view commandName, const std
 	auto fromPrefix = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
 	auto toPrefix = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(std::string{});
 
-	size_t fromStorageType = GS1Visitor::getStorageTypeFromIdentifier(fromPrefix).value_or(ENUM(StorageType::CLIENT));
-	size_t toStorageType = GS1Visitor::getStorageTypeFromIdentifier(toPrefix).value_or(ENUM(StorageType::CLIENT));
+	const size_t fromStorageType = GS1Visitor::getStorageTypeFromIdentifier(fromPrefix).value_or(ENUM(StorageType::CLIENT));
+	const size_t toStorageType = GS1Visitor::getStorageTypeFromIdentifier(toPrefix).value_or(ENUM(StorageType::CLIENT));
 	GS1Visitor::stripStorageNameFromIdentifier(fromPrefix);
 	GS1Visitor::stripStorageNameFromIdentifier(toPrefix);
 
-	auto fromStore = visitor->getGameVariableStoreForStorageType(fromStorageType);
-	auto toStore = visitor->getGameVariableStoreForStorageType(toStorageType);
+	const auto fromStore = visitor->getGameVariableStoreForStorageType(fromStorageType);
+	const auto toStore = visitor->getGameVariableStoreForStorageType(toStorageType);
 	if (fromStore == nullptr || toStore == nullptr)
 		return;
 
@@ -1019,39 +1025,39 @@ void fn_copystrings(GS1Visitor* visitor, std::string_view commandName, const std
 }
 
 // deletelevel filename;
-void fn_deletelevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_deletelevel(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: deletelevel filename");
 
-	auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
+	const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
 
-	auto server = BabyDI::Get<Server>();
-	if (auto level = server->getLoadedLevelNoHint(filename); level != nullptr)
+	const auto server = BabyDI::Get<Server>();
+	if (const auto level = server->getLoadedLevelNoHint(filename); level != nullptr)
 	{
-		for (auto playerId : level->getPlayers())
-			server->warpPlayerToSafePlace(playerId);
+		for (const auto playerId : level->getPlayers())
+			(void)server->warpPlayerToSafePlace(playerId);
 
-		auto path = server->getFileSystem().find(fs::FileCategory::LEVEL, level->levelName);
+		const auto path = server->getFileSystem().find(fs::FileCategory::LEVEL, level->levelName);
 		std::filesystem::remove(path);
 	}
 }
 
 // deletestring list,index;
 // Deletes a string from a string list at the specified index.
-void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_deletestring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: deletestring list,index");
 
-	if (auto listVar = GS1Visitor::getGameVariable(*arguments[0]); listVar != nullptr)
+	if (const auto listVar = GS1Visitor::getGameVariable(*arguments[0]); listVar != nullptr)
 	{
-		auto value = listVar->get<std::string>();
+		const auto value = listVar->get<std::string>();
 		if (!value.has_value() || value.value().get().empty())
 			return;
 
 		auto list = string::fromCSV(value.value().get());
-		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
+		const auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
 
 		// Check for out of bounds.
 		if (index >= list.size())
@@ -1071,14 +1077,14 @@ void fn_deletestring(GS1Visitor* visitor, std::string_view commandName, const st
 
 // destroy;
 // Destroys an NPC.
-void fn_destroy(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_destroy(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->getOriginalSource(); source.second == ScriptObjectType::NPC)
+	if (const auto source = visitor->getOriginalSource(); source.second == ScriptObjectType::NPC)
 	{
-		auto server = BabyDI::Get<Server>();
+		const auto server = BabyDI::Get<Server>();
 		if (server->getSettings().get<bool>("protectdbnpcs").value_or(true))
 		{
-			if (auto npc = server->getNPC(source.first); npc != nullptr && npc->storageType == NPCStorageType::DATABASE && npc->scriptType != NPCTYPE_LOCAL && npc->scriptType != NPCTYPE_ITEM)
+			if (const auto npc = server->getNPC(source.first); npc != nullptr && npc->storageType == NPCStorageType::DATABASE && npc->scriptType != NPCTYPE_LOCAL && npc->scriptType != NPCTYPE_ITEM)
 			{
 				log::printLine(log::npc, "NPC '{}' attempted to destroy itself, but DB NPCs are protected.", npc->name);
 				return;
@@ -1094,38 +1100,38 @@ void fn_destroy(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 // detachplayer;
 // Detaches the player.
-void fn_detachplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_detachplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::ATTACHNPCID>(SetBy::SERVER, static_cast<NPCID>(0), 0_ui8);
 	}
 }
 
 // disableweapons;
 // Disables the player's weapons.
-void fn_disableweapons(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_disableweapons(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->disableWeapons();
 	}
 }
 
 // dontblock;
 // Disables collision.
-void fn_dontblock(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_dontblock(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::NOBLOCK);
+			const uint8_t blockFlags = npc->blockFlags | PROPID(NPCBlockFlags::NOBLOCK);
 			npc->setPropWith<NPCProp::BLOCKFLAGS>(SetBy::SERVER, blockFlags);
 		}
 	}
@@ -1133,12 +1139,12 @@ void fn_dontblock(GS1Visitor* visitor, std::string_view commandName, const std::
 
 // drawoverplayer;
 // Configures the NPC to draw over the player.
-void fn_drawoverplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_drawoverplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			uint8_t newVisFlags = npc->visFlags & ~(PROPID(NPCVisFlags::DRAWUNDERPLAYER) | PROPID(NPCVisFlags::DRAWOVERPLAYER));
 			newVisFlags |= (PROPID(NPCVisFlags::DRAWOVERPLAYER) | PROPID(NPCVisFlags::VISIBLE));
@@ -1149,12 +1155,12 @@ void fn_drawoverplayer(GS1Visitor* visitor, std::string_view commandName, const 
 
 // drawovertrees;
 // Configure the NPC to draw on the same layer as the player.
-void fn_drawovertrees(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_drawovertrees(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto visFlags = npc->visFlags;
 			visFlags &= ~(PROPID(NPCVisFlags::DRAWOVERPLAYER) | PROPID(NPCVisFlags::DRAWUNDERPLAYER));
@@ -1165,12 +1171,12 @@ void fn_drawovertrees(GS1Visitor* visitor, std::string_view commandName, const s
 
 // drawunderplayer;
 // Configure the NPC to draw under the player.
-void fn_drawunderplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_drawunderplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			uint8_t newVisFlags = npc->visFlags & ~(PROPID(NPCVisFlags::DRAWUNDERPLAYER) | PROPID(NPCVisFlags::DRAWOVERPLAYER));
 			newVisFlags |= (PROPID(NPCVisFlags::DRAWUNDERPLAYER) | PROPID(NPCVisFlags::VISIBLE));
@@ -1181,30 +1187,30 @@ void fn_drawunderplayer(GS1Visitor* visitor, std::string_view commandName, const
 
 // enableweapons;
 // Enables the player's weapons.
-void fn_enableweapons(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_enableweapons(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->enableWeapons();
 	}
 }
 
 // explodebomb index;
 // Explodes the bomb at the specified index.
-void fn_explodebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_explodebomb(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: explodebomb index");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		if (auto bomb = level->getBomb(index); bomb.has_value())
+		const auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		if (const auto bomb = level->getBomb(index); bomb.has_value())
 		{
-			auto& power = bomb.value()->power;
-			auto& position = bomb.value()->position;
+			const auto& power = bomb.value()->power;
+			const auto& position = bomb.value()->position;
 			level->removeBomb(inform_client, index);
 
 			if (power != 2)
@@ -1225,41 +1231,41 @@ void fn_explodebomb(GS1Visitor* visitor, std::string_view commandName, const std
 
 // freezeplayer2;
 // Freezes the player, preventing movement and actions.
-void fn_freezeplayer2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_freezeplayer2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->freezePlayer();
 	}
 }
 
 // hide;
 // Hides the NPC.
-void fn_hide(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_hide(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags & ~PROPID(NPCVisFlags::VISIBLE)));
 	}
 }
 
 // hideimg index;
 // Removes the image at the specified index.
-void fn_hideimg(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_hideimg(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: hideimg index");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 			server->getNPCServer()->hideImages(npc, index);
 		}
 	}
@@ -1267,44 +1273,44 @@ void fn_hideimg(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 // hideimgs indexstart,indexend;
 // Removes the images in the specified range.
-void fn_hideimgs(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_hideimgs(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: hideimgs indexstart,indexend");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto indexstart = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto indexend = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+			const auto indexstart = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto indexend = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 			server->getNPCServer()->hideImages(npc, indexstart, indexend);
 		}
 	}
 }
 
 // hitcompu index,power,fromx,fromy;
-void fn_hitcompu(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_hitcompu(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: hitcompu index,power,fromx,fromy");
 
 	// Only calculate for non-gmap levels with players.
-	if (auto level = visitor->findCurrentLevel(); level != nullptr && level->hasPlayers() && !level->isGmap())
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr && level->hasPlayers() && !level->isGmap())
 	{
-		auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto halfhearts = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		auto fromx = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		auto fromy = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
+		const auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto halfhearts = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto fromx = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+		const auto fromy = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
 
-		auto server = BabyDI::Get<Server>();
-		auto leader = level->getPlayers().front();
-		auto baddyOpt = level->getBaddyById(index);
+		const auto server = BabyDI::Get<Server>();
+		const auto leader = level->getPlayers().front();
+		const auto baddyOpt = level->getBaddyById(index);
 		if (!baddyOpt.has_value() || baddyOpt.value() != nullptr)
 			return;
 
-		if (auto player = server->getPlayer(leader); player != nullptr)
+		if (const auto player = server->getPlayer(leader); player != nullptr)
 		{
 			auto& baddy = baddyOpt.value();
 
@@ -1312,11 +1318,11 @@ void fn_hitcompu(GS1Visitor* visitor, std::string_view commandName, const std::v
 			auto tilePosition = toTilePosition(baddy->position);
 			auto dx = tilePosition.x() - fromx;
 			auto dy = tilePosition.y() - fromy;
-			float length = std::sqrt(dx * dx + dy * dy);
+			const float length = std::sqrt(dx * dx + dy * dy);
 			dx /= length;
 			dy /= length;
 
-			PropertyHurtDxDy<64> hurtDxDy{dx, dy};
+			const PropertyHurtDxDy<64> hurtDxDy{dx, dy};
 			player->sendPacket(CString() >> (char)PLO_BADDYHURT >> (char)index << hurtDxDy.serialize() >> (char)halfhearts);
 		}
 	}
@@ -1324,33 +1330,33 @@ void fn_hitcompu(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 // hitnpc index,halfhearts,fromx,fromy;
 // Hits the specified NPC.
-void fn_hitnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_hitnpc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: hitnpc index,halfhearts,fromx,fromy");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto halfhearts = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		auto fromx = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		auto fromy = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
+		const auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto halfhearts = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto fromx = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+		const auto fromy = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
 
 		if (index < level->getNPCs().size())
 		{
-			auto server = BabyDI::Get<Server>();
+			const auto server = BabyDI::Get<Server>();
 			auto& mapNPCs = level->getNPCs();
 			auto iter = mapNPCs.begin();
-			std::ranges::advance(iter, index, mapNPCs.end());
+			std::ranges::advance(iter, static_cast<ptrdiff_t>(index), mapNPCs.end());
 			if (iter != mapNPCs.end())
 			{
-				if (auto npc = server->getNPC(*iter); npc != nullptr)
+				if (const auto npc = server->getNPC(*iter); npc != nullptr)
 				{
 					// Get the DX/DY.
 					auto tilePosition = npc->getTilePosition();
 					auto dx = tilePosition.x() - fromx;
 					auto dy = tilePosition.y() - fromy;
-					float length = std::sqrt(dx * dx + dy * dy);
+					const float length = std::sqrt(dx * dx + dy * dy);
 					dx /= length;
 					dy /= length;
 
@@ -1370,21 +1376,21 @@ void fn_hitnpc(GS1Visitor* visitor, std::string_view commandName, const std::vec
 
 // hitobjects power,x,y;
 // Hit objects at a location.
-void fn_hitobjects(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_hitobjects(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: hitobjects power,x,y");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			if (auto level = npc->getLevel(); level != nullptr)
+			if (const auto level = npc->getLevel(); level != nullptr)
 			{
-				auto power = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 2);
-				auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-				auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+				const auto power = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 2);
+				const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+				const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
 				server->hitObjectsAtPoint({x, y}, power, level, npc);
 			}
 		}
@@ -1393,24 +1399,24 @@ void fn_hitobjects(GS1Visitor* visitor, std::string_view commandName, const std:
 
 // hitplayer index,halfhearts,fromx,fromy;
 // Hits a player in the level.
-void fn_hitplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_hitplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: hitplayer index,halfhearts,fromx,fromy");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto halfhearts = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		auto fromx = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		auto fromy = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
+		const auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto halfhearts = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto fromx = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+		const auto fromy = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
 
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			if (auto level = npc->getLevel(); level != nullptr)
+			if (const auto level = npc->getLevel(); level != nullptr)
 			{
-				auto& mapPlayers = level->getPlayers();
+				const auto& mapPlayers = level->getPlayers();
 				if (index < mapPlayers.size())
 					server->hitPlayer(mapPlayers[index], halfhearts, fromx, fromy, npc);
 			}
@@ -1420,35 +1426,35 @@ void fn_hitplayer(GS1Visitor* visitor, std::string_view commandName, const std::
 
 // hurt halfhearts;
 // Hurts a player.
-void fn_hurt(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_hurt(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: hurt halfhearts");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto halfhearts = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto halfhearts = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		auto npcId = visitor->getOriginalSource().first;
 		if (visitor->getOriginalSource().second != ScriptObjectType::NPC)
 			npcId = 0;
 
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto tilePos = toTilePosition(player->account.character.getLocalPosition());
-			server->hitPlayer(player->getId(), halfhearts, tilePos.x() + 1.5, tilePos.y() + 2, server->getNPC(npcId));
+			server->hitPlayer(player->getId(), halfhearts, tilePos.x() + 1.5f, tilePos.y() + 2, server->getNPC(npcId));
 		}
 	}
 }
 
 // insertstring list,index,text;
 // Inserts a string into a string array at the given position.
-void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_insertstring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: insertstring list,index,text");
 
-	if (auto listVar = GS1Visitor::getGameVariable(*arguments[0]); listVar != nullptr)
+	if (const auto listVar = GS1Visitor::getGameVariable(*arguments[0]); listVar != nullptr)
 	{
 		auto value = listVar->get<std::string>();
 		if (!value.has_value())
@@ -1459,7 +1465,7 @@ void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const st
 
 		auto list = string::fromCSV(value.value().get());
 		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
-		auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
+		const auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
 
 		// Cap index to the size of the list.
 		if (index > list.size())
@@ -1472,7 +1478,7 @@ void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const st
 		}
 		else if (index < list.size())
 		{
-			list.insert(list.begin() + index, text);
+			list.insert(list.begin() + static_cast<ptrdiff_t>(index), text);
 		}
 
 		// Write it back.
@@ -1482,41 +1488,41 @@ void fn_insertstring(GS1Visitor* visitor, std::string_view commandName, const st
 
 // join class;
 // Joins a class.
-void fn_join(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_join(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: join class");
 
 	auto class_ = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	visitor->scriptContext->joinedClasses.insert({class_, server->getNPCServer()->getClass(class_)});
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto npcSource = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); npcSource.has_value())
 	{
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		if (const auto npc = server->getNPC(npcSource.value().first); npc != nullptr)
 			npc->joinClass(class_);
 	}
-	else if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::WEAPON); source.has_value())
+	else if (const auto weaponSource = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::WEAPON); weaponSource.has_value())
 	{
 		auto& weaponList = server->getWeaponList();
-		if (auto weapon = weaponList.find(source.value().first); weapon != weaponList.end())
+		if (const auto weapon = weaponList.find(weaponSource.value().first); weapon != weaponList.end())
 			weapon->second->joinClass(class_);
 	}
 }
 
 // lay itemname;
 // Lays the specified item at the feet of the NPC.
-void fn_lay(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_lay(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: lay itemname");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
 		auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)), 0_ui8, 24_ui8);
 
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			PixelPosition layPosition = npc->character.getGlobalPosition();
 
@@ -1524,7 +1530,7 @@ void fn_lay(GS1Visitor* visitor, std::string_view commandName, const std::vector
 			if (npc->isCharacter())
 				layPosition.translate(static_cast<int16_t>(8), static_cast<int16_t>(16 * 3));
 
-			if (auto level = npc->getLevel(); level != nullptr)
+			if (const auto level = npc->getLevel(); level != nullptr)
 				level->addItem(inform_client, layPosition, static_cast<LevelItemType>(itemname));
 		}
 	}
@@ -1532,12 +1538,12 @@ void fn_lay(GS1Visitor* visitor, std::string_view commandName, const std::vector
 
 // lay2 itemname,x,y;
 // Lays the specified item at the given x and y location.
-void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_lay2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: lay2 itemname,x,y");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
 		auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)), 0_ui8, 24_ui8);
 		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
@@ -1548,94 +1554,94 @@ void fn_lay2(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 
 // message text;
 // Sets the NPC message.
-void fn_message(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_message(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
 		std::string text{};
-		if (arguments.size() != 0)
+		if (!arguments.empty())
 			text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
 
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::MESSAGE>(SetBy::SERVER, text);
 	}
 }
 
 // move dx,dy,time,options;
 // Moves an NPC smoothly on the client.
-void fn_move(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_move(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: move dx,dy,time,options");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto dx = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto dy = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		auto time = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		auto options = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
+		const auto dx = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto dy = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto time = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+		const auto options = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
 
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->addMoveToQueue(toLocalPixelPosition(dx, dy), time, options);
 	}
 }
 
 // noplayeronwall;
 // Disables onwall checks from detecting players.
-void fn_noplayeronwall(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_noplayeronwall(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->noPlayerOnWall = true;
 	}
 }
 
 // putbomb power,x,y;
 // Creates a bomb at the specified location with the given power.
-void fn_putbomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_putbomb(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: putbomb power,x,y");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto power = std::clamp(DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)), 1_ui8, 3_ui8);
-		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+		const auto power = std::clamp(DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)), 1_ui8, 3_ui8);
+		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
 		level->addBomb(inform_client, toPixelPosition({x, y}), power);
 	}
 }
 
 // putcomp baddyname,x,y;
 // Adds a new baddy to the level with the specified parameters.
-void fn_putcomp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_putcomp(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: putcomp baddyname,x,y");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		uint8_t baddyname = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+		const auto baddyname = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
 		level->putNewBaddy(toLocalPixelPosition(x, y), static_cast<BaddyType>(baddyname));
 	}
 }
 
 // putexplosion radius,x,y;
 // Creates an explosion at the specified location with the given radius.
-void fn_putexplosion(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_putexplosion(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: putexplosion radius,x,y");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto radius = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto radius = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
 		level->addExplosion(inform_client, toPixelPosition({x, y}), visitor->getCurrentSource(), radius, 1);
@@ -1644,15 +1650,15 @@ void fn_putexplosion(GS1Visitor* visitor, std::string_view commandName, const st
 
 // putexplosion2 power,radius,x,y;
 // Creates an explosion at the specified location with the given power and radius.
-void fn_putexplosion2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_putexplosion2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: putexplosion2 power,radius,x,y");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto power = std::clamp(DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)), 1_ui8, 3_ui8);
-		auto radius = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto power = std::clamp(DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)), 1_ui8, 3_ui8);
+		const auto radius = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
 		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
 		level->addExplosion(inform_client, toPixelPosition({x, y}), visitor->getCurrentSource(), radius, power);
@@ -1661,64 +1667,63 @@ void fn_putexplosion2(GS1Visitor* visitor, std::string_view commandName, const s
 
 // puthorse imagefile,x,y;
 // Creates a new horse at the specified location with the given image file.
-void fn_puthorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_puthorse(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: puthorse imagefile,x,y");
 
-	auto server = BabyDI::Get<Server>();
-	if (server->getSettings().get<bool>("puthorseenabled").value_or(true) == false)
+	if (const auto server = BabyDI::Get<Server>(); server->getSettings().get<bool>("puthorseenabled").value_or(true) == false)
 	{
 		log::printLine(log::npc, "puthorse command is disabled on this server.");
 		return;
 	}
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto imagefile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+		const auto imagefile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
 		level->addHorse(inform_client, imagefile, toPixelPosition({x, y}), 2, 0);
 	}
 }
 
 // putnewcomp baddyname,x,y,imagefile,power;
 // Adds a new baddy to the level with the specified parameters.
-void fn_putnewcomp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_putnewcomp(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 5)
 		throw std::invalid_argument("invalid arguments: putnewcomp baddyname,x,y,imagefile,power");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		uint8_t baddyname = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		auto imagefile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[3]).value_or("");
-		auto power = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0));
+		const auto baddyname = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+		const auto imagefile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[3]).value_or("");
+		const auto power = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0));
 		level->putNewBaddy(toLocalPixelPosition(x, y), static_cast<BaddyType>(baddyname), power, imagefile);
 	}
 }
 
 // putnpc imagefile,scriptfile,x,y;
 // Creates a new level NPC with the specified parameters.
-void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_putnpc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: putnpc imagefile,scriptfile,x,y");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto imagefile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto scriptfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
-		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
+		const auto imagefile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto scriptfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
+		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
 
-		auto server = BabyDI::Get<Server>();
-		auto& fs = server->getFileSystem();
-		if (auto file = fs.openi(fs::FileCategory::FILE, scriptfile); file != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		const auto& fs = server->getFileSystem();
+		if (const auto file = fs.openi(fs::FileCategory::FILE, scriptfile); file != nullptr)
 		{
-			auto script = file->readAsString();
+			const auto script = file->readAsString();
 			server->addNPC(imagefile, script, x, y, level, NPCStorageType::LEVEL, true);
 		}
 	}
@@ -1726,35 +1731,35 @@ void fn_putnpc(GS1Visitor* visitor, std::string_view commandName, const std::vec
 
 // putnpc2 x,y,{ script };
 // Creates a new database NPC at the location and with the specified script.
-void fn_putnpc2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_putnpc2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: putnpc2 x,y,{ script }");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
+		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto script = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
 		string::trimMutate(script);
 
-		auto server = BabyDI::Get<Server>();
-		server->getNPCServer()->addNPC({}, script, level, {(float)x, (float)y});
+		const auto server = BabyDI::Get<Server>();
+		server->getNPCServer()->addNPC({}, script, level, {x, y});
 	}
 }
 
 // reducebombs amount;
 // Reduces the NPC's bombs by the specified amount.
-void fn_reducebombs(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_reducebombs(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: reducebombs amount");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto amount = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
+		const auto amount = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
 		{
 			// clang-format off
 			int16_t bombs = npc->character.bombs;
@@ -1768,16 +1773,16 @@ void fn_reducebombs(GS1Visitor* visitor, std::string_view commandName, const std
 
 // reducedarts amount;
 // Reduces the NPC's darts by the specified amount.
-void fn_reducedarts(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_reducedarts(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: reducedarts amount");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto amount = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
+		const auto amount = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
 		{
 			// clang-format off
 			int16_t arrows = npc->character.arrows;
@@ -1791,16 +1796,16 @@ void fn_reducedarts(GS1Visitor* visitor, std::string_view commandName, const std
 
 // reducerupees amount;
 // Reduces the NPC's rupees by the specified amount.
-void fn_reducerupees(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_reducerupees(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: reducerupees amount");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto amount = DoubleAsIntegralFloor<int64_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
+		const auto amount = DoubleAsIntegralFloor<int64_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
 		{
 			// clang-format off
 			int64_t rupees = npc->character.gralats;
@@ -1813,62 +1818,62 @@ void fn_reducerupees(GS1Visitor* visitor, std::string_view commandName, const st
 }
 
 // removearrow index;
-void fn_removearrow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_removearrow(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::logic_error("removearrow is clientside only.");
 }
 
 // removebomb index;
 // Removes a bomb from the level.
-void fn_removebomb(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_removebomb(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: removebomb index");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		level->removeBomb(inform_client, index);
 	}
 }
 
 // removecompus;
 // Removes all baddies from the level.
-void fn_removecompus(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_removecompus(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
-		level->removeAllBaddies();
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
+		(void)level->removeAllBaddies();
 }
 
 // removeexplo index;
-void fn_removeexplo(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_removeexplo(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::logic_error("removeexplo is clientside only.");
 }
 
 // removeguild guild;
-void fn_removeguild(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_removeguild(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: removeguild guild");
 
-	auto guild = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+	const auto guild = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 
-	if (auto guildManager = BabyDI::Get<GuildManager>(); guildManager)
+	if (const auto guildManager = BabyDI::Get<GuildManager>(); guildManager)
 		guildManager->deleteGuild(guild);
 }
 
 // removeguildmember guild,account,nick;
-void fn_removeguildmember(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_removeguildmember(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() < 2)
 		throw std::invalid_argument("invalid arguments: removeguildmember guild,account,nick");
 
-	auto guild = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-	auto account = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
-	std::string nick = (arguments.size() > 2) ? GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("") : std::string{};
+	const auto guild = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+	const auto account = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
+	const std::string nick = (arguments.size() > 2) ? GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("") : std::string{};
 
-	if (auto guildManager = BabyDI::Get<GuildManager>(); guildManager)
+	if (const auto guildManager = BabyDI::Get<GuildManager>(); guildManager)
 	{
 		if (nick.empty())
 			guildManager->removePlayerEntirelyFromGuild(guild, account);
@@ -1878,47 +1883,47 @@ void fn_removeguildmember(GS1Visitor* visitor, std::string_view commandName, con
 
 // removehorse index;
 // Removes the horse from the level at the specified index.
-void fn_removehorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_removehorse(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: removehorse index");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		level->removeHorse(inform_client, index);
 	}
 }
 
 // removeitem index;
 // Removes the item from the level at the specified index.
-void fn_removeitem(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_removeitem(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: removeitem index");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		level->removeItem(inform_client, index);
 	}
 }
 
 // removestring list,text;
 // Removes all occurrences of the specified text from the string list.
-void fn_removestring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_removestring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: removestring list,text");
 
-	if (auto listVar = GS1Visitor::getGameVariable(*arguments[0]); listVar != nullptr)
+	if (const auto listVar = GS1Visitor::getGameVariable(*arguments[0]); listVar != nullptr)
 	{
-		auto value = listVar->get<std::string>();
+		const auto value = listVar->get<std::string>();
 		if (!value.has_value() || value.value().get().empty())
 			return;
 
 		auto list = string::fromCSV(value.value().get());
-		auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
+		const auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
 		std::erase(list, text);
 
 		value.value().get() = string::toCSV(list);
@@ -1927,28 +1932,28 @@ void fn_removestring(GS1Visitor* visitor, std::string_view commandName, const st
 
 // removeweapon weaponname;
 // Removes the specified weapon from the player.
-void fn_removeweapon(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_removeweapon(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: removeweapon weaponname");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto weaponname = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto weaponname = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->deleteWeapon(weaponname);
 	}
 }
 
 // replacestring list,index,text;
 // Replaces the string at the specified index in the list with the given text.
-void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_replacestring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: replacestring list,index,text");
 
-	if (auto listVar = GS1Visitor::getGameVariable(*arguments[0]); listVar != nullptr)
+	if (const auto listVar = GS1Visitor::getGameVariable(*arguments[0]); listVar != nullptr)
 	{
 		auto value = listVar->get<std::string>();
 		if (!value.has_value())
@@ -1958,8 +1963,8 @@ void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const s
 		}
 
 		auto list = string::fromCSV(value.value().get());
-		auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
-		auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
+		const auto index = DoubleAsIntegralFloor<size_t>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
+		const auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
 
 		if (index >= list.size())
 			list.push_back(text);
@@ -1973,57 +1978,56 @@ void fn_replacestring(GS1Visitor* visitor, std::string_view commandName, const s
 // saveinfo key,value;
 // Saves information to the database.
 // Was only used for the Graal2001 server, and only for a limited time.
-void fn_saveinfo(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_saveinfo(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw unimplemented_error("saveinfo is not implemented.");
 }
 
 // savelog text;
 // Writes text to npclog.txt.
-void fn_savelog(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_savelog(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: savelog text");
 
-	auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+	const auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 	log::printLine(log::npc, text);
 }
 
 // savelog2 filename,text;
 // Writes text to a specified log file.
-void fn_savelog2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_savelog2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: savelog2 filename,text");
 
-	auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-	auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
+	const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+	const auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
 
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	server->logToFile(filename, text);
 }
 
 // say signindex;
 // Displays the text of a sign at the specified index to the player.
-void fn_say(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_say(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: say signindex");
 
-	if (auto levelTuple = visitor->findCurrentLevelData(); std::get<0>(levelTuple) != nullptr)
+	if (const auto levelTuple = visitor->findCurrentLevelData(); std::get<0>(levelTuple) != nullptr)
 	{
 		//auto& level = std::get<0>(levelTuple);
 		//auto& subLevel = std::get<1>(levelTuple);
-		auto& levelData = std::get<2>(levelTuple);
-		if (levelData != nullptr)
+		if (auto& levelData = std::get<2>(levelTuple); levelData != nullptr)
 		{
-			auto signIndex = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
+			const auto signIndex = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
 			if (source.has_value() && signIndex < levelData->signs.size())
 			{
-				auto& sign = levelData->signs[signIndex];
-				auto server = BabyDI::Get<Server>();
-				if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+				const auto& sign = levelData->signs[signIndex];
+				const auto server = BabyDI::Get<Server>();
+				if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 					player->sendSignMessage(sign.text);
 			}
 		}
@@ -2032,110 +2036,110 @@ void fn_say(GS1Visitor* visitor, std::string_view commandName, const std::vector
 
 // say2 message;
 // Displays a custom sign message to the player.
-void fn_say2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_say2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		std::string message;
-		if (arguments.size() != 0)
+		if (!arguments.empty())
 		{
 			message = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 			string::eraseCharsMutate(message, "\r\n"sv);
 		}
 
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->sendSignMessage(message);
 	}
 }
 
 // sendpm message;
 // Sends a private message to the player.
-void fn_sendpm(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_sendpm(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: sendpm message");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto message = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto message = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->sendPrivateMessage(NPCServerPlayerID, message);
 	}
 }
 
 // sendrpgmessage message;
 // Sends a message to the F2 message window of the player.
-void fn_sendrpgmessage(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_sendrpgmessage(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		std::string message;
-		if (arguments.size() != 0)
+		if (!arguments.empty())
 			message = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->sendRPGMessage(message);
 	}
 }
 
 // sendtonc message;
 // Sends a message to the NC (NPC Control).
-void fn_sendtonc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_sendtonc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	std::string message;
-	if (arguments.size() != 0)
+	if (!arguments.empty())
 		message = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	server->sendToNC(message);
 }
 
 // sendtorc message;
 // Sends a message to the RC (Remote Control).
-void fn_sendtorc(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_sendtorc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	std::string message;
-	if (arguments.size() != 0)
+	if (!arguments.empty())
 		message = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	server->sendToRC(message);
 }
 
 // serverwarp servername;
 // Warps a player to a different server.
-void fn_serverwarp(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_serverwarp(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: serverwarp servername");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto servername = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto servername = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			server->getServerList().sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)player->getId() << servername);
 	}
 }
 
 // set flag;
 // Sets a flag on the player.
-void fn_set(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_set(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: set flag");
 
-	if (auto flag = GS1Visitor::getGameVariable(*arguments[0]); flag != nullptr)
+	if (const auto flag = GS1Visitor::getGameVariable(*arguments[0]); flag != nullptr)
 	{
-		auto server = BabyDI::Get<Server>();
+		const auto server = BabyDI::Get<Server>();
 		if (flag->name.starts_with("client.") || flag->name.starts_with("clientr."))
 		{
-			if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+			if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 			{
-				if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+				if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 					player->setFlag(flag->name, std::nullopt, SetBy::SERVER);
 			}
 		}
@@ -2153,38 +2157,38 @@ void fn_set(GS1Visitor* visitor, std::string_view commandName, const std::vector
 // setani gani;
 // setani gani,attribs;
 // Sets the animation for the player.
-void fn_setani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setani(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setani gani,attribs");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto gani = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto gani = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::GANI>(SetBy::SERVER, gani);
 	}
 }
 
 // setarray var,size;
 // Creates an array of the given size.
-void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setarray(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: setarray var,size");
 
-	if (auto var = GS1Visitor::getGameVariable(*arguments[0]); var != nullptr)
+	if (const auto var = GS1Visitor::getGameVariable(*arguments[0]); var != nullptr)
 	{
-		auto size = DoubleAsIntegralFloor<size_t>(std::clamp(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0), 0.0, static_cast<double>(maximumArraySize)));
+		const auto size = DoubleAsIntegralFloor<size_t>(std::clamp(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0), 0.0, static_cast<double>(maximumArraySize)));
 		std::vector<double> arrayValues;
 		arrayValues.assign(size, 0.0);
 
 		// Copy over existing values, if any.
 		if (var->has<std::vector<double>>())
 		{
-			auto vec = var->get<std::vector<double>>().value();
-			auto& existing = vec.get();
+			const auto vec = var->get<std::vector<double>>().value();
+			const auto& existing = vec.get();
 			for (size_t i = 0; i < std::min(size, existing.size()); ++i)
 				arrayValues[i] = existing[i];
 		}
@@ -2201,16 +2205,16 @@ void fn_setarray(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 // setbeltcolor color;
 // Sets the player's belt color.
-void fn_setbeltcolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setbeltcolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setbeltcolor color");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto color = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto color = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
 			colors.values[ENUM(ColorSlots::BELT)] = static_cast<uint8_t>(color);
@@ -2221,36 +2225,36 @@ void fn_setbeltcolor(GS1Visitor* visitor, std::string_view commandName, const st
 
 // setbody filename;
 // Sets the body image for the player.
-void fn_setbody(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setbody(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setbody filename");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::BODYIMAGE>(SetBy::SERVER, filename);
 	}
 }
 
 // setbow image;
 // Sets the bow image for the player.
-void fn_setbow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setbow(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setbow image");
 
 	// Only set bow image for classic servers, as this property was replaced with the gani property in newer server generations.
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	if (server->Generation != ServerGeneration::CLASSIC)
 		return;
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		auto image = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto prop = player->getProp<PlayerProp::GANI>();
 			if (prop.bowGif.has_value())
@@ -2266,32 +2270,32 @@ void fn_setbow(GS1Visitor* visitor, std::string_view commandName, const std::vec
 // setcharani gani;
 // setcharani gani,attribs;
 // Sets the NPC character's animation.
-void fn_setcharani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setcharani(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setcharani gani,attribs");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto gani = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto gani = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, gani);
 	}
 }
 
 // setchargender gender;
 // Sets the NPC character's gender (controls which voice is used).
-void fn_setchargender(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setchargender(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setchargender gender");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto gender = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto gender = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto visFlags = npc->visFlags;
 			if (gender == 0)
@@ -2305,12 +2309,12 @@ void fn_setchargender(GS1Visitor* visitor, std::string_view commandName, const s
 
 // setcharprop messagecode,text;
 // Sets an NPC character's property.
-void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setcharprop(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() == 0)
+	if (arguments.empty())
 		throw std::invalid_argument("invalid arguments: setcharprop messagecode,text");
 
-	if (auto messagecode = GS1Visitor::getGameVariable(*arguments[0]); messagecode != nullptr)
+	if (const auto messagecode = GS1Visitor::getGameVariable(*arguments[0]); messagecode != nullptr)
 	{
 		std::string text;
 		if (arguments.size() == 2)
@@ -2318,8 +2322,7 @@ void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std
 
 		if (messagecode->name.starts_with("#C"))
 		{
-			double color = GS1Visitor::getColorValueFromString(text);
-			messagecode->assign<double>(std::move(color));
+			messagecode->assign<double>(GS1Visitor::getColorValueFromString(text));
 		}
 		else
 		{
@@ -2330,16 +2333,16 @@ void fn_setcharprop(GS1Visitor* visitor, std::string_view commandName, const std
 
 // setcoatcolor color;
 // Sets the player's coat color.
-void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setcoatcolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setcoatcolor color");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto color = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto color = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
 			colors.values[ENUM(ColorSlots::COAT)] = static_cast<uint8_t>(color);
@@ -2350,7 +2353,7 @@ void fn_setcoatcolor(GS1Visitor* visitor, std::string_view commandName, const st
 
 // (1.20 to 1.31r1)	seteffect r,g,b;
 // (2.0+)			seteffect r,g,b,a;
-void fn_seteffect(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_seteffect(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	// The original seteffect command tinted the entire game screen.
 	// The newer seteffect command adjusts how an NPC is drawn, tinting it and making it translucent.
@@ -2359,16 +2362,16 @@ void fn_seteffect(GS1Visitor* visitor, std::string_view commandName, const std::
 
 // setgender gender;
 // Set's the player's gender (controls which voice is used).
-void fn_setgender(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setgender(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setgender gender");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto gender = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto gender = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto status = player->account.status;
 			if (gender == 0)
@@ -2383,20 +2386,20 @@ void fn_setgender(GS1Visitor* visitor, std::string_view commandName, const std::
 
 // sethead filename;
 // Sets the player's head image.
-void fn_sethead(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_sethead(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: sethead filename");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			// This needs to go to everybody (for the player list), so we have to send it immediately.
 			auto results = player->setPropWith<PlayerProp::HEADIMAGE>(SetBy::SERVER, filename);
-			results.resultFlags = results.sendToAll;
+			results.resultFlags = props::SetResults::sendToAll;
 			player->sendPropsFromResults(results);
 		}
 	}
@@ -2404,37 +2407,37 @@ void fn_sethead(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 // setimg filename;
 // Sets the image of the NPC to a new one.
-void fn_setimg(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setimg(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setimg filename");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::IMAGE>(SetBy::SERVER, filename);
 	}
 }
 
 // setimgpart filename,x,y,width,height;
 // Sets a part of the image for the NPC, allowing for more detailed control over the displayed image.
-void fn_setimgpart(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setimgpart(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 5)
 		throw std::invalid_argument("invalid arguments: setimgpart filename,x,y,width,height");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto x = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		auto y = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		auto width = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
-		auto height = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0));
+		const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto x = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto y = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+		const auto width = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
+		const auto height = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0));
 
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			npc->setPropWith<NPCProp::IMAGE>(SetBy::SERVER, filename);
 			npc->setPropWith<NPCProp::IMAGEPART>(SetBy::SERVER, x, y, width, height);
@@ -2444,96 +2447,96 @@ void fn_setimgpart(GS1Visitor* visitor, std::string_view commandName, const std:
 
 // setlevel filename;
 // Warps the player to a new level specified by the filename.
-void fn_setlevel(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setlevel(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setlevel filename");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->warp(filename, player->account.character.getLocalPosition());
 	}
 }
 
 // setlevel2 filename,x,y;
 // Warps the player to a new level specified by the filename and coordinates (x, y).
-void fn_setlevel2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setlevel2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: setlevel2 filename,x,y");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
-		auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0);
+		const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
+		const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0);
 
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->warp(filename, {static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16)});
 	}
 }
 
 // setmap imgfile,levelsfile,x,y;
 // Sets the big map for the player with the specified image file, levels file, and coordinates (x, y).
-void fn_setmap(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setmap(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: setmap imgfile,levelsfile,x,y");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto imgfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto levelsfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
-		auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0);
-		auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0);
+		const auto imgfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto levelsfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
+		const auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0);
+		const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0);
 
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->sendPacket(CString() >> (char)PLO_BIGMAP << imgfile << "," << levelsfile << "," << CString(x) << "," << CString(y));
 	}
 }
 
 // setminimap imgfile,levelsfile,x,y;
 // Sets the minimap for the player with the specified image file, levels file, and coordinates (x, y).
-void fn_setminimap(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setminimap(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: setminimap imgfile,levelsfile,x,y");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto imgfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto levelsfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
-		auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0);
-		auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0);
+		const auto imgfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto levelsfile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
+		const auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0);
+		const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0);
 
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->sendPacket(CString() >> (char)PLO_MINIMAP << imgfile << "," << levelsfile << "," << CString(x) << "," << CString(y));
 	}
 }
 
 // setplayerdir dir;
 // Sets the direction of the player sprite.
-void fn_setplayerdir(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setplayerdir(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setplayerdir dir");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			// Set the new player direction relative to their current sprite.
-			uint8_t sprite = player->account.character.sprite;
-			uint8_t currentDir = sprite % 4;
-			uint8_t newDir = currentDir + (dir - currentDir);
+			const uint8_t sprite = player->account.character.sprite;
+			const uint8_t currentDir = sprite % 4;
+			const uint8_t newDir = currentDir + (dir - currentDir);
 
 			player->setPropWith<PlayerProp::SPRITE>(SetBy::SERVER, newDir);
 		}
@@ -2542,14 +2545,14 @@ void fn_setplayerdir(GS1Visitor* visitor, std::string_view commandName, const st
 
 // setplayerprop messagecode,text;
 // Sets a property for the player.
-void fn_setplayerprop(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setplayerprop(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() == 0)
+	if (arguments.empty())
 		throw std::invalid_argument("invalid arguments: setplayerprop messagecode,text");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		if (auto messagecode = GS1Visitor::getGameVariable(*arguments[0]); messagecode != nullptr)
+		if (const auto messagecode = GS1Visitor::getGameVariable(*arguments[0]); messagecode != nullptr)
 		{
 			std::string text;
 			if (arguments.size() == 2)
@@ -2557,8 +2560,7 @@ void fn_setplayerprop(GS1Visitor* visitor, std::string_view commandName, const s
 
 			if (messagecode->name.starts_with("#C"))
 			{
-				double color = GS1Visitor::getColorValueFromString(text);
-				messagecode->assign<double>(std::move(color));
+				messagecode->assign<double>(GS1Visitor::getColorValueFromString(text));
 			}
 			else
 			{
@@ -2570,16 +2572,17 @@ void fn_setplayerprop(GS1Visitor* visitor, std::string_view commandName, const s
 
 // setplayerx value;
 // Sets the player's X coordinate.
-void fn_setplayerx(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setplayerx(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setplayerx value");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto value = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			TilePosition position = player->getTilePosition();
 			position.x() = value;
@@ -2590,16 +2593,17 @@ void fn_setplayerx(GS1Visitor* visitor, std::string_view commandName, const std:
 
 // setplayery value;
 // Sets the player's Y coordinate.
-void fn_setplayery(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setplayery(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setplayery value");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto value = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			TilePosition position = player->getTilePosition();
 			position.y() = value;
@@ -2609,72 +2613,72 @@ void fn_setplayery(GS1Visitor* visitor, std::string_view commandName, const std:
 }
 
 // setpm message;
-void fn_setpm(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setpm(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	std::string message;
 
-	if (arguments.size() != 0)
+	if (!arguments.empty())
 		message = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 
-	auto server = BabyDI::Get<Server>();
-	if (auto npcServerPlayer = server->getNPCServer()->getPlayerNPCServer(); npcServerPlayer != nullptr)
+	const auto server = BabyDI::Get<Server>();
+	if (const auto npcServerPlayer = server->getNPCServer()->getPlayerNPCServer(); npcServerPlayer != nullptr)
 	{
 		auto lines = string::split(message, "#b"sv);
-		auto finalMessage = string::toCSV(lines, true);
+		const auto finalMessage = string::toCSV(lines, true);
 		npcServerPlayer->privateMessage = finalMessage;
 	}
 }
 
 // setshape type,width,height;
 // type 1 = rectangle
-void fn_setshape(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setshape(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: setshape type,width,height");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto type = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto type = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		if (type != 1)
 			return;
 
 		auto width = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto height = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->shape = {width, height};
 	}
 }
 
 // setshield image,power;
 // Sets the player's shield image.
-void fn_setshield(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setshield(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: setshield image,power");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto image = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto power = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto image = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto power = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::SHIELDIMAGE>(SetBy::SERVER, image, power);
 	}
 }
 
 // setshoecolor color;
 // Sets the player's shoe color.
-void fn_setshoecolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setshoecolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setshoecolor color");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto color = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto color = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
 			colors.values[ENUM(ColorSlots::SHOES)] = static_cast<uint8_t>(color);
@@ -2685,28 +2689,28 @@ void fn_setshoecolor(GS1Visitor* visitor, std::string_view commandName, const st
 
 // setshootparams params;
 // Sets the shoot parameters that calls to the shoot command will use.
-void fn_setshootparams(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setshootparams(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setshootparams params");
 
-	auto params = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-	auto server = BabyDI::Get<Server>();
+	const auto params = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+	const auto server = BabyDI::Get<Server>();
 	server->setShootParams(string::fromCSV(params));
 }
 
 // setskincolor color;
 // Sets the player's skin color.
-void fn_setskincolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setskincolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setskincolor color");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto color = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto color = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
 			colors.values[ENUM(ColorSlots::SKIN)] = static_cast<uint8_t>(color);
@@ -2717,16 +2721,16 @@ void fn_setskincolor(GS1Visitor* visitor, std::string_view commandName, const st
 
 // setsleevecolor color;
 // Sets the player's sleeve color.
-void fn_setsleevecolor(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setsleevecolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setshoecolor color");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto color = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto color = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto colors = player->getProp<PlayerProp::COLORS>();
 			colors.values[ENUM(ColorSlots::SLEEVES)] = static_cast<uint8_t>(color);
@@ -2737,13 +2741,13 @@ void fn_setsleevecolor(GS1Visitor* visitor, std::string_view commandName, const 
 
 // setstring var,text;
 // Sets a string variable with the given text.
-void fn_setstring(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setstring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() == 0)
+	if (arguments.empty())
 		throw std::invalid_argument("invalid arguments: setstring var,text");
 
 	// Assign the string.
-	if (auto var = GS1Visitor::getGameVariable(*arguments[0]); var != nullptr)
+	if (const auto var = GS1Visitor::getGameVariable(*arguments[0]); var != nullptr)
 	{
 		std::string text;
 		if (arguments.size() == 2)
@@ -2751,12 +2755,12 @@ void fn_setstring(GS1Visitor* visitor, std::string_view commandName, const std::
 
 		// Special handling for prefixed variables.
 		// Maybe think of a way to do this automatically on the assign rather than doing this.
-		auto server = BabyDI::Get<Server>();
+		const auto server = BabyDI::Get<Server>();
 		if (var->name.starts_with("client.") || var->name.starts_with("clientr."))
 		{
-			if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+			if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 			{
-				if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+				if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 				{
 					if (text.empty())
 						player->deleteFlag(var->name, SetBy::SERVER);
@@ -2779,33 +2783,34 @@ void fn_setstring(GS1Visitor* visitor, std::string_view commandName, const std::
 
 // setsword image,power;
 // Sets the players sword image and power.
-void fn_setsword(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setsword(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: setsword image,power");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto image = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto power = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto image = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto power = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::SWORDIMAGE>(SetBy::SERVER, image, power);
 	}
 }
 
 // setx value;
 // Sets the NPC's X coordinate.
-void fn_setx(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setx(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setx value");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
+		const auto value = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
 		{
 			TilePosition position = npc->getTilePosition();
 			position.x() = value;
@@ -2816,16 +2821,17 @@ void fn_setx(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 
 // sety value;
 // Sets the NPC's Y coordinate.
-void fn_sety(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_sety(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setyx value");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
+		const auto value = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPCServer()->getNPC(source.value().first); npc != nullptr)
 		{
 			TilePosition position = npc->getTilePosition();
 			position.y() = value;
@@ -2835,52 +2841,52 @@ void fn_sety(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 }
 
 // setz x,y,width,height,a,b,c,d;
-void fn_setz(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_setz(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::logic_error("setz is clientside only.");
 }
 
 // shoot x,y,z,angle,zangle,power,gani,ganiattribs;
 // Creates a shoot style projectile.
-void fn_shoot(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_shoot(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() < 7)
 		throw std::invalid_argument("invalid arguments: shoot x,y,z,angle,zangle,power,gani,ganiattribs");
 
-	auto level = visitor->findCurrentLevel();
+	const auto level = visitor->findCurrentLevel();
 	if (level == nullptr)
 		return;
 
-	auto pi = std::numbers::pi;
+	constexpr auto pi = std::numbers::pi;
 
-	auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
-	auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
-	auto z = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
-	auto angle = static_cast<float>(std::clamp(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0), 0.0, 2 * pi));
-	auto zangle = static_cast<float>(std::clamp(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0), -(pi / 2), (pi / 2)));
-	auto power = static_cast<uint8_t>(std::clamp(GS1Visitor::getScriptValueAsCopy<double>(*arguments[5]).value_or(0.0), 0.0, 5.0) * 44);
-	auto gani = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[6]).value_or("");
+	const auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
+	const auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
+	const auto z = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+	const auto angle = static_cast<float>(std::clamp(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0), 0.0, 2 * pi));
+	const auto zangle = static_cast<float>(std::clamp(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0), -(pi / 2), (pi / 2)));
+	const auto power = static_cast<uint8_t>(std::clamp(GS1Visitor::getScriptValueAsCopy<double>(*arguments[5]).value_or(0.0), 0.0, 5.0) * 44);
+	const auto gani = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[6]).value_or("");
 
-	auto server = BabyDI::Get<Server>();
-	auto gravity = static_cast<float>(server->Scripting.variables.getValue<double>("gravity").value_or(2.0));
+	const auto server = BabyDI::Get<Server>();
+	const auto gravity = static_cast<float>(server->Scripting.variables.getValue<double>("gravity").value_or(2.0));
 	level->addShoot(inform_client, {x, y, z}, angle, zangle, power, gravity, gani, visitor->getOriginalSource());
 }
 
 // shootarrow dir;
 // Shoots an arrow in the specified direction.
-void fn_shootarrow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_shootarrow(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: shootarrow dir");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 
 		const auto& source = visitor->getOriginalSource();
-		PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
+		const PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
 
-		auto sourcePosition = getPositionForArrow(source, dir);
+		const auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
 			return;
 
@@ -2890,21 +2896,21 @@ void fn_shootarrow(GS1Visitor* visitor, std::string_view commandName, const std:
 
 // shootball;
 // (gr) shootball dir;
-void fn_shootball(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_shootball(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	// TODO(GS1): Conformance modes.
 
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: shootball dir");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 
 		const auto& source = visitor->getOriginalSource();
-		PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
+		const PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
 
-		auto sourcePosition = getPositionForArrow(source, dir);
+		const auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
 			return;
 
@@ -2914,19 +2920,19 @@ void fn_shootball(GS1Visitor* visitor, std::string_view commandName, const std::
 
 // shootfireball dir;
 // Shoots a fireball in the specified direction.
-void fn_shootfireball(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_shootfireball(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: shootfireball dir");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 
 		const auto& source = visitor->getOriginalSource();
-		PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
+		const PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
 
-		auto sourcePosition = getPositionForArrow(source, dir);
+		const auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
 			return;
 
@@ -2936,19 +2942,19 @@ void fn_shootfireball(GS1Visitor* visitor, std::string_view commandName, const s
 
 // shootfireblast dir;
 // Shoots a fireblast in the specified direction.
-void fn_shootfireblast(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_shootfireblast(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: shootfireblast dir");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 
 		const auto& source = visitor->getOriginalSource();
-		PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
+		const PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
 
-		auto sourcePosition = getPositionForArrow(source, dir);
+		const auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
 			return;
 
@@ -2958,19 +2964,19 @@ void fn_shootfireblast(GS1Visitor* visitor, std::string_view commandName, const 
 
 // shootnuke dir;
 // Shoots a nuke in the specified direction.
-void fn_shootnuke(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_shootnuke(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: shootnuke dir");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 
 		const auto& source = visitor->getOriginalSource();
-		PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
+		const PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
 
-		auto sourcePosition = getPositionForArrow(source, dir);
+		const auto sourcePosition = getPositionForArrow(source, dir);
 		if (!sourcePosition.has_value())
 			return;
 
@@ -2980,33 +2986,33 @@ void fn_shootnuke(GS1Visitor* visitor, std::string_view commandName, const std::
 
 // show;
 // Makes the NPC visible.
-void fn_show(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_show(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags | (uint8_t)NPCVisFlags::VISIBLE));
 	}
 }
 
 // showani index,x,y,direction,gani,params;
 // Shows a gani at the specified position.
-void fn_showani(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_showani(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 5)
 		throw std::invalid_argument("invalid arguments: showani index,x,y,direction,gani,params");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
-			auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
-			auto direction = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
-			auto gani = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[4]).value_or("");
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
+			const auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+			const auto direction = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
+			const auto gani = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[4]).value_or("");
 
 			server->getNPCServer()->showGani(npc, index, {x, y}, gani, direction);
 		}
@@ -3015,22 +3021,22 @@ void fn_showani(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 // showani2 index,x,y,z,direction,gani,params;
 // Shows a gani at the specified position.
-void fn_showani2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_showani2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 6)
 		throw std::invalid_argument("invalid arguments: showani2 index,x,y,z,direction,gani,params");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
-			auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
-			auto z = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
-			auto direction = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0));
-			auto gani = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[5]).value_or("");
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
+			const auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+			const auto z = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
+			const auto direction = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0));
+			const auto gani = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[5]).value_or("");
 
 			server->getNPCServer()->showGani(npc, index, {x, y, z}, gani, direction);
 		}
@@ -3039,12 +3045,12 @@ void fn_showani2(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 // showcharacter;
 // Turns the NPC into a character.
-void fn_showcharacter(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_showcharacter(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			npc->setPropWith<NPCProp::IMAGE>(SetBy::SERVER, "#c#"s);
 			npc->shape = {0, 0};
@@ -3054,20 +3060,20 @@ void fn_showcharacter(GS1Visitor* visitor, std::string_view commandName, const s
 
 // showimg index,filename,x,y;
 // Displays an image on the level at the specified coordinates.
-void fn_showimg(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_showimg(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: showimg index,filename,x,y");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
-			auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
-			auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
+			const auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+			const auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
 
 			server->getNPCServer()->showImage(npc, index, {x, y}, filename);
 		}
@@ -3076,21 +3082,21 @@ void fn_showimg(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 // showimg2 index,filename,x,y,z;
 // Displays an image on the level at the specified coordinates.
-void fn_showimg2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_showimg2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 5)
 		throw std::invalid_argument("invalid arguments: showimg2 index,filename,x,y,z");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
-			auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
-			auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
-			auto z = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0) * 16);
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
+			const auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+			const auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
+			const auto z = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0) * 16);
 
 			server->getNPCServer()->showImage(npc, index, {x, y, z}, filename);
 		}
@@ -3099,20 +3105,20 @@ void fn_showimg2(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 // showpoly index,{ x1,y1,...,xn,yn };
 // Displays a polygon at the specified coordinates.
-void fn_showpoly(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_showpoly(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: showpoly index,{ x1,y1,...,xn,yn }");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto polygons = GS1Visitor::getScriptValueAsCopy<std::vector<double>>(*arguments[1]).value_or(std::vector<double>{});
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto polygons = GS1Visitor::getScriptValueAsCopy<std::vector<double>>(*arguments[1]).value_or(std::vector<double>{});
 
-			if (polygons.size() == 0 || polygons.size() % 2 != 0)
+			if (polygons.empty() || polygons.size() % 2 != 0)
 				throw std::invalid_argument("invalid arguments: showpoly index,{ x1,y1,...,xn,yn }");
 
 			server->getNPCServer()->showPoly(npc, index, 2, polygons);
@@ -3122,20 +3128,20 @@ void fn_showpoly(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 // showpoly2 index,{ x1,y1,z1,...,xn,yn,zn };
 // Displays a polygon at the specified coordinates.
-void fn_showpoly2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_showpoly2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: showpoly2 index,{ x1,y1,z1,...,xn,yn,zn }");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto polygons = GS1Visitor::getScriptValueAsCopy<std::vector<double>>(*arguments[1]).value_or(std::vector<double>{});
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto polygons = GS1Visitor::getScriptValueAsCopy<std::vector<double>>(*arguments[1]).value_or(std::vector<double>{});
 
-			if (polygons.size() == 0 || polygons.size() % 3 != 0)
+			if (polygons.empty() || polygons.size() % 3 != 0)
 				throw std::invalid_argument("invalid arguments: showpoly2 index,{ x1,y1,z1,...,xn,yn,zn }");
 
 			server->getNPCServer()->showPoly(npc, index, 3, polygons);
@@ -3144,29 +3150,29 @@ void fn_showpoly2(GS1Visitor* visitor, std::string_view commandName, const std::
 }
 
 // showstats bitflag;
-void fn_showstats(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_showstats(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw unimplemented_error("showstats is not implemented yet.");
 }
 
 // showtext index,x,y,font,style,text;
 // Displays text at the specified coordinates.
-void fn_showtext(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_showtext(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 6)
 		throw std::invalid_argument("invalid arguments: showtext index,x,y,font,style,text");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
-			auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
-			auto font = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[3]).value_or("");
-			auto style = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[4]).value_or("");
-			auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[5]).value_or("");
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
+			const auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+			const auto font = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[3]).value_or("");
+			const auto style = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[4]).value_or("");
+			const auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[5]).value_or("");
 
 			server->getNPCServer()->showText(npc, index, {x, y}, text, font, style);
 		}
@@ -3175,23 +3181,23 @@ void fn_showtext(GS1Visitor* visitor, std::string_view commandName, const std::v
 
 // showtext2 index,x,y,z,font,style,text;
 // Displays text at the specified coordinates.
-void fn_showtext2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_showtext2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 7)
 		throw std::invalid_argument("invalid arguments: showtext2 index,x,y,z,font,style,text");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
-			auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
-			auto z = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
-			auto font = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[4]).value_or("");
-			auto style = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[5]).value_or("");
-			auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[6]).value_or("");
+			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+			const auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
+			const auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+			const auto z = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
+			const auto font = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[4]).value_or("");
+			const auto style = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[5]).value_or("");
+			const auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[6]).value_or("");
 
 			server->getNPCServer()->showText(npc, index, {x, y, z}, text, font, style);
 		}
@@ -3200,17 +3206,17 @@ void fn_showtext2(GS1Visitor* visitor, std::string_view commandName, const std::
 
 // sleep duration;
 // Pauses script execution for the specified duration in seconds.
-void fn_sleep(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_sleep(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: sleep duration");
 
-	if (auto source = visitor->getOriginalSource(); source.second == ScriptObjectType::NPC)
+	if (const auto source = visitor->getOriginalSource(); source.second == ScriptObjectType::NPC)
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.first); npc != nullptr)
 		{
-			auto duration = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+			const auto duration = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 			npc->timeout = std::chrono::duration_cast<std::chrono::milliseconds>(duration_seconds_double(duration));
 			throw sleep_exception{};
 		}
@@ -3219,21 +3225,21 @@ void fn_sleep(GS1Visitor* visitor, std::string_view commandName, const std::vect
 
 // spyfire length,power;
 // Sends a spyfire explosion from the player.
-void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_spyfire(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: spyfire length,power");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto length = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)) & 0b11111;
-		auto power = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)) & 0b111;
-		uint8_t length_power = (length << 3) | power;
+		const auto length = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)) & 0b11111;
+		const auto power = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)) & 0b111;
+		const uint8_t length_power = (length << 3) | power;
 
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 		{
-			if (auto level = player->getLevel(); level != nullptr)
+			if (const auto level = player->getLevel(); level != nullptr)
 			{
 				server->sendPacketToNearby(CString() >> (char)PLO_FIRESPY >> (short)source.value().first >> (char)(length_power), player->account.character.getGlobalPosition(), level);
 				level->addSpyFire(player->account.character.getGlobalPosition(), source.value(), player->account.character.direction, length, power);
@@ -3244,19 +3250,19 @@ void fn_spyfire(GS1Visitor* visitor, std::string_view commandName, const std::ve
 
 // take itemname;
 // Takes an item on the level in a 10-tile radius from the NPC.
-void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_take(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: take itemname");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			if (auto level = npc->getLevel(); level != nullptr)
+			if (const auto level = npc->getLevel(); level != nullptr)
 			{
-				auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)), 0_ui8, 24_ui8);
+				const auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)), 0_ui8, 24_ui8);
 
 				// Get our search position.
 				PixelPosition searchPosition = npc->character.getGlobalPosition();
@@ -3272,7 +3278,7 @@ void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 					if (PROPID(item.item) != itemname)
 						continue;
 
-					auto distance = static_cast<int32_t>(std::hypot(item.position.x() - searchPosition.x(), item.position.y() - searchPosition.y()));
+					const auto distance = static_cast<int32_t>(std::hypot(item.position.x() - searchPosition.x(), item.position.y() - searchPosition.y()));
 					if (distance <= (10 * 16))
 					{
 						itemIndices.push_back(static_cast<uint8_t>(i - 1));
@@ -3292,7 +3298,7 @@ void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 				}
 
 				// Remove all taken items.
-				for (auto& index : itemIndices)
+				for (const auto& index : itemIndices)
 					level->removeItem(inform_client, index);
 			}
 		}
@@ -3301,20 +3307,20 @@ void fn_take(GS1Visitor* visitor, std::string_view commandName, const std::vecto
 
 // take2 index;
 // Takes an item at the specified index on the level.
-void fn_take2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_take2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: take2 index");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			if (auto level = npc->getLevel(); level != nullptr)
+			if (const auto level = npc->getLevel(); level != nullptr)
 			{
-				auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-				if (auto item = level->getItem(index); item.has_value())
+				const auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+				if (const auto item = level->getItem(index); item.has_value())
 				{
 					if (LevelItem::isRupeeType(item.value()->item))
 						npc->setPropWith<NPCProp::GRALATS>(SetBy::SERVER, npc->getProp<NPCProp::GRALATS>().value + LevelItem::GetRupeeCount(item.value()->item));
@@ -3338,20 +3344,20 @@ void fn_take2(GS1Visitor* visitor, std::string_view commandName, const std::vect
 
 // takehorse index;
 // Mounts the horse at the specified index on the level.
-void fn_takehorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_takehorse(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: takehorse index");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			if (auto level = npc->getLevel(); level != nullptr)
+			if (const auto level = npc->getLevel(); level != nullptr)
 			{
-				auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-				if (auto horse = level->getHorse(index); horse.has_value())
+				const auto index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+				if (const auto horse = level->getHorse(index); horse.has_value())
 				{
 					npc->setPropWith<NPCProp::HORSEIMAGE>(SetBy::SERVER, horse.value()->image);
 					level->removeHorse(inform_client, index);
@@ -3363,14 +3369,14 @@ void fn_takehorse(GS1Visitor* visitor, std::string_view commandName, const std::
 
 // takeplayercarry;
 // Takes the carried object from the player.
-void fn_takeplayercarry(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_takeplayercarry(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
-			if (auto level = player->getLevel(); level != nullptr)
+			if (const auto level = player->getLevel(); level != nullptr)
 				level->addThrownItem(player->getTilePosition().translate(0.5f, 1.0f), player->account.character.direction, ENUM<CarryObjectSprite>(player->getCarrySprite()), source::FromPlayer(player->getId()));
 
 			player->sendPacket(CString() >> (char)PLO_THROWCARRIED >> (short)player->getId());
@@ -3381,86 +3387,86 @@ void fn_takeplayercarry(GS1Visitor* visitor, std::string_view commandName, const
 
 // takeplayerhorse;
 // Takes the horse from the player.
-void fn_takeplayerhorse(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_takeplayerhorse(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 			player->setPropWith<PlayerProp::HORSEIMAGE>(SetBy::SERVER, std::string{});
 	}
 }
 
 // throwcarry;
 // Throws the carried object.
-void fn_throwcarry(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_throwcarry(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr && npc->isCharacter() && npc->character.gani.starts_with("carry"))
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr && npc->isCharacter() && npc->character.gani.starts_with("carry"))
 			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, "idle"sv);
 	}
 }
 
 // timershow;
 // Shows the NPC's clientside timeout counter.
-void fn_timershow(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_timershow(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags | PROPID(NPCVisFlags::TIMERSHOW)));
 	}
 }
 
 // tokenize text;
 // Tokenizes a string into tokens using spaces as a delimiter.
-void fn_tokenize(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_tokenize(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: tokenize text");
 
-	auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+	const auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 	visitor->tokenizeTokens = string::tokenize(std::string_view{text}) | range::as_string | std::ranges::to<std::vector<std::string>>();
-	visitor->builtInStore->add(GameVariable{.name = "tokenscount", .value = static_cast<double>(visitor->tokenizeTokens.size()), .lifetime = variables::Lifetime::TEMPORARY});
+	visitor->builtInStore->add(GameVariable{.name = "tokenscount", .value = GameValue{static_cast<double>(visitor->tokenizeTokens.size())}, .lifetime = variables::Lifetime::TEMPORARY});
 }
 
 // tokenize2 delims,text;
 // Tokenizes a string into tokens using the specified delimiters.
-void fn_tokenize2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_tokenize2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: tokenize2 delims,text");
 
-	auto delims = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-	auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
+	const auto delims = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+	const auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
 	visitor->tokenizeTokens = string::tokenize(std::string_view{text}, std::string_view{delims}) | range::as_string | std::ranges::to<std::vector<std::string>>();
-	visitor->builtInStore->add(GameVariable{.name = "tokenscount", .value = static_cast<double>(visitor->tokenizeTokens.size()), .lifetime = variables::Lifetime::TEMPORARY});
+	visitor->builtInStore->add(GameVariable{.name = "tokenscount", .value = GameValue{static_cast<double>(visitor->tokenizeTokens.size())}, .lifetime = variables::Lifetime::TEMPORARY});
 }
 
 // toweapons name;
 // Adds the NPC as a weapon for the player.
-void fn_toweapons(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_toweapons(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: toweapons name");
 
 	// Get our source NPC.
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	const auto& source = visitor->getOriginalSource();
 	if (source.second != ScriptObjectType::NPC || server == nullptr)
 		return;
 
 	// Get the active player.
 	PlayerPtr player = nullptr;
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
-		player = server->getNPCServer()->getPlayer(source.value().first);
+	if (const auto playerSource = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); playerSource.has_value())
+		player = server->getNPCServer()->getPlayer(playerSource.value().first);
 	if (player == nullptr)
 		return;
 
-	if (auto npc = server->getNPC(source.first); npc != nullptr)
+	if (const auto npc = server->getNPC(source.first); npc != nullptr)
 	{
 		// Get or create the weapon, and make sure the script is current.
 		auto name = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
@@ -3485,29 +3491,29 @@ void fn_toweapons(GS1Visitor* visitor, std::string_view commandName, const std::
 
 // triggeraction x,y,action,params;
 // Sends out a trigger action.
-void fn_triggeraction(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_triggeraction(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() < 4)
 		throw std::invalid_argument("invalid arguments: triggeraction x,y,action,params");
 
-	auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-	auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
-	auto action = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
-	auto params = string::toCSV(arguments | std::views::drop(3) | std::views::transform([&visitor](GS1ScriptValue* value)
+	const auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+	const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
+	const auto action = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
+	const auto params = string::toCSV(arguments | std::views::drop(3) | std::views::transform([](const GS1ScriptValue* value)
 	{
 		return GS1Visitor::getScriptValueAsCopy<std::string>(*value).value_or("");
 	}));
 
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	if (action == "clientside")
 	{
-		if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+		if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 			server->sendTriggerAction(source.value().first, 0, {0, 0}, action, params);
 	}
 	else
 	{
 		const auto& currentSource = visitor->getCurrentSource();
-		LevelPtr targetLevel = visitor->findCurrentLevel();
+		const LevelPtr targetLevel = visitor->findCurrentLevel();
 		uint32_t npcId = 0;
 		if (currentSource.second == ScriptObjectType::NPC)
 			npcId = currentSource.first;
@@ -3518,31 +3524,31 @@ void fn_triggeraction(GS1Visitor* visitor, std::string_view commandName, const s
 
 // unfreezeplayer;
 // Unfreezes a player.
-void fn_unfreezeplayer(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_unfreezeplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->unfreezePlayer();
 	}
 }
 
 // unset flag;
 // Unsets a player's flag.
-void fn_unset(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_unset(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: unset flag");
 
-	if (auto flag = GS1Visitor::getGameVariable(*arguments[0]); flag != nullptr)
+	if (const auto flag = GS1Visitor::getGameVariable(*arguments[0]); flag != nullptr)
 	{
-		auto server = BabyDI::Get<Server>();
+		const auto server = BabyDI::Get<Server>();
 		if (flag->name.starts_with("client.") || flag->name.starts_with("clientr."))
 		{
-			if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+			if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 			{
-				if (auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
+				if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 					player->deleteFlag(flag->name, SetBy::SERVER);
 			}
 		}
@@ -3559,61 +3565,63 @@ void fn_unset(GS1Visitor* visitor, std::string_view commandName, const std::vect
 
 // updateboard x,y,width,height;
 // Updates a portion of the map board, making changes visible to other players.
-void fn_updateboard(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_updateboard(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: updateboard x,y,width,height");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)));
-		auto y = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
-		auto width = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0)));
-		auto height = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0)));
+		const auto x = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)));
+		const auto y = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
+		const auto width = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0)));
+		const auto height = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0)));
+
 		level->updateBoard({{x, y}, {width, height}});
 	}
 }
 
 // updateboard2 x,y,width,height;
 // Updates a portion of the map board, saves the changes to the map file, and makes the changes visible to other players.
-void fn_updateboard2(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_updateboard2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: updateboard2 x,y,width,height");
 
-	if (auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)));
-		auto y = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
-		auto width = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0)));
-		auto height = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0)));
+		const auto x = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)));
+		const auto y = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
+		const auto width = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0)));
+		const auto height = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0)));
+
 		level->updateBoard2({{x, y}, {width, height}});
 	}
 }
 
 // updateterrain;
-void fn_updateterrain(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_updateterrain(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::logic_error("updateterrain is clientside only.");
 }
 
 // warpto levelname,x,y;
 // Warps an NPC to a new level.
-void fn_warpto(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_warpto(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: warpto levelname,x,y");
 
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
-		auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
-		auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0);
+		const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+		const auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
+		const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0);
 
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			if (auto level = server->getLoadedLevel(filename, npc->getLevel()); level != nullptr)
+			if (const auto level = server->getLoadedLevel(filename, npc->getLevel()); level != nullptr)
 				npc->warp(level, {static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16)});
 		}
 	}
@@ -3623,24 +3631,24 @@ void fn_warpto(GS1Visitor* visitor, std::string_view commandName, const std::vec
 
 // enabledamagereactions;
 // Enables damage reactions for the NPC, allowing it to react to damage with animations and invincibility frames.
-void fn_enabledamagereactions(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_enabledamagereactions(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->allowServerDamageReactions = true;
 	}
 }
 
 // disabledamagereactions;
 // Disables damage reactions for the NPC, going back to the default behavior of not automatically reacting to damage.
-void fn_disabledamagereactions(GS1Visitor* visitor, std::string_view commandName, const std::vector<GS1ScriptValue*>& arguments)
+void fn_disabledamagereactions(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		auto server = BabyDI::Get<Server>();
-		if (auto npc = server->getNPC(source.value().first); npc != nullptr)
+		const auto server = BabyDI::Get<Server>();
+		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 			npc->allowServerDamageReactions = false;
 	}
 }

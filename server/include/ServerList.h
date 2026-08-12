@@ -36,41 +36,41 @@ class ServerList : public CSocketStub
 {
 public:
 	// Required by CSocketStub.
-	bool onRecv();
-	bool onSend();
-	bool onRegister() { return true; }
-	void onUnregister();
-	SOCKET getSocketHandle() { return m_socket.getHandle(); }
-	bool canRecv();
-	bool canSend() { return m_fileQueue.canSend(); }
+	bool onRecv() override;
+	bool onSend() override;
+	bool onRegister() override { return true; }
+	void onUnregister() override;
+	SOCKET getSocketHandle() override { return m_socket.getHandle(); }
+	bool canRecv() override;
+	bool canSend() override { return m_fileQueue.canSend(); }
 
 	// Constructor - Deconstructor
 	ServerList();
-	~ServerList();
+	~ServerList() override = default;
 
 	bool doTimedEvents(precise_clock::time_point time);
 
 	// Socket-Control Functions
-	bool getConnected() const;
+	[[nodiscard]] bool getConnected() const;
 	bool main(precise_clock::time_point time = precise_clock::now());
 	bool connectServer();
 	CSocket& getSocket() { return m_socket; }
 	void sendPacket(CString& pPacket, bool sendNow = false);
 
 	// Send players to the listserver
-	void addPlayer(std::shared_ptr<Player> player);
-	void deletePlayer(std::shared_ptr<Player> player);
+	void addPlayer(const std::shared_ptr<Player>& player);
+	void deletePlayer(const std::shared_ptr<Player>& player);
 	void sendPlayers();
 	void handleText(const CString& data);
 	void sendText(const CString& data);
 	void sendText(const std::vector<CString>& stringList);
-	void sendTextForPlayer(std::shared_ptr<Player> player, const CString& data);
+	void sendTextForPlayer(const std::shared_ptr<Player>& player, const CString& data);
 
-	void sendLoginPacketForPlayer(std::shared_ptr<Player> player, const CString& password, const CString& identity);
+	void sendLoginPacketForPlayer(const std::shared_ptr<Player>& player, const CString& password, const CString& identity);
 
 	const std::map<std::string, int>& getServerList() { return m_serverListCount; }
-	const std::string& getLocalIP() const { return m_serverLocalIp; }
-	const std::string& getServerIP() const { return m_serverRemoteIp; }
+	[[nodiscard]] const std::string& getLocalIP() const { return m_serverLocalIp; }
+	[[nodiscard]] const std::string& getServerIP() const { return m_serverRemoteIp; }
 
 	// Send New Server-Info
 	void sendServerHQ();
@@ -108,7 +108,7 @@ public:
 	void msgSVI_ASSIGNPCID(CString& pPacket);
 
 protected:
-	BabyDI_INJECT(Server, m_server);
+	Server* m_server = nullptr;
 
 	// Packet Functions
 	bool parsePacket(CString& pPacket);

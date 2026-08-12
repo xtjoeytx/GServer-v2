@@ -16,20 +16,20 @@ namespace preagonal
 class TranslationManagerModern : public ITranslationManager
 {
 public:
-	virtual ~TranslationManagerModern() override {};
+	~TranslationManagerModern() override = default;
 
 public:
-	virtual void loadTranslations(const std::filesystem::path& directory) override;
-	virtual void reloadTranslation(const std::filesystem::path& filePath) override;
-	virtual void saveTranslation(std::string_view domain) override;
-	virtual void saveTranslations() override;
-	virtual std::tuple<std::string_view, size_t, size_t> syncLanguageWithOriginal(std::string_view language) override;
-	virtual std::generator<std::tuple<std::string_view, size_t, size_t>> syncAllLanguagesWithOriginal() override;
-	virtual size_t generateAllLanguageStubs() override;
-	virtual void registerOriginalText(std::string_view key) override;
+	void loadTranslations(const std::filesystem::path& directory) override;
+	void reloadTranslation(const std::filesystem::path& filePath) override;
+	void saveTranslation(std::string_view domain) override;
+	void saveTranslations() override;
+	std::tuple<std::string_view, size_t, size_t> syncLanguageWithOriginal(std::string_view language) override;
+	std::generator<std::tuple<std::string_view, size_t, size_t>> syncAllLanguagesWithOriginal() override;
+	size_t generateAllLanguageStubs() override;
+	void registerOriginalText(std::string_view key) override;
 
 public:
-	virtual std::string_view getText(std::string_view language, std::string_view key) override;
+	std::string_view getText(std::string_view language, std::string_view key) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

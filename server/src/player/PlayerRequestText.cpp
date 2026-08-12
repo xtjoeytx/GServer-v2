@@ -19,91 +19,110 @@ HandlePacketResult Player::msgPLI_REQUESTTEXT(CString& pPacket)
 {
 	// TODO(joey): So I believe these are just requests for information, while sendtext is used to actually do things.
 
-	CString packet = pPacket.readString("");
+	const CString packet = pPacket.readString("");
 	CString data = packet.guntokenize();
 
-	CString weapon = data.readString("\n");
-	CString type = data.readString("\n");
-	CString option = data.readString("\n");
+	const CString weapon = data.readString("\n");
+	const CString type = data.readString("\n");
+	const CString option = data.readString("\n");
 
 	auto& list = m_server->getServerList();
 	if (type == "lister")
 	{
 		if (option == "simplelist")
-			list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)m_id << CString(weapon << "\n"
-				<< type << "\n"
-				<< "simpleserverlist"
-				<< "\n")
-				.gtokenizeI());
+		{
+			const auto output = string::toCSVFromPack(
+				weapon.toStringView(),
+				type.toStringView(),
+				"simpleserverlist"sv
+			);
+			list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)m_id << output);
+		}
 		else if (option == "rebornlist")
 			list.sendPacket(CString() >> (char)SVO_REQUESTLIST >> (short)m_id << packet);
 		else if (option == "subscriptions")
 		{
-			// some versions of the loginserver scripts expected the response of subscriptions2 rather than subscriptions
-			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(CString() << weapon << "\n"
-				<< type << "\n"
-				<< "subscriptions"
-				<< "\n"
-				<< CString(CString() << "unlimited"
-				<< "\n"
-				<< "Unlimited Subscription"
-				<< "\n"
-				<< "\"\""
-				<< "\n")
-				.gtokenizeI())
-				.gtokenizeI());
+			const std::string output = string::toCSVFromPack(
+				weapon.toString(),
+				type.toString(),
+				"subscriptions"s,
+				string::toCSVFromPack("unlimited"sv, "Unlimited Subscription"sv, ""sv)
+			);
+
+			// Some versions of the loginserver scripts expected the response of subscriptions2 rather than subscriptions
+			sendPacket(CString() >> (char)PLO_SERVERTEXT << output);
 		}
 		else if (option == "bantypes")
-			sendPacket(CString() >> (char)PLO_SERVERTEXT << packet << ",\"\"\"Event Interruption\"\",259200\",\"\"\"Message Code Abuse\"\",259200\",\"\"\"General Scamming\"\",604800\",\"Advertising,604800\",\"\"\"General Harassment\"\",604800\",\"\"\"Racism or Severe Vulgarity\"\",1209600\",\"\"\"Sexual Harassment\"\",1209600\",\"Cheating,2592000\",\"\"\"Advertising Money Trade\"\",2592000\",\"\"\"Ban Evasion\"\",2592000\",\"\"\"Speed Hacking\"\",2592000\",\"\"\"Bug Abuse\"\",2592000\",\"\"\"Multiple Jailings\"\",2592000\",\"\"\"Server Destruction\"\",3888000\",\"\"\"Leaking Information\"\",3888000\",\"\"\"Account Scam\"\",7776000\",\"\"\"Account Sharing\"\",315360000\",\"Hacking,315360000\",\"\"\"Multiple Bans\"\",315360000\",\"\"\"Other Unlimited\"\",315360001\"");
+		{
+			// Type,duration (seconds)
+			constexpr std::array builtInBanTypes{
+				"Event Interruption,259200"sv,
+				"Message Code Abuse,259200"sv,
+				"General Scamming,604800"sv,
+				"Advertising,604800"sv,
+				"General Harassment,604800"sv,
+				"Racism or Severe Vulgarity,1209600"sv,
+				"Sexual Harassment,1209600"sv,
+				"Cheating,2592000"sv,
+				"Advertising Money Trade,2592000"sv,
+				"Ban Evasion,2592000"sv,
+				"Speed Hacking,2592000"sv,
+				"Bug Abuse,2592000"sv,
+				"Multiple Jailings,2592000"sv,
+				"Server Destruction,3888000"sv,
+				"Leaking Information,3888000"sv,
+				"Account Scam,7776000"sv,
+				"Account Sharing,315360000"sv,
+				"Hacking,315360000"sv,
+				"Multiple Bans,315360000"sv,
+				"Other Unlimited,315360001"sv,
+			};
+			static std::string banTypes = string::toCSV(builtInBanTypes);
+			sendPacket(CString() >> (char)PLO_SERVERTEXT << packet << "," << banTypes);
+		}
 		else if (option == "getglobalitems")
-			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(weapon << "\n"
-				<< type << "\n"
-				<< "globalitems"
-				<< "\n"
-				<< account.name << "\n"
-				<< CString(CString(CString() << "autobill=1"
-				<< "\n"
-				<< "autobillmine=1"
-				<< "\n"
-				<< "bundle=1"
-				<< "\n"
-				<< "creationtime=1212768763"
-				<< "\n"
-				<< "currenttime=1353248504"
-				<< "\n"
-				<< "description=Gives"
-				<< "\n"
-				<< "duration=2629800"
-				<< "\n"
-				<< "flags=subscription"
-				<< "\n"
-				<< "icon=graalicon_big.png"
-				<< "\n"
-				<< "itemid=1"
-				<< "\n"
-				<< "lifetime=1"
-				<< "\n"
-				<< "owner=global"
-				<< "\n"
-				<< "ownertype=server"
-				<< "\n"
-				<< "price=100"
-				<< "\n"
-				<< "quantity=988506"
-				<< "\n"
-				<< "status=available"
-				<< "\n"
-				<< "title=Gold"
-				<< "\n"
-				<< "tradable=1"
-				<< "\n"
-				<< "typeid=62"
-				<< "\n"
-				<< "world=global"
-				<< "\n")
-				.gtokenizeI())
-				.gtokenizeI())
-				.gtokenizeI());
+		{
+			// Properties for a global tradeable gold item.
+			constexpr std::array goldItemTestProps{
+				"autobill=1"sv,
+				"autobillmine=1"sv,
+				"bundle=1"sv,
+				"creationtime=1212768763"sv,
+				"currenttime=1353248504"sv,
+				"description=Gives"sv,
+				"duration=2629800"sv,
+				"flags=subscription"sv,
+				"icon=graalicon_big.png"sv,
+				"itemid=1"sv,
+				"lifetime=1"sv,
+				"owner=global"sv,
+				"ownertype=server"sv,
+				"price=100"sv,
+				"quantity=988506"sv,
+				"svtatus=available"sv,
+				"title=Gold"sv,
+				"tradable=1"sv,
+				"typeid=62"sv,
+				"world=global"sv,
+			} ;
+			static std::string goldItemTest = string::toCSV(goldItemTestProps);
+
+			// List of all global items.
+			std::array items{
+				goldItemTest
+			};
+
+			// The output elements.
+			const std::string output = string::toCSVFromPack(
+				weapon.toString(),
+				type.toString(),
+				"globalitems"s,
+				account.name,
+				string::toCSV(items)
+			);
+
+			sendPacket(CString() >> (char)PLO_SERVERTEXT << output);
+		}
 		else if (option == "serverinfo")
 		{
 			list.sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)m_id << packet);
@@ -123,12 +142,17 @@ HandlePacketResult Player::msgPLI_REQUESTTEXT(CString& pPacket)
 	else if (type == "packageinfo")
 	{
 		if (const auto updatePackage = m_server->getPackageManager().findOrAddResource(option.text()))
-			sendPacket(CString() >> (char)PLO_SERVERTEXT << CString(weapon << "\n"
-				<< type << "\n"
-				<< option << "\n"
-				<< /* File count */ CString(updatePackage->getFileList().size()) << "\n"
-				<< /* Total size in bytes */ CString(updatePackage->getPackageSize()) << "\n")
-				.gtokenizeI());
+		{
+			const auto packageArgs = string::toCSVFromPack(
+				weapon.toString(),
+				type.toString(),
+				option.toString(),
+				string::to_string(updatePackage->getFileList().size()),
+				string::to_string(updatePackage->getPackageSize())
+			);
+
+			sendPacket(CString() >> (char)PLO_SERVERTEXT << packageArgs);
+		}
 	}
 
 	log::printLine(log::server, "[ IN] [RequestText] from {} -> {}", string::toCSV(account.name), packet);
@@ -139,12 +163,12 @@ HandlePacketResult Player::msgPLI_SENDTEXT(CString& pPacket)
 {
 	CString packet = pPacket.readString("");
 	CString data = packet.guntokenize();
-	std::vector<CString> params = data.tokenize("\n");
+	const auto params = data.tokenize("\n");
 
-	CString weapon = data.readString("\n");
-	CString type = data.readString("\n");
-	CString option = data.readString("\n");
-	std::vector<CString> params2 = data.readString("").tokenize("\n");
+	const auto weapon = data.readString("\n");
+	const auto type = data.readString("\n");
+	const auto option = data.readString("\n");
+	const auto params2 = data.readString("").tokenize("\n");
 
 	auto& list = m_server->getServerList();
 
@@ -167,20 +191,22 @@ HandlePacketResult Player::msgPLI_SENDTEXT(CString& pPacket)
 					sendPacket(CString() >> (char)PLO_ADDPLAYER >> (short)(16000 + 0) >> (char)channelAccount.length() << channelAccount >> (char)PlayerProp::NICKNAME >> (char)channelNick.length() << channelNick >> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::EXTERNAL);
 				}
 				else
+				{
 					sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)(16000 + 0) >> (char)PlayerProp::ACCOUNTNAME >> (char)channelAccount.length() << channelAccount >> (char)PlayerProp::NICKNAME >> (char)channelNick.length() << channelNick >> (char)PlayerProp::PLAYERLISTCATEGORY >> (char)PlayerListCategory::EXTERNAL);
+				}
 			}
 			else if (params.size() > 3)
 			{
 				if (option == "join")
 				{
-					CString channel = params[3];
+					const CString& channel = params[3];
 					CString sendMsg = "GraalEngine,irc,join,";
 					sendMsg << channel.gtokenize();
 					list.sendTextForPlayer(shared_from_this(), sendMsg);
 				}
 				else if (option == "part")
 				{
-					CString channel = params[3];
+					const CString& channel = params[3];
 					CString sendMsg = "GraalEngine,irc,part,";
 					sendMsg << channel.gtokenize();
 					list.sendTextForPlayer(shared_from_this(), sendMsg);
@@ -193,12 +219,12 @@ HandlePacketResult Player::msgPLI_SENDTEXT(CString& pPacket)
 				}
 				else if (option == "privmsg" && params.size() > 4)
 				{
-					CString channel = params[3];
-					CString msg = params[4];
+					const CString& channel = params[3];
+					const CString& msg = params[4];
 
 					if (channel == "IRCBot")
 					{
-						std::vector<CString> params3 = msg.guntokenize().tokenize("\n");
+						const auto params3 = msg.guntokenize().tokenize("\n");
 						if (params3[0] == "!getserverinfo")
 						{
 							//list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << weapon << ",irc,privmsg," << params3[1].gtokenize());

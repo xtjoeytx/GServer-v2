@@ -55,17 +55,17 @@ GameValue& GameValue::operator=(GameValue&& other) noexcept
 {
 	if (this != &other)
 	{
-		m_boolean = std::move(other.m_boolean);
-		m_number = std::move(other.m_number);
+		m_boolean = other.m_boolean;
+		m_number = other.m_number;
 		m_text = std::move(other.m_text);
 		m_array = std::move(other.m_array);
 	}
 	return *this;
 }
 
-bool GameValue::operator==(const GameValue& other) noexcept
+bool GameValue::operator==(const GameValue& other) const noexcept
 {
-	return (bool)*this == (bool)other;
+	return static_cast<bool>(*this) == static_cast<bool>(other);
 }
 
 GameValue::operator bool() const
@@ -77,14 +77,14 @@ GameValue::operator bool() const
 	return false;
 }
 
-GameValue GameValue::flatten(int64_t index) const noexcept
+GameValue GameValue::flatten(const int64_t index) const noexcept
 {
 	if (m_array.has_value())
 	{
 		if (std::holds_alternative<std::vector<double>>(*m_array))
 		{
 			const auto& arr = std::get<std::vector<double>>(*m_array);
-			if (index >= 0 && index < (int64_t)arr.size())
+			if (index >= 0 && index < static_cast<int64_t>(arr.size()))
 				return GameValue{arr[index]};
 			else if (!arr.empty())
 				return GameValue{arr[0]};
@@ -94,7 +94,7 @@ GameValue GameValue::flatten(int64_t index) const noexcept
 		else if (std::holds_alternative<std::vector<ScriptObject>>(*m_array))
 		{
 			const auto& arr = std::get<std::vector<ScriptObject>>(*m_array);
-			if (index >= 0 && index < (int64_t)arr.size())
+			if (index >= 0 && index < static_cast<int64_t>(arr.size()))
 				return GameValue{arr[index]};
 			else if (!arr.empty())
 				return GameValue{arr[0]};
@@ -103,7 +103,7 @@ GameValue GameValue::flatten(int64_t index) const noexcept
 		}
 	}
 
-	return 0.0;
+	return GameValue{0.0};
 }
 
 bool GameValue::testAsFlag() const
@@ -124,35 +124,36 @@ std::optional<GameVariable> GameVariable::deserialize(const std::string_view lin
 	if (line.starts_with("FLAG"))
 	{
 		auto data = string::trim(line.substr(5));
-		auto separator = data.find('=');
+		const auto separator = data.find('=');
 		if (separator == std::string_view::npos)
-			return GameVariable{.name = std::string{string::trim(data)}, .value = true};
-		return GameVariable{.name = std::string{string::trim(data.substr(0, separator))}, .value = std::string{string::trim(data.substr(separator + 1))}};
+			return GameVariable{.name = std::string{string::trim(data)}, .value = GameValue{true}};
+		return GameVariable{.name = std::string{string::trim(data.substr(0, separator))}, .value = GameValue{std::string{string::trim(data.substr(separator + 1))}}};
 	}
-	else if (line.starts_with("VAR"))
+
+	if (line.starts_with("VAR"))
 	{
 		auto data = string::trim(line.substr(4));
-		auto separator = data.find('=');
+		const auto separator = data.find('=');
 		if (separator == std::string_view::npos)
 			return std::nullopt;
 
-		auto identifier = string::trim(data.substr(0, separator));
-		auto value = string::trim(data.substr(separator + 1));
+		const auto identifier = string::trim(data.substr(0, separator));
+		const auto value = string::trim(data.substr(separator + 1));
 		if (value.empty())
 			return std::nullopt;
 		if (value[0] != '{')
-			return GameVariable{.name = std::string{identifier}, .value = string::toDouble(std::string{value})};
+			return GameVariable{.name = std::string{identifier}, .value = GameValue{string::toDouble(std::string{value})}};
 
 		std::vector<double> array;
 		for (std::string_view number : string::split(value.substr(1, value.length() - 2), ","sv))
 			array.emplace_back(string::toDouble(std::string{number}));
-		return GameVariable{.name = std::string{identifier}, .value = std::move(array)};
+		return GameVariable{.name = std::string{identifier}, .value = GameValue{std::move(array)}};
 	}
 
 	return std::nullopt;
 }
 
-std::optional<std::string> GameVariable::serializeModern(std::string_view name) const noexcept
+std::optional<std::string> GameVariable::serializeModern() const noexcept
 {
 	if (value.has<bool>() && !value.has<std::string>() && value.getCopy<bool>().value_or(false) == true)
 		return std::string{name};
@@ -175,6 +176,21 @@ std::weak_ptr<GameVariable> GameVariableStore::add(std::string_view name, GameVa
 	return iter->second;
 }
 
+std::weak_ptr<GameVariable> GameVariableStore::add(const std::string_view name, const bool value) noexcept
+{
+	return add(name, GameValue{value});
+}
+
+std::weak_ptr<GameVariable> GameVariableStore::add(const std::string_view name, const double value) noexcept
+{
+	return add(name, GameValue{value});
+}
+
+std::weak_ptr<GameVariable> GameVariableStore::add(const std::string_view name, std::string value) noexcept
+{
+	return add(name, GameValue{std::move(value)});
+}
+
 std::weak_ptr<GameVariable> GameVariableStore::add(GameVariable&& variable) noexcept
 {
 	if (staticContainer || variable.name.empty())
@@ -188,33 +204,33 @@ std::weak_ptr<GameVariable> GameVariableStore::add(GameVariable&& variable) noex
 	return iter->second;
 }
 
-bool GameVariableStore::remove(std::string_view name) noexcept
+bool GameVariableStore::remove(const std::string_view name) noexcept
 {
 	if (staticContainer || store.empty()) return false;
-	auto it = store.find(name);
+	const auto it = store.find(name);
 	if (it == store.end()) return false;
 	store.erase(it);
 	return true;
 }
 
-bool GameVariableStore::contains(std::string_view name) const noexcept
+bool GameVariableStore::contains(const std::string_view name) const noexcept
 {
 	if (store.empty()) return false;
 	return store.contains(name);
 }
 
-std::weak_ptr<GameVariable> GameVariableStore::get(std::string_view name) noexcept
+std::weak_ptr<GameVariable> GameVariableStore::get(const std::string_view name) noexcept
 {
 	if (store.empty()) return {};
-	auto it = store.find(name);
+	const auto it = store.find(name);
 	if (it == store.end()) return {};
 	return it->second;
 }
 
-const std::weak_ptr<GameVariable> GameVariableStore::get(std::string_view name) const noexcept
+std::weak_ptr<GameVariable> GameVariableStore::get(const std::string_view name) const noexcept
 {
 	if (store.empty()) return {};
-	auto it = store.find(name);
+	const auto it = store.find(name);
 	if (it == store.end()) return {};
 	return it->second;
 }
@@ -223,11 +239,10 @@ std::weak_ptr<GameVariable> GameVariableStore::getOrAdd(std::string_view name) n
 {
 	if (!store.empty())
 	{
-		auto it = store.find(name);
-		if (it != store.end())
+		if (const auto it = store.find(name); it != store.end())
 			return it->second;
 	}
-	return add(std::move(name), GameValue{0.0});
+	return add(name, GameValue{0.0});
 }
 
 void GameVariableStore::clearTemporary() noexcept
@@ -250,9 +265,9 @@ void GameVariableStore::clearTemporary(std::string_view prefix) noexcept
 
 std::optional<std::string> GameVariableStore::serializeModern(std::string_view name) const noexcept
 {
-	auto var = get(name);
-	if (auto variable = var.lock(); variable != nullptr)
-		return variable->serializeModern(name);
+	const auto var = get(name);
+	if (const auto variable = var.lock(); variable != nullptr)
+		return variable->serializeModern();
 
 	return std::nullopt;
 }
@@ -260,8 +275,8 @@ std::optional<std::string> GameVariableStore::serializeModern(std::string_view n
 std::vector<std::string> GameVariableStore::serialize(std::string_view name) const noexcept
 {
 	std::vector<std::string> results;
-	auto var = get(name);
-	if (auto variable = var.lock(); variable != nullptr)
+	const auto var = get(name);
+	if (const auto variable = var.lock(); variable != nullptr)
 	{
 		if (variable->value.has<bool>() && !variable->value.has<std::string>() && variable->getCopy<bool>().value_or(false))
 			results.emplace_back(std::format("FLAG {}", name));
@@ -283,19 +298,19 @@ std::vector<std::string> GameVariableStore::serialize(std::string_view name) con
 
 bool ScriptEventQueue::hasEvent(ScriptEventType type, ScriptObject initiator)
 {
-	return std::ranges::find_if(m_eventQueue, [type, initiator](ScriptEvent& event)
+	return std::ranges::find_if(m_eventQueue, [type, initiator](const ScriptEvent& event)
 	{
-		return event.type == type && event.initiator == initiator && event.args.size() == 0;
+		return event.type == type && event.initiator == initiator && event.args.empty();
 	}) != m_eventQueue.end();
 }
 
-void ScriptEventQueue::addEvent(ScriptEventType type, ScriptObject initiator)
+void ScriptEventQueue::addEvent(const ScriptEventType type, const ScriptObject& initiator)
 {
 	if (hasEvent(type, initiator))
 		return;
 
-	if (auto* server = BabyDI::Get<Server>(); server != nullptr && server->hasNPCServer())
-		m_eventQueue.push_back(std::move(ScriptEvent{.type = type, .initiator = initiator}));
+	if (const auto* server = BabyDI::Get<Server>(); server != nullptr && server->hasNPCServer())
+		m_eventQueue.push_back(ScriptEvent{.type = type, .initiator = initiator});
 }
 
 void ScriptEventQueue::addEvent(const ScriptEvent& event)
@@ -303,7 +318,7 @@ void ScriptEventQueue::addEvent(const ScriptEvent& event)
 	if (hasEvent(event.type, event.initiator))
 		return;
 
-	if (auto* server = BabyDI::Get<Server>(); server != nullptr && server->hasNPCServer())
+	if (const auto* server = BabyDI::Get<Server>(); server != nullptr && server->hasNPCServer())
 		m_eventQueue.push_back(event);
 }
 
@@ -312,7 +327,7 @@ void ScriptEventQueue::addEvent(ScriptEvent&& event)
 	if (hasEvent(event.type, event.initiator))
 		return;
 
-	if (auto* server = BabyDI::Get<Server>(); server != nullptr && server->hasNPCServer())
+	if (const auto* server = BabyDI::Get<Server>(); server != nullptr && server->hasNPCServer())
 		m_eventQueue.push_back(std::move(event));
 }
 

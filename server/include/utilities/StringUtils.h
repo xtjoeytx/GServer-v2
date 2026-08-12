@@ -14,8 +14,8 @@
 #include <ranges>
 #include <span>
 #include <sstream>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -92,12 +92,12 @@ struct string_hash
 	}
 	[[nodiscard]] size_t operator()(const std::u8string_view& str) const noexcept
 	{
-		std::hash<std::u8string_view> hasher{};
+		constexpr std::hash<std::u8string_view> hasher{};
 		return hasher(str);
 	}
 	[[nodiscard]] size_t operator()(const std::u8string& str) const noexcept
 	{
-		std::hash<std::u8string_view> hasher{};
+		constexpr std::hash<std::u8string_view> hasher{};
 		return hasher(str);
 	}
 	[[nodiscard]] size_t operator()(const CString& str) const noexcept
@@ -173,8 +173,8 @@ struct u8string_hash_equal
 	}
 	[[nodiscard]] bool operator()(const CString& lhs, const std::u8string& rhs) const noexcept
 	{
-		auto sv = lhs.toStringView();
-		std::u8string_view view{ reinterpret_cast<const char8_t*>(sv.data()), sv.length() };
+		const auto sv = lhs.toStringView();
+		const std::u8string_view view{ reinterpret_cast<const char8_t*>(sv.data()), sv.length() };
 		return view == rhs;
 	}
 	[[nodiscard]] bool operator()(const size_t& lhs, const std::u8string& rhs) const noexcept
@@ -192,8 +192,8 @@ struct u8string_hash_equal
 	}
 	[[nodiscard]] bool operator()(const std::u8string& lhs, const CString& rhs) const noexcept
 	{
-		auto sv = rhs.toStringView();
-		std::u8string_view view{ reinterpret_cast<const char8_t*>(sv.data()), sv.length() };
+		const auto sv = rhs.toStringView();
+		const std::u8string_view view{ reinterpret_cast<const char8_t*>(sv.data()), sv.length() };
 		return lhs == view;
 	}
 	[[nodiscard]] bool operator()(const std::u8string& lhs, const size_t& rhs) const noexcept
@@ -253,12 +253,11 @@ struct hash_string_equal
 /// @return A string_view to the trimmed string.
 std::string_view trimLeft(StringViewIshVariant auto const& str)
 {
-	std::string_view view{ str };
+	const std::string_view view{ str };
 	auto size = str.size();
 	for (size_t i = 0; i < size; ++i)
 	{
-		auto ch = view[i];
-		if (!std::isspace(static_cast<unsigned char>(ch)) && ch != '\xa7')
+		if (const auto ch = view[i]; !std::isspace(static_cast<unsigned char>(ch)) && ch != '\xa7')
 			return view.substr(i, size - i);
 	}
 	return {};
@@ -269,11 +268,10 @@ std::string_view trimLeft(StringViewIshVariant auto const& str)
 /// @return A string_view to the trimmed string.
 std::string_view trimRight(StringViewIshVariant auto const& str)
 {
-	std::string_view view{ str };
+	const std::string_view view{ str };
 	for (size_t i = view.size(); i > 0; --i)
 	{
-		auto ch = view[i - 1];
-		if (!std::isspace(static_cast<unsigned char>(ch)) && ch != '\xa7')
+		if (const auto ch = view[i - 1]; !std::isspace(static_cast<unsigned char>(ch)) && ch != '\xa7')
 			return view.substr(0, i);
 	}
 	return {};
@@ -284,11 +282,10 @@ std::string_view trimRight(StringViewIshVariant auto const& str)
 /// @return A string_view to the trimmed string.
 std::string_view trimNewlines(StringViewIshVariant auto const& str)
 {
-	std::string_view view{ str };
+	const std::string_view view{ str };
 	for (size_t i = view.size(); i > 0; --i)
 	{
-		auto ch = view[i - 1];
-		if (ch != '\n' && ch != '\r' && ch != '\xa7')
+		if (const auto ch = view[i - 1]; ch != '\n' && ch != '\r' && ch != '\xa7')
 			return view.substr(0, i);
 	}
 	return {};
@@ -308,25 +305,7 @@ std::string_view trim(StringViewIshVariant auto const& str)
 inline std::string& trimLeftMutate(std::string& str)
 {
 	if (str.empty()) return str;
-
-	// Find first non-space.
-	const auto p = str.c_str();
-	size_t idx = 0;
-	while (idx < str.length() && (std::isspace(int(p[idx])) || p[idx] == '\r' || p[idx] == '\n' || p[idx] == '\xa7'))
-		++idx;
-
-	// No whitespace.
-	if (idx == 0)
-		return str;
-
-	// All whitespace.
-	if (idx == str.length())
-	{
-		str.clear();
-		return str;
-	}
-
-	str = std::move(std::string{ str.begin() + idx, str.begin() + str.length()});
+	str.erase(str.begin(), std::ranges::find_if_not(str, [](const unsigned char ch) { return std::isspace(ch) || ch == '\r' || ch == '\n' || ch == 0xa7; }));
 	return str;
 }
 
@@ -336,25 +315,8 @@ inline std::string& trimLeftMutate(std::string& str)
 inline std::string& trimRightMutate(std::string& str)
 {
 	if (str.empty()) return str;
-
-	// Find last non-space.
-	const auto p = str.c_str();
-	size_t idx = str.length();
-	while (idx > 0 && (std::isspace(int(p[idx - 1])) || p[idx - 1] == '\r' || p[idx - 1] == '\n' || p[idx - 1] == '\xa7'))
-		--idx;
-
-	// No whitespace.
-	if (idx == str.length())
-		return str;
-
-	// All whitespace.
-	if (idx < 0)
-	{
-		str.clear();
-		return str;
-	}
-
-	str.resize(idx);
+	auto reversed = std::views::reverse(str);
+	str.erase(std::ranges::find_if_not(reversed, [](const unsigned char ch) { return std::isspace(ch) || ch == '\r' || ch == '\n' || ch == 0xa7; }).base(), str.end());
 	return str;
 }
 
@@ -364,25 +326,8 @@ inline std::string& trimRightMutate(std::string& str)
 inline std::string& trimNewlinesMutate(std::string& str)
 {
 	if (str.empty()) return str;
-
-	// Find last non-space.
-	const auto p = str.c_str();
-	size_t idx = str.length();
-	while (idx > 0 && (p[idx - 1] == '\n' || p[idx - 1] == '\r' || p[idx - 1] == '\xa7'))
-		--idx;
-
-	// No whitespace.
-	if (idx == str.length())
-		return str;
-
-	// All whitespace.
-	if (idx < 0)
-	{
-		str.clear();
-		return str;
-	}
-
-	str.resize(idx);
+	auto reversed = std::views::reverse(str);
+	str.erase(std::ranges::find_if_not(reversed, [](const unsigned char ch) { return ch == '\r' || ch == '\n' || ch == 0xa7; }).base(), str.end());
 	return str;
 }
 
@@ -412,7 +357,7 @@ inline std::string& trimMutate(std::string& str)
 		return str;
 	}
 
-	str = std::move(std::string{ str.begin() + front, str.begin() + back });
+	str = str.substr(front, back - front);
 	return str;
 }
 
@@ -447,7 +392,7 @@ inline std::string&& trimMutate(std::string&& str)
 /// @param from The substring to search for and replace.
 /// @param to The substring to replace each occurrence of 'from' with.
 /// @return A new string with all occurrences of 'from' replaced by 'to'.
-inline std::string replace(std::string_view in, std::string_view from, std::string_view to)
+inline std::string replace(const std::string_view in, const std::string_view from, const std::string_view to)
 {
 	if (from.empty())
 		return std::string{ in };
@@ -475,7 +420,7 @@ inline std::string replace(std::string_view in, std::string_view from, std::stri
 /// @param from The substring to search for and replace.
 /// @param to The substring to replace each occurrence of 'from' with.
 /// @return A reference to the modified input string after all replacements have been made.
-inline std::string& replaceMutate(std::string& in, std::string_view from, std::string_view to)
+inline std::string& replaceMutate(std::string& in, const std::string_view from, const std::string_view to)
 {
 	if (from.empty())
 		return in;
@@ -493,12 +438,12 @@ inline std::string& replaceMutate(std::string& in, std::string_view from, std::s
 /// @param in The input string to process.
 /// @param chars A string containing the characters to remove from the input.
 /// @return A new string with all characters from 'chars' removed from the input string.
-inline std::string eraseChars(std::string_view in, std::string_view chars)
+inline std::string eraseChars(const std::string_view in, const std::string_view chars)
 {
 	if (chars.empty())
 		return std::string{ in };
 
-	auto filtered = in | std::views::filter([&chars](char c) {
+	auto filtered = in | std::views::filter([&chars](const char c) {
 		return chars.find(c) == std::string_view::npos;
 	});
 	std::string result(std::ranges::begin(filtered), std::ranges::end(filtered));
@@ -510,7 +455,7 @@ inline std::string eraseChars(std::string_view in, std::string_view chars)
 /// @param in The string to be modified by removing specified characters.
 /// @param chars A string view containing the characters to remove from the input string.
 /// @return A reference to the modified input string with the specified characters removed.
-inline std::string& eraseCharsMutate(std::string& in, std::string_view chars)
+inline std::string& eraseCharsMutate(std::string& in, const std::string_view chars)
 {
 	if (chars.empty())
 		return in;
@@ -656,7 +601,7 @@ inline std::string& wrapQuotesMutate(std::string& str)
 	if (str.find(',') != std::string_view::npos)
 	{
 		string::replaceMutate(str, "\"", "\"\"");
-		str += "\"";
+		str += '\"';
 		str.insert(str.begin(), '\"');
 	}
 	return str;
@@ -669,7 +614,7 @@ inline std::string& wrapQuotesMutate(std::string& str)
 /// @param delims A string containing delimiter characters used to split the input.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
 /// @return A generator yielding each token as a std::string_view.
-auto split(StringViewVariant auto const str, StringViewVariant auto const delims, bool ignoreEmpty) -> std::generator<std::remove_cvref_t<decltype(str)>>
+auto split(StringViewVariant auto const str, StringViewVariant auto const delims, const bool ignoreEmpty) -> std::generator<std::remove_cvref_t<decltype(str)>>
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -715,7 +660,7 @@ auto split(StringViewVariant auto const str, StringViewVariant auto const delims
 /// @param delim A string used to split the input.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
 /// @return A generator yielding each token as a std::string_view.
-auto splitByString(StringViewVariant auto const str, StringViewVariant auto const delim, bool ignoreEmpty) -> std::generator<std::remove_cvref_t<decltype(str)>>
+auto splitByString(StringViewVariant auto const str, StringViewVariant auto const delim, const bool ignoreEmpty) -> std::generator<std::remove_cvref_t<decltype(str)>>
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -750,7 +695,8 @@ auto splitByString(StringViewVariant auto const str, StringViewVariant auto cons
 	// Handle a case where the string ends with a delimiter and we are not ignoring empty tokens.
 	if (!ignoreEmpty && start == str.length())
 	{
-		bool endsWithDelim = strview.length() >= delim.length() && strview.compare(strview.length() - delim.length(), delim.length(), delim) == 0;
+		// ReSharper disable once CppTooWideScope
+		const bool endsWithDelim = strview.length() >= delim.length() && strview.compare(strview.length() - delim.length(), delim.length(), delim) == 0;
 		if (endsWithDelim)
 			co_yield StringViewType{};
 	}
@@ -761,7 +707,7 @@ auto splitByString(StringViewVariant auto const str, StringViewVariant auto cons
 /// @param delims A string containing delimiter characters used to split the input string.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the result.
 /// @return A vector of strings containing the tokens extracted from the input string.
-auto splitToVector(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delims, bool ignoreEmpty)
+auto splitToVector(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delims, const bool ignoreEmpty)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -782,7 +728,7 @@ auto splitToVector(StringViewIshVariant auto const& str, StringViewIshVariant au
 /// @param delims A string containing delimiter characters used to split the input string.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the result.
 /// @return A vector of strings containing the tokens extracted from the input string.
-auto splitToVectorView(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delims, bool ignoreEmpty)
+auto splitToVectorView(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delims, const bool ignoreEmpty)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -802,7 +748,7 @@ auto splitToVectorView(StringViewIshVariant auto const& str, StringViewIshVarian
 /// @param delim The delimiter string used to split the input.
 /// @param ignoreEmpty If true, empty substrings are ignored; otherwise, they are included in the result.
 /// @return A vector containing the substrings resulting from splitting the input string by the delimiter.
-auto splitToVectorByString(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delim, bool ignoreEmpty)
+auto splitToVectorByString(StringViewIshVariant auto const& str, StringViewIshVariant auto const& delim, const bool ignoreEmpty)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -899,12 +845,12 @@ auto splitToVectorByString(StringViewIshVariant auto const& str, StringViewIshVa
 /// @param delims A string containing delimiter characters used to split the input.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
 /// @return A generator yielding each token as a std::string_view.
-inline std::generator<std::string_view> split(const std::string& str, const std::string_view delims, bool ignoreEmpty = true)
+inline std::generator<std::string_view> split(const std::string& str, const std::string_view delims, const bool ignoreEmpty = true)
 {
 	for (auto item : split(std::string_view{ str }, delims, ignoreEmpty))
 		co_yield item;
 }
-inline std::generator<std::wstring_view> split(const std::wstring& str, const std::wstring_view delims, bool ignoreEmpty = true)
+inline std::generator<std::wstring_view> split(const std::wstring& str, const std::wstring_view delims, const bool ignoreEmpty = true)
 {
 	for (auto item : split(std::wstring_view{ str }, delims, ignoreEmpty))
 		co_yield item;
@@ -915,7 +861,7 @@ inline std::generator<std::wstring_view> split(const std::wstring& str, const st
 /// @param delim A string used to split the input.
 /// @param ignoreEmpty If true, empty tokens are ignored; if false, empty tokens are included in the output.
 /// @return A generator yielding each token as a std::string_view.
-inline std::generator<std::string_view> splitByString(const std::string& str, const std::string_view delim, bool ignoreEmpty = true)
+inline std::generator<std::string_view> splitByString(const std::string& str, const std::string_view delim, const bool ignoreEmpty = true)
 {
 	for (auto item : splitByString(std::string_view{ str }, delim, ignoreEmpty))
 		co_yield item;
@@ -927,7 +873,7 @@ inline std::generator<std::string_view> splitByString(const std::string& str, co
 /// @param range An input range containing elements to join. The elements must be streamable to std::ostringstream.
 /// @param delim The delimiter string to insert between elements. Defaults to ','.
 /// @return A string containing the joined elements of the range, separated by the specified delimiter.
-std::string join(std::ranges::input_range auto&& range, std::string_view delim = ",")
+std::string join(std::ranges::input_range auto&& range, const std::string_view delim = ","sv)
 {
 	std::ostringstream oss;
 	auto it = std::ranges::begin(range);
@@ -1025,53 +971,53 @@ auto tokenize(StringViewVariant auto const str)
 /// @param range An input range of string-like elements to be converted to CSV format.
 /// @param force_quoted If true, all fields will be quoted regardless of content. Defaults to false.
 /// @return A std::string containing the CSV-formatted representation of the input range, with fields separated by commas and quoted as necessary.
-auto toCSV(InputRangeNotString auto&& range, bool force_quoted = false)
+auto toCSV(InputRangeNotString auto&& range, const bool force_quoted = false)
 {
-	constexpr std::array<char, 3> complexChars = { '"', ',', '\\' };
-	std::ostringstream oss;
+	std::string oss{};
 
 	for (const auto& wordFromRange : range)
 	{
-		std::string_view word{ wordFromRange };
+		constexpr std::array<char, 3> complexChars = {'"', ',', '\\'};
+		std::string_view word{wordFromRange};
 
 		// Check if the word contains any complex characters.
-		bool complex = std::ranges::any_of(word,
+		const bool complex = std::ranges::any_of(word,
 			[&complexChars](const auto& c) { return std::ranges::find(complexChars, c) != complexChars.end(); });
 
 		// Output the word.
 		if (!complex && !force_quoted)
 		{
-			oss << word << ',';
+			oss += word;
+			oss += ',';
 			continue;
 		}
 
-		// This was a complex word, so we need to certain characters.
+		// This was a complex word, so we need to escape certain characters.
 		// For some reason we were doubling the backslash.  I can't remember if that was intentional or not.
-		oss << '"';
-		for (const char& c: word)
+		oss += '"';
+		for (const char& c : word)
 		{
-			oss << c;
+			oss += c;
 			if (c == '"' || c == '\\')
-				oss << c;
+				oss += c;
 		}
 
 		// Add the separator.
-		oss << "\",";
+		oss += "\",";
 	}
 
 	// Remove the last comma.
-	auto result = oss.str();
-	if (!result.empty())
-		result.pop_back();
+	if (!oss.empty())
+		oss.pop_back();
 
-	return result;
+	return oss;
 }
 
 /// @brief Converts a range of strings to a single CSV-formatted string, quoting fields as needed.
 /// @param range An input range of string-like elements to be converted to CSV format.
 /// @param force_quoted If true, all fields will be quoted regardless of content. Defaults to false.
 /// @return A std::string containing the CSV-formatted representation of the input range, with fields separated by commas and quoted as necessary.
-auto toCSV(const InputRangeNotString auto& range, bool force_quoted = false)
+auto toCSV(const InputRangeNotString auto& range, const bool force_quoted = false)
 {
 	return toCSV(std::move(range), force_quoted);
 }
@@ -1081,7 +1027,7 @@ auto toCSV(const InputRangeNotString auto& range, bool force_quoted = false)
 /// @param delim The character used to split the input string into fields. Defaults to newline ('\n').
 /// @param force_quoted If true, all fields will be quoted in the resulting CSV. Defaults to false.
 /// @return A CSV-formatted string constructed from the split fields of the input.
-auto toCSV(StringViewIshVariant auto const& str, std::string_view delim = "\n"sv, bool force_quoted = false)
+auto toCSV(StringViewIshVariant auto const& str, std::string_view delim = "\n"sv, const bool force_quoted = false)
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -1096,7 +1042,7 @@ auto toCSV(StringViewIshVariant auto const& str, std::string_view delim = "\n"sv
 /// @param str The input string or string view containing CSV data to parse.
 /// @param ignoreLeadingWhitespace If true, leading spaces and tabs before each field are ignored. Defaults to false.
 /// @return A vector of strings, each representing a parsed field from the CSV input.
-std::vector<std::string> fromCSV(StringViewIshVariant auto const& str, bool ignoreLeadingWhitespace = false)
+std::vector<std::string> fromCSV(StringViewIshVariant auto const& str, const bool ignoreLeadingWhitespace = false)
 {
 	using StrType = std::remove_cvref_t<decltype(str)>;
 
@@ -1227,7 +1173,7 @@ bool equalsi(StringViewIshVariant auto const& str1, StringViewIshVariant auto co
 /// @param substr The substring to search for.
 /// @param pos The position in the string to start the search from. Defaults to 0.
 /// @return The index of the first occurrence of the substring (case-insensitive) in the string after the specified position, or std::string::npos if not found.
-size_t findi(StringViewIshVariant auto const& str, StringViewIshVariant auto const& substr, size_t pos = 0)
+size_t findi(StringViewIshVariant auto const& str, StringViewIshVariant auto const& substr, const size_t pos = 0)
 {
 	if (pos >= str.size())
 		return std::string::npos;
@@ -1320,6 +1266,8 @@ auto toLower(StringViewIshVariant auto const& str)
 /// @return true if the string represents a valid integral number; otherwise, false.
 bool isIntegral(StringViewIshVariant auto const& str)
 {
+	using StrType = std::remove_cvref_t<decltype(str)>;
+
 	if (str.empty())
 		return false;
 
@@ -1329,7 +1277,7 @@ bool isIntegral(StringViewIshVariant auto const& str)
 		startPos = 1;
 
 	// Check that all remaining characters are digits.
-	return str.find_first_not_of("0123456789"sv, startPos) == decltype(str)::npos;
+	return str.find_first_not_of("0123456789", startPos) == StrType::npos;
 }
 
 /// @brief Checks if a string represents a valid floating-point number, allowing for an optional leading sign and at most one decimal point.
@@ -1349,8 +1297,7 @@ bool isFloat(StringViewIshVariant auto const& str)
 	bool decimalPointSeen = false;
 	for (size_t i = startPos; i < str.size(); ++i)
 	{
-		const char c = str[i];
-		if (c == '.')
+		if (const char c = str[i]; c == '.')
 		{
 			if (decimalPointSeen)
 				return false;
@@ -1369,7 +1316,7 @@ bool isFloat(StringViewIshVariant auto const& str)
 /// @param result Reference to a variable where the converted number will be stored if the conversion succeeds.
 /// @return true if the conversion was successful; false otherwise.
 template <std::integral T = int32_t>
-bool toNumber(std::string_view str, T& result)
+bool toNumber(const std::string_view str, T& result)
 {
 	try
 	{
@@ -1393,7 +1340,7 @@ bool toNumber(std::string_view str, T& result)
 /// @param str The string to convert to a number.
 /// @return The converted number if the conversion succeeds; otherwise, returns 0 of the specified type.
 template <std::integral T = int32_t>
-T toNumber(std::string_view str)
+T toNumber(const std::string_view str)
 {
 	if (T result{}; toNumber(str, result))
 		return result;
@@ -1405,7 +1352,7 @@ T toNumber(std::string_view str)
 /// @param str The input string to convert to a float.
 /// @param result Reference to a float variable where the converted value will be stored if the conversion succeeds.
 /// @return true if the conversion was successful and the result is stored in 'result'; false otherwise.
-inline bool toFloat(std::string_view str, float& result)
+inline bool toFloat(const std::string_view str, float& result)
 {
 	try
 	{
@@ -1427,7 +1374,7 @@ inline bool toFloat(std::string_view str, float& result)
 /// @brief Converts a string to a float value.
 /// @param str The string to convert to a float.
 /// @return The float value represented by the string, or 0.0f if the conversion fails.
-inline float toFloat(std::string_view str)
+inline float toFloat(const std::string_view str)
 {
 	if (float result; toFloat(str, result))
 		return result;
@@ -1439,7 +1386,7 @@ inline float toFloat(std::string_view str)
 /// @param str The input string to convert.
 /// @param result Reference to a double where the converted value will be stored if the conversion succeeds.
 /// @return true if the conversion was successful and the result is stored in 'result'; false otherwise.
-inline bool toDouble(std::string_view str, double& result)
+inline bool toDouble(const std::string_view str, double& result)
 {
 	try
 	{
@@ -1461,7 +1408,7 @@ inline bool toDouble(std::string_view str, double& result)
 /// @brief Converts a string to a double-precision floating-point number.
 /// @param str The string to convert to a double.
 /// @return The converted double value if the conversion is successful; otherwise, returns 0.0.
-inline double toDouble(std::string_view str)
+inline double toDouble(const std::string_view str)
 {
 	if (double result; toDouble(str, result))
 		return result;
@@ -1469,10 +1416,10 @@ inline double toDouble(std::string_view str)
 	return 0.0f;
 }
 
-/// @brief Converts a string to its Base64 encoded representation.
-/// @param str The string-like object to be encoded.
+/// @brief Converts an array to its Base64 encoded representation.
+/// @param in The array-like object to be encoded.
 /// @return A Base64 encoded string.
-inline std::string toBase64(std::span<uint8_t> in)
+inline std::string toBase64(const std::span<const uint8_t> in)
 {
 	static constexpr std::array<const char, 64> encodingTable = {
 		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
@@ -1486,8 +1433,8 @@ inline std::string toBase64(std::span<uint8_t> in)
 	};
 
 	// Calculate the lengths of the input and output.
-	size_t in_len = in.size();
-	size_t out_len = 4 * ((in_len + 2) / 3);
+	const size_t in_len = in.size();
+	const size_t out_len = 4 * ((in_len + 2) / 3);
 
 	// Create the output buffer.
 	std::string out(out_len, '\0');
@@ -1548,14 +1495,14 @@ inline std::vector<uint8_t> fromBase64(StringViewIshVariant auto const& str)
 	};
 
 	// Check if our input is a valid length.
-	size_t in_len = str.length();
+	const size_t in_len = str.length();
 	if (in_len % 4 != 0)
 		return {};
 
 	// Calculate the output length.
 	size_t out_len = in_len / 4 * 3;
-	if (str[in_len - 1] == '=') out_len--;
-	if (str[in_len - 2] == '=') out_len--;
+	if (str[in_len - 1] == '=') --out_len;
+	if (str[in_len - 2] == '=') --out_len;
 
 	// Prepare the output buffer.
 	std::vector<uint8_t> out(out_len, static_cast<uint8_t>(0));
@@ -1563,12 +1510,12 @@ inline std::vector<uint8_t> fromBase64(StringViewIshVariant auto const& str)
 	// Decode.
 	for (size_t i = 0, j = 0; i < in_len;)
 	{
-		uint32_t a = str[i] == '=' ? 0 & i++ : decodingTable[static_cast<int>(str[i++])];
-		uint32_t b = str[i] == '=' ? 0 & i++ : decodingTable[static_cast<int>(str[i++])];
-		uint32_t c = str[i] == '=' ? 0 & i++ : decodingTable[static_cast<int>(str[i++])];
-		uint32_t d = str[i] == '=' ? 0 & i++ : decodingTable[static_cast<int>(str[i++])];
+		const uint32_t a = str[i] == '=' ? 0 & i++ : decodingTable[static_cast<int>(str[i++])];
+		const uint32_t b = str[i] == '=' ? 0 & i++ : decodingTable[static_cast<int>(str[i++])];
+		const uint32_t c = str[i] == '=' ? 0 & i++ : decodingTable[static_cast<int>(str[i++])];
+		const uint32_t d = str[i] == '=' ? 0 & i++ : decodingTable[static_cast<int>(str[i++])];
 
-		uint32_t triple = (a << 3 * 6) + (b << 2 * 6) + (c << 1 * 6) + (d << 0 * 6);
+		const uint32_t triple = (a << 3 * 6) + (b << 2 * 6) + (c << 1 * 6) + (d << 0 * 6);
 
 		if (j < out_len) out[j++] = (triple >> 2 * 8) & 0xFF;
 		if (j < out_len) out[j++] = (triple >> 1 * 8) & 0xFF;
@@ -1585,7 +1532,7 @@ using std::to_string;
 /// @param value The double value to convert to a string.
 /// @param precision The number of digits to display after the decimal point.
 /// @return A string representation of the value with the specified precision.
-inline auto to_string(double value, int precision)
+inline auto to_string(const double value, const int precision)
 {
 	return std::format("{:0.{}f}", value, precision);
 }
@@ -1595,7 +1542,7 @@ inline auto to_string(double value, int precision)
 /// @param width The minimum width of the resulting string, including padding if necessary.
 /// @param precision The number of digits to display after the decimal point.
 /// @return A string representation of the value, formatted with the given width and precision.
-inline auto to_string(double value, int width, int precision)
+inline auto to_string(const double value, const int width, const int precision)
 {
 	return std::format("{:0{}.{}f}", value, width, precision);
 }
@@ -1606,7 +1553,7 @@ inline auto to_string(double value, int width, int precision)
 /// @param str A reference to the string view to extract from.
 /// @param delim The delimiter character to use for splitting lines. Defaults to '\n'.
 /// @return A string view containing the extracted line or substring up to the delimiter. If the delimiter is not found, returns the whole string.
-inline auto retrieveLine(StringViewVariant auto const str, char delim = '\n')
+inline auto retrieveLine(StringViewVariant auto const str, const char delim = '\n')
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -1624,7 +1571,7 @@ inline auto retrieveLine(StringViewVariant auto const str, char delim = '\n')
 /// @param str A reference to the string to extract from.
 /// @param delim The delimiter character to use for splitting lines. Defaults to '\n'.
 /// @return A string view containing the extracted line or substring up to the delimiter. If the delimiter is not found, returns the whole string.
-inline auto retrieveLine(StringVariant auto const& str, char delim = '\n')
+inline auto retrieveLine(StringVariant auto const& str, const char delim = '\n')
 {
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
@@ -1636,12 +1583,12 @@ inline auto retrieveLine(StringVariant auto const& str, char delim = '\n')
 /// @param str A reference to the string view to extract from. This will be updated to remove the extracted line.
 /// @param delim The delimiter character to use for splitting lines. Defaults to '\\n'.
 /// @return A string containing the extracted line or substring up to the delimiter. If the delimiter is not found, returns the remainder of the string.
-inline std::string extractLine(std::string_view& str, char delim = '\n')
+inline std::string extractLine(std::string_view& str, const char delim = '\n')
 {
 	const auto pos = str.find(delim);
 	if (pos == std::string::npos)
 	{
-		std::string_view line = str;
+		const std::string_view line = str;
 		str = {};
 		return std::string(line);
 	}
@@ -1655,7 +1602,7 @@ inline std::string extractLine(std::string_view& str, char delim = '\n')
 /// @param str The input string to split.
 /// @param delim The character used as the delimiter to split the string. Defaults to a space (' ').
 /// @return A pair of std::string_view objects: the first is the trimmed substring before the delimiter, the second is the trimmed substring after the delimiter (or empty if the delimiter is not found).
-inline std::pair<std::string_view, std::string_view> extractConfigParts(StringViewIshVariant auto const& str, char delim = ' ')
+inline std::pair<std::string_view, std::string_view> extractConfigParts(StringViewIshVariant auto const& str, const char delim = ' ')
 {
 	using StrType = std::remove_cvref_t<decltype(str)>;
 
@@ -1698,12 +1645,12 @@ inline bool match(StringViewVariant auto const str, StringViewVariant auto const
 				{
 					const auto m = std::tolower(static_cast<int>(*maskpos));
 					while (*curpos != 0 && std::tolower(static_cast<int>(*curpos)) != m)
-						curpos++;
+						++curpos;
 				}
 				else
 				{
 					while (*curpos != 0 && *curpos != *maskpos)
-						curpos++;
+						++curpos;
 				}
 			}
 		}
@@ -1722,8 +1669,8 @@ inline bool match(StringViewVariant auto const str, StringViewVariant auto const
 		// Exact match or single character (match one).
 		if (match || (*maskpos == static_cast<str_value_type>('?')))
 		{
-			maskpos++;
-			curpos++;
+			++maskpos;
+			++curpos;
 		}
 		else
 		{
@@ -1772,8 +1719,11 @@ namespace preagonal::range
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-/// Transforms a range of std::string_view to std::string.
-constexpr auto as_string = std::views::transform([](std::string_view s) { return std::string(s); });
+/// @brief Transforms a range of std::string_view to std::string.
+constexpr auto as_string = std::views::transform([](const std::string_view s) { return std::string(s); });
+
+/// @brief Transforms a range of std::string_view by trimming the strings.
+constexpr auto string_trim = std::views::transform([](const std::string_view s) { return string::trim(s); });
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal::range

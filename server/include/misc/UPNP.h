@@ -4,7 +4,6 @@
 #include <set>
 #include <string_view>
 #include <string>
-#include <type_traits>
 
 #ifdef ENABLE_UPNP
 #include <miniupnpc.h>
@@ -51,9 +50,9 @@ public:
 	}
 
 	// Returns true if the port was successfully forwarded.
-	bool wasPortForwarded(std::string_view port)
+	[[nodiscard]] bool wasPortForwarded(const std::string_view port) const
 	{
-		return m_portsForwarded.find(port) != m_portsForwarded.end();
+		return m_portsForwarded.contains(port);
 	}
 
 private:

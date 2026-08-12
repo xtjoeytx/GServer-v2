@@ -28,7 +28,7 @@ public:
 	/// @param levelName The filesystem path representing the name or location of the level to load.
 	/// @param level The shared pointer to the level object where the loaded data will be stored.
 	/// @return True if the level was loaded successfully, false otherwise.
-	static bool loadLevelInto(const std::filesystem::path& levelName, LevelPtr level);
+	static bool loadLevelInto(const std::filesystem::path& levelName, const LevelPtr& level);
 
 public:
 	/// @brief Loads the static data of a specified level using the given level name.
@@ -39,33 +39,33 @@ public:
 	/// @brief Loads the static data of a specified level into an existing static level data object.
 	/// @param staticLevelData The pointer to the static level data object where the loaded data will be stored.
 	/// @return True if the static level data was loaded successfully, false otherwise.
-	static bool loadStaticDataInto(StaticLevelDataPtr staticLevelData);
+	static bool loadStaticDataInto(const StaticLevelDataPtr& staticLevelData);
 
 	/// @brief Attaches static level data to a given level, returning a SubLevel that attaches it.
 	/// @param level The level to attach the static data to.
 	/// @param mapPosition The location within the map where the static data should be applied.
 	/// @param staticData The static data to attach to the level.
 	/// @return A new SubLevelPtr that represents the attached static data within the level.
-	static SubLevelPtr attachStaticDataToLevel(LevelPtr level, std::optional<MapPosition> mapPosition, StaticLevelDataPtr staticData);
+	static SubLevelPtr attachStaticDataToLevel(const LevelPtr& level, std::optional<MapPosition> mapPosition, const StaticLevelDataPtr& staticData);
 
 	/// @brief Loads the NPCs for a given level from the provided static level data.
 	/// @param level The shared pointer to the level for which NPCs are to be loaded.
 	/// @param mapPosition An optional map position indicating the specific sub-level location.
-	/// @param levelData A pointer to the static level data containing NPC information.
-	static void loadStaticDataNPCs(LevelPtr level, std::optional<MapPosition> mapPosition, StaticLevelDataPtr staticData);
+	/// @param staticData A pointer to the static level data containing NPC information.
+	static void loadStaticDataNPCs(const LevelPtr& level, std::optional<MapPosition> mapPosition, const StaticLevelDataPtr& staticData);
 
 private:
-	static void loadBinaryTiles(StaticLevelDataPtr levelData, fs::FilePtr& fileData, uint32_t bits, int layers);
-	static void loadBinaryLinks(StaticLevelDataPtr levelData, fs::FilePtr& fileData, fs::FileSystem& fileSystem);
-	static void loadBinaryBaddies(StaticLevelDataPtr levelData, fs::FilePtr& fileData, bool loadVerses);
-	static void loadBinaryNPCs(StaticLevelDataPtr levelData, fs::FilePtr& fileData);
-	static void loadBinaryChests(StaticLevelDataPtr levelData, fs::FilePtr& fileData);
-	static void loadBinarySigns(StaticLevelDataPtr levelData, fs::FilePtr& fileData);
+	static void loadBinaryTiles(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData, uint32_t bits, uint8_t layers);
+	static void loadBinaryLinks(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData, const fs::FileSystem& fileSystem);
+	static void loadBinaryBaddies(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData, bool loadVerses);
+	static void loadBinaryNPCs(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData);
+	static void loadBinaryChests(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData);
+	static void loadBinarySigns(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData);
 
 private:
-	static bool loadGraal(StaticLevelDataPtr levelData, std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData);
-	static bool loadZelda(StaticLevelDataPtr levelData, std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData);
-	static bool loadNW(StaticLevelDataPtr levelData, std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData);
+	static bool loadGraal(const StaticLevelDataPtr& levelData, std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData);
+	static bool loadZelda(const StaticLevelDataPtr& levelData, std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData);
+	static bool loadNW(const StaticLevelDataPtr& levelData, std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

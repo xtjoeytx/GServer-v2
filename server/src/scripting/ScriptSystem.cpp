@@ -15,25 +15,25 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void ScriptSystem::registerScriptEngine(std::string_view name, std::shared_ptr<IScriptEngine> engine)
+void ScriptSystem::registerScriptEngine(const std::string_view name, std::shared_ptr<IScriptEngine> engine)
 {
 	// Check if the engine is already registered.
-	if (m_script_engines.find(name) != m_script_engines.end())
+	if (m_script_engines.contains(name))
 		log::printLine(log::server, "Script engine '{}' is already registered. Overwriting.", name);
 
 	// Register the script engine.
 	m_script_engines.insert_or_assign(std::string{ name }, engine);
 }
 
-CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(std::string_view who, std::string_view source)
+CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(const std::string_view who, const std::string_view source)
 {
 	// Check for empty source.
-	auto trimmed = string::trim(source);
+	const auto trimmed = string::trim(source);
 	if (trimmed.empty())
 		return nullptr;
 
 	// We are using GS2.
-	if (auto it = m_script_engines.find("GS2"); it != m_script_engines.end())
+	if (const auto it = m_script_engines.find("GS2"); it != m_script_engines.end())
 		return getCompiledScript(it->second.get(), who, trimmed);
 
 	// Throw at this point.  We should always have a GS2 engine.
@@ -41,7 +41,7 @@ CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(std::string_view w
 	return nullptr;
 }
 
-CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(std::string_view who, std::string_view source)
+CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(const std::string_view who, const std::string_view source)
 {
 	// Check for empty source.
 	auto trimmed = string::trim(source);
@@ -54,21 +54,20 @@ CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(std::string_view w
 	if (trimmed.starts_with("//#"))
 	{
 		// Read the line and get the script engine we are going to use.
-		auto engine = string::extractLine(trimmed).substr(3);
-		if (!engine.empty())
+		if (const auto engine = string::extractLine(trimmed).substr(3); !engine.empty())
 			script_engine = engine;
 	}
 
 	// Find the script engine.
-	if (auto it = m_script_engines.find(script_engine); it != m_script_engines.end())
+	if (const auto it = m_script_engines.find(script_engine); it != m_script_engines.end())
 		return getCompiledScript(it->second.get(), who, trimmed);
 
 	return nullptr;
 }
 
-std::shared_ptr<IScriptEngine> ScriptSystem::getScriptEngine(std::string_view name) const
+std::shared_ptr<IScriptEngine> ScriptSystem::getScriptEngine(const std::string_view name) const
 {
-	auto engine = m_script_engines.find(name);
+	const auto engine = m_script_engines.find(name);
 	if (engine == m_script_engines.end())
 		return nullptr;
 
@@ -77,11 +76,11 @@ std::shared_ptr<IScriptEngine> ScriptSystem::getScriptEngine(std::string_view na
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompiledScriptResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, std::string_view who, std::string_view source)
+CompiledScriptResultPtr ScriptSystem::getCompiledScript(IScriptEngine* engine, const std::string_view who, const std::string_view source)
 {
 	// Check for a cached script.
-	size_t script_hash = string::string_hash{}(source);
-	if (auto it = m_script_cache.find(script_hash); it != m_script_cache.end())
+	const size_t script_hash = string::string_hash{}(source);
+	if (const auto it = m_script_cache.find(script_hash); it != m_script_cache.end())
 		return it->second;
 
 	// Compile the script.

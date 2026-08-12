@@ -72,7 +72,7 @@ public:
 protected:
 	std::string getClientSideScript() const;
 	void calculateHeaderChecksum();
-	void updateScriptClass(ScriptClass* scriptClass);
+	void updateScriptClass(ScriptClass* scriptClass) const;
 
 protected:
 	Server* m_server;

@@ -17,14 +17,11 @@ namespace preagonal
 
 std::optional<UpdatePackage> UpdatePackage::load(Server* const server, const std::string& name)
 {
-	auto& fileSystem = server->getFileSystem();
-
-	// Search for the file in the filesystem, and load the contents
-	auto fileData = fileSystem.info(fs::FileCategory::FILE, name);
-	if (fileData == nullptr)
+	// Search for the file in the filesystem.
+	if (const auto& fileSystem = server->getFileSystem(); !fileSystem.hasi(fs::FileCategory::FILE, name))
 		return std::nullopt;
 
-	// Calculate the checksum for the gupd file
+	// Calculate the checksum for the gupd file.
 	UpdatePackage updatePackage(name);
 	updatePackage.reload(server);
 
@@ -37,10 +34,10 @@ void UpdatePackage::reload(Server* const server)
 	this->m_packageSize = 0;
 	this->m_fileList.clear();
 
-	auto& fileSystem = server->getFileSystem();
+	const auto& fileSystem = server->getFileSystem();
 
 	// Search for the file in the filesystem, and load the contents
-	auto fileData = fileSystem.info(fs::FileCategory::FILE, m_packageName);
+	auto fileData = fileSystem.infoi(fs::FileCategory::FILE, m_packageName);
 	if (fileData == nullptr)
 		return;
 
@@ -69,12 +66,9 @@ void UpdatePackage::reload(Server* const server)
 
 			CString updateFileData;
 			updateFileData.load(fileData->file.string());
-			uint32_t fileLength(updateFileData.length());
+			const uint32_t fileLength(updateFileData.length());
 
-			this->m_fileList.emplace(baseFileName, FileEntry{
-													   .size = fileLength,
-													   .checksum = calculateCrc32Checksum(updateFileData) });
-
+			this->m_fileList.emplace(baseFileName, FileEntry{.size = fileLength, .checksum = calculateCrc32Checksum(updateFileData)});
 			this->m_packageSize += fileLength;
 		}
 	}

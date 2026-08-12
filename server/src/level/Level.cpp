@@ -65,7 +65,7 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-static short respawningTiles[] = {
+[[maybe_unused]] static short respawningTiles[] = {
 	0x1ff, // grass
 	0x3ff, // grass
 	0x7ff, // grass
@@ -856,7 +856,7 @@ bool Level::saveLevel(const MapPosition& mapPosition, const std::string_view fil
 					}
 
 					// Append the base64 encoded tile data.
-					std::span<uint8_t> tileData{reinterpret_cast<uint8_t*>(&tile), sizeof(decltype(tile))};
+					std::span<const uint8_t> tileData{reinterpret_cast<const uint8_t*>(&tile), sizeof(decltype(tile))};
 					data += string::toBase64(tileData).substr(0, 2);
 				}
 
@@ -1723,6 +1723,7 @@ void Level::updateBoard2(const TileRectangleArea& area) noexcept
 	const auto wholeTileArea = toWholeTileRectangleArea(area);
 	applyBoardChangeFromScriptTiles(wholeTileArea, false, false);
 
+	// ReSharper disable once CppTooWideScope
 	const bool levelsAutoSave = m_server->cached.saveTileChangesToLevelFile.getValue();
 	if (levelsAutoSave)
 	{
@@ -1810,8 +1811,7 @@ LevelBaddy* Level::addBaddy(const LocalPixelPosition& position, const BaddyType 
 	nextIndex = std::clamp(nextIndex, static_cast<size_t>(0), subLevel->baddies.size());
 
 	// New Baddy
-	LevelBaddy newBaddy{position, type, this->shared_from_this()};
-	newBaddy.id = nextIndex + 1;
+	LevelBaddy newBaddy{nextIndex + 1, position, type, this->shared_from_this()};
 
 	if (nextIndex == subLevel->baddies.size())
 		subLevel->baddies.emplace_back(std::move(newBaddy));
@@ -2008,7 +2008,7 @@ bool Level::removeBomb(const size_t index)
 	if (index >= m_bombs.size())
 		return false;
 
-	m_bombs.erase(m_bombs.begin() + index);
+	m_bombs.erase(m_bombs.begin() + static_cast<std::ptrdiff_t>(index));
 	return true;
 }
 
@@ -2038,7 +2038,7 @@ std::optional<const LevelChest*> Level::getChest(const size_t index) const noexc
 {
 	auto objects = getChests();
 	auto iter = objects.begin();
-	std::ranges::advance(iter, index, objects.end());
+	std::ranges::advance(iter, static_cast<std::ptrdiff_t>(index), objects.end());
 	if (iter == objects.end())
 		return std::nullopt;
 	return std::make_optional(&(*iter));
@@ -2189,7 +2189,7 @@ bool Level::removeExplosion(const size_t index)
 	if (index >= m_explosions.size())
 		return false;
 
-	m_explosions.erase(m_explosions.begin() + index);
+	m_explosions.erase(m_explosions.begin() + static_cast<std::ptrdiff_t>(index));
 	return true;
 }
 
@@ -2251,7 +2251,7 @@ bool Level::removeHorse(const size_t index)
 	if (index >= m_horses.size())
 		return false;
 
-	m_horses.erase(m_horses.begin() + index);
+	m_horses.erase(m_horses.begin() + static_cast<std::ptrdiff_t>(index));
 	return true;
 }
 
@@ -2259,8 +2259,7 @@ bool Level::removeHorse(const PixelPosition& position)
 {
 	for (size_t i = 0; i < m_horses.size(); ++i)
 	{
-		const LevelHorse& horse = m_horses[i];
-		if (horse.position == position)
+		if (const LevelHorse& horse = m_horses[i]; horse.position == position)
 			return removeHorse(i);
 	}
 	return false;
@@ -2342,7 +2341,7 @@ bool Level::removeItem(const size_t index)
 	if (index >= m_items.size())
 		return false;
 
-	m_items.erase(m_items.begin() + index);
+	m_items.erase(m_items.begin() + static_cast<std::ptrdiff_t>(index));
 	return true;
 }
 
@@ -2350,10 +2349,9 @@ LevelItemType Level::removeItem(const PixelPosition& position)
 {
 	for (auto i = m_items.begin(); i != m_items.end(); ++i)
 	{
-		LevelItem& item = *i;
-		if (item.position == position)
+		if (LevelItem& item = *i; item.position == position)
 		{
-			LevelItemType itemType = item.item;
+			const LevelItemType itemType = item.item;
 			m_items.erase(i);
 			return itemType;
 		}
@@ -2375,7 +2373,7 @@ std::optional<const LevelLink*> Level::getLink(const size_t index) const noexcep
 {
 	auto objects = getLinks();
 	auto iter = objects.begin();
-	std::ranges::advance(iter, index, objects.end());
+	std::ranges::advance(iter, static_cast<std::ptrdiff_t>(index), objects.end());
 	if (iter == objects.end())
 		return std::nullopt;
 	return std::make_optional(&(*iter));
@@ -2495,7 +2493,7 @@ std::optional<const LevelSign*> Level::getSign(const size_t index) const noexcep
 {
 	auto objects = getSigns();
 	auto iter = objects.begin();
-	std::ranges::advance(iter, index, objects.end());
+	std::ranges::advance(iter, static_cast<std::ptrdiff_t>(index), objects.end());
 	if (iter == objects.end())
 		return std::nullopt;
 	return std::make_optional(&(*iter));
@@ -2678,8 +2676,10 @@ bool Level::moveArrow(LevelArrow* arrow, const int iterations)
 
 bool Level::moveThrownItem(const size_t index, const int iterations)
 {
+	// ReSharper disable CppTooWideScope
 	constexpr uint8_t framesUntilHitsGround = 10;
 	constexpr int8_t damageFromThrownItem = 2;
+	// ReSharper enable CppTooWideScope
 
 	auto& thrownItem = m_thrownItems.at(index);
 	if (!thrownItem.has_value())
@@ -2792,6 +2792,7 @@ bool Level::isOnWater2(const PixelRectangleArea& area) const noexcept
 
 bool Level::isOnNPC(const PixelPosition& position) const noexcept
 {
+	// NOLINTNEXTLINE(*-use-anyofallof)
 	for (const auto& npcId : findInRangeNPCs(position))
 	{
 		if (auto npc = m_server->getNPC(npcId); npc != nullptr)
@@ -2805,6 +2806,7 @@ bool Level::isOnNPC(const PixelPosition& position) const noexcept
 
 bool Level::isOnNPC(const PixelRectangleArea& pixelArea) const noexcept
 {
+	// NOLINTNEXTLINE(*-use-anyofallof)
 	for (const auto& npcId : findInRangeNPCs(pixelArea.position))
 	{
 		if (auto npc = m_server->getNPC(npcId); npc != nullptr)
@@ -2818,6 +2820,7 @@ bool Level::isOnNPC(const PixelRectangleArea& pixelArea) const noexcept
 
 bool Level::isOnPlayer(const PixelPosition& position) const noexcept
 {
+	// NOLINTNEXTLINE(*-use-anyofallof)
 	for (const auto& playerId : findInRangePlayers(position))
 	{
 		if (auto player = m_server->getPlayer(playerId); player != nullptr)
@@ -2831,6 +2834,7 @@ bool Level::isOnPlayer(const PixelPosition& position) const noexcept
 
 bool Level::isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept
 {
+	// NOLINTNEXTLINE(*-use-anyofallof)
 	for (const auto& playerId : findInRangePlayers(pixelArea.position))
 	{
 		if (auto player = m_server->getPlayer(playerId); player != nullptr)
@@ -2859,7 +2863,7 @@ tileset::TileType Level::getTileTypeAt(const WholeTilePosition& tilePosition) co
 	const auto tile = tiles.value()->at(static_cast<size_t>(localPosition.y()) * 64 + localPosition.x());
 
 	const auto tileset = m_server->getTilesetTypeForLevel(shared_from_this());
-	return m_server->getTileTypeForTile(tileset, tile);
+	return Server::getTileTypeForTile(tileset, tile);
 }
 
 tileset::TileType Level::getTileTypeAt(const PixelPosition& position) const noexcept
@@ -2986,7 +2990,7 @@ std::generator<SubLevelPtr> Level::getNearbySubLevels(const PixelPosition& posit
 
 //----------------------------
 
-std::generator<PlayerID> Level::findInRangePlayers(const PixelPosition& position, std::optional<std::pair<uint32_t, uint32_t>> range) const noexcept
+std::generator<PlayerID> Level::findInRangePlayers(const PixelPosition& position, const std::optional<std::pair<uint32_t, uint32_t>> range) const noexcept
 {
 	const bool syncInside = m_server->cached.enableInsideSyncDistance.getValue();
 	const bool isInsideLevel = !isGmap();
@@ -3284,8 +3288,7 @@ std::shared_ptr<NPC> Level::generateItemNPC(const PixelPosition& position, const
 	}
 
 	// Create a new npc for this item.
-	const bool isNew = !itemNPC;
-	if (isNew)
+	if (!itemNPC)
 	{
 		itemNPC = m_server->getNPCServer()->addNPC("", std::format("if (created) join {};", itemName), shared_from_this(), {loc[0], loc[1]}, NPCTYPE_ITEM);
 		itemNPC->character.gralats = itemNPC->character.arrows = itemNPC->character.bombs = itemNPC->character.hitpointsInHalves = 0;

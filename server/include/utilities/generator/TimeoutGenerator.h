@@ -22,7 +22,7 @@ struct TimeoutGenerator
 	TimeoutGenerator() = default;
 
 	template<typename Rep, typename Period>
-	TimeoutGenerator(std::chrono::duration<Rep, Period> timeout, bool repeated = false)
+	explicit TimeoutGenerator(std::chrono::duration<Rep, Period> timeout, const bool repeated = false)
 		: timeout(std::chrono::duration_cast<time_delta>(timeout)), repeated(repeated) {}
 
 public:
@@ -36,13 +36,13 @@ public:
 	std::function<void(time_delta)> callbackDuration = nullptr;
 
 public:
-	int update(time_point now = precise_clock::now())
+	int update(const time_point now = precise_clock::now())
 	{
 		if (!m_running)
 			return 0;
 
-		auto duration = now - m_lastTimeout;
-		int iterations = duration / timeout;
+		const auto duration = now - m_lastTimeout;
+		int iterations = static_cast<int>(duration / timeout);
 		if (iterations > 0)
 		{
 			m_lastTimeout = now;
@@ -61,7 +61,7 @@ public:
 		return iterations;
 	}
 
-	void setLastTimeout(time_point lastTimeout = precise_clock::now())
+	void setLastTimeout(const time_point lastTimeout = precise_clock::now())
 	{
 		m_lastTimeout = lastTimeout;
 	}
@@ -96,24 +96,24 @@ public:
 		m_running = false;
 	}
 
-	bool isRunning() const
+	[[nodiscard]] bool isRunning() const
 	{
 		return m_running;
 	}
 
-	clock::duration getRemainingTime(time_point now = precise_clock::now()) const
+	[[nodiscard]] clock::duration getRemainingTime(const time_point now = precise_clock::now()) const
 	{
 		if (!m_running) return clock::duration::zero();
-		auto elapsed = now - m_lastTimeout;
-		auto remaining = timeout - std::chrono::duration_cast<time_delta>(elapsed);
+		const auto elapsed = now - m_lastTimeout;
+		const auto remaining = timeout - std::chrono::duration_cast<time_delta>(elapsed);
 		return std::chrono::duration_cast<clock::duration>(remaining > clock::duration::zero() ? remaining : clock::duration::zero());
 	}
 
-	size_t getRemainingTimeIn50msIncrements(time_point now = precise_clock::now()) const
+	[[nodiscard]] size_t getRemainingTimeIn50msIncrements(const time_point now = precise_clock::now()) const
 	{
 		if (!m_running) return 0;
-		auto elapsed = now - m_lastTimeout;
-		auto remaining = timeout - std::chrono::duration_cast<time_delta>(elapsed);
+		const auto elapsed = now - m_lastTimeout;
+		const auto remaining = timeout - std::chrono::duration_cast<time_delta>(elapsed);
 		if (remaining > clock::duration::zero())
 			return std::chrono::duration_cast<clock::duration>(remaining).count() / 50;
 		return 0;

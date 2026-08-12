@@ -56,9 +56,9 @@ HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 	if (pPacket[0] - 32 == PLI_LEVELWARPMOD)
 		modTime = clock::from_time_t((time_t)pPacket.readGUInt5());
 
-	LocalPixelPosition pos = {static_cast<int16_t>(pPacket.readGChar() * 8), static_cast<int16_t>(pPacket.readGChar() * 8)};
-	CString newLevelC = pPacket.readString("");
-	std::string_view newLevel = newLevelC.toStringView();
+	const LocalPixelPosition pos = {static_cast<int16_t>(pPacket.readGChar() * 8), static_cast<int16_t>(pPacket.readGChar() * 8)};
+	const CString newLevelC = pPacket.readString("");
+	const std::string_view newLevel = newLevelC.toStringView();
 
 	bool success = false;
 
@@ -69,17 +69,17 @@ HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 	}
 	else
 	{
-		if (auto level = m_server->getLoadedLevel(newLevel, shared_from_this()); level != nullptr)
+		if (const auto level = m_server->getLoadedLevel(newLevel, shared_from_this()); level != nullptr)
 		{
 			// If this level is part of a gmap, send the static data first, then warp second (so the appear on the correct level).
 			if (level->isGmap() && level->levelName != newLevel)
 			{
 				// Send the static data first.
-				auto subLevel = level->getSubLevelByName(newLevel);
+				const auto subLevel = level->getSubLevelByName(newLevel);
 				success = sendStaticLevelData(subLevel->staticData.lock(), subLevel, modTime);
 
 				// Now warp.
-				success = success && warp(level, toPixelPosition(level->getSubLevelOrigin(subLevel).value_or(PixelPosition{}), pos), modTime);
+				success = success && warp(level, toPixelPosition(Level::getSubLevelOrigin(subLevel).value_or(PixelPosition{}), pos), modTime);
 			}
 			// Otherwise, just enter the level.
 			else
@@ -92,7 +92,7 @@ HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 	// If we failed, try to resolve this.
 	if (!success)
 	{
-		if (auto level = getLevel(); level != nullptr)
+		if (const auto level = getLevel(); level != nullptr)
 			success = warp(level->levelName, account.character.getLocalPosition());
 	}
 	if (!success)
@@ -111,15 +111,15 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 	// Bushes, grasses, swamp, snow grass, desert grass.
 	constexpr std::array<uint16_t, 7> dropTiles = {0x002, 0x1a4, 0x1ff, 0x7ff, 0x3ff, 0x5d9, 0x34f};
 
-	uint8_t loc[2] = {pPacket.readGUChar(), pPacket.readGUChar()};
-	uint8_t dim[2] = {pPacket.readGUChar(), pPacket.readGUChar()};
+	const uint8_t loc[2] = {pPacket.readGUChar(), pPacket.readGUChar()};
+	const uint8_t dim[2] = {pPacket.readGUChar(), pPacket.readGUChar()};
 	CString tiles = pPacket.readString("");
 
-	auto level = getLevel();
+	const auto level = getLevel();
 	if (level == nullptr)
 		return HandlePacketResult::Handled;
 
-	auto globalPosition = toPixelPosition(getSubLevelOrigin(), LocalWholeTilePosition{loc[0], loc[1]});
+	const auto globalPosition = toPixelPosition(getSubLevelOrigin(), LocalWholeTilePosition{loc[0], loc[1]});
 
 	// Alter level data.
 	if (level->alterBoard(tiles, {toWholeTilePosition(globalPosition), {dim[0], dim[1]}}, this))
@@ -141,14 +141,14 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 		return HandlePacketResult::Handled;
 
 	// Lay items when you destroy objects.
-	auto levelTiles = level->getTiles(getMapPosition());
+	const auto levelTiles = level->getTiles(getMapPosition());
 	if (!levelTiles.has_value())
 		return HandlePacketResult::Handled;
 
-	auto oldTile = levelTiles.value()->at(loc[0] + static_cast<size_t>(loc[1] * 64));
-	bool bushitems = m_server->cached.enableBushItemDrops.getValue();
-	bool vasesdrop = m_server->cached.enableVaseItemDrops.getValue();
-	LevelItemType dropItem = LevelItemType::INVALID;
+	const auto oldTile = levelTiles.value()->at(loc[0] + static_cast<size_t>(loc[1] * 64));
+	const bool bushitems = m_server->cached.enableBushItemDrops.getValue();
+	const bool vasesdrop = m_server->cached.enableVaseItemDrops.getValue();
+	auto dropItem = LevelItemType::INVALID;
 
 	// If we support item drops and the tile is in the allowed list, drop the item.
 	if (std::ranges::contains(dropTiles, oldTile) && bushitems)
@@ -171,14 +171,14 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
 {
 	// {130}{CHAR level length}{level}{INT5 modtime}{SHORT x}{SHORT y}{SHORT width}{SHORT height}
-	CString level = pPacket.readChars(pPacket.readGUChar());
+	const CString level = pPacket.readChars(pPacket.readGUChar());
 
-	time_t modTime = (time_t)pPacket.readGUInt5();
+	const auto modTime = static_cast<time_t>(pPacket.readGUInt5());
 
-	short x = pPacket.readGShort();
-	short y = pPacket.readGShort();
-	short w = pPacket.readGShort();
-	short h = pPacket.readGShort();
+	const short x = pPacket.readGShort();
+	const short y = pPacket.readGShort();
+	const short w = pPacket.readGShort();
+	const short h = pPacket.readGShort();
 
 	// TODO: What to return?
 	log::printLine(log::server, "Received PLI_REQUESTUPDATEBOARD - level: {} - x: {} - y: {} - w: {} - h: {} - modtime: {}", level, x, y, w, h, modTime);
@@ -192,7 +192,7 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 	if (m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
-	unsigned int npcId = pPacket.readGUInt();
+	const unsigned int npcId = pPacket.readGUInt();
 	CString npcProps = pPacket.readString("");
 
 	//printf( "npcId: %d\n", npcId );
@@ -200,11 +200,11 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 	//for (int i = 0; i < pPacket.length(); ++i) printf( "%02x ", (unsigned char)pPacket[i] );
 	//printf( "\n" );
 
-	auto npc = m_server->getNPC(npcId);
+	const auto npc = m_server->getNPC(npcId);
 	if (!npc)
 		return HandlePacketResult::Handled;
 
-	if (auto level = getLevel(); npc->getLevel() != level)
+	if (const auto level = getLevel(); npc->getLevel() != level)
 		return HandlePacketResult::Handled;
 
 	npc->setPropsFromPacket(npcProps, shared_from_this());
@@ -214,21 +214,21 @@ HandlePacketResult PlayerClient::msgPLI_NPCPROPS(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_BOMBADD(CString& pPacket)
 {
-	float loc[2] = {(pPacket.readGUChar() % 128) / 2.0f, (pPacket.readGUChar() % 128) / 2.0f};
-	[[maybe_unused]] unsigned char player_power = pPacket.readGUChar();
-	[[maybe_unused]] unsigned char player = player_power >> 2;
-	[[maybe_unused]] unsigned char power = player_power & 0x03;
+	const float loc[2] = {static_cast<float>(pPacket.readGUChar() % 128) / 2.0f, static_cast<float>(pPacket.readGUChar() % 128) / 2.0f};
+	[[maybe_unused]] const unsigned char player_power = pPacket.readGUChar();
+	[[maybe_unused]] const unsigned char player = player_power >> 2;
+	[[maybe_unused]] const unsigned char power = player_power & 0x03;
 
 	// How many 0.05 sec increments until it explodes.
 	// It takes 3 seconds for a bomb to explode, but by the time the client sends the packet, it has already counted down to 2.75 seconds.
 	// The 0 is counted as a 0.05 second increment, so we add 50ms to the total.
-	[[maybe_unused]] std::chrono::milliseconds timeToExplode = (pPacket.readGUChar() * 50ms) + 50ms;
+	[[maybe_unused]] const std::chrono::milliseconds timeToExplode = (pPacket.readGUChar() * 50ms) + 50ms;
 
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		if (m_server->hasNPCServer())
 		{
-			auto position = toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]);
+			const auto position = toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]);
 			if (level->addBombFromClient(position, power, m_id, timeToExplode) == nullptr)
 				sendPacket(CString() >> (char)PLO_BOMBDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
 		}
@@ -243,11 +243,11 @@ HandlePacketResult PlayerClient::msgPLI_BOMBADD(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_BOMBDEL(CString& pPacket)
 {
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOMBDEL << (pPacket.text() + 1), getGlobalPosition(), level, {m_id});
 
-		float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
+		const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
 		level->removeBomb(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]));
 	}
 
@@ -256,15 +256,15 @@ HandlePacketResult PlayerClient::msgPLI_BOMBDEL(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_HORSEADD(CString& pPacket)
 {
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_HORSEADD << (pPacket.text() + 1), getGlobalPosition(), level, {m_id});
 
-		float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
-		uint8_t dir_bush = pPacket.readGUChar();
-		uint8_t hdir = dir_bush & 0x03;
-		uint8_t hbushes = dir_bush >> 2;
-		CString image = pPacket.readString("");
+		const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
+		const uint8_t dir_bush = pPacket.readGUChar();
+		const uint8_t hdir = dir_bush & 0x03;
+		const uint8_t hbushes = dir_bush >> 2;
+		const CString image = pPacket.readString("");
 
 		level->addHorse(image, toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), hdir, hbushes);
 	}
@@ -274,11 +274,11 @@ HandlePacketResult PlayerClient::msgPLI_HORSEADD(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_HORSEDEL(CString& pPacket)
 {
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_HORSEDEL << (pPacket.text() + 1), getGlobalPosition(), level, {m_id});
 
-		float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
+		const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
 		level->removeHorse(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]));
 	}
 
@@ -287,23 +287,23 @@ HandlePacketResult PlayerClient::msgPLI_HORSEDEL(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_ARROWADD(CString& pPacket)
 {
-	[[maybe_unused]] float loc[] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
-	[[maybe_unused]] uint8_t flags = pPacket.readGUChar();
-	[[maybe_unused]] uint8_t sprite = pPacket.readGUChar();
-	[[maybe_unused]] uint8_t power = pPacket.readGUChar();
+	[[maybe_unused]] const float loc[] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
+	[[maybe_unused]] const uint8_t flags = pPacket.readGUChar();
+	[[maybe_unused]] const uint8_t sprite = pPacket.readGUChar();
+	[[maybe_unused]] const int8_t power = pPacket.readGChar();
 
-	[[maybe_unused]] uint8_t dir = flags & 0b11;
-	[[maybe_unused]] bool reflect = (flags & 0b100) != 0;
-	[[maybe_unused]] bool fromPlayer = (flags & 0b1000) != 0;
+	[[maybe_unused]] const uint8_t dir = flags & 0b11;
+	[[maybe_unused]] const bool reflect = (flags & 0b100) != 0;
+	[[maybe_unused]] const bool fromPlayer = (flags & 0b1000) != 0;
 
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_ARROWADD >> (short)m_id << (pPacket.text() + 1), getGlobalPosition(), level, {m_id});
 
 		// Add it to the level.
 		if (m_server->hasNPCServer())
 		{
-			PixelPosition speed = PixelPosition::playerDirectionVector(dir) * arrowSpeedInPixelsPer50ms;
+			const PixelPosition speed = PixelPosition::playerDirectionVector(dir) * arrowSpeedInPixelsPer50ms;
 			level->addArrow(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), speed, dir, power, fromPlayer ? source::FromPlayer(m_id) : source::FromServer());
 		}
 	}
@@ -313,11 +313,11 @@ HandlePacketResult PlayerClient::msgPLI_ARROWADD(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_FIRESPY(CString& pPacket)
 {
-	uint8_t length_power = pPacket.readGUChar();
-	uint8_t power = length_power & 0b111; // Power is the last three bits.
-	uint8_t length = length_power >> 3;   // Length is the first five bits.
+	const uint8_t length_power = pPacket.readGUChar();
+	const uint8_t power = length_power & 0b111; // Power is the last three bits.
+	const uint8_t length = length_power >> 3;   // Length is the first five bits.
 
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_FIRESPY >> (short)m_id << (pPacket.text() + 1), getGlobalPosition(), level, {m_id});
 
@@ -335,7 +335,7 @@ HandlePacketResult PlayerClient::msgPLI_THROWCARRIED(CString& pPacket)
 
 	if (m_server->hasNPCServer())
 	{
-		if (auto level = getLevel(); level != nullptr)
+		if (const auto level = getLevel(); level != nullptr)
 			level->addThrownItem(getTilePosition().translate(0.5f, 1.0f), account.character.direction, ENUM<CarryObjectSprite>(m_carrySprite), source::FromPlayer(m_id));
 	}
 
@@ -344,9 +344,9 @@ HandlePacketResult PlayerClient::msgPLI_THROWCARRIED(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 {
-	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
-	uint8_t item = pPacket.readGUChar();
-	LevelItemType itemType = LevelItem::getItemId(item);
+	const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
+	const int8_t item = pPacket.readGChar();
+	const LevelItemType itemType = LevelItem::getItemId(item);
 
 	// If item drops are disabled, tell the client to delete the item and roll back the changes.
 	if (m_server->cached.disableItemDropping.getValue())
@@ -359,7 +359,7 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 
 	m_server->queueNPCEvent(m_currentLevel.lock(), getGlobalPosition(), ScriptEventType::PLAYERLAYSITEM, source::FromPlayer(m_id));
 
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		if (m_server->hasNPCServer())
 		{
@@ -384,14 +384,14 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_ITEMDEL(CString& pPacket)
 {
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_ITEMDEL << (pPacket.text() + 1), getGlobalPosition(), level, {m_id});
 
-		float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
+		const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
 
 		// Remove the item from the level, getting the type of the item in the process.
-		LevelItemType item = level->removeItem(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]));
+		const LevelItemType item = level->removeItem(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]));
 		if (item == LevelItemType::INVALID) return HandlePacketResult::Handled;
 
 		// If this is a PLI_ITEMTAKE packet, give the item to the player.
@@ -405,8 +405,8 @@ HandlePacketResult PlayerClient::msgPLI_ITEMDEL(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 {
 	// Get the player who killed us.
-	unsigned int pId = pPacket.readGUShort();
-	auto killer = m_server->getPlayer(pId, PLTYPE_ANYCLIENT);
+	const unsigned int pId = pPacket.readGUShort();
+	const auto killer = m_server->getPlayer(pId, PLTYPE_ANYCLIENT);
 	if (killer == nullptr || killer.get() == this)
 		return HandlePacketResult::Handled;
 
@@ -415,7 +415,7 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 
 	// Sparring zone rating code.
 	// Uses the glicko rating system.
-	auto level = getLevel();
+	const auto level = getLevel();
 	if (level == nullptr) return HandlePacketResult::Handled;
 	if (level->isSparringZone(getMapPosition()))
 	{
@@ -423,19 +423,19 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 		{
 			// Get some stats we are going to use.
 			// Need to parse the other player's PlayerProp::RATING.
-			auto otherRating = killer->getProp<PlayerProp::RATING>();
-			float oldStats[4] = {account.eloRating, account.eloDeviation, (float)otherRating.rating, (float)otherRating.deviation};
+			const auto otherRating = killer->getProp<PlayerProp::RATING>();
+			const float oldStats[4] = {account.eloRating, account.eloDeviation, otherRating.rating, otherRating.deviation};
 
 			// If the IPs are the same, don't update the rating to prevent cheating.
 			if (CString(m_playerSock->getRemoteIp()) == CString(killer->getSocket()->getRemoteIp()))
 				return HandlePacketResult::Handled;
 
-			float gSpar[2] = {static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[3], 2)) / pow(3.14159265f, 2)), 0.5f)),  //Winner
-							  static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[1], 2)) / pow(3.14159265f, 2)), 0.5f))}; //Loser
-			float ESpar[2] = {static_cast<float>(1.0f / (1.0f + pow(10.0f, (-gSpar[1] * (oldStats[2] - oldStats[0]) / 400.0f)))),                      //Winner
-							  static_cast<float>(1.0f / (1.0f + pow(10.0f, (-gSpar[0] * (oldStats[0] - oldStats[2]) / 400.0f))))};                     //Loser
-			float dSpar[2] = {static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[0], 2) * ESpar[0] * (1.0f - ESpar[0]))),                       //Winner
-							  static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[1], 2) * ESpar[1] * (1.0f - ESpar[1])))};                      //Loser
+			const float gSpar[2] = {static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[3], 2)) / pow(3.14159265f, 2)), 0.5f)),  //Winner
+									static_cast<float>(1.0f / pow((1.0f + 3.0f * pow(0.0057565f, 2) * (pow(oldStats[1], 2)) / pow(3.14159265f, 2)), 0.5f))}; //Loser
+			const float ESpar[2] = {static_cast<float>(1.0f / (1.0f + std::pow(10.0f, (-gSpar[1] * (oldStats[2] - oldStats[0]) / 400.0f)))),                     //Winner
+									static_cast<float>(1.0f / (1.0f + std::pow(10.0f, (-gSpar[0] * (oldStats[0] - oldStats[2]) / 400.0f))))};                    //Loser
+			const float dSpar[2] = {static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[0], 2) * ESpar[0] * (1.0f - ESpar[0]))),                       //Winner
+									static_cast<float>(1.0f / (pow(0.0057565f, 2) * pow(gSpar[1], 2) * ESpar[1] * (1.0f - ESpar[1])))};                      //Loser
 
 			float tWinRating = oldStats[2] + (0.0057565f / (1.0f / powf(oldStats[3], 2) + 1.0f / dSpar[0])) * (gSpar[0] * (1.0f - ESpar[0]));
 			float tLoseRating = oldStats[0] + (0.0057565f / (1.0f / powf(oldStats[1], 2) + 1.0f / dSpar[1])) * (gSpar[1] * (0.0f - ESpar[1]));
@@ -474,7 +474,7 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 			// If I have 20 or more AP, they lose AP.
 			if (oAp > 0 && account.character.ap > 19)
 			{
-				int aptime[] =
+				const int aptime[] =
 				{
 					m_server->cached.apSystemThresholdSeconds[0].getValue(), m_server->cached.apSystemThresholdSeconds[1].getValue(),
 					m_server->cached.apSystemThresholdSeconds[2].getValue(), m_server->cached.apSystemThresholdSeconds[3].getValue(),
@@ -494,17 +494,17 @@ HandlePacketResult PlayerClient::msgPLI_CLAIMPKER(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_BADDYPROPS(CString& pPacket)
 {
-	auto level = getLevel();
+	const auto level = getLevel();
 	if (level == nullptr || !level->hasPlayers())
 		return HandlePacketResult::Handled;
 
-	bool livingBaddies = level->hasLivingBaddies();
+	const bool livingBaddies = level->hasLivingBaddies();
 
-	unsigned char id = pPacket.readGUChar();
+	const unsigned char id = pPacket.readGUChar();
 	CString props = pPacket.readString("");
 
 	// Get the baddy.
-	auto baddy = level->getBaddyById(id);
+	const auto baddy = level->getBaddyById(id);
 	if (!baddy.has_value() || baddy.value() == nullptr)
 		return HandlePacketResult::Handled;
 
@@ -523,12 +523,12 @@ HandlePacketResult PlayerClient::msgPLI_BADDYPROPS(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_BADDYHURT(CString& pPacket)
 {
-	auto level = getLevel();
+	const auto level = getLevel();
 	if (level == nullptr || !level->hasPlayers())
 		return HandlePacketResult::Handled;
 
-	auto leaderId = level->getPlayers().front();
-	auto leader = m_server->getPlayer(leaderId);
+	const auto leaderId = level->getPlayers().front();
+	const auto leader = m_server->getPlayer(leaderId);
 	if (leader == nullptr)
 		return HandlePacketResult::Handled;
 
@@ -547,13 +547,13 @@ HandlePacketResult PlayerClient::msgPLI_BADDYADD(CString& pPacket)
 	if (m_currentLevel.expired())
 		return HandlePacketResult::Handled;
 
-	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
+	const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
 	uint8_t bType = pPacket.readGUChar();
 	uint8_t bPower = pPacket.readGUChar();
 	CString bImage = pPacket.readString("");
 	bPower = std::min(bPower, 12_ui8); // Hard-limit to 6 hearts.
 
-	auto level = getLevel();
+	const auto level = getLevel();
 	if (level == nullptr)
 		return HandlePacketResult::Handled;
 
@@ -637,7 +637,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 			else if (flagName == "gr.z")
 			{
 				if (m_versionId >= CLVER_2_3) return HandlePacketResult::Handled;
-				float pos = (float)atof(flagValue.text());
+				const auto pos = static_cast<float>(atof(flagValue.text()));
 				if (pos != account.character.localPixelZ / 16.0f)
 					m_grMovementPackets >> (char)PlayerProp::Z >> (char)((pos + 0.5f) + 50.0f) << "\n";
 				return HandlePacketResult::Handled;
@@ -677,7 +677,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_FLAGDEL(CString& pPacket)
 {
-	CString flagPacket = pPacket.readString("");
+	const CString flagPacket = pPacket.readString("");
 
 	std::string_view flagName;
 	bool hasValue = false;
@@ -710,7 +710,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGDEL(CString& pPacket)
 	}
 
 	// Try to remove the flag.
-	if (auto flag = account.variables.get(flagName).lock(); flag != nullptr)
+	if (const auto flag = account.variables.get(flagName).lock(); flag != nullptr)
 	{
 		if (flag->value.has<std::string>())
 		{
@@ -728,18 +728,18 @@ HandlePacketResult PlayerClient::msgPLI_FLAGDEL(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 {
-	uint8_t cX = pPacket.readGChar();
-	uint8_t cY = pPacket.readGChar();
+	const uint8_t cX = pPacket.readGChar();
+	const uint8_t cY = pPacket.readGChar();
 
-	if (auto level = getLevel(); level)
+	if (const auto level = getLevel(); level)
 	{
 		LocalWholeTilePosition chestPos{cX, cY};
-		if (auto chest = level->getChest(getMapPosition(), chestPos); chest.has_value())
+		if (const auto chest = level->getChest(getMapPosition(), chestPos); chest.has_value())
 		{
-			auto levelName = level->getLevelNameAtPosition(getGlobalPosition());
+			const auto levelName = level->getLevelNameAtPosition(getGlobalPosition());
 			if (!account.hasChest(levelName, chestPos))
 			{
-				LevelItemType chestItem = chest.value()->item;
+				const LevelItemType chestItem = chest.value()->item;
 				setPropsFromPacket(CString() << LevelItem::getItemPlayerProp(chestItem, this), props::SetBy::SERVER);
 				sendPacket(CString() >> (char)PLO_LEVELCHEST >> (char)1 >> (char)cX >> (char)cY);
 				account.savedChests.insert(std::make_pair(level->levelName, chestPos));
@@ -756,16 +756,16 @@ HandlePacketResult PlayerClient::msgPLI_PUTNPC(CString& pPacket)
 	if (m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
-	CString nimage = pPacket.readChars(pPacket.readGUChar());
-	CString ncode = pPacket.readChars(pPacket.readGUChar());
-	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
+	const CString nimage = pPacket.readChars(pPacket.readGUChar());
+	const CString ncode = pPacket.readChars(pPacket.readGUChar());
+	const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
 
 	// See if putnpc is allowed.
 	if (!m_server->getSettings().get<bool>("putnpcenabled").value_or(false))
 		return HandlePacketResult::Handled;
 
 	// Get the file.
-	auto file = m_server->getFileSystem().open(fs::FileCategory::FILE, ncode.toStringView());
+	const auto file = m_server->getFileSystem().open(fs::FileCategory::FILE, ncode.toStringView());
 	if (!file)
 		return HandlePacketResult::Handled;
 
@@ -785,10 +785,10 @@ HandlePacketResult PlayerClient::msgPLI_NPCDEL(CString& pPacket)
 	if (m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
-	unsigned int nid = pPacket.readGUInt();
+	const unsigned int nid = pPacket.readGUInt();
 
 	// Remove the NPC.
-	if (auto npc = m_server->getNPC(nid); npc)
+	if (const auto npc = m_server->getNPC(nid); npc)
 		m_server->deleteNPC(npc, !m_currentLevel.expired());
 
 	return HandlePacketResult::Handled;
@@ -818,18 +818,20 @@ HandlePacketResult PlayerClient::msgPLI_SHOWIMGPLAYER(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_HURTPLAYER(CString& pPacket)
 {
-	unsigned short pId = pPacket.readGUShort();
-	char hurtdx = pPacket.readGChar();
-	char hurtdy = pPacket.readGChar();
-	unsigned char power = pPacket.readGUChar();
-	unsigned int npc = pPacket.readGUInt();
+	const unsigned short pId = pPacket.readGUShort();
+	const char hurtdx = pPacket.readGChar();
+	const char hurtdy = pPacket.readGChar();
+	const unsigned char power = pPacket.readGUChar();
+	const unsigned int npc = pPacket.readGUInt();
 
 	// Get the victim.
-	auto victim = m_server->getPlayer(pId, PLTYPE_ANYCLIENT);
-	if (victim == 0) return HandlePacketResult::Handled;
+	const auto victim = m_server->getPlayer(pId, PLTYPE_ANYCLIENT);
+	if (victim == nullptr)
+		return HandlePacketResult::Handled;
 
 	// If they are paused, they don't get hurt.
-	if (victim->getProp<PlayerProp::STATUS>().value & PLSTATUS_PAUSED) return HandlePacketResult::Handled;
+	if (victim->getProp<PlayerProp::STATUS>().value & PLSTATUS_PAUSED)
+		return HandlePacketResult::Handled;
 
 	// Send the packet.
 	victim->sendPacket(CString() >> (char)PLO_HURTPLAYER >> (short)m_id >> (char)hurtdx >> (char)hurtdy >> (char)power >> (int)npc);
@@ -842,14 +844,14 @@ HandlePacketResult PlayerClient::msgPLI_EXPLOSION(CString& pPacket)
 	if (m_server->cached.disableExplosions.getValue())
 		return HandlePacketResult::Handled;
 
-	unsigned char eradius = pPacket.readGUChar();
-	float loc[2] = {(float)pPacket.readGUChar() / 2.0f, (float)pPacket.readGUChar() / 2.0f};
-	unsigned char epower = pPacket.readGUChar();
+	const unsigned char eradius = pPacket.readGUChar();
+	const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
+	const unsigned char epower = pPacket.readGUChar();
 
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		// Send the packet out.
-		CString packet = CString() >> (char)PLO_EXPLOSION >> (short)m_id >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
+		const CString packet = CString() >> (char)PLO_EXPLOSION >> (short)m_id >> (char)eradius >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)epower;
 		m_server->sendPacketToOneLevelPart(packet, getGlobalPosition(), level, {m_id});
 
 		// Add it to the level.
@@ -862,10 +864,10 @@ HandlePacketResult PlayerClient::msgPLI_EXPLOSION(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 {
-	const int sendLimit = 4;
+	constexpr int sendLimit = 4;
 	if (isClient() && timeDifference(m_server->getFrameStartTime(), m_lastMessage) < 4s)
 	{
-		sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE << "Server message:\xa7You can only send messages once every " << CString((int)sendLimit) << " seconds.");
+		sendPacket(CString() >> (char)PLO_RC_ADMINMESSAGE << "Server message:\xa7You can only send messages once every " << string::to_string(sendLimit) << " seconds.");
 		return HandlePacketResult::Handled;
 	}
 	m_lastMessage = m_server->getFrameStartTime();
@@ -874,7 +876,7 @@ HandlePacketResult PlayerClient::msgPLI_PRIVATEMESSAGE(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_NPCWEAPONDEL(CString& pPacket)
 {
-	std::string weapon = pPacket.readString("").toString();
+	const std::string weapon = pPacket.readString("").toString();
 
 	// If it is a protected weapon, don't delete it.
 	if (std::ranges::contains(m_server->cached.protectedWeapons.getValue(), weapon))
@@ -890,10 +892,8 @@ HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 	if (m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
-	unsigned char type = pPacket.readGUChar();
-
 	// Type 0 means it is a default weapon.
-	if (type == 0)
+	if (const unsigned char type = pPacket.readGUChar(); type == 0)
 	{
 		this->addWeapon(LevelItem::getItemId(pPacket.readGChar()));
 	}
@@ -901,19 +901,19 @@ HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 	else
 	{
 		// Get the NPC id.
-		unsigned int npcId = pPacket.readGUInt();
-		auto npc = m_server->getNPC(npcId);
+		const unsigned int npcId = pPacket.readGUInt();
+		const auto npc = m_server->getNPC(npcId);
 		if (npc == nullptr)
 			return HandlePacketResult::Handled;
 
 		// Get the level.
-		auto level = npc->getLevel();
+		const auto level = npc->getLevel();
 		if (level == nullptr)
 			return HandlePacketResult::Handled;
 
 		// Get the name of the weapon.
 		const auto& name = npc->getWeaponName();
-		if (name.length() == 0)
+		if (name.empty())
 			return HandlePacketResult::Handled;
 
 		// See if we can find the weapon in the server weapon list.
@@ -948,17 +948,17 @@ HandlePacketResult PlayerClient::msgPLI_WEAPONADD(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_UPDATEFILE(CString& pPacket)
 {
 	// Get the packet data and file mod time.
-	time_t modTime = pPacket.readGUInt5();
+	const time_t modTime = pPacket.readGUInt5();
 	CString file = pPacket.readString("");
 
 	// If we are the 1.41 client, make sure a file extension was sent.
 	if (m_versionId < CLVER_2_1 && getExtension(file).isEmpty())
 		file << ".gif";
 
-	auto& fileSystem = m_server->getFileSystem();
+	const auto& fileSystem = m_server->getFileSystem();
 	time_t fModTime = 0;
 
-	if (auto info = fileSystem.infoi(fs::FileCategory::ALL, file.toStringView()); info != nullptr)
+	if (const auto info = fileSystem.infoi(fs::FileCategory::ALL, file.toStringView()); info != nullptr)
 		fModTime = clock::to_time_t(toSystemClock(info->modifiedTime));
 
 	//printf("UPDATEFILE: %s\n", file.text());
@@ -992,16 +992,16 @@ HandlePacketResult PlayerClient::msgPLI_UPDATEFILE(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 {
-	std::optional<clock::time_point> modTime = clock::from_time_t((time_t)pPacket.readGUInt5());
+	const std::optional<clock::time_point> modTime = clock::from_time_t((time_t)pPacket.readGUInt5());
 
-	CString levelNameC = pPacket.readString("");
-	std::string_view levelName = levelNameC.toStringView();
+	const CString levelNameC = pPacket.readString("");
+	const std::string_view levelName = levelNameC.toStringView();
 
 	// Check if the adjacent level is on the player's current gmap.
 	// The gmap might have customized data.
-	if (auto currentLevel = getLevel(); currentLevel != nullptr && currentLevel->isGmap())
+	if (const auto currentLevel = getLevel(); currentLevel != nullptr && currentLevel->isGmap())
 	{
-		if (auto subLevel = currentLevel->getSubLevelByName(levelName); subLevel != nullptr)
+		if (const auto subLevel = currentLevel->getSubLevelByName(levelName); subLevel != nullptr)
 		{
 			sendStaticLevelData(subLevel->staticData.lock(), subLevel, modTime);
 			return HandlePacketResult::Handled;
@@ -1009,7 +1009,7 @@ HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	}
 
 	// Otherwise, send the normal static data.
-	if (auto cachedData = m_server->getCachedLevelData(levelName); cachedData != nullptr)
+	if (const auto cachedData = m_server->getCachedLevelData(levelName); cachedData != nullptr)
 		sendStaticLevelData(cachedData, nullptr, modTime);
 
 	return HandlePacketResult::Handled;
@@ -1017,28 +1017,28 @@ HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_HITOBJECTS(CString& pPacket)
 {
-	float power = (float)pPacket.readGChar() / 2.0f;
-	float loc[2] = {(float)pPacket.readGChar() / 2.0f, (float)pPacket.readGChar() / 2.0f};
-	int nid = (pPacket.bytesLeft() != 0) ? pPacket.readGUInt() : -1;
+	const int8_t power = pPacket.readGChar();
+	const float loc[2] = {static_cast<float>(pPacket.readGChar()) / 2.0f, static_cast<float>(pPacket.readGChar()) / 2.0f};
+	const int nid = (pPacket.bytesLeft() != 0) ? pPacket.readGInt() : -1;
 
 	// Construct the packet.
 	// {46}{SHORT player_id / 0 for NPC}{CHAR power}{CHAR x}{CHAR y}[{INT npc_id}]
 	CString nPacket;
 	nPacket >> (char)PLO_HITOBJECTS;
 	nPacket >> (short)((nid == -1) ? m_id : 0); // If it came from an NPC, send 0 for the id.
-	nPacket >> (char)(power * 2) >> (char)(loc[0] * 2) >> (char)(loc[1] * 2);
+	nPacket >> (char)power >> (char)(loc[0] * 2) >> (char)(loc[1] * 2);
 	if (nid != -1) nPacket >> (int)nid;
 
 	if (m_server->hasNPCServer())
 	{
-		if (auto level = getLevel(); level != nullptr)
+		if (const auto level = getLevel(); level != nullptr)
 		{
 			auto hitNPCs = level->findIntersectingNPCsForCollision({static_cast<int16_t>(loc[0] * 16), static_cast<int16_t>(loc[1] * 16)});
 			for (const auto& npcId : hitNPCs)
 			{
 				if (auto npc = m_server->getNPC(npcId); npc != nullptr && npc->isCharacter() && npc->visFlags != PROPID(NPCVisFlags::HIDDEN))
 				{
-					npc->setPropWith<NPCProp::HALFHEARTS>(SetBy::SERVER, static_cast<GBYTE1>(std::max(0, (int)npc->getProp<NPCProp::HALFHEARTS>().value - int(power * 2))));
+					npc->setPropWith<NPCProp::HALFHEARTS>(SetBy::SERVER, static_cast<GBYTE1>(std::max(0, static_cast<int>(npc->getProp<NPCProp::HALFHEARTS>().value) - static_cast<int>(power * 2))));
 					npc->hurtAndPush(power, translatePosition(getGlobalPosition(), 24_i32, 32_i32), ScriptEventType::WASHIT, source::FromPlayer(m_id));
 				}
 			}
@@ -1052,11 +1052,8 @@ HandlePacketResult PlayerClient::msgPLI_HITOBJECTS(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 {
 	// Read packet data
-	[[maybe_unused]] unsigned int npcId = pPacket.readGUInt();
-	float loc[2] = {
-		(float)pPacket.readGUChar() / 2.0f,
-		(float)pPacket.readGUChar() / 2.0f
-	};
+	[[maybe_unused]] const unsigned int npcId = pPacket.readGUInt();
+	const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
 
 	PixelPosition pixelLoc{toPixelPosition(getSubLevelOrigin(), loc[0], loc[1])};
 
@@ -1079,7 +1076,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 				m_grExecParameterList.clear();
 				return HandlePacketResult::Handled;
 			}
-			else if (actualActionName == "gr.es_set")
+			if (actualActionName == "gr.es_set")
 			{
 				// Add the parameter to our saved parameter list.
 				CString parameters = string::join(actions | std::views::drop(1));
@@ -1089,7 +1086,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 					m_grExecParameterList << "," << parameters;
 				return HandlePacketResult::Handled;
 			}
-			else if (actualActionName == "gr.es_append")
+			if (actualActionName == "gr.es_append")
 			{
 				// Append doesn't add the beginning comma.
 				CString parameters = string::join(actions | std::views::drop(1));
@@ -1099,7 +1096,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 					m_grExecParameterList << parameters;
 				return HandlePacketResult::Handled;
 			}
-			else if (actualActionName == "gr.es")
+			if (actualActionName == "gr.es")
 			{
 				if (actions.size() > 2)
 				{
@@ -1126,7 +1123,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 
 					// Replace parameters.
 					std::vector<CString> parameters = m_grExecParameterList.tokenize(",");
-					for (int i = 0; i < (int)parameters.size(); i++)
+					for (int i = 0; i < static_cast<int>(parameters.size()); i++)
 					{
 						CString parmName = "*PARM" + CString(i);
 						wepscript.replaceAllI(parmName, parameters[i]);
@@ -1160,10 +1157,10 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 		{
 			if (actualActionName == "gr.appendfile")
 			{
-				int start = actionData.find(",") + 1;
-				if (start == 0) return HandlePacketResult::Handled;
-				int finish = actionData.find(",", start) + 1;
-				if (finish == 0) return HandlePacketResult::Handled;
+				auto start = actionData.find(',') + 1;
+				if (start == std::string::npos) return HandlePacketResult::Handled;
+				auto finish = actionData.find(',', start) + 1;
+				if (finish == std::string::npos) return HandlePacketResult::Handled;
 
 				// Assemble the file name.
 				CString filename = actionData.substr(start, finish - start - 1);
@@ -1179,12 +1176,12 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 				file.save(CString() << "logs/" << filename);
 				return HandlePacketResult::Handled;
 			}
-			else if (actualActionName == "gr.writefile")
+			if (actualActionName == "gr.writefile")
 			{
-				int start = actionData.find(",") + 1;
-				if (start == 0) return HandlePacketResult::Handled;
-				int finish = actionData.find(",", start) + 1;
-				if (finish == 0) return HandlePacketResult::Handled;
+				auto start = actionData.find(',') + 1;
+				if (start == std::string::npos) return HandlePacketResult::Handled;
+				auto finish = actionData.find(',', start) + 1;
+				if (finish == std::string::npos) return HandlePacketResult::Handled;
 
 				// Grab the filename.
 				CString filename = actionData.substr(start, finish - start - 1);
@@ -1196,12 +1193,12 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 				file.save(CString() << "logs/" << filename);
 				return HandlePacketResult::Handled;
 			}
-			else if (actualActionName == "gr.readfile")
+			if (actualActionName == "gr.readfile")
 			{
-				int start = actionData.find(",") + 1;
-				if (start == 0) return HandlePacketResult::Handled;
-				int finish = actionData.find(",", start) + 1;
-				if (finish == 0) return HandlePacketResult::Handled;
+				auto start = actionData.find(',') + 1;
+				if (start == std::string::npos) return HandlePacketResult::Handled;
+				auto finish = actionData.find(',', start) + 1;
+				if (finish == std::string::npos) return HandlePacketResult::Handled;
 
 				// Grab the filename.
 				CString filename = actionData.substr(start, finish - start - 1);
@@ -1244,10 +1241,9 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 		{
 			if (actualActionName == "gr.attr")
 			{
-				int start = actionData.find(",");
-				if (start != -1)
+				if (auto start = actionData.find(','); start != std::string::npos)
 				{
-					int attrNum = string::toNumber(actionData.substr(7, std::max(0, start - 7)));
+					const int attrNum = string::toNumber(actionData.substr(7, std::max(0ZU, start - 7)));
 					if (attrNum > 0 && attrNum <= 30)
 					{
 						++start;
@@ -1258,8 +1254,8 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 			}
 			if (actualActionName == "gr.fullhearts")
 			{
-				int start = actionData.find(",");
-				if (start != -1)
+				auto start = actionData.find(',');
+				if (start != std::string::npos)
 				{
 					++start;
 					int hearts = string::toNumber(string::trimMutate(actionData.substr(start)));
@@ -1273,15 +1269,15 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 			if (actualActionName == "gr.updatelevel")
 			{
 				auto level = getLevel();
-				int start = actionData.find(",");
-				if (start == -1)
-					level->reload(getMapPosition());
+				auto start = actionData.find(',');
+				if (start == std::string::npos)
+					(void)level->reload(getMapPosition());
 				else
 				{
 					++start;
 					std::string levelName = string::trimMutate(actionData.substr(start));
 					if (levelName.empty())
-						level->reload(getMapPosition());
+						(void)level->reload(getMapPosition());
 					else
 					{
 						LevelPtr targetLevel;
@@ -1290,7 +1286,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 						else
 							targetLevel = m_server->getLoadedLevel(levelName, shared_from_this());
 						if (targetLevel != nullptr)
-							targetLevel->reload(levelName);
+							(void)targetLevel->reload(levelName);
 					}
 				}
 			}
@@ -1330,7 +1326,7 @@ HandlePacketResult PlayerClient::msgPLI_TAMPERCHECK(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 {
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		ShootPacketWrapper newPacket{};
 		[[maybe_unused]] int unknown = pPacket.readGInt(); // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
@@ -1363,8 +1359,8 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 		[[maybe_unused]] unsigned char someParam = pPacket.readGUChar();
 		newPacket.shootParams = pPacket.readString("");
 
-		CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
-		CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
+		const CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
+		const CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
 
 		// clang-format off
 		m_server->sendPacketToNearby(oldPacketBuf, getGlobalPosition(), level, {m_id}, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
@@ -1380,7 +1376,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 {
-	if (auto level = getLevel(); level != nullptr)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		ShootPacketWrapper newPacket{};
 		newPacket.position.x() = static_cast<int16_t>(pPacket.readGUShort());
@@ -1396,8 +1392,8 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 		[[maybe_unused]] unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 		newPacket.shootParams = pPacket.readString("");
 
-		CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
-		CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
+		const CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
+		const CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
 
 		// clang-format off
 		m_server->sendPacketToNearby(oldPacketBuf, getGlobalPosition(), level, {m_id}, [](const auto pl) { return pl->getVersion() < CLVER_5_07; });
@@ -1405,7 +1401,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 		// clang-format on
 
 		if (m_server->hasNPCServer())
-			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravity / 16.0f, newPacket.gani, source::FromPlayer(m_id));
+			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, static_cast<float>(newPacket.gravity) / 16.0f, newPacket.gani, source::FromPlayer(m_id));
 	}
 
 	return HandlePacketResult::Handled;
@@ -1413,7 +1409,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_SERVERWARP(CString& pPacket)
 {
-	CString servername = pPacket.readString("");
+	const CString servername = pPacket.readString("");
 	log::printLine(log::server, "{} is requesting serverwarp to {}", account.name, servername);
 	m_server->getServerList().sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)m_id << servername);
 	return HandlePacketResult::Handled;
@@ -1432,8 +1428,8 @@ HandlePacketResult PlayerClient::msgPLI_ENTERLEVEL(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_VERIFYWANTSEND(CString& pPacket)
 {
-	unsigned long fileChecksum = pPacket.readGUInt5();
-	CString fileName = pPacket.readString("");
+	const unsigned long fileChecksum = pPacket.readGUInt5();
+	const CString fileName = pPacket.readString("");
 
 	// There is a USECHECKSUM flag in the config, and im pretty
 	// certain it works similar to this: By always sending the
@@ -1445,7 +1441,7 @@ HandlePacketResult PlayerClient::msgPLI_VERIFYWANTSEND(CString& pPacket)
 
 	if (!ignoreChecksum)
 	{
-		auto info = m_server->getFileSystem().infoi(fs::FileCategory::ALL, fileName.toStringView());
+		const auto info = m_server->getFileSystem().infoi(fs::FileCategory::ALL, fileName.toStringView());
 		if (info == nullptr)
 			return HandlePacketResult::Handled;
 
@@ -1472,12 +1468,12 @@ HandlePacketResult PlayerClient::msgPLI_VERIFYWANTSEND(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_UPDATEGANI(CString& pPacket)
 {
 	// Read packet data
-	uint32_t checksum = pPacket.readGUInt5();
-	std::string gani = pPacket.readString("").toString();
+	const uint32_t checksum = pPacket.readGUInt5();
+	const std::string gani = pPacket.readString("").toString();
 	const std::string ganiFile = gani + ".gani";
 
 	// Try to find the animation in memory or on disk
-	auto findAni = m_server->getAnimationManager().findOrAddResource(ganiFile);
+	const auto findAni = m_server->getAnimationManager().findOrAddResource(ganiFile);
 	if (!findAni)
 	{
 		//printf("Client requested gani %s, but was not found\n", ganiFile.c_str());
@@ -1507,13 +1503,13 @@ HandlePacketResult PlayerClient::msgPLI_UPDATESCRIPT(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 {
 	// Get the checksum and class name.
-	uint32_t checkSum = pPacket.readGInt5();
+	const uint32_t checkSum = pPacket.readGInt5();
 	std::string className = pPacket.readString("").toString();
 
 	if (!m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
-	auto npcServer = m_server->getNPCServer();
+	const auto npcServer = m_server->getNPCServer();
 	if (const auto classObj = npcServer->getClass(className); classObj != nullptr)
 	{
 		if (classObj->getCheckSum() == checkSum)
@@ -1546,21 +1542,21 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket)
 {
-	CString packageName = pPacket.readChars(pPacket.readGUChar());
+	const CString packageName = pPacket.readChars(pPacket.readGUChar());
 
 	// 1 -> Install, 2 -> Reinstall
-	unsigned char installType = pPacket.readGUChar();
+	const unsigned char installType = pPacket.readGUChar();
 	CString fileChecksums = pPacket.readString("");
 
 	// If this is a reinstall, we need to download everything so clear the checksum data
 	if (installType == 2)
 		fileChecksums.clear();
 
-	auto totalDownloadSize = 0;
+	uint32_t totalDownloadSize = 0;
 	std::vector<std::string> missingFiles;
 
 	{
-		auto updatePackage = m_server->getPackageManager().findOrAddResource(packageName.toString());
+		const auto updatePackage = m_server->getPackageManager().findOrAddResource(packageName.toString());
 		if (updatePackage)
 		{
 			for (const auto& [fileName, entry] : updatePackage->getFileList())
@@ -1569,7 +1565,7 @@ HandlePacketResult PlayerClient::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacke
 				bool needsFile = true;
 				if (fileChecksums.bytesLeft() >= 5)
 				{
-					uint32_t userFileChecksum = fileChecksums.readGUInt5();
+					const uint32_t userFileChecksum = fileChecksums.readGUInt5();
 					if (entry.checksum == userFileChecksum)
 						needsFile = false;
 				}

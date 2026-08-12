@@ -67,9 +67,9 @@ static std::unordered_map<std::string, std::string_view, string::string_hash, st
 	{ "Svenska"s, "sv"sv },
 };
 
-inline static std::string_view mapToClassic(std::string_view language) noexcept
+inline static std::string_view mapToClassic(const std::string_view language) noexcept
 {
-	if (auto it = languageAliasesToClassic.find(language); it != languageAliasesToClassic.end())
+	if (const auto it = languageAliasesToClassic.find(language); it != languageAliasesToClassic.end())
 		return it->second;
 	return language;
 }
@@ -82,7 +82,7 @@ inline static std::string_view mapToClassic(std::string_view language) noexcept
 class ITranslationManager
 {
 public:
-	virtual ~ITranslationManager() {};
+	virtual ~ITranslationManager() = default;
 
 public:
 	/// @brief Loads all translations from a given directory.
@@ -90,7 +90,7 @@ public:
 	virtual void loadTranslations(const std::filesystem::path& directory) = 0;
 
 	/// @brief Reloads the translation data from the specified file.
-	/// @param fileName The path to the translation file to reload.
+	/// @param filePath The path to the translation file to reload.
 	virtual void reloadTranslation(const std::filesystem::path& filePath) = 0;
 
 	/// @brief Saves a specified translation in memory to the disk.

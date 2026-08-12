@@ -23,20 +23,20 @@ class Server;
 class LevelBoardChange
 {
 public:
-	LevelBoardChange(std::shared_ptr<Level> level, const LocalWholeTileRectangleArea& area, const CString& tiles, const CString& oldTiles, std::chrono::seconds respawnTime = 15s);
-	LevelBoardChange(std::shared_ptr<Level> level, const MapPosition& mapPosition, const LocalWholeTileRectangleArea& area, const CString& tiles, const CString& oldTiles, std::chrono::seconds respawnTime = 15s);
+	LevelBoardChange(const std::shared_ptr<Level>& level, const LocalWholeTileRectangleArea& area, CString tiles, CString oldTiles, std::chrono::seconds respawnTime = 15s);
+	LevelBoardChange(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalWholeTileRectangleArea& area, const CString& tiles, const CString& oldTiles, std::chrono::seconds respawnTime = 15s);
 
 public:
 	void update(const precise_clock::time_point& time);
 	void sendToPlayersOnLevel() const;
 
 public:
-	CString getTiles() const { return m_newTiles; }
-	CString getPropsForSingleLevel() const;
-	CString getPropsForMapClassic() const;
-	//CString getPropsForMapNewMain() const;
+	[[nodiscard]] [[a::inline]] CString getTiles() const;
+	[[nodiscard]] CString getPropsForSingleLevel() const;
+	[[nodiscard]] CString getPropsForMapClassic() const;
+	//[[nodiscard]] CString getPropsForMapNewMain() const;
 	void swapTiles();
-	bool willRespawn() const { return m_timeout.isRunning(); }
+	[[nodiscard]] [[a::inline]] bool willRespawn() const;
 
 public:
 	LocalWholeTileRectangleArea area;
@@ -50,6 +50,18 @@ private:
 	std::optional<MapPosition> m_mapPosition;
 	CString m_newTiles, m_oldTiles;
 };
+
+//----------------------------
+
+inline CString LevelBoardChange::getTiles() const
+{
+	return m_newTiles;
+}
+
+inline bool LevelBoardChange::willRespawn() const
+{
+	return m_timeout.isRunning();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // end namespace preagonal

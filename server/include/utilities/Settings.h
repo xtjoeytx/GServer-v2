@@ -5,7 +5,6 @@
 #include <concepts>
 #include <filesystem>
 #include <functional>
-#include <initializer_list>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -41,7 +40,7 @@ public:
 	~Settings()
 	{
 		m_settings.clear();
-		for (auto& [_, dispatch] : m_settingUpdateEvents)
+		for (auto& dispatch : m_settingUpdateEvents | std::views::values)
 			dispatch.unsubscribeAll();
 	}
 
@@ -54,14 +53,14 @@ public:
 	void clear()
 	{
 		m_settings.clear();
-		for (auto& [_, dispatch] : m_settingUpdateEvents)
+		for (auto& dispatch : m_settingUpdateEvents | std::views::values)
 			dispatch.post();
 	}
 
 public:
 	/// @brief Tracks a setting cache. The setting cache will be updated when the setting is updated, and when this function is first called.
-	/// @tparam ...T The contained types of the setting caches to track.
-	/// @param ...cache The setting caches to track.
+	/// @tparam T The contained types of the setting caches to track.
+	/// @param cache The setting caches to track.
 	template<typename... T>
 	void track(SettingCache<T>&... cache)
 	{
@@ -72,7 +71,7 @@ public:
 	/// @brief Checks if a setting exists.
 	/// @param key The key of the setting to check for.
 	/// @return True if the setting exists, false otherwise.
-	bool exists(std::string_view key) const
+	bool exists(const std::string_view key) const
 	{
 		return m_settings.contains(key);
 	}
@@ -99,9 +98,10 @@ public:
 	/// @param key The key of the setting to get.
 	/// @return The value of the setting, or std::nullopt if the setting does not exist.
 	template<typename T>
-	std::optional<T> get(std::string_view key) const
+	std::optional<T> get(const std::string_view key) const
 	{
 		static_assert(false, "Settings::get called with a type that isn't handled. Make sure to provide a template specialization for the type you want to get.");
+		return std::nullopt;
 	}
 
 	/// @brief Gets the value of a setting. If there are multiple values for the same key, the last value will be returned.
@@ -109,7 +109,7 @@ public:
 	/// @param key The key of the setting to get.
 	/// @return The value of the setting, or std::nullopt if the setting does not exist.
 	template<string::StringVariant T = std::string>
-	std::optional<T> get(std::string_view key) const
+	std::optional<T> get(const std::string_view key) const
 	{
 		auto range = m_settings.equal_range(key);
 
@@ -132,7 +132,7 @@ public:
 	/// @param key The key of the setting to get.
 	/// @return The container with the values of the setting, or std::nullopt if the setting does not exist.
 	template<ContainerLikeNotString T>
-	std::optional<T> get(std::string_view key) const
+	std::optional<T> get(const std::string_view key) const
 	{
 		using value_type = std::ranges::range_value_t<T>;
 
@@ -165,15 +165,15 @@ public:
 	/// @param key The key of the setting to get.
 	/// @return The value of the setting, or std::nullopt if the setting does not exist.
 	template<std::integral T>
-	std::optional<T> get(std::string_view key) const
+	std::optional<T> get(const std::string_view key) const
 	{
-		auto value = get<std::string>(key);
+		const auto value = get<std::string>(key);
 		if (!value)
 			return std::nullopt;
 
 		if constexpr (std::same_as<T, bool>)
 		{
-			std::string_view str = value.value();
+			const std::string_view str = value.value();
 			if (string::equalsi(str, "true"sv))
 				return true;
 			if (string::equalsi(str, "false"sv))
@@ -191,9 +191,9 @@ public:
 	/// @param key The key of the setting to get.
 	/// @return The value of the setting, or std::nullopt if the setting does not exist.
 	template<std::floating_point T>
-	std::optional<float> get(std::string_view key) const
+	std::optional<float> get(const std::string_view key) const
 	{
-		auto value = get<std::string>(key);
+		const auto value = get<std::string>(key);
 		if (!value)
 			return std::nullopt;
 
@@ -203,12 +203,14 @@ public:
 			return string::toDouble(value.value());
 		else
 			static_assert(false, "Settings::get<std::floating_point> called with a floating point type that isn't handled.");
+
+		return std::nullopt;
 	}
 
 	/// @brief Gets a list of values for a setting. The values will be split by commas. If there are multiple values for the same key, all values will be returned.
 	/// @param key The key of the setting to get.
 	/// @return A generator that yields the values of the setting.
-	std::generator<std::string_view> getList(std::string_view key) const
+	std::generator<std::string_view> getList(const std::string_view key) const
 	{
 		auto range = m_settings.equal_range(key);
 		if (range.first == std::end(m_settings))
@@ -239,9 +241,11 @@ public:
 	friend class Settings;
 
 public:
+	SettingCache() = delete;
+
 	/// @brief Creates a blank setting cache with the given key.
 	/// @param key The key of the setting to cache.
-	constexpr SettingCache(const std::string_view key) : key(key) {}
+	constexpr explicit SettingCache(const std::string_view key) : key(key) {}
 
 	/// @brief Creates a setting cache with the given key and default value.
 	/// @param key The key of the setting to cache.
@@ -257,7 +261,7 @@ public:
 
 	/// @brief Returns whether the setting cache has a value.
 	/// @return True if the setting cache has a value, false otherwise.
-	operator bool() const
+	explicit operator bool() const
 	{
 		return value.has_value();
 	}
@@ -297,8 +301,6 @@ public:
 	std::function<void(const std::optional<T>&, const std::optional<T>&)> onUpdate;
 
 protected:
-	SettingCache() = delete;
-
 	std::function<void()> onRequireDefaultValue;
 
 	void update(std::optional<T>&& newValue, const std::optional<T>& oldValue)

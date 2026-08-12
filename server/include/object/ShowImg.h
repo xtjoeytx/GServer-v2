@@ -104,9 +104,9 @@ struct ShowImg
 	static ShowImg ConstructPoly(clock::time_point modTime, uint8_t dimensions, const std::vector<double>& points) noexcept;
 
 	void processProps(CString& props);
-	CString getPropPacket(ShowImgProp prop) const;
-	CString getAllPropsPacket(std::optional<clock::time_point> newTime = std::nullopt) const;
-	CString getModifiedPropsPacket() const;
+	[[nodiscard]] CString getPropPacket(ShowImgProp property) const;
+	[[nodiscard]] CString getAllPropsPacket(std::optional<clock::time_point> newTime = std::nullopt) const;
+	[[nodiscard]] CString getModifiedPropsPacket() const;
 
 	[[a::inline]] void recordCurrentPropModTime();
 };

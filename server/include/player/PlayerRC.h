@@ -72,19 +72,18 @@ constexpr std::array<PlayerPermissions, 10> ImportantFileRights = {
 class PlayerRC : public Player
 {
 public:
-	PlayerRC(CSocket* pSocket, PlayerID pId) : Player(pSocket, pId) {}
-	virtual ~PlayerRC() {}
-	virtual void cleanup() override;
+	PlayerRC(CSocket* pSocket, const PlayerID pId) : Player(pSocket, pId) {}
+	~PlayerRC() override = default;
 
 public:
-	virtual bool handleLogin(CString& pPacket) override;
-	virtual bool sendLogin() override;
+	bool handleLogin(CString& pPacket) override;
+	bool sendLogin() override;
 
 public:
 	bool isUsingFileBrowser() const { return m_isFtp; }
 
 protected:
-	virtual HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
+	HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
 
 public:
 	HandlePacketResult msgPLI_RC_SERVEROPTIONSGET(CString& pPacket);

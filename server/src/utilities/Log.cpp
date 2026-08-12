@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <fstream>
 #include <memory>
-#include <utility>
 
 #include <utilities/Log.h>
 
@@ -11,7 +10,7 @@ namespace preagonal::log
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-Indent::Indent(Log* log, uint8_t level)
+Indent::Indent(Log* log, const uint8_t level)
 	: m_log(log)
 {
 	assert(m_log != nullptr);
@@ -19,7 +18,7 @@ Indent::Indent(Log* log, uint8_t level)
 	m_log->indentLevel += level;
 }
 
-Indent::Indent(IndentAbsolute_t is_absolute, Log* log, uint8_t level)
+Indent::Indent(IndentAbsolute_t is_absolute, Log* log, const uint8_t level)
 	: m_log(log)
 {
 	assert(m_log != nullptr);
@@ -28,7 +27,7 @@ Indent::Indent(IndentAbsolute_t is_absolute, Log* log, uint8_t level)
 }
 
 Indent::Indent(Indent&& other) noexcept
-	: m_log(std::move(other.m_log)), m_old_level(std::move(other.m_old_level))
+	: m_log(other.m_log), m_old_level(other.m_old_level)
 {
 	other.m_log = nullptr;
 	other.m_old_level = 0;

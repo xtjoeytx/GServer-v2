@@ -21,7 +21,7 @@ namespace preagonal
 {
 ////////////////////////////////////////////////////////////////////////////////
 
-ShowImg ShowImg::ConstructImage(clock::time_point modTime, const PixelPosition& position, std::string_view image) noexcept
+ShowImg ShowImg::ConstructImage(const clock::time_point modTime, const PixelPosition& position, const std::string_view image) noexcept
 {
 	ShowImg showimg{ .image = std::string{ image }, .position = position };
 	showimg.modTime.fill(std::nullopt);
@@ -34,21 +34,21 @@ ShowImg ShowImg::ConstructImage(clock::time_point modTime, const PixelPosition& 
 	return showimg;
 }
 
-ShowImg ShowImg::ConstructText(clock::time_point modTime, const PixelPosition& position, std::string_view text, std::string_view font, std::string_view style) noexcept
+ShowImg ShowImg::ConstructText(const clock::time_point modTime, const PixelPosition& position, const std::string_view text, const std::string_view font, const std::string_view style) noexcept
 {
 	// Construct the formatted text string.
 	std::string formattedTextString;
 	if (!font.empty())
 	{
-		formattedTextString += "@";
+		formattedTextString += '@';
 		formattedTextString += font;
 		if (!style.empty())
 		{
-			formattedTextString += "@";
+			formattedTextString += '@';
 			formattedTextString += style;
 		}
 	}
-	formattedTextString += "@";
+	formattedTextString += '@';
 	formattedTextString += text;
 
 	// Create the showimg.
@@ -63,7 +63,7 @@ ShowImg ShowImg::ConstructText(clock::time_point modTime, const PixelPosition& p
 	return showimg;
 }
 
-ShowImg ShowImg::ConstructGani(clock::time_point modTime, const PixelPosition& position, std::string_view animation, uint8_t direction) noexcept
+ShowImg ShowImg::ConstructGani(const clock::time_point modTime, const PixelPosition& position, const std::string_view animation, const uint8_t direction) noexcept
 {
 	// Create the showimg.
 	ShowImg showimg{ .image = std::format("&{},{}", direction, animation), .position = position };
@@ -77,7 +77,7 @@ ShowImg ShowImg::ConstructGani(clock::time_point modTime, const PixelPosition& p
 	return showimg;
 }
 
-ShowImg ShowImg::ConstructPoly(clock::time_point modTime, uint8_t dimensions, const std::vector<double>& points) noexcept
+ShowImg ShowImg::ConstructPoly(const clock::time_point modTime, const uint8_t dimensions, const std::vector<double>& points) noexcept
 {
 	std::string polygon = std::format("#{}", dimensions);
 	for (const auto& point : points)
@@ -101,9 +101,8 @@ void ShowImg::processProps(CString& props)
 {
 	while (props.bytesLeft() > 0)
 	{
-		uint8_t propId = props.readGUChar();
-		ShowImgProp prop = static_cast<ShowImgProp>(propId);
-		switch (prop)
+		const uint8_t propId = props.readGUChar();
+		switch (ENUM<ShowImgProp>(propId))
 		{
 			case ShowImgProp::IMAGE:
 			{
@@ -155,7 +154,7 @@ void ShowImg::processProps(CString& props)
 				props::PropertyArray<props::GBYTE1, 4> prop;
 				prop.deserialize(props);
 
-				std::ranges::transform(prop.values | std::views::take(4), colors.begin(), [](props::GBYTE1 value)
+				std::ranges::transform(prop.values | std::views::take(4), colors.begin(), [](const props::GBYTE1 value)
 				{
 					return static_cast<float>(value) / 200.0f;
 				});
@@ -167,7 +166,7 @@ void ShowImg::processProps(CString& props)
 				props::PropertyNumeric<props::GBYTE1> prop;
 				prop.deserialize(props);
 
-				zoom = prop.value / 10.0f;
+				zoom = static_cast<float>(prop.value) / 10.0f;
 				break;
 			}
 
@@ -188,37 +187,39 @@ void ShowImg::processProps(CString& props)
 				drawMode = prop.value;
 				break;
 			}
+
+			default:;
 		}
 	}
 }
 
-CString ShowImg::getPropPacket(ShowImgProp prop) const
+CString ShowImg::getPropPacket(const ShowImgProp property) const
 {
-	switch (prop)
+	switch (property)
 	{
 		case ShowImgProp::IMAGE:
 		{
-			props::PropertyString prop{ image };
+			const props::PropertyString prop{image};
 			return prop.serialize();
 		}
 
 		case ShowImgProp::X:
 		{
 			auto localPosition = toLocalPixelPosition(position);
-			props::PropertyTileCoordinate prop{ localPosition.x() };
+			const props::PropertyTileCoordinate prop{localPosition.x()};
 			return prop.serialize();
 		}
 
 		case ShowImgProp::Y:
 		{
 			auto localPosition = toLocalPixelPosition(position);
-			props::PropertyTileCoordinate prop{ localPosition.y() };
+			const props::PropertyTileCoordinate prop{localPosition.y()};
 			return prop.serialize();
 		}
 
 		case ShowImgProp::LAYER:
 		{
-			props::PropertyNumeric<props::GBYTE1> prop{ layer };
+			const props::PropertyNumeric<props::GBYTE1> prop{layer};
 			return prop.serialize();
 		}
 
@@ -227,43 +228,45 @@ CString ShowImg::getPropPacket(ShowImgProp prop) const
 			if (imagePart.size.width() == 0 && imagePart.size.height() == 0)
 				return CString() >> (char)0;
 
-			props::PropertyImagePart prop{ imagePart };
+			const props::PropertyImagePart prop{imagePart};
 			return CString() >> (char)1 << prop.serialize();
 		}
 
 		case ShowImgProp::COLORS:
 		{
-			auto toByte = [](float value)
+			auto toByte = [](const float value)
 			{
 				return static_cast<props::GBYTE1>(std::clamp(value, 0.0f, 1.0f) * 200.0f);
 			};
-			props::PropertyArray<props::GBYTE1, 4> prop{ colors | std::views::transform(toByte) };
+			const props::PropertyArray<props::GBYTE1, 4> prop{colors | std::views::transform(toByte)};
 			return prop.serialize();
 		}
 
 		case ShowImgProp::ZOOM:
 		{
-			props::PropertyNumeric<props::GBYTE1> prop{ static_cast<props::GBYTE1>(zoom * 10.0f) };
+			const props::PropertyNumeric<props::GBYTE1> prop{static_cast<props::GBYTE1>(zoom * 10.0f)};
 			return prop.serialize();
 		}
 
 		case ShowImgProp::Z:
 		{
-			props::PropertyTileCoordinateZ prop{ static_cast<int16_t>(position.z()) };
+			const props::PropertyTileCoordinateZ prop{static_cast<int16_t>(position.z())};
 			return prop.serialize();
 		}
 
 		case ShowImgProp::DRAWMODE:
 		{
-			props::PropertyNumeric<props::GBYTE1> prop{ drawMode };
+			const props::PropertyNumeric<props::GBYTE1> prop{drawMode};
 			return prop.serialize();
 		}
+
+		default:;
 	}
 
-	return CString();
+	return {};
 }
 
-CString ShowImg::getAllPropsPacket(std::optional<clock::time_point> newTime) const
+CString ShowImg::getAllPropsPacket(const std::optional<clock::time_point> newTime) const
 {
 	CString result;
 
@@ -271,7 +274,7 @@ CString ShowImg::getAllPropsPacket(std::optional<clock::time_point> newTime) con
 	{
 		if (modTime[i].has_value() && modTime[i] >= newTime)
 		{
-			auto prop = static_cast<ShowImgProp>(i);
+			const auto prop = static_cast<ShowImgProp>(i);
 			result >> (char)i << getPropPacket(prop);
 		}
 	}
@@ -287,7 +290,7 @@ CString ShowImg::getModifiedPropsPacket() const
 	{
 		if (modTime[i] != savedModTime[i])
 		{
-			auto prop = static_cast<ShowImgProp>(i);
+			const auto prop = static_cast<ShowImgProp>(i);
 			result >> (char)i << getPropPacket(prop);
 		}
 	}

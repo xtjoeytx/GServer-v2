@@ -352,7 +352,7 @@ void Weapon::calculateHeaderChecksum()
 	m_headerWithCRC = string::toCSV(headerParts);
 }
 
-void Weapon::updateScriptClass(ScriptClass* scriptClass)
+void Weapon::updateScriptClass(ScriptClass* scriptClass) const
 {
 	m_server->updateWeaponForPlayers(this);
 }
