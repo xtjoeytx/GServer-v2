@@ -45,6 +45,13 @@ namespace preagonal::gs1
 {
 ////////////////////////////////////////////////////////////////////////////////
 
+static std::string determineEventName(const ScriptEventType type)
+{
+	if (const auto knownEventIter = eventFlagMap.find(type); knownEventIter != eventFlagMap.end())
+		return std::string{knownEventIter->second};
+	return {};
+}
+
 static std::string determineEventName(const ScriptEvent& event)
 {
 	if (const auto knownEventIter = eventFlagMap.find(event.type); knownEventIter != eventFlagMap.end())
@@ -317,7 +324,14 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, std::vector<ScriptEventType>* 
 	if (!hasCreated && !hasInitialized && (event.type != ScriptEventType::TIMEOUT || !wrapper->visitor->hasSleepStack()))
 	{
 		const auto& eventName = determineEventName(event);
-		if (!wrapper->parser->identifiers.contains(eventName) && !server->cached.runAllScriptEvents.getValue())
+		bool hasEvent = wrapper->parser->identifiers.contains(eventName);
+		size_t idx = 0;
+		while (hasEvent == false && additionalEventTypes != nullptr && idx < additionalEventTypes->size())
+		{
+			hasEvent = wrapper->parser->identifiers.contains(determineEventName(additionalEventTypes->at(idx)));
+			++idx;
+		}
+		if (!hasEvent && !server->cached.runAllScriptEvents.getValue())
 		{
 #if defined(DEBUG) && 0
 			prepare(*wrapper, event, additionalEventTypes, source, context, npc, level);

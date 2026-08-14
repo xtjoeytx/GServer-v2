@@ -241,7 +241,7 @@ void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source)
 
 			std::ranges::for_each(queue, [&event, &types, &processedTypes](const ScriptEvent& e)
 			{
-				if (e.type != event.type && e.args.empty() && !std::ranges::contains(processedTypes, e.type))
+				if (e.type != event.type && e.initiator == event.initiator && e.args.empty() && !std::ranges::contains(processedTypes, e.type))
 				{
 					types.emplace_back(e.type);
 					processedTypes.emplace_back(e.type);
