@@ -130,12 +130,8 @@ bool Weapon::saveWeapon()
 	// Write the script.
 	const auto& originalSource = m_script.getOriginalSource();
 	if (!originalSource.empty())
-	{
-		const std::string_view source{ originalSource };
-		file->writeLine("SCRIPT"sv);
-		file->writeLines(string::split(source, "\r\n"sv, false));
-		file->writeLine("SCRIPTEND"sv);
-	}
+		file->writeConfigSection("SCRIPT", originalSource, "SCRIPTEND");
+
 	file->close();
 
 	calculateHeaderChecksum();

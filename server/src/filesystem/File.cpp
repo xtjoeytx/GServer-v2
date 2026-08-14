@@ -352,6 +352,9 @@ std::optional<std::string> File::readConfigSection(const std::string_view startK
 			section += line + "\n";
 	}
 
+	if (!section.empty() && section.back() == '\n')
+		section.pop_back();
+
 	setStreamPosition(0);
 
 	if (section.empty())
