@@ -100,7 +100,7 @@ std::filesystem::path getHTMLUnescapedFileName(const std::filesystem::path& file
 
 	const std::function<size_t(const ST&, size_t)> findFirstEscaped = [](const ST& native, const size_t pos) -> size_t
 	{
-		return native.find_first_of(TO_PLATFORM_STRING(L'%'), pos);
+		return native.find_first_of(TO_PLATFORM_STRING('%'), pos);
 	};
 
 #ifdef PLATFORM_WINDOWS
