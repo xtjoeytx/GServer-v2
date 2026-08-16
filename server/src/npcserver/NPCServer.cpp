@@ -301,11 +301,18 @@ void NPCServer::saveNPCs()
 		return;
 	}
 
-	log::printLine(log::server, "Saving NPCs.");
+	bool printed = false;
 	for (const auto& npcPtr : m_globalNPCList | std::views::values)
 	{
-		if (auto npc = npcPtr.lock(); npc != nullptr)
+		if (auto npc = npcPtr.lock(); npc != nullptr && npc->lastSaveTime != npc->lastUpdateTime)
+		{
+			if (!printed)
+			{
+				log::printLine(log::server, "Saving NPCs.");
+				printed = true;
+			}
 			m_server->getNPCLoader().saveNPC(npc);
+		}
 	}
 }
 

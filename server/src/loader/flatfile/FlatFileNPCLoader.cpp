@@ -88,7 +88,6 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 
 	// Make the NPC.
 	auto npc = std::make_shared<NPC>(id, NPCStorageType::DATABASE);
-	npc->lastSaveTime = fs::getFileModTime(filePath);
 
 	// Set the default warp type.
 	auto warpRestriction = server->hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
@@ -438,6 +437,9 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			npc->joinClass(className);
 	}
 
+	// Set our last update / save times.
+	npc->lastUpdateTime = npc->lastSaveTime = fs::getFileModTime(filePath);
+
 	// Add the NPC to the server.
 	server->addNPC(npc, false);
 
@@ -636,7 +638,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	file->close();
 
 	// Update the NPC's last save time.
-	npc->lastSaveTime = toSystemClock(file->modifiedTime());
+	npc->lastUpdateTime = npc->lastSaveTime = toSystemClock(file->modifiedTime());
 
 	// If the NPC exists on the filesystem, refresh its mod time to avoid any modification events.
 	auto& fs = server->getFileSystemServer();
