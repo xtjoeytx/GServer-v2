@@ -12,7 +12,7 @@ unstickmey = 30.5
 unstickmetime = 30
 
 # List of weapon names (comma separated) that will be given to the player each time they connect.
-protectedweapons = 
+protectedweapons =
 
 # Players in these levels can`t warp out nor can they PM other players.
 jaillevels = police2.graal,police4.graal
@@ -85,13 +85,18 @@ ignorewarpto = false
 playerlisticons = Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing
 
 # Selects what is displayed in the player`s profile.
-# Name:=variable, where variable can also be a flag on the player`s account.
-profilevars = Kills:=playerkills,Deaths:=playerdeaths,Maxpower:=playerfullhearts,Rating:=playerrating,Alignment:=playerap,Gralat:=playerrupees,Swordpower:=playerswordpower,Spin Attack:=canspin
+# Safely allows 8 values, unsafely allows up to 26 (can crash client, verified 26 on 2.31 client).
+# Display Name=variable, where variable can also be a flag on the player`s account.
+# Display Name is optional only for the 8 default profilevars listed below.
+# Pre-defined variables: playerkills,playerdeaths,playerfullhearts,playerrating,playerap,playerrupees,playerswordpower,
+#   canspin,playerhearts,playerdarts,playerbombs,playermp,playershieldpower,playerglovepower
+# If variable is a string array flag, you can use the form Display=variable{#} to get the value at index #.
+profilevars = playerkills,playerdeaths,playerfullhearts,playerrating,playerap,playerrupees,playerswordpower,canspin
 
 # Global guild settings.
 # If globalguilds is true, global guilds are allowed.  If false, allowedglobalguilds specifies which guilds are allowed.
 globalguilds = true
-allowedglobalguilds = 
+allowedglobalguilds =
 
 # AP system settings.
 # If apsystem is set to true, it activates some restrictions regarding hearts for low AP players.
@@ -157,15 +162,15 @@ projectilesstoponwall = true
 
 # List of bigmap.txt type maps used by the server.  It lets the server know the level layout
 # so you can see players move and talk in adjacent levels.
-maps = 
+maps =
 
 # List of gmaps to be used by the server.
-gmaps = 
+gmaps =
 
 # List of levels where you don`t see other players.
 # GR: Comma-delimited list of level names in glob format.
 # GR: Make sure your glob doesn`t match both the gmap and its level files.
-singleplayerlevels = 
+singleplayerlevels =
 
 # Sets the bigmap and minimap to use.
 # Setting bigmap will break gmaps.
@@ -174,8 +179,8 @@ singleplayerlevels =
 #   maptext is the bigmap.txt styled file with the levels.
 #   mapimage is the image to use
 #   defaultx and defaulty is the position where the heads of players not on the map will be drawn.
-bigmap = 
-minimap = 
+bigmap =
+minimap =
 
 # Radius, in tiles, in which players receive updates.
 # By default it only works on gmaps, but syncbydistanceinside can allow in non-gmap levels.
@@ -195,7 +200,7 @@ minimap =
 
 # Controls if levels use the new tileset layout server-side, or a match list of levels that will (file-globbing).
 # newtilesets = false
-# newtilesetlevels = 
+# newtilesetlevels =
 
 # Enables extended v6 body colors (disable v5 clients if using this).
 # enableexbodycolors = true/false
@@ -210,7 +215,7 @@ clientsidepushpull = true
 # List of group instanced maps used by the server.
 # Comma-delimited list of level names in glob format.
 # Make sure your glob doesn`t match both the gmap and its level files.
-# groupmaps = 
+# groupmaps =
 
 # The head used by RCs on the server.
 staffhead = head25.png
@@ -293,7 +298,7 @@ serverside = false
 
 # If folders config is disabled, put additional search directories besides "world" here.
 # Comma delimited array.
-sharefolder = 
+sharefolder =
 
 # Sets the language.  Currently not implemented.
 language = English
@@ -361,7 +366,7 @@ gs2default = false
 # defaultlanguage = en
 
 # The order in which weapons will be sent to the player.
-# weaponorder = 
+# weaponorder =
 
 # Enables or disables the checking of account rights for NC usage.
 # npcrights = true
@@ -380,7 +385,7 @@ gs2default = false
 
 # List of player attributes to send to all players and not just nearby players.
 # The attribute numbers are the ones from #P / player.attr[].  Like 1, 2, 3, etc.
-# sendtoallattr = 
+# sendtoallattr =
 
 # Use optimized storage for putnpc2 npcs, activated by setting this.savelocally = true in the NPC script.
 # newnpcstorage = true
@@ -389,7 +394,7 @@ gs2default = false
 # sendechotorc = false
 
 # List of SQLite database files allowed to be used with the requestsql2() function.
-# database = 
+# database =
 
 # Controls if server-side gralats are logged.
 # disablegralatlog = false
@@ -431,7 +436,7 @@ gs2default = false
 
 # Controls if ganis can only be used in player attr[] values (and not set on the player themselves).
 # If the filter is set, attempts to use a restricted gani will be logged to logs/ganifilter.txt.
-# ganionlyattr = 
+# ganionlyattr =
 # ganifilterlog = true
 
 # Distance of players to which projectiles are sent.

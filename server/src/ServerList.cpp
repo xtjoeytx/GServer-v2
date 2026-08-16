@@ -582,6 +582,11 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 	if (p2 == nullptr)
 		return;
 
+	// v6 clients don't use the old profile packets.
+	// TODO: Support somehow?
+	if (p2->getVersion() >= CLVER_6_015)
+		return;
+
 	// Start the profile string.
 	CString profile;
 	profile << p2->getProp<PlayerProp::ACCOUNTNAME>().serialize() << pPacket.readString("");
@@ -626,76 +631,128 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 	}
 	else if (!p2->isNPCServer())
 	{
+		size_t count = 0;
+
 		// Add all the specified variables to the profile string.
-		for (const auto& profilevar : m_server->cached.playerProfileVariables.value.value())
+		for (const auto& profileVariable : m_server->cached.playerProfileVariables.value.value())
 		{
-			auto tokens = string::splitToVectorByString(profilevar, ":="sv);
-			if (tokens.size() != 2)
-				continue;
+			using defaultProfileType = std::tuple<std::string_view, std::string_view, std::string_view>;
+			constexpr std::array<defaultProfileType, 8> defaultProfileVars {
+				std::make_tuple("playerkills"sv, "Kills:"sv, "kills"sv),
+				{"playerdeaths"sv, "Deaths:"sv, "deaths"sv},
+				{"playerfullhearts"sv, "Maxpower"sv, "maxpower"sv},
+				{"playerrating"sv, "Rating"sv, "rating"sv},
+				{"playerap"sv, "Alignment"sv, "alignment"sv},
+				{"playerrupees"sv, "Gralat"sv, "gelat"sv},
+				{"playerswordpower"sv, "Swordpower"sv, "swordpower"sv},
+				{"canspin"sv, "Spin"sv, "spin"sv},
+			};
 
-			CString name = string::trim(tokens[0]);
-			CString val = string::trim(tokens[1]);
+			// The Graal client has a buffer overflow with profile variables.
+			// The first 8 can be safely used, everything else depends.
+			// The 2.31 client was verified to work for 26 variables before hitting invalid memory.
+			if (++count == 27)
+				break;
 
-			// Built-in values.
-			if (val == "playerkills")
-				val = CString(p2->account.kills);
-			else if (val == "playerdeaths")
-				val = CString(p2->account.deaths);
-			else if (val == "playerfullhearts")
-				val = CString(p2->getProp<PlayerProp::FULLHEARTS>().value);
-			else if (val == "playerrating")
+			std::string_view profileVar{profileVariable};
+			std::string_view caption{};
+			std::string_view value{};
+
+			auto collectValue = [&p2](std::string_view val) -> std::string
 			{
-				auto rating = p2->getProp<PlayerProp::RATING>();
-				val = CString(rating.rating) << "/" << CString(rating.deviation);
-			}
-			else if (val == "playerap")
-				val = CString(p2->getProp<PlayerProp::ALIGNMENT>().value);
-			else if (val == "playerrupees")
-				val = CString(p2->getProp<PlayerProp::GRALATS>().value);
-			else if (val == "playerswordpower")
-				val = CString(p2->getProp<PlayerProp::SWORDIMAGE>().power.value_or(1));
-			else if (val == "canspin")
-				val = ((p2->getProp<PlayerProp::STATUS>().value & PLSTATUS_HASSPIN) ? "true" : "false");
-			else if (val == "playerhearts")
+				// Built-in values.
+				if (val == "playerkills")
+					return string::to_string(p2->account.kills);
+				if (val == "playerdeaths")
+					return string::to_string(p2->account.deaths);
+				if (val == "playerfullhearts")
+					return string::to_string(p2->getProp<PlayerProp::FULLHEARTS>().value);
+				if (val == "playerrating")
+				{
+					const auto rating = p2->getProp<PlayerProp::RATING>();
+					return std::format("{}/{}", static_cast<uint16_t>(rating.rating), static_cast<uint16_t>(rating.deviation));
+				}
+				if (val == "playerap")
+					return string::to_string(p2->getProp<PlayerProp::ALIGNMENT>().value);
+				if (val == "playerrupees")
+					return string::to_string(p2->getProp<PlayerProp::GRALATS>().value);
+				if (val == "playerswordpower")
+					return string::to_string(p2->getProp<PlayerProp::SWORDIMAGE>().power.value_or(1));
+				if (val == "canspin")
+					return (p2->getProp<PlayerProp::STATUS>().value & PLSTATUS_HASSPIN) ? "true" : "false";
+				if (val == "playerhearts")
+				{
+					const auto power = p2->getProp<PlayerProp::HALFHEARTS>().value;
+					return std::format("{}{}", power / 2, (power % 2 == 1 ? ".5" : ""));
+				}
+				if (val == "playerdarts")
+					return string::to_string(p2->getProp<PlayerProp::ARROWS>().value);
+				if (val == "playerbombs")
+					return string::to_string(p2->getProp<PlayerProp::BOMBS>().value);
+				if (val == "playermp")
+					return string::to_string(p2->getProp<PlayerProp::MAGICPOINTS>().value);
+				if (val == "playershieldpower")
+					return string::to_string(p2->getProp<PlayerProp::SHIELDIMAGE>().power.value_or(1));
+				if (val == "playerglovepower")
+					return string::to_string(p2->getProp<PlayerProp::GLOVEPOWER>().value);
+
+				const auto arraySep = val.find('{');
+				const auto flagName = val.substr(0, arraySep);
+				if (const auto flag = p2->account.variables.get(flagName).lock(); flag != nullptr && flag->has<std::string>())
+				{
+					if (arraySep == std::string_view::npos)
+						return flag->value.getCopy<std::string>().value_or(""s);
+
+					// We have an array, so find the index.
+					const auto arrayEnd = val.find('}', arraySep);
+					const auto arrayIndex = string::toNumber<size_t>(val.substr(arraySep + 1, arrayEnd - arraySep - 1));
+
+					// Get the value and find the string at the index position.
+					const auto& flagValue = flag->value.get<std::string>()->get();
+					if (const auto values = string::fromCSV(flagValue); !values.empty() && arrayIndex < values.size())
+						return values.at(arrayIndex);
+				}
+
+				// Failed to find anything, so return empty;
+				return ""s;
+			};
+
+			// key=value
+			if (auto sep = profileVar.find('='); sep != std::string::npos)
 			{
-				auto power = p2->getProp<PlayerProp::HALFHEARTS>().value;
-				val = CString(power / 2);
-				if (power % 2 == 1) val << ".5";
+				caption = string::trim(profileVar.substr(0, profileVar.find('=')));
+				value = string::trim(profileVar.substr(sep + 1));
 			}
-			else if (val == "playerdarts")
-				val = CString(p2->getProp<PlayerProp::ARROWS>().value);
-			else if (val == "playerbombs")
-				val = CString(p2->getProp<PlayerProp::BOMBS>().value);
-			else if (val == "playermp")
-				val = CString(p2->getProp<PlayerProp::MAGICPOINTS>().value);
-			else if (val == "playershieldpower")
-				val = CString(p2->getProp<PlayerProp::SHIELDIMAGE>().power.value_or(1));
-			else if (val == "playerglovepower")
-				val = CString(p2->getProp<PlayerProp::GLOVEPOWER>().value);
+			// value
 			else
 			{
-				// Find if String-Array
-				int pos[3] = {0, 0, 0};
-				pos[0] = val.findl('{');
-				pos[1] = val.find('}', pos[0]);
-				pos[2] = (pos[0] >= 0 && pos[1] > 0 ? strtoint(val.subString(pos[0] + 1, pos[1] - 1)) : -1);
+				value = string::trim(profileVar);
 
-				// Find Flag Name / Value
-				CString flagName = val.subString(0, pos[0]);
-				auto flagMaybe = p2->account.variables.get(flagName.toStringView());
-				if (auto flag = flagMaybe.lock(); flag != nullptr)
-					val = flag->getCopy<std::string>().value_or(std::string{});
-
-				// If String-Array, Get Index
-				if (pos[2] >= 0)
+				// Check for default variables.
+				size_t i = 0;
+				for (; i < defaultProfileVars.size(); ++i)
 				{
-					if (std::vector<CString> temp = val.guntokenize().tokenize("\n"); static_cast<int>(temp.size()) > pos[2])
-						val = temp[pos[2]];
+					const auto& [defaultValue, defaultCaption, convertedCaption] = defaultProfileVars[i];
+					if (value == defaultValue)
+					{
+						caption = (i == count - 1) ? ""sv : convertedCaption;
+						break;
+					}
 				}
+
+				// Otherwise, use the variable name.
+				if (i >= 8 && caption.empty())
+					caption = value;
 			}
 
-			// Add it to the profile now.
-			profile >> (char)(name.length() + val.length() + 2) << name << ":=" << val;
+			// Grab values.
+			auto strValue = collectValue(value);
+
+			// Add to profile string.
+			if (caption.empty())
+				profile >> (char)strValue.length() << strValue;
+			else
+				profile >> (char)(caption.length() + 1 + strValue.length()) << caption << '=' << strValue;
 		}
 	}
 
