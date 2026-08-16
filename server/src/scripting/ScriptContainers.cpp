@@ -172,6 +172,9 @@ std::weak_ptr<GameVariable> GameVariableStore::add(std::string_view name, GameVa
 		return {};
 
 	auto var = std::make_shared<GameVariable>(GameVariable{.name{name}, .value{std::move(value)}, .lifetime{defaultLifetime}});
+	if (source.has_value())
+		var->source = source.value();
+
 	auto [iter, was_inserted] = store.insert_or_assign(var->name, var);
 	return iter->second;
 }
@@ -199,6 +202,8 @@ std::weak_ptr<GameVariable> GameVariableStore::add(GameVariable&& variable) noex
 	auto var = std::make_shared<GameVariable>(std::move(variable));
 	if (!var->lifetime.has_value())
 		var->lifetime = defaultLifetime;
+	if (source.has_value())
+		var->source = source.value();
 
 	auto [iter, was_inserted] = store.insert_or_assign(var->name, var);
 	return iter->second;

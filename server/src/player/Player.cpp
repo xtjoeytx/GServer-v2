@@ -329,6 +329,7 @@ Player::Player(CSocket* pSocket, const PlayerID pId)
 	m_serverName = m_server->getName();
 
 	account.variables.defaultLifetime = variables::Lifetime::PERMANENT;
+	account.variables.source = source::FromPlayer(pId);
 
 	// NOLINTNEXTLINE(*-msc51-cpp)
 	srand(static_cast<unsigned int>(time(nullptr)));

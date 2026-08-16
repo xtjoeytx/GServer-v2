@@ -100,6 +100,7 @@ NPC::NPC(const NPCID id, const NPCStorageType storageType)
 	assert(m_server != nullptr);
 
 	scripting.variables.defaultLifetime = variables::Lifetime::PERMANENT;
+	scripting.variables.source = source::FromNPC(id);
 
 	resetToInitialState();
 }

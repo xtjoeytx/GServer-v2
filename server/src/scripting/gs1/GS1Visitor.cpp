@@ -111,7 +111,7 @@ static std::optional<size_t> getSymbolType(antlr4::tree::ParseTree* tree)
 	return std::nullopt;
 }
 
-static std::generator<Script*> getJoinedClassesFromSource(ScriptObject source)
+static std::generator<Script*> getJoinedClassesFromSource(const ScriptObject source)
 {
 	auto* server = BabyDI::Get<Server>();
 	switch (source.second)
@@ -488,7 +488,7 @@ GameVariable* GS1Visitor::getGameVariableFromSource(const ScriptObject& source, 
 	return nullptr;
 }
 
-GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view identifier, const std::optional<size_t> type)
+GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view identifier, const std::optional<size_t> type) const
 {
 	// If we have a specific storage type, try to get the store for it.
 	if (type.has_value())
@@ -693,9 +693,11 @@ void GS1Visitor::setCurrentPlayerVariables(const std::optional<ScriptObject>& so
 
 	// All the player property shortcuts.
 	player->constructScriptParameters();
+	auto playerSource = source::FromPlayer(player->getId());
 	for (const auto& [name, variable] : player->scriptParameters)
 	{
 		GameVariable var{.name = std::format("player{}", name), .lifetime = variables::Lifetime::TEMPORARY};
+		var.source = playerSource;
 		var.setters = variable.setters;
 		var.getters = variable.getters;
 		builtInStore->add(std::move(var));
@@ -1085,6 +1087,13 @@ std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentCont
 			throw std::runtime_error("AssignmentOperation is not a vector expression");
 
 		left->assign(right.value().get());
+
+		// Update NPC last update time if the variable is from an NPC source.
+		if (left->source.has_value() && left->source.value().second == ScriptObjectType::NPC)
+		{
+			if (const auto npc = server->getNPC(left->source.value().first); npc != nullptr)
+				npc->lastUpdateTime = server->getFrameStartTime();
+		}
 		return {};
 	}
 
@@ -1126,6 +1135,13 @@ std::any GS1Visitor::visitStatementAssignment(GS1Parser::StatementAssignmentCont
 			left->assign(std::pow(leftD, right), left->index);
 			break;
 		default:;
+	}
+
+	// Update NPC last update time if the variable is from an NPC source.
+	if (left->source.has_value() && left->source.value().second == ScriptObjectType::NPC)
+	{
+		if (const auto npc = server->getNPC(left->source.value().first); npc != nullptr)
+			npc->lastUpdateTime = server->getFrameStartTime();
 	}
 
 	// Assignment operations are statements and can't be used inside expressions.
@@ -1456,7 +1472,11 @@ std::any GS1Visitor::visitExpressionPostfix(GS1Parser::ExpressionPostfixContext*
 	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	auto anyval = visit(context->children[0]);
-	if (const auto left = getScriptValueAs<double>(anyval); left.has_value())
+	const auto variable = getGameVariable(anyval);
+	if (!variable)
+		throw std::runtime_error("ExpressionPostfix has no valid variable");
+
+	if (const auto left = variable->get<double>(); left.has_value())
 	{
 		auto& value = left.value().get();
 
@@ -1471,6 +1491,13 @@ std::any GS1Visitor::visitExpressionPostfix(GS1Parser::ExpressionPostfixContext*
 				break;
 			default:
 				throw std::runtime_error("ExpressionPostfix does not have an operator");
+		}
+
+		// Update NPC last update time if the variable is from an NPC source.
+		if (variable->source.has_value() && variable->source.value().second == ScriptObjectType::NPC)
+		{
+			if (const auto npc = server->getNPC(variable->source.value().first); npc != nullptr)
+				npc->lastUpdateTime = server->getFrameStartTime();
 		}
 	}
 
@@ -1625,6 +1652,7 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 			}
 		}
 
+		// NOLINTNEXTLINE(*-move-const-arg)
 		return makeGS1ScriptValue(std::move(variable));
 	}
 

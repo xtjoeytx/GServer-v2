@@ -509,6 +509,9 @@ public:
 	/// @brief The lifetime of the game variable.
 	std::optional<variables::Lifetime> lifetime;
 
+	/// @brief The source of the game variable, if it was created from a script object.
+	std::optional<ScriptObject> source;
+
 public:
 	/// @brief Getters for different data types.
 	hash_map<func_get> getters;
@@ -951,6 +954,9 @@ public:
 
 	/// @brief The default lifetime for new variables added to the store.
 	variables::Lifetime defaultLifetime = variables::Lifetime::NORMAL;
+
+	/// @brief The source of the variable store, if it was created from a script object.
+	std::optional<ScriptObject> source;
 
 	/// @brief The variable store map.
 	string_map<std::shared_ptr<GameVariable>> store;

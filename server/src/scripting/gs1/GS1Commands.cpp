@@ -2150,6 +2150,13 @@ void fn_set(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 		else
 		{
 			flag->assign<bool>(true);
+
+			// Update NPC last update time if the variable is from an NPC source.
+			if (flag->source.has_value() && flag->source.value().second == ScriptObjectType::NPC)
+			{
+				if (const auto npc = server->getNPC(flag->source.value().first); npc != nullptr)
+					npc->lastUpdateTime = server->getFrameStartTime();
+			}
 		}
 	}
 }
@@ -2189,11 +2196,22 @@ void fn_setarray(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argume
 		{
 			const auto vec = var->get<std::vector<double>>().value();
 			const auto& existing = vec.get();
+			if (existing.size() == size)
+				return;
+
 			for (size_t i = 0; i < std::min(size, existing.size()); ++i)
 				arrayValues[i] = existing[i];
 		}
 
 		var->assign<std::vector<double>>(std::move(arrayValues));
+
+		// Update NPC last update time if the variable is from an NPC source.
+		if (var->source.has_value() && var->source.value().second == ScriptObjectType::NPC)
+		{
+			const auto server = BabyDI::Get<Server>();
+			if (const auto npc = server->getNPC(var->source.value().first); npc != nullptr)
+				npc->lastUpdateTime = server->getFrameStartTime();
+		}
 	}
 }
 
@@ -2777,6 +2795,13 @@ void fn_setstring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argum
 		else
 		{
 			var->assign<std::string>(std::move(text));
+
+			// Update NPC last update time if the variable is from an NPC source.
+			if (var->source.has_value() && var->source.value().second == ScriptObjectType::NPC)
+			{
+				if (const auto npc = server->getNPC(var->source.value().first); npc != nullptr)
+					npc->lastUpdateTime = server->getFrameStartTime();
+			}
 		}
 	}
 }
@@ -3559,6 +3584,13 @@ void fn_unset(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments
 		else
 		{
 			flag->assign<bool>(false);
+
+			// Update NPC last update time if the variable is from an NPC source.
+			if (flag->source.has_value() && flag->source.value().second == ScriptObjectType::NPC)
+			{
+				if (const auto npc = server->getNPC(flag->source.value().first); npc != nullptr)
+					npc->lastUpdateTime = server->getFrameStartTime();
+			}
 		}
 	}
 }

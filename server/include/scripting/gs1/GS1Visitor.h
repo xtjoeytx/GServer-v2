@@ -132,7 +132,7 @@ public:
 
 public:
 	GameVariable* getGameVariableFromSource(const ScriptObject& source, std::string_view identifier) const;
-	GameVariable* getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt);
+	GameVariable* getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt) const;
 
 public:
 	GameValue translateSourceText(antlr4::tree::ParseTree* node, std::string_view language);
