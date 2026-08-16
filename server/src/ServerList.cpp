@@ -722,6 +722,10 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 			{
 				caption = string::trim(profileVar.substr(0, profileVar.find('=')));
 				value = string::trim(profileVar.substr(sep + 1));
+
+				// Send an empty space instead of nothing.
+				if (caption.empty())
+					caption = " "sv;
 			}
 			// value
 			else
