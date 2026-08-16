@@ -152,7 +152,15 @@ void FileSystem::defaultWatchCallback(uint32_t id, const std::filesystem::path& 
 	FileData* eventFileData = nullptr;
 	FileData deletedData;
 
-	DEBUGPRINT("[FS] Event: {} on file: {} in dir: {}", e.to_string(), file.string(), dir.string());
+#ifdef DEBUG
+	std::string events{"-----"};
+	if (e.test(FileEvent::Renamed)) events[0] = 'R';
+	if (e.test(FileEvent::Modified)) events[1] = 'M';
+	if (e.test(FileEvent::Deleted)) events[2] = 'D';
+	if (e.test(FileEvent::Added)) events[3] = 'A';
+	if (e.test(FileEvent::Invalid)) events[4] = 'I';
+	log::printLine(log::server, "[FS] Event: {} {} on file: {} in dir: {}", e.to_string(), events, file.string(), dir.string());
+#endif
 
 	// Limit our lock to not include the event callbacks.
 	{
@@ -194,7 +202,10 @@ void FileSystem::defaultWatchCallback(uint32_t id, const std::filesystem::path& 
 				m_files.erase(iter);
 				iter = m_files.end();
 
-				DEBUGPRINT("[FS] Existing file deleted: {}", file.string());
+#ifdef DEBUG
+				if (!e.test(FileEvent::Renamed))
+					DEBUGPRINT("[FS] Existing file deleted: {}", file.string());
+#endif
 			}
 
 			// If the file got renamed, make sure we remove the old one from the file system.

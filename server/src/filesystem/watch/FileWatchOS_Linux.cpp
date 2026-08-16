@@ -57,7 +57,7 @@ FileWatch::~FileWatch()
 	removeAll();
 }
 
-uint32_t FileWatch::add(const std::filesystem::path& directory, watch_cb callback, bool recursive)
+uint32_t FileWatch::add(const std::filesystem::path& directory, watch_cb callback, const bool recursive)
 {
 	auto addWatch = [this, &callback](const std::filesystem::path& file) -> int
 	{
@@ -107,7 +107,7 @@ void FileWatch::remove(const std::filesystem::path& directory)
 	}
 }
 
-void FileWatch::remove(uint32_t watch_id)
+void FileWatch::remove(const uint32_t watch_id)
 {
 	const auto i = m_watchers.find(watch_id);
 	if (i == m_watchers.end())
@@ -142,7 +142,8 @@ void FileWatch::update()
 	else if (FD_ISSET(m_watch_os->fd, &m_watch_os->descriptor_set))
 	{
 		ssize_t i = 0;
-		std::unordered_map<std::filesystem::path, FileEventData> fileEvents;
+		std::vector<FileEventData> fileEventList;
+		std::unordered_map<std::filesystem::path, size_t> fileEvents;
 		char notifyBuff[BUFF_SIZE] = { 0 };
 		char fileBuff[FILENAME_MAX + 1] = { 0 };
 
@@ -164,8 +165,11 @@ void FileWatch::update()
 					else
 					{
 						std::filesystem::path fileName{ pevent->name };
+						auto [eventIter, inserted] = fileEvents.try_emplace(fileName.filename(), fileEventList.size());
+						if (inserted)
+							fileEventList.emplace_back();
 
-						auto& data = fileEvents[fileName.filename()];
+						auto& data = fileEventList[eventIter->second];
 						data.fsData = watch;
 						data.fileName = fileName;
 						if (fileBuff[0] != '\0')
@@ -186,14 +190,18 @@ void FileWatch::update()
 				}
 			}
 
-			i += sizeof(struct inotify_event) + pevent->len;
+			i += static_cast<ssize_t>(sizeof(struct inotify_event)) + pevent->len;
 		}
 
-		// Check for rename events on overwritten files.
-		// When we save files, a temp file gets created and renamed over top of the original file.
-		// The temp file will get an Added event, and the original file will get a Deleted event + a Renamed event.
-		// We want the original file to have a single Modified event, while the original file should get a Deleted event.
-		for (auto& data : fileEvents | std::views::values)
+		// Fix events on temporary files.
+		// Save:
+		//   When we save files, a temp file gets created and renamed over top of the original file.
+		//   The temp file will get an Added event, and the original file will get a Deleted event + a Renamed event.
+		//   We want the original file to have a single Modified event, while the original file should get a Deleted event.
+		// Add:
+		//   When we add files, a temp file gets created and renamed over top of the original file.
+		//   We want just the non-temp file to get the Added event.
+		for (auto& data : fileEventList)
 		{
 			const auto watch = static_cast<Watch*>(data.fsData);
 			if (watch == nullptr) continue;
@@ -211,10 +219,15 @@ void FileWatch::update()
 			{
 				data.events.reset(FileEvent::Modified);
 			}
+			// If we have an added + renamed event, clear the renamed flag.
+			else if (data.events.test(FileEvent::Added) && data.events.test(FileEvent::Renamed))
+			{
+				data.events.reset(FileEvent::Renamed);
+			}
 		}
 
 		// Execute callbacks for our queued data.
-		for (auto& data : fileEvents | std::views::values)
+		for (auto& data : fileEventList)
 		{
 			if (data.events.test(FileEvent::Invalid))
 				continue;
