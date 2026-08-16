@@ -6,8 +6,8 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -40,40 +40,40 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifdef PACKETLOGGING
-#define DO_PACKETLOG(LOG) LOG
+	#define DO_PACKETLOG(LOG) LOG
 #else
-#define DO_PACKETLOG(LOG)
+	#define DO_PACKETLOG(LOG)
 #endif
 
-#define PRINT_PLAYERPROP(prop, ...) #prop ##sv,
+#define PRINT_PLAYERPROP(prop, ...) #prop##sv,
 constexpr std::array<std::string_view, PLAYERPROP_COUNT> playerPropNames =
 {
 	FOR_LIST_OF_PLAYER_PROPS(PRINT_PLAYERPROP)
 };
 
 #ifdef PACKETLOGGING
-static void printHeader(const Player* player, std::string_view header)
+static void printHeader(const Player* player, const std::string_view header)
 {
 	log::printBlock(log::networkdump, "{}:\n", header);
 	log::printBlock(log::networkdump, "  PlayerProp::ID: value: {}\n", player->getId());
 }
 
-static void printProp(const Player* player, PlayerProp playerProp, PropertyBase* base)
+static void printProp(const Player* player, const PlayerProp playerProp, PropertyBase* base)
 {
-	auto prop = player->getProp(playerProp);
+	const auto prop = player->getProp(playerProp);
 	CString data = prop->serialize();
 
 	log::printBlock(log::networkdump, "  {}: {}", playerPropNames[PROPID(playerProp)], prop);
 	log::printBlock(log::networkdump, " |");
-	for (size_t i = 0; i < data.length(); ++i)
-		log::printBlock(log::networkdump, " {:02x}", (unsigned char)data[i]);
+	for (size_t i = 0; i < static_cast<size_t>(data.length()); ++i)
+		log::printBlock(log::networkdump, " {:02x}", static_cast<unsigned char>(data[i]));
 	log::printBlock(log::networkdump, "\n");
 }
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static bool canSendProp(PlayerProp prop)
+static bool canSendProp(const PlayerProp prop)
 {
 	static Server* server = nullptr;
 	if (server == nullptr)
@@ -91,7 +91,8 @@ std::shared_ptr<PropertyBase> Player::constructPropFor(const PlayerProp prop)
 {
 	switch (prop)
 	{
-#define GENERATE_CONSTRUCTPROPFOR_CASE(prop, type, ...) case prop: return std::make_shared<type>();
+#define GENERATE_CONSTRUCTPROPFOR_CASE(prop, type, ...) \
+	case prop: return std::make_shared<type>();
 		FOR_LIST_OF_PLAYER_PROPS(GENERATE_CONSTRUCTPROPFOR_CASE);
 		default:;
 	}
@@ -104,7 +105,8 @@ std::shared_ptr<PropertyBase> Player::getProp(const PlayerProp prop) const
 {
 	switch (prop)
 	{
-#define GENERATE_GETPROP_CASE(prop, type, ...) case prop: return std::make_shared<type>( __VA_ARGS__ );
+#define GENERATE_GETPROP_CASE(prop, type, ...) \
+	case prop: return std::make_shared<type>(__VA_ARGS__);
 		FOR_LIST_OF_PLAYER_PROPS(GENERATE_GETPROP_CASE);
 		default:;
 	}
@@ -127,7 +129,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 	auto level = player ? player->getLevel() : nullptr;
 	bool restrictedPropAllowed = !m_server->hasNPCServer() || setBy == props::SetBy::SERVER;
 
-	props::SetResults result{ .propId = PROPID(prop) };
+	props::SetResults result{.propId = PROPID(prop)};
 	result.resultFlags.set(props::SetResults::sendToLevel, clientPropsSharedLocal[PROPID(prop)]);
 	result.resultFlags.set(props::SetResults::sendToSource, setBy == props::SetBy::SERVER);
 
@@ -135,18 +137,54 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 	auto oldTime = modTime[PROPID(prop)];
 	modTime[PROPID(prop)] = curTime;
 
-#define SETPROP_RETURN_ERROR do { result.resultFlags.set(SetResults::wasInvalid); modTime[PROPID(prop)] = oldTime; return result; } while(false)
+	// Ignores a property change.
+#define SETPROP_RETURN_IGNORE                           \
+	do                                                  \
+	{                                                   \
+		result.resultFlags.set(SetResults::wasInvalid); \
+		modTime[PROPID(prop)] = oldTime;                \
+		return result;                                  \
+	}                                                   \
+	while (false)
+
+	// Ignores a property change and sends it back to the client.
+#define SETPROP_RETURN_REVERT                                    \
+	do                                                           \
+	{                                                            \
+		if (setBy == SetBy::CLIENT)                              \
+		{                                                        \
+			result.resultFlags.reset();                          \
+			result.resultFlags.set(SetResults::sendToSource);    \
+			result.resultFlags.set(SetResults::getLatestOnSend); \
+		}                                                        \
+		else                                                     \
+		{                                                        \
+			result.resultFlags.set(SetResults::wasInvalid);      \
+		}                                                        \
+		modTime[PROPID(prop)] = oldTime;                         \
+		return result;                                           \
+	}                                                            \
+	while (false)
+
+	// Sends a property back to the source if it was altered.
+#define SETPROP_SENDBACK                                     \
+	do                                                       \
+	{                                                        \
+		result.resultFlags.set(SetResults::sendToSource);    \
+		result.resultFlags.set(SetResults::getLatestOnSend); \
+	}                                                        \
+	while (false)
 
 	switch (prop)
 	{
 		case PlayerProp::NICKNAME:
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
-			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (strProp == nullptr || strProp->value == account.character.nickName)
+				SETPROP_RETURN_IGNORE;
 
 			// Word filter.
-			CString nick{ strProp->value };
+			CString nick{strProp->value};
 			int filter = m_server->getWordFilter().apply(this, nick, FILTER_CHECK_NICK);
 			if (filter & FILTER_ACTION_WARN)
 			{
@@ -160,10 +198,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			// If the nickname was changed due to restrictions, send the new nick back to the source.
 			if (account.character.nickName != nick)
-			{
-				result.resultFlags.set(props::SetResults::sendToSource);
-				result.resultFlags.set(props::SetResults::getLatestOnSend);
-			}
+				SETPROP_SENDBACK;
 
 			result.resultFlags.set(props::SetResults::sendToAll);
 			break;
@@ -172,33 +207,32 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::FULLHEARTS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.maxHitpoints)
+				SETPROP_RETURN_IGNORE;
+			if (!restrictedPropAllowed)
+				SETPROP_RETURN_REVERT;
 
 			uint8_t newMaxHitpoints = numProp->value;
 
-			if (restrictedPropAllowed)
-			{
-				account.maxHitpoints = props::Limits::applyMaxHitpoints(newMaxHitpoints);
-				account.character.hitpointsInHalves = newMaxHitpoints * 2;
+			account.maxHitpoints = props::Limits::applyMaxHitpoints(newMaxHitpoints);
+			account.character.hitpointsInHalves = newMaxHitpoints * 2;
 
-				result.resultPropIds.push_back(PROPID(PlayerProp::HALFHEARTS));
-				result.resultFlags.set(props::SetResults::sendToSource);
-			}
+			result.resultPropIds.push_back(PROPID(PlayerProp::HALFHEARTS));
+			result.resultFlags.set(props::SetResults::sendToSource);
 			break;
 		}
 
 		case PlayerProp::HALFHEARTS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.character.hitpointsInHalves)
+				SETPROP_RETURN_IGNORE;
 
 			uint8_t power = numProp->value;
 			auto powerDelta = static_cast<int8_t>(power - account.character.hitpointsInHalves);
 
 			if (account.character.ap < 40 && powerDelta > 0)
-				break;
+				SETPROP_RETURN_REVERT;
 
 			account.character.hurtDeltaInHalves = -powerDelta;
 			account.character.hitpointsInHalves = props::Limits::apply(power, 0, account.maxHitpoints * 2);
@@ -213,20 +247,21 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::GRALATS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.character.gralats)
+				SETPROP_RETURN_IGNORE;
+			if (!restrictedPropAllowed)
+				SETPROP_RETURN_REVERT;
 
 			uint32_t newGralatCount = std::min(numProp->value, 9999999u);
-			if (restrictedPropAllowed)
-				account.character.gralats = newGralatCount;
+			account.character.gralats = newGralatCount;
 			break;
 		}
 
 		case PlayerProp::ARROWS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.character.arrows)
+				SETPROP_RETURN_IGNORE;
 
 			account.character.arrows = props::Limits::apply(numProp->value, props::Limits::MaxArrows);
 			break;
@@ -235,8 +270,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::BOMBS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.character.bombs)
+				SETPROP_RETURN_IGNORE;
 
 			account.character.bombs = props::Limits::apply(numProp->value, props::Limits::MaxBombs);
 			break;
@@ -245,20 +280,21 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::GLOVEPOWER:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.character.glovePower)
+				SETPROP_RETURN_IGNORE;
+			if (!restrictedPropAllowed)
+				SETPROP_RETURN_REVERT;
 
 			uint8_t newGlovePower = numProp->value;
-			if (restrictedPropAllowed)
-				account.character.glovePower = props::Limits::apply(newGlovePower, props::Limits::MaxGlovePower);
+			account.character.glovePower = props::Limits::apply(newGlovePower, props::Limits::MaxPlayerGlovePower);
 			break;
 		}
 
 		case PlayerProp::BOMBPOWER:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.character.bombPower)
+				SETPROP_RETURN_IGNORE;
 
 			account.character.bombPower = props::Limits::apply(numProp->value, props::Limits::MaxBombPower);
 			break;
@@ -267,11 +303,13 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::SWORDIMAGE:
 		{
 			auto swordProp = dynamic_cast<PropertySwordPower*>(base);
-			if (swordProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (swordProp == nullptr || (swordProp->power.value_or(0) == account.character.swordPower && swordProp->image == account.character.swordImage))
+				SETPROP_RETURN_IGNORE;
 
 			if (restrictedPropAllowed && swordProp->power.has_value())
 				account.character.swordPower = props::Limits::applySwordPower(swordProp->power.value_or(1));
+			else if (!restrictedPropAllowed)
+				SETPROP_SENDBACK;
 
 			account.character.swordImage = props::Limits::apply(swordProp->image, props::Limits::SwordImageLength);
 			break;
@@ -280,11 +318,13 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::SHIELDIMAGE:
 		{
 			auto shieldProp = dynamic_cast<PropertyShieldPower*>(base);
-			if (shieldProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (shieldProp == nullptr || (shieldProp->power.value_or(0) == account.character.shieldPower && shieldProp->image == account.character.shieldImage))
+				SETPROP_RETURN_IGNORE;
 
 			if (restrictedPropAllowed && shieldProp->power.has_value())
 				account.character.shieldPower = props::Limits::applyShieldPower(shieldProp->power.value_or(1));
+			else if (!restrictedPropAllowed)
+				SETPROP_SENDBACK;
 
 			account.character.shieldImage = props::Limits::apply(shieldProp->image, props::Limits::ShieldImageLength);
 			break;
@@ -294,15 +334,18 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		{
 			auto ganiProp = dynamic_cast<PropertyGaniOrBowGif*>(base);
 			if (ganiProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			// 1.x servers didn't have ganis.  This prop was used for the bow instead.
 			if (m_server->Generation == ServerGeneration::CLASSIC)
 			{
 				if (!ganiProp->bowGif.has_value())
-					break;
+					SETPROP_RETURN_IGNORE;
 
 				auto& [image, power] = ganiProp->bowGif.value();
+				if (image == account.character.bowImage && power == account.character.bowPower)
+					SETPROP_RETURN_IGNORE;
+
 				account.character.bowPower = props::Limits::apply(power, props::Limits::MaxBowPower);
 				account.character.bowImage = image;
 				if (!account.character.bowImage.empty() && !account.character.bowImage.contains('.'))
@@ -310,6 +353,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				break;
 			}
 
+			// Set the gani.
+			// Ganis can be set to themselves to play it again from the beginning, so don't check for equality here.
 			std::string gani = ganiProp->gani.value_or("idle");
 			account.character.gani = props::Limits::apply(gani, props::Limits::GaniLength);
 
@@ -318,10 +363,10 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			{
 				float tX = static_cast<float>(account.character.localPixelX) / 16.0f + 1.5f;
 				float tY = static_cast<float>(account.character.localPixelY) / 16.0f + 2.0f;
-				m_server->hitObjectsAtPoint({ tX, tY + 2.0f }, account.character.swordPower, level, shared_from_this());
-				m_server->hitObjectsAtPoint({ tX, tY - 2.0f }, account.character.swordPower, level, shared_from_this());
-				m_server->hitObjectsAtPoint({ tX + 2.0f, tY }, account.character.swordPower, level, shared_from_this());
-				m_server->hitObjectsAtPoint({ tX - 2.0f, tY }, account.character.swordPower, level, shared_from_this());
+				m_server->hitObjectsAtPoint({tX, tY + 2.0f}, account.character.swordPower, level, shared_from_this());
+				m_server->hitObjectsAtPoint({tX, tY - 2.0f}, account.character.swordPower, level, shared_from_this());
+				m_server->hitObjectsAtPoint({tX + 2.0f, tY}, account.character.swordPower, level, shared_from_this());
+				m_server->hitObjectsAtPoint({tX - 2.0f, tY}, account.character.swordPower, level, shared_from_this());
 			}
 			break;
 		}
@@ -330,7 +375,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		{
 			auto headProp = dynamic_cast<PropertyHeadGif*>(base);
 			if (headProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			std::string img;
 			if (std::holds_alternative<uint8_t>(headProp->image))
@@ -341,6 +386,9 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (m_server->Generation == ServerGeneration::CLASSIC && !img.empty() && !img.contains('.'))
 				img += ".gif";
 
+			if (img == account.character.headImage)
+				SETPROP_RETURN_IGNORE;
+
 			account.character.headImage = props::Limits::apply(img, props::Limits::HeadImageLength);
 			result.resultFlags.set(props::SetResults::sendToAll);
 			break;
@@ -350,10 +398,9 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
-
+				SETPROP_RETURN_IGNORE;
 			if (bool chatChanged = (account.character.chatMessage != strProp->value); !chatChanged)
-				break;
+				SETPROP_RETURN_IGNORE;
 
 			account.character.chatMessage = props::Limits::apply(strProp->value, props::Limits::ChatMessageLength);
 
@@ -380,8 +427,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::COLORS:
 		{
 			auto colorProp = dynamic_cast<PropertyColors*>(base);
-			if (colorProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (colorProp == nullptr || colorProp->values == account.character.colors)
+				SETPROP_RETURN_IGNORE;
 
 			account.character.colors = colorProp->values;
 			break;
@@ -393,11 +440,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::X:
 		{
 			auto coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
-			if (coordProp == nullptr)
-				SETPROP_RETURN_ERROR;
-
-			if (account.character.localPixelX == coordProp->pixelCoordinate)
-				break;
+			if (coordProp == nullptr || coordProp->pixelCoordinate == account.character.localPixelX)
+				SETPROP_RETURN_IGNORE;
 
 			auto movementDirection = static_cast<uint8_t>(2 + std::clamp(coordProp->pixelCoordinate - account.character.localPixelX, -1, 1));
 			account.character.localPixelX = coordProp->pixelCoordinate;
@@ -415,11 +459,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::Y:
 		{
 			auto coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
-			if (coordProp == nullptr)
-				SETPROP_RETURN_ERROR;
-
-			if (account.character.localPixelY == coordProp->pixelCoordinate)
-				break;
+			if (coordProp == nullptr || coordProp->pixelCoordinate == account.character.localPixelY)
+				SETPROP_RETURN_IGNORE;
 
 			auto movementDirection = static_cast<uint8_t>(1 + std::clamp(coordProp->pixelCoordinate - account.character.localPixelY, -1, 1));
 			account.character.localPixelY = coordProp->pixelCoordinate;
@@ -438,16 +479,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		{
 			auto zProp = dynamic_cast<PropertyTileCoordinateZ*>(base);
 			if (zProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			// If Z is disabled, don't allow changing it.
 			if (m_server->cached.lockPlayerZ.getValue())
-			{
-				result.resultFlags.reset();
-				result.resultFlags.set(SetResults::sendToSource);
-				result.resultFlags.set(SetResults::getLatestOnSend);
-				break;
-			}
+				SETPROP_RETURN_REVERT;
 
 			account.character.localPixelZ = zProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);
@@ -462,10 +498,9 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		{
 			auto spriteProp = dynamic_cast<PropertySprite*>(base);
 			if (spriteProp == nullptr)
-				SETPROP_RETURN_ERROR;
-
+				SETPROP_RETURN_IGNORE;
 			if (account.character.sprite == spriteProp->sprite && account.character.direction == spriteProp->direction)
-				break;
+				SETPROP_RETURN_IGNORE;
 
 			bool directionChanged = (account.character.direction != spriteProp->direction);
 			account.character.direction = spriteProp->direction;
@@ -489,8 +524,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::STATUS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.status)
+				SETPROP_RETURN_IGNORE;
 
 			int oldStatus = account.status;
 			account.status = numProp->value;
@@ -541,8 +576,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::CARRYSPRITE:
 		{
 			auto numProp = dynamic_cast<PropertyUnsafeByte*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == m_carrySprite)
+				SETPROP_RETURN_IGNORE;
 
 			m_carrySprite = numProp->value;
 			break;
@@ -551,11 +586,12 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::LEVEL:
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
-			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (strProp == nullptr || strProp->value == account.level)
+				SETPROP_RETURN_IGNORE;
+			if (!restrictedPropAllowed)
+				SETPROP_RETURN_REVERT;
 
-			if (restrictedPropAllowed && account.level != strProp->value)
-				warp(strProp->value, getGlobalPosition());
+			warp(strProp->value, getGlobalPosition());
 			break;
 		}
 
@@ -563,19 +599,24 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
-			account.character.horseImage = strProp->value;
-			if (m_server->Generation == ServerGeneration::CLASSIC && !account.character.horseImage.empty() && !account.character.horseImage.contains('.'))
-				account.character.horseImage += ".gif";
+			std::string horseImage = strProp->value;
+			if (m_server->Generation == ServerGeneration::CLASSIC && !horseImage.empty() && !horseImage.contains('.'))
+				horseImage += ".gif";
+
+			if (horseImage == account.character.horseImage)
+				SETPROP_RETURN_IGNORE;
+
+			account.character.horseImage = horseImage;
 			break;
 		}
 
 		case PlayerProp::HORSEBUSHES:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == m_horseBombCount)
+				SETPROP_RETURN_IGNORE;
 
 			m_horseBombCount = numProp->value;
 			break;
@@ -584,8 +625,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::EFFECTCOLORS:
 		{
 			auto effectColorsProp = dynamic_cast<PropertyEffectColors*>(base);
-			if (effectColorsProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (effectColorsProp == nullptr || effectColorsProp->values == m_effectColors)
+				SETPROP_RETURN_IGNORE;
 
 			m_effectColors = effectColorsProp->values;
 			break;
@@ -594,13 +635,10 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::CARRYNPCID:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || player == nullptr || numProp->value == m_carryNPC)
+				SETPROP_RETURN_IGNORE;
 
 			NPCID newNPCID = numProp->value;
-
-			if (player == nullptr)
-				break;
 
 			// Not supported on gmaps.
 			if (level && level->isGmap())
@@ -608,7 +646,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				// The client seems to freak out when picking up a character on the gmap.
 				// Normally, the client would "delete" the NPC when picking it up and respawn it when thrown, but on the gmap the
 				// NPC doesn't get deleted, causing a lot of weird problems.
-				break;
+				SETPROP_RETURN_REVERT;
 			}
 
 			// Picked up.
@@ -638,7 +676,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 								// and tell the player to remove the NPC from memory.
 								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::CARRYNPCID >> (int)0);
 								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->levelName.length() << level->levelName >> (int)newNPCID);
-								m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::CARRYNPCID >> (int)0, player->getGlobalPosition(), level, { m_id });
+								m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::CARRYNPCID >> (int)0, player->getGlobalPosition(), level, {m_id});
 								isOwner = false;
 								newNPCID = 0;
 								break;
@@ -666,15 +704,19 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 					// Send the position of the NPC to other players in the level so the it will appear in the right spot after the move completes.
 					// Do not send to the player who threw it.
 					// The client is still "throwing" the NPC and sending props will break things!
+					// clang-format off
 					npc->sendPropsFromResults(
 						player,
-						SetResults{ .propId = PROPID(NPCProp::VISFLAGS), .resultFlags = (1 << SetResults::sendToLevel) },
+						SetResults{.propId = PROPID(NPCProp::VISFLAGS), .resultFlags = (1 << SetResults::sendToLevel)},
 						npc->setPropWith<NPCProp::X2>(props::SetBy::SERVER, pos.x()),
 						npc->setPropWith<NPCProp::Y2>(props::SetBy::SERVER, pos.y())
 					);
+					// clang-format on
 
 					// Queue up the movement of the NPC so clients position it properly.
-					LocalPixelPosition moveDelta{ dir == 1_i16 ? -moveDistance : dir == 3 ? moveDistance : 0_i16, dir == 0 ? -moveDistance : dir == 2_i16 ? moveDistance : 0_i16 };
+					// clang-format off
+					LocalPixelPosition moveDelta{dir == 1_i16 ? -moveDistance : dir == 3 ? moveDistance : 0_i16, dir == 0 ? -moveDistance : dir == 2_i16 ? moveDistance : 0_i16};
+					// clang-format on
 					npc->addMoveToQueue(moveDelta, 0.5, ENUM(NPCMoveFlags::NOCACHE));
 					if (!npc->moveQueue.empty())
 					{
@@ -714,8 +756,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::APCOUNTER:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE2>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.apCounter)
+				SETPROP_RETURN_IGNORE;
 
 			account.apCounter = numProp->value + 1;
 			break;
@@ -724,33 +766,36 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::MAGICPOINTS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.character.mp)
+				SETPROP_RETURN_IGNORE;
+			if (!restrictedPropAllowed)
+				SETPROP_RETURN_REVERT;
 
-			if (restrictedPropAllowed)
-				account.character.mp = props::Limits::apply(numProp->value, props::Limits::MaxMP);
+			account.character.mp = props::Limits::apply(numProp->value, props::Limits::MaxMP);
 			break;
 		}
 
 		case PlayerProp::KILLS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.kills)
+				SETPROP_RETURN_IGNORE;
+			if (!restrictedPropAllowed)
+				SETPROP_RETURN_REVERT;
 
-			if (restrictedPropAllowed)
-				account.kills = numProp->value;
+			account.kills = numProp->value;
 			break;
 		}
 
 		case PlayerProp::DEATHS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.deaths)
+				SETPROP_RETURN_IGNORE;
+			if (!restrictedPropAllowed)
+				SETPROP_RETURN_REVERT;
 
-			if (restrictedPropAllowed)
-				account.deaths = numProp->value;
+			account.deaths = numProp->value;
 			break;
 		}
 
@@ -761,8 +806,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::UDPPORT:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == m_udpport)
+				SETPROP_RETURN_IGNORE;
 
 			m_udpport = numProp->value;
 			break;
@@ -771,20 +816,21 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::ALIGNMENT:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.character.ap)
+				SETPROP_RETURN_IGNORE;
+			if (!restrictedPropAllowed)
+				SETPROP_RETURN_REVERT;
 
 			uint8_t newAlignment = numProp->value;
-			if (restrictedPropAllowed)
-				account.character.ap = std::min<uint8_t>(newAlignment, 100);
+			account.character.ap = std::min<uint8_t>(newAlignment, 100);
 			break;
 		}
 
 		case PlayerProp::ADDITFLAGS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == m_additionalFlags)
+				SETPROP_RETURN_IGNORE;
 
 			m_additionalFlags = numProp->value;
 			break;
@@ -796,8 +842,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::BODYIMAGE:
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
-			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (strProp == nullptr || strProp->value == account.character.bodyImage)
+				SETPROP_RETURN_IGNORE;
 
 			account.character.bodyImage = props::Limits::apply(strProp->value, props::Limits::BodyImageLength);
 			break;
@@ -807,21 +853,22 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		{
 			auto eloProp = dynamic_cast<PropertyEloRating*>(base);
 			if (eloProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
+			if (eloProp->rating == account.eloRating && eloProp->deviation == account.eloDeviation)
+				SETPROP_RETURN_IGNORE;
+			if (!restrictedPropAllowed)
+				SETPROP_RETURN_REVERT;
 
-			if (restrictedPropAllowed)
-			{
-				account.eloRating = eloProp->rating;
-				account.eloDeviation = eloProp->deviation;
-			}
+			account.eloRating = eloProp->rating;
+			account.eloDeviation = eloProp->deviation;
 			break;
 		}
 
 		case PlayerProp::ATTACHNPCID:
 		{
 			auto attachProp = dynamic_cast<PropertyAttachNPC*>(base);
-			if (attachProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (attachProp == nullptr || attachProp->npcId == m_attachNPC)
+				SETPROP_RETURN_IGNORE;
 
 			// Only supports object_type 0 (NPC).
 			m_attachNPC = attachProp->npcId;
@@ -831,11 +878,10 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::GMAPLEVELX:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr || level == nullptr || !level->isGmap())
-				SETPROP_RETURN_ERROR;
-
-			if (account.character.mapX == numProp->value)
-				break;
+			if (numProp == nullptr || numProp->value == account.character.mapX)
+				SETPROP_RETURN_IGNORE;
+			if (level == nullptr || !level->isGmap())
+				SETPROP_RETURN_REVERT;
 
 			if (auto subLevel = level->getSubLevelAtPosition(getMapPosition()); subLevel != nullptr)
 				leaveSubLevel(subLevel);
@@ -853,11 +899,10 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::GMAPLEVELY:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr || level == nullptr || !level->isGmap())
-				SETPROP_RETURN_ERROR;
-
-			if (account.character.mapY == numProp->value)
-				break;
+			if (numProp == nullptr || numProp->value == account.character.mapY)
+				SETPROP_RETURN_IGNORE;
+			if (level == nullptr || !level->isGmap())
+				SETPROP_RETURN_REVERT;
 
 			if (auto subLevel = level->getSubLevelAtPosition(getMapPosition()); subLevel != nullptr)
 				leaveSubLevel(subLevel);
@@ -879,8 +924,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::LANGUAGE:
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
-			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (strProp == nullptr || strProp->value == account.language)
+				SETPROP_RETURN_IGNORE;
 
 			account.language = strProp->value;
 			break;
@@ -889,8 +934,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::PLAYERLISTSTATUS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == m_statusMsg)
+				SETPROP_RETURN_IGNORE;
 
 			m_statusMsg = numProp->value;
 			if (m_id == 0 || !m_loaded)
@@ -933,9 +978,14 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			auto index = std::ranges::distance(GaniAttributePropList.begin(), std::ranges::find(GaniAttributePropList, PROPID(prop)));
+			if (index < 0 || index >= static_cast<std::ptrdiff_t>(account.character.ganiAttributes.size()))
+				SETPROP_RETURN_IGNORE;
+			if (strProp->value == account.character.ganiAttributes[index])
+				SETPROP_RETURN_IGNORE;
+
 			account.character.ganiAttributes[index] = strProp->value;
 			break;
 		}
@@ -945,8 +995,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::OSTYPE:
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
-			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (strProp == nullptr || strProp->value == account.platform)
+				SETPROP_RETURN_IGNORE;
 
 			account.platform = strProp->value;
 			break;
@@ -957,8 +1007,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::TEXTCODEPAGE:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == account.codePage)
+				SETPROP_RETURN_IGNORE;
 
 			account.codePage = static_cast<uint16_t>(numProp->value);
 			break;
@@ -974,11 +1024,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::X2:
 		{
 			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
-			if (pixelProp == nullptr)
-				SETPROP_RETURN_ERROR;
-
-			if (account.character.localPixelX == pixelProp->pixelCoordinate)
-				break;
+			if (pixelProp == nullptr || pixelProp->pixelCoordinate == account.character.localPixelX)
+				SETPROP_RETURN_IGNORE;
 
 			auto movementDirection = static_cast<uint8_t>(2 + std::clamp(pixelProp->pixelCoordinate - account.character.localPixelX, -1, 1));
 			account.character.localPixelX = pixelProp->pixelCoordinate;
@@ -996,11 +1043,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::Y2:
 		{
 			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
-			if (pixelProp == nullptr)
-				SETPROP_RETURN_ERROR;
-
-			if (account.character.localPixelY == pixelProp->pixelCoordinate)
-				break;
+			if (pixelProp == nullptr || pixelProp->pixelCoordinate == account.character.localPixelY)
+				SETPROP_RETURN_IGNORE;
 
 			auto movementDirection = static_cast<uint8_t>(1 + std::clamp(pixelProp->pixelCoordinate - account.character.localPixelY, -1, 1));
 			account.character.localPixelY = pixelProp->pixelCoordinate;
@@ -1018,17 +1062,12 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::Z2:
 		{
 			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
-			if (pixelProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (pixelProp == nullptr || pixelProp->pixelCoordinate == account.character.localPixelZ)
+				SETPROP_RETURN_IGNORE;
 
 			// If Z is disabled, don't allow changing it.
 			if (m_server->cached.lockPlayerZ.getValue())
-			{
-				result.resultFlags.reset();
-				result.resultFlags.set(SetResults::sendToSource);
-				result.resultFlags.set(SetResults::getLatestOnSend);
-				break;
-			}
+				SETPROP_RETURN_REVERT;
 
 			account.character.localPixelZ = pixelProp->pixelCoordinate;
 			account.status &= (~PLSTATUS_PAUSED);
@@ -1042,8 +1081,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::PLAYERLISTCATEGORY:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == static_cast<uint8_t>(m_playerListCategory))
+				SETPROP_RETURN_IGNORE;
 
 			m_playerListCategory = static_cast<PlayerListCategory>(numProp->value);
 			break;
@@ -1052,8 +1091,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		case PlayerProp::COMMUNITYNAME:
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
-			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (strProp == nullptr || strProp->value == account.communityName)
+				SETPROP_RETURN_IGNORE;
 
 			account.communityName = strProp->value;
 			break;
@@ -1063,7 +1102,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE5>*>(base);
 			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			log::printLine(log::server, "Player {} set prop 83 to value {}.  This prop is currently unknown.", account.name, numProp->value);
 			break;
@@ -1083,6 +1122,10 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 		for (const auto& id : result.resultPropIds)
 			modTime[id] = curTime;
 	}
+
+#undef SETPROP_RETURN_IGNORE
+#undef SETPROP_RETURN_REVERT
+#undef SETPROP_SENDBACK
 
 	return result;
 }
@@ -1139,7 +1182,7 @@ void Player::sendPropsFromResults(PropertySendResults& results)
 
 	// Send the buffers out.
 	if (sendAll.length() > 0)
-		m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << sendAll, { m_id });
+		m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << sendAll, {m_id});
 
 	if (const auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr && sendLevel.length() > 0)
 		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << sendLevel, player->getGlobalPosition(), player->getLevel(), {m_id});

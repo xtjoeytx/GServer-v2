@@ -31,7 +31,7 @@ struct Character
 	uint8_t bombs = 10;
 	uint8_t arrows = 5;
 	uint8_t bombPower = 1;
-	uint8_t glovePower = 1;
+	uint8_t glovePower = 1;	// NPC: 0-2, Player: 0-3
 	int8_t swordPower = 1;
 	uint8_t shieldPower = 1;
 	uint8_t bowPower = 1;
@@ -49,7 +49,7 @@ struct Character
 	std::string swordImage{ "sword1.png" };
 	std::string shieldImage{ "shield1.png" };
 	std::string bowImage{ "bow1.png" };
-	std::string ganiAttributes[30];
+	std::array<std::string, 30> ganiAttributes;
 
 	[[nodiscard]] LocalPixelPosition getLocalPosition() const noexcept
 	{

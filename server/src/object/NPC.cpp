@@ -3,6 +3,7 @@
 #include <cassert>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <format>
@@ -949,7 +950,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 	modTime[PROPID(prop)] = curTime;
 	lastUpdateTime = curTime;
 
-#define SETPROP_RETURN_ERROR                            \
+	// Ignores a property change.
+#define SETPROP_RETURN_IGNORE                           \
 	do                                                  \
 	{                                                   \
 		result.resultFlags.set(SetResults::wasInvalid); \
@@ -965,7 +967,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr || strProp->value == image)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			// If we are changing to a character, set the gani to idle.
 			if (strProp->value == "#c#" && image != "#c")
@@ -998,7 +1000,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr || setBy != SetBy::SERVER)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			setScript(strProp->value);
 			break;
@@ -1007,8 +1009,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::X:
 		{
 			auto coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
-			if (coordProp == nullptr || !canUpdatePosition)
-				SETPROP_RETURN_ERROR;
+			if (coordProp == nullptr || !canUpdatePosition || coordProp->pixelCoordinate == character.localPixelX)
+				SETPROP_RETURN_IGNORE;
 
 			character.localPixelX = coordProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::X2));
@@ -1021,8 +1023,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::Y:
 		{
 			auto coordProp = dynamic_cast<PropertyTileCoordinate*>(base);
-			if (coordProp == nullptr || !canUpdatePosition)
-				SETPROP_RETURN_ERROR;
+			if (coordProp == nullptr || !canUpdatePosition || coordProp->pixelCoordinate == character.localPixelY)
+				SETPROP_RETURN_IGNORE;
 
 			character.localPixelY = coordProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::Y2));
@@ -1035,8 +1037,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::Z:
 		{
 			auto zProp = dynamic_cast<PropertyTileCoordinateZ*>(base);
-			if (zProp == nullptr || !canUpdatePosition)
-				SETPROP_RETURN_ERROR;
+			if (zProp == nullptr || !canUpdatePosition || zProp->pixelCoordinate == character.localPixelZ)
+				SETPROP_RETURN_IGNORE;
 
 			character.localPixelZ = zProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::Z2));
@@ -1048,8 +1050,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::HALFHEARTS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == character.hitpointsInHalves)
+				SETPROP_RETURN_IGNORE;
 
 			character.hurtDeltaInHalves = character.hitpointsInHalves - numProp->value;
 			character.hitpointsInHalves = numProp->value;
@@ -1062,8 +1064,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::GRALATS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE3>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == character.gralats)
+				SETPROP_RETURN_IGNORE;
 
 			character.gralats = numProp->value;
 			break;
@@ -1072,48 +1074,48 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::ARROWS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == character.arrows)
+				SETPROP_RETURN_IGNORE;
 
-			character.arrows = numProp->value;
+			character.arrows = props::Limits::apply(numProp->value, props::Limits::MaxArrows);
 			break;
 		}
 
 		case NPCProp::BOMBS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == character.bombs)
+				SETPROP_RETURN_IGNORE;
 
-			character.bombs = numProp->value;
+			character.bombs = props::Limits::apply(numProp->value, props::Limits::MaxBombs);
 			break;
 		}
 
 		case NPCProp::GLOVEPOWER:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == character.glovePower)
+				SETPROP_RETURN_IGNORE;
 
-			character.glovePower = numProp->value;
+			character.glovePower = props::Limits::apply(numProp->value, props::Limits::MaxNPCGlovePower);
 			break;
 		}
 
 		case NPCProp::BOMBPOWER:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == character.bombPower)
+				SETPROP_RETURN_IGNORE;
 
-			character.bombPower = numProp->value;
+			character.bombPower = props::Limits::apply(numProp->value, props::Limits::MaxBombPower);
 			break;
 		}
 
 		case NPCProp::SWORDIMAGE:
 		{
 			auto swordProp = dynamic_cast<PropertySwordPower*>(base);
-			if (swordProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (swordProp == nullptr || (swordProp->power.value_or(0) == character.swordPower && swordProp->image == character.swordImage))
+				SETPROP_RETURN_IGNORE;
 
 			if (swordProp->power.has_value())
 				character.swordPower = props::Limits::applySwordPower(swordProp->power.value_or(1));
@@ -1125,8 +1127,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::SHIELDIMAGE:
 		{
 			auto shieldProp = dynamic_cast<PropertyShieldPower*>(base);
-			if (shieldProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (shieldProp == nullptr || (shieldProp->power.value_or(0) == character.shieldPower && shieldProp->image == character.shieldImage))
+				SETPROP_RETURN_IGNORE;
 
 			if (shieldProp->power.has_value())
 				character.shieldPower = props::Limits::applyShieldPower(shieldProp->power.value_or(1));
@@ -1139,23 +1141,28 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		{
 			auto ganiProp = dynamic_cast<PropertyGaniOrBowGif*>(base);
 			if (ganiProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			// 1.x servers didn't have ganis.  This prop was used for the bow instead.
 			if (m_server->Generation == ServerGeneration::CLASSIC)
 			{
 				if (!ganiProp->bowGif.has_value())
-					SETPROP_RETURN_ERROR;
+					SETPROP_RETURN_IGNORE;
 
 				auto& [image, power] = ganiProp->bowGif.value();
+				if (image.contains('.'))
+					image += ".gif";
+
+				if (image == character.bowImage || power == character.bowPower)
+					SETPROP_RETURN_IGNORE;
+
 				character.bowPower = props::Limits::apply(power, props::Limits::MaxBowPower);
 				character.bowImage = image;
-				if (!character.bowImage.empty() && !character.bowImage.contains('.'))
-					character.bowImage += ".gif";
 				break;
 			}
 
 			// Set the gani.
+			// Ganis can be set to themselves to play it again from the beginning, so don't check for equality here.
 			std::string gani = ganiProp->gani.value_or("idle");
 			character.gani = props::Limits::apply(gani, props::Limits::GaniLength);
 			result.resultFlags.set(SetResults::getLatestOnSend);
@@ -1195,8 +1202,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::VISFLAGS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == visFlags)
+				SETPROP_RETURN_IGNORE;
 
 			visFlags = numProp->value;
 			break;
@@ -1205,8 +1212,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::BLOCKFLAGS:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == blockFlags)
+				SETPROP_RETURN_IGNORE;
 
 			blockFlags = numProp->value;
 			break;
@@ -1215,8 +1222,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::MESSAGE:
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
-			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (strProp == nullptr || strProp->value == character.chatMessage)
+				SETPROP_RETURN_IGNORE;
 
 			character.chatMessage = strProp->value;
 			break;
@@ -1225,8 +1232,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::HURTDXDY:
 		{
 			auto hurtProp = dynamic_cast<PropertyHurtDxDy<>*>(base);
-			if (hurtProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (hurtProp == nullptr || (hurtProp->hurtDX == character.hurtPushDeltaInHalfPixels[0] && hurtProp->hurtDY == character.hurtPushDeltaInHalfPixels[1]))
+				SETPROP_RETURN_IGNORE;
 
 			character.hurtPushDeltaInHalfPixels[0] = hurtProp->hurtDX;
 			character.hurtPushDeltaInHalfPixels[1] = hurtProp->hurtDY;
@@ -1239,8 +1246,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::SPRITE:
 		{
 			auto spriteProp = dynamic_cast<PropertySprite*>(base);
-			if (spriteProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (spriteProp == nullptr || spriteProp->sprite == character.sprite)
+				SETPROP_RETURN_IGNORE;
 
 			character.direction = spriteProp->direction;
 			character.sprite = spriteProp->sprite;
@@ -1260,8 +1267,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::COLORS:
 		{
 			auto colorProp = dynamic_cast<PropertyColors*>(base);
-			if (colorProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (colorProp == nullptr || colorProp->values == character.colors)
+				SETPROP_RETURN_IGNORE;
 
 			character.colors = colorProp->values;
 			break;
@@ -1270,8 +1277,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::NICKNAME:
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
-			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (strProp == nullptr || strProp->value == character.nickName)
+				SETPROP_RETURN_IGNORE;
 
 			character.nickName = strProp->value;
 			break;
@@ -1281,12 +1288,16 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
-			character.horseImage = strProp->value;
+			std::string horseImage = strProp->value;
+			if (m_server->Generation == ServerGeneration::CLASSIC && !horseImage.empty() && !horseImage.contains('.'))
+				horseImage += ".gif";
 
-			if (m_server->Generation == ServerGeneration::CLASSIC && !character.horseImage.empty() && !character.horseImage.contains('.'))
-				character.horseImage += ".gif";
+			if (horseImage == character.horseImage)
+				SETPROP_RETURN_IGNORE;
+
+			character.horseImage = horseImage;
 			break;
 		}
 
@@ -1294,7 +1305,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		{
 			auto headProp = dynamic_cast<PropertyHeadGif*>(base);
 			if (headProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			std::string img;
 			if (std::holds_alternative<uint8_t>(headProp->image))
@@ -1304,6 +1315,9 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 
 			if (m_server->Generation == ServerGeneration::CLASSIC && !img.empty() && !img.contains('.'))
 				img += ".gif";
+
+			if (img == character.headImage)
+				SETPROP_RETURN_IGNORE;
 
 			character.headImage = props::Limits::apply(img, props::Limits::HeadImageLength);
 			result.resultFlags.set(SetResults::getLatestOnSend);
@@ -1323,9 +1337,14 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
 			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
-			auto index = PROPID(prop) - PROPID(NPCProp::SAVE0);
+			int index = PROPID(prop) - PROPID(NPCProp::SAVE0);
+			if (index < 0 || index >= static_cast<int>(saves.size()))
+				SETPROP_RETURN_IGNORE;
+			if (numProp->value == saves[index])
+				SETPROP_RETURN_IGNORE;
+
 			saves[index] = numProp->value;
 			break;
 		}
@@ -1333,8 +1352,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::ALIGNMENT:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == character.ap)
+				SETPROP_RETURN_IGNORE;
 
 			character.ap = numProp->value;
 			break;
@@ -1343,8 +1362,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::IMAGEPART:
 		{
 			auto imgPartProp = dynamic_cast<PropertyImagePart*>(base);
-			if (imgPartProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (imgPartProp == nullptr || (imgPartProp->imagePart.position == imagePart.position && imgPartProp->imagePart.size == imagePart.size))
+				SETPROP_RETURN_IGNORE;
 
 			imagePart = imgPartProp->imagePart;
 			break;
@@ -1353,8 +1372,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::BODYIMAGE:
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
-			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (strProp == nullptr || strProp->value == character.bodyImage)
+				SETPROP_RETURN_IGNORE;
 
 			character.bodyImage = strProp->value;
 			break;
@@ -1363,8 +1382,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::GMAPLEVELX:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == character.mapX)
+				SETPROP_RETURN_IGNORE;
 
 			character.mapX = numProp->value;
 			break;
@@ -1373,8 +1392,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::GMAPLEVELY:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE1>*>(base);
-			if (numProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (numProp == nullptr || numProp->value == character.mapY)
+				SETPROP_RETURN_IGNORE;
 
 			character.mapY = numProp->value;
 			break;
@@ -1387,7 +1406,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			scripter = strProp->value;
 			break;
@@ -1397,7 +1416,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			name = strProp->value;
 			break;
@@ -1407,7 +1426,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			scriptType = strProp->value;
 			break;
@@ -1417,16 +1436,16 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr || !canUpdatePosition)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			// No change?  Don't do anything.
 			if (level == strProp->value)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			// See if the level exists.
 			auto newLevel = m_server->getLoadedLevel(strProp->value, levelPtr);
 			if (newLevel == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			// Tell everybody we are moving.
 			// This should technically only be sent to players in the level or those who had been in the level.
@@ -1485,9 +1504,14 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		{
 			auto strProp = dynamic_cast<PropertyString*>(base);
 			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+				SETPROP_RETURN_IGNORE;
 
 			auto index = std::ranges::distance(NPCGaniAttrPackets.begin(), std::ranges::find(NPCGaniAttrPackets, PROPID(prop)));
+			if (index < 0 || index >= static_cast<std::ptrdiff_t>(character.ganiAttributes.size()))
+				SETPROP_RETURN_IGNORE;
+			if (strProp->value == character.ganiAttributes[index])
+				SETPROP_RETURN_IGNORE;
+
 			character.ganiAttributes[index] = strProp->value;
 			break;
 		}
@@ -1495,8 +1519,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::CLASS:
 		{
 			auto strProp = dynamic_cast<PropertyLongString*>(base);
-			if (strProp == nullptr)
-				SETPROP_RETURN_ERROR;
+			if (strProp == nullptr || strProp->value == getJoinedClassesList())
+				SETPROP_RETURN_IGNORE;
 
 			setJoinedClasses(strProp->value);
 			break;
@@ -1505,8 +1529,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::X2:
 		{
 			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
-			if (pixelProp == nullptr || !canUpdatePosition)
-				SETPROP_RETURN_ERROR;
+			if (pixelProp == nullptr || !canUpdatePosition || pixelProp->pixelCoordinate == character.localPixelX)
+				SETPROP_RETURN_IGNORE;
 
 			character.localPixelX = pixelProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::X));
@@ -1519,8 +1543,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::Y2:
 		{
 			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
-			if (pixelProp == nullptr || !canUpdatePosition)
-				SETPROP_RETURN_ERROR;
+			if (pixelProp == nullptr || !canUpdatePosition || pixelProp->pixelCoordinate == character.localPixelY)
+				SETPROP_RETURN_IGNORE;
 
 			character.localPixelY = pixelProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::Y));
@@ -1533,8 +1557,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 		case NPCProp::Z2:
 		{
 			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
-			if (pixelProp == nullptr || !canUpdatePosition)
-				SETPROP_RETURN_ERROR;
+			if (pixelProp == nullptr || !canUpdatePosition || pixelProp->pixelCoordinate == character.localPixelZ)
+				SETPROP_RETURN_IGNORE;
 
 			character.localPixelZ = pixelProp->pixelCoordinate;
 			result.resultPropIds.push_back(PROPID(NPCProp::Z));

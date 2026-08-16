@@ -122,8 +122,11 @@ struct Limits
 	/// @brief Shield, mirrorshield, lizardshield.
 	static constexpr uint8_t MaxShieldPower = 3;
 
-	/// @brief None?, ?, glove1, glove2.
-	static constexpr uint8_t MaxGlovePower = 3;
+	/// @brief None, glove1, glove2.
+	static constexpr uint8_t MaxNPCGlovePower = 2;
+
+	/// @brief None, ?, glove1, glove2.
+	static constexpr uint8_t MaxPlayerGlovePower = 3;
 
 	/// @brief Bomb, joltbomb, superbomb.
 	static constexpr uint8_t MaxBombPower = 3;
