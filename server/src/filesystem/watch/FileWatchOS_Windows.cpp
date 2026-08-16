@@ -8,8 +8,8 @@
 	#define NOMINMAX
 #endif
 
-#include <windows.h>
 #include <strsafe.h>
+#include <windows.h>
 
 /*
 #if defined(_MSC_VER)
@@ -26,11 +26,12 @@
 #include <cstring>
 #include <filesystem>
 #include <limits>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <filesystem/FileSystemTypes.h>
 #include <filesystem/watch/FileWatch.h>
-#include <unordered_map>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::fs::watch
@@ -113,7 +114,8 @@ static void CALLBACK watchCallback(DWORD dwErrorCode, DWORD dwNumberOfBytesTrans
 
 	if (dwErrorCode == ERROR_SUCCESS)
 	{
-		std::unordered_map<std::filesystem::path, FileEventData> fileEvents;
+		std::vector<FileEventData> fileEventList;
+		std::unordered_map<std::filesystem::path, size_t> fileEvents;
 		fileBuffer[0] = TEXT('\0');
 		oldFileBuffer[0] = TEXT('\0');
 
@@ -136,9 +138,7 @@ static void CALLBACK watchCallback(DWORD dwErrorCode, DWORD dwNumberOfBytesTrans
 			}
 #else
 			{
-				int count = WideCharToMultiByte(CP_ACP, 0, pNotify->FileName,
-					pNotify->FileNameLength / sizeof(WCHAR),
-					targetBuffer, Watch::FileBufferLength - 1, NULL, NULL);
+				int count = WideCharToMultiByte(CP_ACP, 0, pNotify->FileName, pNotify->FileNameLength / sizeof(WCHAR), targetBuffer, Watch::FileBufferLength - 1, NULL, NULL);
 				targetBuffer[count] = TEXT('\0');
 			}
 #endif
@@ -148,22 +148,30 @@ static void CALLBACK watchCallback(DWORD dwErrorCode, DWORD dwNumberOfBytesTrans
 			if (pNotify->Action == FILE_ACTION_RENAMED_OLD_NAME)
 				continue;
 
-			std::filesystem::path fileName{ fileBuffer };
-			auto& data = fileEvents[fileName.filename()];
+			std::filesystem::path fileName{fileBuffer};
+			auto [eventIter, inserted] = fileEvents.try_emplace(fileName.filename(), fileEventList.size());
+			if (inserted)
+				fileEventList.emplace_back();
+
+			auto& data = fileEventList[eventIter->second];
 
 			// Save information to the queued data.
 			translateAction(data.events, pNotify->Action);
 			data.fileName = fileName;
 			if (oldFileBuffer[0] != TEXT('\0'))
-				data.oldFileName = std::filesystem::path{ oldFileBuffer };
+				data.oldFileName = std::filesystem::path{oldFileBuffer};
 		}
 		while (pNotify->NextEntryOffset != 0);
 
-		// Check for rename events on overwritten files.
-		// When we save files, a temp file gets created and renamed over top of the original file.
-		// The temp file will get an Added event, and the original file will get a Deleted event + a Renamed event.
-		// We want the original file to have a single Renamed event, while the temp file should be ignored.
-		for (auto& [file, data] : fileEvents)
+		// Fix events on temporary files.
+		// Save:
+		//   When we save files, a temp file gets created and renamed over top of the original file.
+		//   The temp file will get an Added event, and the original file will get a Deleted event + a Renamed event.
+		//   We want the original file to have a single Modified event, while the original file should get a Deleted event.
+		// Add:
+		//   When we add files, a temp file gets created and renamed over top of the original file.
+		//   We want just the non-temp file to get the Added event.
+		for (auto& data : fileEventList)
 		{
 			if (data.events.test(FileEvent::Renamed))
 			{
@@ -176,14 +184,27 @@ static void CALLBACK watchCallback(DWORD dwErrorCode, DWORD dwNumberOfBytesTrans
 				auto oldFileIter = fileEvents.find(data.oldFileName);
 				if (oldFileIter != fileEvents.end())
 				{
-					auto& [oldFile, oldFileData] = *oldFileIter;
+					auto& oldFileData = fileEventList[oldFileIter->second];
 					oldFileData.events.set(FileEvent::Invalid);
 				}
+			}
+			// If we have both an added and deleted event, test if the file exists and only set the appropriate one.
+			else if (data.events.test(FileEvent::Added) && data.events.test(FileEvent::Deleted))
+			{
+				if (std::filesystem::exists(pWatch->dir / data.oldFileName))
+					data.events.reset(FileEvent::Deleted);
+				else
+					data.events.reset(FileEvent::Added);
+			}
+			// If we have an added + modified event, clear the modified.
+			else if (data.events.test(FileEvent::Added) && data.events.test(FileEvent::Modified))
+			{
+				data.events.reset(FileEvent::Modified);
 			}
 		}
 
 		// Execute callbacks for our queued data.
-		for (auto& [file, data] : fileEvents)
+		for (auto& data : fileEventList)
 		{
 			if (data.events.test(FileEvent::Invalid))
 				continue;
@@ -201,8 +222,9 @@ static void CALLBACK watchCallback(DWORD dwErrorCode, DWORD dwNumberOfBytesTrans
 bool refreshWatch(Watch* watch, bool clear)
 {
 	return ReadDirectoryChangesW(
-			   watch->dir_handle, watch->buffer, sizeof(watch->buffer), watch->recursive,
-			   watch->notify_filter, NULL, &watch->overlapped, clear ? 0 : watchCallback) != 0;
+		   watch->dir_handle, watch->buffer, sizeof(watch->buffer), watch->recursive,
+		   watch->notify_filter, NULL, &watch->overlapped, clear ? 0 : watchCallback
+		   ) != 0;
 }
 
 void deleteWatch(Watch* watch)

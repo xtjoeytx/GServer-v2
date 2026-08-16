@@ -14,7 +14,7 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
 
-#define BUFF_SIZE ((sizeof(struct inotify_event)+FILENAME_MAX)*100)
+#define BUFF_SIZE ((sizeof(struct inotify_event) + FILENAME_MAX) * 100)
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal::fs::watch
@@ -64,8 +64,7 @@ uint32_t FileWatch::add(const std::filesystem::path& directory, watch_cb callbac
 		DEBUGPRINT("[FS] Adding watch for directory: {}", file.string());
 
 		// Add the watch for this directory.
-		int wd = inotify_add_watch(m_watch_os->fd, file.c_str(),
-			IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_MOVED_FROM | IN_DELETE);
+		int wd = inotify_add_watch(m_watch_os->fd, file.c_str(), IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_MOVED_FROM | IN_DELETE);
 
 		if (wd < 0)
 			return 0;
@@ -144,8 +143,8 @@ void FileWatch::update()
 		ssize_t i = 0;
 		std::vector<FileEventData> fileEventList;
 		std::unordered_map<std::filesystem::path, size_t> fileEvents;
-		char notifyBuff[BUFF_SIZE] = { 0 };
-		char fileBuff[FILENAME_MAX + 1] = { 0 };
+		char notifyBuff[BUFF_SIZE] = {0};
+		char fileBuff[FILENAME_MAX + 1] = {0};
 
 		const ssize_t len = read(m_watch_os->fd, notifyBuff, BUFF_SIZE);
 		while (i < len)
@@ -164,7 +163,7 @@ void FileWatch::update()
 					}
 					else
 					{
-						std::filesystem::path fileName{ pevent->name };
+						std::filesystem::path fileName{pevent->name};
 						auto [eventIter, inserted] = fileEvents.try_emplace(fileName.filename(), fileEventList.size());
 						if (inserted)
 							fileEventList.emplace_back();
@@ -174,7 +173,7 @@ void FileWatch::update()
 						data.fileName = fileName;
 						if (fileBuff[0] != '\0')
 						{
-							data.oldFileName = std::filesystem::path{ fileBuff };
+							data.oldFileName = std::filesystem::path{fileBuff};
 							fileBuff[0] = '\0';
 						}
 
