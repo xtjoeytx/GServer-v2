@@ -204,13 +204,10 @@ bool NPC::warp(const LevelPtr& level, const PixelPosition& position)
 
 void NPC::setLevel(const LevelPtr& level)
 {
-	if (level == nullptr)
-		return;
-
 	// Refresh our mod times.
 	refreshModTimes(m_server->getFrameStartTime());
 
-	this->level = level->levelName;
+	this->level = level != nullptr ? level->levelName : ""s;
 	m_currentLevel = level;
 }
 

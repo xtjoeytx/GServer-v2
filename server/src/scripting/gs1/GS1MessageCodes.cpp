@@ -134,14 +134,13 @@ static MessageCodeHandleMap GenerateMap()
 }
 
 /// @brief Message codes that switch to flag processing mode, which results in identifiers defaulting to client storage.
-/// TODO: This might not be required anymore.
-constexpr std::array<std::string_view, 8> flagProcessingMessageCodes =
+constexpr std::array flagProcessingMessageCodes =
 {
 	"I"sv,
 	"s"sv,
 };
 
-constexpr std::array<std::string_view, 1> translatableMessageCodes =
+constexpr std::array translatableMessageCodes =
 {
 	"U"sv,
 };

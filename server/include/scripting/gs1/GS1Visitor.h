@@ -247,6 +247,8 @@ inline std::optional<size_t> GS1Visitor::getStorageTypeFromIdentifier(const std:
 		return ENUM(StorageType::SERVER);
 	if (string::starts_withi(identifier, "serverr."sv))
 		return ENUM(StorageType::SERVERR);
+	if (string::starts_withi(identifier, "level."sv))
+		return ENUM(StorageType::LEVEL);
 	if (string::starts_withi(identifier, "local."sv))
 		return ENUM(StorageType::LOCAL);
 	if (string::starts_withi(identifier, "temp."sv))

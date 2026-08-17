@@ -188,8 +188,6 @@ bool PlayerClientOriginal::sendDynamicLevelData(const std::shared_ptr<Level>& le
 
 	// Send board changes, horses, and baddies.
 	subLevel->sendBoardChangesToPlayer(self, cachedModTime);
-
-	// TODO: Maybe bind horses to sub-level and send in sendStaticLevelData.
 	level->sendHorsesToPlayer(self);
 	level->sendBaddiesToPlayer(self);
 

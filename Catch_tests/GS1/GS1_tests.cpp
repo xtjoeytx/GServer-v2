@@ -57,18 +57,18 @@ struct ServerFixture
 		server->loadNPCServer();
 
 		// Configure NPC-Player.
-		auto player = std::dynamic_pointer_cast<Player>(server->getNPCServer()->getPlayerNPCServer());
+		const auto player = std::dynamic_pointer_cast<Player>(server->getNPCServer()->getPlayerNPCServer());
 		gs1::setPlayerVariables(player->account.variables, player);
 
 		// Configure Test NPC.
-		auto npcServer = server->getNPCServer();
-		auto npc = npcServer->addNPC("door.png"sv, ""sv, nullptr, TilePosition{20.0f, 30.0f}, NPCTYPE_OBJECT);
+		const auto npcServer = server->getNPCServer();
+		const auto npc = npcServer->addNPC("door.png"sv, ""sv, nullptr, TilePosition{20.0f, 30.0f}, NPCTYPE_OBJECT);
 		npc->name = "Test";
 		testNPC = npc->id;
 
 		// Configure Test Clients.
-		auto client = std::make_shared<PlayerClient>(new CSocket(), server->getPlayerIdGenerator().getAvailableId());
-		auto rc = std::make_shared<PlayerRC>(new CSocket(), server->getPlayerIdGenerator().getAvailableId());
+		const auto client = std::make_shared<PlayerClient>(new CSocket(), server->getPlayerIdGenerator().getAvailableId());
+		const auto rc = std::make_shared<PlayerRC>(new CSocket(), server->getPlayerIdGenerator().getAvailableId());
 		server->addPlayer(client, client->getId());
 		server->addPlayer(rc, rc->getId());
 		npcServer->playerLogin(client);
@@ -82,7 +82,7 @@ struct ServerFixture
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static gs1::GS1ScriptWrapper* get_wrapper(CompiledScriptResult& result, const std::source_location location = std::source_location::current())
+static gs1::GS1ScriptWrapper* get_wrapper(const CompiledScriptResult& result, const std::source_location location = std::source_location::current())
 {
 	CAPTURE(location.line());
 	CAPTURE(location.function_name());
@@ -97,7 +97,7 @@ static gs1::GS1ScriptWrapper* get_wrapper(CompiledScriptResult& result, const st
 	return wrapper;
 }
 
-static bool execute_script(IScriptEngine& engine, ScriptEvent& event, ScriptObject source, CompiledScriptResult& result, const std::source_location location = std::source_location::current())
+static bool execute_script(IScriptEngine& engine, ScriptEvent& event, const ScriptObject& source, CompiledScriptResult& result, const std::source_location location = std::source_location::current())
 {
 	CAPTURE(location.line());
 	CAPTURE(location.function_name());
@@ -110,7 +110,7 @@ static bool execute_script(IScriptEngine& engine, ScriptEvent& event, ScriptObje
 	wrapper->variables.defaultLifetime = variables::Lifetime::NORMAL;
 
 	auto& context = std::get<ScriptExecutionContext>(result);
-	auto contextPtr = std::shared_ptr<ScriptExecutionContext>(&context, [](ScriptExecutionContext*) {});
+	const auto contextPtr = std::shared_ptr<ScriptExecutionContext>(&context, [](ScriptExecutionContext*) {});
 
 	return engine.execute(event, source, contextPtr);
 }
@@ -123,7 +123,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles scripts", "[Scripting]
 	{
 		// Checks a script that should compile successfully.
 		// Check also includes sloppy code that should be accepted by the parser, such as missing semi-colons and commands that don't need line breaks.
-		const std::string_view validScript = R"(
+		constexpr std::string_view validScript = R"(
 			// NPC made by
 			if (created || playerenters) {
 				setimg light2.png;
@@ -139,7 +139,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles scripts", "[Scripting]
 	SECTION("invalid script")
 	{
 		// Bad script that should fail to compile.
-		const std::string_view invalidScript = R"(
+		constexpr std::string_view invalidScript = R"(
 			if (created || playerenters) {
 				setanimg light2.png;
 				doblock;
@@ -151,7 +151,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles scripts", "[Scripting]
 	SECTION("compiled script identifiers are found")
 	{
 		// Checks if every single identifier is found and registered during compilation.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created || playerenters) {
 				this.origx = x;
 				this.origy = y;
@@ -179,7 +179,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles scripts", "[Scripting]
 	SECTION("compiled script functions are found")
 	{
 		// Checks if functions are found and registered during compilation.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			function testFunc() {}
 		)";
 		auto result = engine.compileScript("script_with_functions", script);
@@ -204,7 +204,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 	SECTION("integer variable assignment and retrieval")
 	{
 		// Checks if integer variables can be assigned, using both types of assignment operators.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created) {
 				this.myvar = 42;
 				this.myvar2 := 42;
@@ -224,7 +224,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 	SECTION("string flag assignment and retrieval")
 	{
 		// Checks if string flags can be assigned and retrieved.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created) {
 				setstring this.mystring,Hello, world!;
 			}
@@ -241,7 +241,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 	SECTION("array assignment and retrieval")
 	{
 		// Checks if arrays can be assigned and retrieved, including direct assignment and negative indexing.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created) {
 				setarray this.myarray,5;
 				this.myarray[3] = 7;
@@ -278,7 +278,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 	SECTION("logical expressions")
 	{
 		// Tests all forms of logical expressions.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created) {
 				this.myvar = 42;
 				this.truevar = true;
@@ -376,7 +376,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 	SECTION("arithmetic expressions")
 	{
 		// Tests all forms of arithmetic expressions, including order of operations and compound assignment operators.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created) {
 				this.three = 1 + 2;
 				this.four = 3 + true;
@@ -432,7 +432,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 	SECTION("string manipulation")
 	{
 		// Tests string manipulation functions, including adding, removing, inserting, deleting, and replacing strings in a list.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created) {
 				setstring this.temp,One;
 				addstring this.temp,Two,Two;
@@ -479,7 +479,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 	SECTION("string operations")
 	{
 		// Tests additional string functions.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			setstring s, thisisatest;
 			test1 = indexof(isa, #s(s));
 		)";
@@ -494,7 +494,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 	SECTION("tokenized text")
 	{
 		// Tests tokenize and tokenize2.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			setstring test,This, is "A, test" string;
 
 			// First test.
@@ -538,7 +538,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 	{
 		// Tests the sleep command, which pauses execution of the script.
 		// Subsequent runs of the script should continue from where it left off in the loop, and the loop variable should not be lost.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created) {
 				for (i = 1; i <= 3; i++) {
 					this.myvar = i;
@@ -573,7 +573,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		// This lets us set the timeout property to a number while also letting the timeout event be false.
 		// This test ensures that this behavior is working as expected by setting timeout to a value and doing relational comparisons on it.
 		// Checking the value against a number should work, while checking the value as a flag boolean should not work.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created) {
 				this.test = 1;
 				timeout = 5;
@@ -595,7 +595,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 
 	SECTION("reserved constants cannot be used as variables")
 	{
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
             pi = 3.14;
 		)";
 		auto result = engine.compileScript("test_script", script);
@@ -604,7 +604,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 
 	SECTION("reserved constants allowed in scoped variables")
 	{
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
             this.pi = 3.14;
 		)";
 		auto result = engine.compileScript("test_script", script);
@@ -617,7 +617,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 
 	SECTION("loop statements")
 	{
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			while (i < 10) {
 				i++;
 				if (i == 5) break;
@@ -653,7 +653,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles and executes simple ex
 	{
 		// Tests the compilation and execution of a simple string expression that includes a variable.
 		// Used by the system to translate text strings and process them.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			this#nis a test
 		)";
 		auto result = engine.processStringExpression(script, source::FromPlayer(NPCServerPlayerID));
@@ -664,10 +664,10 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles and executes simple ex
 	{
 		// Tests the compilation and execution of a simple math expression that includes a variable.
 		// Used by the system in various places, such as level links and the playersays command.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			10 + x
 		)";
-		auto result = engine.processMathExpression(script, source::FromPlayer(NPCServerPlayerID));
+		const auto result = engine.processMathExpression(script, source::FromPlayer(NPCServerPlayerID));
 		CHECK_THAT(result.value_or(0.0), Catch::Matchers::WithinRel(40.5));
 	}
 }
@@ -684,8 +684,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 	SECTION("variables and flags save to the correct object")
 	{
 		// Tests that variables and flags are saved to the correct object, whether it be the NPC, the player, or the script's built-in store.
-		// TODO: level.variables
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created) {
 				contextVar = 42;
 
@@ -698,8 +697,16 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 
 				set server.Test;
 				setstring serverr.Test2,Hello!;
+
+				setstring level.test,LevelHello!;
 			}
 		)";
+		auto npc = server->getNPC(testNPC);
+
+		auto level = std::make_shared<Level>();
+		level->levelName = "TestLevel";
+		npc->setLevel(level);
+
 		auto result = engine.compileScript("test_script", script);
 		REQUIRE(execute_script(engine, created, source::FromNPC(testNPC), result));
 
@@ -707,7 +714,6 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		auto scriptStore = wrapper->visitor->builtInStore;
 		CHECK_THAT(scriptStore->getValue<double>("contextVar").value_or(0.0), Catch::Matchers::WithinRel(42.0));
 
-		auto npc = server->getNPC(testNPC);
 		auto npcstore = &npc->scripting.variables;
 		CHECK_THAT(npcstore->getValue<double>("npcVar").value_or(0.0), Catch::Matchers::WithinRel(33.0));
 		CHECK_THAT(npcstore->getValue<std::string>("npcFlag").value_or(std::string{}), Catch::Matchers::Equals("World!"));
@@ -720,12 +726,17 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		auto serverstore = &server->Scripting.variables;
 		CHECK(serverstore->getValue<bool>("server.Test").value_or(false) == true);
 		CHECK_THAT(serverstore->getValue<std::string>("serverr.Test2").value_or(std::string{}), Catch::Matchers::Equals("Hello!"));
+
+		auto levelstore = &level->scripting.variables;
+		CHECK_THAT(levelstore->getValue<std::string>("test").value_or(std::string{}), Catch::Matchers::Equals("LevelHello!"));
+
+		npc->setLevel(nullptr);
 	}
 
 	SECTION("setting variables inside and outside of with()")
 	{
 		// Tests that variables can be set both inside and outside of a with() block, and that the correct variable is set in each case.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created) {
 				this.myvar = 42;
 			}
@@ -751,7 +762,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 	SECTION("message code bindings")
 	{
 		// Tests that message codes can be set and retrieved, and that they are correctly bound to the player.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created) {
 				setstring this.message,Hello, #n!;
 				setplayerprop #n,Altered;
@@ -772,7 +783,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 	SECTION("player properties can be changed")
 	{
 		// Tests that player properties can be changed and retrieved.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			if (created) {
 				setplayerprop #3,head2.png;
 				setplayerprop #C3,cynober;
@@ -796,7 +807,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 	SECTION("playersaysnumber processes math expressions")
 	{
 		// Tests that the playersaysnumber command can process math expressions.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			this.test = playersaysnumber;
 		)";
 		auto result = engine.compileScript("test_script", script);
@@ -900,14 +911,14 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 server bindings", "[Scripting][
 	{
 		// Tests that the allplayerscount command correctly counts all players, including remote clients.
 		// The NPC-Server is not counted.
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			this.test = allplayerscount;
 		)";
 		auto result = engine.compileScript("test_script", script);
 		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
 
-		auto wrapper = get_wrapper(result);
-		auto store = wrapper->visitor->builtInStore;
+		const auto wrapper = get_wrapper(result);
+		const auto store = wrapper->visitor->builtInStore;
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(2.0));
 	}
 }
@@ -923,7 +934,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 functions", "[Scripting][IScrip
 
 	SECTION("passwordmatches() and #E()")
 	{
-		const std::string_view script = R"(
+		constexpr std::string_view script = R"(
 			setstring this.passwordHash,#E(hunter2);
 			this.testSuccess = passwordmatches(#s(this.passwordHash), hunter2);
 			this.testFail = passwordmatches(#s(this.passwordHash), hunter3);
