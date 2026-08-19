@@ -45,7 +45,7 @@ Z3-V1.03	(Zelda Online?)
 Z3-V1.04	(Alpha 1)
 	12 bit tiles
 	links
-	baddies
+	+ baddies
 	signs
 
 GR-V1.00	(Alpha 1 online?)
@@ -60,11 +60,11 @@ GR-V1.01	(Alpha 2)
 	links
 	baddies
 	npcs
-	chests
+	+ chests
 	signs
 
 GR-V1.02	(Alpha 5)
-	13 bit tiles
+	+ 13 bit tiles
 	links
 	baddies
 	npcs
@@ -73,16 +73,29 @@ GR-V1.02	(Alpha 5)
 
 GR-V1.03	(Alpha 7)
 	13 bit tiles
-	links (using variables)
+	+ links (using variables)
 	baddies
 	npcs
 	chests
 	signs
 
 GR-V1.04
+	13 bit tiles
+	links (using variables)
+	baddies
+	npcs
+	chests
+	signs
+	+ heights
 
 GR-V1.05
-	tile layers
+	+ 13 bit tiles (multiple layer support)
+	links (using variables)
+	baddies
+	npcs
+	chests
+	signs
+	heights
 
 GLEVNW01
 
@@ -402,6 +415,8 @@ bool LevelLoader::loadGraal(const StaticLevelDataPtr& levelData, const std::stri
 		version = 2;
 	else if (fileVersion == "GR-V1.03")
 		version = 3;
+	else if (fileVersion == "GR-V1.04")
+		version = 4;
 	else if (fileVersion == "GR-V1.05")
 		version = 5;
 	else return false;
@@ -434,6 +449,12 @@ bool LevelLoader::loadGraal(const StaticLevelDataPtr& levelData, const std::stri
 
 	// Load signs.
 	loadBinarySigns(levelData, fileData);
+
+	// Load heights.
+	if (version > 4)
+	{
+		loadBinaryHeights(levelData, fileData);
+	}
 
 	return true;
 }
@@ -671,6 +692,38 @@ void LevelLoader::loadBinarySigns(const StaticLevelDataPtr& levelData, const fs:
 		text.remove_prefix(2);
 
 		levelData->signs.emplace_back(LocalWholeTilePosition{ x, y }, text, true);
+	}
+}
+
+void LevelLoader::loadBinaryHeights(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData)
+{
+	constexpr auto sectionStart = "HEIGHTS"sv;
+	constexpr auto sectionEnd = "HEIGHTSEND"sv;
+
+	if (!fileData->finishedReading())
+	{
+		// Check if we actually have heights.
+		const auto currentPosition = fileData->getStreamPosition();
+		if (fileData->readLine() != sectionStart)
+		{
+			fileData->setStreamPosition(currentPosition);
+			return;
+		}
+
+		// Load the heights.
+		for (const auto& heights : fileData->readLinesUntilSectionEnd(sectionEnd))
+		{
+			auto values = string::splitToVectorView(heights, ","sv);
+			for (const auto& val : values)
+				levelData->heights.push_back(string::toDouble(string::trim(val)));
+		}
+
+		// Double check the height data was valid.
+		if (levelData->heights.size() != 81)
+		{
+			log::printLine(log::server, "[WARNING] Level '{}' has an improper amount of heights. Expected: {}, found: {}.", levelData->levelName, 81, levelData->heights.size());
+			levelData->heights.clear();
+		}
 	}
 }
 

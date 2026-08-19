@@ -61,6 +61,7 @@ private:
 	static void loadBinaryNPCs(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData);
 	static void loadBinaryChests(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData);
 	static void loadBinarySigns(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData);
+	static void loadBinaryHeights(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData);
 
 private:
 	static bool loadGraal(const StaticLevelDataPtr& levelData, std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData);
