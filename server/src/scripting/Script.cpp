@@ -344,7 +344,15 @@ std::string Script::minify(const std::string& src) noexcept
 
 		// Append the line to minified.
 		if (!line.empty())
-			minified.append(line).append("\n");
+		{
+			minified.append(line);
+
+			// An else without a space after it can break the GS1 parser so manually add a space.
+			if (line.ends_with("else"))
+				minified.append(" ");
+
+			minified.append("\n");
+		}
 
 		// Move to the next line.
 		srcView.remove_prefix(nextLine);
