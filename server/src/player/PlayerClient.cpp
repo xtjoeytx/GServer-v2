@@ -453,6 +453,9 @@ bool PlayerClient::sendLogin()
 	if (Player::sendLogin() == false)
 		return false;
 
+	// Unset loaded until after we have fully logged in and sent the level to the player.
+	m_loaded = false;
+
 	auto& settings = m_server->getSettings();
 	bool hasNPCServer = m_server->hasNPCServer();
 
@@ -662,6 +665,9 @@ bool PlayerClient::sendLogin()
 		npcServer->addEventToControlNPC(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), "playeronline");
 		npcServer->addEventToControlNPC(ScriptEventType::PLAYERLOGIN, source::FromPlayer(m_id));
 	}
+
+	// Fully loaded now.
+	m_loaded = true;
 
 	return true;
 }
@@ -1437,6 +1443,12 @@ bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& s
 	// Tell the client that the following data is for the specified level.
 	// Gmaps consist of multiple levels so this is the name of the sub-level.
 	sendPacket(CString() >> (char)PLO_LEVELNAME << staticLevelData->levelName);
+
+	// If we haven't loaded yet, send a blank board packet first.
+	// This solves a client bug where it will animate the board tiles before checking if it is a type 1 tileset.
+	// The blank board packet makes the client go through the tiledef loading routine before the actual board tiles are sent.
+	if (!m_loaded)
+		sendPacket(CString() >> (char)PLO_LEVELBOARD);
 
 	// If we have not entered this level during this session, send board data.
 	// Also send if the client sends a cache time that doesn't match the level.
