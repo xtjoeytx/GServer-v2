@@ -35,7 +35,7 @@ constexpr auto clientSideTerminator = "//#CLIENTSIDE"sv;
 
 static std::string performClientSideJoinHack(std::string_view code)
 {
-	static constexpr std::array<char, 5> blockStarters = { '\n', '\xa7', ')', '{', ';' };
+	static constexpr std::array<char, 5> blockStarters = {'\n', '\xa7', ')', '{', ';'};
 	static constexpr size_t joinKeywordLen = 5; // strlen("join ")
 
 	std::string result;
@@ -282,7 +282,7 @@ std::string Script::minify(const std::string& src) noexcept
 		return src;
 
 	std::string minified;
-	std::string_view srcView{ src };
+	std::string_view srcView{src};
 
 	const auto server = BabyDI::Get<Server>();
 
@@ -302,7 +302,7 @@ std::string Script::minify(const std::string& src) noexcept
 			newline = srcView.size();
 
 		// Save the start of the next line since the carriage return check will mess it up.
-		const size_t nextLine = std::min(srcView.size(), newline + 1);
+		size_t nextLine = std::min(srcView.size(), newline + 1);
 
 		// Search for \r and remove that too.
 		if (newline > 0 && srcView[newline - 1] == '\r')
@@ -317,11 +317,24 @@ std::string Script::minify(const std::string& src) noexcept
 			if (comment + 2 < line.size() && line[comment + 2] != '#')
 			{
 				line = line.substr(0, comment);
+				newline = comment;
 			}
 			else if (line.find(clientSideTerminator) != std::string_view::npos)
 			{
 				// If we have a clientside terminator, we are now in clientside code.
 				inServerSide = false;
+			}
+		}
+
+		// Check if a multi-line comment starts in this line.
+		// If it does, we need to skip the entire comment block.
+		if (const auto commentStart = line.find("/*"); commentStart != std::string_view::npos)
+		{
+			line = line.substr(0, commentStart);
+			nextLine = std::string_view::npos;
+			if (const auto commentEnd = srcView.find("*/", commentStart + 2); commentEnd != std::string_view::npos)
+			{
+				nextLine = commentEnd + 2;
 			}
 		}
 
@@ -335,16 +348,6 @@ std::string Script::minify(const std::string& src) noexcept
 
 		// Move to the next line.
 		srcView.remove_prefix(nextLine);
-	}
-
-	// Remove /* ... */ blocks from already compacted text.
-	std::string::size_type start = 0;
-	while ((start = minified.find("/*", start)) != std::string::npos)
-	{
-		const auto end = minified.find("*/", start);
-		if (end == std::string::npos)
-			break;
-		minified.erase(start, end - start + 2);
 	}
 
 	// Final trim.
@@ -385,7 +388,7 @@ void Script::split(std::string& source) noexcept
 	// Expand clientside "join" statements when server-side scripts are unavailable.
 	if (!hasServerSide && server->getSettings().get<bool>("clientsidejoins").value_or(true) && clientside != source.end())
 	{
-		const auto joinedScript = performClientSideJoinHack(std::string_view{ clientside, source.end() });
+		const auto joinedScript = performClientSideJoinHack(std::string_view{clientside, source.end()});
 		source.replace(clientside, source.end(), joinedScript);
 
 		if (hasServerSide)
@@ -412,11 +415,11 @@ void Script::split(std::string& source) noexcept
 		if (endOfLine == std::string::npos)
 			endOfLine = clientSep + clientSideTerminator.size();
 
-		m_serverside = string::trim(std::string_view{ source }.substr(0, clientSep));
+		m_serverside = string::trim(std::string_view{source}.substr(0, clientSep));
 		m_clientside = {};
 
 		if (endOfLine + 1 < source.size())
-			m_clientside = string::trim(std::string_view{ source }.substr(endOfLine + 1));
+			m_clientside = string::trim(std::string_view{source}.substr(endOfLine + 1));
 	}
 	else
 	{
