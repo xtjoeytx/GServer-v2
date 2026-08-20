@@ -22,6 +22,7 @@
 
 #include <CString.h>
 
+#include <object/Character.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
@@ -49,9 +50,9 @@ using GBYTE3_signed = int32_t;
 // Helper Functions
 //////////////////////////////////////////////////
 
-/// @brief Helper function to avoid #include'ing Server.h in this file.
-/// @return ServerGeneration in integer format.
-int getServerGeneration();
+bool isModernGeneration();
+bool isNewWorldMode();
+bool exBodyColorsEnabled();
 
 //////////////////////////////////////////////////
 // SetBy and SetResults
@@ -672,7 +673,7 @@ struct PropertyImagePart : public PropertyBase
 	PropertyImagePart(uint16_t x, uint16_t y, uint8_t width, uint8_t height)
 		: imagePart({ x, y }, { width, height }) {}
 	explicit PropertyImagePart(const ImagePartRectangle& imagePart) : imagePart(imagePart) {}
-	explicit PropertyImagePart(ImagePartRectangle&& imagePart) noexcept : imagePart(std::move(imagePart)) {}
+	explicit PropertyImagePart(ImagePartRectangle&& imagePart) noexcept : imagePart(imagePart) {}
 
 	[[nodiscard]] CString serialize() const override;
 	void deserialize(CString& data) override;
@@ -699,6 +700,7 @@ struct PropertySprite : public PropertyBase
 };
 
 /// @brief A property that stores an array of colors.
+template<bool onlyDeserialize5 = false>
 struct PropertyColors : public PropertyArray<GBYTE1, 8>
 {
 	PropertyColors() = default;
@@ -706,13 +708,74 @@ struct PropertyColors : public PropertyArray<GBYTE1, 8>
 	explicit PropertyColors(std::array<GBYTE1, 8>&& input) noexcept : PropertyArray(input) {}
 	explicit PropertyColors(std::ranges::input_range auto&& input) noexcept : PropertyArray(std::forward<decltype(input)>(input)) {}
 
-	[[nodiscard]] CString serialize() const override;
-	void deserialize(CString& data) override;
-	void apply(const GameValue& gameValue) override;
-	std::format_context::iterator format(std::format_context& ctx) const override;
+	[[nodiscard]] CString serialize() const override
+	{
+		const size_t count = getColorCount();
+		const size_t maxValue = getMaxColorValue();
+		CString result;
+		for (size_t i = 0; i < count; ++i)
+		{
+			result >> std::clamp(static_cast<ValueType>(values[i]), static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
+		}
+		return result;
+	}
 
-	static int getColorCount() noexcept;
-	static size_t getMaxColorValue() noexcept;
+	void deserialize(CString& data) override
+	{
+		const size_t count = onlyDeserialize5 ? 5 : getColorCount();
+		const size_t maxValue = getMaxColorValue();
+		for (size_t i = 0; i < count; ++i)
+		{
+			if (static_cast<size_t>(data.bytesLeft()) < sizeof(ValueType))
+				throw std::runtime_error("Not enough data to deserialize PropertyArray.");
+			data.readGInto(values[i]);
+			values[i] = std::clamp(values[i], static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
+		}
+	}
+
+	void apply(const GameValue& gameValue) override
+	{
+		if (const auto value = gameValue.get<std::vector<double>>(); value.has_value())
+		{
+			auto& vec = value.value().get();
+
+			// Convert all values to type T and insert into the values array.
+			const size_t count = getColorCount();
+			const size_t maxValue = getMaxColorValue();
+			for (size_t i = 0; i < count && i < vec.size(); ++i)
+			{
+				values[i] = std::clamp(static_cast<ValueType>(vec[i]), static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
+			}
+		}
+	}
+
+	std::format_context::iterator format(std::format_context& ctx) const override
+	{
+		std::ostringstream out;
+		const size_t count = getColorCount();
+
+		for (size_t i = 0; i < count; ++i)
+		{
+			out << std::format("{}", values[i]);
+			if (i < count - 1)
+				out << ", ";
+		}
+
+		return std::format_to(ctx.out(), "values: [{}]", out.str());
+	}
+
+	static int getColorCount() noexcept
+	{
+		return isNewWorldMode() ? 8 : 5;
+	}
+
+	static size_t getMaxColorValue() noexcept
+	{
+		size_t colorCount = CLASSICCOLORS_COUNT;
+		if (isModernGeneration() && exBodyColorsEnabled())
+			colorCount += HTMLCOLORS_COUNT;
+		return colorCount;
+	}
 };
 
 // Renames these properties so they can be used inside the X-macro.

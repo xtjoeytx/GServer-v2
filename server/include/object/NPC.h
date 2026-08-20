@@ -606,7 +606,7 @@ inline TilePosition NPC::getTilePosition() const noexcept
 	DO(NPCProp::HURTDXDY,	PropertyHurtDxDy<>,			character.hurtPushDeltaInHalfPixels[0], character.hurtPushDeltaInHalfPixels[1]) \
 	DO(NPCProp::ID,			PropertyNumeric<GBYTE3>,	id) \
 	DO(NPCProp::SPRITE,		PropertySprite,				character.sprite, character.direction) \
-	DO(NPCProp::COLORS,		PropertyColors,				character.colors) \
+	DO(NPCProp::COLORS,		PropertyColors<true>,		character.colors) \
 	DO(NPCProp::NICKNAME,	PropertyString,				character.nickName) \
 	DO(NPCProp::HORSEIMAGE,	PropertyString,				character.horseImage) \
 	DO(NPCProp::HEADIMAGE,	PropertyHeadGif,			character.headImage) \

@@ -116,7 +116,7 @@ enum class ClassicColors : uint8_t
 };
 constexpr size_t CLASSICCOLORS_COUNT = static_cast<size_t>(ClassicColors::COUNT);
 
-inline std::string_view getClassicColorName(ClassicColors color)
+inline std::string_view getClassicColorName(const ClassicColors color)
 {
 	static const std::unordered_map<ClassicColors, std::string_view> colorNames =
 	{

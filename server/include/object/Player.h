@@ -676,7 +676,7 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::GANI, PropertyGaniOrBowGif, account.character.gani, account.character.bowPower, account.character.bowImage) \
 	DO(PlayerProp::HEADIMAGE, PropertyHeadGif, account.character.headImage)                                                    \
 	DO(PlayerProp::MESSAGE, PropertyString, account.character.chatMessage)                                                     \
-	DO(PlayerProp::COLORS, PropertyColors, account.character.colors)                                                           \
+	DO(PlayerProp::COLORS, PropertyColors<>, account.character.colors)                                                         \
 	DO(PlayerProp::ID, PropertyNumeric<GBYTE2>, m_id)                                                                          \
 	DO(PlayerProp::X, PropertyTileCoordinate, account.character.localPixelX)                                                   \
 	DO(PlayerProp::Y, PropertyTileCoordinate, account.character.localPixelY)                                                   \

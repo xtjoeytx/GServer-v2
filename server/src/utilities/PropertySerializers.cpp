@@ -34,6 +34,24 @@ int getServerGeneration()
 	return static_cast<int>(server->Generation);
 }
 
+bool isModernGeneration()
+{
+	const auto server = BabyDI::Get<Server>();
+	return server->Generation == ServerGeneration::MODERN;
+}
+
+bool isNewWorldMode()
+{
+	const auto server = BabyDI::Get<Server>();
+	return server->isNewWorldMode();
+}
+
+bool exBodyColorsEnabled()
+{
+	const auto server = BabyDI::Get<Server>();
+	return server->cached.enableExBodyColors.getValue();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // -----------------------------------------------
@@ -566,80 +584,6 @@ void PropertySprite::apply(const GameValue& gameValue)
 std::format_context::iterator PropertySprite::format(std::format_context& ctx) const
 {
 	return std::format_to(ctx.out(), "sprite: {}, direction: {}", sprite, direction);
-}
-
-// -----------------------------------------------
-// PropertyColors
-
-CString PropertyColors::serialize() const
-{
-	const size_t count = getColorCount();
-	const size_t maxValue = getMaxColorValue();
-	CString result;
-	for (size_t i = 0; i < count; ++i)
-	{
-		result >> std::clamp(static_cast<ValueType>(values[i]), static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
-	}
-	return result;
-}
-
-void PropertyColors::deserialize(CString& data)
-{
-	const size_t count = getColorCount();
-	const size_t maxValue = getMaxColorValue();
-	for (size_t i = 0; i < count; ++i)
-	{
-		if (static_cast<size_t>(data.bytesLeft()) < sizeof(ValueType))
-			throw std::runtime_error("Not enough data to deserialize PropertyArray.");
-		data.readGInto(values[i]);
-		values[i] = std::clamp(values[i], static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
-	}
-}
-
-void PropertyColors::apply(const GameValue& gameValue)
-{
-	if (const auto value = gameValue.get<std::vector<double>>(); value.has_value())
-	{
-		auto& vec = value.value().get();
-
-		// Convert all values to type T and insert into the values array.
-		const size_t count = getColorCount();
-		const size_t maxValue = getMaxColorValue();
-		for (size_t i = 0; i < count && i < vec.size(); ++i)
-		{
-			values[i] = std::clamp(static_cast<ValueType>(vec[i]), static_cast<ValueType>(0), static_cast<ValueType>(maxValue));
-		}
-	}
-}
-
-std::format_context::iterator PropertyColors::format(std::format_context& ctx) const
-{
-	std::ostringstream out;
-	const size_t count = getColorCount();
-
-	for (size_t i = 0; i < count; ++i)
-	{
-		out << std::format("{}", values[i]);
-		if (i < count - 1)
-			out << ", ";
-	}
-
-	return std::format_to(ctx.out(), "values: [{}]", out.str());
-}
-
-int PropertyColors::getColorCount() noexcept
-{
-	const auto server = BabyDI::Get<Server>();
-	return server->isNewWorldMode() ? 8 : 5;
-}
-
-size_t PropertyColors::getMaxColorValue() noexcept
-{
-	const auto server = BabyDI::Get<Server>();
-	size_t colorCount = CLASSICCOLORS_COUNT;
-	if (server->Generation == ServerGeneration::MODERN && server->cached.enableExBodyColors.getValue())
-		colorCount += HTMLCOLORS_COUNT;
-	return colorCount;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

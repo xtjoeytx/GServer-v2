@@ -1264,7 +1264,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 
 		case NPCProp::COLORS:
 		{
-			auto colorProp = dynamic_cast<PropertyColors*>(base);
+			auto colorProp = dynamic_cast<PropertyColors<true>*>(base);
 			if (colorProp == nullptr || colorProp->values == character.colors)
 				SETPROP_RETURN_IGNORE;
 

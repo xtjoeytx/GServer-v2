@@ -426,7 +426,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::COLORS:
 		{
-			auto colorProp = dynamic_cast<PropertyColors*>(base);
+			auto colorProp = dynamic_cast<PropertyColors<>*>(base);
 			if (colorProp == nullptr || colorProp->values == account.character.colors)
 				SETPROP_RETURN_IGNORE;
 
