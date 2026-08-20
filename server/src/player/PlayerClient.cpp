@@ -476,155 +476,183 @@ bool PlayerClient::sendLogin()
 		}
 	}
 
-	// Send the player his login props.
-	sendPacket(CString() >> (char)PLO_PLAYERPROPS << getPropsPacketFromList(loginPropsClientSelf));
-
-	// Workaround for the 2.31 client.  It doesn't request the map file when used with setmap.
-	// So, just send them all the maps loaded into the server.
-	if (m_versionId == CLVER_2_31 || m_versionId == CLVER_1_411)
+	// Stage 0 - Server info.
 	{
-		for (const auto& map : m_server->getMapList())
+		// Workaround for the 2.31 client.  It doesn't request the map file when used with setmap.
+		// So, just send them all the maps loaded into the server.
+		if (m_versionId == CLVER_2_31 || m_versionId == CLVER_1_411)
 		{
-			if (map->isBigMap())
-				msgPLI_WANTFILE(CString() << map->getMapName());
-		}
-	}
-
-	// Sent to rc and client, but rc ignores it so...
-	sendPacket(CString() >> (char)PLO_CLEARWEAPONS);
-
-	// If the gr.ip hack is enabled, add it to the player's flag list.
-	if (settings.get<bool>("flaghack_ip").value_or(false) == true)
-		setFlag("gr.ip", account.ipAddress, SetBy::SERVER);
-
-	// Send the player's flags.
-	for (const auto& [flag, value] : account.variables.store | variables::serializable)
-	{
-		if (auto serialized = account.variables.serializeModern(flag); serialized.has_value())
-			sendPacket(CString() >> (char)PLO_FLAGSET << serialized.value());
-	}
-
-	// Send the server's flags to the player.
-	for (const auto& flag : m_server->Scripting.variables.store | std::views::keys)
-	{
-		if (hasNPCServer && !flag.starts_with("serverr.")) continue;
-		if (auto serialized = m_server->Scripting.variables.serializeModern(flag); serialized.has_value())
-			sendPacket(CString() >> (char)PLO_FLAGSET << serialized.value());
-	}
-
-	// Delete the bomb and bow.  They get automagically added by the client for
-	// God knows which reason.  Bomb and Bow must be capitalized.
-	sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bomb");
-	sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bow");
-
-	// Send the player's weapons.
-	for (const auto& weaponName : account.weapons)
-	{
-		auto weapon = m_server->getWeapon(weaponName);
-		if (weapon == nullptr)
-		{
-			// Let's check to see if it is a default weapon.  If so, we can add it to the server now.
-			if (auto itemType = LevelItem::getItemId(weaponName); itemType != LevelItemType::INVALID)
+			for (const auto& map : m_server->getMapList())
 			{
-				CString defWeapPacket = CString() >> (char)PLI_WEAPONADD >> (char)0 >> (char)LevelItem::getItemTypeId(itemType);
-				defWeapPacket.readGChar();
-				msgPLI_WEAPONADD(defWeapPacket);
+				if (map->isBigMap())
+					msgPLI_WANTFILE(CString() << map->getMapName());
+			}
+		}
+
+		// Tell the client if the server is connected to the listserver.
+		if (m_server->getServerList().getConnected())
+			sendPacket(CString() >> (char)PLO_SERVERLISTCONNECTED);
+
+		// Send the bigmap if it was set.
+		if (m_versionId >= CLVER_2_1)
+		{
+			if (const CString bigmap = settings.get("bigmap").value_or(""); !bigmap.isEmpty())
+			{
+				if (const std::vector<CString> vbigmap = bigmap.tokenize(","); vbigmap.size() == 4)
+					sendPacket(CString() >> (char)PLO_BIGMAP << vbigmap[0].trim() << "," << vbigmap[1].trim() << "," << vbigmap[2].trim() << "," << vbigmap[3].trim());
+			}
+		}
+
+		// Send the minimap if it was set.
+		if (m_versionId >= CLVER_2_1)
+		{
+			if (const CString minimap = settings.get("minimap").value_or(""); !minimap.isEmpty())
+			{
+				if (const std::vector<CString> vminimap = minimap.tokenize(","); vminimap.size() == 4)
+					sendPacket(CString() >> (char)PLO_MINIMAP << vminimap[0].trim() << "," << vminimap[1].trim() << "," << vminimap[2].trim() << "," << vminimap[3].trim());
+			}
+		}
+
+		// Send out RPG Window greeting.
+		if (m_versionId >= CLVER_2_1)
+			sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings.get("name").value_or("") << ".\",\"" << CString(APP_VENDOR) << " " << CString(APP_NAME) << " programmed by " << CString(APP_CREDITS) << ".\"");
+
+		// Send the start message to the player.
+		sendPacket(CString() >> (char)PLO_STARTMESSAGE << m_server->getServerMessage());
+
+		// This will allow serverwarp and some other things, for some reason.
+		sendPacket(CString() >> (char)PLO_SERVERTEXT);
+
+		// Send out what guilds should be placed in the Staff section of the playerlist.
+		CString guildPacket = CString() >> (char)PLO_STAFFGUILDS;
+		guildPacket << string::toCSV(string::split(settings.get<std::string>("staffguilds").value_or(""), ","sv) | range::string_trim);
+		sendPacket(guildPacket);
+
+		// Send out the server's available status list options.
+		if (m_versionId >= CLVER_2_1)
+		{
+			// graal doesn't quote these
+			CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
+			pliconPacket << string::join(m_server->cached.playerStatusList.getValue() | range::string_trim, ","sv);
+			sendPacket(pliconPacket);
+		}
+
+		// Ask for processes. This causes windows v6 clients to crash
+		/*
+		if (m_versionId < CLVER_6_015)
+			sendPacket(CString() >> (char)PLO_LISTPROCESSES);
+		*/
+
+		m_fileQueue.sendCompress();
+	}
+
+	// Stage 1 - Player props
+	{
+		// Send the player his login props.
+		sendPacket(CString() >> (char)PLO_PLAYERPROPS << getPropsPacketFromList(loginPropsClientSelf));
+
+		m_fileQueue.sendCompress();
+	}
+
+	// Stage 2 - Flags
+	{
+		// If the gr.ip hack is enabled, add it to the player's flag list.
+		if (settings.get<bool>("flaghack_ip").value_or(false) == true)
+			setFlag("gr.ip", account.ipAddress, SetBy::SERVER);
+
+		// Send the player's flags.
+		for (const auto& [flag, value] : account.variables.store | variables::serializable)
+		{
+			if (auto serialized = account.variables.serializeModern(flag); serialized.has_value())
+				sendPacket(CString() >> (char)PLO_FLAGSET << serialized.value());
+		}
+
+		// Send the server's flags to the player.
+		for (const auto& flag : m_server->Scripting.variables.store | std::views::keys)
+		{
+			if (hasNPCServer && !flag.starts_with("serverr.")) continue;
+			if (auto serialized = m_server->Scripting.variables.serializeModern(flag); serialized.has_value())
+				sendPacket(CString() >> (char)PLO_FLAGSET << serialized.value());
+		}
+
+		m_fileQueue.sendCompress();
+	}
+
+	// Stage 3 - Weapons
+	{
+		// Sent to rc and client, but rc ignores it so...
+		sendPacket(CString() >> (char)PLO_CLEARWEAPONS);
+
+		// Delete the bomb and bow.  They get automagically added by the client for
+		// God knows which reason.  Bomb and Bow must be capitalized.
+		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bomb");
+		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bow");
+
+		// Send the player's weapons.
+		for (const auto& weaponName : account.weapons)
+		{
+			auto weapon = m_server->getWeapon(weaponName);
+			if (weapon == nullptr)
+			{
+				// Let's check to see if it is a default weapon.  If so, we can add it to the server now.
+				if (auto itemType = LevelItem::getItemId(weaponName); itemType != LevelItemType::INVALID)
+				{
+					CString defWeapPacket = CString() >> (char)PLI_WEAPONADD >> (char)0 >> (char)LevelItem::getItemTypeId(itemType);
+					defWeapPacket.readGChar();
+					msgPLI_WEAPONADD(defWeapPacket);
+					continue;
+				}
 				continue;
 			}
-			continue;
+			weapon->registerWeaponWithPlayer(shared_from_this());
 		}
-		weapon->registerWeaponWithPlayer(shared_from_this());
-	}
 
-	// Send any protected weapons we do not have.
-	for (const auto& weapon : m_server->cached.protectedWeapons.getValue())
-	{
-		if (!account.hasWeapon(weapon))
-			this->addWeapon(weapon);
-	}
-
-	// Send the zlib fixing NPC to client versions 2.21 - 2.31.
-	if (m_versionId >= CLVER_2_21 && m_versionId <= CLVER_2_31)
-	{
-		sendPacket(CString() >> (char)PLO_NPCWEAPONADD >> (char)12 << "-gr_zlib_fix" >> (char)0 >> (char)0 >> (char)1 >> (short)zlibFix.length() << zlibFix);
-	}
-
-	// Tell the client if the server is connected to the listserver.
-	if (m_server->getServerList().getConnected())
-		sendPacket(CString() >> (char)PLO_SERVERLISTCONNECTED);
-
-	// Send the bigmap if it was set.
-	if (m_versionId >= CLVER_2_1)
-	{
-		if (const CString bigmap = settings.get("bigmap").value_or(""); !bigmap.isEmpty())
+		// Send any protected weapons we do not have.
+		for (const auto& weapon : m_server->cached.protectedWeapons.getValue())
 		{
-			if (const std::vector<CString> vbigmap = bigmap.tokenize(","); vbigmap.size() == 4)
-				sendPacket(CString() >> (char)PLO_BIGMAP << vbigmap[0].trim() << "," << vbigmap[1].trim() << "," << vbigmap[2].trim() << "," << vbigmap[3].trim());
+			if (!account.hasWeapon(weapon))
+				this->addWeapon(weapon);
 		}
-	}
 
-	// Send the minimap if it was set.
-	if (m_versionId >= CLVER_2_1)
-	{
-		if (const CString minimap = settings.get("minimap").value_or(""); !minimap.isEmpty())
+		// Send the zlib fixing NPC to client versions 2.21 - 2.31.
+		if (m_versionId >= CLVER_2_21 && m_versionId <= CLVER_2_31)
 		{
-			if (const std::vector<CString> vminimap = minimap.tokenize(","); vminimap.size() == 4)
-				sendPacket(CString() >> (char)PLO_MINIMAP << vminimap[0].trim() << "," << vminimap[1].trim() << "," << vminimap[2].trim() << "," << vminimap[3].trim());
+			sendPacket(CString() >> (char)PLO_NPCWEAPONADD >> (char)12 << "-gr_zlib_fix" >> (char)0 >> (char)0 >> (char)1 >> (short)zlibFix.length() << zlibFix);
 		}
+
+		m_fileQueue.sendCompress();
 	}
 
-	// Send out RPG Window greeting.
-	if (m_versionId >= CLVER_2_1)
-		sendPacket(CString() >> (char)PLO_RPGWINDOW << "\"Welcome to " << settings.get("name").value_or("") << ".\",\"" << CString(APP_VENDOR) << " " << CString(APP_NAME) << " programmed by " << CString(APP_CREDITS) << ".\"");
-
-	// Send the start message to the player.
-	sendPacket(CString() >> (char)PLO_STARTMESSAGE << m_server->getServerMessage());
-
-	// This will allow serverwarp and some other things, for some reason.
-	sendPacket(CString() >> (char)PLO_SERVERTEXT);
-
-	// Send out what guilds should be placed in the Staff section of the playerlist.
-	CString guildPacket = CString() >> (char)PLO_STAFFGUILDS;
-	guildPacket << string::toCSV(string::split(settings.get<std::string>("staffguilds").value_or(""), ","sv) | range::string_trim);
-	sendPacket(guildPacket);
-
-	// Send out the server's available status list options.
-	if (m_versionId >= CLVER_2_1)
+	// Stage 4 - Other player's props.
 	{
-		// graal doesn't quote these
-		CString pliconPacket = CString() >> (char)PLO_STATUSLIST;
-		pliconPacket << string::join(m_server->cached.playerStatusList.getValue() | range::string_trim, ","sv);
-		sendPacket(pliconPacket);
+		// Exchange props with everybody on the server.
+		exchangeMyPropsWithOthers();
+
+		// Record prop mod time.
+		auto curTime = currentTime();
+		std::ranges::for_each(modTime, [&curTime](auto& modTime)
+		{
+			modTime = curTime;
+		});
+
+		m_fileQueue.sendCompress(true);
 	}
 
-	// Ask for processes. This causes windows v6 clients to crash
-	/*
-	if (m_versionId < CLVER_6_015)
-		sendPacket(CString() >> (char)PLO_LISTPROCESSES);
-	*/
-
-	// Send the level to the player.
-	// warp will call sendCompress() for us.
-	if (!warp(account.level, getGlobalPosition()) && m_currentLevel.expired())
+	// Stage 5 - The level.
 	{
-		log::printLine(log::rc, "** [Disconnect] '{}': No level available for player.", account.name);
-		m_fileQueue.clearBuffers();
-		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
-		log::printLine(log::server, "** Cannot find level for {}.", account.name);
-		return false;
+		// Send the level to the player.
+		// warp will call sendCompress() for us.
+		if (!warp(account.level, getGlobalPosition()) && m_currentLevel.expired())
+		{
+			log::printLine(log::rc, "** [Disconnect] '{}': No level available for player.", account.name);
+			m_fileQueue.clearBuffers();
+			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "No level available.");
+			log::printLine(log::server, "** Cannot find level for {}.", account.name);
+			return false;
+		}
+
+		m_fileQueue.sendCompress();
 	}
-
-	// Exchange props with everybody on the server.
-	exchangeMyPropsWithOthers();
-
-	// Record prop mod time.
-	auto curTime = currentTime();
-	std::ranges::for_each(modTime, [&curTime](auto& modTime)
-	{
-		modTime = curTime;
-	});
-
-	m_fileQueue.sendCompress(true);
 
 	// Queue up the login event.
 	if (m_server->hasNPCServer())
