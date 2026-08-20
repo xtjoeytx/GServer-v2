@@ -7,6 +7,11 @@ along with the [addtiledef](scripting-gs1-commands.md#addtiledef) command.
 The tileset is organized, unlike the default type 0 tileset.
 Despite what it may seem, it lacks the default client functionality that is expressed by the type 0 tileset.
 
+#### Type 2
+
+Type 2 tilesets are a New World variant of type 1 tilesets that provide sections for foreground tiles.
+It only works on the New World client and requires [setbacktile](scripting-gs1-commands.md#setbacktile) to set the tile to render under the foreground tiles.
+
 ### How to use
 
 The tileset image has a maximum size of 2048x512 pixels, and must be an indexed PNG/GIF image.

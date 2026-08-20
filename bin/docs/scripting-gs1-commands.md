@@ -44,11 +44,22 @@ official serverside: ❌<br>
 Swaps the tileset for all levels whose filenames start with `levelstart`.
 The `type` parameter identifies how the tiles are layed out.
 
-| Type | Format                 |
-|------|------------------------|
-| 0    | pics1.png              |
-| 1    | (new order)            |
-| 5    | picso.png (3D terrain) |
+| Type | Useable             | Format                                 |
+|------|---------------------|----------------------------------------|
+| 0    | Yes                 | classic (pics1.png)                    |
+| 1    | Yes                 | new order                              |
+| 2    | No (NW client only) | new order + new world foreground tiles |
+| 3    | -                   |                                        |
+| 4    | No                  | (internal addtiledef2 overlay)         |
+| 5    | Yes                 | 3D terrain (picso.png)                 |
+
+Type 2 is only implemented on the New World client.
+It extends the type 1 tileset with foreground tile sections (tiles that are drawn over the player and have transparency).
+The [setbacktile](#setbacktile) command should be used to specify the tile to be rendered under foreground tiles.
+
+Type 3 does not exist.
+
+Type 4 is the internal type used to identify an [addtiledef2](#addtiledef2) overlay and should not used directly.
 
 ---
 ## addtiledef2
