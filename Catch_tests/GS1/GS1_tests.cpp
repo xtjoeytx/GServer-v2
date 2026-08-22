@@ -56,12 +56,15 @@ struct ServerFixture
 		server->getSettings().set("serverside", true);
 		server->loadNPCServer();
 
+		// Link the scripting engine.
+		npcServer = server->getNPCServer();
+		engine = std::dynamic_pointer_cast<gs1::ScriptEngineGS1>(npcServer->scripting.getScriptEngine(gs1::ScriptEngineGS1::EngineName));
+
 		// Configure NPC-Player.
 		const auto player = std::dynamic_pointer_cast<Player>(server->getNPCServer()->getPlayerNPCServer());
 		gs1::setPlayerVariables(player->account.variables, player);
 
 		// Configure Test NPC.
-		const auto npcServer = server->getNPCServer();
 		const auto npc = npcServer->addNPC("door.png"sv, ""sv, nullptr, TilePosition{20.0f, 30.0f}, NPCTYPE_OBJECT);
 		npc->name = "Test";
 		testNPC = npc->id;
@@ -77,7 +80,8 @@ struct ServerFixture
 
 	NPCID testNPC = NPCID_GEN_DATABASE_LOCALN;
 	Server* server;
-	gs1::ScriptEngineGS1 engine;
+	std::shared_ptr<NPCServer> npcServer;
+	std::shared_ptr<gs1::ScriptEngineGS1> engine;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -132,7 +136,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles scripts", "[Scripting]
 			if (created) {x=10}
 			if (created) {y=5;say2HEY!}
 		)";
-		auto result = engine.compileScript("valid_script", validScript);
+		auto result = engine->compileScript("valid_script", validScript);
 		REQUIRE(std::holds_alternative<ScriptExecutionContext>(result));
 	}
 
@@ -144,7 +148,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles scripts", "[Scripting]
 				setanimg light2.png;
 				doblock;
 		)";
-		auto result = engine.compileScript("invalid_script", invalidScript);
+		auto result = engine->compileScript("invalid_script", invalidScript);
 		REQUIRE(std::holds_alternative<std::string>(result));
 	}
 
@@ -158,7 +162,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles scripts", "[Scripting]
 				setstring mystring,Hello, world!;
 			}
 		)";
-		auto result = engine.compileScript("script_with_identifiers", script);
+		auto result = engine->compileScript("script_with_identifiers", script);
 		REQUIRE(std::holds_alternative<ScriptExecutionContext>(result));
 
 		auto& context = std::get<ScriptExecutionContext>(result);
@@ -182,7 +186,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles scripts", "[Scripting]
 		constexpr std::string_view script = R"(
 			function testFunc() {}
 		)";
-		auto result = engine.compileScript("script_with_functions", script);
+		auto result = engine->compileScript("script_with_functions", script);
 		REQUIRE(std::holds_alternative<ScriptExecutionContext>(result));
 
 		auto& context = std::get<ScriptExecutionContext>(result);
@@ -210,8 +214,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				this.myvar2 := 42;
 			}
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;
@@ -229,8 +233,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				setstring this.mystring,Hello, world!;
 			}
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;
@@ -250,8 +254,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				this.negativeIndex[-1] = 99;
 			}
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;
@@ -323,8 +327,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 					this.testtruestring = 1;
 			}
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;
@@ -405,8 +409,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				this.as_power ^= 3;
 			}
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;
@@ -461,8 +465,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				insertstring this.test8,3,Two;
 			}
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;
@@ -483,8 +487,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 			setstring s, thisisatest;
 			test1 = indexof(isa, #s(s));
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;
@@ -509,10 +513,10 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 			for (i=0; i<tokenscount; i++)
 				setstring tokens2_t#v(i),#t(i);
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
-		auto player = server->getNPCServer()->getPlayerNPCServer();
+		const auto player = npcServer->getPlayerNPCServer();
 		REQUIRE(player != nullptr);
 
 		auto wrapper = get_wrapper(result);
@@ -548,20 +552,20 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		)";
 		ScriptEvent timeout{.type = ScriptEventType::TIMEOUT, .initiator = source::FromPlayer(NPCServerPlayerID)};
 
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(testNPC), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		[[maybe_unused]] auto wrapper = get_wrapper(result);
 		auto npcstore = &server->getNPC(testNPC)->scripting.variables;
 		CHECK_THAT(npcstore->getValue<double>("myvar").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 
-		CHECK(execute_script(engine, timeout, source::FromNPC(testNPC), result));
+		CHECK(execute_script(*engine, timeout, source::FromNPC(testNPC), result));
 		CHECK_THAT(npcstore->getValue<double>("myvar").value_or(0.0), Catch::Matchers::WithinRel(2.0));
 
-		CHECK(execute_script(engine, timeout, source::FromNPC(testNPC), result));
+		CHECK(execute_script(*engine, timeout, source::FromNPC(testNPC), result));
 		CHECK_THAT(npcstore->getValue<double>("myvar").value_or(0.0), Catch::Matchers::WithinRel(3.0));
 
-		CHECK(execute_script(engine, timeout, source::FromNPC(testNPC), result));
+		CHECK(execute_script(*engine, timeout, source::FromNPC(testNPC), result));
 		auto match = Catch::Matchers::WithinRel(4.0);
 		CHECK_FALSE(match.match(npcstore->getValue<double>("myvar").value_or(0.0)));
 	}
@@ -585,8 +589,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				this.test = 3;
 			}
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(testNPC), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		[[maybe_unused]] auto wrapper = get_wrapper(result);
 		auto npcstore = &server->getNPC(testNPC)->scripting.variables;
@@ -598,8 +602,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		constexpr std::string_view script = R"(
             pi = 3.14;
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE_THROWS_AS(execute_script(engine, created, source::FromNPC(testNPC), result), script_error);
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE_THROWS_AS(execute_script(*engine, created, source::FromNPC(testNPC), result), script_error);
 	}
 
 	SECTION("reserved constants allowed in scoped variables")
@@ -607,8 +611,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		constexpr std::string_view script = R"(
             this.pi = 3.14;
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(testNPC), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		[[maybe_unused]] auto wrapper = get_wrapper(result);
 		auto npcstore = &server->getNPC(testNPC)->scripting.variables;
@@ -634,8 +638,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				k = 5;
 			}
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(testNPC), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		[[maybe_unused]] auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;
@@ -656,7 +660,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles and executes simple ex
 		constexpr std::string_view script = R"(
 			this#nis a test
 		)";
-		auto result = engine.processStringExpression(script, source::FromPlayer(NPCServerPlayerID));
+		auto result = engine->processStringExpression(script, source::FromPlayer(NPCServerPlayerID));
 		CHECK(result == "thisNPC-Server (Server)is a test");
 	}
 
@@ -667,7 +671,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles and executes simple ex
 		constexpr std::string_view script = R"(
 			10 + x
 		)";
-		const auto result = engine.processMathExpression(script, source::FromPlayer(NPCServerPlayerID));
+		const auto result = engine->processMathExpression(script, source::FromPlayer(NPCServerPlayerID));
 		CHECK_THAT(result.value_or(0.0), Catch::Matchers::WithinRel(40.5));
 	}
 }
@@ -677,7 +681,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles and executes simple ex
 TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cross-npc interactions", "[Scripting][IScriptEngine][GS1]")
 {
 	ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source::FromPlayer(NPCServerPlayerID)};
-	auto player = server->getNPCServer()->getPlayerNPCServer();
+	const auto player = npcServer->getPlayerNPCServer();
 	player->account.character = Character{};
 	player->account.character.nickName = "NPC-Server (Server)";
 
@@ -707,8 +711,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		level->levelName = "TestLevel";
 		npc->setLevel(level);
 
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(testNPC), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		auto wrapper = get_wrapper(result);
 		auto scriptStore = wrapper->visitor->builtInStore;
@@ -733,6 +737,38 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		npc->setLevel(nullptr);
 	}
 
+	SECTION("variables respect conformance modes")
+	{
+		// Tests that variables are set and retrieved correctly in both conformance modes.
+		constexpr std::string_view script = R"(
+			if (created) { client.myvar = 3; }
+		)";
+
+		auto matchTest = Catch::Matchers::WithinRel(3.0);
+
+		// Test conforming mode.
+		engine->settings.set("strict", true);
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
+
+		auto wrapper = get_wrapper(result);
+		auto store = wrapper->visitor->builtInStore;
+		auto playerstore = &player->account.variables;
+		CHECK(store->contains("client.myvar"));
+		CHECK_FALSE(matchTest.match(playerstore->getValue<double>("client.myvar").value_or(0.0)));
+
+		// Test non-conforming mode.
+		store->store.clear();
+		engine->settings.set("strict", false);
+		result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
+
+		wrapper = get_wrapper(result);
+		store = wrapper->visitor->builtInStore;
+		CHECK_FALSE(store->contains("client.myvar"));
+		CHECK(matchTest.match(playerstore->getValue<double>("client.myvar").value_or(0.0)));
+	}
+
 	SECTION("setting variables inside and outside of with()")
 	{
 		// Tests that variables can be set both inside and outside of a with() block, and that the correct variable is set in each case.
@@ -745,8 +781,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 				thiso.myvar = 3;
 			}
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;
@@ -769,8 +805,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 				setstring this.message2,Hello, #n!;
 			}
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;
@@ -792,8 +828,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 				if (sprite == 14) sprite = 16;
 			}
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		CHECK(player->account.character.colors[0] == 2);
 		CHECK(player->account.character.colors[1] == 0);
@@ -810,61 +846,61 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		constexpr std::string_view script = R"(
 			this.test = playersaysnumber;
 		)";
-		auto result = engine.compileScript("test_script", script);
+		auto result = engine->compileScript("test_script", script);
 
 		player->account.character.chatMessage = "10 playerhearts";
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(10.0));
 
 		player->account.character.chatMessage = "playerhearts 10";
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(3.0));
 
 		player->account.character.chatMessage = "true"; // 1
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 
 		player->account.character.chatMessage = "false"; // 0
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(99.0), Catch::Matchers::WithinRel(0.0));
 
 		player->account.character.chatMessage = "5&&2"; // 0
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(0.0));
 
 		player->account.character.chatMessage = "5==5&&false==false"; // 1
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 
 		player->account.character.chatMessage = "5||2"; // 0
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(0.0));
 
 		player->account.character.chatMessage = "5==2"; // 0
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(0.0));
 
 		player->account.character.chatMessage = "5==2||true"; // 1
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 
 		player->account.character.chatMessage = "10 + playerhearts"; // 10
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(10.0));
 
 		player->account.character.chatMessage = "playerhearts + 10"; // 3
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(3.0));
 
 		player->account.character.chatMessage = "10+playerhearts"; // 13
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(13.0));
 
 		player->account.character.chatMessage = "-playerhearts"; // -3
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(-3.0));
 
 		// These tests currently fail.  They are low priority for solving.
@@ -872,28 +908,28 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 			auto matchPlayerHearts = Catch::Matchers::WithinRel(3.0);
 
 			player->account.character.chatMessage = "playerhearts-"; // 3
-			REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+			REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 			CHECK_NOFAIL(matchPlayerHearts.match(store->getValue<double>("test").value_or(0.0)));
 
 			player->account.character.chatMessage = "playerhearts--"; // 3
-			REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+			REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 			CHECK_NOFAIL(matchPlayerHearts.match(store->getValue<double>("test").value_or(0.0)));
 		}
 
 		player->account.character.chatMessage = "(playerhearts)"; // 3
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(3.0));
 
 		player->account.character.chatMessage = "(playerhearts"; // 0
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(0.0));
 
 		player->account.character.chatMessage = "(playerhearts in |1,5|)"; // 0
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(0.0));
 
 		player->account.character.chatMessage = "(playerhearts==3?5:2)"; // 0
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 		CHECK_THAT(store->getValue<double>("test").value_or(0.0), Catch::Matchers::WithinRel(0.0));
 	}
 }
@@ -903,7 +939,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 server bindings", "[Scripting][IScriptEngine][GS1]")
 {
 	ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source::FromPlayer(NPCServerPlayerID)};
-	auto player = server->getNPCServer()->getPlayerNPCServer();
+	const auto player = npcServer->getPlayerNPCServer();
 	player->account.character = Character{};
 	player->account.character.nickName = "NPC-Server (Server)";
 
@@ -914,8 +950,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 server bindings", "[Scripting][
 		constexpr std::string_view script = R"(
 			this.test = allplayerscount;
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		const auto wrapper = get_wrapper(result);
 		const auto store = wrapper->visitor->builtInStore;
@@ -928,7 +964,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 server bindings", "[Scripting][
 TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 functions", "[Scripting][IScriptEngine][GS1]")
 {
 	ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source::FromPlayer(NPCServerPlayerID)};
-	auto player = server->getNPCServer()->getPlayerNPCServer();
+	const auto player = npcServer->getPlayerNPCServer();
 	player->account.character = Character{};
 	player->account.character.nickName = "NPC-Server (Server)";
 
@@ -939,8 +975,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 functions", "[Scripting][IScrip
 			this.testSuccess = passwordmatches(#s(this.passwordHash), hunter2);
 			this.testFail = passwordmatches(#s(this.passwordHash), hunter3);
 		)";
-		auto result = engine.compileScript("test_script", script);
-		REQUIRE(execute_script(engine, created, source::FromNPC(3), result));
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
 		auto store = wrapper->visitor->builtInStore;

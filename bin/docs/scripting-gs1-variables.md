@@ -624,11 +624,18 @@ Note 2:
 | this.flag     | 2.19        | The currently active NPC.                                                                                                                             |
 | thiso.var     | (npcserver) | The source NPC (the one outside of [with()](scripting-gs1-flow-control-operators.md#flow-control-statements)).                                        |
 | thiso.flag    | (npcserver) | The source NPC (the one outside of [with()](scripting-gs1-flow-control-operators.md#flow-control-statements)).                                        |
-| level.        | (npcserver) | The level.                                                                                                                                            |
+| level.var     | (npcserver) | The level.                                                                                                                                            |
+| level.flag    | (npcserver) | The level.                                                                                                                                            |
+| local.var     |             | Same as `var`.                                                                                                                                        |
 | local.flag    | 2.02        | Clientside: The level.  Does not get sent to the server.<br>Serverside: The script context.                                                           |
+| client.var    |             | Same as `var`.                                                                                                                                        |
 | client.flag   | 2.19        | The currently active player.                                                                                                                          |
+| clientr.var   |             | Same as `var`.                                                                                                                                        |
 | clientr.flag  | (npcserver) | The currently active player.  Clientside cannot alter this flag.                                                                                      |
+| cliento.var   |             | Same as `var`.                                                                                                                                        |
 | cliento.flag  | (npcserver) | The source player (the one outside of [with()](scripting-gs1-flow-control-operators.md#flow-control-statements)).                                     |
+| clientro.var  |             | Same as `var`.                                                                                                                                        |
 | clientro.flag | (npcserver) | The source player (the one outside of [with()](scripting-gs1-flow-control-operators.md#flow-control-statements)).  Clientside cannot alter this flag. |
+| server.var    | ???         | Clientside: The level.<br>Serverside: The server.                                                                                                     |
 | server.flag   | ???         | The server.  NPC-Server enabled servers do not send these to clients.                                                                                 |
 | serverr.flag  | (npcserver) | The server.                                                                                                                                           |

@@ -532,7 +532,7 @@ GS1ScriptValue fn_getflagkeys(GS1Visitor* visitor, const std::vector<GS1ScriptVa
 
 	std::vector<double> results;
 	const auto storageType = GS1Visitor::getStorageTypeFromIdentifier(prefix).value_or(ENUM(StorageType::CLIENT));
-	GS1Visitor::stripStorageNameFromIdentifier(prefix);
+	GS1Visitor::fixStorageNameOnIdentifier(prefix);
 
 	const auto variableStore = visitor->getGameVariableStoreForStorageType(storageType);
 	if (variableStore == nullptr)

@@ -210,6 +210,20 @@ GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string
 
 ////////////////////////////////////////////////////////////////////////////////
 
+ScriptEngineGS1::ScriptEngineGS1()
+{
+	settings.track(config.strictMode, config.alwaysScopeVariables);
+	settings.track(config.damageReactions, config.shootball);
+}
+
+void ScriptEngineGS1::loadConfiguration(const std::filesystem::path& file)
+{
+	log::printLine(log::server, "Loading GS1 script engine configuration.");
+	settings.load(file);
+}
+
+//----------------------------
+
 CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::string_view script)
 {
 	ScriptExecutionContext result{.engine = this};

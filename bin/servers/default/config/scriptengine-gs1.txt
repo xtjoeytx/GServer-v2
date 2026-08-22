@@ -1,0 +1,17 @@
+# ---[ CONFORMANCE ]------------------------------------------------------------
+
+# Enable strict conformance.
+# If set to true, all other options will be disabled.
+strict=false
+
+# Enable the use of scoped variables.
+# Some variables, like client.var, are not scoped to the client by default.
+always-scope-variables=true
+
+# ---[ NON-STANDARD COMMANDS ]--------------------------------------------------
+
+# Enables the enabledamagereactions and disabledamagereactions commands.
+damagereactions=true
+
+# Enables a serverside shootball command that accepts a direction argument.
+shootball=true

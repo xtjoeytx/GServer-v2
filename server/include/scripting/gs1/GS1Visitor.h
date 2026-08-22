@@ -19,6 +19,7 @@
 #include <GS1ParserBaseVisitor.h>
 #include <tree/ParseTree.h>
 
+#include <npcserver/NPCServer.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
@@ -79,11 +80,12 @@ public:
 	Server* server = nullptr;
 	ITranslationManager* translationManager = nullptr;
 	GuildManager* guildManager = nullptr;
+	NPCServer* npcServer = nullptr;
+	ScriptEngineGS1* scriptEngine = nullptr;
 
 public:
 	[[a::inline]] static std::optional<size_t> getStorageTypeFromIdentifier(std::string_view identifier, std::optional<size_t> defaultValue = {}) noexcept;
-	[[a::inline]] static void applyStorageNameToIdentifier(std::optional<size_t> storage, std::string& identifier) noexcept;
-	[[a::inline]] static void stripStorageNameFromIdentifier(std::string& identifier) noexcept;
+	[[a::inline]] static void fixStorageNameOnIdentifier(std::string& identifier) noexcept;
 	static double getColorValueFromString(std::string_view colorString);
 	static GameVariable* getGameVariable(std::any& value);
 	static GameVariable* getGameVariable(GS1ScriptValue& value);
@@ -257,32 +259,7 @@ inline std::optional<size_t> GS1Visitor::getStorageTypeFromIdentifier(const std:
 	return defaultValue;
 }
 
-inline void GS1Visitor::applyStorageNameToIdentifier(const std::optional<size_t> storage, std::string& identifier) noexcept
-{
-	if (!storage.has_value())
-		return;
-
-	switch (storage.value())
-	{
-		case ENUM(StorageType::CLIENT):
-		case ENUM(StorageType::CLIENTO):
-			identifier = std::format("client.{}", identifier);
-			break;
-		case ENUM(StorageType::CLIENTR):
-		case ENUM(StorageType::CLIENTRO):
-			identifier = std::format("clientr.{}", identifier);
-			break;
-		case ENUM(StorageType::SERVER):
-			identifier = std::format("server.{}", identifier);
-			break;
-		case ENUM(StorageType::SERVERR):
-			identifier = std::format("serverr.{}", identifier);
-			break;
-		default:;
-	}
-}
-
-inline void GS1Visitor::stripStorageNameFromIdentifier(std::string& identifier) noexcept
+inline void GS1Visitor::fixStorageNameOnIdentifier(std::string& identifier) noexcept
 {
 	const auto storage = GS1Visitor::getStorageTypeFromIdentifier(identifier);
 	if (!storage.has_value()) return;
@@ -294,6 +271,7 @@ inline void GS1Visitor::stripStorageNameFromIdentifier(std::string& identifier) 
 		// Erase the storage prefix from the identifier, leaving only the actual variable name.
 		case ENUM(StorageType::THIS):
 		case ENUM(StorageType::THISO):
+		case ENUM(StorageType::LEVEL):
 			identifier.erase(0, period + 1);
 			break;
 

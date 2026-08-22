@@ -53,16 +53,18 @@ concept VariantContainsType = requires(Va v, Tp t)
 template<typename R, typename T>
 concept RangeOf = std::ranges::range<R> && std::same_as<std::ranges::range_value_t<R>, T>;
 
+// clang-format off
 template<class... Ts>
 concept AllSame = sizeof...(Ts) < 2 ||
 	std::conjunction_v<
-	std::is_same<std::tuple_element_t<0, std::tuple<Ts...>>, Ts>...
+		std::is_same<std::tuple_element_t<0, std::tuple<Ts...>>, Ts>...
 	>;
 
 template<class O, class... Ts>
 concept AllSameAs = sizeof...(Ts) < 2 ||
 	(std::conjunction_v<std::is_same<std::tuple_element_t<0, std::tuple<Ts...>>, Ts>...>
 		&& std::same_as<O, std::tuple_element_t<0, std::tuple<Ts...>>>);
+// clang-format on
 
 template<typename T>
 concept IsEnum = std::is_enum_v<T>;
@@ -234,7 +236,7 @@ inline clock::time_point convertFromTimeT(const time_t time)
 /// @param time1 The first time point.
 /// @param time2 The second time point.
 /// @return The absolute duration between the two time points, or the maximum duration value if either time point is uninitialized (minimum value).
-template <typename T = std::chrono::seconds, typename C = clock>
+template<typename T = std::chrono::seconds, typename C = clock>
 inline T timeDifference(const typename C::time_point& time1, const typename C::time_point& time2)
 {
 	if (time1 == C::time_point::min() || time2 == C::time_point::min())
@@ -247,7 +249,7 @@ inline T timeDifference(const typename C::time_point& time1, const typename C::t
 /// @param currentTime The current time point.
 /// @param futureTime The future time point to check.
 /// @return True if the future time has passed, false otherwise.
-template <typename C = clock>
+template<typename C = clock>
 inline bool timePassed(const typename C::time_point& currentTime, const typename C::time_point& futureTime)
 {
 	if (currentTime == C::time_point::min() || futureTime == C::time_point::min())
@@ -306,11 +308,11 @@ inline static auto toNonOwningRange(Ts&&... range)
 	return std::views::counted(arr, sizeof...(Ts));
 }
 
+// clang-format off
 inline auto removeNulls = std::views::filter([](auto&& ptr) { return ptr != nullptr; });
-
 inline auto toSharedPtr = std::views::transform([](auto&& ptr) { return ptr.lock(); });
-
-inline auto toAny = std::views::transform([](const auto& value) { return std::any{ value }; });
+inline auto toAny = std::views::transform([](const auto& value) { return std::any{value}; });
+// clang-format on
 
 //----------------------------
 // Floating point helpers
@@ -369,19 +371,30 @@ inline constexpr bool inList(C&& check, Pack&&... values)
 	return ((check == values) || ...);
 }
 
+template<typename C, typename T, std::size_t N>
+inline constexpr bool inList(C&& check, const std::array<T, N>& arr)
+{
+	return std::apply([&](const auto&... values)
+	{
+		return inList(std::forward<C>(check), values...);
+	}, arr);
+}
+
 //----------------------------
 // Tags
 
+//clang-format off
 struct inform_client_t { explicit inform_client_t() = default; };
 inline constexpr inform_client_t inform_client{};
 
 struct clear_container_t { explicit clear_container_t() = default; };
 inline constexpr clear_container_t clear_container{};
+// clang-format on
 
 //----------------------------
 // RAII structs
 
-template <typename T>
+template<typename T>
 struct SetAndRestore
 {
 	SetAndRestore(T& var, T newValue)
@@ -503,13 +516,17 @@ auto toCSVFromPack(Args&&... args)
 // Macros
 
 #ifdef DEBUG
-#include <utilities/Log.h>
-#define DEBUGPRINT(...) do { log::printLine(log::server, __VA_ARGS__); } while(false)
+	#include <utilities/Log.h>
+	#define DEBUGPRINT(...)                              \
+		do { log::printLine(log::server, __VA_ARGS__); } \
+		while (false)
 #else
-#define DEBUGPRINT(...)
+	#define DEBUGPRINT(...)
 #endif
 
-#define RETURN_CONSTRUCTPROPSFOR_CONSTEXPR(prop, type, ...) if constexpr (P == prop) return type{ values... };
-#define RETURN_GETPROP_CONSTEXPR(prop, type, ...) if constexpr (P == prop) return type{ __VA_ARGS__ };
+#define RETURN_CONSTRUCTPROPSFOR_CONSTEXPR(prop, type, ...) \
+	if constexpr (P == prop) return type{values...};
+#define RETURN_GETPROP_CONSTEXPR(prop, type, ...) \
+	if constexpr (P == prop) return type{__VA_ARGS__};
 
 #endif // COMMONTYPES_H

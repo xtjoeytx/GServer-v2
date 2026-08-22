@@ -79,6 +79,11 @@ namespace preagonal::gs1::grammar
 GS1Visitor::GS1Visitor()
 	: server(BabyDI::Get<Server>()), translationManager(BabyDI::Get<ITranslationManager>()), guildManager(BabyDI::Get<GuildManager>())
 {
+	const auto npc = server->getNPCServer();
+	npcServer = npc.get();
+
+	const auto gs1 = std::dynamic_pointer_cast<ScriptEngineGS1>(npc->scripting.getScriptEngine(ScriptEngineGS1::EngineName));
+	scriptEngine = gs1.get();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1615,11 +1620,26 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 	}
 
 	// Strip the storage type from the identifier, if needed.
-	stripStorageNameFromIdentifier(*identifier);
+	fixStorageNameOnIdentifier(*identifier);
 
 	// If we have no storage value, and we are expecting a flag, force client storage.
 	if (!storage.has_value() && expectingFlag)
 		storage = ENUM(StorageType::CLIENT);
+
+	// Conformance.
+	// If we are expecting a flag, force certain variables to script storage.
+	if (!expectingFlag && (scriptEngine->config.strictMode.getValue() || scriptEngine->config.alwaysScopeVariables.getValue() == false))
+	{
+		constexpr std::array alwaysScriptStorage = {
+			// Client storage types.
+			ENUM(StorageType::CLIENT),
+			ENUM(StorageType::CLIENTO),
+			ENUM(StorageType::CLIENTR),
+			ENUM(StorageType::CLIENTRO),
+		};
+		if (storage.has_value() && inList(storage.value(), alwaysScriptStorage))
+			storage = ENUM(StorageType::LOCAL);
+	}
 
 	// Get the game variable store for the identifier.
 	// If there is no storage type, it pulls from the built-in variable store (saved on the script context).

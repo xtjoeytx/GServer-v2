@@ -531,6 +531,10 @@ void processBuiltInCommand(GS1Visitor* visitor, const antlr4::tree::ParseTree* n
 	{
 		throw;
 	}
+	catch (const break_exception&)
+	{
+		// Do nothing (recoverable error like a bad command or permissions issue).
+	}
 	catch (const std::logic_error& ex)
 	{
 		log::printLine(log::npc, "[WARNING] NPC [{}] '{}', error: {}", visitor->getOriginalSource().first, visitor->who, ex.what());
@@ -1006,8 +1010,8 @@ void fn_copystrings(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arg
 
 	const size_t fromStorageType = GS1Visitor::getStorageTypeFromIdentifier(fromPrefix).value_or(ENUM(StorageType::CLIENT));
 	const size_t toStorageType = GS1Visitor::getStorageTypeFromIdentifier(toPrefix).value_or(ENUM(StorageType::CLIENT));
-	GS1Visitor::stripStorageNameFromIdentifier(fromPrefix);
-	GS1Visitor::stripStorageNameFromIdentifier(toPrefix);
+	GS1Visitor::fixStorageNameOnIdentifier(fromPrefix);
+	GS1Visitor::fixStorageNameOnIdentifier(toPrefix);
 
 	const auto fromStore = visitor->getGameVariableStoreForStorageType(fromStorageType);
 	const auto toStore = visitor->getGameVariableStoreForStorageType(toStorageType);
@@ -2923,7 +2927,10 @@ void fn_shootarrow(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argu
 // (gr) shootball dir;
 void fn_shootball(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	// TODO(GS1): Conformance modes.
+	// Conformance.
+	const auto& config = visitor->scriptEngine->config;
+	if (config.strictMode.getValue() || config.shootball.getValue() == false)
+		throw std::logic_error("shootball is clientside only.");
 
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: shootball dir");
@@ -3665,6 +3672,14 @@ void fn_warpto(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argument
 // Enables damage reactions for the NPC, allowing it to react to damage with animations and invincibility frames.
 void fn_enabledamagereactions(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
+	// Conformance.
+	const auto& config = visitor->scriptEngine->config;
+	if (config.strictMode.getValue() || config.damageReactions.getValue() == false)
+	{
+		log::printLine(log::script, "Unknown command in NPC [{}] '{}': {}", visitor->getOriginalSource().first, visitor->who, "enabledamagereactions");
+		throw break_exception{};
+	}
+
 	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
 		const auto server = BabyDI::Get<Server>();
@@ -3677,6 +3692,14 @@ void fn_enabledamagereactions(GS1Visitor* visitor, const std::vector<GS1ScriptVa
 // Disables damage reactions for the NPC, going back to the default behavior of not automatically reacting to damage.
 void fn_disabledamagereactions(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
+	// Conformance.
+	const auto& config = visitor->scriptEngine->config;
+	if (config.strictMode.getValue() || config.damageReactions.getValue() == false)
+	{
+		log::printLine(log::script, "Unknown command in NPC [{}] '{}': {}", visitor->getOriginalSource().first, visitor->who, "disabledamagereactions");
+		throw break_exception{};
+	}
+
 	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
 		const auto server = BabyDI::Get<Server>();

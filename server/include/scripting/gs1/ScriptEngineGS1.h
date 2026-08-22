@@ -27,6 +27,7 @@
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
 #include <scripting/gs1/GS1ErrorListener.h>
+#include <utilities/Settings.h>
 
 // Forward declare.
 namespace preagonal::gs1::grammar
@@ -159,10 +160,20 @@ struct GS1ScriptWrapper
 
 //----------------------------
 
+struct CachedSettings
+{
+	SettingCache<bool> strictMode{"strict", false};
+	SettingCache<bool> alwaysScopeVariables{"always-scope-variables", true};
+	SettingCache<bool> damageReactions{"damagereactions", true};
+	SettingCache<bool> shootball{"shootball", true};
+};
+
+//----------------------------
+
 class ScriptEngineGS1 : public IScriptEngine
 {
 public:
-	ScriptEngineGS1() = default;
+	ScriptEngineGS1();
 	~ScriptEngineGS1() override = default;
 
 public:
@@ -172,7 +183,7 @@ public:
 	ScriptExecutionType getExecutionType() override { return ScriptExecutionType::INTERPRETED; }
 
 public:
-	void loadConfiguration(const std::filesystem::path& file) override {}
+	void loadConfiguration(const std::filesystem::path& file) override;
 
 public:
 	CompiledScriptResult compileScript(std::string_view who, std::string_view script) override;
@@ -187,6 +198,10 @@ public:
 public:
 	std::optional<double> processMathExpression(std::string_view expression, ScriptObject source) override;
 	std::optional<std::string> processStringExpression(std::string_view expression, ScriptObject source) override;
+
+public:
+	Settings settings;
+	CachedSettings config;
 
 protected:
 	static bool prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, std::vector<ScriptEventType>* additionalEventTypes, ScriptObject source, NPCPtr& npc, LevelPtr& level);
