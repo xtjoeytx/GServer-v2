@@ -633,7 +633,7 @@ GS1ScriptValue mc_R(const GS1Visitor* visitor, const std::string_view messageCod
 }
 
 // #S
-// The player's selected sword (Newworld).
+// The player's selected sword (New World).
 GS1ScriptValue mc_S(const GS1Visitor* visitor, const std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
 {
 	throw std::logic_error("clientside only: #S");

@@ -4,8 +4,8 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 #include <utilities/CommonTypes.h>
@@ -16,10 +16,11 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+/// @brief Represents a character.
 struct Character
 {
-	int16_t localPixelX = 488;	// 30.5
-	int16_t localPixelY = 480;	// 30
+	int16_t localPixelX = 488; // 30.5
+	int16_t localPixelY = 480; // 30
 	int16_t localPixelZ = 0;
 	uint8_t mapX = 0;
 	uint8_t mapY = 0;
@@ -31,24 +32,24 @@ struct Character
 	uint8_t bombs = 10;
 	uint8_t arrows = 5;
 	uint8_t bombPower = 1;
-	uint8_t glovePower = 1;	// NPC: 0-2, Player: 0-3
+	uint8_t glovePower = 1; // NPC: 0-2, Player: 0-3
 	int8_t swordPower = 1;
 	uint8_t shieldPower = 1;
 	uint8_t bowPower = 1;
 	uint8_t sprite = 0;
-	uint8_t direction = 2;	// 0: up, 1: left, 2: down, 3: right
+	uint8_t direction = 2; // 0: up, 1: left, 2: down, 3: right
 	clock::time_point lastHurtTime = clock::time_point::min();
-	std::array<int8_t, 2> hurtPushDeltaInHalfPixels{ 0, 0 };
-	std::array<uint8_t, 8> colors{ 2, 0, 10, 4, 18, 18, 18, 18 };  // 0-19 are ClassicColors, 20+ are HTMLColors
+	std::array<int8_t, 2> hurtPushDeltaInHalfPixels{0, 0};
+	std::array<uint8_t, 8> colors{2, 0, 10, 4, 18, 18, 18, 18}; // 0-19 are ClassicColors, 20+ are HTMLColors
 	std::string nickName{};
-	std::string gani{ "idle" };
+	std::string gani{"idle"};
 	std::string chatMessage;
 	std::string horseImage;
-	std::string headImage{ "head0.png" };
-	std::string bodyImage{ "body.png" };
-	std::string swordImage{ "sword1.png" };
-	std::string shieldImage{ "shield1.png" };
-	std::string bowImage{ "bow1.png" };
+	std::string headImage{"head0.png"};
+	std::string bodyImage{"body.png"};
+	std::string swordImage{"sword1.png"};
+	std::string shieldImage{"shield1.png"};
+	std::string bowImage{"bow1.png"};
 	std::array<std::string, 30> ganiAttributes;
 
 	[[nodiscard]] LocalPixelPosition getLocalPosition() const noexcept
@@ -74,6 +75,7 @@ struct Character
 
 //----------------------------
 
+/// @brief Defines the color slots for a character's appearance.
 enum class ColorSlots : uint8_t
 {
 	SKIN = 0,
@@ -88,7 +90,39 @@ enum class ColorSlots : uint8_t
 	//
 	COUNT
 };
+constexpr size_t COLORSLOTS_COUNT = static_cast<size_t>(ColorSlots::COUNT);
 
+/// @brief Defines the palette indices for the character's color palette in classic mode.
+enum class BodyPaletteIndicesClassic : uint8_t
+{
+	SKIN = 5,
+	COAT = 6,
+	SLEEVES = 4,
+	TRANSPARENCY = 3,
+	SHOES = 2,
+	BELT = 1,
+	BORDER = 0,
+};
+constexpr size_t BODYPALETTEINDICESCLASSIC_COUNT = 7;
+
+/// @brief Defines the palette indices for the character's color palette in new world mode.
+enum class BodyPaletteIndicesNewWorld : uint8_t
+{
+	SKIN = 0,
+	COAT = 1,
+	SLEEVES = 2,
+	SHOES = 3,
+	BELT = 4,
+	PULLOVER = 5,
+	PANTS = 6,
+	BORDER = 7,
+	TRANSPARENCY = 8,
+};
+constexpr size_t BODYPALETTEINDICESNEWWORLD_COUNT = 9;
+constexpr size_t NW_PALETTE_DARKER_MULT = 2;
+constexpr size_t NW_PALETTE_LIGHTER_MULT = 3;
+
+/// @brief Defines the classic colors for a character's appearance.
 enum class ClassicColors : uint8_t
 {
 	WHITE = 0,
@@ -111,35 +145,36 @@ enum class ClassicColors : uint8_t
 	GRAY,
 	BLACK,
 	TRANSPARENT,
-
+	//
 	COUNT
 };
 constexpr size_t CLASSICCOLORS_COUNT = static_cast<size_t>(ClassicColors::COUNT);
 
+/// @brief Gets the name of a classic color.
 inline std::string_view getClassicColorName(const ClassicColors color)
 {
 	static const std::unordered_map<ClassicColors, std::string_view> colorNames =
 	{
-		{ ClassicColors::WHITE, "white"sv },
-		{ ClassicColors::YELLOW, "yellow"sv },
-		{ ClassicColors::ORANGE, "orange"sv },
-		{ ClassicColors::PINK, "pink"sv },
-		{ ClassicColors::RED, "red"sv },
-		{ ClassicColors::DARKRED, "darkred"sv },
-		{ ClassicColors::LIGHTGREEN, "lightgreen"sv },
-		{ ClassicColors::GREEN, "green"sv },
-		{ ClassicColors::DARKGREEN, "darkgreen"sv },
-		{ ClassicColors::LIGHTBLUE, "lightblue"sv },
-		{ ClassicColors::BLUE, "blue"sv },
-		{ ClassicColors::DARKBLUE, "darkblue"sv },
-		{ ClassicColors::BROWN, "brown"sv },
-		{ ClassicColors::CYNOBER, "cynober"sv },
-		{ ClassicColors::PURPLE, "purple"sv },
-		{ ClassicColors::DARKPURPLE, "darkpurple"sv },
-		{ ClassicColors::LIGHTGRAY, "lightgray"sv },
-		{ ClassicColors::GRAY, "gray"sv },
-		{ ClassicColors::BLACK, "black"sv },
-		{ ClassicColors::TRANSPARENT, "transparent"sv },
+		{ClassicColors::WHITE, "white"sv},
+		{ClassicColors::YELLOW, "yellow"sv},
+		{ClassicColors::ORANGE, "orange"sv},
+		{ClassicColors::PINK, "pink"sv},
+		{ClassicColors::RED, "red"sv},
+		{ClassicColors::DARKRED, "darkred"sv},
+		{ClassicColors::LIGHTGREEN, "lightgreen"sv},
+		{ClassicColors::GREEN, "green"sv},
+		{ClassicColors::DARKGREEN, "darkgreen"sv},
+		{ClassicColors::LIGHTBLUE, "lightblue"sv},
+		{ClassicColors::BLUE, "blue"sv},
+		{ClassicColors::DARKBLUE, "darkblue"sv},
+		{ClassicColors::BROWN, "brown"sv},
+		{ClassicColors::CYNOBER, "cynober"sv},
+		{ClassicColors::PURPLE, "purple"sv},
+		{ClassicColors::DARKPURPLE, "darkpurple"sv},
+		{ClassicColors::LIGHTGRAY, "lightgray"sv},
+		{ClassicColors::GRAY, "gray"sv},
+		{ClassicColors::BLACK, "black"sv},
+		{ClassicColors::TRANSPARENT, "transparent"sv},
 	};
 
 	if (colorNames.contains(color))
@@ -150,6 +185,7 @@ inline std::string_view getClassicColorName(const ClassicColors color)
 
 //----------------------------
 
+/// @brief Defines the HTML colors for a character's appearance.
 enum class HTMLColors : uint8_t
 {
 	ALICEBLUE = 0,
@@ -307,160 +343,161 @@ enum class HTMLColors : uint8_t
 };
 constexpr size_t HTMLCOLORS_COUNT = static_cast<size_t>(HTMLColors::COUNT);
 
+/// @brief Gets the name of an HTML color.
 inline std::string_view getHTMLColorName(const HTMLColors color)
 {
 	static const std::unordered_map<HTMLColors, std::string_view> colorNames =
 	{
-		{ HTMLColors::ALICEBLUE, "aliceblue"sv },
-		{ HTMLColors::ANTIQUEWHITE, "antiquewhite"sv },
-		{ HTMLColors::AQUA, "aqua"sv },
-		{ HTMLColors::AQUAMARINE, "aquamarine"sv },
-		{ HTMLColors::AZURE, "azure"sv },
-		{ HTMLColors::BEIGE, "beige"sv },
-		{ HTMLColors::BISQUE, "bisque"sv },
-		{ HTMLColors::BLACK, "black"sv },
-		{ HTMLColors::BLANCHEDALMOND, "blanchedalmond"sv },
-		{ HTMLColors::BLUE, "blue"sv },
-		{ HTMLColors::BLUEVIOLET, "blueviolet"sv },
-		{ HTMLColors::BROWN, "brown"sv },
-		{ HTMLColors::BURLYWOOD, "burlywood"sv },
-		{ HTMLColors::CADETBLUE, "cadetblue"sv },
-		{ HTMLColors::CHARTREUSE, "chartreuse"sv },
-		{ HTMLColors::CHOCOLATE, "chocolate"sv },
-		{ HTMLColors::CORAL, "coral"sv },
-		{ HTMLColors::CORNFLOWERBLUE, "cornflowerblue"sv },
-		{ HTMLColors::CORNSILK, "cornsilk"sv },
-		{ HTMLColors::CRIMSON, "crimson"sv },
-		{ HTMLColors::CYAN, "cyan"sv },
-		{ HTMLColors::DARKBLUE, "darkblue"sv },
-		{ HTMLColors::DARKCYAN, "darkcyan"sv },
-		{ HTMLColors::DARKGOLDENROD, "darkgoldenrod"sv },
-		{ HTMLColors::DARKGRAY, "darkgray"sv },
-		{ HTMLColors::DARKGREEN, "darkgreen"sv },
-		{ HTMLColors::DARKGREY, "darkgrey"sv },
-		{ HTMLColors::DARKKHAKI, "darkkhaki"sv },
-		{ HTMLColors::DARKMAGENTA, "darkmagenta"sv },
-		{ HTMLColors::DARKOLIVEGREEN, "darkolivegreen"sv },
-		{ HTMLColors::DARKORANGE, "darkorange"sv },
-		{ HTMLColors::DARKORCHID, "darkorchid"sv },
-		{ HTMLColors::DARKRED, "darkred"sv },
-		{ HTMLColors::DARKSALMON, "darksalmon"sv },
-		{ HTMLColors::DARKSEAGREEN, "darkseagreen"sv },
-		{ HTMLColors::DARKSLATEBLUE, "darkslateblue"sv },
-		{ HTMLColors::DARKSLATEGRAY, "darkslategray"sv },
-		{ HTMLColors::DARKSLATEGREY, "darkslategrey"sv },
-		{ HTMLColors::DARKTURQUOISE, "darkturquoise"sv },
-		{ HTMLColors::DARKVIOLET, "darkviolet"sv },
-		{ HTMLColors::DEEPPINK, "deeppink"sv },
-		{ HTMLColors::DEEPSKYBLUE, "deepskyblue"sv },
-		{ HTMLColors::DIMGRAY, "dimgray"sv },
-		{ HTMLColors::DIMGREY, "dimgrey"sv },
-		{ HTMLColors::DODGERBLUE, "dodgerblue"sv },
-		{ HTMLColors::FELDSPAR, "feldspar"sv },
-		{ HTMLColors::FIREBRICK, "firebrick"sv },
-		{ HTMLColors::FLORALWHITE, "floralwhite"sv },
-		{ HTMLColors::FORESTGREEN, "forestgreen"sv },
-		{ HTMLColors::FUCHSIA, "fuchsia"sv },
-		{ HTMLColors::GAINSBORO, "gainsboro"sv },
-		{ HTMLColors::GHOSTWHITE, "ghostwhite"sv },
-		{ HTMLColors::GOLD, "gold"sv },
-		{ HTMLColors::GOLDENROD, "goldenrod"sv },
-		{ HTMLColors::GRAY, "gray"sv },
-		{ HTMLColors::GREEN, "green"sv },
-		{ HTMLColors::GREENYELLOW, "greenyellow"sv },
-		{ HTMLColors::GREY, "grey"sv },
-		{ HTMLColors::HONEYDEW, "honeydew"sv },
-		{ HTMLColors::HOTPINK, "hotpink"sv },
-		{ HTMLColors::INDIANRED, "indianred"sv },
-		{ HTMLColors::INDIGO, "indigo"sv },
-		{ HTMLColors::IVORY, "ivory"sv },
-		{ HTMLColors::KHAKI, "khaki"sv },
-		{ HTMLColors::LAVENDER, "lavender"sv },
-		{ HTMLColors::LAVENDERBLUSH, "lavenderblush"sv },
-		{ HTMLColors::LAWNGREEN, "lawngreen"sv },
-		{ HTMLColors::LEMONCHIFFON, "lemonchiffon"sv },
-		{ HTMLColors::LIGHTBLUE, "lightblue"sv },
-		{ HTMLColors::LIGHTCORAL, "lightcoral"sv },
-		{ HTMLColors::LIGHTCYAN, "lightcyan"sv },
-		{ HTMLColors::LIGHTGOLDENRODYELLOW, "lightgoldenrodyellow"sv },
-		{ HTMLColors::LIGHTGRAY, "lightgray"sv },
-		{ HTMLColors::LIGHTGREEN, "lightgreen"sv },
-		{ HTMLColors::LIGHTGREY, "lightgrey"sv },
-		{ HTMLColors::LIGHTPINK, "lightpink"sv },
-		{ HTMLColors::LIGHTSALMON, "lightsalmon"sv },
-		{ HTMLColors::LIGHTSEAGREEN, "lightseagreen"sv },
-		{ HTMLColors::LIGHTSKYBLUE, "lightskyblue"sv },
-		{ HTMLColors::LIGHTSLATEBLUE, "lightslateblue"sv },
-		{ HTMLColors::LIGHTSLATEGRAY, "lightslategray"sv },
-		{ HTMLColors::LIGHTSLATEGREY, "lightslategrey"sv },
-		{ HTMLColors::LIGHTSTEELBLUE, "lightsteelblue"sv },
-		{ HTMLColors::LIGHTYELLOW, "lightyellow"sv },
-		{ HTMLColors::LIME, "lime"sv },
-		{ HTMLColors::LIMEGREEN, "limegreen"sv },
-		{ HTMLColors::LINEN, "linen"sv },
-		{ HTMLColors::MAGENTA, "magenta"sv },
-		{ HTMLColors::MAROON, "maroon"sv },
-		{ HTMLColors::MEDIUMAQUAMARINE, "mediumaquamarine"sv },
-		{ HTMLColors::MEDIUMBLUE, "mediumblue"sv },
-		{ HTMLColors::MEDIUMORCHID, "mediumorchid"sv },
-		{ HTMLColors::MEDIUMPURPLE, "mediumpurple"sv },
-		{ HTMLColors::MEDIUMSEAGREEN, "mediumseagreen"sv },
-		{ HTMLColors::MEDIUMSLATEBLUE, "mediumslateblue"sv },
-		{ HTMLColors::MEDIUMSPRINGGREEN, "mediumspringgreen"sv },
-		{ HTMLColors::MEDIUMTURQUOISE, "mediumturquoise"sv },
-		{ HTMLColors::MEDIUMVIOLETRED, "mediumvioletred"sv },
-		{ HTMLColors::MIDNIGHTBLUE, "midnightblue"sv },
-		{ HTMLColors::MINTCREAM, "mintcream"sv },
-		{ HTMLColors::MISTYROSE, "mistyrose"sv },
-		{ HTMLColors::MOCCASIN, "moccasin"sv },
-		{ HTMLColors::NAVAJOWHITE, "navajowhite"sv },
-		{ HTMLColors::NAVY, "navy"sv },
-		{ HTMLColors::OLDLACE, "oldlace"sv },
-		{ HTMLColors::OLIVE, "olive"sv },
-		{ HTMLColors::OLIVEDRAB, "olivedrab"sv },
-		{ HTMLColors::ORANGE, "orange"sv },
-		{ HTMLColors::ORANGERED, "orangered"sv },
-		{ HTMLColors::ORCHID, "orchid"sv },
-		{ HTMLColors::PALEGOLDENROD, "palegoldenrod"sv },
-		{ HTMLColors::PALEGREEN, "palegreen"sv },
-		{ HTMLColors::PALETURQUOISE, "paleturquoise"sv },
-		{ HTMLColors::PALEVIOLETRED, "palevioletred"sv },
-		{ HTMLColors::PAPAYAWHIP, "papayawhip"sv },
-		{ HTMLColors::PEACHPUFF, "peachpuff"sv },
-		{ HTMLColors::PERU, "peru"sv },
-		{ HTMLColors::PINK, "pink"sv },
-		{ HTMLColors::PLUM, "plum"sv },
-		{ HTMLColors::POWDERBLUE, "powderblue"sv },
-		{ HTMLColors::PURPLE, "purple"sv },
-		{ HTMLColors::RED, "red"sv },
-		{ HTMLColors::ROSYBROWN, "rosybrown"sv },
-		{ HTMLColors::ROYALBLUE, "royalblue"sv },
-		{ HTMLColors::SADDLEBROWN, "saddlebrown"sv },
-		{ HTMLColors::SALMON, "salmon"sv },
-		{ HTMLColors::SANDYBROWN, "sandybrown"sv },
-		{ HTMLColors::SEAGREEN, "seagreen"sv },
-		{ HTMLColors::SEASHELL, "seashell"sv },
-		{ HTMLColors::SIENNA, "sienna"sv },
-		{ HTMLColors::SILVER, "silver"sv },
-		{ HTMLColors::SKYBLUE, "skyblue"sv },
-		{ HTMLColors::SLATEBLUE, "slateblue"sv },
-		{ HTMLColors::SLATEGRAY, "slategray"sv },
-		{ HTMLColors::SLATEGREY, "slategrey"sv },
-		{ HTMLColors::SNOW, "snow"sv },
-		{ HTMLColors::SPRINGGREEN, "springgreen"sv },
-		{ HTMLColors::STEELBLUE, "steelblue"sv },
-		{ HTMLColors::TAN, "tan"sv },
-		{ HTMLColors::TEAL, "teal"sv },
-		{ HTMLColors::THISTLE, "thistle"sv },
-		{ HTMLColors::TOMATO, "tomato"sv },
-		{ HTMLColors::TURQUOISE, "turquoise"sv },
-		{ HTMLColors::VIOLET, "violet"sv },
-		{ HTMLColors::VIOLETRED, "violetred"sv },
-		{ HTMLColors::WHEAT, "wheat"sv },
-		{ HTMLColors::WHITE, "white"sv },
-		{ HTMLColors::WHITESMOKE, "whitesmoke"sv },
-		{ HTMLColors::YELLOW, "yellow"sv },
-		{ HTMLColors::YELLOWGREEN, "yellowgreen"sv },
+		{HTMLColors::ALICEBLUE, "aliceblue"sv},
+		{HTMLColors::ANTIQUEWHITE, "antiquewhite"sv},
+		{HTMLColors::AQUA, "aqua"sv},
+		{HTMLColors::AQUAMARINE, "aquamarine"sv},
+		{HTMLColors::AZURE, "azure"sv},
+		{HTMLColors::BEIGE, "beige"sv},
+		{HTMLColors::BISQUE, "bisque"sv},
+		{HTMLColors::BLACK, "black"sv},
+		{HTMLColors::BLANCHEDALMOND, "blanchedalmond"sv},
+		{HTMLColors::BLUE, "blue"sv},
+		{HTMLColors::BLUEVIOLET, "blueviolet"sv},
+		{HTMLColors::BROWN, "brown"sv},
+		{HTMLColors::BURLYWOOD, "burlywood"sv},
+		{HTMLColors::CADETBLUE, "cadetblue"sv},
+		{HTMLColors::CHARTREUSE, "chartreuse"sv},
+		{HTMLColors::CHOCOLATE, "chocolate"sv},
+		{HTMLColors::CORAL, "coral"sv},
+		{HTMLColors::CORNFLOWERBLUE, "cornflowerblue"sv},
+		{HTMLColors::CORNSILK, "cornsilk"sv},
+		{HTMLColors::CRIMSON, "crimson"sv},
+		{HTMLColors::CYAN, "cyan"sv},
+		{HTMLColors::DARKBLUE, "darkblue"sv},
+		{HTMLColors::DARKCYAN, "darkcyan"sv},
+		{HTMLColors::DARKGOLDENROD, "darkgoldenrod"sv},
+		{HTMLColors::DARKGRAY, "darkgray"sv},
+		{HTMLColors::DARKGREEN, "darkgreen"sv},
+		{HTMLColors::DARKGREY, "darkgrey"sv},
+		{HTMLColors::DARKKHAKI, "darkkhaki"sv},
+		{HTMLColors::DARKMAGENTA, "darkmagenta"sv},
+		{HTMLColors::DARKOLIVEGREEN, "darkolivegreen"sv},
+		{HTMLColors::DARKORANGE, "darkorange"sv},
+		{HTMLColors::DARKORCHID, "darkorchid"sv},
+		{HTMLColors::DARKRED, "darkred"sv},
+		{HTMLColors::DARKSALMON, "darksalmon"sv},
+		{HTMLColors::DARKSEAGREEN, "darkseagreen"sv},
+		{HTMLColors::DARKSLATEBLUE, "darkslateblue"sv},
+		{HTMLColors::DARKSLATEGRAY, "darkslategray"sv},
+		{HTMLColors::DARKSLATEGREY, "darkslategrey"sv},
+		{HTMLColors::DARKTURQUOISE, "darkturquoise"sv},
+		{HTMLColors::DARKVIOLET, "darkviolet"sv},
+		{HTMLColors::DEEPPINK, "deeppink"sv},
+		{HTMLColors::DEEPSKYBLUE, "deepskyblue"sv},
+		{HTMLColors::DIMGRAY, "dimgray"sv},
+		{HTMLColors::DIMGREY, "dimgrey"sv},
+		{HTMLColors::DODGERBLUE, "dodgerblue"sv},
+		{HTMLColors::FELDSPAR, "feldspar"sv},
+		{HTMLColors::FIREBRICK, "firebrick"sv},
+		{HTMLColors::FLORALWHITE, "floralwhite"sv},
+		{HTMLColors::FORESTGREEN, "forestgreen"sv},
+		{HTMLColors::FUCHSIA, "fuchsia"sv},
+		{HTMLColors::GAINSBORO, "gainsboro"sv},
+		{HTMLColors::GHOSTWHITE, "ghostwhite"sv},
+		{HTMLColors::GOLD, "gold"sv},
+		{HTMLColors::GOLDENROD, "goldenrod"sv},
+		{HTMLColors::GRAY, "gray"sv},
+		{HTMLColors::GREEN, "green"sv},
+		{HTMLColors::GREENYELLOW, "greenyellow"sv},
+		{HTMLColors::GREY, "grey"sv},
+		{HTMLColors::HONEYDEW, "honeydew"sv},
+		{HTMLColors::HOTPINK, "hotpink"sv},
+		{HTMLColors::INDIANRED, "indianred"sv},
+		{HTMLColors::INDIGO, "indigo"sv},
+		{HTMLColors::IVORY, "ivory"sv},
+		{HTMLColors::KHAKI, "khaki"sv},
+		{HTMLColors::LAVENDER, "lavender"sv},
+		{HTMLColors::LAVENDERBLUSH, "lavenderblush"sv},
+		{HTMLColors::LAWNGREEN, "lawngreen"sv},
+		{HTMLColors::LEMONCHIFFON, "lemonchiffon"sv},
+		{HTMLColors::LIGHTBLUE, "lightblue"sv},
+		{HTMLColors::LIGHTCORAL, "lightcoral"sv},
+		{HTMLColors::LIGHTCYAN, "lightcyan"sv},
+		{HTMLColors::LIGHTGOLDENRODYELLOW, "lightgoldenrodyellow"sv},
+		{HTMLColors::LIGHTGRAY, "lightgray"sv},
+		{HTMLColors::LIGHTGREEN, "lightgreen"sv},
+		{HTMLColors::LIGHTGREY, "lightgrey"sv},
+		{HTMLColors::LIGHTPINK, "lightpink"sv},
+		{HTMLColors::LIGHTSALMON, "lightsalmon"sv},
+		{HTMLColors::LIGHTSEAGREEN, "lightseagreen"sv},
+		{HTMLColors::LIGHTSKYBLUE, "lightskyblue"sv},
+		{HTMLColors::LIGHTSLATEBLUE, "lightslateblue"sv},
+		{HTMLColors::LIGHTSLATEGRAY, "lightslategray"sv},
+		{HTMLColors::LIGHTSLATEGREY, "lightslategrey"sv},
+		{HTMLColors::LIGHTSTEELBLUE, "lightsteelblue"sv},
+		{HTMLColors::LIGHTYELLOW, "lightyellow"sv},
+		{HTMLColors::LIME, "lime"sv},
+		{HTMLColors::LIMEGREEN, "limegreen"sv},
+		{HTMLColors::LINEN, "linen"sv},
+		{HTMLColors::MAGENTA, "magenta"sv},
+		{HTMLColors::MAROON, "maroon"sv},
+		{HTMLColors::MEDIUMAQUAMARINE, "mediumaquamarine"sv},
+		{HTMLColors::MEDIUMBLUE, "mediumblue"sv},
+		{HTMLColors::MEDIUMORCHID, "mediumorchid"sv},
+		{HTMLColors::MEDIUMPURPLE, "mediumpurple"sv},
+		{HTMLColors::MEDIUMSEAGREEN, "mediumseagreen"sv},
+		{HTMLColors::MEDIUMSLATEBLUE, "mediumslateblue"sv},
+		{HTMLColors::MEDIUMSPRINGGREEN, "mediumspringgreen"sv},
+		{HTMLColors::MEDIUMTURQUOISE, "mediumturquoise"sv},
+		{HTMLColors::MEDIUMVIOLETRED, "mediumvioletred"sv},
+		{HTMLColors::MIDNIGHTBLUE, "midnightblue"sv},
+		{HTMLColors::MINTCREAM, "mintcream"sv},
+		{HTMLColors::MISTYROSE, "mistyrose"sv},
+		{HTMLColors::MOCCASIN, "moccasin"sv},
+		{HTMLColors::NAVAJOWHITE, "navajowhite"sv},
+		{HTMLColors::NAVY, "navy"sv},
+		{HTMLColors::OLDLACE, "oldlace"sv},
+		{HTMLColors::OLIVE, "olive"sv},
+		{HTMLColors::OLIVEDRAB, "olivedrab"sv},
+		{HTMLColors::ORANGE, "orange"sv},
+		{HTMLColors::ORANGERED, "orangered"sv},
+		{HTMLColors::ORCHID, "orchid"sv},
+		{HTMLColors::PALEGOLDENROD, "palegoldenrod"sv},
+		{HTMLColors::PALEGREEN, "palegreen"sv},
+		{HTMLColors::PALETURQUOISE, "paleturquoise"sv},
+		{HTMLColors::PALEVIOLETRED, "palevioletred"sv},
+		{HTMLColors::PAPAYAWHIP, "papayawhip"sv},
+		{HTMLColors::PEACHPUFF, "peachpuff"sv},
+		{HTMLColors::PERU, "peru"sv},
+		{HTMLColors::PINK, "pink"sv},
+		{HTMLColors::PLUM, "plum"sv},
+		{HTMLColors::POWDERBLUE, "powderblue"sv},
+		{HTMLColors::PURPLE, "purple"sv},
+		{HTMLColors::RED, "red"sv},
+		{HTMLColors::ROSYBROWN, "rosybrown"sv},
+		{HTMLColors::ROYALBLUE, "royalblue"sv},
+		{HTMLColors::SADDLEBROWN, "saddlebrown"sv},
+		{HTMLColors::SALMON, "salmon"sv},
+		{HTMLColors::SANDYBROWN, "sandybrown"sv},
+		{HTMLColors::SEAGREEN, "seagreen"sv},
+		{HTMLColors::SEASHELL, "seashell"sv},
+		{HTMLColors::SIENNA, "sienna"sv},
+		{HTMLColors::SILVER, "silver"sv},
+		{HTMLColors::SKYBLUE, "skyblue"sv},
+		{HTMLColors::SLATEBLUE, "slateblue"sv},
+		{HTMLColors::SLATEGRAY, "slategray"sv},
+		{HTMLColors::SLATEGREY, "slategrey"sv},
+		{HTMLColors::SNOW, "snow"sv},
+		{HTMLColors::SPRINGGREEN, "springgreen"sv},
+		{HTMLColors::STEELBLUE, "steelblue"sv},
+		{HTMLColors::TAN, "tan"sv},
+		{HTMLColors::TEAL, "teal"sv},
+		{HTMLColors::THISTLE, "thistle"sv},
+		{HTMLColors::TOMATO, "tomato"sv},
+		{HTMLColors::TURQUOISE, "turquoise"sv},
+		{HTMLColors::VIOLET, "violet"sv},
+		{HTMLColors::VIOLETRED, "violetred"sv},
+		{HTMLColors::WHEAT, "wheat"sv},
+		{HTMLColors::WHITE, "white"sv},
+		{HTMLColors::WHITESMOKE, "whitesmoke"sv},
+		{HTMLColors::YELLOW, "yellow"sv},
+		{HTMLColors::YELLOWGREEN, "yellowgreen"sv},
 	};
 
 	if (colorNames.contains(color))

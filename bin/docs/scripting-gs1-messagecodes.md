@@ -179,7 +179,7 @@ The character's body colors.
 | #C3   | Shoes      |
 | #C4   | Belt       |
 
-Body colors 5-7 require the server to be set in New World mode, and require a compatible client (2.x verified).
+Body colors 5-7 require the server to be set in New World mode, and require a compatible client.
 
 See: `serveroptions.txt` - `servermode` option.
 

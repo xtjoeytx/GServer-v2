@@ -626,7 +626,7 @@ Note 2:
 | thiso.flag    | (npcserver) | The source NPC (the one outside of [with()](scripting-gs1-flow-control-operators.md#flow-control-statements)).                                        |
 | level.        | (npcserver) | The level.                                                                                                                                            |
 | local.flag    | 2.02        | Clientside: The level.  Does not get sent to the server.<br>Serverside: The script context.                                                           |
-| client.flag   | 2.19        | The currently aftive player.                                                                                                                          |
+| client.flag   | 2.19        | The currently active player.                                                                                                                          |
 | clientr.flag  | (npcserver) | The currently active player.  Clientside cannot alter this flag.                                                                                      |
 | cliento.flag  | (npcserver) | The source player (the one outside of [with()](scripting-gs1-flow-control-operators.md#flow-control-statements)).                                     |
 | clientro.flag | (npcserver) | The source player (the one outside of [with()](scripting-gs1-flow-control-operators.md#flow-control-statements)).  Clientside cannot alter this flag. |
