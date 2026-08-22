@@ -23,6 +23,12 @@ namespace preagonal
 {
 ////////////////////////////////////////////////////////////////////////////////
 
+struct append_list_t
+{
+	explicit append_list_t() = default;
+};
+inline constexpr append_list_t append_list{};
+
 template<typename T>
 class SettingCache;
 
@@ -84,12 +90,41 @@ public:
 	template<typename T>
 	void set(std::string_view key, const T& value)
 	{
+		m_settings.erase(key);
+
 		if constexpr (std::same_as<T, std::string> || std::same_as<T, std::string_view>)
 			m_settings.emplace(key, value);
 		else if constexpr (std::same_as<T, bool>)
 			m_settings.emplace(key, value ? "true" : "false");
 		else
 			m_settings.emplace(key, std::to_string(value));
+
+		if (const auto eventIt = m_settingUpdateEvents.find(key); eventIt != m_settingUpdateEvents.end())
+		{
+			auto& event = eventIt->second;
+			event.post();
+		}
+	}
+
+	/// @brief Adds a value to a setting.
+	/// @tparam T The type of the value to set.
+	/// @param key The key of the setting to set.
+	/// @param value The value to set.
+	template<typename T>
+	void set(append_list_t, std::string_view key, const T& value)
+	{
+		if constexpr (std::same_as<T, std::string> || std::same_as<T, std::string_view>)
+			m_settings.emplace(key, value);
+		else if constexpr (std::same_as<T, bool>)
+			m_settings.emplace(key, value ? "true" : "false");
+		else
+			m_settings.emplace(key, std::to_string(value));
+
+		if (const auto eventIt = m_settingUpdateEvents.find(key); eventIt != m_settingUpdateEvents.end())
+		{
+			auto& event = eventIt->second;
+			event.post();
+		}
 	}
 
 public:

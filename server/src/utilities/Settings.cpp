@@ -76,7 +76,7 @@ void Settings::load(const std::filesystem::path& file)
 	// Post update events for any changed settings.
 	for (const auto& key : settingWasChanged)
 	{
-		if (auto eventIt = m_settingUpdateEvents.find(key); eventIt != m_settingUpdateEvents.end())
+		if (const auto eventIt = m_settingUpdateEvents.find(key); eventIt != m_settingUpdateEvents.end())
 		{
 			auto& event = eventIt->second;
 			event.post();
