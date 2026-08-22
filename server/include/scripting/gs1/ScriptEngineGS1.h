@@ -165,7 +165,8 @@ public:
 	~ScriptEngineGS1() override = default;
 
 public:
-	std::string_view getEngineName() override { return "GS1"sv; }
+	inline static auto EngineName = "gs1"sv;
+	std::string_view getEngineName() override { return EngineName; }
 	ScriptEngineMode getExecutionMode() override { return ScriptEngineMode::DIRECT; }
 	ScriptExecutionType getExecutionType() override { return ScriptExecutionType::INTERPRETED; }
 

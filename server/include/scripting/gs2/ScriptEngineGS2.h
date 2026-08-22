@@ -29,7 +29,8 @@ public:
 	~ScriptEngineGS2() override = default;
 
 public:
-	std::string_view getEngineName() override { return "GS2"sv; }
+	inline static auto EngineName = "gs2"sv;
+	std::string_view getEngineName() override { return EngineName; }
 	ScriptEngineMode getExecutionMode() override { return ScriptEngineMode::CALLBACK; }
 	ScriptExecutionType getExecutionType() override { return ScriptExecutionType::COMPILED; }
 

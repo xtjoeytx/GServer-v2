@@ -12,6 +12,7 @@
 #include <object/Character.h>
 #include <scripting/IScriptEngine.h>
 #include <scripting/ScriptTypes.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
 #include <utilities/Extents.h>
 #include <utilities/StringUtils.h>
 
@@ -119,7 +120,7 @@ LocalPixelPosition LevelLink::getDestinationForCharacter(const Character& charac
 	if ((m_complex[0] || m_complex[1]) && m_server && m_server->hasNPCServer())
 	{
 		const auto& npcServer = m_server->getNPCServer();
-		if (const auto gs1 = npcServer->scripting.getScriptEngine("GS1"); gs1 != nullptr)
+		if (const auto gs1 = npcServer->scripting.getScriptEngine(gs1::ScriptEngineGS1::EngineName); gs1 != nullptr)
 		{
 			const auto x = m_complex[0] ? static_cast<int16_t>(gs1->processMathExpression(m_destinationX, source).value_or(0.0) * 16) : getPixelDestination(m_destinationX, character);
 			const auto y = m_complex[1] ? static_cast<int16_t>(gs1->processMathExpression(m_destinationY, source).value_or(0.0) * 16) : getPixelDestination(m_destinationY, character);

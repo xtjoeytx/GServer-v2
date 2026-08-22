@@ -12,8 +12,8 @@
 #include <memory>
 #include <optional>
 #include <span>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -44,6 +44,7 @@
 #include <scripting/IScriptEngine.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
@@ -1239,7 +1240,7 @@ void Player::constructScriptParameters()
 					auto line = string::retrieveLine(std::string_view{ account.character.chatMessage }, ' ');
 
 					// GS1: Then retrieve up to a question mark, since ternary's are not supported.
-					if (engine->getEngineName() == "GS1"sv)
+					if (engine->getEngineName() == gs1::ScriptEngineGS1::EngineName)
 						line = string::retrieveLine(line, '?');
 
 					if (auto result = engine->processMathExpression(line, source::FromPlayer(m_id)); result.has_value())

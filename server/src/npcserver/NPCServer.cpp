@@ -54,12 +54,14 @@ NPCServer::NPCServer()
 
 void NPCServer::initialize()
 {
-	// TODO(Nalin): This needs to be an option somewhere.
-	scripting.defaultScriptEngine = "GS1";
+	const auto& settings = m_server->getSettings();
+
+	// Default script engine.
+	scripting.defaultScriptEngine = settings.get<std::string>("default_scriptengine").value_or(std::string{gs1::ScriptEngineGS1::EngineName});
 
 	// NC options.
-	m_ncHost = string::toLower(m_server->getAdminSettings().get<std::string>("ns_ip").value_or("auto"));
-	m_ncPort = m_server->getSettings().get<uint16_t>("serverport").value_or(14900);
+	m_ncHost = string::toLower(m_server->getAdminSettings().get<std::string>("ns_ip").value_or("auto"s));
+	m_ncPort = settings.get<uint16_t>("serverport").value_or(14900);
 	if (m_ncHost == "auto")
 		m_ncHost = m_server->getServerList().getServerIP();
 
@@ -67,17 +69,15 @@ void NPCServer::initialize()
 	m_npcServerPlayer = std::make_shared<PlayerNPCServer>(nullptr, NPCServerPlayerID);
 	m_npcServerPlayer->setType(PLTYPE_NPCSERVER);
 
-	const auto& settings = m_server->getSettings();
-	auto& account = m_npcServerPlayer->account;
-
-	// TODO(Nalin): The settings manager sees `NICK ` nodes as valid, so it doesn't get a default!  We need to redo settings.
-	auto nickname = settings.get<std::string>("nickname").value_or("NPC-Server");
+	// Set a nickname.
+	auto nickname = settings.get<std::string>("nickname").value_or("NPC-Server"s);
 	if (nickname.empty())
 		nickname = "NPC-Server";
 
 	// Load the npc-server account.
+	auto& account = m_npcServerPlayer->account;
 	m_server->getAccountLoader().loadAccount("(npcserver)", account);
-	account.character.headImage = settings.get<std::string>("staffhead").value_or("head25.png");
+	account.character.headImage = settings.get<std::string>("staffhead").value_or("head25.png"s);
 	account.character.nickName = std::format("{} (Server)", nickname);
 	account.level = "";
 	m_npcServerPlayer->setLoaded(true);
@@ -87,8 +87,8 @@ void NPCServer::initialize()
 
 	// Load the GS1 and GS2 engines.
 	// They must always be loaded as the client will only accept GS1 or GS2 scripts.
-	scripting.registerScriptEngine("GS1", std::make_shared<gs1::ScriptEngineGS1>());
-	scripting.registerScriptEngine("GS2", std::make_shared<gs2::ScriptEngineGS2>());
+	scripting.registerScriptEngine(gs1::ScriptEngineGS1::EngineName, std::make_shared<gs1::ScriptEngineGS1>());
+	scripting.registerScriptEngine(gs2::ScriptEngineGS2::EngineName, std::make_shared<gs2::ScriptEngineGS2>());
 
 	log::printLine(log::server, "Loading classes...");
 	loadClasses();

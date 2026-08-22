@@ -338,7 +338,7 @@ flaghack_ip = false				# gr.ip
 runallscriptevents = false
 
 # Scripting
-gs2default = false
+default_scriptengine = gs1
 
 # --------------------------------------------------------------------------------------
 # --- Not implemented options.                                                       ---
