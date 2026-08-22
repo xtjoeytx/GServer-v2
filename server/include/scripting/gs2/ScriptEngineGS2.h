@@ -1,6 +1,7 @@
 #ifndef SCRIPTENGINEGS2_H
 #define SCRIPTENGINEGS2_H
 
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -33,6 +34,9 @@ public:
 	std::string_view getEngineName() override { return EngineName; }
 	ScriptEngineMode getExecutionMode() override { return ScriptEngineMode::CALLBACK; }
 	ScriptExecutionType getExecutionType() override { return ScriptExecutionType::COMPILED; }
+
+public:
+	void loadConfiguration(const std::filesystem::path& file) override {}
 
 public:
 	CompiledScriptResult compileScript(std::string_view who, std::string_view script) override;

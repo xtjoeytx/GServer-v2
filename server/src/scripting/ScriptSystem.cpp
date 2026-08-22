@@ -1,10 +1,12 @@
 #include <cassert>
 #include <memory>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 
+#include <BabyDI.h>
+#include <Server.h>
 #include <scripting/IScriptEngine.h>
 #include <scripting/ScriptSystem.h>
 #include <utilities/Log.h>
@@ -22,7 +24,14 @@ void ScriptSystem::registerScriptEngine(const std::string_view name, std::shared
 		log::printLine(log::server, "Script engine '{}' is already registered. Overwriting.", name);
 
 	// Register the script engine.
-	m_script_engines.insert_or_assign(std::string{ name }, engine);
+	m_script_engines.insert_or_assign(std::string{name}, engine);
+
+	// Load the configuration file.
+	if (const auto server = BabyDI::Get<Server>(); server != nullptr)
+	{
+		if (const auto config = server->getFileSystemServer().infoi(fs::FileCategory::CONFIG, std::format("scriptengine-{}.txt", name)); config != nullptr)
+			engine->loadConfiguration(config->file);
+	}
 }
 
 CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(const std::string_view who, const std::string_view source)

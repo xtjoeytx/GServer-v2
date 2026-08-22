@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdint>
 #include <exception>
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -169,6 +170,9 @@ public:
 	std::string_view getEngineName() override { return EngineName; }
 	ScriptEngineMode getExecutionMode() override { return ScriptEngineMode::DIRECT; }
 	ScriptExecutionType getExecutionType() override { return ScriptExecutionType::INTERPRETED; }
+
+public:
+	void loadConfiguration(const std::filesystem::path& file) override {}
 
 public:
 	CompiledScriptResult compileScript(std::string_view who, std::string_view script) override;

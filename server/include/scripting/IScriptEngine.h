@@ -1,6 +1,7 @@
 #ifndef ISCRIPTENGINE_H
 #define ISCRIPTENGINE_H
 
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -34,6 +35,9 @@ public:
 	virtual std::string_view getEngineName() = 0;
 	virtual ScriptEngineMode getExecutionMode() = 0;
 	virtual ScriptExecutionType getExecutionType() = 0;
+
+public:
+	virtual void loadConfiguration(const std::filesystem::path& file) = 0;
 
 public:
 	virtual CompiledScriptResult compileScript(std::string_view who, std::string_view script) = 0;

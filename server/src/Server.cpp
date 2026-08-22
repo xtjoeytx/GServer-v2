@@ -57,6 +57,7 @@
 #include <player/PlayerClient.h>
 #include <player/PlayerLogin.h>
 #include <player/PlayerRC.h>
+#include <scripting/IScriptEngine.h>
 #include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptTypes.h>
@@ -315,6 +316,15 @@ Server::Server(CString pName)
 				loadIPBans();
 			else if (fileName == "rules.txt")
 				loadWordFilter();
+			else if (fileName.starts_with("scriptengine-") && fileName.ends_with(".txt"))
+			{
+				if (const auto npcServer = getNPCServer(); npcServer != nullptr)
+				{
+					const auto engineName = fileName.substr(13, fileName.size() - 17); // Remove scriptengine- and .txt
+					if (const auto engine = npcServer->scripting.getScriptEngine(engineName); engine != nullptr)
+						engine->loadConfiguration(file.file);
+				}
+			}
 		}
 	};
 	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::NPC)] = [this](const fs::FileEventCollection events, const fs::FileData& file)
