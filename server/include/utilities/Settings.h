@@ -90,7 +90,7 @@ public:
 	template<typename T>
 	void set(std::string_view key, const T& value)
 	{
-		m_settings.erase(key);
+		m_settings.erase(std::string{key});
 
 		if constexpr (std::same_as<T, std::string> || std::same_as<T, std::string_view>)
 			m_settings.emplace(key, value);
