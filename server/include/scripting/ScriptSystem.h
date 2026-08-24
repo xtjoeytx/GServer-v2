@@ -2,11 +2,15 @@
 #define SCRIPTSYSTEM_H
 
 #include <any>
+#include <deque>
 #include <memory>
 #include <string_view>
 #include <string>
+#include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <variant>
+#include <vector>
 
 #include <utilities/CommonTypes.h>
 
@@ -24,7 +28,9 @@ struct ScriptExecutionContext
 {
 	IScriptEngine* engine = nullptr;
 	std::shared_ptr<std::any> script;
+	std::string identifier;
 	std::unordered_map<std::string, std::weak_ptr<ScriptClass>> joinedClasses;
+	std::deque<std::pair<precise_clock::time_point, precise_clock::duration>> executionProfiles;
 };
 
 using CompiledScriptResult = std::variant<ScriptExecutionContext, std::string>;
@@ -53,6 +59,11 @@ public:
 	/// @brief Gets the default script engine.
 	/// @return The default script engine, or nullptr if no default engine is set or registered.
 	[[a::inline]] std::shared_ptr<IScriptEngine> getDefaultScriptEngine() const;
+
+	/// @brief Gets the execution profiles of the scripts over the last second.
+	/// @param count The maximum number of execution profiles to retrieve. Defaults to 50.
+	/// @return A vector yielding a 3 element tuple of script identifiers, their execution durations, and the number of times they were executed in the last second, sorted from longest to shortest duration.
+	std::vector<std::tuple<precise_clock::duration, size_t, std::string_view>> getExecutionProfiles(size_t count = 50) const;
 
 public:
 	std::string defaultScriptEngine = "gs1";

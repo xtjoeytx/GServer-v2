@@ -2484,23 +2484,25 @@ bool Server::processRCChat(std::string_view message, const std::weak_ptr<Player>
 		}
 	}
 
-	if (words[0] == "/stats" && words.size() == 1)
+	if (hasNPCServer() && words[0] == "/stats" && words.size() == 1)
 	{
-		// TODO(NPCSERVER): Execution stats.
-		//auto npcStats = m_server->calculateNPCStats();
+		auto npcStats = getNPCServer()->scripting.getExecutionProfiles();
 
 		player->sendPacket(CString() >> (char)PLO_RC_CHAT << "Top scripts using the most execution time (in the last min)");
-
-		/*
-		int idx = 0;
-		for (auto it = npcStats.begin(); it != npcStats.end(); ++it)
+		if (npcStats.empty())
 		{
-			idx++;
-			sendPacket(CString() >> (char)PLO_RC_CHAT << CString(idx) << ". 	" << CString((*it).first) << "	" << (*it).second);
-			if (idx == 50)
-				break;
+			player->sendPacket(CString() >> (char)PLO_RC_CHAT << "0.\tNo scripts ran in the last minute.");
+			return true;
 		}
-		*/
+
+		for (size_t i = 0; i < npcStats.size(); ++i)
+		{
+			const auto& [execTime, iterations, scriptName] = npcStats[i];
+			const auto asMS = std::chrono::duration_cast<std::chrono::milliseconds>(execTime).count();
+			auto execTimeString = std::format("{}{}ms{}", asMS == 0 ? "<" : "", asMS, std::string(asMS < 100 ? 2 : 1, '\t'));
+			player->sendPacket(CString() >> (char)PLO_RC_CHAT << CString(i + 1) << ".\t" << execTimeString << std::format("{} exec(s)\t", iterations) << scriptName);
+		}
+
 		return true;
 	}
 

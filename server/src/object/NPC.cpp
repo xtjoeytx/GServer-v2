@@ -677,7 +677,7 @@ void NPC::setScript(const std::string_view script)
 
 	// Set the script.
 	setJoinedClasses("");
-	m_script = Script{name, script};
+	m_script = Script{util::constructScriptName(std::format("(NPC {})", id), name), script};
 	modTime[PROPID(NPCProp::SCRIPT)] = m_server->getFrameStartTime();
 
 	// Check if we have joined classes already (due to a cached script).

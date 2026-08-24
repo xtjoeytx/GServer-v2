@@ -4,6 +4,7 @@
 #include <any>
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <concepts>
 #include <cstdint>
 #include <cstdlib>
@@ -76,12 +77,28 @@ template<typename T>
 concept ContainerLikeNotString = std::ranges::range<T> && std::ranges::sized_range<T> && !string::StringViewIshVariant<T> && !string::PointerToConstCharString<T>;
 
 template<typename T>
-concept MapContainer = requires(T t) {
+concept MapContainer = requires(T t)
+{
 	typename T::key_type;
 	typename T::mapped_type;
 	typename T::value_type;
 	{ t.find(std::declval<typename T::key_type>()) } -> std::same_as<typename T::iterator>;
 	{ t.try_emplace(std::declval<typename T::key_type>(), std::declval<typename T::mapped_type>()) } -> std::same_as<std::pair<typename T::iterator, bool>>;
+};
+
+template<typename T>
+concept EraseableContainer = requires(T t, typename T::iterator iter)
+{
+	typename T::value_type;
+	typename T::iterator;
+	t.erase(iter, iter);
+};
+
+template<typename T, typename C>
+concept CheckFunction = requires(T t, typename C::value_type a)
+{
+	typename C::value_type;
+	{ t(a) } -> std::convertible_to<bool>;
 };
 
 //----------------------------
@@ -291,6 +308,34 @@ struct visit_functions : Ts...
 {
 	using Ts::operator()...;
 };
+
+//----------------------------
+// Container helpers
+
+namespace util
+{
+
+template<EraseableContainer T>
+inline void truncateContainerWhen(T& container, CheckFunction<T> auto&& func)
+{
+	container.erase(std::ranges::find_if(container, func), std::end(container));
+};
+
+inline std::string constructScriptName(const std::string& scriptIdentifier, const std::string& name)
+{
+	constexpr size_t maxIdentifierLength = 24;
+	auto tablength = static_cast<size_t>(std::round(static_cast<float>(maxIdentifierLength - scriptIdentifier.length()) / 4.0f));
+
+	// Fudge the numbers a little bit to make it look nicer in RC2.
+	if (scriptIdentifier.length() < 8)
+		++tablength;
+	if (scriptIdentifier.length() > 16)
+		++tablength;
+
+	return std::format("{}{}{}", scriptIdentifier, std::string(tablength, '\t'), name);
+}
+
+} // end namespace util
 
 //----------------------------
 // Range helpers

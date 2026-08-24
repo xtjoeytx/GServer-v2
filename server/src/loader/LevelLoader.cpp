@@ -5,8 +5,8 @@
 #include <limits>
 #include <memory>
 #include <optional>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -476,7 +476,7 @@ void LevelLoader::loadBinaryTiles(const StaticLevelDataPtr& levelData, const fs:
 		const bool isExtraLayer = layer != 0;
 
 		bool doubleTileRLEMode = false;
-		int32_t rleTiles[2] = { -1, -1 };
+		int32_t rleTiles[2] = {-1, -1};
 
 		// Read the tiles.
 		while (boardWriteIndex < MAX_TILE_COUNT && !fileData->finishedReading())
@@ -650,14 +650,14 @@ void LevelLoader::loadBinaryNPCs(const StaticLevelDataPtr& levelData, const fs::
 		position[0] = static_cast<float>(line[0] - 32);
 		position[1] = static_cast<float>(line[1] - 32);
 
-		std::string_view lineView{ line };
+		std::string_view lineView{line};
 		lineView.remove_prefix(2);
 
 		const auto image = string::extractLine(lineView, '#');
 		auto code = string::replace(lineView, "\xa7", "\n");
 
 		LevelNPCTemplate npc{.image = image, .position = toLocalPixelPosition(position)};
-		npc.script.setOriginalSource(std::format("{}.{}", levelData->levelName, index), code);
+		npc.script.setOriginalSource(util::constructScriptName(std::format("(Level NPC at {}, {})", position[0], position[1]), std::format("{}.{}", levelData->levelName, index)), code);
 		levelData->npcs.emplace_back(std::move(npc));
 	}
 }
@@ -674,7 +674,7 @@ void LevelLoader::loadBinaryChests(const StaticLevelDataPtr& levelData, const fs
 		const char item = static_cast<char>(line[2] - 32);
 		const auto signindex = static_cast<uint8_t>(line[3] - 32);
 
-		LevelChest chest{.position = LocalWholeTilePosition{ x, y }, .item = ENUM<LevelItemType>(item), .sign = signindex };
+		LevelChest chest{.position = LocalWholeTilePosition{x, y}, .item = ENUM<LevelItemType>(item), .sign = signindex};
 		levelData->chests.emplace_back(chest);
 	}
 }
@@ -691,7 +691,7 @@ void LevelLoader::loadBinarySigns(const StaticLevelDataPtr& levelData, const fs:
 		std::string_view text{line};
 		text.remove_prefix(2);
 
-		levelData->signs.emplace_back(LocalWholeTilePosition{ x, y }, text, true);
+		levelData->signs.emplace_back(LocalWholeTilePosition{x, y}, text, true);
 	}
 }
 
@@ -739,7 +739,7 @@ bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view f
 	{
 		// Read the line.
 		curLine = fileData->readLine();
-		std::string_view line{ string::trim(curLine) };
+		std::string_view line{string::trim(curLine)};
 		if (line.empty())
 			continue;
 
@@ -787,7 +787,7 @@ bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view f
 				const auto chesty = string::toNumber<uint8_t>(splitData[1]);
 				char signidx = string::toNumber<char>(splitData[3]);
 
-				LevelChest chest{ .position = LocalWholeTilePosition{ chestx, chesty }, .item = itemType, .sign = (uint8_t)signidx };
+				LevelChest chest{.position = LocalWholeTilePosition{chestx, chesty}, .item = itemType, .sign = (uint8_t)signidx};
 				levelData->chests.emplace_back(chest);
 			}
 		}
@@ -838,7 +838,7 @@ bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view f
 				text.pop_back();
 
 			// Add the new sign.
-			levelData->signs.emplace_back(LocalWholeTilePosition{ x, y }, text, false);
+			levelData->signs.emplace_back(LocalWholeTilePosition{x, y}, text, false);
 		}
 		else if (section == "BADDY")
 		{
@@ -848,7 +848,7 @@ bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view f
 			TilePosition position;
 			position[0] = string::toFloat(splitData[0]);
 			position[1] = string::toFloat(splitData[1]);
-			BaddyType type = LevelBaddy::getBaddyTypeFromString(std::string{ splitData[2] });
+			BaddyType type = LevelBaddy::getBaddyTypeFromString(std::string{splitData[2]});
 
 			LevelBaddy baddy{static_cast<uint8_t>(levelData->baddies.size() + 1), toLocalPixelPosition(position), type, {}};
 
@@ -891,8 +891,8 @@ bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view f
 				code += '\n';
 			}
 
-			LevelNPCTemplate npc{ .image = image, .position = toLocalPixelPosition(position) };
-			npc.script.setOriginalSource(std::format("{}.{}", levelData->levelName, npcIndex), code);
+			LevelNPCTemplate npc{.image = image, .position = toLocalPixelPosition(position)};
+			npc.script.setOriginalSource(util::constructScriptName(std::format("(Level NPC at {}, {})", position[0], position[1]), std::format("{}.{}", levelData->levelName, npcIndex)), code);
 			levelData->npcs.emplace_back(std::move(npc));
 		}
 		else if (section == "HEIGHTS")

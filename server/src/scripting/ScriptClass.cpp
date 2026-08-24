@@ -1,7 +1,7 @@
 #include <chrono>
 #include <cstdint>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <zlib.h>
@@ -25,7 +25,7 @@ ScriptClass::ScriptClass(const std::string_view className, const std::string_vie
 
 ScriptClass& ScriptClass::setScript(std::string_view classScript)
 {
-	m_script = { name, classScript };
+	m_script = {util::constructScriptName(std::format("(Class)"), name), classScript};
 
 	// Set the cryptographic key to be the script's hash.
 	constexpr string::string_hash hash{};

@@ -1,9 +1,12 @@
 #include <cassert>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include <BabyDI.h>
 #include <Server.h>
@@ -81,6 +84,38 @@ std::shared_ptr<IScriptEngine> ScriptSystem::getScriptEngine(const std::string_v
 		return nullptr;
 
 	return engine->second;
+}
+
+std::vector<std::tuple<precise_clock::duration, size_t, std::string_view>> ScriptSystem::getExecutionProfiles(const size_t count) const
+{
+	const auto now = precise_clock::now();
+
+	// Collect all of the results and sort from longest to shortest.
+	std::vector<std::tuple<precise_clock::duration, size_t, std::string_view>> result;
+	for (const auto& script : m_script_cache | std::views::values | removeNulls)
+	{
+		// Remove any execution profiles that are older than 1 minute.
+		util::truncateContainerWhen(script->executionProfiles, [cutoff = now - std::chrono::minutes(1)](const auto& pair)
+		{
+			return pair.first < cutoff;
+		});
+
+		// Add up the total duration of the remaining execution profiles.
+		auto duration = std::ranges::fold_left(script->executionProfiles | std::views::values, precise_clock::duration(0), std::plus<precise_clock::duration>{});
+
+		result.emplace_back(duration, script->executionProfiles.size(), script->identifier);
+	}
+	std::sort(result.rbegin(), result.rend());
+
+	// Remove any entries that are empty or beyond the count.
+	size_t idx = 0;
+	util::truncateContainerWhen(result, [&idx, count](const auto& triplet)
+	{
+		++idx;
+		return idx >= count || std::get<0>(triplet).count() == 0;
+	});
+
+	return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

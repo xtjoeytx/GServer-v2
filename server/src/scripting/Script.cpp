@@ -2,6 +2,7 @@
 #include <any>
 #include <array>
 #include <format>
+#include <numeric>
 #include <iterator>
 #include <string>
 #include <string_view>
@@ -165,6 +166,41 @@ static std::string performClientSideJoinHack(std::string_view code)
 	return result;
 }
 
+/// @brief Profiler for script execution time.
+struct ExecutionProfiler
+{
+	precise_clock::time_point beginTime;
+	ScriptExecutionContext* compiledScript;
+
+	explicit ExecutionProfiler(ScriptExecutionContext* script)
+		: beginTime(precise_clock::now()), compiledScript(script)
+	{
+	}
+
+	ExecutionProfiler(const precise_clock::time_point begin, ScriptExecutionContext* script)
+		: beginTime(begin), compiledScript(script)
+	{
+	}
+
+	~ExecutionProfiler()
+	{
+		if (compiledScript == nullptr)
+			return;
+
+		auto duration = precise_clock::now() - beginTime;
+		compiledScript->executionProfiles.emplace_front(beginTime, duration);
+
+		// Add up durations until we reach 1 minute, then remove the rest.
+		auto totalDuration = precise_clock::duration(0);
+		const auto it = std::ranges::find_if(compiledScript->executionProfiles, [cutoff = beginTime - std::chrono::minutes(1), &totalDuration](const auto& d)
+		{
+			totalDuration += d.second;
+			return totalDuration > std::chrono::minutes(1) || d.first < cutoff;
+		});
+		compiledScript->executionProfiles.erase(it, compiledScript->executionProfiles.end());
+	}
+};
+
 //----------------------------
 
 // NOLINTNEXTLINE(*-no-recursion)
@@ -216,14 +252,15 @@ void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source)
 
 	if (queue.size() == 1)
 	{
-		for (auto& event : queue)
-			engine->execute(event, source, m_server_script);
+		ExecutionProfiler profiler{m_server_script.get()};
+		engine->execute(queue.front(), source, m_server_script);
 		return;
 	}
 
 	std::vector<ScriptEventType> types;
 	std::vector<ScriptEventType> processedTypes;
 
+	ExecutionProfiler profiler{m_server_script.get()};
 	for (auto& event : queue)
 	{
 		// Execute events with args (or TIMEOUT) individually.
@@ -271,6 +308,7 @@ bool Script::runUserDefinedFunction(const std::string_view functionName, ScriptE
 	if (m_server_script == nullptr || m_server_script->engine == nullptr)
 		return false;
 
+	ExecutionProfiler profiler{m_server_script.get()};
 	return m_server_script->engine->executeFunction(functionName, event, source, m_server_script);
 }
 
@@ -450,11 +488,17 @@ void Script::compileScript() noexcept
 	if (server->Generation == ServerGeneration::NEWMAIN)
 	{
 		m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
+		if (m_server_script != nullptr && m_server_script->identifier.empty())
+			m_server_script->identifier = m_who.empty() ? "(server:unnamed)" : m_who;
 	}
 	else if (server->Generation == ServerGeneration::MODERN)
 	{
 		m_client_script = npcServer->scripting.getCompiledClientScript(m_who, m_clientside);
 		m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
+		if (m_client_script != nullptr && m_client_script->identifier.empty())
+			m_client_script->identifier = m_who.empty() ? "(client:unnamed)" : m_who;
+		if (m_server_script != nullptr && m_server_script->identifier.empty())
+			m_server_script->identifier = m_who.empty() ? "(server:unnamed)" : m_who;
 	}
 }
 
