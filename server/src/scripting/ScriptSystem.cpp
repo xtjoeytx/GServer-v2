@@ -42,7 +42,7 @@ CompiledScriptResultPtr ScriptSystem::getCompiledClientScript(const std::string_
 		return nullptr;
 
 	// We are using GS2.
-	if (const auto it = m_script_engines.find("GS2"); it != m_script_engines.end())
+	if (const auto it = m_script_engines.find("gs2"); it != m_script_engines.end())
 		return getCompiledScript(it->second.get(), who, trimmed);
 
 	// Throw at this point.  We should always have a GS2 engine.

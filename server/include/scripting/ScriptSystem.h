@@ -55,7 +55,7 @@ public:
 	[[a::inline]] std::shared_ptr<IScriptEngine> getDefaultScriptEngine() const;
 
 public:
-	std::string defaultScriptEngine = "GS2";
+	std::string defaultScriptEngine = "gs1";
 
 private:
 	CompiledScriptResultPtr getCompiledScript(IScriptEngine* engine, std::string_view who, std::string_view source);

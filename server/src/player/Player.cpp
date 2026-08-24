@@ -1370,7 +1370,7 @@ void Player::constructScriptParameters()
 
 			if (auto headSet = std::clamp(static_cast<int>(value->get()), -1, 99); headSet != -1)
 			{
-				account.character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::CLASSIC ? "gif" : "png"));
+				account.character.headImage = std::format("head{}.{}", headSet, Limits::defaultImageExtension());
 				modTime[PROPID(PlayerProp::HEADIMAGE)] = m_server->getFrameStartTime();
 			}
 		}

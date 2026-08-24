@@ -181,6 +181,10 @@ struct Limits
 	/// @param shieldPower The shield power value to apply.
 	/// @return The applied shield power value, clamped to the maximum allowed.
 	static uint8_t applyShieldPower(uint8_t shieldPower);
+
+	/// @brief Gets the default image extension for images, which is "png" for modern generation and "gif" for older generations.
+	/// @return The default image extension as a string view.
+	static std::string_view defaultImageExtension();
 };
 
 //////////////////////////////////////////////////

@@ -2009,7 +2009,8 @@ bool PlayerClient::removeItem(const LevelItemType itemType)
 		case LevelItemType::GOLDRUPEE:  // goldrupee
 		{
 			uint32_t gralatsRequired;
-			if (itemType == LevelItemType::GOLDRUPEE) gralatsRequired = 100;
+			if (itemType == LevelItemType::GOLDRUPEE)
+				gralatsRequired = 100;
 			else if (itemType == LevelItemType::REDRUPEE)
 				gralatsRequired = 30;
 			else if (itemType == LevelItemType::BLUERUPEE)
@@ -2056,6 +2057,16 @@ bool PlayerClient::removeItem(const LevelItemType itemType)
 			return false;
 		}
 
+		case LevelItemType::FULLHEART:
+		{
+			if (account.maxHitpoints > 1)
+			{
+				--account.maxHitpoints;
+				return true;
+			}
+			return false;
+		}
+
 		// NOTE: not receiving PLI_ITEMTAKE for >2.31, so we will not remove the item
 		// same is true for sword/shield. assuming its true for the weapon-items, but
 		// its currently not tested.
@@ -2070,32 +2081,89 @@ bool PlayerClient::removeItem(const LevelItemType itemType)
 			return false;
 		}
 
-		/*
-		case LevelItemType::BOW:		// bow
-		case LevelItemType::BOMB:		// bomb
-			return false;
+		case LevelItemType::BOW:
+		case LevelItemType::FIREBALL:
+		case LevelItemType::FIREBLAST:
+		case LevelItemType::NUKESHOT:
+		{
+			constexpr std::array<std::pair<LevelItemType, uint8_t>, 4> items = {{
+				{LevelItemType::BOW, 1},
+				{LevelItemType::FIREBALL, 2},
+				{LevelItemType::FIREBLAST, 3},
+				{LevelItemType::NUKESHOT, 4}
+			}};
 
-		case LevelItemType::SUPERBOMB:	// superbomb
-		case LevelItemType::FIREBALL:	// fireball
-		case LevelItemType::FIREBLAST:	// fireblast
-		case LevelItemType::NUKESHOT:	// nukeshot
-		case LevelItemType::JOLTBOMB:	// joltbomb
+			const auto& [item, power] = *std::ranges::find_if(items, [itemType](const auto& pair) { return pair.first == itemType; });
+			if (account.character.bowPower >= power)
+			{
+				--account.character.bowPower;
+				return true;
+			}
 			return false;
+		}
 
-		case LevelItemType::SHIELD:			// shield
-		case LevelItemType::MIRRORSHIELD:	// mirrorshield
-		case LevelItemType::LIZARDSHIELD:	// lizardshield
-			return false;
+		case LevelItemType::BOMB:
+		case LevelItemType::SUPERBOMB:
+		case LevelItemType::JOLTBOMB:
+		{
+			constexpr std::array<std::pair<LevelItemType, uint8_t>, 3> items = {{
+				{LevelItemType::BOMB, 1},
+				{LevelItemType::SUPERBOMB, 2},
+				{LevelItemType::JOLTBOMB, 3}
+			}};
 
-		case LevelItemType::SWORD:			// sword
-		case LevelItemType::BATTLEAXE:		// battleaxe
-		case LevelItemType::LIZARDSWORD:	// lizardsword
-		case LevelItemType::GOLDENSWORD:	// goldensword
+			const auto& [item, power] = *std::ranges::find_if(items, [itemType](const auto& pair) { return pair.first == itemType; });
+			if (account.character.bombPower >= power)
+			{
+				--account.character.bombPower;
+				return true;
+			}
 			return false;
+		}
 
-		case LevelItemType::FULLHEART:	// fullheart
+		case LevelItemType::SHIELD:
+		case LevelItemType::MIRRORSHIELD:
+		case LevelItemType::LIZARDSHIELD:
+		{
+			constexpr std::array<std::pair<LevelItemType, uint8_t>, 3> items = {{
+				{LevelItemType::SHIELD, 1},
+				{LevelItemType::MIRRORSHIELD, 2},
+				{LevelItemType::LIZARDSHIELD, 3}
+			}};
+
+			const auto& [item, power] = *std::ranges::find_if(items, [itemType](const auto& pair) { return pair.first == itemType; });
+			if (account.character.shieldPower >= power)
+			{
+				--account.character.shieldPower;
+				if (!account.character.shieldImage.empty() && account.character.shieldImage == std::format("shield_{}.{}", power, Limits::defaultImageExtension()))
+					account.character.shieldImage.clear();
+				return true;
+			}
 			return false;
-		*/
+		}
+
+		case LevelItemType::SWORD:
+		case LevelItemType::BATTLEAXE:
+		case LevelItemType::LIZARDSWORD:
+		case LevelItemType::GOLDENSWORD:
+		{
+			constexpr std::array<std::pair<LevelItemType, uint8_t>, 4> items = {{
+				{LevelItemType::SWORD, 1},
+				{LevelItemType::BATTLEAXE, 2},
+				{LevelItemType::LIZARDSWORD, 3},
+				{LevelItemType::GOLDENSWORD, 4}
+			}};
+
+			const auto& [item, power] = *std::ranges::find_if(items, [itemType](const auto& pair) { return pair.first == itemType; });
+			if (account.character.swordPower >= power)
+			{
+				--account.character.swordPower;
+				if (!account.character.swordImage.empty() && account.character.swordImage == std::format("sword_{}.{}", power, Limits::defaultImageExtension()))
+					account.character.swordImage.clear();
+				return true;
+			}
+			return false;
+		}
 
 		case LevelItemType::SPINATTACK:
 		{
@@ -2135,9 +2203,105 @@ props::SetResults PlayerClient::addItem(const LevelItemType itemType, const prop
 			return setPropWith<PlayerProp::BOMBS>(setBy, std::min(maxHearts, static_cast<uint8_t>(account.character.hitpointsInHalves + 2)));
 		}
 
+		case LevelItemType::FULLHEART:
+		{
+			const uint8_t maxHearts = static_cast<uint8_t>(std::min(account.maxHitpoints, static_cast<uint8_t>(m_server->cached.maxHeartLimit.getValue())) * 2);
+			return setPropWith<PlayerProp::FULLHEARTS>(setBy, std::min(maxHearts, static_cast<uint8_t>(account.maxHitpoints + 1)));
+		}
+
 		case LevelItemType::GLOVE1:
 		case LevelItemType::GLOVE2:
-			return setPropWith<PlayerProp::GLOVEPOWER>(setBy, std::min(2_ui8, static_cast<uint8_t>(account.character.glovePower + 1)));
+		{
+			const auto power = itemType == LevelItemType::GLOVE1 ? 2_ui8 : 3_ui8;
+			auto prop = getProp<PlayerProp::GLOVEPOWER>();
+			if (prop.value < power)
+				prop.value = Limits::apply(power, Limits::MaxPlayerGlovePower);
+			return setProp<PlayerProp::GLOVEPOWER>(setBy, prop);
+		}
+
+		case LevelItemType::BOW:
+		case LevelItemType::FIREBALL:
+		case LevelItemType::FIREBLAST:
+		case LevelItemType::NUKESHOT:
+		{
+			constexpr std::array<std::pair<LevelItemType, uint8_t>, 4> items = {{
+				{LevelItemType::BOW, 1},
+				{LevelItemType::FIREBALL, 2},
+				{LevelItemType::FIREBLAST, 3},
+				{LevelItemType::NUKESHOT, 4},
+			}};
+			if (m_server->Generation == ServerGeneration::CLASSIC)
+			{
+				const auto& [item, power] = *std::ranges::find_if(items, [itemType](const auto& pair) { return pair.first == itemType; });
+				auto prop = getProp<PlayerProp::GANI>();
+				if (prop.bowGif.has_value())
+				{
+					auto& currentPower = prop.bowGif.value().second;
+					if (currentPower < power)
+						currentPower = Limits::apply(power, Limits::MaxBowPower);
+				}
+				else prop.bowGif = std::make_pair(""s, power);
+				return setPropWith<PlayerProp::GANI>(setBy, prop);
+			}
+		}
+
+		case LevelItemType::BOMB:
+		case LevelItemType::SUPERBOMB:
+		case LevelItemType::JOLTBOMB:
+		{
+			constexpr std::array<std::pair<LevelItemType, uint8_t>, 3> items = {{
+				{LevelItemType::BOMB, 1},
+				{LevelItemType::SUPERBOMB, 2},
+				{LevelItemType::JOLTBOMB, 3},
+			}};
+			const auto& [item, power] = *std::ranges::find_if(items, [itemType](const auto& pair) { return pair.first == itemType; });
+			auto prop = getProp<PlayerProp::BOMBPOWER>();
+			if (prop.value < power)
+				prop.value = Limits::apply(power, Limits::MaxBombPower);
+			return setPropWith<PlayerProp::BOMBPOWER>(setBy, prop);
+		}
+
+		case LevelItemType::SHIELD:
+		case LevelItemType::MIRRORSHIELD:
+		case LevelItemType::LIZARDSHIELD:
+		{
+			constexpr std::array<std::pair<LevelItemType, uint8_t>, 3> items = {{
+				{LevelItemType::SHIELD, 1},
+				{LevelItemType::MIRRORSHIELD, 2},
+				{LevelItemType::LIZARDSHIELD, 3},
+			}};
+			const auto& [item, power] = *std::ranges::find_if(items, [itemType](const auto& pair) { return pair.first == itemType; });
+			auto prop = getProp<PlayerProp::SHIELDIMAGE>();
+			if (prop.power < power)
+			{
+				if (!prop.image.empty() && prop.image == std::format("shield_{}.{}", power, Limits::defaultImageExtension()))
+					prop.image.clear();
+				prop.power = Limits::applyShieldPower(power);
+			}
+			return setPropWith<PlayerProp::SHIELDIMAGE>(setBy, prop);
+		}
+
+		case LevelItemType::SWORD:
+		case LevelItemType::BATTLEAXE:
+		case LevelItemType::LIZARDSWORD:
+		case LevelItemType::GOLDENSWORD:
+		{
+			constexpr std::array<std::pair<LevelItemType, int8_t>, 4> items = {{
+				{LevelItemType::SWORD, 1},
+				{LevelItemType::BATTLEAXE, 2},
+				{LevelItemType::LIZARDSWORD, 3},
+				{LevelItemType::GOLDENSWORD, 4},
+			}};
+			const auto& [item, power] = *std::ranges::find_if(items, [itemType](const auto& pair) { return pair.first == itemType; });
+			auto prop = getProp<PlayerProp::SWORDIMAGE>();
+			if (prop.power < power)
+			{
+				if (!prop.image.empty() && prop.image == std::format("sword_{}.{}", power, Limits::defaultImageExtension()))
+					prop.image.clear();
+				prop.power = Limits::applySwordPower(power);
+			}
+			return setPropWith<PlayerProp::SWORDIMAGE>(setBy, prop);
+		}
 
 		case LevelItemType::SPINATTACK:
 			return setPropWith<PlayerProp::STATUS>(setBy, static_cast<uint8_t>(account.status | PLSTATUS_HASSPIN));

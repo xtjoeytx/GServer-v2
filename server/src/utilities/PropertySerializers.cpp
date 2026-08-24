@@ -113,10 +113,7 @@ void PropertySwordPower::deserialize(CString& data)
 
 		// For older clients, we use a default image name.
 		if (powerVal > 0 && powerVal <= 4)
-		{
-			const auto server = BabyDI::Get<Server>();
-			image = std::format("sword{}.{}", powerVal, (server->Generation != ServerGeneration::CLASSIC ? "png" : "gif"));
-		}
+			image = std::format("sword{}.{}", powerVal, Limits::defaultImageExtension());
 		else image.clear();
 
 		power = powerVal;
@@ -128,10 +125,13 @@ void PropertySwordPower::deserialize(CString& data)
 	power = powerVal;
 
 	// Read the image name.
-	// If there is no extension, assume its a .gif.
-	image = data.readChars(data.readGUChar());
-	if (!image.contains('.'))
-		image += ".gif";
+	// If there is no extension, assume its a .gif, for 1.x servers.
+	if (const auto server = BabyDI::Get<Server>(); server->Generation == ServerGeneration::CLASSIC)
+	{
+		image = data.readChars(data.readGUChar());
+		if (!image.contains('.'))
+			image += ".gif";
+	}
 }
 
 void PropertySwordPower::apply(const GameValue& gameValue)
@@ -142,7 +142,7 @@ void PropertySwordPower::apply(const GameValue& gameValue)
 std::format_context::iterator PropertySwordPower::format(std::format_context& ctx) const
 {
 	if (power.value_or(0) > 0 && power.value_or(0) <= 4 && image.empty())
-		return std::format_to(ctx.out(), "image: (preset {0}) sword{0}.{1}, power: {2}", power.value_or(0), (getServerGeneration() == 0 ? "gif" : "png"), power.value_or(0));
+		return std::format_to(ctx.out(), "image: (preset {0}) sword{0}.{1}, power: {2}", power.value_or(0), Limits::defaultImageExtension(), power.value_or(0));
 	if (power.has_value() && power.value() == 0)
 		return std::format_to(ctx.out(), "image: (empty), power: 0");
 	return std::format_to(ctx.out(), "image: {}, power: {}", (image.empty() ? "(empty)" : image), power.value_or(0));
@@ -163,8 +163,6 @@ CString PropertyShieldPower::serialize() const
 
 void PropertyShieldPower::deserialize(CString& data)
 {
-	const auto server = BabyDI::Get<Server>();
-
 	uint8_t powerVal = 0;
 	data.readGInto(powerVal);
 	if (powerVal < 10)
@@ -173,7 +171,7 @@ void PropertyShieldPower::deserialize(CString& data)
 
 		// For older clients, we use a default image name.
 		if (powerVal > 0 && powerVal <= 4)
-			image = std::format("shield{}.{}", powerVal, (server->Generation != ServerGeneration::CLASSIC ? "png" : "gif"));
+			image = std::format("shield{}.{}", powerVal, Limits::defaultImageExtension());
 		else image.clear();
 
 		power = powerVal;
@@ -191,7 +189,7 @@ void PropertyShieldPower::deserialize(CString& data)
 	image = data.readChars(data.readGUChar());
 
 	// If there is no extension, assume its a .gif, for 1.x servers.
-	if (server->Generation == ServerGeneration::CLASSIC)
+	if (const auto server = BabyDI::Get<Server>(); server->Generation == ServerGeneration::CLASSIC)
 	{
 		if (!image.contains('.'))
 			image += ".gif";
@@ -206,7 +204,7 @@ void PropertyShieldPower::apply(const GameValue& gameValue)
 std::format_context::iterator PropertyShieldPower::format(std::format_context& ctx) const
 {
 	if (power.value_or(0) > 0 && power.value_or(0) <= 3 && image.empty())
-		return std::format_to(ctx.out(), "image: (preset {0}) shield{0}.{1}, power: {2}", power.value_or(0), (getServerGeneration() == 0 ? "gif" : "png"), power.value_or(0));
+		return std::format_to(ctx.out(), "image: (preset {0}) shield{0}.{1}, power: {2}", power.value_or(0), Limits::defaultImageExtension(), power.value_or(0));
 	if (power.has_value() && power.value() == 0)
 		return std::format_to(ctx.out(), "image: (empty), power: 0");
 	return std::format_to(ctx.out(), "image: {}, power: {}", (image.empty() ? "(empty)" : image), power.value_or(0));
@@ -316,7 +314,7 @@ std::format_context::iterator PropertyHeadGif::format(std::format_context& ctx) 
 	if (std::holds_alternative<uint8_t>(image))
 	{
 		uint8_t preset = std::get<uint8_t>(image);
-		return std::format_to(ctx.out(), "head: (preset {0}) head{0}.{1}", preset, (getServerGeneration() == 0 ? "gif" : "png"));
+		return std::format_to(ctx.out(), "head: (preset {0}) head{0}.{1}", preset, Limits::defaultImageExtension());
 	}
 	else
 	{
@@ -607,6 +605,12 @@ uint8_t Limits::applyShieldPower(const uint8_t shieldPower)
 {
 	const auto server = BabyDI::Get<Server>();
 	return std::clamp(shieldPower, 0_ui8, server->cached.shieldPowerLimit.getValue());
+}
+
+std::string_view Limits::defaultImageExtension()
+{
+	const auto server = BabyDI::Get<Server>();
+	return server->Generation == ServerGeneration::CLASSIC ? "gif"sv : "png"sv;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

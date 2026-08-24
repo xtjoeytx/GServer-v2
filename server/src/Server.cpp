@@ -539,6 +539,8 @@ Server::~Server()
 	if (m_upnp)
 		m_upnp->removeAllForwardedPorts();
 #endif
+
+	log::printLine(log::server, "-------------------------------------");
 }
 
 int Server::init(const std::string_view serverip, const std::string_view serverport, const std::string_view localip, const std::string_view serverinterface)
@@ -717,8 +719,6 @@ void Server::cleanup()
 	// Clean up the socket manager.  Pass false so we don't cause a crash.
 	m_sockManager.cleanup(false);
 	m_adminSettings.clear();
-
-	log::printLine(log::server, "-------------------------------------");
 }
 
 void Server::restart()

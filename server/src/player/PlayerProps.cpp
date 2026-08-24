@@ -379,10 +379,11 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			std::string img;
 			if (std::holds_alternative<uint8_t>(headProp->image))
-				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (m_server->Generation != ServerGeneration::CLASSIC ? "png" : "gif"));
+				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), Limits::defaultImageExtension());
 			else
 				img = std::get<std::string>(headProp->image);
 
+			// If there is no extension, assume its a .gif, for 1.x servers.
 			if (m_server->Generation == ServerGeneration::CLASSIC && !img.empty() && !img.contains('.'))
 				img += ".gif";
 

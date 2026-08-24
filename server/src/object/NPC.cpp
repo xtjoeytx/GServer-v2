@@ -1307,7 +1307,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 
 			std::string img;
 			if (std::holds_alternative<uint8_t>(headProp->image))
-				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), (m_server->Generation != ServerGeneration::CLASSIC ? "png" : "gif"));
+				img = std::format("head{}.{}", std::get<uint8_t>(headProp->image), Limits::defaultImageExtension());
 			else
 				img = std::get<std::string>(headProp->image);
 
@@ -1880,7 +1880,7 @@ void NPC::constructScriptParameters()
 			const auto headSet = std::clamp(static_cast<int>(value->get()), -1, 99);
 			if (headSet != -1)
 			{
-				character.headImage = std::format("head{}.{}", headSet, (m_server->Generation == ServerGeneration::CLASSIC ? "gif" : "png"));
+				character.headImage = std::format("head{}.{}", headSet, Limits::defaultImageExtension());
 				modTime[PROPID(NPCProp::HEADIMAGE)] = m_server->getFrameStartTime();
 			}
 		}
