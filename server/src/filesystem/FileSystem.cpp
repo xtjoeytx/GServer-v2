@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cerrno>
 #include <cstdint>
 #include <filesystem>
 #include <functional>
@@ -687,8 +688,13 @@ FileData* FileSystem::rename(const FileData& fileData, const std::filesystem::pa
 			newFilePath.make_preferred();
 
 			// Rename the file.
-			std::error_code ec;
+			std::error_code ec{errno, std::generic_category()};
 			std::filesystem::rename(fileData.file, newFilePath, ec);
+			if (ec && ec.value() == EBUSY)
+			{
+				std::this_thread::sleep_for(1ms);
+				std::filesystem::rename(fileData.file, newFilePath, ec);
+			}
 			if (ec)
 			{
 				log::printLine(log::server, "** Error renaming file [{}] to [{}]: {} **", fileData.file.filename().string(), newFileName.string(), ec.message());

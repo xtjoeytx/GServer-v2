@@ -71,6 +71,7 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const std::filesystem::path& fileName
 	const auto weaponName = file->readConfigLine("REALNAME", " "sv);
 	const auto weaponImage = file->readConfigLine("IMAGE", " "sv);
 	const auto weaponScript = file->readConfigSection("SCRIPT", "SCRIPTEND");
+	file->close();
 
 	// Valid Weapon Name?
 	if (!weaponName.has_value() || weaponName->empty())
