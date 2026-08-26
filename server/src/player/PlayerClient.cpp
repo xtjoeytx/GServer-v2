@@ -956,8 +956,9 @@ bool PlayerClient::processChat(const CString& pChat)
 			}
 
 			auto player = m_server->getPlayer<PlayerClient>(chatParse[1], PLTYPE_ANYCLIENT);
-			if (player && player->getLevel())
-				warp(player->getLevel()->levelName, player->getLocalPosition());
+			LevelPtr level;
+			if (player && (level = player->getLevel()) != nullptr)
+				warp(level->levelName, player->getLocalPosition());
 		}
 		// To location
 		else
@@ -1019,7 +1020,7 @@ bool PlayerClient::processChat(const CString& pChat)
 	{
 		processed = true;
 
-		if (auto level = getLevel(); level)
+		if (auto level = getLevel(); level != nullptr)
 			(void)level->reload(getMapPosition());
 	}
 	else if (pChat == "showadmins" && m_server->getSettings().get<bool>("disableshowadmins").value_or(false) == false)
@@ -1993,7 +1994,7 @@ bool PlayerClient::dropItem(const PixelPosition& position, const LevelItemType i
 {
 	if (removeItem(item))
 	{
-		if (const auto level = getLevel(); level && level->addItem(position, item))
+		if (const auto level = getLevel(); level != nullptr && level->addItem(position, item))
 			return true;
 	}
 	return false;

@@ -120,7 +120,7 @@ void StaticLevelData::sendBoardToPlayer(const std::shared_ptr<Player>& player) c
 
 void StaticLevelData::sendBoardLayersToPlayer(const std::shared_ptr<Player>& player) const
 {
-	for (auto layer : tiles.getUsedTileLayers())
+	for (const auto layer : tiles.getUsedTileLayers())
 	{
 		if (layer == 0) continue;
 		sendBoardLayerToPlayer(player, layer);
@@ -145,9 +145,9 @@ void StaticLevelData::sendBoardLayerToPlayer(const std::shared_ptr<Player>& play
 void StaticLevelData::sendChestsToPlayer(const std::shared_ptr<Player>& player) const
 {
 	CString packet;
-	for (auto& chest : chests)
+	for (const auto& chest : chests)
 	{
-		bool hasChest = player->account.hasChest(levelName, chest.position);
+		const bool hasChest = player->account.hasChest(levelName, chest.position);
 
 		packet.clear();
 		packet >> (char)PLO_LEVELCHEST >> (char)(hasChest ? 1 : 0) >> (char)chest.position.x() >> (char)chest.position.y();

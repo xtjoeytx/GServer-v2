@@ -731,7 +731,7 @@ HandlePacketResult PlayerClient::msgPLI_OPENCHEST(CString& pPacket)
 	const uint8_t cX = pPacket.readGChar();
 	const uint8_t cY = pPacket.readGChar();
 
-	if (const auto level = getLevel(); level)
+	if (const auto level = getLevel(); level != nullptr)
 	{
 		LocalWholeTilePosition chestPos{cX, cY};
 		if (const auto chest = level->getChest(getMapPosition(), chestPos); chest.has_value())
@@ -1234,6 +1234,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 				// Send it back to the player.
 				sendPacket(CString() >> (char)PLO_FLAGSET << "gr.fileerror=" << error);
 				sendPacket(CString() >> (char)PLO_FLAGSET << "gr.filedata=" << tokens[line]);
+				return HandlePacketResult::Handled;
 			}
 		}
 
@@ -1251,6 +1252,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 						setPropsFromPacket(CString() >> (char)(GaniAttributePropList[static_cast<size_t>(attrNum) - 1]) >> (char)val.length() << val, props::SetBy::SERVER);
 					}
 				}
+				return HandlePacketResult::Handled;
 			}
 			if (actualActionName == "gr.fullhearts")
 			{
@@ -1261,6 +1263,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 					int hearts = string::toNumber(string::trimMutate(actionData.substr(start)));
 					sendPropsFromResults(setPropWith<PlayerProp::FULLHEARTS>(props::SetBy::SERVER, static_cast<uint8_t>(hearts)));
 				}
+				return HandlePacketResult::Handled;
 			}
 		}
 
@@ -1269,6 +1272,8 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 			if (actualActionName == "gr.updatelevel")
 			{
 				auto level = getLevel();
+				if (level == nullptr) return HandlePacketResult::Handled;
+
 				auto start = actionData.find(',');
 				if (start == std::string::npos)
 					(void)level->reload(getMapPosition());
@@ -1290,6 +1295,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 					}
 				}
 			}
+			return HandlePacketResult::Handled;
 		}
 	}
 
@@ -1303,7 +1309,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 			return HandlePacketResult::Handled;
 		}
 
-		if (auto level = getLevel(); level)
+		if (auto level = getLevel(); level != nullptr)
 		{
 			// Send to the level.
 			if (m_server->cached.sendTriggerActionsToPlayers.getValue())
@@ -1313,6 +1319,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 			if (m_server->hasNPCServer())
 				m_server->getNPCServer()->addEventToLevelNPCsAtPosition(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), level, pixelLoc, actions);
 		}
+		return HandlePacketResult::Handled;
 	}
 
 	return HandlePacketResult::Handled;

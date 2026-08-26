@@ -61,7 +61,7 @@ static constexpr std::array<uint8_t, 10> savePackets = {23, 24, 25, 26, 27, 28, 
 
 static std::string_view toWeaponName(std::string_view code);
 
-static bool canSendProp(NPCProp prop)
+static bool canSendProp(const NPCProp prop)
 {
 	static Server* server = nullptr;
 	if (server == nullptr)
@@ -1625,7 +1625,7 @@ void NPC::setPropsFromPacket(CString& packet, const PlayerPtr& source)
 		{
 			const auto propId = static_cast<NPCProp>(packet.readGUChar());
 
-			DO_PACKETLOG(size_t oldPos = packet.readPos());
+			DO_PACKETLOG(const size_t oldPos = packet.readPos());
 
 			auto prop = constructPropFor(propId);
 			prop->deserialize(packet);
