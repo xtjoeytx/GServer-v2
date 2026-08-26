@@ -664,7 +664,7 @@ inline TilePosition NPC::getTilePosition() const noexcept
 	DO(NPCProp::CLASS,		PropertyLongString,			getJoinedClassesList()) \
 	DO(NPCProp::X2,			PropertyPixelCoordinate,	character.localPixelX) \
 	DO(NPCProp::Y2,			PropertyPixelCoordinate,	character.localPixelY) \
-	DO(NPCProp::Z2,			PropertyPixelCoordinate,	character.localPixelZ)
+	DO(NPCProp::Z2,			PropertyPixelCoordinateZ,	character.localPixelZ)
 
 // clang-format on
 

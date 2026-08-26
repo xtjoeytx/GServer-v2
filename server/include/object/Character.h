@@ -21,7 +21,7 @@ struct Character
 {
 	int16_t localPixelX = 488;	// 30.5
 	int16_t localPixelY = 480;	// 30
-	int16_t localPixelZ = InvalidZPixels;	// -51
+	std::optional<int16_t> localPixelZ;
 	uint8_t mapX = 0;
 	uint8_t mapY = 0;
 	uint8_t ap = 50;
@@ -54,17 +54,17 @@ struct Character
 
 	[[nodiscard]] LocalPixelPosition getLocalPosition() const noexcept
 	{
-		return {localPixelX, localPixelY, localPixelZ};
+		return {localPixelX, localPixelY, localPixelZ.value_or(0)};
 	}
 
 	[[nodiscard]] PixelPosition getGlobalPosition() const noexcept
 	{
-		return {static_cast<int32_t>((mapX * 1024) + localPixelX), static_cast<int32_t>((mapY * 1024) + localPixelY), static_cast<int32_t>(localPixelZ)};
+		return {static_cast<int32_t>((mapX * 1024) + localPixelX), static_cast<int32_t>((mapY * 1024) + localPixelY), static_cast<int32_t>(localPixelZ.value_or(0))};
 	}
 
 	[[nodiscard]] TilePosition getTilePosition() const noexcept
 	{
-		return {static_cast<float>(mapX * 64) + (static_cast<float>(localPixelX) / 16.0f), static_cast<float>(mapY * 64) + (static_cast<float>(localPixelY) / 16.0f), static_cast<float>(localPixelZ) / 16.0f};
+		return {static_cast<float>(mapX * 64) + (static_cast<float>(localPixelX) / 16.0f), static_cast<float>(mapY * 64) + (static_cast<float>(localPixelY) / 16.0f), static_cast<float>(localPixelZ.value_or(0)) / 16.0f};
 	}
 
 	[[nodiscard]] MapPosition getMapPosition() const noexcept
@@ -75,6 +75,8 @@ struct Character
 	// Represents a Z value that is not set.
 	constexpr static int16_t InvalidZTiles = -51;
 	constexpr static int16_t InvalidZPixels = InvalidZTiles * 16_i16;
+	constexpr static std::array<int16_t, 2> ValidZRangeTiles = {-50, 170};
+	constexpr static std::array<int16_t, 2> ValidZRangePixels = {ValidZRangeTiles[0] * 16_i16, ValidZRangeTiles[1] * 16_i16};
 };
 
 //----------------------------

@@ -284,6 +284,10 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 	if (account.communityName.empty())
 		account.communityName = account.name;
 
+	// Fix Z if we need to.
+	if (account.character.localPixelZ.has_value() && (account.character.localPixelZ.value() < Character::ValidZRangePixels[0] || account.character.localPixelZ.value() > Character::ValidZRangePixels[1]))
+		account.character.localPixelZ.reset();
+
 	// If we loaded from the default account, check if the settings is overriding the start level and position.
 	// Also, save the account and add it to the file system.
 	if (loadedFromDefault)
@@ -337,7 +341,8 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 
 	writeLine(newFile, "X", static_cast<float>(account.character.localPixelX) / 16.0f);
 	writeLine(newFile, "Y", static_cast<float>(account.character.localPixelY) / 16.0f);
-	writeLine(newFile, "Z", static_cast<float>(account.character.localPixelZ) / 16.0f, 0.0f);
+	if (account.character.localPixelZ.has_value())
+		writeLine(newFile, "Z", static_cast<float>(account.character.localPixelZ.value()) / 16.0f, 0.0f);
 	writeLine(newFile, "MAPX", account.character.mapX);
 	writeLine(newFile, "MAPY", account.character.mapY);
 	writeLine(newFile, "MAXHP", account.maxHitpoints);

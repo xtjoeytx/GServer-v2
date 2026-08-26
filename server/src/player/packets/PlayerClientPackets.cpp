@@ -608,7 +608,7 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 			{
 				if (m_versionId >= CLVER_2_3) return HandlePacketResult::Handled;
 				auto globalPos = getGlobalPosition();
-				globalPos.x() = static_cast<int32_t>(atof(flagValue.text()) * 16.0);
+				globalPos.x() = static_cast<int32_t>(string::toFloat(flagValue.toStringView()) * 16.0f);
 				if (auto localPos = toLocalPixelPosition(globalPos); localPos.x() != account.character.localPixelX)
 				{
 					auto xprop = getProp<PlayerProp::X>();
@@ -619,11 +619,11 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 				}
 				return HandlePacketResult::Handled;
 			}
-			else if (flagName == "gr.y")
+			if (flagName == "gr.y")
 			{
 				if (m_versionId >= CLVER_2_3) return HandlePacketResult::Handled;
 				auto globalPos = getGlobalPosition();
-				globalPos.y() = static_cast<int32_t>(atof(flagValue.text()) * 16.0);
+				globalPos.y() = static_cast<int32_t>(string::toFloat(flagValue.toStringView()) * 16.0f);
 				if (auto localPos = toLocalPixelPosition(globalPos); localPos.y() != account.character.localPixelY)
 				{
 					auto yprop = getProp<PlayerProp::Y>();
@@ -634,12 +634,12 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 				}
 				return HandlePacketResult::Handled;
 			}
-			else if (flagName == "gr.z")
+			if (flagName == "gr.z")
 			{
 				if (m_versionId >= CLVER_2_3) return HandlePacketResult::Handled;
-				const auto pos = static_cast<float>(atof(flagValue.text()));
-				if (pos != account.character.localPixelZ / 16.0f)
-					m_grMovementPackets >> (char)PlayerProp::Z >> (char)((pos + 0.5f) + 50.0f) << "\n";
+				const auto pos = string::toFloat(flagValue.toStringView());
+				if (pos != static_cast<float>(account.character.localPixelZ.value_or(0)) / 16.0f)
+					m_grMovementPackets >> (char)PlayerProp::Z >> (char)(pos + 50.0f) << "\n";
 				return HandlePacketResult::Handled;
 			}
 		}

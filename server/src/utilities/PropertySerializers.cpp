@@ -415,6 +415,49 @@ std::format_context::iterator PropertyPixelCoordinate::format(std::format_contex
 }
 
 // -----------------------------------------------
+// PropertyPixelCoordinateZ
+
+void PropertyPixelCoordinateZ::fixCoordinate()
+{
+	if (pixelCoordinate.has_value() && (pixelCoordinate.value() < Character::ValidZRangePixels[0] || pixelCoordinate.value() > Character::ValidZRangePixels[1]))
+		pixelCoordinate.reset();
+}
+
+CString PropertyPixelCoordinateZ::serialize() const
+{
+	uint16_t val = static_cast<uint16_t>(std::abs(pixelCoordinate.value_or(Character::InvalidZPixels))) << 1;
+	if (pixelCoordinate.value_or(Character::InvalidZPixels) < 0)
+		val |= 0x0001;
+	return CString() >> (short)val;
+}
+
+void PropertyPixelCoordinateZ::deserialize(CString& data)
+{
+	const auto len = data.readGUShort();
+	pixelCoordinate = static_cast<int16_t>(len >> 1);
+
+	// If the first bit is 1, our pixelCoordinate is negative.
+	if (static_cast<uint16_t>(len) & 0x0001)
+		pixelCoordinate.value() = static_cast<int16_t>(-pixelCoordinate.value());
+
+	fixCoordinate();
+}
+
+void PropertyPixelCoordinateZ::apply(const GameValue& gameValue)
+{
+	pixelCoordinate = static_cast<int16_t>(gameValue.getCopy<double>().value_or(0) * 16);
+	fixCoordinate();
+}
+
+std::format_context::iterator PropertyPixelCoordinateZ::format(std::format_context& ctx) const
+{
+	if (!pixelCoordinate.has_value())
+		return std::format_to(ctx.out(), "pixel: (not set) (tile: not set)");
+
+	return std::format_to(ctx.out(), "pixel: {} (tile: {:.2f})", pixelCoordinate.value(), static_cast<float>(pixelCoordinate.value()) / 16.0f);
+}
+
+// -----------------------------------------------
 // PropertyTileCoordinate
 
 CString PropertyTileCoordinate::serialize() const
@@ -460,24 +503,34 @@ std::format_context::iterator PropertyTileCoordinate::format(std::format_context
 // -----------------------------------------------
 // PropertyTileCoordinateZ
 
+void PropertyTileCoordinateZ::fixCoordinate()
+{
+	if (pixelCoordinate.has_value() && (pixelCoordinate.value() < Character::ValidZRangePixels[0] || pixelCoordinate.value() > Character::ValidZRangePixels[1]))
+		pixelCoordinate.reset();
+}
+
 CString PropertyTileCoordinateZ::serialize() const
 {
-	return CString() >> (char)(std::min(170, std::max(-50, (pixelCoordinate / 16))) + 50);
+	return CString() >> (char)((pixelCoordinate.value_or(Character::InvalidZPixels) / 16) + 50);
 }
 
 void PropertyTileCoordinateZ::deserialize(CString& data)
 {
 	pixelCoordinate = static_cast<int16_t>((data.readGUChar() - 50) * 16);
+	fixCoordinate();
 }
 
 void PropertyTileCoordinateZ::apply(const GameValue& gameValue)
 {
 	pixelCoordinate = static_cast<int16_t>(gameValue.getCopy<double>().value_or(0) * 16);
+	fixCoordinate();
 }
 
 std::format_context::iterator PropertyTileCoordinateZ::format(std::format_context& ctx) const
 {
-	return std::format_to(ctx.out(), "tile: {:.2f} (pixel: {})", static_cast<float>(pixelCoordinate) / 16.0f, pixelCoordinate);
+	if (!pixelCoordinate.has_value())
+		return std::format_to(ctx.out(), "tile: (not set) (pixel: not set)");
+	return std::format_to(ctx.out(), "tile: {:.2f} (pixel: {})", static_cast<float>(pixelCoordinate.value()) / 16.0f, pixelCoordinate.value());
 }
 
 // -----------------------------------------------

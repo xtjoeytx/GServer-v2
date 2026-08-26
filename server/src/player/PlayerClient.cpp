@@ -1116,11 +1116,11 @@ double PlayerClient::getCalculatedTileZ() const noexcept
 {
 	const auto level = getLevel();
 	if (level == nullptr || !level->hasTerrain())
-		return account.character.localPixelZ / 16.0;
+		return account.character.localPixelZ.value_or(0) / 16.0;
 
 	const PixelPosition testPosition = account.character.getGlobalPosition().translate(24, 48);
 	const auto terrainHeight = level->getHeightAt(testPosition);
-	const auto currentZ = account.character.localPixelZ / 16.0;
+	const auto currentZ = account.character.localPixelZ.value_or(0) / 16.0;
 	return std::max(terrainHeight, currentZ);
 }
 

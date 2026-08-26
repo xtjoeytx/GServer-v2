@@ -1062,7 +1062,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 		case PlayerProp::Z2:
 		{
-			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
+			auto pixelProp = dynamic_cast<PropertyPixelCoordinateZ*>(base);
 			if (pixelProp == nullptr || pixelProp->pixelCoordinate == account.character.localPixelZ)
 				SETPROP_RETURN_IGNORE;
 

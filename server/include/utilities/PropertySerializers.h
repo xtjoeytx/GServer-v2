@@ -529,6 +529,25 @@ struct PropertyPixelCoordinate : public PropertyBase
 	int16_t pixelCoordinate = 0;
 };
 
+/// @brief A property that stores a Z pixel position.
+struct PropertyPixelCoordinateZ : public PropertyBase
+{
+	PropertyPixelCoordinateZ() = default;
+	explicit PropertyPixelCoordinateZ(const std::optional<int16_t> pixelCoordinate) : pixelCoordinate(pixelCoordinate) { fixCoordinate(); }
+	explicit PropertyPixelCoordinateZ(const int16_t pixelCoordinate) : pixelCoordinate(pixelCoordinate) { fixCoordinate(); }
+	explicit PropertyPixelCoordinateZ(const float tileCoordinate) : pixelCoordinate(static_cast<int16_t>(tileCoordinate * 16)) { fixCoordinate(); }
+	explicit PropertyPixelCoordinateZ(const double tileCoordinate) : pixelCoordinate(static_cast<int16_t>(tileCoordinate * 16)) { fixCoordinate(); }
+
+	void fixCoordinate();
+
+	[[nodiscard]] CString serialize() const override;
+	void deserialize(CString& data) override;
+	void apply(const GameValue& gameValue) override;
+	std::format_context::iterator format(std::format_context& ctx) const override;
+
+	std::optional<int16_t> pixelCoordinate = 0;
+};
+
 /// @brief A property that serializes a coordinate in the old style.
 struct PropertyTileCoordinate : public PropertyBase
 {
@@ -548,16 +567,19 @@ struct PropertyTileCoordinate : public PropertyBase
 struct PropertyTileCoordinateZ : public PropertyBase
 {
 	PropertyTileCoordinateZ() = default;
-	explicit PropertyTileCoordinateZ(const int16_t pixelCoordinate) : pixelCoordinate(pixelCoordinate) {}
-	explicit PropertyTileCoordinateZ(const float tileCoordinate) : pixelCoordinate(static_cast<int16_t>(tileCoordinate * 16)) {}
-	explicit PropertyTileCoordinateZ(const double tileCoordinate) : pixelCoordinate(static_cast<int16_t>(tileCoordinate * 16)) {}
+	explicit PropertyTileCoordinateZ(const std::optional<int16_t> pixelCoordinate) : pixelCoordinate(pixelCoordinate) { fixCoordinate(); }
+	explicit PropertyTileCoordinateZ(const int16_t pixelCoordinate) : pixelCoordinate(pixelCoordinate) { fixCoordinate(); }
+	explicit PropertyTileCoordinateZ(const float tileCoordinate) : pixelCoordinate(static_cast<int16_t>(tileCoordinate * 16)) { fixCoordinate(); }
+	explicit PropertyTileCoordinateZ(const double tileCoordinate) : pixelCoordinate(static_cast<int16_t>(tileCoordinate * 16)) { fixCoordinate(); }
+
+	void fixCoordinate();
 
 	[[nodiscard]] CString serialize() const override;
 	void deserialize(CString& data) override;
 	void apply(const GameValue& gameValue) override;
 	std::format_context::iterator format(std::format_context& ctx) const override;
 
-	int16_t pixelCoordinate = 0;
+	std::optional<int16_t> pixelCoordinate;
 };
 
 /// @brief A property that stores an old GS1 script.
@@ -895,6 +917,12 @@ template <>
 struct std::formatter<preagonal::props::PropertyPixelCoordinate> : std::formatter<std::string>
 {
 	static auto format(const preagonal::props::PropertyPixelCoordinate& prop, std::format_context& ctx) { return prop.format(ctx); }
+};
+
+template <>
+struct std::formatter<preagonal::props::PropertyPixelCoordinateZ> : std::formatter<std::string>
+{
+	static auto format(const preagonal::props::PropertyPixelCoordinateZ& prop, std::format_context& ctx) { return prop.format(ctx); }
 };
 
 template <>

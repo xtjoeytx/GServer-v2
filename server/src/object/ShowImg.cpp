@@ -175,7 +175,7 @@ void ShowImg::processProps(CString& props)
 				props::PropertyTileCoordinateZ prop;
 				prop.deserialize(props);
 
-				position.z() = prop.pixelCoordinate;
+				position.z() = prop.pixelCoordinate.value_or(0);
 				break;
 			}
 

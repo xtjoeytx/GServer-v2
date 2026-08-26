@@ -147,7 +147,11 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (command == "STARTY")
 			npc->m_initialCharacter.localPixelY = static_cast<int16_t>(string::toFloat(lineView) * 16);
 		else if (command == "STARTZ")
+		{
 			npc->m_initialCharacter.localPixelZ = static_cast<int16_t>(string::toFloat(lineView) * 16);
+			if (npc->m_initialCharacter.localPixelZ.has_value() && (npc->m_initialCharacter.localPixelZ.value() < Character::ValidZRangePixels[0] || npc->m_initialCharacter.localPixelZ.value() > Character::ValidZRangePixels[1]))
+				npc->m_initialCharacter.localPixelZ.reset();
+		}
 		else if (command == "STARTMAPX")
 			npc->m_initialCharacter.mapX = string::toNumber<uint8_t>(lineView);
 		else if (command == "STARTMAPY")
@@ -171,8 +175,13 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		else if (command == "Z")
 		{
 			npc->character.localPixelZ = static_cast<int16_t>(string::toFloat(lineView) * 16);
-			npc->modTime[PROPID(NPCProp::Z)] = updateTime;
-			npc->modTime[PROPID(NPCProp::Z2)] = updateTime;
+			if (npc->character.localPixelZ.has_value() && (npc->character.localPixelZ.value() < Character::ValidZRangePixels[0] || npc->character.localPixelZ.value() > Character::ValidZRangePixels[1]))
+				npc->character.localPixelZ.reset();
+			else
+			{
+				npc->modTime[PROPID(NPCProp::Z)] = updateTime;
+				npc->modTime[PROPID(NPCProp::Z2)] = updateTime;
+			}
 		}
 		else if (command == "MAPX")
 		{
@@ -511,7 +520,8 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	file->writeConfigLine("STARTLEVEL", npc->m_initialLevel);
 	file->writeConfigLine("STARTX", string::to_string(npc->m_initialCharacter.localPixelX / 16.0, 2));
 	file->writeConfigLine("STARTY", string::to_string(npc->m_initialCharacter.localPixelY / 16.0, 2));
-	file->writeConfigLine("STARTZ", string::to_string(npc->m_initialCharacter.localPixelZ / 16.0, 2));
+	if (npc->m_initialCharacter.localPixelZ.has_value())
+		file->writeConfigLine("STARTZ", string::to_string(npc->m_initialCharacter.localPixelZ.value() / 16.0, 2));
 	if (npc->m_initialCharacter.mapX != 0 || npc->m_initialCharacter.mapY != 0)
 	{
 		file->writeConfigLine("STARTMAPX", string::to_string(npc->m_initialCharacter.mapX));
@@ -526,7 +536,8 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 
 		file->writeConfigLine("X", string::to_string(npc->character.localPixelX / 16.0, 2));
 		file->writeConfigLine("Y", string::to_string(npc->character.localPixelY / 16.0, 2));
-		file->writeConfigLine("Z", string::to_string(npc->character.localPixelZ / 16.0, 2));
+		if (npc->character.localPixelZ.has_value())
+			file->writeConfigLine("Z", string::to_string(npc->character.localPixelZ.value() / 16.0, 2));
 		if (npc->character.mapX != 0 || npc->character.mapY != 0 || (level != nullptr && level->isGmap()))
 		{
 			file->writeConfigLine("MAPX", string::to_string(npc->character.mapX));

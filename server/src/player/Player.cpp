@@ -843,7 +843,7 @@ bool Player::isJailed() const
 
 double Player::getCalculatedTileZ() const noexcept
 {
-	return account.character.localPixelZ / 16.0;
+	return account.character.localPixelZ.value_or(0) / 16.0;
 }
 
 bool Player::isInNoPkLevel() const noexcept
@@ -1258,7 +1258,6 @@ void Player::constructScriptParameters()
 		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return isGuest() ? 1.0 : 0.0; }
 	});
 
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{.name = "z"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::Z2)]), .value = std::ref(account.character.localPixelZ), .factor = 16});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{.name = "hearts"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HALFHEARTS)]), .value = std::ref(account.character.hitpointsInHalves), .factor = 2});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{.name = "hp"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HALFHEARTS)]), .value = std::ref(account.character.hitpointsInHalves), .factor = 2});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "fullhearts"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::FULLHEARTS)]), .value = std::ref(account.maxHitpoints)});
@@ -1347,6 +1346,24 @@ void Player::constructScriptParameters()
 						modTime[PROPID(PlayerProp::GMAPLEVELY)] = now;
 					}
 				}
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		.name = "z"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter
+		{
+			return static_cast<double>(account.character.localPixelZ.value_or(0)) / 16.0;
+		},
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			{
+				const PropertyTileCoordinateZ zProp{value->get()};
+				auto now = m_server->getFrameStartTime();
+				account.character.localPixelZ = zProp.pixelCoordinate;
+				modTime[PROPID(PlayerProp::Z2)] = now;
 			}
 		}
 	});

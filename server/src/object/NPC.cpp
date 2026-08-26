@@ -534,14 +534,14 @@ double NPC::getCalculatedTileZ() const noexcept
 {
 	const auto levelPtr = getLevel();
 	if (levelPtr == nullptr || !levelPtr->hasTerrain())
-		return character.localPixelZ / 16.0;
+		return character.localPixelZ.value_or(0) / 16.0;
 
 	PixelPosition testPosition = character.getGlobalPosition();
 	if (isCharacter())
 		testPosition.translate(24, 48);
 
 	const auto terrainHeight = levelPtr->getHeightAt(testPosition);
-	const auto currentZ = character.localPixelZ / 16.0;
+	const auto currentZ = character.localPixelZ.value_or(0) / 16.0;
 	return std::max(terrainHeight, currentZ);
 }
 
@@ -595,7 +595,10 @@ void NPC::hurtAndPush(const int8_t damageInHalves, const PixelPosition& pushOrig
 
 		// Push the character away from the source of damage.
 		auto tileOrigin = toTilePosition(pushOrigin);
-		TilePosition pushVector{character.getTilePosition().x() + 1.5f - tileOrigin.x(), character.getTilePosition().y() + 2.0f - tileOrigin.y()};
+		TilePosition pushVector{
+			character.getTilePosition().x() + 1.5f - tileOrigin.x(),
+			character.getTilePosition().y() + 2.0f - tileOrigin.y()
+		};
 		pushVector.normalize2D(pushVector.length2D());
 		pushVector = pushVector * 5.0f;
 
@@ -1554,7 +1557,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 
 		case NPCProp::Z2:
 		{
-			auto pixelProp = dynamic_cast<PropertyPixelCoordinate*>(base);
+			auto pixelProp = dynamic_cast<PropertyPixelCoordinateZ*>(base);
 			if (pixelProp == nullptr || !canUpdatePosition || pixelProp->pixelCoordinate == character.localPixelZ)
 				SETPROP_RETURN_IGNORE;
 
@@ -1768,7 +1771,6 @@ void NPC::constructScriptParameters()
 		.name = "height"sv, .getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return getComputedShape().height() / 16.0; }
 	});
 
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{.name = "z"sv, .modTime = std::ref(modTime[PROPID(NPCProp::Z2)]), .value = std::ref(character.localPixelZ), .factor = 16});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{.name = "hearts"sv, .modTime = std::ref(modTime[PROPID(NPCProp::HALFHEARTS)]), .value = std::ref(character.hitpointsInHalves), .factor = 2});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::DivideByIntegralProperty{.name = "hp"sv, .modTime = std::ref(modTime[PROPID(NPCProp::HALFHEARTS)]), .value = std::ref(character.hitpointsInHalves), .factor = 2});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "ap"sv, .modTime = std::ref(modTime[PROPID(NPCProp::ALIGNMENT)]), .value = std::ref(character.ap)});
@@ -1856,6 +1858,24 @@ void NPC::constructScriptParameters()
 						modTime[PROPID(NPCProp::GMAPLEVELY)] = now;
 					}
 				}
+			}
+		}
+	});
+
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		.name = "z"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter
+		{
+			return static_cast<double>(character.localPixelZ.value_or(0)) / 16.0;
+		},
+		.setter = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
+		{
+			if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+			{
+				const PropertyTileCoordinateZ zProp{value->get()};
+				auto now = m_server->getFrameStartTime();
+				character.localPixelZ = zProp.pixelCoordinate;
+				modTime[PROPID(NPCProp::Z2)] = now;
 			}
 		}
 	});
@@ -2273,7 +2293,8 @@ std::vector<std::string> NPC::getVariableDump() const
 	{
 		if (variable->value.has<bool>() && !variable->value.has<std::string>() && variable->getCopy<bool>().value_or(false))
 			result.emplace_back(std::format("{}.flags[{}]: true", npcname, flag));
-		else result.emplace_back(std::format("{}.flags[{}]: {}", npcname, flag, variable->getCopy<std::string>().value_or(std::string{})));
+		else
+			result.emplace_back(std::format("{}.flags[{}]: {}", npcname, flag, variable->getCopy<std::string>().value_or(std::string{})));
 	}
 
 	result.emplace_back();

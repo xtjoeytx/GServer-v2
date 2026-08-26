@@ -743,7 +743,7 @@ inline void Player::recordCurrentPropModTime()
 	DO(PlayerProp::ONLINESECONDS2, PropertyNumeric<GBYTE5>)                                                                    \
 	DO(PlayerProp::X2, PropertyPixelCoordinate, account.character.localPixelX)                                                 \
 	DO(PlayerProp::Y2, PropertyPixelCoordinate, account.character.localPixelY)                                                 \
-	DO(PlayerProp::Z2, PropertyPixelCoordinate, account.character.localPixelZ)                                                 \
+	DO(PlayerProp::Z2, PropertyPixelCoordinateZ, account.character.localPixelZ)                                                \
 	DO(PlayerProp::PLAYERLISTCATEGORY, PropertyNumeric<GBYTE1>, (uint8_t)m_playerListCategory)                                 \
 	DO(PlayerProp::COMMUNITYNAME, PropertyString, account.communityName)
 
