@@ -1475,10 +1475,11 @@ HandlePacketResult Player::msgPLI_NULL(CString& pPacket)
 
 	// If we are getting a whole bunch of invalid packets, something went wrong.  Disconnect the player.
 	InvalidPackets++;
-	if (InvalidPackets > 5)
+	if (InvalidPackets > 2)
 	{
 		log::printLine(log::server, "Player {} is sending invalid packets.", account.character.nickName);
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Disconnected for sending invalid packets.");
+		disconnect();
 		return HandlePacketResult::Failed;
 	}
 

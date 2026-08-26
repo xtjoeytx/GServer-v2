@@ -249,6 +249,8 @@ inline std::optional<CString> IPacketHandler::retrievePacketBundle(CString& buff
 
 inline void IPacketHandler::processPacketBundle(CString& bundle)
 {
+	bool usedDeflate = false;
+
 	// No encryption or compression.
 	if (Encryption.getGen() == ENCRYPT_GEN_1)
 		return;
@@ -257,13 +259,13 @@ inline void IPacketHandler::processPacketBundle(CString& bundle)
 	// Not encrypted, but zlib compressed.
 	if (Encryption.getGen() == ENCRYPT_GEN_2)
 	{
-		bundle.zuncompressI();
+		bundle.zuncompress2I(usedDeflate);
 	}
 	// Version 1.41 - 2.18 client encryption
 	// Compressed with zlib, individual packets in bundle encrypted.
 	else if (Encryption.getGen() == ENCRYPT_GEN_3)
 	{
-		bundle.zuncompressI();
+		bundle.zuncompress2I(usedDeflate);
 	}
 	// Version 2.19+ encryption.
 	// Bundle compressed and then encrypted.  Always BZ2 compressed.
@@ -289,7 +291,14 @@ inline void IPacketHandler::processPacketBundle(CString& bundle)
 
 		// Uncompress bundle
 		if (pType == COMPRESS_ZLIB)
-			bundle.zuncompressI();
+		{
+			bundle.zuncompress2I(usedDeflate);
+
+			// If we used deflate, we need to roll back the iterator so that the next packet can be decrypted properly.
+			// This works around a bug in the 2.x client's version of zlib.
+			if (usedDeflate)
+				Encryption.rollbackIterator();
+		}
 		else if (pType == COMPRESS_BZ2)
 			bundle.bzuncompressI();
 		else if (pType != COMPRESS_UNCOMPRESSED)

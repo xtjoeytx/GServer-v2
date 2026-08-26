@@ -48,32 +48,6 @@
 #include <utilities/std/inplace_vector.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-
-// There is a zlib bug where if you have 11 identical characters in a row, with 0 or 1 following characters, zlib will fail to decompress.
-// aaaaaaaaaaa = fail
-// aaaaaaaaaaaB = fail
-// aaaaaaaaaaaBB = success
-static CString zlibFix(
-	"//#CLIENTSIDE\xa7"
-	"if(playerchats) {\xa7"
-	"  this.chr = {ascii(#e(0,1,#c)),0,0,0,0};\xa7"
-	"  for(this.c=0;this.c<strlen(#c)*(strlen(#c)>=11);this.c++) {\xa7"
-	"    this.chr[2] = ascii(#e(this.c,1,#c));\xa7"
-	"    this.chr[3] += 1*(this.chr[2]==this.chr[0]);\xa7"
-	"    if(!(this.chr[2] in {this.chr[0],this.chr[1]})) {\xa7"
-	"      if(this.chr[1]==0) {\xa7"
-	"        if(this.chr[2]!=this.chr[0]) this.chr[1]=this.chr[2];\xa7"
-	"      } else break; //[A][B][C]\xa7"
-	"    }\xa7"
-	"    this.chr[4] += 1*(this.chr[2]==this.chr[1]);\xa7"
-	"    if(this.chr[1]>0 && this.chr[3] in |2,10|) break; //[1<A<11][B]\xa7"
-	"    if(this.chr[3]>=11 && this.chr[4]>1) break; //[A>=11][B>1]\xa7"
-	"  }\xa7"
-	"  if(this.c>0 && this.c == strlen(#c)) setplayerprop #c,\xa0#c\xa0; //Pad\xa7"
-	"}\xa7"
-);
-
-///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -615,12 +589,6 @@ bool PlayerClient::sendLogin()
 		{
 			if (!account.hasWeapon(weapon))
 				this->addWeapon(weapon);
-		}
-
-		// Send the zlib fixing NPC to client versions 2.21 - 2.31.
-		if (m_versionId >= CLVER_2_21 && m_versionId <= CLVER_2_31)
-		{
-			sendPacket(CString() >> (char)PLO_NPCWEAPONADD >> (char)12 << "-gr_zlib_fix" >> (char)0 >> (char)0 >> (char)1 >> (short)zlibFix.length() << zlibFix);
 		}
 
 		m_fileQueue.sendCompress();
