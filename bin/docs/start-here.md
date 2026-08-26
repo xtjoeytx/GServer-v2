@@ -36,6 +36,14 @@ For example, if you are running a `newmain` server, make sure your `allowedversi
 The names of the server generations changed during development so if you never updated your configuration file,
 you may be running the gserver in `classic` 1.x mode and connecting with a 2.x client, which would result in mangled packets.
 
+## Error: "Invalid NPCProp type", or "Invalid PlayerProp type"
+
+This happens when the packet stream gets corrupted.
+Often, this is a result of your server's [Generation](server.md#server-generation) option being set incorrectly.
+If your server is set to `classic` mode, and you allow a 2.x client to connect, the property packet can become corrupted.
+Likewise, connecting to a `newmain` server with a 1.x client can also corrupt the packet stream.
+The properties between `classic` and `newmain` clients differ, so a mismatch will cause them to be read incorrectly.
+
 # Further reading
 
 - [Server](server.md) - Learn about server generations, client versions, and other server options.
