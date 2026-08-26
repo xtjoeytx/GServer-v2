@@ -19,9 +19,9 @@ namespace preagonal
 /// @brief Represents a character.
 struct Character
 {
-	int16_t localPixelX = 488; // 30.5
-	int16_t localPixelY = 480; // 30
-	int16_t localPixelZ = 0;
+	int16_t localPixelX = 488;	// 30.5
+	int16_t localPixelY = 480;	// 30
+	int16_t localPixelZ = InvalidZPixels;	// -51
 	uint8_t mapX = 0;
 	uint8_t mapY = 0;
 	uint8_t ap = 50;
@@ -71,6 +71,10 @@ struct Character
 	{
 		return {mapX, mapY, 0};
 	}
+
+	// Represents a Z value that is not set.
+	constexpr static int16_t InvalidZTiles = -51;
+	constexpr static int16_t InvalidZPixels = InvalidZTiles * 16_i16;
 };
 
 //----------------------------

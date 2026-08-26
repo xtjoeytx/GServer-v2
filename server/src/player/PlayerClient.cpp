@@ -1269,6 +1269,13 @@ bool PlayerClient::enterLevel(const std::shared_ptr<Level>& level, const std::op
 		return false;
 	}
 
+	// If we are entering the level for the first time, send our Z prop to the client.
+	// For some reason the client ignores the Z prop on login until they have fully entered a level.
+	if (!m_loaded)
+	{
+		sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::Z << getProp<PlayerProp::Z>().serialize());
+	}
+
 	// If the level is a sparring zone and you have 100 AP, change AP to 99 and
 	// the apcounter to 1.
 	if (level->isSparringZone(getMapPosition()) && account.character.ap == 100)

@@ -139,7 +139,7 @@ inline constexpr PropList loginPropsClientSelf =
 	false, true, true, false, false, false, // 24-29
 	false, false, true, false, true, true,  // 30-35
 	true, true, true, true, true, true,     // 36-41
-	false, false, false, false, true, true, // 42-47
+	false, false, false, true, true, true,  // 42-47
 	true, true, false, false, false, false, // 48-53
 	true, true, true, true, true, true,     // 54-59
 	true, true, true, true, true, true,     // 60-65
