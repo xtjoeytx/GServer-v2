@@ -41,7 +41,6 @@ constexpr std::array<std::string_view, 9> supportedLanguages =
 };
 
 constexpr auto filePrefix = "slanguage"sv;
-constexpr auto originalLanguage = "Original"sv;
 
 //----------------------------
 
@@ -275,9 +274,56 @@ void TranslationManagerClassic::registerOriginalText(const std::string_view key)
 	domain->second.lines.emplace(hash, key);
 }
 
+bool TranslationManagerClassic::addTranslation(const std::string_view language, const std::string_view key, const std::string_view translation)
+{
+	const auto hash = generateHash(key);
+
+	// Find or create the language domain.
+	auto calculatedLanguage = language::mapToClassic(language);
+	auto domain = m_domains.find(calculatedLanguage);
+	if (domain == m_domains.end())
+	{
+		if (calculatedLanguage != originalLanguage && std::ranges::find(supportedLanguages, calculatedLanguage) == std::ranges::end(supportedLanguages))
+			return false;
+
+		std::filesystem::path languageFile;
+		if (const auto originalDomain = m_domains.find(originalLanguage); originalDomain != m_domains.end())
+			languageFile = originalDomain->second.filename.parent_path() / std::format("{}{}.txt", filePrefix, calculatedLanguage);
+
+		domain = m_domains.emplace(calculatedLanguage, TranslationMap{.filename = languageFile}).first;
+	}
+
+	// Failed to find or create it.
+	if (domain == m_domains.end())
+		return false;
+
+	// If the language is not the original, check if the original has this key.
+	if (calculatedLanguage != originalLanguage)
+	{
+		auto findTranslation = [this](const std::string_view lang, const std::string_view k) -> std::string*
+		{
+			const auto domain = m_domains.find(lang);
+			if (domain == m_domains.end())
+				return nullptr;
+			if (const auto line = domain->second.lines.find(k); line != domain->second.lines.end())
+				return &line->second;
+			return nullptr;
+		};
+		if (const auto line = findTranslation(originalLanguage, hash); line == nullptr)
+			return false;
+	}
+
+	// Add or update the translation.
+	domain->second.lines[hash] = translation;
+	return true;
+}
+
 std::string_view TranslationManagerClassic::getText(const std::string_view language, const std::string_view key)
 {
-	auto hash = generateHash(key);
+	if (key.empty())
+		return key;
+
+	const auto hash = generateHash(key);
 
 	auto findTranslation = [this](const std::string_view lang, const std::string_view k) -> std::string*
 	{
@@ -290,7 +336,8 @@ std::string_view TranslationManagerClassic::getText(const std::string_view langu
 	};
 
 	// Search the target language, then "Original".
-	if (const auto line = findTranslation(language, hash); line != nullptr)
+	const auto calculatedLanguage = language::mapToClassic(language);
+	if (const auto line = findTranslation(calculatedLanguage, hash); line != nullptr)
 		return *line;
 	if (const auto line = findTranslation(originalLanguage, hash); line != nullptr)
 		return *line;
@@ -304,6 +351,9 @@ std::string_view TranslationManagerClassic::getText(const std::string_view langu
 
 std::string TranslationManagerClassic::generateHash(const std::string_view key)
 {
+	if (key.empty())
+		return "";
+
 	hash_state md5;
 	uint8_t output[16]{};
 

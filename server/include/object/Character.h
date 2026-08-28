@@ -104,8 +104,8 @@ enum class BodyPaletteIndicesClassic : uint8_t
 	SKIN = 5,
 	COAT = 6,
 	SLEEVES = 4,
-	TRANSPARENCY = 3,
-	SHOES = 2,
+	TRANSPARENCY = 2,
+	SHOES = 3,
 	BELT = 1,
 	BORDER = 0,
 };

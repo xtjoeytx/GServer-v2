@@ -84,6 +84,7 @@ static GS1ScriptValue mc_s(const GS1Visitor* visitor, const std::string_view mes
 static GS1ScriptValue mc_t(const GS1Visitor* visitor, const std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_T(const GS1Visitor* visitor, const std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_U(const GS1Visitor* visitor, const std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue mc_U2(const GS1Visitor* visitor, const std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_v(const GS1Visitor* visitor, const std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_W(const GS1Visitor* visitor, const std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue mc_w(const GS1Visitor* visitor, const std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments);
@@ -126,6 +127,7 @@ static MessageCodeHandleMap GenerateMap()
 		{hash("t"), &mc_t},
 		{hash("T"), &mc_T},
 		{hash("U"), &mc_U},
+		{hash("U2"), &mc_U2},
 		{hash("v"), &mc_v},
 		{hash("W"), &mc_W},
 		{hash("w"), &mc_w},
@@ -168,7 +170,10 @@ GS1ScriptValue processMessageCode(GS1Visitor* visitor, antlr4::tree::ParseTree* 
 	if (messageCode.empty())
 		throw std::runtime_error("processMessageCode received an empty message code");
 
-	const bool isTranslatable = std::ranges::contains(translatableMessageCodes, messageCode);
+	bool isTranslatable = std::ranges::contains(translatableMessageCodes, messageCode);
+	if (visitor->scriptEngine->config.alwaysTranslateStrings.getValue() == false)
+		isTranslatable = false;
+
 	std::vector<GS1ScriptValue*> arguments;
 	std::vector<std::any> keepAlive;
 
@@ -679,8 +684,54 @@ GS1ScriptValue mc_U(const GS1Visitor* visitor, const std::string_view messageCod
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: #U(string)");
 
+	const auto message = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
+
 	// Translation has already happened.
-	return makeGS1ScriptValue(GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{}));
+	if (visitor->scriptEngine->config.alwaysTranslateStrings.getValue() == true)
+		return makeGS1ScriptValue(message);
+
+	// If we have a player in the stack, use their language to translate the string.
+	if (const auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); player.has_value())
+	{
+		const auto server = BabyDI::Get<Server>();
+		if (const auto playerPtr = server->getPlayer(player.value().first); playerPtr != nullptr)
+		{
+			// We need to cast away the constness of the visitor so we can call translateSourceText, which is a non-const method.
+			// Rather than removing const from every function, I am just doing this.
+			const auto mutableVisitor = const_cast<GS1Visitor*>(visitor);
+			return mutableVisitor->translateSourceText(message, playerPtr->account.language);
+		}
+	}
+
+	return makeGS1ScriptValue(message);
+}
+
+// #U2(string)
+// Replaces the string with a translated version of it, after processing message codes.
+GS1ScriptValue mc_U2(const GS1Visitor* visitor, const std::string_view messageCode, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: #U2(string)");
+
+	const auto message = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
+
+	// We need to cast away the constness of the visitor so we can call translateSourceText, which is a non-const method.
+	// Rather than removing const from every function, I am just doing this.
+	const auto mutableVisitor = const_cast<GS1Visitor*>(visitor);
+
+	// For #U2, we want to process the message codes before we translate.
+	// To do that, we need to temporarily turn off the reparse protection.
+	SetAndRestore sar{mutableVisitor->reparsingStringExpression, false};
+
+	// If we have a player in the stack, use their language to translate the string.
+	if (const auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); player.has_value())
+	{
+		const auto server = BabyDI::Get<Server>();
+		if (const auto playerPtr = server->getPlayer(player.value().first); playerPtr != nullptr)
+			return mutableVisitor->translateSourceText(message, playerPtr->account.language);
+	}
+
+	return makeGS1ScriptValue(message);
 }
 
 // #v(identifier)

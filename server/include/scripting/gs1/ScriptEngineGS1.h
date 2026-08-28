@@ -164,6 +164,7 @@ struct CachedSettings
 {
 	SettingCache<bool> strictMode{"strict", false};
 	SettingCache<bool> alwaysScopeVariables{"always-scope-variables", true};
+	SettingCache<bool> alwaysTranslateStrings{"always-translate-strings", true};
 	SettingCache<bool> damageReactions{"damagereactions", true};
 	SettingCache<bool> shootball{"shootball", true};
 };

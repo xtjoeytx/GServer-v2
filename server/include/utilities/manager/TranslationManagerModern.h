@@ -29,6 +29,7 @@ public:
 	void registerOriginalText(std::string_view key) override;
 
 public:
+	bool addTranslation(std::string_view language, std::string_view key, std::string_view translation) override;
 	std::string_view getText(std::string_view language, std::string_view key) override;
 };
 

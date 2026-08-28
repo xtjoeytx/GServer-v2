@@ -8,6 +8,11 @@ strict=false
 # Some variables, like client.var, are not scoped to the client by default.
 always-scope-variables=true
 
+# Enable the implicit use of translated strings.
+# If set to true, all strings will be translated by default.
+# If set to false, only strings wrapped in #U(...) will be translated.
+always-translate-strings=true
+
 # ---[ NON-STANDARD COMMANDS ]--------------------------------------------------
 
 # Enables the enabledamagereactions and disabledamagereactions commands.

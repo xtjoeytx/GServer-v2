@@ -44,6 +44,7 @@ protected:
 	static std::string generateHash(std::string_view key);
 
 public:
+	bool addTranslation(std::string_view language, std::string_view key, std::string_view translation) override;
 	std::string_view getText(std::string_view language, std::string_view key) override;
 
 protected:

@@ -34,6 +34,8 @@
 #include <utilities/CommonTypes.h>
 #include <utilities/Extents.h>
 #include <utilities/Log.h>
+#include <utilities/manager/ITranslationManager.h>
+#include <utilities/manager/TranslationManagerClassic.h>
 
 using namespace preagonal;
 using namespace std::string_literals;
@@ -50,6 +52,9 @@ struct ServerFixture
 		log::rc.disabled = true;
 		log::script.disabled = true;
 		log::server.disabled = true;
+
+		BabyDI_RELEASE(ITranslationManager);
+		translationManager = BabyDI_PROVIDE(ITranslationManager, new TranslationManagerClassic());
 
 		BabyDI_RELEASE(Server);
 		server = BabyDI_PROVIDE(Server, new Server("test"));
@@ -79,7 +84,8 @@ struct ServerFixture
 	}
 
 	NPCID testNPC = NPCID_GEN_DATABASE_LOCALN;
-	Server* server;
+	Server* server = nullptr;
+	ITranslationManager* translationManager = nullptr;
 	std::shared_ptr<NPCServer> npcServer;
 	std::shared_ptr<gs1::ScriptEngineGS1> engine;
 };
@@ -983,5 +989,78 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 functions", "[Scripting][IScrip
 		CHECK(store->getValue<std::string>("passwordHash").value_or(std::string{}) == "9S+9MrKzuG/4jvbEkGKChfSCrxXdyylUH5S89Saj9sc="s);
 		CHECK_THAT(store->getValue<double>("testSuccess").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 		CHECK_THAT(store->getValue<double>("testFail").value_or(0.0), Catch::Matchers::WithinRel(0.0));
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 message codes", "[Scripting][IScriptEngine][GS1]")
+{
+	ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source::FromPlayer(NPCServerPlayerID)};
+	const auto player = npcServer->getPlayerNPCServer();
+	player->account.character = Character{};
+	player->account.character.nickName = "NPC-Server (Server)";
+	engine->settings.set("always-translate-strings", true);
+
+	SECTION("#U - explicit translate")
+	{
+		constexpr std::string_view script = R"(
+			setstring client.animal,cat;
+			setstring client.animal.es,dog;
+			setstring this.test1,#U(cat);
+			setstring this.test2,#U(the animal is #s(client.animal));
+			setstring this.test3,#U(the animal is #U(#s(client.animal)));
+			setstring this.test4,#U(the animal is #U2(#s(client.animal)));
+			setstring this.test5,#U(the animal is #U2(#U(#s(client.animal))));
+			setstring this.test6,#U(the animal is #U2(#U2(#U(#s(client.animal)))));
+		)";
+
+		auto npc = server->getNPC(testNPC);
+		auto npcstore = &npc->scripting.variables;
+		auto playerstore = &player->account.variables;
+
+		translationManager->addTranslation(language::originalLanguage, "cat", "cat");
+		translationManager->addTranslation(language::originalLanguage, "dog", "dog");
+		translationManager->addTranslation(language::originalLanguage, "#s(client.animal)", "#s(client.animal)");
+		translationManager->addTranslation(language::originalLanguage, "the animal is #s(client.animal)", "the animal is #s(client.animal)");
+		translationManager->addTranslation(language::originalLanguage, "the animal is #U(#s(client.animal))", "the animal is #U(#s(client.animal))");
+		translationManager->addTranslation(language::originalLanguage, "the animal is #U2(#s(client.animal))", "the animal is #U2(#s(client.animal))");
+		translationManager->addTranslation(language::originalLanguage, "the animal is #U2(#U(#s(client.animal)))", "the animal is #U2(#U(#s(client.animal)))");
+		translationManager->addTranslation(language::originalLanguage, "the animal is #U2(#U2(#U(#s(client.animal))))", "the animal is #U2(#U2(#U(#s(client.animal))))");
+		translationManager->addTranslation("spanish", "cat", "gato");
+		translationManager->addTranslation("spanish", "dog", "perro");
+		translationManager->addTranslation("spanish", "#s(client.animal)", "#s(client.animal.es)");
+		translationManager->addTranslation("spanish", "the animal is #s(client.animal)", "#s(client.animal): el tipo de animal");
+		translationManager->addTranslation("spanish", "the animal is #U(#s(client.animal))", "el animal es #U(#s(client.animal))");
+		translationManager->addTranslation("spanish", "the animal is #U2(#s(client.animal))", "el animal es #U2(#s(client.animal))");
+		translationManager->addTranslation("spanish", "the animal is #U2(#U(#s(client.animal)))", "el animal es #U2(#U(#s(client.animal)))");
+		translationManager->addTranslation("spanish", "the animal is #U2(#U2(#U(#s(client.animal))))", "el animal es #U2(#U2(#U(#s(client.animal))))");
+		engine->settings.set("always-translate-strings", false);
+
+		// English.
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
+
+		CHECK(playerstore->getValue<std::string>("client.animal").value_or(std::string{}) == "cat"s);
+		CHECK(playerstore->getValue<std::string>("client.animal.es").value_or(std::string{}) == "dog"s);
+		CHECK(npcstore->getValue<std::string>("test1").value_or(std::string{}) == "cat"s);
+		CHECK(npcstore->getValue<std::string>("test2").value_or(std::string{}) == "the animal is cat"s);
+		CHECK(npcstore->getValue<std::string>("test3").value_or(std::string{}) == "the animal is #s(client.animal)"s);
+		CHECK(npcstore->getValue<std::string>("test4").value_or(std::string{}) == "the animal is cat"s);
+		CHECK(npcstore->getValue<std::string>("test5").value_or(std::string{}) == "the animal is cat"s);
+		CHECK(npcstore->getValue<std::string>("test6").value_or(std::string{}) == "the animal is cat"s);
+
+		// Spanish.
+		player->account.language = "spanish";
+		result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
+
+		CHECK(playerstore->getValue<std::string>("client.animal").value_or(std::string{}) == "cat"s);
+		CHECK(npcstore->getValue<std::string>("test1").value_or(std::string{}) == "gato"s);
+		CHECK(npcstore->getValue<std::string>("test2").value_or(std::string{}) == "cat: el tipo de animal"s);
+		CHECK(npcstore->getValue<std::string>("test3").value_or(std::string{}) == "el animal es #s(client.animal.es)"s);
+		CHECK(npcstore->getValue<std::string>("test4").value_or(std::string{}) == "el animal es gato"s);
+		CHECK(npcstore->getValue<std::string>("test5").value_or(std::string{}) == "el animal es dog"s);
+		CHECK(npcstore->getValue<std::string>("test6").value_or(std::string{}) == "el animal es perro"s);
 	}
 }

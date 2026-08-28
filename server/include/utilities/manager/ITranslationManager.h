@@ -67,6 +67,8 @@ static std::unordered_map<std::string, std::string_view, string::string_hash, st
 	{ "Svenska"s, "sv"sv },
 };
 
+inline constexpr auto originalLanguage = "Original"sv;
+
 inline static std::string_view mapToClassic(const std::string_view language) noexcept
 {
 	if (const auto it = languageAliasesToClassic.find(language); it != languageAliasesToClassic.end())
@@ -117,6 +119,13 @@ public:
 	virtual void registerOriginalText(std::string_view key) = 0;
 
 public:
+	/// @brief Adds a translation for a given language and key.
+	/// @param language The language code specifying the desired localization.
+	/// @param key The key identifying the text string to translate.
+	/// @param translation The translated text string.
+	/// @return True if the translation was successfully added, false otherwise.
+	virtual bool addTranslation(std::string_view language, std::string_view key, std::string_view translation) = 0;
+
 	/// @brief Retrieves a localized text string for a given language and key.
 	/// @param language The language code specifying the desired localization.
 	/// @param key The key identifying the text string to retrieve.

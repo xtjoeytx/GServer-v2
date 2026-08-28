@@ -74,6 +74,7 @@ public:
 	ScriptExecutionContext* scriptContext = nullptr;
 	bool expectingFlag = false;
 	bool expectingTimeoutAsVariable = false;
+	bool reparsingStringExpression = false;
 	std::string who;
 
 public:
@@ -143,7 +144,7 @@ public:
 	GameValue processMathExpression(std::string_view expression);
 
 	template<class T = GS1Parser::CompoundStringContext>
-	[[a::inline]] T* walkToContext(antlr4::tree::ParseTree* node);
+	[[a::inline]] T* walkToContext(antlr4::tree::ParseTree* node) const;
 
 public:
 	std::vector<std::any> visitChildrenAndCollect(const antlr4::tree::ParseTree* node);
@@ -157,8 +158,6 @@ protected:
 	std::deque<ScriptObject> m_sleepCurrentSource;
 	std::vector<std::pair<antlr4::tree::ParseTree*, size_t>> m_callStack;
 	std::vector<std::pair<antlr4::tree::ParseTree*, size_t>> m_sleepCallStack;
-	bool m_reparsingStringExpression = false;
-	//bool m_reparsingMathExpression = false;
 
 protected:
 	std::any safeVisit(antlr4::tree::ParseTree* node);
@@ -417,7 +416,7 @@ inline bool GS1Visitor::hasSleepStack() const
 //----------------------------
 
 template<class T>
-T* GS1Visitor::walkToContext(antlr4::tree::ParseTree* node)
+T* GS1Visitor::walkToContext(antlr4::tree::ParseTree* node) const
 {
 	if (node == nullptr) return nullptr;
 

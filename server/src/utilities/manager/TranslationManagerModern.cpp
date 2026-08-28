@@ -45,6 +45,11 @@ void TranslationManagerModern::registerOriginalText(std::string_view key)
 {
 }
 
+bool TranslationManagerModern::addTranslation(std::string_view language, std::string_view key, std::string_view translation)
+{
+	return false;
+}
+
 std::string_view TranslationManagerModern::getText(std::string_view language, const std::string_view key)
 {
 	return key;

@@ -337,6 +337,8 @@ struct CommandState
 	std::string_view arguments;
 	POPMODE popMode;
 	bool commaPop = true;
+	size_t braceCount = 0;  // {}
+	size_t parenCount = 0;  // ()
 };
 
 bool canFuncPop() const
@@ -357,6 +359,40 @@ bool canArrayPop() const
 bool canCommaPop() const
 {
 	return m_commandStates.empty() || m_commandStates.back().commaPop;
+}
+
+bool shouldFuncPop() const
+{
+    return canFuncPop() && m_commandStates.back().parenCount == 0;
+}
+
+bool shouldCmdPop() const
+{
+    return canCmdPop() && m_commandStates.back().braceCount == 0;
+}
+
+void incParen()
+{
+    if (!m_commandStates.empty())
+        ++m_commandStates.back().parenCount;
+}
+
+void decParen()
+{
+    if (!m_commandStates.empty() && m_commandStates.back().parenCount > 0)
+        --m_commandStates.back().parenCount;
+}
+
+void incBrace()
+{
+    if (!m_commandStates.empty())
+        ++m_commandStates.back().braceCount;
+}
+
+void decBrace()
+{
+    if (!m_commandStates.empty() && m_commandStates.back().braceCount > 0)
+        --m_commandStates.back().braceCount;
 }
 
 bool isNextArgLeftParen() const
@@ -434,7 +470,7 @@ void popNextMode(bool terminateEarly = false)
 		currentState.arguments.remove_prefix(1);
 
 		// Last string?  Commas are included!
-		if ((mode == 'S' || mode == 'R') && (currentState.arguments.empty() || currentState.arguments.front() == ')'))
+		if ((mode == 'S' || mode == 'T' || mode == 'R') && (currentState.arguments.empty() || currentState.arguments.front() == ')'))
 			currentState.commaPop = false;
 
 		switch (mode)
@@ -444,6 +480,7 @@ void popNextMode(bool terminateEarly = false)
 			case 'P': setMode(IN_PARAM_E); currentState.commaPop = false; break;
 			case 'S': setMode(IN_PARAM_S); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
 			case 'R': setMode(IN_PARAM_R); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
+			case 'T': setMode(IN_PARAM_T); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
 			case 'L': setMode(IN_PARAM_L); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
 			case 'M': setMode(IN_PARAM_M); emitIdentifierAfter(GS1Lexer::RAWMESSAGECODE, getText()); break;
 			case 'B': setMode(IN_PARAM_B); break;
@@ -462,8 +499,6 @@ void popNextMode(bool terminateEarly = false)
 	}
 }
 
-size_t m_braceCount = 0;  // {}
-size_t m_parenCount = 0;  // ()
 std::deque<CommandState> m_commandStates;
 
 std::deque<std::unique_ptr<antlr4::Token>> m_pendingTokensBefore{};
@@ -480,6 +515,7 @@ tokens { COMMAND, FUNCTION, MESSAGECODE, RAWMESSAGECODE, STRING, BADDY, ITEM, CO
 	- P  parameters (multiple expressions)
 	- S  string
 	- R  raw string (string that doesn't process message codes)
+	- T  translatable string (raw string that accepts the #U2 message code)
 	- L  variable length comma-separated string list
 	- M  message code
 	- B  baddy name
@@ -801,7 +837,8 @@ MC_COMPUTED_V	: '#v'          { pushCommand("(E)"); }   -> type(MESSAGECODE);
 MC_I			: '#I'          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
 MC_T			: '#T'          { pushCommand("(S)"); }   -> type(MESSAGECODE);
 MC_E			: '#E'          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-MC_U			: '#U'          { pushCommand("(R)"); }   -> type(MESSAGECODE);
+MC_U			: '#U'          { pushCommand("(T)"); }   -> type(MESSAGECODE);
+MC_U2			: '#U2'         { pushCommand("(S)"); }   -> type(MESSAGECODE);
 MC_e			: '#e'          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 MC_i			: '#i'          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 MC_R			: '#R'          { pushCommand("(L)"); }   -> type(MESSAGECODE);
@@ -1034,7 +1071,8 @@ PARAM_V_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(E)"); }   -> type(MESSAG
 PARAM_V_MC_I            : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
 PARAM_V_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_V_MC_E            : MC_E          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_V_MC_U            : MC_U          { pushCommand("(R)"); }   -> type(MESSAGECODE);
+PARAM_V_MC_U            : MC_U          { pushCommand("(T)"); }   -> type(MESSAGECODE);
+PARAM_V_MC_U2           : MC_U2         { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_V_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_V_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_V_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
@@ -1052,10 +1090,10 @@ PARAM_V_TOKEN_PERIOD        : TOKEN_PERIOD -> type(TOKEN_PERIOD);
 mode IN_PARAM_E;
 
 PARAM_E_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
-PARAM_E_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() && m_braceCount == 0 }?    { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
-PARAM_E_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() && m_parenCount == 0 }?   { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_E_POP_END         : END               { canCmdPop() }?                         { popNextMode(true); } -> type(END);
-PARAM_E_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }?                       { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_E_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { shouldCmdPop()  }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
+PARAM_E_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { shouldFuncPop() }?  { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
+PARAM_E_POP_END         : END               { canCmdPop() }?      { popNextMode(true); } -> type(END);
+PARAM_E_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }?    { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_E_COMMA           : TOKEN_COMMA       { !canCommaPop() }?   -> type(TOKEN_COMMA);
 PARAM_E_FUNC_GROUP_1    : FUNC_GROUP_1 { pushCommand("(P)"); }    -> type(FUNCTION);
 PARAM_E_FUNC_GROUP_2    : FUNC_GROUP_2 { pushCommand("(S)"); }    -> type(FUNCTION);
@@ -1088,10 +1126,10 @@ PARAM_E_OP_LOGICALNOT     : OP_LOGICALNOT -> type(OP_LOGICALNOT);
 PARAM_E_TOKEN_BRACKET_LEFT      : TOKEN_BRACKET_LEFT                     { pushArrayAccess(); } -> type(TOKEN_BRACKET_LEFT);
 PARAM_E_POP_TOKEN_BRACKET_RIGHT : TOKEN_BRACKET_RIGHT { canArrayPop() }? { popNextMode(); }     -> type(TOKEN_BRACKET_RIGHT);
 PARAM_E_TOKEN_BRACKET_RIGHT     : TOKEN_BRACKET_RIGHT { !canArrayPop() }?                       -> type(TOKEN_BRACKET_RIGHT);
-PARAM_E_TOKEN_BRACE_LEFT    : TOKEN_BRACE_LEFT  { ++m_braceCount; } -> type(TOKEN_BRACE_LEFT);
-PARAM_E_TOKEN_BRACE_RIGHT   : TOKEN_BRACE_RIGHT { --m_braceCount; } -> type(TOKEN_BRACE_RIGHT);
-PARAM_E_TOKEN_PAREN_LEFT    : TOKEN_PAREN_LEFT  { ++m_parenCount; } -> type(TOKEN_PAREN_LEFT);
-PARAM_E_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT { --m_parenCount; } -> type(TOKEN_PAREN_RIGHT);
+PARAM_E_TOKEN_BRACE_LEFT    : TOKEN_BRACE_LEFT  { incBrace(); } -> type(TOKEN_BRACE_LEFT);
+PARAM_E_TOKEN_BRACE_RIGHT   : TOKEN_BRACE_RIGHT { decBrace(); } -> type(TOKEN_BRACE_RIGHT);
+PARAM_E_TOKEN_PAREN_LEFT    : TOKEN_PAREN_LEFT  { incParen(); } -> type(TOKEN_PAREN_LEFT);
+PARAM_E_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT { decParen(); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_E_TOKEN_PIPE          : TOKEN_PIPE -> type(TOKEN_PIPE);
 PARAM_E_TOKEN_QUESTION      : TOKEN_QUESTION -> type(TOKEN_QUESTION);
 PARAM_E_TOKEN_COLON         : TOKEN_COLON -> type(TOKEN_COLON);
@@ -1112,7 +1150,8 @@ PARAM_S_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(E)"); }   -> type(MESSAG
 PARAM_S_MC_I            : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
 PARAM_S_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_S_MC_E            : MC_E          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_S_MC_U            : MC_U          { pushCommand("(R)"); }   -> type(MESSAGECODE);
+PARAM_S_MC_U            : MC_U          { pushCommand("(T)"); }   -> type(MESSAGECODE);
+PARAM_S_MC_U2           : MC_U2         { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_S_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_S_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_S_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
@@ -1133,6 +1172,21 @@ PARAM_R_STRING_LITERAL  : ~[};,]+   { canCmdPop() && canCommaPop() }?  -> type(S
 PARAM_R_STRING_LITERAL_END : ~[};]+ { canCmdPop() && !canCommaPop() }? -> type(STRING);
 
 // --------------------------------------------------------
+mode IN_PARAM_T;
+
+PARAM_T_POP_BRACE_RIGHT   : TOKEN_BRACE_RIGHT { canCmdPop() }?      { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
+PARAM_T_POP_PAREN_RIGHT   : TOKEN_PAREN_RIGHT { shouldFuncPop() }?  { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
+PARAM_T_POP_END           : END               { canCmdPop() }?      { popNextMode(true); } -> type(END);
+PARAM_T_POP_COMMA         : TOKEN_COMMA       { canCommaPop() }?    { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_T_TOKEN_PAREN_LEFT  : TOKEN_PAREN_LEFT  { canFuncPop() }?                     { incParen(); } -> type(STRING);
+PARAM_T_TOKEN_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() && !shouldFuncPop() }? { decParen(); } -> type(STRING);
+PARAM_T_TOKEN_COMMA       : TOKEN_COMMA       { !canCommaPop() }?        -> type(STRING);
+PARAM_T_STRING_LITERAL1   : ~[(),]+  { canFuncPop() && canCommaPop() }?  -> type(STRING);
+PARAM_T_STRING_LITERAL2   : ~[};,]+  { canCmdPop()  && canCommaPop() }?  -> type(STRING);
+PARAM_T_STRING_LITERAL_END1 : ~[()]+ { canFuncPop() && !canCommaPop() }? -> type(STRING);
+PARAM_T_STRING_LITERAL_END2 : ~[};]+ { canCmdPop()  && !canCommaPop() }? -> type(STRING);
+
+// --------------------------------------------------------
 mode IN_PARAM_L;
 
 PARAM_L_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
@@ -1147,7 +1201,8 @@ PARAM_L_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(E)"); }   -> type(MESSAG
 PARAM_L_MC_I            : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
 PARAM_L_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_L_MC_E            : MC_E          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_L_MC_U            : MC_U          { pushCommand("(R)"); }   -> type(MESSAGECODE);
+PARAM_L_MC_U            : MC_U          { pushCommand("(T)"); }   -> type(MESSAGECODE);
+PARAM_L_MC_U2           : MC_U2         { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_L_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_L_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_L_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
@@ -1172,7 +1227,8 @@ PARAM_M_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(E)"); }   -> type(MESSAG
 PARAM_M_MC_I            : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
 PARAM_M_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_M_MC_E            : MC_E          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_M_MC_U            : MC_U          { pushCommand("(R)"); }   -> type(MESSAGECODE);
+PARAM_M_MC_U            : MC_U          { pushCommand("(T)"); }   -> type(MESSAGECODE);
+PARAM_M_MC_U2           : MC_U2         { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_M_MC_e            : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_M_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_M_MC_R            : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
@@ -1303,7 +1359,8 @@ PARAM_X_MC_COMPUTED_V : MC_COMPUTED_V { pushCommand("(E)"); }   -> type(MESSAGEC
 PARAM_X_MC_I          : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
 PARAM_X_MC_T          : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_X_MC_E          : MC_E          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_X_MC_U          : MC_U          { pushCommand("(R)"); }   -> type(MESSAGECODE);
+PARAM_X_MC_U          : MC_U          { pushCommand("(T)"); }   -> type(MESSAGECODE);
+PARAM_X_MC_U2         : MC_U2         { pushCommand("(S)"); }   -> type(MESSAGECODE);
 PARAM_X_MC_e          : MC_e          { pushCommand("(EES)"); } -> type(MESSAGECODE);
 PARAM_X_MC_i          : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
 PARAM_X_MC_R          : MC_R          { pushCommand("(L)"); }   -> type(MESSAGECODE);
@@ -1312,19 +1369,19 @@ PARAM_X_MC_Q          : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGEC
 // --------------------------------------------------------
 mode IN_PARAM_Z;
 
-PARAM_Z_START           : TOKEN_BRACE_LEFT  { m_braceCount == 0 }? { ++m_braceCount; } -> channel(HIDDEN);
-PARAM_Z_POP_END         : END               { m_braceCount == 0 }? { popNextMode(); }  -> type(END);
-PARAM_Z_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { m_braceCount == 1 }? { --m_braceCount; popNextMode(); emitIdentifierBefore(GS1Lexer::END, getText()); } -> channel(HIDDEN);
-PARAM_Z_BRACE_LEFT      : TOKEN_BRACE_LEFT                         { ++m_braceCount; } -> type(STRING);
-PARAM_Z_BRACE_RIGHT     : TOKEN_BRACE_RIGHT                        { --m_braceCount; } -> type(STRING);
-PARAM_Z_END             : END               { m_braceCount != 0 }? -> type(STRING);
+PARAM_Z_START           : TOKEN_BRACE_LEFT  { shouldCmdPop()  }? { incBrace(); }    -> channel(HIDDEN);
+PARAM_Z_POP_END         : END               { shouldCmdPop()  }? { popNextMode(); } -> type(END);
+PARAM_Z_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { !shouldCmdPop() }? { decBrace(); popNextMode(); emitIdentifierBefore(GS1Lexer::END, getText()); } -> channel(HIDDEN);
+PARAM_Z_BRACE_LEFT      : TOKEN_BRACE_LEFT                       { incBrace(); }    -> type(STRING);
+PARAM_Z_BRACE_RIGHT     : TOKEN_BRACE_RIGHT                      { decBrace(); }    -> type(STRING);
+PARAM_Z_END             : END               { !shouldCmdPop() }?                    -> type(STRING);
 PARAM_Z_STRING          : ~[{};]+ -> type(STRING);
 
 // --------------------------------------------------------
 mode IN_PARAM_1;
 
 PARAM_1_WS                : WHITESPACE+ -> type(WS), channel(HIDDEN);
-PARAM_1_TOKEN_PAREN_LEFT  : TOKEN_PAREN_LEFT { m_commandStates.back().popMode = POPMODE_FUNCTION; popNextMode(); } -> type(TOKEN_PAREN_LEFT);
+PARAM_1_TOKEN_PAREN_LEFT  : TOKEN_PAREN_LEFT { m_commandStates.back().popMode = POPMODE_FUNCTION; m_commandStates.back().parenCount = 0; popNextMode(); } -> type(TOKEN_PAREN_LEFT);
 
 // --------------------------------------------------------
 mode IN_PARAM_2;
@@ -1336,4 +1393,4 @@ PARAM_2_TOKEN_PAREN_RIGHT : TOKEN_PAREN_RIGHT { popNextMode(); } -> type(TOKEN_P
 mode IN_PARAM_3;
 
 PARAM_3_WS                : WHITESPACE+ -> type(WS), channel(HIDDEN);
-PARAM_3_TOKEN_PAREN_LEFT  : TOKEN_PAREN_LEFT { m_commandStates.back().popMode = POPMODE_FUNCTION; checkIfNextModeOptional(); } -> type(TOKEN_PAREN_LEFT);
+PARAM_3_TOKEN_PAREN_LEFT  : TOKEN_PAREN_LEFT { m_commandStates.back().popMode = POPMODE_FUNCTION; m_commandStates.back().parenCount = 0; checkIfNextModeOptional(); } -> type(TOKEN_PAREN_LEFT);

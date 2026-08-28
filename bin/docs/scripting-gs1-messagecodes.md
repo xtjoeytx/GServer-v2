@@ -22,8 +22,8 @@ Inserts a single `#` into the string.  It is an escape character for message cod
 `#1(index)`
 
 > introduced: 1.24 or 1.25<br>
-permissions: [RW]<br>
-targets: character
+> permissions: [RW]<br>
+> targets: character
 
 The character's sword image.
 
@@ -36,8 +36,8 @@ The character's sword image.
 `#2(index)`
 
 > introduced: 1.24 or 1.25<br>
-permissions: [RW]<br>
-targets: character
+> permissions: [RW]<br>
+> targets: character
 
 The character's shield image.
 
@@ -50,8 +50,8 @@ The character's shield image.
 `#3(index)`
 
 > introduced: 1.24 or 1.25<br>
-permissions: [RW]<br>
-targets: character
+> permissions: [RW]<br>
+> targets: character
 
 The character's head image.
 
@@ -64,8 +64,8 @@ The character's head image.
 `#5(index)`
 
 > introduced: 1.24 or 1.25<br>
-permissions: [RW]<br>
-targets: character
+> permissions: [RW]<br>
+> targets: character
 
 The character's horse image.
 
@@ -78,8 +78,8 @@ The character's horse image.
 `#6(index)`
 
 > introduced: 1.24 or 1.25<br>
-permissions: [R-]<br>
-targets: player
+> permissions: [R-]<br>
+> targets: player
 
 The image of the NPC the player is carrying.
 
@@ -92,9 +92,9 @@ The image of the NPC the player is carrying.
 `#7(index)`
 
 > introduced: 1.24 or 1.25<br>
-removed: 2.00<br>
-permissions: [RW]<br>
-targets: character
+> removed: 2.00<br>
+> permissions: [RW]<br>
+> targets: character
 
 The character's bow image.
 
@@ -107,8 +107,8 @@ The character's bow image.
 `#8(index)`
 
 > introduced: 1.34 [R], 1.40 [RW]<br>
-permissions: [RW]<br>
-targets: character
+> permissions: [RW]<br>
+> targets: character
 
 The character's body image.
 
@@ -121,8 +121,8 @@ The character's body image.
 `#a(index)`
 
 > introduced: 1.30<br>
-permissions: [R-]<br>
-targets: player
+> permissions: [R-]<br>
+> targets: player
 
 The player's account name.
 
@@ -144,8 +144,8 @@ Represents a line break for certain commands, like `say2`.
 `#c(index)`
 
 > introduced: 1.24 or 1.25<br>
-permissions: [RW]<br>
-targets: character
+> permissions: [RW]<br>
+> targets: character
 
 The character's chat text.
 
@@ -157,15 +157,15 @@ The character's chat text.
 `#C0 - #C4(index)`
 
 > introduced: 1.24 or 1.25<br>
-permissions: [RW]<br>
-targets: character
+> permissions: [RW]<br>
+> targets: character
 
 `#C5 - #C7(index)`
 
 > introduced: newworld<br>
-restriction: (client) New World mode<br>
-permissions: [RW]<br>
-targets: character
+> restriction: (client) New World mode<br>
+> permissions: [RW]<br>
+> targets: character
 
 The character's body colors.
 
@@ -179,7 +179,7 @@ The character's body colors.
 | #C3   | Shoes      |
 | #C4   | Belt       |
 
-Body colors 5-7 require the server to be set in New World mode, and require a compatible client.
+Body colors 5-7 require the server to be set in New World mode, and require the New World client.
 
 See: `serveroptions.txt` - `servermode` option.
 
@@ -195,7 +195,7 @@ See: `serveroptions.txt` - `servermode` option.
 `#D`
 
 > introduced: 2.14<br>
-restriction: 🧑 clientside
+> restriction: 🧑 clientside
 
 The name of the file currently being downloaded.
 Paired with the variables `downloadpos` and `downloadsize`.
@@ -206,7 +206,7 @@ Paired with the variables `downloadpos` and `downloadsize`.
 `#E`
 
 > introduced: after 2.10, before 2.17rev1, maybe 2.13rev3?<br>
-restriction: 🧑 clientside
+> restriction: 🧑 clientside
 
 The current emoticon being displayed by the player.
 Emoticons are displayed by holding the `CTRL` key down and pressing a key, like `A`.
@@ -218,7 +218,7 @@ When that happens, the `#E` message code will return `A`.
 `#E(string)`
 
 > introduced: (npcserver)<br>
-restriction: 💻 serverside
+> restriction: 💻 serverside
 
 Password hashes the given string.
 
@@ -237,9 +237,9 @@ Extracts a substring from the given string.
 `#F`
 
 > introduced: (npcserver)<br>
-restriction: 💻 serverside<br>
-permissions: [R-]<br>
-targets: player
+> restriction: 💻 serverside<br>
+> permissions: [R-]<br>
+> targets: player
 
 The level of the player.
 
@@ -249,14 +249,14 @@ The level of the player.
 `#f`
 
 > introduced: 1.24 or 1.25<br>
-permissions: [R-]<br>
-targets: npc
+> permissions: [R-]<br>
+> targets: npc
 
 `#f(index)`
 
 > introduced: 2.12<br>
-permissions: [R-]<br>
-targets: npc
+> permissions: [R-]<br>
+> targets: npc
 
 The image of the NPC.
 
@@ -269,9 +269,9 @@ The image of the NPC.
 `#G(index)`
 
 > introduced: (npcserver)<br>
-restriction: 💻 serverside<br>
-permissions: [R-]<br>
-targets: player
+> restriction: 💻 serverside<br>
+> permissions: [R-]<br>
+> targets: player
 
 The player's account level.
 
@@ -290,8 +290,8 @@ The player's account level.
 `#g(index)`
 
 > introduced: 1.24 or 1.25<br>
-permissions: [RW]<br>
-targets: character
+> permissions: [RW]<br>
+> targets: character
 
 The guild name of the character.
 
@@ -304,7 +304,7 @@ The guild name of the character.
 `#i(image, x, y, width, height)`
 
 > introduced: 2.02<br>
-restriction: 🧑 clientside
+> restriction: 🧑 clientside
 
 Displays an image or part of an image when used in a sign.
 
@@ -350,8 +350,8 @@ The description of the specified key (in client language/key assignments).
 `#L`
 
 > introduced: 1.24<br>
-permissions: [R-]<br>
-targets: npc
+> permissions: [R-]<br>
+> targets: npc
 
 The level of the source NPC.
 
@@ -362,8 +362,8 @@ The level of the source NPC.
 `#m(index)`
 
 > introduced: 2.00<br>
-permissions: [RW]<br>
-targets: character
+> permissions: [RW]<br>
+> targets: character
 
 The gani animation of the character.
 
@@ -376,9 +376,9 @@ The gani animation of the character.
 `#N(index)`
 
 > introduced: (npcserver)<br>
-restriction: 💻 serverside<br>
-permissions: [R-]<br>
-targets: npc
+> restriction: 💻 serverside<br>
+> permissions: [R-]<br>
+> targets: npc
 
 The name of a database NPC.
 
@@ -391,8 +391,8 @@ The name of a database NPC.
 `#n(index)`
 
 > introduced: 1.24 or 1.25<br>
-permissions: [RW]<br>
-targets: character
+> permissions: [RW]<br>
+> targets: character
 
 The nickname of the character.
 
@@ -413,8 +413,8 @@ The value of a parameter, set by something like the `triggeraction` command.
 `#P1 - #P30(index)`
 
 > introduced: 2.02 (1-5), 2.13 (6-9), 2.16 (10-30)<br>
-permissions: [RW]<br>
-targets: character
+> permissions: [RW]<br>
+> targets: character
 
 The gani attributes of the character.
 
@@ -426,7 +426,7 @@ The gani attributes of the character.
 `#Q(guild_name, account_name)`
 
 > introduced: (npcserver)<br>
-restriction: 💻 serverside
+> restriction: 💻 serverside
 
 The assigned nickname of the player in a guild.
 
@@ -445,9 +445,9 @@ Randomly selects a string from the given string list.
 `#S`
 
 > introduced: newworld<br>
-restriction: (client) New World mode, 🧑 clientside<br>
-permissions: [R-]<br>
-targets: player
+> restriction: (client) New World mode, 🧑 clientside<br>
+> permissions: [R-]<br>
+> targets: player
 
 The name of the player's currently selected sword.
 
@@ -484,9 +484,58 @@ Trims the string.
 `#U(string)`
 
 > introduced: (npcserver)<br>
-restriction: 💻 serverside
+> restriction: 💻 serverside
 
 Replaces the string with a translated version of it.
+
+---
+## #U2
+
+`#U2(string)`
+
+> introduced: (npcserver) (Kingdoms)<br>
+> restriction: 💻 serverside
+
+Replaces the string with a translated version of it. 
+The string is first processed before looking up the translation.
+
+Take this example:
+```
+setstring this.str,#U(Your pet type is: #U2(#s(clientr.petname)));
+```
+
+The `#U` message code will create the following translation key:
+> Your pet type is: #U2(#s(clientr.petname))
+
+When translated, the `#U2` message code will first process the `#s(clientr.petname)` message code, and then look up the translation for the resulting string.
+
+Assuming the `clientr.petname` identifier has the value `cat`, and the language is Spanish, the final translation key will be:
+> Your pet type is: gato
+
+The message codes can be chained:
+```
+setstring this.type,#U(the animal is #U2(#U2(#U(#s(client.animal)))));
+```
+
+Assume the following:
+1. The `client.animal` identifier has an animal type for the default locale.
+2. The `client.animal.es` identifier has an animal type of the Spanish local.
+3. `client.animal` = `cat` and `client.animal.es` = `dog`.
+4. There is a translation key on `#s(client.animal)` that returns `#s(client.animal.es)` for Spanish.
+5. There are translation keys for `cat` and `dog` in Spanish that return `gato` and `perro`.
+6. `the animal is #U2(#U2(#U(#s(client.animal))))` = `el animal es #U2(#U2(#U(#s(client.animal))))`.
+
+This will break down as follows:
+1. The outer `#U(...)` will process the whole string inside, returning `el animal es #U2(#U2(#U(#s(client.animal))))`.
+2. The inner `#U2(#U(#s(client.animal))))` segment will process the string inside.
+3. `#U(#s(client.animal))` will look for the Spanish translation for the key `#s(client.animal)`, returning `#s(client.animal.es)`.
+4. The inner `#U2(...)` will then translate `#s(client.animal.es)`.  No key exists, so it will return the string as-is.
+5. The outer `#U2(...)` will process and evaluate `#s(client.animal.es)`, which returns `dog`, then translates to `perro`.
+6. The final result will be: `el animal es perro`.
+
+The important thing to note is that `#U(...)` will treat all the text inside as a single translation key.
+`#U(some #U(stuff))` will result in a translation key of `some #U(stuff)`, and will not process the inner `#U(stuff)` message code.
+This is why `#U2(...)` is needed to process the inner message codes before looking up the translation, and  why this example needed to chain them together.
 
 ---
 ## #v
@@ -503,16 +552,16 @@ The value of the identifier transformed into a string.
 `#W`
 
 > introduced: possibly 2.04<br>
-restriction: 🧑 clientside<br>
-permissions: [R-]<br>
-targets: player
+> restriction: 🧑 clientside<br>
+> permissions: [R-]<br>
+> targets: player
 
 `#W(index)`
 
 > introduced: 2.04<br>
-restriction: 🧑 clientside<br>
-permissions: [R-]<br>
-targets: player
+> restriction: 🧑 clientside<br>
+> permissions: [R-]<br>
+> targets: player
 
 The image of the player's currently selected weapon.
 
@@ -524,16 +573,16 @@ The image of the player's currently selected weapon.
 `#w`
 
 > introduced: 1.24 or 1.25<br>
-restriction: 🧑 clientside<br>
-permissions: [R-]<br>
-targets: player
+> restriction: 🧑 clientside<br>
+> permissions: [R-]<br>
+> targets: player
 
 `#w(index)`
 
 > introduced: 2.04<br>
-restriction: 🧑 clientside<br>
-permissions: [R-]<br>
-targets: player
+> restriction: 🧑 clientside<br>
+> permissions: [R-]<br>
+> targets: player
 
 The name of the player's currently selected weapon.
 

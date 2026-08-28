@@ -551,7 +551,7 @@ GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view iden
 
 //--
 
-GameValue GS1Visitor::translateSourceText(antlr4::tree::ParseTree* node, std::string_view language)
+GameValue GS1Visitor::translateSourceText(antlr4::tree::ParseTree* node, const std::string_view language)
 {
 	// TODO: We should cache this somewhere.
 
@@ -596,11 +596,11 @@ GameValue GS1Visitor::translateSourceText(const std::string_view sourceText, con
 GameValue GS1Visitor::processStringExpression(const std::string_view expression)
 {
 	// If we are already reparsing string content, do not recurse.
-	if (m_reparsingStringExpression)
+	if (reparsingStringExpression)
 		return GameValue{std::string{expression}};
 
 	// Reparse the string expression and get the result.
-	SetAndRestore sar{m_reparsingStringExpression, true};
+	SetAndRestore sar{reparsingStringExpression, true};
 	const auto result = reparseExpression(expression, "S", [](GS1Parser& parser)
 	{
 		return parser.compound_string();
