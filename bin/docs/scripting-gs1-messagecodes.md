@@ -356,6 +356,25 @@ The description of the specified key (in client language/key assignments).
 The level of the source NPC.
 
 ---
+## #M
+
+`#M(mud_object, attribute_name)`
+
+> introduced: (npcserver) (Kingdoms)<br>
+> gs2emu serverside: ❌<br>
+> restriction: 💻 serverside<br>
+> targets: MUD
+
+Retrieves the string value of a MUD attribute from the specified MUD object.
+
+The mud object is a string that represents the name of an object directly, or an ID number of an instance of the object.
+
+```
+#M(money,this.price)
+#M(#s(clientr.selecteditem),weight)
+```
+
+---
 ## #m
 
 `#m`
