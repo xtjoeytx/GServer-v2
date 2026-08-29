@@ -2315,12 +2315,15 @@ void fn_setchargender(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& a
 
 	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		const auto gender = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto gender = GS1Visitor::getScriptValueAs<std::string>(*arguments[0]);
+		if (!gender.has_value())
+			return;
+
 		const auto server = BabyDI::Get<Server>();
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			auto visFlags = npc->visFlags;
-			if (gender == 0)
+			if (string::equalsi(gender.value().get(), "male"sv))
 				visFlags |= PROPID(NPCVisFlags::MALE);
 			else visFlags &= ~PROPID(NPCVisFlags::MALE);
 
@@ -2391,12 +2394,15 @@ void fn_setgender(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argum
 
 	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
-		const auto gender = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto gender = GS1Visitor::getScriptValueAs<std::string>(*arguments[0]);
+		if (!gender.has_value())
+			return;
+
 		const auto server = BabyDI::Get<Server>();
 		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
 			auto status = player->account.status;
-			if (gender == 0)
+			if (string::equalsi(gender.value().get(), "male"sv))
 				status |= PLSTATUS_MALE;
 			else
 				status &= ~PLSTATUS_MALE;

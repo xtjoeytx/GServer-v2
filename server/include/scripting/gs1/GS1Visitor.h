@@ -206,7 +206,6 @@ public:
 	std::any visitItemLiteral(GS1Parser::ItemLiteralContext* context) override;
 	std::any visitCarryLiteral(GS1Parser::CarryLiteralContext* context) override;
 	std::any visitDirectionLiteral(GS1Parser::DirectionLiteralContext* context) override;
-	std::any visitGenderLiteral(GS1Parser::GenderLiteralContext* context) override;
 	std::any visitColorLiteral(GS1Parser::ColorLiteralContext* context) override;
 	std::any visitBaddyLiteral(GS1Parser::BaddyLiteralContext* context) override;
 	//

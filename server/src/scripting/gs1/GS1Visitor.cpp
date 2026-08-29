@@ -1901,16 +1901,6 @@ std::any GS1Visitor::visitDirectionLiteral(GS1Parser::DirectionLiteralContext* c
 	return makeGS1ScriptValue(static_cast<double>(index));
 }
 
-std::any GS1Visitor::visitGenderLiteral(GS1Parser::GenderLiteralContext* context)
-{
-	const auto text = context->GENDER()->getText();
-	auto it = std::ranges::find(genderNames, text);
-	if (it == genderNames.end())
-		it = genderNames.begin();
-
-	return makeGS1ScriptValue(static_cast<double>(std::distance(genderNames.begin(), it)));
-}
-
 std::any GS1Visitor::visitColorLiteral(GS1Parser::ColorLiteralContext* context)
 {
 	return makeGS1ScriptValue(getColorValueFromString(context->COLOR()->getText()));

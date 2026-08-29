@@ -269,7 +269,6 @@ special_literal
 	: ITEM																					# ItemLiteral
 	| CARRY																					# CarryLiteral
 	| DIRECTION																				# DirectionLiteral
-	| GENDER																				# GenderLiteral
 	| COLOR																					# ColorLiteral
 	| BADDY																					# BaddyLiteral
 	;

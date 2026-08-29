@@ -168,7 +168,7 @@ Character* getCharacterFromSource(const ScriptObject& source, std::optional<int6
 
 ////////////////////////////////////////////////////////////////////////////////
 
-GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string_view script)
+GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string_view script, const ScriptEngineGS1* engine)
 {
 	errorListenerLexer = std::make_shared<GS1ErrorListener>("lexing", who);
 	errorListenerParser = std::make_shared<GS1ErrorListener>("parsing", who);
@@ -182,6 +182,23 @@ GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string
 	GS1Lexer lexer{input.get()};
 	lexer.removeErrorListeners();
 	lexer.addErrorListener(errorListenerLexer.get());
+
+	// Enable custom commands.
+	if (const auto& config = engine->config; !config.strictMode.getValue())
+	{
+		if (config.damageReactions.getValue() == true)
+		{
+			lexer.addNewCommand("enabledamagereactions"sv, ""sv);
+			lexer.addNewCommand("disabledamagereactions"sv, ""sv);
+		}
+		if (config.shootball.getValue() == true)
+		{
+			lexer.addNewCommand("shootball"sv, "D"sv);
+		}
+	}
+#ifdef DEBUG
+	lexer.addNewCommand("debugger"sv, ""sv);
+#endif
 
 	// Fill the tokens from the lexer.
 	tokens = std::make_shared<antlr4::CommonTokenStream>(&lexer);
@@ -229,7 +246,7 @@ CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::s
 	ScriptExecutionContext result{.engine = this};
 	try
 	{
-		result.script = std::make_shared<std::any>(std::in_place_type<GS1ScriptWrapper>, who, script);
+		result.script = std::make_shared<std::any>(std::in_place_type<GS1ScriptWrapper>, who, script, this);
 	}
 	catch (const std::exception& ex)
 	{

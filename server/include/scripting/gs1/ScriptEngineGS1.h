@@ -143,10 +143,12 @@ using GS1ObjectSourceWithStore = std::pair<ScriptObject, GameVariableStore*>;
 
 //----------------------------
 
+class ScriptEngineGS1;
+
 /// @brief Wraps the GS1 script components needed for parsing and execution.
 struct GS1ScriptWrapper
 {
-	GS1ScriptWrapper(std::string_view who, std::string_view script);
+	GS1ScriptWrapper(std::string_view who, std::string_view script, const ScriptEngineGS1* engine);
 
 	std::shared_ptr<grammar::GS1ErrorListener> errorListenerLexer;
 	std::shared_ptr<grammar::GS1ErrorListener> errorListenerParser;
