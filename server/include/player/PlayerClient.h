@@ -91,7 +91,7 @@ public:
 
 	bool processChat(const CString& pChat);
 
-	[[a::inline]] const std::string& getGroup() const;
+	[[a::inline]] std::string_view getGroup() const;
 	void setGroup(std::string_view group);
 
 	double getCalculatedTileZ() const noexcept override;
@@ -231,9 +231,13 @@ using PlayerClientPtr = std::shared_ptr<PlayerClient>;
 
 //----------------------------
 
-inline const std::string& PlayerClient::getGroup() const
+inline std::string_view PlayerClient::getGroup() const
 {
-	return account.groupName;
+	if (!account.groupName.starts_with("gr."))
+		return ""sv;
+
+	const std::string_view result{account.groupName};
+	return result.substr(3);
 }
 
 inline bool PlayerClient::hasSeenFile(const std::string& file) const

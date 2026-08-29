@@ -145,9 +145,7 @@ Server::Server(CString pName)
 	// clang-format off
 	auto playerFilter = std::views::filter([](auto& kvp)
 	{
-		const bool isClient = dynamic_cast<PlayerClient*>(kvp.second.get()) != nullptr;
-		const bool isRC = dynamic_cast<PlayerRC*>(kvp.second.get()) != nullptr;
-		return (isClient || isRC) && kvp.second->getId() != 0;
+		return (kvp.second->isClient() || kvp.second->isRC()) && kvp.second->getId() != 0;
 	});
 
 	Scripting.variables.add("gravity"sv, GameValue{2.0});

@@ -311,6 +311,32 @@ with (getplayer(#c)) {
 ```
 
 ---
+## getplayersingroup
+
+`getplayersingroup(groupname)`
+
+> introduced: gs2emu 4.0<br>
+> scope: 💻 server<br>
+> gs2emu serverside: ✅<br>
+> official serverside: ❌<br>
+> enable option: `group-commands`<br>
+
+Returns an array of all players in the specified group.
+The values of the array are the indices of the players in the `allplayers[]` array. 
+
+```
+temp.members = getplayersingroup(blueteam);
+setstring temp.accounts,;
+for (i=0; i<arraylen(temp.members); i++) {
+  pid = temp.members[i];
+  with (allplayers[pid]) {
+    addstring temp.accounts,#a;
+  }
+}
+setplayerprop #c,Current members: #s(temp.accounts);
+```
+
+---
 ## getz
 
 `getz(x, y)`

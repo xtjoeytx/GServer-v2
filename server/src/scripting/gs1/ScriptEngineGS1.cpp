@@ -191,6 +191,12 @@ GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string
 			lexer.addNewCommand("enabledamagereactions"sv, ""sv);
 			lexer.addNewCommand("disabledamagereactions"sv, ""sv);
 		}
+		if (config.groupCommands.getValue() == true)
+		{
+			lexer.addNewCommand("setgroup"sv, "S"sv);
+			lexer.addNewCommand("getgroup"sv, "V"sv);
+			lexer.addNewFunction("getplayersingroup"sv, "(S)"sv);
+		}
 		if (config.shootball.getValue() == true)
 		{
 			lexer.addNewCommand("shootball"sv, "D"sv);
@@ -230,7 +236,7 @@ GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string
 ScriptEngineGS1::ScriptEngineGS1()
 {
 	settings.track(config.strictMode, config.alwaysScopeVariables, config.alwaysTranslateStrings);
-	settings.track(config.damageReactions, config.shootball);
+	settings.track(config.damageReactions, config.groupCommands, config.shootball);
 }
 
 void ScriptEngineGS1::loadConfiguration(const std::filesystem::path& file)

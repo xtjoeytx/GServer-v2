@@ -72,6 +72,7 @@ static GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, const std::vector
 static GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getnpc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_getplayersingroup(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getz(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_hasright(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
@@ -145,6 +146,7 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{hash("getnearestplayers"), &fn_getnearestplayers},
 		{hash("getnpc"), &fn_getnpc},
 		{hash("getplayer"), &fn_getplayer},
+		{hash("getplayersingroup"), &fn_getplayersingroup},
 		{hash("getz"), &fn_getz},
 		{hash("hasright"), &fn_hasright},
 		{hash("hasweapon"), &fn_hasweapon},
@@ -673,6 +675,37 @@ GS1ScriptValue fn_getplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValu
 	}
 
 	return GameValue{0.0};
+}
+
+// [GR] getplayersingroup(group)
+// Returns an array of all players in the specified group, for use with allplayers[].
+GS1ScriptValue fn_getplayersingroup(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: getplayersingroup(group)");
+
+	std::vector<double> results{};
+
+	const auto allPlayersVar = visitor->server->Scripting.variables.get("allplayers").lock();
+	if (allPlayersVar == nullptr)
+		return GameValue{results};
+
+	const auto allPlayersArr = allPlayersVar->get<std::vector<ScriptObject>>();
+	if (!allPlayersArr.has_value())
+		return GameValue{results};
+
+	const auto group = string::toLower(GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s));
+	const auto& allPlayers = allPlayersArr.value().get();
+	for (size_t i = 0; i < allPlayers.size(); ++i)
+	{
+		if (const auto player = visitor->server->getNPCServer()->getPlayer<PlayerClient>(allPlayers[i].first); player != nullptr)
+		{
+			if (player->getGroup() == group)
+				results.push_back(static_cast<double>(i));
+		}
+	}
+
+	return GameValue{results};
 }
 
 // getz(x, y)

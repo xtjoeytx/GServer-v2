@@ -785,6 +785,24 @@ official serverside: ✅<br>
 
 Freezes a player.
 
+--
+## getgroup
+
+`getgroup flag;`
+
+> introduced: gs2emu 4.0<br>
+> scope: 💻 serverside<br>
+> gs2emu serverside: ✅<br>
+> official serverside: ❌<br>
+> enable option: `group-commands`<br>
+
+Gets the group of the currently scoped player and stores it in the specified flag name.
+
+```
+getgroup temp.group;
+setplayerprop #c,You are in group #s(temp.group);
+```
+
 ---
 ## hide
 
@@ -2030,6 +2048,25 @@ official serverside: ✅<br>
 Sets the NPC image.
 
 Identical to: [setimgpart](#setimgpart).
+
+---
+## setgroup
+
+`setgroup groupname;`
+
+> introduced: gs2emu 4.0<br>
+> scope: 💻 serverside<br>
+> gs2emu serverside: ✅<br>
+> official serverside: ❌<br>
+> enable option: `group-commands`<br>
+
+Sets the group of the currently scoped player.
+
+```
+with (getplayer(name)) {
+  setgroup mygroup;
+}
+```
 
 ---
 ## sethead

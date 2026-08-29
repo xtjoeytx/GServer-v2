@@ -102,6 +102,7 @@ static void fn_drawunderplayer(GS1Visitor* visitor, const std::vector<GS1ScriptV
 static void fn_enableweapons(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_explodebomb(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_freezeplayer2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_getgroup(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_hide(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_hideimg(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_hideimgs(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
@@ -161,6 +162,7 @@ static void fn_setcharprop(GS1Visitor* visitor, const std::vector<GS1ScriptValue
 static void fn_setcoatcolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_seteffect(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setgender(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static void fn_setgroup(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_sethead(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setimg(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setimgpart(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
@@ -267,6 +269,7 @@ static BuiltInCommandHandleMap GenerateMap()
 		{hash("enableweapons"), &fn_enableweapons},
 		{hash("explodebomb"), &fn_explodebomb},
 		{hash("freezeplayer2"), &fn_freezeplayer2},
+		{hash("getgroup"), &fn_getgroup},
 		{hash("hide"), &fn_hide},
 		{hash("hideimg"), &fn_hideimg},
 		{hash("hideimgs"), &fn_hideimgs},
@@ -328,6 +331,7 @@ static BuiltInCommandHandleMap GenerateMap()
 		{hash("setgender"), &fn_setgender},
 		{hash("setgif"), &fn_setimg},
 		{hash("setgifpart"), &fn_setimgpart},
+		{hash("setgroup"), &fn_setgroup},
 		{hash("sethead"), &fn_sethead},
 		{hash("setimg"), &fn_setimg},
 		{hash("setimgpart"), &fn_setimgpart},
@@ -1242,6 +1246,33 @@ void fn_freezeplayer2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& a
 		const auto server = BabyDI::Get<Server>();
 		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
 			player->freezePlayer();
+	}
+}
+
+// [GR] getgroup flag;
+// Gets the group for the current player and assigns it to the string flag.
+void fn_getgroup(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: getgroup flag");
+
+	const auto flag = GS1Visitor::getGameVariable(*arguments[0]);
+	if (flag == nullptr)
+		return;
+
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	{
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+		{
+			if (flag->has<std::string>())
+				flag->get<std::string>().value().get() = player->getGroup();
+			else
+			{
+				auto group = std::string{player->getGroup()};
+				flag->set<std::string>(group);
+			}
+		}
 	}
 }
 
@@ -2409,6 +2440,23 @@ void fn_setgender(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argum
 
 			player->setPropWith<PlayerProp::STATUS>(SetBy::SERVER, status);
 		}
+	}
+}
+
+// setgroup name;
+// Sets the group for the current player.
+void fn_setgroup(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: setgroup name");
+
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	{
+		const auto flag = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(std::string{});
+
+		const auto server = BabyDI::Get<Server>();
+		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
+			player->setGroup(flag);
 	}
 }
 

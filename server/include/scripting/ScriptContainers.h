@@ -184,7 +184,7 @@ inline std::optional<std::reference_wrapper<T>> GameValue::get()
 		if (!m_array.has_value() || !std::holds_alternative<std::vector<ScriptObject>>(*m_array))
 			return std::nullopt;
 
-		const auto& arr = std::get<std::vector<ScriptObject>>(*m_array);
+		auto& arr = std::get<std::vector<ScriptObject>>(*m_array);
 		if (arr.empty())
 			return std::nullopt;
 
@@ -203,7 +203,7 @@ inline std::optional<std::reference_wrapper<T>> GameValue::get()
 		if (!m_array.has_value() || !std::holds_alternative<std::vector<ScriptObject>>(*m_array))
 			return std::nullopt;
 
-		const auto& arr = std::get<std::vector<ScriptObject>>(*m_array);
+		auto& arr = std::get<std::vector<ScriptObject>>(*m_array);
 		result = std::ref(arr);
 	}
 	else static_assert(false, "Invalid type for GameValue::get.");
