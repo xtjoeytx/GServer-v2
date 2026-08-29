@@ -12,15 +12,17 @@
 + Scripted items for all item types, not just "gralats"
 + New internal filesystem keeps track of file changes and automatically reloads modified files, letting you change levels on the fly when locally hosting
 + Introduced "server generations", which simplifies server setup and will help segment incompatible client changes in the future
++ Added "Kingdom" mode toggle that disables classic interactions and forces a fully scripted experience
 + If the current working directory is set to a player world, that world will be loaded
 + Reintroduced UPNP support
-+ Added support for 'GR-V1.05' .graal levels
++ Added support for 'GR-V1.04' and 'GR-V1.05' .graal levels
 + Tons of new server options (too many to list, see serveroptions.txt)
 + Added the ability to adjust the item drop rates for various item types
 + Classic translation system (old .po based system is not yet supported and has been removed)
 + Text code page handling and conversions
 + Support for v6 client HTML body colors (see serveroption: enableexbodycolors)
 + Baddy names and item numbers can be used in .nw files
+* Worked around the ancient zlib bug that has been disconnecting clients since 2009 and removed the hardcoded -gr_zlib_fix weapon workaround
 * Fixed bugs with carryable NPCs
 * Fixed "update level" so it won't reset the X/Y locations of players in the level
 * Fixed a bug that would cause players to momentarily become invisible when crossing level boundaries
@@ -32,6 +34,10 @@
 * Fixed some GR triggeractions not properly respecting the server option to turn them on/off
 * Fixed the 'gr.setgroup' triggeraction hack to let you remove a player from a group by passing an empty string
 * The current group name is properly saved to the player's account file and to database NPCs
+* Fixed 'profilevars' to be compliant with the official server and client
+* Fixed script minification breaking 'else' blocks in certain situations
+* Fixed the client loading animation
+* Connecting to the server and starting on a type 1 tileset level will no longer result in broken tiles on the client
 o Removed the v8 NPC-server
 o Removed multiple server support
 o Removed servers.txt and altered how the startup server is found

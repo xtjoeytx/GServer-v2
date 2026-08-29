@@ -474,12 +474,11 @@ Detaches the player from the NPC they are attached to.
 
 `disabledamagereactions;`
 
-> introduced: [GR]<br>
-scope: 💻 serverside<br>
-gs2emu serverside: ✅<br>
-official serverside: ❌<br>
-
-**gs2emu** only command.
+> introduced: [GR] gs2emu 4.0<br>
+> scope: 💻 serverside<br>
+> gs2emu serverside: ✅<br>
+> official serverside: ❌<br>
+> enable option: `damagereactions`<br>
 
 Disables NPC damage reactions (taking damage and being pushed around like a player).
 
@@ -627,12 +626,11 @@ Draws the NPC on the 0th layer (below players and NPCs).
 
 `enabledamagereactions;`
 
-> introduced: [GR]<br>
-scope: 💻 serverside<br>
-gs2emu serverside: ✅<br>
-official serverside: ❌<br>
-
-**gs2emu** only command.
+> introduced: [GR] gs2emu 4.0<br>
+> scope: 💻 serverside<br>
+> gs2emu serverside: ✅<br>
+> official serverside: ❌<br>
+> enable option: `damagereactions`<br>
 
 Enables NPC damage reactions (they take damage and are pushed around like a player).
 
@@ -2559,9 +2557,10 @@ Shoots an arrow projectile in the specified [direction](scripting-gs1-variables.
 `[GR] shootball dir;`
 
 > introduced: beta 5<br>
-scope: 🧑💻 clientside, serverside<br>
-gs2emu serverside: ✅<br>
-official serverside: ❌<br>
+> scope: 🧑💻 clientside, serverside<br>
+> gs2emu serverside: ✅<br>
+> official serverside: ❌<br>
+> enable option (for [GR] variant): `shootball`<br>
 
 Shoots a ball projectile at the player.
 
