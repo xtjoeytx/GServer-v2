@@ -168,7 +168,14 @@ Server::Server(CString pName)
 				| playerFilter
 				| std::views::transform([](auto& kvp) { return ScriptObject{ std::make_pair(static_cast<size_t>(kvp.first), ScriptObjectType::PLAYER) }; });
 
-			return std::vector<ScriptObject>{std::ranges::begin(playerObjects), std::ranges::end(playerObjects)};
+			// I don't know why I have to do this but it was crashing when I tried to use my normal take/drop ranges logic.
+			std::vector<ScriptObject> players{std::ranges::begin(playerObjects), std::ranges::end(playerObjects)};
+			if (index.has_value() && index.value() >= 0 && index.value() < static_cast<int64_t>(players.size()))
+			{
+				players[0] = players[index.value()];
+				players.resize(1);
+			}
+			return players;
 		},
 		{});
 
