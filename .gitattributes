@@ -1,6 +1,7 @@
 * text=auto
 *.cpp text
 *.h text
+*.txt text
 *.exe binary
-bin/servers/** binary
+bin/servers/** text
 .gitignore text
