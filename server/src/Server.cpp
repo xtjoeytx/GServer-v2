@@ -1228,13 +1228,15 @@ void Server::loadServerFlags()
 		{
 			if (value.empty())
 			{
-				Scripting.variables.add(flag, true);
+				GameVariable var{.name = flag, .value = GameValue{true}, .lifetime = variables::Lifetime::PERMANENT};
+				Scripting.variables.add(std::move(var));
 				if (!hasNS || flag.starts_with("serverr."))
 					sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << flag);
 			}
 			else
 			{
-				Scripting.variables.add(flag, value);
+				GameVariable var{.name = flag, .value = GameValue{value}, .lifetime = variables::Lifetime::PERMANENT};
+				Scripting.variables.add(std::move(var));
 				if (!hasNS || flag.starts_with("serverr."))
 					sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_FLAGSET << flag << "=" << value);
 			}
@@ -1452,7 +1454,13 @@ void Server::saveServerFlags()
 	if (const auto file = m_fsServer.openiForWriting(fs::FileCategory::CONFIG, "serverflags.txt"); file && file->opened())
 	{
 		file->clear();
-		for (const auto& value : Scripting.variables.store | std::views::values)
+		auto variables = Scripting.variables.store | variables::serializable | std::views::transform([](const auto& pair)
+		{
+			return std::make_pair(std::string_view{pair.first}, pair.second.get());
+		});
+		std::map<std::string_view, GameVariable*> sortedFlags{variables.begin(), variables.end()};
+
+		for (const auto& value : sortedFlags | std::views::values)
 		{
 			if (auto serialized = value->serializeModern(); serialized.has_value())
 				file->writeLine(serialized.value());
