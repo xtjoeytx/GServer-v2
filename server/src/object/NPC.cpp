@@ -872,7 +872,7 @@ void NPC::leaveClass(std::string_view className)
 
 void NPC::sendScriptUpdatesToLevel(const clock::time_point when) const
 {
-	if (const auto npclevel = getLevel(); npclevel != nullptr)
+	if (const auto npclevel = getLevel(); npclevel != nullptr && npclevel->loaded)
 	{
 		if (const auto levelData = npclevel->getStaticLevelDataAtPosition(character.getMapPosition()); levelData != nullptr)
 		{
