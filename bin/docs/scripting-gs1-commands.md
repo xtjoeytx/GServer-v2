@@ -2737,6 +2737,8 @@ Polygons can be shown instead of an image file by using the `filename` format of
 
 `point-x`, `point-y`, and `point-z` values are the numerical points of the polygon and are repeated until finished.
 
+The 2D polygon form follows the character's Z coordinate on 3D terrain, while the 3D form has a fixed Z coordinate.
+
 The [showpoly](#showpoly) command is a simpler way of creating a polygon mode `showani`.
 
 ```
@@ -2790,6 +2792,8 @@ official serverside: ✅<br>
 Draws a polygon on the screen.  At least two sets of coordinates are required, which will draw a line.
 With three or more sets of coordinates, the polygon will automatically be closed with a line drawn from the last coordinate to the first.
 
+The polygon will follow the character's Z coordinate on 3D terrain.
+
 `index` ranges between `[0..199]` cause the showimg to appear for other players,
 while ranges `[200...]` and above are only visible to the player who issues the command.
 
@@ -2810,7 +2814,9 @@ official serverside: ✅<br>
 Draws a polygon on the screen.  At least two sets of coordinates are required, which will draw a line.
 With three or more sets of coordinates, the polygon will automatically be closed with a line drawn from the last coordinate to the first.
 
-> NOTE: This command doesn't seem to show the polygon correctly to other players, at least in the 2.x clients.
+The polygon will NOT follow the player's Z coordinate as they move around a 2D level, since it has hardcoded Z coordinates.
+
+> NOTE: 3D polygons do not show to players correctly in 2.x clients due to a client bug.
 
 `index` ranges between `[0..199]` cause the showimg to appear for other players,
 while ranges `[200...]` and above are only visible to the player who issues the command.
