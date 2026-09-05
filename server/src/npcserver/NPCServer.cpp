@@ -204,6 +204,7 @@ void NPCServer::run(const TimeoutGenerator::time_delta delta)
 
 	// Send all changed NPC props.
 	// Send all queued movements.
+	if (!m_playerList.empty())
 	{
 		CString propsPacket;
 		for (const auto& npc : m_server->getNPCList() | std::views::values)
@@ -223,6 +224,7 @@ void NPCServer::run(const TimeoutGenerator::time_delta delta)
 	}
 
 	// Send all changed player props.
+	if (!m_playerList.empty())
 	{
 		CString propsPacket;
 		for (auto& player : m_playerList | std::views::values)
