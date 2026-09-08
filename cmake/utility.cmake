@@ -37,6 +37,7 @@ function(set_default_compiler_options target ISTESTTARGET)
 			-Wno-narrowing
 			-Wno-switch
 			-Wno-unknown-pragmas
+			-Wno-mismatched-new-delete
 		)
 	endif()
 
@@ -46,6 +47,7 @@ function(set_default_compiler_options target ISTESTTARGET)
 			-Wno-unknown-attributes
 			-Wno-narrowing
 			-Wno-switch
+			-Wno-mismatched-new-delete
 		)
 	endif()
 
@@ -83,7 +85,7 @@ function(set_default_compiler_options target ISTESTTARGET)
 	if(TESTS AND ISTESTTARGET)
 		target_compile_definitions(${target} PUBLIC NOMAIN _NOMAIN)
 	endif()
-	
+
 	# Debug definitions.
 	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 		target_compile_definitions(${target} PUBLIC DEBUG _DEBUG)

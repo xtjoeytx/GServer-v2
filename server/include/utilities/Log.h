@@ -253,6 +253,25 @@ void printLine(Log& log, const std::string_view fmt, const Args&... args)
 	print(log, "\n"sv);
 }
 
+/// @brief Prints a message to the log file and console without any indentation or section prefix, and terminates the line.
+/// @tparam Args The types of the arguments to format.
+/// @param log The log instance.
+/// @param fmt The format string.
+/// @param args The arguments to format.
+template <typename ...Args>
+void printRawLine(Log& log, const std::string_view fmt, const Args&... args)
+{
+	std::lock_guard lock(log.mutex);
+
+	if (log.disabled)
+		return;
+
+	SetAndRestore<uint8_t> indentLevel(log.indentLevel, 0);
+	SetAndRestore<std::string> sectionPrefix(log.sectionPrefix, "");
+	print(log, fmt, args...);
+	print(log, "\n"sv);
+}
+
 /// @brief Prints a message to the log file preventing trailing newlines from starting a new line.
 /// @tparam Args The types of the arguments to format.
 /// @param log The log instance.

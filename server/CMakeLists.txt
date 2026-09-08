@@ -194,10 +194,20 @@ set_default_compiler_options(${TARGET_NAME} FALSE)
 # Create the gserver executable target.
 add_executable(${EXE_NAME})
 set_target_properties(${EXE_NAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+set_target_properties(${EXE_NAME} PROPERTIES MAP_IMPORTED_CONFIG_MINSIZEREL "MinSizeRel;Release;None")
+set_target_properties(${EXE_NAME} PROPERTIES MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RelWithDebInfo;MinSizeRel;Release;None")
 target_sources(${EXE_NAME} PRIVATE "include/main.h" "src/main.cpp")
 target_sources(${EXE_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS "include" "${PROJECT_BINARY_DIR}/server/include")
 set_default_compiler_options(${EXE_NAME} FALSE)
 target_link_libraries(${EXE_NAME} PRIVATE ${TARGET_NAME})
+
+# ----------------------------
+# GNU Stacktrace support (requires an additional link library).
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "14.0")
+		target_link_libraries(${TARGET_NAME} PUBLIC stdc++exp)
+	endif()
+endif()
 
 # ----------------------------
 # Packet logging.

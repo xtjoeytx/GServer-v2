@@ -9,6 +9,12 @@
 #include <string_view>
 #include <string>
 #include <vector>
+#include <version>
+
+#if __cpp_lib_stacktrace
+	#include <exception>
+	#include <stacktrace>
+#endif
 
 #include <CSocket.h>
 
@@ -36,6 +42,27 @@ using namespace preagonal;
 
 // Function pointer for signal handling.
 typedef void (*sighandler_t)(int);
+
+#if __cpp_lib_stacktrace
+static void printStackTrace()
+{
+	try
+	{
+		if (const auto ex = std::current_exception())
+			std::rethrow_exception(ex);
+	}
+	catch (const std::exception& ex)
+	{
+		log::printRawLine(log::server, "** [Error] Unhandled exception occurred: {}", ex.what());
+	}
+	catch (...)
+	{
+		log::printRawLine(log::server, "** [Error] Unhandled exception occurred: unknown");
+	}
+
+	log::printRawLine(log::server, "** Stacktrace:\n{}", std::to_string(std::stacktrace::current()));
+}
+#endif
 
 // Home path of the gserver.
 static CString getBasePath()
@@ -106,6 +133,11 @@ int main(const int argc, char* argv[])
 		signal(SIGTERM, (sighandler_t)shutdownServer);
 		signal(SIGBREAK, (sighandler_t)shutdownServer);
 		signal(SIGABRT, (sighandler_t)shutdownServer);
+
+#if __cpp_lib_stacktrace
+		// Set the terminate handler to print the stack trace on unhandled exceptions.
+		std::set_terminate(printStackTrace);
+#endif
 
 		// Seed the random number generator with the current time.
 		srand(static_cast<unsigned int>(time(nullptr)));

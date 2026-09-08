@@ -87,7 +87,7 @@
     },
     {
       "name": "Windows Release",
-      "inherits": [ "Release", "Target Windows", "MSVC SegmentHeap" ]
+      "inherits": [ "Release Debug Info", "Target Windows", "MSVC SegmentHeap" ]
     },
     {
       "name": "Windows Debug",
@@ -102,7 +102,7 @@
     },
     {
       "name": "Linux Release",
-      "inherits": [ "Release", "Target Linux" ]
+      "inherits": [ "Release Debug Info", "Target Linux" ]
     },
     {
       "name": "Linux Debug",
@@ -118,7 +118,7 @@
     },
     {
       "name": "Release MINGW",
-      "inherits": "Release",
+      "inherits": "Release Debug Info",
       "cacheVariables": {
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": {
           "value": "${sourceDir}/cmake/crosscompile/x86_64-mingw64.cmake",
