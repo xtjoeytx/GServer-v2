@@ -69,13 +69,17 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const std::filesystem::path& fileName
 		return nullptr;
 
 	const auto weaponName = file->readConfigLine("REALNAME", " "sv);
-	const auto weaponImage = file->readConfigLine("IMAGE", " "sv);
+	auto weaponImage = file->readConfigLine("IMAGE", " "sv);
 	const auto weaponScript = file->readConfigSection("SCRIPT", "SCRIPTEND");
 	file->close();
 
 	// Valid Weapon Name?
 	if (!weaponName.has_value() || weaponName->empty())
 		return nullptr;
+
+	// Fix weapon image.
+	if (weaponImage == "-"sv)
+		weaponImage.reset();
 
 	// Create the weapon.
 	auto weapon = std::make_shared<Weapon>(weaponName.value(), weaponImage.value_or(""s), weaponScript.value_or(""s));
