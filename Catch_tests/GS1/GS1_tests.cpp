@@ -77,6 +77,8 @@ struct ServerFixture
 		// Configure Test Clients.
 		const auto client = std::make_shared<PlayerClient>(new CSocket(), server->getPlayerIdGenerator().getAvailableId());
 		const auto rc = std::make_shared<PlayerRC>(new CSocket(), server->getPlayerIdGenerator().getAvailableId());
+		client->setType(PLTYPE_CLIENT2);
+		rc->setType(PLTYPE_RC);
 		server->addPlayer(client, client->getId());
 		server->addPlayer(rc, rc->getId());
 		npcServer->playerLogin(client);
