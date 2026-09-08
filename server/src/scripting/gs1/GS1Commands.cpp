@@ -1342,7 +1342,7 @@ void fn_hitcompu(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argume
 		const auto server = BabyDI::Get<Server>();
 		const auto leader = level->getPlayers().front();
 		const auto baddyOpt = level->getBaddyById(index);
-		if (!baddyOpt.has_value() || baddyOpt.value() != nullptr)
+		if (!baddyOpt.has_value() || baddyOpt.value() == nullptr)
 			return;
 
 		if (const auto player = server->getPlayer(leader); player != nullptr)
