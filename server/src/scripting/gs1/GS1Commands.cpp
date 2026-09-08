@@ -2827,7 +2827,7 @@ void fn_setstring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argum
 	{
 		std::string text;
 		if (arguments.size() == 2)
-			text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
+			text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or(""s);
 
 		// Special handling for prefixed variables.
 		// Maybe think of a way to do this automatically on the assign rather than doing this.
@@ -2852,7 +2852,9 @@ void fn_setstring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argum
 		}
 		else
 		{
-			var->assign<std::string>(std::move(text));
+			if (text.empty())
+				var->value.unassign<std::string>();
+			else  var->assign<std::string>(std::move(text));
 
 			// Update NPC last update time if the variable is from an NPC source.
 			if (var->source.has_value() && var->source.value().second == ScriptObjectType::NPC)

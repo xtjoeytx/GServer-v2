@@ -364,9 +364,7 @@ inline GameValue& GameValue::insert(const StoresInGameValue auto& value)
 	}
 	else if constexpr (std::same_as<V, std::string>)
 	{
-		if (value.empty())
-			m_text = std::nullopt;
-		else m_text = value;
+		m_text.emplace(value);
 	}
 	else if constexpr (std::same_as<V, ScriptObject>)
 	{
@@ -379,7 +377,7 @@ inline GameValue& GameValue::insert(const StoresInGameValue auto& value)
 	}
 	else if constexpr (std::same_as<V, std::vector<double>> || std::same_as<V, std::vector<ScriptObject>>)
 	{
-		m_array = value;
+		m_array.emplace(value);
 	}
 	else
 	{
@@ -402,9 +400,7 @@ inline GameValue& GameValue::insert(StoresInGameValue auto&& value)
 	}
 	else if constexpr (std::same_as<V, std::string>)
 	{
-		if (value.empty())
-			m_text = std::nullopt;
-		m_text = std::forward<decltype(value)>(value);
+		m_text.emplace(std::forward<decltype(value)>(value));
 	}
 	else if constexpr (std::same_as<V, ScriptObject>)
 	{
@@ -417,7 +413,7 @@ inline GameValue& GameValue::insert(StoresInGameValue auto&& value)
 	}
 	else if constexpr (std::same_as<V, std::vector<double>> || std::same_as<V, std::vector<ScriptObject>>)
 	{
-		m_array = std::forward<decltype(value)>(value);
+		m_array.emplace(std::forward<decltype(value)>(value));
 	}
 	else
 	{
@@ -668,7 +664,7 @@ inline std::optional<std::reference_wrapper<T>> GameVariable::get(std::optional<
 		{
 			result = std::get<std::reference_wrapper<G>>(variantValue);
 		}
-		else if (std::holds_alternative<T>(variantValue))
+		else if (std::holds_alternative<G>(variantValue))
 		{
 			// We did not get a direct reference, so store the index so we can properly set the value back later.
 			this->index = idx;
