@@ -306,7 +306,7 @@ PrototypeList registeredFunctions =
     {"aindexof"sv,              "(P)"sv},
     {"arctan"sv,                "(P)"sv},
     {"arraylen"sv,              "(P)"sv},
-    {"ascii"sv,                 "(P)"sv},
+    {"ascii"sv,                 "(S)"sv},
     {"base64decode"sv,          "(S)"sv},
     {"base64encode"sv,          "(S)"sv},
     {"cos"sv,                   "(P)"sv},
