@@ -7,6 +7,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -335,7 +336,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 	}
 
 	CString ret;
-	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)m_server->Scripting.variables.store.size();
+	ret >> (char)PLO_RC_SERVERFLAGSGET >> (short)std::ranges::distance(m_server->Scripting.variables.store | variables::serializable);
 	for (const auto& [flag, value] : m_server->Scripting.variables.store | variables::serializable)
 	{
 		if (auto serialized = m_server->Scripting.variables.serializeModern(flag); serialized.has_value())
