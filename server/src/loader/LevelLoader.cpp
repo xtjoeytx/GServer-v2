@@ -657,7 +657,7 @@ void LevelLoader::loadBinaryNPCs(const StaticLevelDataPtr& levelData, const fs::
 		auto code = string::replace(lineView, "\xa7", "\n");
 
 		LevelNPCTemplate npc{.image = image, .position = toLocalPixelPosition(position)};
-		npc.script.setOriginalSource(util::constructScriptName(std::format("(Level NPC at {}, {})", position[0], position[1]), std::format("{}.{}", levelData->levelName, index)), code);
+		npc.script.setOriginalSource(std::format("{}.{}", levelData->levelName, index), ScriptType::NPC, code);
 		levelData->npcs.emplace_back(std::move(npc));
 	}
 }
@@ -892,7 +892,7 @@ bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view f
 			}
 
 			LevelNPCTemplate npc{.image = image, .position = toLocalPixelPosition(position)};
-			npc.script.setOriginalSource(util::constructScriptName(std::format("(Level NPC at {}, {})", position[0], position[1]), std::format("{}.{}", levelData->levelName, npcIndex)), code);
+			npc.script.setOriginalSource(std::format("{}.{}", levelData->levelName, npcIndex), ScriptType::NPC, code);
 			levelData->npcs.emplace_back(std::move(npc));
 		}
 		else if (section == "HEIGHTS")

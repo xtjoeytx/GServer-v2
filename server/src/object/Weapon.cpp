@@ -150,7 +150,7 @@ bool Weapon::saveWeapon()
 Weapon& Weapon::updateWeapon(const std::string_view newImage, const std::string_view newScript)
 {
 	setJoinedClasses("");
-	m_script = Script{util::constructScriptName(std::format("(Weapon)"), name), newScript};
+	m_script = Script{name, ScriptType::WEAPON, newScript};
 	image = newImage;
 	modTime = clock::now();
 
