@@ -49,13 +49,13 @@ if (true)
 ---
 ## Flow control statements
 
-| Directive | Introduced | Description |
-| --------- | ---------- | ----------- |
-| `if` `(` _expression_ `)` _statement_ | Beta 2 | If the _expression_ is `true`, the _statement_ is executed. |
-| `if` `(` _expression_ `)` _statement_ `else` _statement_ | Beta 5 | If the _expression_ is `true`, the first _statement_ is executed. Otherwise, the `else` _statement_ is executed. |
+| Directive                                                          | Introduced  | Description                                                                                                                                                                                                |
+|--------------------------------------------------------------------|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `if` `(` _expression_ `)` _statement_                              | Beta 2      | If the _expression_ is `true`, the _statement_ is executed.                                                                                                                                                |
+| `if` `(` _expression_ `)` _statement_ `else` _statement_           | Beta 5      | If the _expression_ is `true`, the first _statement_ is executed. Otherwise, the `else` _statement_ is executed.                                                                                           |
 | `for` `(` _init-op_ `;` _expression_ `;` _incr-op_ `)` _statement_ | around 1.20 | Performs _init-op_ (an assignment statement), then executes the _statement_ if the _expression_ is `true`.  After each time the _statement_ was executed, _incr-op_ is performed (an assigment statement). |
-| `while` `(` _expression_ `)` _statement_ | 1.2.2 | Continuously executes the _statement_ while the _expression_ is `true`. |
-| `with` `(` _expression_ `)` _statement_ | (npcserver) | Executes _statement_ under the context of the object returned from _expression_. |
+| `while` `(` _expression_ `)` _statement_                           | 1.2.2       | Continuously executes the _statement_ while the _expression_ is `true`.                                                                                                                                    |
+| `with` `(` _expression_ `)` _statement_                            | (npcserver) | Executes _statement_ under the context of the object returned from _expression_.                                                                                                                           |
 
 #### With
 
@@ -74,49 +74,49 @@ if (playertouchsme) {
 
 Introduced in 1.39rev2.
 
-| Command | Description |
-| ------- | ----------- |
+| Command    | Description                   |
+|------------|-------------------------------|
 | `continue` | Skips to the end of the loop. |
-| `break` | Breaks out of a loop. |
-| `return` | Breaks out of a function. |
+| `break`    | Breaks out of a loop.         |
+| `return`   | Breaks out of a function.     |
 
 ---
 ## Assignment statements
 
-| Directive | Introduced | Description |
-| --------- | ---------- | ----------- |
-| _identifier_ `=` _expression_ | Beta 5 | Assigns the value of the _expression_ to the _identifier_. |
-| _identifier_ `+=` _expression_ | Beta 5 | Adds the value of the _expression_ to the _identifier_. |
-| _identifier_ `-=` _expression_ | Beta 5 | Subtracts the value of the _expression_ from the _identifier_. |
-| _identifier_ `*=` _expression_ | Beta 5 | Multiplies the _identifier_ by the value of the _expression_. |
-| _identifier_ `/=` _expression_ | 2.16rev5 | Divides the _identifier_ by the value of the _expression_. |
-| _identifier_ `++` | Beta 5 | Increments (adds) the _identifier_ by 1. |
-| _identifier_ `--` | Beta 5 | Decrements (subtracts) the _identifier_ by 1. |
+| Directive                      | Introduced | Description                                                    |
+|--------------------------------|------------|----------------------------------------------------------------|
+| _identifier_ `=` _expression_  | Beta 5     | Assigns the value of the _expression_ to the _identifier_.     |
+| _identifier_ `+=` _expression_ | Beta 5     | Adds the value of the _expression_ to the _identifier_.        |
+| _identifier_ `-=` _expression_ | Beta 5     | Subtracts the value of the _expression_ from the _identifier_. |
+| _identifier_ `*=` _expression_ | Beta 5     | Multiplies the _identifier_ by the value of the _expression_.  |
+| _identifier_ `/=` _expression_ | 2.16rev5   | Divides the _identifier_ by the value of the _expression_.     |
+| _identifier_ `++`              | Beta 5     | Increments (adds) the _identifier_ by 1.                       |
+| _identifier_ `--`              | Beta 5     | Decrements (subtracts) the _identifier_ by 1.                  |
 
 #### Alternatives were introduced around version 1.20:
 
 | Operator | Alternative |
-| -------- | ----------- |
-| `=` | `:=` |
+|----------|-------------|
+| `=`      | `:=`        |
 
 ---
 ## Logical expression operators
 
-| Operator | Introduced | Description |
-| -------- | ---------- | ----------- |
-| `!` _expression_ | Beta 2 | Logical NOT.  If the _expression_ is `true`, it becomes `false`, and vice-versa. |
-| _expression_ `&&` _expression_ | Beta 2 | Logical AND.  Returns `true` if both *expression*s are `true`.  If the first _expression_ is false, the second will not be evaluated. |
-| _expression_ `\|\|` _expression_ | Beta 2 | Logical OR.  Returns `true` if one _expression_ is `true`.  If the first _expression_ is `true`, the second will not be evaluated. |
-| _expression_ `==` _expression_ | Beta 5 | Returns `true` if both expressions are equal to each other. |
-| _expression_ `!=` _expression_ | around 1.20 | Returns `true` if both expressions are **not** equal to each other. |
-| _expression_ `>` _expression_ | around 1.20 | Returns `true` if the left _expression_ has a greater value than the right _expression_. |
-| _expression_ `>=` _expression_ | around 1.20 | Returns `true` if the left _expression_ has a greater value or is equal to the right _expression_. |
-| _expression_ `<` _expression_ | around 1.20 | Returns `true` if the left _expression_ has a lesser value than the right _expression_. |
-| _expression_ `<=` _expression_ | around 1.20 | Returns `true` if the left _expression_ has a lesser value or is equal to the right _expression_. |
-| _expression_ ` in ` _array_ | 1.38 | Returns `true` if _expression_ is contained within the array. |
-| _expression_ [, _expression_ ...] ` in ` _array_ | 1.40 | Returns `true` if every _expression_ is contained within the array. |
-| _expression_ [, _expression_ ...] ` in ` _range_ | 1.40 | Returns `true` if every _expression_ is contained within the range. |
-| _expression_ `?` _expression_ `:` _expression_ | 1.39rev2 | Ternary expression, shortcut for an if-then statement that can be used in an expression. |
+| Operator                                         | Introduced  | Description                                                                                                                           |
+|--------------------------------------------------|-------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `!` _expression_                                 | Beta 2      | Logical NOT.  If the _expression_ is `true`, it becomes `false`, and vice-versa.                                                      |
+| _expression_ `&&` _expression_                   | Beta 2      | Logical AND.  Returns `true` if both *expression*s are `true`.  If the first _expression_ is false, the second will not be evaluated. |
+| _expression_ `\|\|` _expression_                 | Beta 2      | Logical OR.  Returns `true` if one _expression_ is `true`.  If the first _expression_ is `true`, the second will not be evaluated.    |
+| _expression_ `==` _expression_                   | Beta 5      | Returns `true` if both expressions are equal to each other.                                                                           |
+| _expression_ `!=` _expression_                   | around 1.20 | Returns `true` if both expressions are **not** equal to each other.                                                                   |
+| _expression_ `>` _expression_                    | around 1.20 | Returns `true` if the left _expression_ has a greater value than the right _expression_.                                              |
+| _expression_ `>=` _expression_                   | around 1.20 | Returns `true` if the left _expression_ has a greater value or is equal to the right _expression_.                                    |
+| _expression_ `<` _expression_                    | around 1.20 | Returns `true` if the left _expression_ has a lesser value than the right _expression_.                                               |
+| _expression_ `<=` _expression_                   | around 1.20 | Returns `true` if the left _expression_ has a lesser value or is equal to the right _expression_.                                     |
+| _expression_ ` in ` _array_                      | 1.38        | Returns `true` if _expression_ is contained within the array.                                                                         |
+| _expression_ [, _expression_ ...] ` in ` _array_ | 1.40        | Returns `true` if every _expression_ is contained within the array.                                                                   |
+| _expression_ [, _expression_ ...] ` in ` _range_ | 1.40        | Returns `true` if every _expression_ is contained within the range.                                                                   |
+| _expression_ `?` _expression_ `:` _expression_   | 1.39rev2    | Ternary expression, shortcut for an if-then statement that can be used in an expression.                                              |
 
 > `in` requires spaces around the word.
 
@@ -137,12 +137,12 @@ x,y in <0,10| - is true when 0 < x <= 10 AND 0 < y <= 10
 
 #### Alternatives:
 
-| Operator | Alternative | Introduced |
-| -------- | ----------- | ---------- |
-| `==` | `=` | around 1.20 |
-| `!=` | `<>` | 1.2.1 |
-| `>=` | `=>` | around 1.20 |
-| `<=` | `=<` | around 1.20 |
+| Operator | Alternative | Introduced  |
+|----------|-------------|-------------|
+| `==`     | `=`         | around 1.20 |
+| `!=`     | `<>`        | 1.2.1       |
+| `>=`     | `=>`        | around 1.20 |
+| `<=`     | `=<`        | around 1.20 |
 
 Array comparisons using `==` and `!=` were added in 1.38.
 
@@ -152,13 +152,13 @@ Array comparisons using `==` and `!=` were added in 1.38.
 Mathematical expression operators are performed on two expressions.
 Both expressions are implicitly converted to a `double` data type, the operation is performed on them, and the result is returned as a `double`.
 
-| Operator | Introduced | Description |
-| -------- | ---------- | ----------- |
-| _expression_ `+` _expression_ | Beta 5 | Adds the two expressions together. |
-| _expression_ `-` _expression_ | Beta 5 | Subtracts the result of the right expression from the first. |
-| _expression_ `*` _expression_ | Beta 5 | Multiplies the two expressions together. |
-| _expression_ `/` _expression_ | around 1.20 | Divides the left expression by the right expression. |
-| _expression_ `%` _expression_ | around 1.20 | Divides the left expression by the right expression and returns the remained (modulus division). |
+| Operator                      | Introduced  | Description                                                                                                                                           |
+|-------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| _expression_ `+` _expression_ | Beta 5      | Adds the two expressions together.                                                                                                                    |
+| _expression_ `-` _expression_ | Beta 5      | Subtracts the result of the right expression from the first.                                                                                          |
+| _expression_ `*` _expression_ | Beta 5      | Multiplies the two expressions together.                                                                                                              |
+| _expression_ `/` _expression_ | around 1.20 | Divides the left expression by the right expression.                                                                                                  |
+| _expression_ `%` _expression_ | around 1.20 | Divides the left expression by the right expression and returns the remained (modulus division).                                                      |
 | _expression_ `^` _expression_ | around 1.20 | Raises the left expression by the power of the right expression (exponentiation).  `x ^ 0.5` is synonymous with taking the square root of the number. |
 
 Versions prior to 2.16rev5 did not follow the order of operations.
@@ -181,3 +181,22 @@ function myFunc() {
   this.i = 10;
 }
 ```
+
+---
+## Raw Strings
+
+> `{` string `}`
+
+When a string is wrapped in braces, it is treated as a raw string.
+This means that until the closing brace, everything is treated as a string, including semicolons.
+
+The number of opening braces must match the number of closing braces, and they must be balanced.
+
+The resulting string _INCLUDES_ the opening and closing braces.
+
+For example:
+```
+setstring this.test, {Raw string; it can contain semicolons; and braces {like; this}.};
+putnpc2 30,30,{ if (created) { join gralats; } };
+```
+> this.test =  {Raw string; it can contain semicolons; and braces {like; this}.}

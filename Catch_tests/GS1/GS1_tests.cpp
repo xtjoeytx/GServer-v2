@@ -488,6 +488,26 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK(store->getValue<std::string>("test8").value_or(std::string{}) == "Two");
 	}
 
+	SECTION("raw strings")
+	{
+		// Tests raw strings.
+		constexpr std::string_view script = R"(
+			if (created) {
+				setstring this.test1,{test;string};
+				setstring this.test2, {test; string};
+				setstring this.test3,{test {;} string; };
+			}
+		)";
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
+
+		auto wrapper = get_wrapper(result);
+		auto store = wrapper->visitor->builtInStore;
+		CHECK(store->getValue<std::string>("test1").value_or(std::string{}) == "{test;string}");
+		CHECK(store->getValue<std::string>("test2").value_or(std::string{}) == "{test; string}");
+		CHECK(store->getValue<std::string>("test3").value_or(std::string{}) == "{test {;} string; }");
+	}
+
 	SECTION("string operations")
 	{
 		// Tests additional string functions.

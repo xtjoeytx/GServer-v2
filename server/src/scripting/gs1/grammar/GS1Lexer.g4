@@ -52,24 +52,27 @@ static constexpr std::string_view trimRight(const std::string_view view)
 @lexer::members
 {
 // --------------------------------------------------------
-/*
-    Mode parameter argument guide:
-    - V  variable (number/array/string)
+/* Mode parameter argument guide:
+    Official:
     - R  expression (variable + math)
-    - P  parameters (multiple expressions)
     - S  string
-    - M  raw string (string that doesn't process message codes)
-    - U  translatable string (raw string that accepts the #U2 message code)
-    - K  variable length comma-separated string list
-    - X  message code
+    - M  string that doesn't include a comma (only valid if used as the last parameter)
     - B  baddy name
-    - L  carry item name
     - C  color name
     - D  direction name or number
     - I  item name
-    - Z  code (putnpc2 special case)
+    - L  carry item name
     - (  left parenthesis
     - )  right parenthesis
+
+    Custom:
+    - V  variable (number/array/string)
+    - P  parameters (multiple expressions)
+    - U  translatable string (simple string that accepts the #U2 message code)
+    - K  variable length comma-separated string list
+    - N  raw string (braces around a string)
+    - X  message code
+    - Z  code (putnpc2 special case)
     - <  left parenthesis that tests if a comma is found before the ) and, if not, skips the next mode (playersays special case)
 
     Unused official types:
@@ -529,6 +532,11 @@ bool shouldCmdPop() const
     return canCmdPop() && m_commandStates.back().braceCount == 0;
 }
 
+bool shouldRawStringPop() const
+{
+    return !m_commandStates.empty() && m_commandStates.back().braceCount == 0;
+}
+
 void incParen()
 {
     if (!m_commandStates.empty())
@@ -551,6 +559,24 @@ void decBrace()
 {
     if (!m_commandStates.empty() && m_commandStates.back().braceCount > 0)
         --m_commandStates.back().braceCount;
+}
+
+bool shouldStartRawStringBrace() const
+{
+    if (m_commandStates.empty())
+        return false;
+
+    // Walk through the whitespace to see if the next non-whitespace token is a left brace.
+    int64_t index = 0;
+    auto symbol = _input->LA(++index);
+    while (symbol != EOF)
+    {
+        if (!std::isspace(static_cast<unsigned char>(symbol)))
+            return symbol == '{';
+        symbol = _input->LA(++index);
+    }
+
+    return false;
 }
 
 bool isNextArgLeftParen() const
@@ -647,8 +673,14 @@ void popNextMode(bool terminateEarly = false)
             case 'V': setMode(IN_PARAM_V); emitIdentifierAfter(GS1Lexer::IDENTIFIER, getText()); break;
             case 'R': setMode(IN_PARAM_R); break;
             case 'P': setMode(IN_PARAM_R); currentState.commaPop = false; break;
-            case 'S': setMode(IN_PARAM_S); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
-            case 'M': setMode(IN_PARAM_M); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
+            case 'M':
+            case 'S':
+            {
+                emitIdentifierAfter(GS1Lexer::STRING, getText());
+                setMode(shouldStartRawStringBrace() ? IN_PARAM_N : IN_PARAM_S);
+                break;
+            }
+            case 'N': setMode(IN_PARAM_N); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
             case 'U': setMode(IN_PARAM_U); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
             case 'K': setMode(IN_PARAM_K); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
             case 'X': setMode(IN_PARAM_X); emitIdentifierAfter(GS1Lexer::RAWMESSAGECODE, getText()); break;
@@ -983,42 +1015,60 @@ PARAM_R_TOKEN_PERIOD        : TOKEN_PERIOD      -> type(TOKEN_PERIOD);
 mode IN_PARAM_S;
 
 PARAM_S_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?   { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
-PARAM_S_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }?  { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
-PARAM_S_POP_END         : END               { canCmdPop() }?   { popNextMode(true); } -> type(END);
-PARAM_S_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }? { popNextMode(); }     -> type(TOKEN_COMMA);
-PARAM_S_MC_ESCAPE       : MC_ESCAPE                            { setText("#"); }      -> type(STRING);
-PARAM_S_MC_NOINDEX      : MC_NOINDEX                              -> type(MESSAGECODE);
-PARAM_S_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGECODE);
-PARAM_S_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
-PARAM_S_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(R)"); }   -> type(MESSAGECODE);
-PARAM_S_MC_I            : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
-PARAM_S_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_S_MC_E            : MC_E          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_S_MC_U            : MC_U          { pushCommand("(U)"); }   -> type(MESSAGECODE);
-PARAM_S_MC_U2           : MC_U2         { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_S_MC_e            : MC_e          { pushCommand("(RRS)"); } -> type(MESSAGECODE);
-PARAM_S_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
-PARAM_S_MC_R            : MC_R          { pushCommand("(K)"); }   -> type(MESSAGECODE);
-PARAM_S_MC_Q            : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
-PARAM_S_STRING_ESCAPE   : '##'                                            -> type(STRING);
-PARAM_S_STRING_LITERAL1 : ~[#),]+     { canFuncPop() && canCommaPop()  }? -> type(STRING);
-PARAM_S_STRING_LITERAL2 : ~[#};,]+    { canCmdPop()  && canCommaPop()  }? -> type(STRING);
-PARAM_S_STRING_LITERAL_END1 : ~[#)]+  { canFuncPop() && !canCommaPop() }? -> type(STRING);
-PARAM_S_STRING_LITERAL_END2 : ~[#};]+ { canCmdPop()  && !canCommaPop() }? -> type(STRING);
+PARAM_S_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }?  { popNextMode(true); }   -> type(TOKEN_PAREN_RIGHT);
+PARAM_S_POP_END         : END               { canCmdPop() }?   { popNextMode(true); }   -> type(END);
+PARAM_S_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }? { popNextMode(); }       -> type(TOKEN_COMMA);
+PARAM_S_MC_ESCAPE       : MC_ESCAPE     { setText("#"); }           -> type(STRING);
+PARAM_S_MC_NOINDEX      : MC_NOINDEX                                -> type(MESSAGECODE);
+PARAM_S_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }     -> type(MESSAGECODE);
+PARAM_S_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }     -> type(MESSAGECODE);
+PARAM_S_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(R)"); }     -> type(MESSAGECODE);
+PARAM_S_MC_I            : MC_I          { pushCommand("(VP)"); }    -> type(MESSAGECODE);
+PARAM_S_MC_T            : MC_T          { pushCommand("(S)"); }     -> type(MESSAGECODE);
+PARAM_S_MC_E            : MC_E          { pushCommand("(S)"); }     -> type(MESSAGECODE);
+PARAM_S_MC_U            : MC_U          { pushCommand("(U)"); }     -> type(MESSAGECODE);
+PARAM_S_MC_U2           : MC_U2         { pushCommand("(S)"); }     -> type(MESSAGECODE);
+PARAM_S_MC_e            : MC_e          { pushCommand("(RRS)"); }   -> type(MESSAGECODE);
+PARAM_S_MC_i            : MC_i          { pushCommand("(SP)"); }    -> type(MESSAGECODE);
+PARAM_S_MC_R            : MC_R          { pushCommand("(K)"); }     -> type(MESSAGECODE);
+PARAM_S_MC_Q            : MC_Q          { pushCommand("(SS)"); }    -> type(MESSAGECODE);
+PARAM_S_STRING_LITERAL1 : ~[#),]+       { canFuncPop() && canCommaPop()  }?     -> type(STRING);
+PARAM_S_STRING_LITERAL2 : ~[#};,]+      { canCmdPop()  && canCommaPop()  }?     -> type(STRING);
+PARAM_S_STRING_LITERAL_END1 : ~[#)]+    { canFuncPop() && !canCommaPop() }?     -> type(STRING);
+PARAM_S_STRING_LITERAL_END2 : ~[#};]+   { canCmdPop()  && !canCommaPop() }?     -> type(STRING);
 
 // --------------------------------------------------------
-// ---[ RAW STRING ]---------------------------------------
+// ---[ STRING NO COMMA ]----------------------------------
 
 mode IN_PARAM_M;
 
 PARAM_M_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?   { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
-PARAM_M_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }?  { popNextMode(true); }   -> type(TOKEN_PAREN_RIGHT);
-PARAM_M_POP_END         : END               { canCmdPop() }?   { popNextMode(true); }   -> type(END);
-PARAM_M_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }? { popNextMode(); }       -> type(TOKEN_COMMA);
-PARAM_M_STRING_LITERAL1 : ~[),]+     { canFuncPop() && canCommaPop()  }?    -> type(STRING);
-PARAM_M_STRING_LITERAL2 : ~[};,]+    { canCmdPop()  && canCommaPop()  }?    -> type(STRING);
-PARAM_M_STRING_LITERAL_END1 : ~[)]+  { canFuncPop() && !canCommaPop() }?    -> type(STRING);
-PARAM_M_STRING_LITERAL_END2 : ~[};]+ { canCmdPop()  && !canCommaPop() }?    -> type(STRING);
+PARAM_M_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }?  { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
+PARAM_M_POP_END         : END               { canCmdPop() }?   { popNextMode(true); } -> type(END);
+PARAM_M_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }? { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_M_STRING_LITERAL1 : ~[),]+        { canFuncPop() && canCommaPop()  }?  -> type(STRING);
+PARAM_M_STRING_LITERAL2 : ~[};,]+       { canCmdPop()  && canCommaPop()  }?  -> type(STRING);
+PARAM_M_STRING_LITERAL_END1 : ~[)]+     { canFuncPop() && !canCommaPop() }?  -> type(STRING);
+PARAM_M_STRING_LITERAL_END2 : ~[};]+    { canCmdPop()  && !canCommaPop() }?  -> type(STRING);
+
+// --------------------------------------------------------
+// ---[ RAW STRING ]---------------------------------------
+
+mode IN_PARAM_N;
+
+PARAM_N_RAW_BRACE_OPEN  : TOKEN_BRACE_LEFT                                              { incBrace(); }         -> type(STRING);
+PARAM_N_RAW_BRACE_CLOSE : TOKEN_BRACE_RIGHT { !shouldRawStringPop() }?                  { decBrace(); }         -> type(STRING);
+PARAM_N_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { shouldRawStringPop() && canCmdPop()   }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
+PARAM_N_POP_END         : END               { shouldRawStringPop() && canCmdPop()   }?  { popNextMode(true); }  -> type(END);
+PARAM_N_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { shouldRawStringPop() && canFuncPop()  }?  { popNextMode(true); }  -> type(TOKEN_PAREN_RIGHT);
+PARAM_N_POP_COMMA       : TOKEN_COMMA       { shouldRawStringPop() && canCommaPop() }?  { popNextMode(); }      -> type(TOKEN_COMMA);
+PARAM_N_END                 : END               { !shouldRawStringPop() }?  -> type(STRING);
+PARAM_N_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT { !shouldRawStringPop() }?  -> type(STRING);
+PARAM_N_TOKEN_COMMA         : TOKEN_COMMA       { !shouldRawStringPop() }?  -> type(STRING);
+PARAM_N_STRING_LITERAL1 : ~[{}),]+      { canFuncPop() && canCommaPop()  }?  -> type(STRING);
+PARAM_N_STRING_LITERAL2 : ~[{};,]+      { canCmdPop()  && canCommaPop()  }?  -> type(STRING);
+PARAM_N_STRING_LITERAL_END1 : ~[{})]+   { canFuncPop() && !canCommaPop() }?  -> type(STRING);
+PARAM_N_STRING_LITERAL_END2 : ~[{};]+   { canCmdPop()  && !canCommaPop() }?  -> type(STRING);
 
 // --------------------------------------------------------
 // ---[ TRANSLATABLE STRING ]------------------------------
