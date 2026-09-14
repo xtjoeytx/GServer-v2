@@ -73,7 +73,6 @@ static constexpr std::string_view trimRight(const std::string_view view)
     - K  variable length comma-separated string list
     - N  raw string (braces around a string)
     - X  message code
-    - Z  code (putnpc2 special case)
     - <  left parenthesis that tests if a comma is found before the ) and, if not, skips the next mode (playersays special case)
 
     Unused official types:
@@ -173,7 +172,7 @@ PrototypeList registeredCommands =
     {"putleaps"sv,              "RRR"sv},       // RRR
     {"putnewcomp"sv,            "BRRMR"sv},     // BRRMR
     {"putnpc"sv,                "FFRR"sv},      // QQRR (FFRR in 1.x clients)
-    {"putnpc2"sv,               "RRZ"sv},       // RRS
+    {"putnpc2"sv,               "RRS"sv},       // RRS
     {"putobject"sv,             "SRR"sv},       // ORR
     {"reducebombs"sv,           "R"sv},
     {"reducedarts"sv,           "R"sv},
@@ -704,7 +703,6 @@ void popNextMode(bool terminateEarly = false)
             case 'C': setMode(IN_PARAM_C); break;
             case 'L': setMode(IN_PARAM_L); break;
             case 'D': setMode(IN_PARAM_D); break;
-            case 'Z': setMode(IN_PARAM_Z); break;
             case '(': setMode(IN_PARAM_1); break;
             case ')': setMode(IN_PARAM_2); break;
             case '<': setMode(IN_PARAM_3); break;
@@ -1256,19 +1254,6 @@ PARAM_D_TOKEN_PIPE          : TOKEN_PIPE        -> type(TOKEN_PIPE);
 PARAM_D_TOKEN_QUESTION      : TOKEN_QUESTION    -> type(TOKEN_QUESTION);
 PARAM_D_TOKEN_COLON         : TOKEN_COLON       -> type(TOKEN_COLON);
 PARAM_D_TOKEN_PERIOD        : TOKEN_PERIOD      -> type(TOKEN_PERIOD);
-
-// --------------------------------------------------------
-// ---[ EMBEDDED CODE ]------------------------------------
-
-mode IN_PARAM_Z;
-
-PARAM_Z_START           : TOKEN_BRACE_LEFT  { shouldCmdPop()  }? { incBrace(); }    -> channel(HIDDEN);
-PARAM_Z_POP_END         : END               { shouldCmdPop()  }? { popNextMode(); } -> type(END);
-PARAM_Z_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { !shouldCmdPop() }? { decBrace(); popNextMode(); emitIdentifierBefore(GS1Lexer::END, getText()); } -> channel(HIDDEN);
-PARAM_Z_BRACE_LEFT      : TOKEN_BRACE_LEFT                       { incBrace(); }    -> type(STRING);
-PARAM_Z_BRACE_RIGHT     : TOKEN_BRACE_RIGHT                      { decBrace(); }    -> type(STRING);
-PARAM_Z_END             : END               { !shouldCmdPop() }?                    -> type(STRING);
-PARAM_Z_STRING          : ~[{};]+ -> type(STRING);
 
 // --------------------------------------------------------
 // ---[ FUNCTION OPEN ]------------------------------------

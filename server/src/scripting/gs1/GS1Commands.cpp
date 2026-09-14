@@ -1775,11 +1775,16 @@ void fn_putnpc2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argumen
 	{
 		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		auto script = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
-		string::trimMutate(script);
+		const auto script = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
+
+		// Remove the surrounding braces if they exist.
+		// The braces are included in raw strings.
+		std::string_view scriptview = string::trim(script);
+		if (!scriptview.empty() && scriptview.front() == '{' && scriptview.back() == '}')
+			scriptview = scriptview.substr(1, scriptview.size() - 2);
 
 		const auto server = BabyDI::Get<Server>();
-		server->getNPCServer()->addNPC({}, script, level, {x, y});
+		server->getNPCServer()->addNPC({}, scriptview, level, {x, y});
 	}
 }
 

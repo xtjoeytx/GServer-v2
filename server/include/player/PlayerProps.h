@@ -19,7 +19,7 @@ enum class PlayerProp : uint8_t
 	BOMBS = 5,
 	GLOVEPOWER = 6,
 	BOMBPOWER = 7,
-	SWORDIMAGE = 8,
+	SWORDIMAGE = 8,	// GANI in NW
 	SHIELDIMAGE = 9,
 	GANI = 10, // BOWIMAGE in pre-2.x
 	HEADIMAGE = 11,

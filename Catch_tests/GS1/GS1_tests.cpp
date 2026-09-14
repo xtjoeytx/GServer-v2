@@ -496,6 +496,12 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				setstring this.test1,{test;string};
 				setstring this.test2, {test; string};
 				setstring this.test3,{test {;} string; };
+
+				tokenize2 {;},{th{}is;test};
+				this.tcount = tokenscount;
+				setstring this.t0,#t(0);
+				setstring this.t1,#t(1);
+				setstring this.t2,#t(2);
 			}
 		)";
 		auto result = engine->compileScript("test_script", script);
@@ -506,6 +512,10 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK(store->getValue<std::string>("test1").value_or(std::string{}) == "{test;string}");
 		CHECK(store->getValue<std::string>("test2").value_or(std::string{}) == "{test; string}");
 		CHECK(store->getValue<std::string>("test3").value_or(std::string{}) == "{test {;} string; }");
+		CHECK_THAT(store->getValue<double>("tcount").value_or(0.0), Catch::Matchers::WithinRel(3.0));
+		CHECK(store->getValue<std::string>("t0").value_or(std::string{}) == "th");
+		CHECK(store->getValue<std::string>("t1").value_or(std::string{}) == "is");
+		CHECK(store->getValue<std::string>("t2").value_or(std::string{}) == "test");
 	}
 
 	SECTION("string operations")
