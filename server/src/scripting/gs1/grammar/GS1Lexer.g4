@@ -57,6 +57,7 @@ static constexpr std::string_view trimRight(const std::string_view view)
     - R  expression (variable + math)
     - S  string
     - M  string that doesn't include a comma (only valid if used as the last parameter)
+    - F  filename (official checks if file exists, we currently do not)
     - B  baddy name
     - C  color name
     - D  direction name or number
@@ -161,9 +162,9 @@ PrototypeList registeredCommands =
     {"noplayeronwall"sv,        ""sv},          //
     {"openurl "sv,              "M"sv},         // M
     {"openurl2 "sv,             "MRR"sv},       // MRR
-    {"play "sv,                 "S"sv},         // F
-    {"play2 "sv,                "SRRR"sv},      // FRRR
-    {"playlooped"sv,            "S"sv},         // F
+    {"play "sv,                 "F"sv},         // F
+    {"play2 "sv,                "FRRR"sv},      // FRRR
+    {"playlooped"sv,            "F"sv},         // F
     {"putbomb"sv,               "RRR"sv},       // RRR
     {"putcomp"sv,               "BRR"sv},       // BRR
     {"putexplosion "sv,         "RRR"sv},       // RRR
@@ -171,7 +172,7 @@ PrototypeList registeredCommands =
     {"puthorse"sv,              "MRR"sv},       // MRR
     {"putleaps"sv,              "RRR"sv},       // RRR
     {"putnewcomp"sv,            "BRRMR"sv},     // BRRMR
-    {"putnpc"sv,                "SSRR"sv},      // QQRR
+    {"putnpc"sv,                "FFRR"sv},      // QQRR (FFRR in 1.x clients)
     {"putnpc2"sv,               "RRZ"sv},       // RRS
     {"putobject"sv,             "SRR"sv},       // ORR
     {"reducebombs"sv,           "R"sv},
@@ -205,11 +206,11 @@ PrototypeList registeredCommands =
     {"set "sv,                  "V"sv},         // M
     {"setani"sv,                "S"sv},         // SS
     {"setarray"sv,              "VR"sv},        // RR
-    {"setbackpal"sv,            "S"sv},         // F
+    {"setbackpal"sv,            "F"sv},         // F
     {"setbacktile"sv,           "R"sv},         // R
     {"setbacktile2"sv,          "RRRRR"sv},     // RRRRR
     {"setbeltcolor"sv,          "C"sv},         // C
-    {"setbody"sv,               "S"sv},         // F
+    {"setbody"sv,               "F"sv},         // F
     {"setbow"sv,                "S"sv},         // S
     {"setcharani"sv,            "S"sv},         // SS
     {"setchargender"sv,         "S"sv},         // S
@@ -217,21 +218,21 @@ PrototypeList registeredCommands =
     {"setcoatcolor"sv,          "C"sv},         // C
     {"setcoloreffect"sv,        "RRRR"sv},      // RRRR
     {"setcursor "sv,            "R"sv},         // R
-    {"setcursor2"sv,            "S"sv},         // F
-    {"seteffect "sv,            "RRP"sv},       // RRRR
+    {"setcursor2"sv,            "F"sv},         // F
+    {"seteffect "sv,            "RRP"sv},       // RRRR     // TODO: Use RRRR and overwrite manually to support old RRR.
     {"seteffectmode"sv,         "R"sv},         // R
     {"setfocus"sv,              "RR"sv},        // RR
     {"setgender"sv,             "S"sv},         // S
-    {"setgif "sv,               "S"sv},         // F
-    {"setgifpart"sv,            "SRRRR"sv},     // FRRRR
-    {"sethead"sv,               "S"sv},         // F
-    {"setimg "sv,               "S"sv},         // F
-    {"setimgpart"sv,            "SRRRR"sv},     // FRRRR
-    {"setletters"sv,            "S"sv},         // F
-    {"setlevel "sv,             "S"sv},         // M
-    {"setlevel2"sv,             "SRR"sv},       // MRR
-    {"setmap"sv,                "SSRR"sv},      // FFRR
-    {"setminimap"sv,            "SSRR"sv},      // FFRR
+    {"setgif "sv,               "F"sv},         // F
+    {"setgifpart"sv,            "FRRRR"sv},     // FRRRR
+    {"sethead"sv,               "F"sv},         // F
+    {"setimg "sv,               "F"sv},         // F
+    {"setimgpart"sv,            "FRRRR"sv},     // FRRRR
+    {"setletters"sv,            "F"sv},         // F
+    {"setlevel "sv,             "M"sv},         // M
+    {"setlevel2"sv,             "MRR"sv},       // MRR
+    {"setmap"sv,                "FFRR"sv},      // FFRR
+    {"setminimap"sv,            "FFRR"sv},      // FFRR
     {"setmusicvolume"sv,        "RR"sv},        // RR
     {"setplayerdir"sv,          "D"sv},         // D
     {"setplayerprop"sv,         "XS"sv},        // MS
@@ -240,7 +241,7 @@ PrototypeList registeredCommands =
     {"setpm"sv,                 "S"sv},         // S
     {"setshape "sv,             "RRR"sv},       // RRR
     {"setshape2"sv,             "RRR"sv},       // RRR
-    {"setshield"sv,             "SR"sv},        // MR
+    {"setshield"sv,             "MR"sv},        // MR
     {"setshoecolor"sv,          "C"sv},         // C
     {"setshootparams "sv,       "K"sv},         // S
     {"setskincolor"sv,          "C"sv},         // C
@@ -248,7 +249,7 @@ PrototypeList registeredCommands =
     {"setspritesimage"sv,       "S"sv},
     {"setstatusimage"sv,        "S"sv},
     {"setstring"sv,             "VS"sv},        // SS
-    {"setsword"sv,              "SR"sv},        // MR
+    {"setsword"sv,              "MR"sv},        // MR
     {"seturllevel"sv,           "M"sv},         // M
     {"setx"sv,                  "R"sv},
     {"sety"sv,                  "R"sv},
@@ -264,9 +265,9 @@ PrototypeList registeredCommands =
     {"showani"sv,               "RRRDS"sv},     // RRRRS
     {"showani2"sv,              "RRRRDS"sv},    // RRRRRS
     {"showcharacter"sv,         ""sv},          //
-    {"showfile"sv,              "S"sv},         // F
-    {"showimg"sv,               "RSRR"sv},      // RMRR
-    {"showimg2"sv,              "RSRRR"sv},     // RMRRR
+    {"showfile"sv,              "F"sv},         // F
+    {"showimg"sv,               "RMRR"sv},      // RMRR
+    {"showimg2"sv,              "RMRRR"sv},     // RMRRR
     {"showlocal"sv,             ""sv},          //
     {"showpoly"sv,              "RR"sv},        // RR
     {"showpoly2"sv,             "RR"sv},        // RR
@@ -276,7 +277,7 @@ PrototypeList registeredCommands =
     {"sleep"sv,                 "R"sv},         // R
     {"spyfire"sv,               "RR"sv},        // RR
     {"stopmidi"sv,              ""sv},          //
-    {"stopsound"sv,             "S"sv},         // F
+    {"stopsound"sv,             "F"sv},         // F
     {"take "sv,                 "I"sv},         // I
     {"take2"sv,                 "R"sv},         // R
     {"takehorse"sv,             "R"sv},         // R
@@ -305,73 +306,72 @@ PrototypeList registeredCommands =
 
 PrototypeList registeredFunctions =
 {
-    {"abs"sv,                   "(P)"sv},
-    {"aindexof"sv,              "(P)"sv},
-    {"arctan"sv,                "(P)"sv},
-    {"arraylen"sv,              "(P)"sv},
-    {"ascii"sv,                 "(S)"sv},
+    {"abs"sv,                   "(R)"sv},       // (R)
+    {"aindexof"sv,              "(R,R)"sv},     // (R,R)
+    {"arctan"sv,                "(R)"sv},       // (R)
+    {"arraylen"sv,              "(R)"sv},       // (R)
+    {"ascii"sv,                 "(S)"sv},       // (S)
     {"base64decode"sv,          "(S)"sv},
     {"base64encode"sv,          "(S)"sv},
-    {"cos"sv,                   "(P)"sv},
-    {"exp"sv,                   "(P)"sv},
-    {"findnearestplayer"sv,     "(P)"sv},
-    {"findnearestplayers"sv,    "(P)"sv},
-    {"getangle"sv,              "(P)"sv},
-    {"getareanpcs"sv,           "(P)"sv},
-    {"getdir"sv,                "(P)"sv},
-    {"getflagkeys"sv,           "(S)"sv},
-    {"getnearestplayer"sv,      "(P)"sv},
-    {"getnearestplayers"sv,     "(P)"sv},
-    {"getnpc"sv,                "(S)"sv},
-    {"getplayer"sv,             "(S)"sv},
-    {"getz"sv,                  "(P)"sv},
-    {"hasright"sv,              "(SS)"sv},
-    {"hasweapon"sv,             "(S)"sv},
-    {"imgheight"sv,             "(S)"sv},
-    {"imgwidth"sv,              "(S)"sv},
-    {"indexof"sv,               "(SS)"sv},
-    {"int"sv,                   "(P)"sv},
-    {"keycode"sv,               "(S)"sv},
-    {"keydown"sv,               "(P)"sv},
-    {"keydown2"sv,              "(P)"sv},
-    {"lindexof"sv,              "(SV)"sv},
-    {"log"sv,                   "(P)"sv},
-    {"max"sv,                   "(P)"sv},
-    {"min"sv,                   "(P)"sv},
-    {"onmapx"sv,                "(S)"sv},
-    {"onmapy"sv,                "(S)"sv},
-    {"onwall"sv,                "(P)"sv},
-    {"onwall2"sv,               "(P)"sv},
-    {"onwater"sv,               "(P)"sv},
-    {"onwater2"sv,              "(P)"sv},
-    {"passwordmatches"sv,       "(SS)"sv},
-    {"playersays"sv,            "<RS)"sv},
-    {"playersays2"sv,           "<RS)"sv},
-    {"random"sv,                "(P)"sv},
-    {"sarraylen"sv,             "(V)"sv},
-    {"screenx"sv,               "(P)"sv},
-    {"screeny"sv,               "(P)"sv},
-    {"sin"sv,                   "(P)"sv},
-    {"startswith"sv,            "(SS)"sv},
-    {"strcontains"sv,           "(SS)"sv},
-    {"strequals"sv,             "(SS)"sv},
-    {"strlen"sv,                "(S)"sv},
-    {"strtofloat"sv,            "(S)"sv},
-    {"testbomb"sv,              "(P)"sv},
-    {"testcompu"sv,             "(P)"sv},
-    {"testexplo"sv,             "(P)"sv},
-    {"testhorse"sv,             "(P)"sv},
-    {"testitem"sv,              "(P)"sv},
-    {"testnpc"sv,               "(P)"sv},
-    {"testplayer"sv,            "(P)"sv},
-    {"testsign"sv,              "(P)"sv},
-    {"textheight"sv,            "(RSSS)"sv},
-    {"textwidth"sv,             "(RSSS)"sv},
-    {"tiletype"sv,              "(P)"sv},
-    {"vecx"sv,                  "(P)"sv},
-    {"vecy"sv,                  "(P)"sv},
-    {"worldx"sv,                "(P)"sv},
-    {"worldy"sv,                "(P)"sv},
+    {"cos"sv,                   "(R)"sv},       // (R)
+    {"exp"sv,                   "(R)"sv},       // (R)
+    {"findnearestplayer"sv,     "(R,R)"sv},
+    {"getangle"sv,              "(R,R)"sv},     // (R,R)
+    {"getareanpcs"sv,           "(R,R,R,R)"sv},
+    {"getdir"sv,                "(R,R)"sv},     // (R,R)
+    {"getflagkeys"sv,           "(S)"sv},       // (S)
+    {"getnearestplayer"sv,      "(R,R)"sv},
+    {"getnearestplayers"sv,     "(R,R,R)"sv},
+    {"getnpc"sv,                "(S)"sv},       // (S)
+    {"getplayer"sv,             "(S)"sv},       // (S)
+    {"getz"sv,                  "(R,R)"sv},     // (R,R)
+    {"hasright"sv,              "(S,S)"sv},
+    {"hasweapon"sv,             "(S)"sv},       // (S)
+    {"imgheight"sv,             "(S)"sv},       // (S)
+    {"imgwidth"sv,              "(S)"sv},       // (S)
+    {"indexof"sv,               "(S,S)"sv},     // (S,S)
+    {"int"sv,                   "(R)"sv},       // (R)
+    {"keycode"sv,               "(S)"sv},       // (S)
+    {"keydown"sv,               "(R)"sv},       // (R)
+    {"keydown2"sv,              "(R,R)"sv},     // (R,R)
+    {"lindexof"sv,              "(S,V)"sv},     // (S,S)
+    {"log"sv,                   "(R,R)"sv},     // (R,R)
+    {"max"sv,                   "(R,R)"sv},     // (R,R)
+    {"min"sv,                   "(R,R)"sv},     // (R,R)
+    {"onmapx"sv,                "(S)"sv},       // (S)
+    {"onmapy"sv,                "(S)"sv},       // (S)
+    {"onwall"sv,                "(R)"sv},       // (R,R)
+    {"onwall2"sv,               "(R,R,R,R)"sv}, // (R,R,R,R)
+    {"onwater"sv,               "(R,R)"sv},     // (R,R)
+    {"onwater2"sv,              "(R,R,R,R)"sv}, // (R,R,R,R)
+    {"passwordmatches"sv,       "(S,S)"sv},
+    {"playersays"sv,            "<R,S)"sv},     // (S) and (R,S)
+    {"playersays2"sv,           "<R,S)"sv},     // (S) and (R,S)
+    {"random"sv,                "(R,R)"sv},     // (R,R)
+    {"sarraylen"sv,             "(V)"sv},       // (S)
+    {"screenx"sv,               "(R,R)"sv},     // (R,R)
+    {"screeny"sv,               "(R,R)"sv},     // (R,R)
+    {"sin"sv,                   "(R)"sv},       // (R)
+    {"startswith"sv,            "(S,S)"sv},     // (S,S)
+    {"strcontains"sv,           "(S,S)"sv},     // (S,S)
+    {"strequals"sv,             "(S,S)"sv},     // (S,S)
+    {"strlen"sv,                "(S)"sv},       // (S)
+    {"strtofloat"sv,            "(S)"sv},       // (S)
+    {"testbomb"sv,              "(R,R)"sv},     // (R,R)
+    {"testcompu"sv,             "(R,R)"sv},     // (R,R)
+    {"testexplo"sv,             "(R,R)"sv},     // (R,R)
+    {"testhorse"sv,             "(R,R)"sv},     // (R,R)
+    {"testitem"sv,              "(R,R)"sv},     // (R,R)
+    {"testnpc"sv,               "(R,R)"sv},     // (R,R)
+    {"testplayer"sv,            "(R,R)"sv},     // (R,R)
+    {"testsign"sv,              "(R,R)"sv},     // (R,R)
+    {"textheight"sv,            "(R,S,S)"sv},   // (R,S,S)
+    {"textwidth"sv,             "(R,S,S,S)"sv}, // (R,S,S,S)
+    {"tiletype"sv,              "(R,R)"sv},     // (R,R)
+    {"vecx"sv,                  "(R)"sv},       // (R)
+    {"vecy"sv,                  "(R)"sv},       // (R)
+    {"worldx"sv,                "(R,R)"sv},     // (R,R)
+    {"worldy"sv,                "(R,R)"sv},     // (R,R)
 };
 
 // --------------------------------------------------------
@@ -664,6 +664,20 @@ void popNextMode(bool terminateEarly = false)
         auto mode = currentState.arguments.front();
         currentState.arguments.remove_prefix(1);
 
+        // Ignore commas.  They are a relic of the original GS1 engine's function prototypes.
+        while (mode == ',')
+        {
+            if (currentState.arguments.empty())
+            {
+                popMode();
+                m_commandStates.pop_back();
+                return;
+            }
+
+            mode = currentState.arguments.front();
+            currentState.arguments.remove_prefix(1);
+        }
+
         // Last string?  Commas are included!
         if ((mode == 'S' || mode == 'M' || mode == 'U') && (currentState.arguments.empty() || currentState.arguments.front() == ')'))
             currentState.commaPop = false;
@@ -673,6 +687,7 @@ void popNextMode(bool terminateEarly = false)
             case 'V': setMode(IN_PARAM_V); emitIdentifierAfter(GS1Lexer::IDENTIFIER, getText()); break;
             case 'R': setMode(IN_PARAM_R); break;
             case 'P': setMode(IN_PARAM_R); currentState.commaPop = false; break;
+            case 'F':
             case 'M':
             case 'S':
             {
@@ -708,26 +723,26 @@ std::deque<std::unique_ptr<antlr4::Token>> m_pendingTokensAfter{};
 tokens { MESSAGECODE, RAWMESSAGECODE, STRING, BADDY, ITEM, COLOR, GENDER, CARRY, DIRECTION }
 
 COMMAND
-    : [a-zA-Z0-9]+[ ]?  { isRegisteredCommand(getText()) }?   { pushCommand(getPrototype(registeredCommands, getText())); }
+    : [a-zA-Z0-9]+[ ]?  { isRegisteredCommand(getText()) }?     { pushCommand(getPrototype(registeredCommands, getText())); }
     ;
 
 FUNCTION
-    : [a-zA-Z0-9]+      { isRegisteredFunction(getText()) && _input->LA(1) == '(' }?    { pushCommand(getPrototype(registeredFunctions, getText())); }
+    : [a-zA-Z0-9]+      { isRegisteredFunction(getText()) }?    { pushCommand(getPrototype(registeredFunctions, getText())); }
     ;
 
 MC_ESCAPE		: '##'          { setText("#"); }         -> type(IDENTIFIER);
 MC_NOINDEX		: '#' ([angcmWw1235678NDLFfpbES] | 'C' [01234567] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { _input->LA(1) != '(' }? -> type(MESSAGECODE);
 MC_SIMPLE		: '#' ([angcmWw1235678NDptKkG]   | 'C' [01234567] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { pushCommand("(P)"); }   -> type(MESSAGECODE);
-MC_COMPUTED_S	: '#s'          { pushCommand("(V)"); }   -> type(MESSAGECODE);
-MC_COMPUTED_V	: '#v'          { pushCommand("(R)"); }   -> type(MESSAGECODE);
-MC_I			: '#I'          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
-MC_T			: '#T'          { pushCommand("(S)"); }   -> type(MESSAGECODE);
+MC_COMPUTED_S	: '#s'          { pushCommand("(V)"); }   -> type(MESSAGECODE);     // (S)
+MC_COMPUTED_V	: '#v'          { pushCommand("(R)"); }   -> type(MESSAGECODE);     // (R)
+MC_I			: '#I'          { pushCommand("(VP)"); }  -> type(MESSAGECODE);     // (S,R)
+MC_T			: '#T'          { pushCommand("(S)"); }   -> type(MESSAGECODE);     // (S)
 MC_E			: '#E'          { pushCommand("(S)"); }   -> type(MESSAGECODE);
 MC_U			: '#U'          { pushCommand("(U)"); }   -> type(MESSAGECODE);
 MC_U2			: '#U2'         { pushCommand("(S)"); }   -> type(MESSAGECODE);
-MC_e			: '#e'          { pushCommand("(RRS)"); } -> type(MESSAGECODE);
+MC_e			: '#e'          { pushCommand("(RRS)"); } -> type(MESSAGECODE);     // (R,R,S)
 MC_i			: '#i'          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
-MC_R			: '#R'          { pushCommand("(K)"); }   -> type(MESSAGECODE);
+MC_R			: '#R'          { pushCommand("(K)"); }   -> type(MESSAGECODE);     // (S)
 MC_Q            : '#Q'          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
 
 // Keep above KW_TRUE/KW_FALSE.
