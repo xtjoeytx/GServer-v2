@@ -1248,7 +1248,7 @@ GS1ScriptValue fn_playeringuild(GS1Visitor* visitor, const std::vector<GS1Script
 		throw std::invalid_argument("invalid arguments: playeringuild guild");
 
 	const auto param0 = GS1Visitor::getScriptValueAs<std::string>(*arguments[0]);
-	if (!param0.has_value())
+	if (!param0.has_value() || param0.value().get().empty())
 		return GameValue{false};
 
 	const auto& guild = param0.value().get();
