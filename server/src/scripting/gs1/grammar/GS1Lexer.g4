@@ -873,7 +873,7 @@ REAL
     ;
 
 IDENTIFIER
-    : [a-zA-Z0-9_]+ { isNotDefaultMode() || !(containsValidCommand(getText()) || isRegisteredFunction(getText())) }?
+    : [a-zA-Z0-9_][a-zA-Z0-9_.]*    { isNotDefaultMode() || !(containsValidCommand(getText()) || isRegisteredFunction(getText())) }?
     ;
 
 END

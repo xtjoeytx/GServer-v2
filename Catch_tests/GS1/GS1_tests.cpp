@@ -75,8 +75,8 @@ struct ServerFixture
 		testNPC = npc->id;
 
 		// Configure Test Clients.
-		const auto client = std::make_shared<PlayerClient>(new CSocket(), server->getPlayerIdGenerator().getAvailableId());
-		const auto rc = std::make_shared<PlayerRC>(new CSocket(), server->getPlayerIdGenerator().getAvailableId());
+		client = std::make_shared<PlayerClient>(new CSocket(), server->getPlayerIdGenerator().getAvailableId());
+		rc = std::make_shared<PlayerRC>(new CSocket(), server->getPlayerIdGenerator().getAvailableId());
 		client->setType(PLTYPE_CLIENT2);
 		rc->setType(PLTYPE_RC);
 		server->addPlayer(client, client->getId());
@@ -90,6 +90,8 @@ struct ServerFixture
 	ITranslationManager* translationManager = nullptr;
 	std::shared_ptr<NPCServer> npcServer;
 	std::shared_ptr<gs1::ScriptEngineGS1> engine;
+	std::shared_ptr<PlayerClient> client;
+	std::shared_ptr<PlayerRC> rc;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -760,6 +762,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 				setstring serverr.Test2,Hello!;
 
 				setstring level.test,LevelHello!;
+
+				this.px = players[0].x;
 			}
 		)";
 		auto npc = server->getNPC(testNPC);
@@ -767,6 +771,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		auto level = std::make_shared<Level>();
 		level->levelName = "TestLevel";
 		npc->setLevel(level);
+		client->account.character.localPixelX = (36 * 16);
+		level->addPlayer(client->getId());
 
 		auto result = engine->compileScript("test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
@@ -778,6 +784,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		auto npcstore = &npc->scripting.variables;
 		CHECK_THAT(npcstore->getValue<double>("npcVar").value_or(0.0), Catch::Matchers::WithinRel(33.0));
 		CHECK_THAT(npcstore->getValue<std::string>("npcFlag").value_or(std::string{}), Catch::Matchers::Equals("World!"));
+		CHECK_THAT(npcstore->getValue<double>("px").value_or(0.0), Catch::Matchers::WithinRel(36.0));
 
 		auto playerstore = &player->account.variables;
 		CHECK_THAT(playerstore->getValue<std::string>("playerFlag").value_or(std::string{}), Catch::Matchers::Equals("Hello!"));
