@@ -167,10 +167,10 @@ TEST_CASE("GameVariable serialize and deserialize behavior", "[Scripting][Script
 	{
 		GameVariable textVar{.name = "title", .value = GameValue{"Knight"s}};
 		REQUIRE(textVar.serialize<std::string>() == "Knight");
-		REQUIRE(textVar.serializeModern("title").value() == "title=Knight");
+		REQUIRE(textVar.serializeModern().value() == "title=Knight");
 
 		GameVariable boolVar{.name = "canjump", .value = GameValue{true}};
-		REQUIRE(boolVar.serializeModern("canjump").value() == "canjump");
+		REQUIRE(boolVar.serializeModern().value() == "canjump");
 	}
 }
 
@@ -219,8 +219,9 @@ TEST_CASE("ScriptEventQueue queue visibility and duplicate detection", "[Scripti
 	REQUIRE_FALSE(queue.hasEvent(ScriptEventType::CREATED, initiator));
 
 	queue.addEvent(ScriptEventType::CREATED, initiator);
+	queue.addEvent(ScriptEventType::CREATED, initiator);
 	queue.addEvent(ScriptEventType::CREATED, initiator, 1.0, "abc"s);
-	REQUIRE(queue.queue().size() == 1);
+	REQUIRE(queue.queue().size() == 2);
 }
 
 TEST_CASE("ScriptContainer exposes event and variable stores", "[Scripting][ScriptContainers][ScriptContainer]")
