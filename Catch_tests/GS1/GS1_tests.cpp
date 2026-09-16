@@ -1168,3 +1168,28 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 message codes", "[Scripting][IS
 		CHECK(npcstore->getValue<std::string>("test6").value_or(std::string{}) == "el animal es perro"s);
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 commands", "[Scripting][IScriptEngine][GS1]")
+{
+	ScriptEvent created{.type = ScriptEventType::CREATED, .initiator = source::FromPlayer(NPCServerPlayerID)};
+	const auto player = npcServer->getPlayerNPCServer();
+	player->account.character = Character{};
+	player->account.character.nickName = "NPC-Server (Server)";
+
+	SECTION("serverside join")
+	{
+		constexpr std::string_view script = R"(
+			join TestClass;
+		)";
+
+		npcServer->addClass("TestClass"sv, "if (created) { this.test = 42; }"sv);
+
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
+
+		auto npc = server->getNPC(testNPC);
+		CHECK(npc->hasJoinedClass("TestClass"));
+	}
+}

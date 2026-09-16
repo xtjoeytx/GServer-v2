@@ -537,17 +537,22 @@ bool NPCServer::deleteClass(const std::string_view className)
 
 std::shared_ptr<ScriptClass> NPCServer::addClass(const std::string_view className, const std::string_view classCode)
 {
-	const auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::SCRIPTCLASS, std::format("{}.txt", className), true);
-	if (!file) return nullptr;
-
-	const auto& filePath = file->filePath();
-	file->clear();
-	file->write(classCode);
-	file->close();
-
 	auto scriptClass = std::make_shared<ScriptClass>(className, classCode);
-	scriptClass->modTime = fs::getFileModTime(filePath);
 	m_classList[std::string{ className }] = scriptClass;
+
+	if (!m_server->running)
+		return scriptClass;
+
+	const auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::SCRIPTCLASS, std::format("{}.txt", className), true);
+	if (file)
+	{
+		const auto& filePath = file->filePath();
+		file->clear();
+		file->write(classCode);
+		file->close();
+
+		scriptClass->modTime = fs::getFileModTime(filePath);
+	}
 
 	m_server->updateClassForPlayers(scriptClass);
 	return scriptClass;

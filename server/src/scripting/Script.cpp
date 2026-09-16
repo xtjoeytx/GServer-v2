@@ -42,7 +42,15 @@ static std::string performClientSideJoinHack(std::string_view code)
 	std::string result;
 	std::vector<std::string_view> joins;
 
-	size_t start = 0;
+	// Beginning of the actual code portion.
+	size_t beginning = 0;
+	if (string::trimLeft(code).starts_with("//#CLIENTSIDE"sv))
+	{
+		beginning = code.find_first_not_of(" \t", clientSideTerminator.length());
+		result += code.substr(0, beginning);
+	}
+
+	size_t start = beginning;
 	size_t end = 0;
 
 	while (start < code.length())
@@ -83,7 +91,7 @@ static std::string performClientSideJoinHack(std::string_view code)
 
 			if (!joinIsStartOfBlock)
 			{
-				result += code.substr(start, end);
+				result += code.substr(start, (end + joinKeywordLen) - start);
 				start = end + joinKeywordLen;
 				continue;
 			}
@@ -107,14 +115,14 @@ static std::string performClientSideJoinHack(std::string_view code)
 		{
 			bool inSign = false;
 
-			// A simple check to make sure we aren't in a say2 sign.
-			// This won't identify when the join keyword is used as the first word in the last line of a sign.
-			// TODO: Improve this check.
-			if (const auto lineEnd = code.find('\n', start); lineEnd != std::string_view::npos)
-			{
-				if (const auto signCheck = code.find("#b", start); signCheck < lineEnd)
-					inSign = true;
-			}
+			// Make sure we aren't in a say2 sign.
+			// Work backwards to the last {, }, or ;, then check if this is a say2 command.
+			auto blockpos = code.substr(beginning, start - beginning).find_last_of("{};");
+			if (blockpos == std::string_view::npos)
+				blockpos = beginning;
+			else ++blockpos;
+			if (const auto say2Command = code.substr(blockpos, start - blockpos); string::trim(say2Command).starts_with("say2"))
+				inSign = true;
 
 			if (inSign)
 			{
@@ -421,7 +429,7 @@ void Script::split(std::string& source) noexcept
 	// Check if we have an npc-server or not.
 	// If we don't, we don't have serverside code, and thus we will ignore the clientside terminator.
 	bool hasServerSide = true;
-	if (server && !server->hasNPCServer())
+	if (server && (!server->hasNPCServer() || server->cached.serverside.getValue() == false))
 		hasServerSide = false;
 
 	// If we have serverside code, find the start of the clientside terminator.

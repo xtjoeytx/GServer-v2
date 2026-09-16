@@ -113,7 +113,7 @@ void ExternalServerCachedSettings::bind(Server* server)
 	settings.track(enableFlaghackMovement, enableTriggerhackExecscript, enableTriggerhackFiles, enableTriggerhackGroups, enableTriggerhackGuilds, enableTriggerhackLevels, enableTriggerhackProps, enableTriggerhackRC, enableTriggerhackWeapons);
 
 	// npc-server
-	settings.track(forceClientsideLinks, forceClientsideSigns, enableItemDropEvents, itemDropEventsOnlyForGralats, projectilesStopOnWall, runAllScriptEvents);
+	settings.track(serverside, forceClientsideLinks, forceClientsideSigns, enableItemDropEvents, itemDropEventsOnlyForGralats, projectilesStopOnWall, runAllScriptEvents);
 
 	// security
 	settings.track(normalAdminsCanChangeGralats, protectedWeapons, jailLevels);

@@ -147,6 +147,7 @@ struct ExternalServerCachedSettings
 	SettingCache<bool> enableTriggerhackRC{"triggerhack_rc", false};
 	SettingCache<bool> enableTriggerhackWeapons{"triggerhack_weapons", false};
 	// npc-server
+	SettingCache<bool> serverside{"serverside", false};
 	SettingCache<bool> forceClientsideLinks{"clientsidelinks", false};
 	SettingCache<bool> forceClientsideSigns{"clientsidesigns", false};
 	SettingCache<bool> enableItemDropEvents{"itemdropevents", false};
