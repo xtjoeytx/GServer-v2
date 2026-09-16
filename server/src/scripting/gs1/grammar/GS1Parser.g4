@@ -149,7 +149,7 @@ assignmentStatement
 //----------------------------------------------------------
 
 expression
-	: logicalOrExpression (TOKEN_QUESTION expression TOKEN_COLON expression)*				# ExpressionTernary
+	: logicalOrExpression (TOKEN_QUESTION expression TOKEN_COLON expression)?				# ExpressionTernary
 	;
 
 logicalOrExpression
@@ -193,18 +193,17 @@ unaryExpression
 	;
 
 postfixExpression
-	: primaryExpression (OP_INC | OP_DEC)													# ExpressionPostfix
-	| primaryExpression																		# ignoreExpressionPostfixPrimary
+	: primaryExpression (OP_INC | OP_DEC)?													# ExpressionPostfix
 	;
 
 primaryExpression
-	: TOKEN_PAREN_LEFT expression TOKEN_PAREN_RIGHT
+	: literal_literal
+	| array_literal
+	| TOKEN_PAREN_LEFT expression TOKEN_PAREN_RIGHT
 	| RAWMESSAGECODE messagecode_string
 	| builtin_function
-	| array_literal
-	| literal_literal
-	| identifier_access
 	| compound_string
+	| identifier_access
 	;
 
 //----------------------------------------------------------
@@ -254,7 +253,7 @@ assignment_operator
 	;
 
 array_literal
-	: TOKEN_BRACE_LEFT (TOKEN_COMMA | expression)* END? TOKEN_BRACE_RIGHT					# ArrayLiteral
+	: TOKEN_BRACE_LEFT expression? (TOKEN_COMMA expression?)* END? TOKEN_BRACE_RIGHT		# ArrayLiteral
 	;
 
 literal_literal

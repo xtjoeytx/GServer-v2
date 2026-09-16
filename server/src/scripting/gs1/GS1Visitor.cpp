@@ -1221,16 +1221,15 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 
 std::any GS1Visitor::visitExpressionTernary(GS1Parser::ExpressionTernaryContext* context)
 {
-	if (context->children.size() == 1)
+	if (context->children.size() == 1 || context->children.size() < 5)
 		return visitChildren(context);
 
 	std::any result = visit(context->logicalOrExpression());
-	for (size_t i = 1; i < context->children.size(); i += 4)
-	{
-		if (getScriptValueAsCopy<bool>(result).value_or(false))
-			result = visit(context->children[i + 1]);
-		else result = visit(context->children[i + 3]);
-	}
+
+	if (getScriptValueAsCopy<bool>(result).value_or(false))
+		result = visit(context->children[2]);
+	else result = visit(context->children[4]);
+
 	return result;
 }
 
@@ -1470,6 +1469,9 @@ std::any GS1Visitor::visitExpressionUnary(GS1Parser::ExpressionUnaryContext* con
 
 std::any GS1Visitor::visitExpressionPostfix(GS1Parser::ExpressionPostfixContext* context)
 {
+	if (context->children.size() == 1)
+		return visitChildren(context);
+
 	const auto op = getSymbolType(context->children[1]);
 	if (!op.has_value())
 		throw std::runtime_error("ExpressionPostfix has no operation");

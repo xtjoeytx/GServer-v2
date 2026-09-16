@@ -266,6 +266,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				this.direct = { 1, 2, 3 };
 				this.negativeIndex = { 42 };
 				this.negativeIndex[-1] = 99;
+				this.skip = {,,,3};
 			}
 		)";
 		auto result = engine->compileScript("test_script", script);
@@ -276,6 +277,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK(store->contains("myarray"));
 		CHECK(store->contains("direct"));
 		CHECK(store->contains("negativeIndex"));
+		CHECK(store->contains("skip"));
 
 		auto myarray = store->get("myarray").lock();
 		REQUIRE(myarray != nullptr);
@@ -283,6 +285,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		REQUIRE(direct != nullptr);
 		auto negativeIndex = store->get("negativeIndex").lock();
 		REQUIRE(negativeIndex != nullptr);
+		auto skip = store->get("skip").lock();
+		REQUIRE(skip != nullptr);
 
 		CHECK(myarray->value.has<std::vector<double>>());
 		CHECK(myarray->value.get<std::vector<double>>().value().get().size() == 5);
@@ -291,6 +295,10 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK(direct->value.get<std::vector<double>>().value().get().size() == 3);
 		CHECK_THAT(direct->value.get<std::vector<double>>().value().get().at(1), Catch::Matchers::WithinRel(2.0));
 		CHECK_THAT(negativeIndex->value.get<std::vector<double>>().value().get().at(0), Catch::Matchers::WithinRel(42.0));
+		CHECK(skip->value.has<std::vector<double>>());
+		CHECK(skip->value.get<std::vector<double>>().value().get().size() == 4);
+		CHECK_THAT(skip->value.get<std::vector<double>>().value().get().at(1), Catch::Matchers::WithinRel(0.0));
+		CHECK_THAT(skip->value.get<std::vector<double>>().value().get().at(3), Catch::Matchers::WithinRel(3.0));
 	}
 
 	SECTION("logical expressions")
