@@ -183,6 +183,13 @@ GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string
 	lexer.removeErrorListeners();
 	lexer.addErrorListener(errorListenerLexer.get());
 
+	// Helper function.
+	auto alterPrototype = [&](const std::string_view command, const std::string_view prototype)
+	{
+		if (const auto it = std::ranges::find_if(lexer.registeredCommands, [command](const auto& cmd) { return string::equalsi(cmd.first, command); }); it != lexer.registeredCommands.end())
+			it->second = prototype;
+	};
+
 	// Enable custom commands.
 	if (const auto& config = engine->config; !config.strictMode.getValue())
 	{
@@ -205,6 +212,12 @@ GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string
 #ifdef DEBUG
 	lexer.addNewCommand("debugger"sv, ""sv);
 #endif
+
+	// Classic compatibility overrides.
+	if (const auto server = BabyDI::Get<Server>(); server != nullptr && server->Generation == ServerGeneration::CLASSIC)
+	{
+		alterPrototype("seteffect"sv, "RRR"sv);
+	}
 
 	// Fill the tokens from the lexer.
 	tokens = std::make_shared<antlr4::CommonTokenStream>(&lexer);

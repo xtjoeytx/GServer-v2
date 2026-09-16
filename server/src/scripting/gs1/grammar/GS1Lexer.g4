@@ -218,7 +218,7 @@ PrototypeList registeredCommands =
     {"setcoloreffect"sv,        "RRRR"sv},      // RRRR
     {"setcursor "sv,            "R"sv},         // R
     {"setcursor2"sv,            "F"sv},         // F
-    {"seteffect "sv,            "RRP"sv},       // RRRR     // TODO: Use RRRR and overwrite manually to support old RRR.
+    {"seteffect "sv,            "RRRR"sv},      // RRRR // RRR (1.x)
     {"seteffectmode"sv,         "R"sv},         // R
     {"setfocus"sv,              "RR"sv},        // RR
     {"setgender"sv,             "S"sv},         // S
