@@ -78,7 +78,7 @@ void NPCServer::initialize()
 	auto& account = m_npcServerPlayer->account;
 	m_server->getAccountLoader().loadAccount("(npcserver)", account);
 	account.character.headImage = settings.get<std::string>("staffhead").value_or("head25.png"s);
-	account.character.nickName = std::format("{} (Server)", nickname);
+	m_npcServerPlayer->setNick(std::format("{} (Server)", nickname), true);
 	account.level = "";
 	m_npcServerPlayer->setLoaded(true);
 
