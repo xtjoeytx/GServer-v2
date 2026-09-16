@@ -446,16 +446,6 @@ official serverside: ???<br>
 True when the player is attached to an NPC.
 
 ---
-## playeringuild `<guild>`
-
-> introduced: beta 7<br>
-removed: around 1.25<br>
-gs2emu serverside: ❌ (won't implement)<br>
-official serverside: ❌<br>
-
-True when the player is in the specified guild.
-
----
 ## playerisfemale
 
 > introduced: 1.36<br>

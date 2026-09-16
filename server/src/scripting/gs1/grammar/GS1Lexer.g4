@@ -378,6 +378,10 @@ PrototypeList registeredFunctions =
 
 PrototypeList registeredAncientFunctions =
 {
+    {"gotbombs"sv,              "R"sv},         // R
+    {"gotdarts"sv,              "R"sv},         // R
+    {"gotrupees"sv,             "R"sv},         // R
+    {"isinguild"sv,             "S"sv},         // S
     {"playeringuild"sv,         "S"sv},         // S
 };
 

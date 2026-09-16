@@ -74,6 +74,9 @@ static GS1ScriptValue fn_getnpc(GS1Visitor* visitor, const std::vector<GS1Script
 static GS1ScriptValue fn_getplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getplayersingroup(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getz(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_gotbombs(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_gotdarts(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_gotrupees(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_hasright(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_hasweapon(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_imgheight(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
@@ -149,12 +152,16 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{hash("getplayer"), &fn_getplayer},
 		{hash("getplayersingroup"), &fn_getplayersingroup},
 		{hash("getz"), &fn_getz},
+		{hash("gotbombs"), &fn_gotbombs},
+		{hash("gotdarts"), &fn_gotdarts},
+		{hash("gotrupees"), &fn_gotrupees},
 		{hash("hasright"), &fn_hasright},
 		{hash("hasweapon"), &fn_hasweapon},
 		{hash("imgheight"), &fn_imgheight},
 		{hash("imgwidth"), &fn_imgwidth},
 		{hash("indexof"), &fn_indexof},
 		{hash("int"), &fn_int},
+		{hash("isinguild"), &fn_playeringuild},
 		{hash("keycode"), &fn_keycode},
 		{hash("keydown"), &fn_keydown},
 		{hash("keydown2"), &fn_keydown2},
@@ -725,6 +732,57 @@ GS1ScriptValue fn_getz(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& 
 	}
 
 	return GameValue{0.0};
+}
+
+// gotbombs value
+// Checks if the NPC has bombs >= value.
+GS1ScriptValue fn_gotbombs(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: gotbombs value");
+
+	if (const auto* character = getCharacterFromSource(visitor->getOriginalSource()); character != nullptr)
+	{
+		const auto value = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		if (character->bombs >= value)
+			return GameValue{true};
+	}
+
+	return GameValue{false};
+}
+
+// gotdarts value
+// Checks if the NPC has arrows >= value.
+GS1ScriptValue fn_gotdarts(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: gotdarts value");
+
+	if (const auto* character = getCharacterFromSource(visitor->getOriginalSource()); character != nullptr)
+	{
+		const auto value = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		if (character->arrows >= value)
+			return GameValue{true};
+	}
+
+	return GameValue{false};
+}
+
+// gotrupees value
+// Checks if the NPC has gralats >= value.
+GS1ScriptValue fn_gotrupees(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: gotrupees value");
+
+	if (const auto* character = getCharacterFromSource(visitor->getOriginalSource()); character != nullptr)
+	{
+		const auto value = DoubleAsIntegralFloor<uint32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		if (character->gralats >= value)
+			return GameValue{true};
+	}
+
+	return GameValue{false};
 }
 
 // hasright(rw,path)
