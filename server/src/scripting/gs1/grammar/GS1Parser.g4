@@ -210,7 +210,7 @@ primaryExpression
 //----------------------------------------------------------
 
 builtin_function
-	: FUNCTION TOKEN_PAREN_LEFT expression (TOKEN_COMMA expression)* TOKEN_PAREN_RIGHT
+	: FUNCTION ((TOKEN_PAREN_LEFT expression (TOKEN_COMMA expression)* TOKEN_PAREN_RIGHT) | expression)
 		{ if ($FUNCTION->getText().starts_with("playersays")) add_identifier("playerchats");
 		}																					# BuiltInFunctionCall
 	;

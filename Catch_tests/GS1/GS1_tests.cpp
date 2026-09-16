@@ -1022,6 +1022,27 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 functions", "[Scripting][IScrip
 		CHECK_THAT(store->getValue<double>("testSuccess").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 		CHECK_THAT(store->getValue<double>("testFail").value_or(0.0), Catch::Matchers::WithinRel(0.0));
 	}
+
+	SECTION("playeringuild works as an expression")
+	{
+		constexpr std::string_view script = R"(
+			this.test1 = 1;
+			this.test2 = 1;
+			if (playeringuild Server) {
+				this.test1 = 3;
+			}
+			if (playeringuildServer) {
+				this.test2 = 3;
+			}
+		)";
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
+
+		auto wrapper = get_wrapper(result);
+		auto store = wrapper->visitor->builtInStore;
+		CHECK_THAT(store->getValue<double>("test1").value_or(0.0), Catch::Matchers::WithinRel(3.0));
+		CHECK_THAT(store->getValue<double>("test2").value_or(0.0), Catch::Matchers::WithinRel(3.0));
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

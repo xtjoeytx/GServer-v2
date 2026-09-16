@@ -94,6 +94,7 @@ static GS1ScriptValue fn_onwall2(GS1Visitor* visitor, const std::vector<GS1Scrip
 static GS1ScriptValue fn_onwater(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_onwater2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_passwordmatches(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
+static GS1ScriptValue fn_playeringuild(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_playersays(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_playersays2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_random(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
@@ -168,6 +169,7 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{hash("onwater"), &fn_onwater},
 		{hash("onwater2"), &fn_onwater2},
 		{hash("passwordmatches"), &fn_passwordmatches},
+		{hash("playeringuild"), &fn_playeringuild},
 		{hash("playersays"), &fn_playersays},
 		{hash("playersays2"), &fn_playersays2},
 		{hash("random"), &fn_random},
@@ -1178,6 +1180,30 @@ GS1ScriptValue fn_passwordmatches(GS1Visitor* visitor, const std::vector<GS1Scri
 	base64_encode(reinterpret_cast<const unsigned char*>(hash.data()), static_cast<unsigned long>(hash.size()), output.data(), &outputLength);
 
 	return GameValue{(encrypted == std::string{output.data(), outputLength})};
+}
+
+// playeringuild guild
+// Checks if the player is a member of a guild.
+GS1ScriptValue fn_playeringuild(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
+{
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: playeringuild guild");
+
+	const auto param0 = GS1Visitor::getScriptValueAs<std::string>(*arguments[0]);
+	if (!param0.has_value())
+		return GameValue{false};
+
+	const auto& guild = param0.value().get();
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	{
+		if (const auto player = getPlayerFromSource(*source); player != nullptr)
+		{
+			if (string::equalsi(player->getGuild().toStringView(), guild))
+				return GameValue{true};
+		}
+	}
+
+	return GameValue{false};
 }
 
 // playersays(text)

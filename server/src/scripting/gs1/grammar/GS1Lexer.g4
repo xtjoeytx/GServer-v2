@@ -39,12 +39,12 @@ static constexpr bool isReservedConstant(const std::string_view name)
 
 static constexpr std::string_view trimRight(const std::string_view view)
 {
-	for (size_t i = view.size(); i > 0; --i)
-	{
-		if (const auto ch = view[i - 1]; !std::isspace(static_cast<unsigned char>(ch)))
-			return view.substr(0, i);
-	}
-	return {};
+    for (size_t i = view.size(); i > 0; --i)
+    {
+        if (const auto ch = view[i - 1]; !std::isspace(static_cast<unsigned char>(ch)))
+            return view.substr(0, i);
+    }
+    return {};
 }
 // --------------------------------------------------------
 }
@@ -374,6 +374,14 @@ PrototypeList registeredFunctions =
 };
 
 // --------------------------------------------------------
+// ---[ ANCIENT FUNCTIONS ]--------------------------------
+
+PrototypeList registeredAncientFunctions =
+{
+    {"playeringuild"sv,         "S"sv},         // S
+};
+
+// --------------------------------------------------------
 // ---[ LEXER MANIPULATION ]-------------------------------
 
 constexpr bool addNewCommand(std::string_view name, std::string_view prototype)
@@ -400,6 +408,18 @@ constexpr bool addNewFunction(std::string_view name, std::string_view prototype)
     return false;
 }
 
+constexpr bool addNewAncientFunction(std::string_view name, std::string_view prototype)
+{
+    auto existing = std::ranges::find(registeredAncientFunctions, name, [](const auto& pair) { return pair.first; });
+    if (existing == std::ranges::end(registeredAncientFunctions))
+    {
+        registeredAncientFunctions.emplace_back(name, prototype);
+        return true;
+    }
+    existing->second = prototype;
+    return false;
+}
+
 constexpr bool isRegisteredCommand(std::string_view name)
 {
     for (const auto& builtIn : registeredCommands | std::views::keys)
@@ -415,6 +435,16 @@ constexpr bool isRegisteredFunction(std::string_view name)
     for (const auto& builtIn : registeredFunctions | std::views::keys)
     {
         if (builtIn == name)
+            return true;
+    }
+    return false;
+}
+
+constexpr bool isRegisteredAncientFunction(std::string_view name)
+{
+    for (const auto& builtIn : registeredAncientFunctions | std::views::keys)
+    {
+        if (trimRight(builtIn) == name)
             return true;
     }
     return false;
@@ -595,21 +625,35 @@ bool containsValidCommand(std::string_view name)
         if (name.starts_with(builtIn))
             return true;
     }
+    for (const auto& builtIn : registeredAncientFunctions | std::views::keys)
+    {
+        if (name.starts_with(builtIn))
+            return true;
+    }
     return false;
 }
 
 void pushCommand(std::string_view arguments)
 {
     if (arguments.empty()) return;
-    m_commandStates.emplace_back(CommandState{arguments, POPMODE_COMMAND, true});
-    pushMode(IN_PARAM_1);	// Just a dummy state that gets immediately cleared.
+    m_commandStates.emplace_back(CommandState{.arguments = arguments, .popMode = POPMODE_COMMAND, .commaPop = true});
+    pushMode(IN_PARAM_1);   // Just a dummy state that gets immediately cleared.
+    popNextMode();
+}
+
+void pushFunction(std::string_view arguments)
+{
+    if (arguments.empty()) return;
+    m_commandStates.emplace_back(CommandState{.arguments = arguments, .popMode = POPMODE_FUNCTION, .commaPop = true});
+    m_commandStates.back().parenCount = 0;
+    pushMode(IN_PARAM_1);   // Just a dummy state that gets immediately cleared.
     popNextMode();
 }
 
 void pushArrayAccess()
 {
-    m_commandStates.emplace_back(CommandState{"P", POPMODE_ARRAYINDEX, false});
-    pushMode(IN_PARAM_1);	// Just a dummy state that gets immediately cleared.
+    m_commandStates.emplace_back(CommandState{.arguments = "P", .popMode = POPMODE_ARRAYINDEX, .commaPop = false});
+    pushMode(IN_PARAM_1);   // Just a dummy state that gets immediately cleared.
     popNextMode();
 }
 
@@ -725,23 +769,27 @@ COMMAND
     ;
 
 FUNCTION
-    : [a-zA-Z0-9]+      { isRegisteredFunction(getText()) }?    { pushCommand(getPrototype(registeredFunctions, getText())); }
+    : [a-zA-Z0-9]+      { isRegisteredFunction(getText()) && _input->LA(1) == '(' }?    { pushFunction(getPrototype(registeredFunctions, getText())); }
     ;
 
-MC_ESCAPE		: '##'          { setText("#"); }         -> type(IDENTIFIER);
-MC_NOINDEX		: '#' ([angcmWw1235678NDLFfpbES] | 'C' [01234567] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { _input->LA(1) != '(' }? -> type(MESSAGECODE);
-MC_SIMPLE		: '#' ([angcmWw1235678NDptKkG]   | 'C' [01234567] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { pushCommand("(P)"); }   -> type(MESSAGECODE);
-MC_COMPUTED_S	: '#s'          { pushCommand("(V)"); }   -> type(MESSAGECODE);     // (S)
-MC_COMPUTED_V	: '#v'          { pushCommand("(R)"); }   -> type(MESSAGECODE);     // (R)
-MC_I			: '#I'          { pushCommand("(VP)"); }  -> type(MESSAGECODE);     // (S,R)
-MC_T			: '#T'          { pushCommand("(S)"); }   -> type(MESSAGECODE);     // (S)
-MC_E			: '#E'          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-MC_U			: '#U'          { pushCommand("(U)"); }   -> type(MESSAGECODE);
-MC_U2			: '#U2'         { pushCommand("(S)"); }   -> type(MESSAGECODE);
-MC_e			: '#e'          { pushCommand("(RRS)"); } -> type(MESSAGECODE);     // (R,R,S)
-MC_i			: '#i'          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
-MC_R			: '#R'          { pushCommand("(K)"); }   -> type(MESSAGECODE);     // (S)
-MC_Q            : '#Q'          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
+ANCIENTFUNCTION
+    : [a-zA-Z0-9]+      { isRegisteredAncientFunction(getText()) }?    { pushFunction(getPrototype(registeredAncientFunctions, getText())); }  -> type(FUNCTION)
+    ;
+
+MC_ESCAPE       : '##'          { setText("#"); }         -> type(IDENTIFIER);
+MC_NOINDEX      : '#' ([angcmWw1235678NDLFfpbES] | 'C' [01234567] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { _input->LA(1) != '(' }? -> type(MESSAGECODE);
+MC_SIMPLE       : '#' ([angcmWw1235678NDptKkG]   | 'C' [01234567] | 'P1' DIGITS? | 'P2' DIGITS? | 'P3' '0'? | 'P' [456789]) { pushFunction("(R)"); }   -> type(MESSAGECODE);
+MC_COMPUTED_S   : '#s'          { pushFunction("(V)"); }   -> type(MESSAGECODE);     // (S)
+MC_COMPUTED_V   : '#v'          { pushFunction("(R)"); }   -> type(MESSAGECODE);     // (R)
+MC_I            : '#I'          { pushFunction("(VR)"); }  -> type(MESSAGECODE);     // (S,R)
+MC_T            : '#T'          { pushFunction("(S)"); }   -> type(MESSAGECODE);     // (S)
+MC_E            : '#E'          { pushFunction("(S)"); }   -> type(MESSAGECODE);
+MC_U            : '#U'          { pushFunction("(U)"); }   -> type(MESSAGECODE);
+MC_U2           : '#U2'         { pushFunction("(S)"); }   -> type(MESSAGECODE);
+MC_e            : '#e'          { pushFunction("(RRS)"); } -> type(MESSAGECODE);     // (R,R,S)
+MC_i            : '#i'          { pushFunction("(SP)"); }  -> type(MESSAGECODE);
+MC_R            : '#R'          { pushFunction("(K)"); }   -> type(MESSAGECODE);     // (S)
+MC_Q            : '#Q'          { pushFunction("(SS)"); }  -> type(MESSAGECODE);
 
 // Keep above KW_TRUE/KW_FALSE.
 LITERAL
@@ -750,59 +798,59 @@ LITERAL
     | KW_FALSE
     ;
 
-KW_WITH			: 'with';
-KW_FUNCTION		: 'function' { pushCommand("V()"); };
-KW_IF			: 'if';
-KW_ELSE			: 'else';
-KW_FOR			: 'for';
-KW_WHILE		: 'while';
-KW_RETURN		: 'return';
-KW_BREAK		: 'break';
-KW_CONTINUE		: 'continue';
-KW_TRUE			: 'true';
-KW_FALSE		: 'false';
+KW_WITH         : 'with';
+KW_FUNCTION     : 'function' { pushFunction("V()"); };
+KW_IF           : 'if';
+KW_ELSE         : 'else';
+KW_FOR          : 'for';
+KW_WHILE        : 'while';
+KW_RETURN       : 'return';
+KW_BREAK        : 'break';
+KW_CONTINUE     : 'continue';
+KW_TRUE         : 'true';
+KW_FALSE        : 'false';
 
-OP_ASSIGN		: '=';
-OP_ASSIGN2		: ':='	-> type(OP_ASSIGN);
-OP_ADD			: '+';
-OP_SUB			: '-';
-OP_MUL			: '*';
-OP_DIV			: '/';
-OP_MOD			: '%';
-OP_POW			: '^';
-OP_ASSIGN_ADD	: '+=';
-OP_ASSIGN_SUB	: '-=';
-OP_ASSIGN_MUL	: '*=';
-OP_ASSIGN_DIV	: '/=';
-OP_ASSIGN_MOD	: '%=';
-OP_ASSIGN_POW	: '^=';
-OP_EQUAL		: '==';
-OP_NOTEQ		: '!=';
-OP_NOTEQ2		: '<>'	-> type(OP_NOTEQ);
-OP_LESS			: '<';
-OP_GREAT		: '>';
-OP_LESS_EQ		: '<=';
-OP_LESS_EQ2		: '=<'	-> type(OP_LESS_EQ);
-OP_GREAT_EQ		: '>=';
-OP_GREAT_EQ2	: '=>'	-> type(OP_GREAT_EQ);
-OP_IN			: ' in ';
-OP_INC			: '++';
-OP_DEC			: '--';
-OP_LOGICALAND	: '&&';
-OP_LOGICALOR	: '||';
-OP_LOGICALNOT	: '!';
+OP_ASSIGN       : '=';
+OP_ASSIGN2      : ':='  -> type(OP_ASSIGN);
+OP_ADD          : '+';
+OP_SUB          : '-';
+OP_MUL          : '*';
+OP_DIV          : '/';
+OP_MOD          : '%';
+OP_POW          : '^';
+OP_ASSIGN_ADD   : '+=';
+OP_ASSIGN_SUB   : '-=';
+OP_ASSIGN_MUL   : '*=';
+OP_ASSIGN_DIV   : '/=';
+OP_ASSIGN_MOD   : '%=';
+OP_ASSIGN_POW   : '^=';
+OP_EQUAL        : '==';
+OP_NOTEQ        : '!=';
+OP_NOTEQ2       : '<>'  -> type(OP_NOTEQ);
+OP_LESS         : '<';
+OP_GREAT        : '>';
+OP_LESS_EQ      : '<=';
+OP_LESS_EQ2     : '=<'  -> type(OP_LESS_EQ);
+OP_GREAT_EQ     : '>=';
+OP_GREAT_EQ2    : '=>'  -> type(OP_GREAT_EQ);
+OP_IN           : ' in ';
+OP_INC          : '++';
+OP_DEC          : '--';
+OP_LOGICALAND   : '&&';
+OP_LOGICALOR    : '||';
+OP_LOGICALNOT   : '!';
 
 TOKEN_BRACKET_LEFT  : '[' { pushArrayAccess(); };
 TOKEN_BRACKET_RIGHT : ']';
-TOKEN_BRACE_LEFT	: '{';
-TOKEN_BRACE_RIGHT	: '}' { emitIdentifierBefore(GS1Lexer::END, getText()); };
-TOKEN_PAREN_LEFT	: '(';
-TOKEN_PAREN_RIGHT	: ')';
-TOKEN_COMMA			: ',';
-TOKEN_PIPE			: '|';
-TOKEN_QUESTION		: '?';
-TOKEN_COLON			: ':';
-TOKEN_PERIOD		: '.';
+TOKEN_BRACE_LEFT    : '{';
+TOKEN_BRACE_RIGHT   : '}' { emitIdentifierBefore(GS1Lexer::END, getText()); };
+TOKEN_PAREN_LEFT    : '(';
+TOKEN_PAREN_RIGHT   : ')';
+TOKEN_COMMA         : ',';
+TOKEN_PIPE          : '|';
+TOKEN_QUESTION      : '?';
+TOKEN_COLON         : ':';
+TOKEN_PERIOD        : '.';
 
 RESERVEDCONSTANTS
     : 'pi'
@@ -953,21 +1001,21 @@ PARAM_V_POP_PAREN_LEFT  : TOKEN_PAREN_LEFT  { isNextArgLeftParen() }? { popNextM
 PARAM_V_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }?         { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_V_POP_END         : END               { canCmdPop() }?          { popNextMode(true); } -> type(END);
 PARAM_V_POP_COMMA       : TOKEN_COMMA                                 { popNextMode(); }     -> type(TOKEN_COMMA);
-PARAM_V_FUNCTION        : FUNCTION      { pushCommand(getPrototype(registeredFunctions, getText())); } -> type(FUNCTION);
-PARAM_V_MC_ESCAPE       : MC_ESCAPE     { setText("#"); }         -> type(IDENTIFIER);
-PARAM_V_MC_NOINDEX      : MC_NOINDEX                              -> type(MESSAGECODE);
-PARAM_V_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGECODE);
-PARAM_V_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
-PARAM_V_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(R)"); }   -> type(MESSAGECODE);
-PARAM_V_MC_I            : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
-PARAM_V_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_V_MC_E            : MC_E          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_V_MC_U            : MC_U          { pushCommand("(U)"); }   -> type(MESSAGECODE);
-PARAM_V_MC_U2           : MC_U2         { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_V_MC_e            : MC_e          { pushCommand("(RRS)"); } -> type(MESSAGECODE);
-PARAM_V_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
-PARAM_V_MC_R            : MC_R          { pushCommand("(K)"); }   -> type(MESSAGECODE);
-PARAM_V_MC_Q            : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
+PARAM_V_FUNCTION        : FUNCTION      { pushFunction(getPrototype(registeredFunctions, getText())); } -> type(FUNCTION);
+PARAM_V_MC_ESCAPE       : MC_ESCAPE     { setText("#"); }           -> type(IDENTIFIER);
+PARAM_V_MC_NOINDEX      : MC_NOINDEX                                -> type(MESSAGECODE);
+PARAM_V_MC_SIMPLE       : MC_SIMPLE     { pushFunction("(R)"); }    -> type(MESSAGECODE);
+PARAM_V_MC_COMPUTED_S   : MC_COMPUTED_S { pushFunction("(V)"); }    -> type(MESSAGECODE);
+PARAM_V_MC_COMPUTED_V   : MC_COMPUTED_V { pushFunction("(R)"); }    -> type(MESSAGECODE);
+PARAM_V_MC_I            : MC_I          { pushFunction("(VR)"); }   -> type(MESSAGECODE);
+PARAM_V_MC_T            : MC_T          { pushFunction("(S)"); }    -> type(MESSAGECODE);
+PARAM_V_MC_E            : MC_E          { pushFunction("(S)"); }    -> type(MESSAGECODE);
+PARAM_V_MC_U            : MC_U          { pushFunction("(U)"); }    -> type(MESSAGECODE);
+PARAM_V_MC_U2           : MC_U2         { pushFunction("(S)"); }    -> type(MESSAGECODE);
+PARAM_V_MC_e            : MC_e          { pushFunction("(RRS)"); }  -> type(MESSAGECODE);
+PARAM_V_MC_i            : MC_i          { pushFunction("(SP)"); }   -> type(MESSAGECODE);
+PARAM_V_MC_R            : MC_R          { pushFunction("(K)"); }    -> type(MESSAGECODE);
+PARAM_V_MC_Q            : MC_Q          { pushFunction("(SS)"); }   -> type(MESSAGECODE);
 PARAM_V_LITERAL         : LITERAL -> type(LITERAL);
 PARAM_V_RESERVEDCONSTANTS : RESERVEDCONSTANTS -> type(RESERVEDCONSTANTS);
 PARAM_V_IDENTIFIER        : IDENTIFIER -> type(IDENTIFIER);
@@ -988,7 +1036,7 @@ PARAM_R_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { shouldFuncPop() }?  { popNextMode(
 PARAM_R_POP_END         : END               { canCmdPop() }?      { popNextMode(true); } -> type(END);
 PARAM_R_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }?    { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_R_COMMA           : TOKEN_COMMA       { !canCommaPop() }?   -> type(TOKEN_COMMA);
-PARAM_R_FUNCTION        : FUNCTION      { pushCommand(getPrototype(registeredFunctions, getText())); } -> type(FUNCTION);
+PARAM_R_FUNCTION        : FUNCTION      { pushFunction(getPrototype(registeredFunctions, getText())); } -> type(FUNCTION);
 PARAM_R_LITERAL         : LITERAL       -> type(LITERAL);
 PARAM_R_IDENTIFIER      : IDENTIFIER    -> type(IDENTIFIER);
 PARAM_R_OP_ASSIGN       : OP_ASSIGN     -> type(OP_ASSIGN);
@@ -1033,18 +1081,18 @@ PARAM_S_POP_END         : END               { canCmdPop() }?   { popNextMode(tru
 PARAM_S_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }? { popNextMode(); }       -> type(TOKEN_COMMA);
 PARAM_S_MC_ESCAPE       : MC_ESCAPE     { setText("#"); }           -> type(STRING);
 PARAM_S_MC_NOINDEX      : MC_NOINDEX                                -> type(MESSAGECODE);
-PARAM_S_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }     -> type(MESSAGECODE);
-PARAM_S_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }     -> type(MESSAGECODE);
-PARAM_S_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(R)"); }     -> type(MESSAGECODE);
-PARAM_S_MC_I            : MC_I          { pushCommand("(VP)"); }    -> type(MESSAGECODE);
-PARAM_S_MC_T            : MC_T          { pushCommand("(S)"); }     -> type(MESSAGECODE);
-PARAM_S_MC_E            : MC_E          { pushCommand("(S)"); }     -> type(MESSAGECODE);
-PARAM_S_MC_U            : MC_U          { pushCommand("(U)"); }     -> type(MESSAGECODE);
-PARAM_S_MC_U2           : MC_U2         { pushCommand("(S)"); }     -> type(MESSAGECODE);
-PARAM_S_MC_e            : MC_e          { pushCommand("(RRS)"); }   -> type(MESSAGECODE);
-PARAM_S_MC_i            : MC_i          { pushCommand("(SP)"); }    -> type(MESSAGECODE);
-PARAM_S_MC_R            : MC_R          { pushCommand("(K)"); }     -> type(MESSAGECODE);
-PARAM_S_MC_Q            : MC_Q          { pushCommand("(SS)"); }    -> type(MESSAGECODE);
+PARAM_S_MC_SIMPLE       : MC_SIMPLE     { pushFunction("(R)"); }    -> type(MESSAGECODE);
+PARAM_S_MC_COMPUTED_S   : MC_COMPUTED_S { pushFunction("(V)"); }    -> type(MESSAGECODE);
+PARAM_S_MC_COMPUTED_V   : MC_COMPUTED_V { pushFunction("(R)"); }    -> type(MESSAGECODE);
+PARAM_S_MC_I            : MC_I          { pushFunction("(VR)"); }   -> type(MESSAGECODE);
+PARAM_S_MC_T            : MC_T          { pushFunction("(S)"); }    -> type(MESSAGECODE);
+PARAM_S_MC_E            : MC_E          { pushFunction("(S)"); }    -> type(MESSAGECODE);
+PARAM_S_MC_U            : MC_U          { pushFunction("(U)"); }    -> type(MESSAGECODE);
+PARAM_S_MC_U2           : MC_U2         { pushFunction("(S)"); }    -> type(MESSAGECODE);
+PARAM_S_MC_e            : MC_e          { pushFunction("(RRS)"); }  -> type(MESSAGECODE);
+PARAM_S_MC_i            : MC_i          { pushFunction("(SP)"); }   -> type(MESSAGECODE);
+PARAM_S_MC_R            : MC_R          { pushFunction("(K)"); }    -> type(MESSAGECODE);
+PARAM_S_MC_Q            : MC_Q          { pushFunction("(SS)"); }   -> type(MESSAGECODE);
 PARAM_S_STRING_LITERAL1 : ~[#),]+       { canFuncPop() && canCommaPop()  }?     -> type(STRING);
 PARAM_S_STRING_LITERAL2 : ~[#};,]+      { canCmdPop()  && canCommaPop()  }?     -> type(STRING);
 PARAM_S_STRING_LITERAL_END1 : ~[#)]+    { canFuncPop() && !canCommaPop() }?     -> type(STRING);
@@ -1111,20 +1159,20 @@ PARAM_K_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true
 PARAM_K_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_K_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
 PARAM_K_COMMA           : TOKEN_COMMA   { emitIdentifierAfter(GS1Lexer::STRING, getText()); } -> type(TOKEN_COMMA);
-PARAM_K_MC_ESCAPE       : MC_ESCAPE                           { setText("#"); }      -> type(STRING);
-PARAM_K_MC_NOINDEX      : MC_NOINDEX                              -> type(MESSAGECODE);
-PARAM_K_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGECODE);
-PARAM_K_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
-PARAM_K_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(R)"); }   -> type(MESSAGECODE);
-PARAM_K_MC_I            : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
-PARAM_K_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_K_MC_E            : MC_E          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_K_MC_U            : MC_U          { pushCommand("(U)"); }   -> type(MESSAGECODE);
-PARAM_K_MC_U2           : MC_U2         { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_K_MC_e            : MC_e          { pushCommand("(RRS)"); } -> type(MESSAGECODE);
-PARAM_K_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
-PARAM_K_MC_R            : MC_R          { pushCommand("(K)"); }   -> type(MESSAGECODE);
-PARAM_K_MC_Q            : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
+PARAM_K_MC_ESCAPE       : MC_ESCAPE     { setText("#"); }           -> type(STRING);
+PARAM_K_MC_NOINDEX      : MC_NOINDEX                                -> type(MESSAGECODE);
+PARAM_K_MC_SIMPLE       : MC_SIMPLE     { pushFunction("(R)"); }    -> type(MESSAGECODE);
+PARAM_K_MC_COMPUTED_S   : MC_COMPUTED_S { pushFunction("(V)"); }    -> type(MESSAGECODE);
+PARAM_K_MC_COMPUTED_V   : MC_COMPUTED_V { pushFunction("(R)"); }    -> type(MESSAGECODE);
+PARAM_K_MC_I            : MC_I          { pushFunction("(VR)"); }   -> type(MESSAGECODE);
+PARAM_K_MC_T            : MC_T          { pushFunction("(S)"); }    -> type(MESSAGECODE);
+PARAM_K_MC_E            : MC_E          { pushFunction("(S)"); }    -> type(MESSAGECODE);
+PARAM_K_MC_U            : MC_U          { pushFunction("(U)"); }    -> type(MESSAGECODE);
+PARAM_K_MC_U2           : MC_U2         { pushFunction("(S)"); }    -> type(MESSAGECODE);
+PARAM_K_MC_e            : MC_e          { pushFunction("(RRS)"); }  -> type(MESSAGECODE);
+PARAM_K_MC_i            : MC_i          { pushFunction("(SP)"); }   -> type(MESSAGECODE);
+PARAM_K_MC_R            : MC_R          { pushFunction("(K)"); }    -> type(MESSAGECODE);
+PARAM_K_MC_Q            : MC_Q          { pushFunction("(SS)"); }   -> type(MESSAGECODE);
 PARAM_K_STRING_ESCAPE   : '##' -> type(STRING);
 PARAM_K_STRING_LITERAL1  : ~[#),]+  { canFuncPop() }? -> type(STRING);
 PARAM_K_STRING_LITERAL2  : ~[#};,]+ { canCmdPop() }?  -> type(STRING);
@@ -1140,20 +1188,20 @@ PARAM_X_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true
 PARAM_X_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
 PARAM_X_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
 PARAM_X_MC_ESCAPE       : MC_ESCAPE                           { setText("#"); }      -> type(IDENTIFIER);
-PARAM_X_MC_NOINDEX      : MC_NOINDEX                              -> type(MESSAGECODE);
-PARAM_X_MC_SIMPLE       : MC_SIMPLE     { pushCommand("(P)"); }   -> type(MESSAGECODE);
-PARAM_X_MC_COMPUTED_S   : MC_COMPUTED_S { pushCommand("(V)"); }   -> type(MESSAGECODE);
-PARAM_X_MC_COMPUTED_V   : MC_COMPUTED_V { pushCommand("(R)"); }   -> type(MESSAGECODE);
-PARAM_X_MC_I            : MC_I          { pushCommand("(VP)"); }  -> type(MESSAGECODE);
-PARAM_X_MC_T            : MC_T          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_X_MC_E            : MC_E          { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_X_MC_U            : MC_U          { pushCommand("(U)"); }   -> type(MESSAGECODE);
-PARAM_X_MC_U2           : MC_U2         { pushCommand("(S)"); }   -> type(MESSAGECODE);
-PARAM_X_MC_e            : MC_e          { pushCommand("(RRS)"); } -> type(MESSAGECODE);
-PARAM_X_MC_i            : MC_i          { pushCommand("(SP)"); }  -> type(MESSAGECODE);
-PARAM_X_MC_R            : MC_R          { pushCommand("(K)"); }   -> type(MESSAGECODE);
-PARAM_X_MC_Q            : MC_Q          { pushCommand("(SS)"); }  -> type(MESSAGECODE);
-PARAM_X_FUNCTION        : FUNCTION      { pushCommand(getPrototype(registeredFunctions, getText())); } -> type(FUNCTION);
+PARAM_X_MC_NOINDEX      : MC_NOINDEX                                -> type(MESSAGECODE);
+PARAM_X_MC_SIMPLE       : MC_SIMPLE     { pushFunction("(R)"); }    -> type(MESSAGECODE);
+PARAM_X_MC_COMPUTED_S   : MC_COMPUTED_S { pushFunction("(V)"); }    -> type(MESSAGECODE);
+PARAM_X_MC_COMPUTED_V   : MC_COMPUTED_V { pushFunction("(R)"); }    -> type(MESSAGECODE);
+PARAM_X_MC_I            : MC_I          { pushFunction("(VR)"); }   -> type(MESSAGECODE);
+PARAM_X_MC_T            : MC_T          { pushFunction("(S)"); }    -> type(MESSAGECODE);
+PARAM_X_MC_E            : MC_E          { pushFunction("(S)"); }    -> type(MESSAGECODE);
+PARAM_X_MC_U            : MC_U          { pushFunction("(U)"); }    -> type(MESSAGECODE);
+PARAM_X_MC_U2           : MC_U2         { pushFunction("(S)"); }    -> type(MESSAGECODE);
+PARAM_X_MC_e            : MC_e          { pushFunction("(RRS)"); }  -> type(MESSAGECODE);
+PARAM_X_MC_i            : MC_i          { pushFunction("(SP)"); }   -> type(MESSAGECODE);
+PARAM_X_MC_R            : MC_R          { pushFunction("(K)"); }    -> type(MESSAGECODE);
+PARAM_X_MC_Q            : MC_Q          { pushFunction("(SS)"); }   -> type(MESSAGECODE);
+PARAM_X_FUNCTION        : FUNCTION      { pushFunction(getPrototype(registeredFunctions, getText())); } -> type(FUNCTION);
 PARAM_X_LITERAL         : LITERAL       -> type(LITERAL);
 PARAM_X_IDENTIFIER      : IDENTIFIER    -> type(IDENTIFIER);
 PARAM_X_OP_ADD          : OP_ADD        -> type(OP_ADD);
@@ -1224,7 +1272,7 @@ PARAM_D_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true
 PARAM_D_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_D_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
 PARAM_D_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
-PARAM_D_FUNCTION        : FUNCTION      { pushCommand(getPrototype(registeredFunctions, getText())); } -> type(FUNCTION);
+PARAM_D_FUNCTION        : FUNCTION      { pushFunction(getPrototype(registeredFunctions, getText())); } -> type(FUNCTION);
 PARAM_D_DIR             : DIR           -> type(DIRECTION);
 PARAM_D_LITERAL         : LITERAL       -> type(LITERAL);
 PARAM_D_IDENTIFIER      : IDENTIFIER    -> type(IDENTIFIER);
@@ -1261,7 +1309,7 @@ PARAM_D_TOKEN_PERIOD        : TOKEN_PERIOD      -> type(TOKEN_PERIOD);
 mode IN_PARAM_1;
 
 PARAM_1_WS                : WHITESPACE+ -> type(WS), channel(HIDDEN);
-PARAM_1_TOKEN_PAREN_LEFT  : TOKEN_PAREN_LEFT { m_commandStates.back().popMode = POPMODE_FUNCTION; m_commandStates.back().parenCount = 0; popNextMode(); } -> type(TOKEN_PAREN_LEFT);
+PARAM_1_TOKEN_PAREN_LEFT  : TOKEN_PAREN_LEFT { popNextMode(); } -> type(TOKEN_PAREN_LEFT);
 
 // --------------------------------------------------------
 // ---[ FUNCTION CLOSE ]-----------------------------------
@@ -1277,4 +1325,4 @@ PARAM_2_TOKEN_PAREN_RIGHT : TOKEN_PAREN_RIGHT { popNextMode(); } -> type(TOKEN_P
 mode IN_PARAM_3;
 
 PARAM_3_WS                : WHITESPACE+ -> type(WS), channel(HIDDEN);
-PARAM_3_TOKEN_PAREN_LEFT  : TOKEN_PAREN_LEFT { m_commandStates.back().popMode = POPMODE_FUNCTION; m_commandStates.back().parenCount = 0; checkIfNextModeOptional(); } -> type(TOKEN_PAREN_LEFT);
+PARAM_3_TOKEN_PAREN_LEFT  : TOKEN_PAREN_LEFT { checkIfNextModeOptional(); } -> type(TOKEN_PAREN_LEFT);
