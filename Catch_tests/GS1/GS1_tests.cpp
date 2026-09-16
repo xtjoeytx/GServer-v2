@@ -111,8 +111,12 @@ static gs1::GS1ScriptWrapper* get_wrapper(const CompiledScriptResult& result, co
 
 static bool execute_script(IScriptEngine& engine, ScriptEvent& event, const ScriptObject& source, CompiledScriptResult& result, const std::source_location location = std::source_location::current())
 {
+	const auto str = std::get_if<std::string>(&result);
+	const std::string error{str ? *str : ""};
+
 	CAPTURE(location.line());
 	CAPTURE(location.function_name());
+	CAPTURE(error);
 
 	REQUIRE(std::holds_alternative<ScriptExecutionContext>(result));
 
@@ -685,6 +689,21 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK_THAT(store->getValue<double>("q").value_or(0.0), Catch::Matchers::WithinRel(11.0));
 		CHECK_THAT(store->getValue<double>("k").value_or(0.0), Catch::Matchers::WithinRel(3.0));
 	}
+
+	SECTION("variables with the same name as commands and functions")
+	{
+		constexpr std::string_view script = R"(
+			this.message = 1;
+			this.onmapx = 3;
+		)";
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
+
+		[[maybe_unused]] auto wrapper = get_wrapper(result);
+		auto npcstore = &server->getNPC(testNPC)->scripting.variables;
+		CHECK_THAT(npcstore->getValue<double>("message").value_or(0.0), Catch::Matchers::WithinRel(1.0));
+		CHECK_THAT(npcstore->getValue<double>("onmapx").value_or(0.0), Catch::Matchers::WithinRel(3.0));
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -773,6 +792,23 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		CHECK_THAT(levelstore->getValue<std::string>("test").value_or(std::string{}), Catch::Matchers::Equals("LevelHello!"));
 
 		npc->setLevel(nullptr);
+	}
+
+	SECTION("variables that share the name with a property work when prefixed")
+	{
+		// Tests that x and this.x are not the same variable.
+		constexpr std::string_view script = R"(
+			x = 42;
+			this.x = 3;
+		)";
+
+		auto result = engine->compileScript("test_script", script);
+		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
+
+		auto npc = server->getNPC(testNPC);
+		auto npcstore = &npc->scripting.variables;
+		CHECK(npc->getGlobalPosition().x() == (42 * 16));
+		CHECK_THAT(npcstore->getValue<double>("x").value_or(0.0), Catch::Matchers::WithinRel(3.0));
 	}
 
 	SECTION("variables respect conformance modes")
