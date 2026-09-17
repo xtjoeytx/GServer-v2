@@ -701,6 +701,9 @@ void GS1Visitor::setCurrentPlayerVariables(const std::optional<ScriptObject>& so
 	auto playerSource = source::FromPlayer(player->getId());
 	for (const auto& [name, variable] : player->scriptParameters)
 	{
+		if (name.starts_with('#'))
+			continue;
+
 		GameVariable var{.name = std::format("player{}", name), .lifetime = variables::Lifetime::TEMPORARY};
 		var.source = playerSource;
 		var.setters = variable.setters;
