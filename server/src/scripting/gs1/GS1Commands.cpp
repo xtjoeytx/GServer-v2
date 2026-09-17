@@ -129,10 +129,8 @@ static void fn_putnpc2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& 
 static void fn_reducebombs(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_reducedarts(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_reducerupees(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_removearrow(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_removebomb(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_removecompus(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_removeexplo(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_removeguild(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_removeguildmember(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_removehorse(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
@@ -160,7 +158,6 @@ static void fn_setcharani(GS1Visitor* visitor, const std::vector<GS1ScriptValue*
 static void fn_setchargender(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setcharprop(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setcoatcolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_seteffect(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setgender(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setgroup(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_sethead(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
@@ -185,7 +182,6 @@ static void fn_setstring(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>
 static void fn_setsword(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_setx(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_sety(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_setz(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_shoot(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_shootarrow(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_shootball(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
@@ -220,7 +216,6 @@ static void fn_unfreezeplayer(GS1Visitor* visitor, const std::vector<GS1ScriptVa
 static void fn_unset(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_updateboard(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_updateboard2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
-static void fn_updateterrain(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static void fn_warpto(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 // GR extensions
 static void fn_enabledamagereactions(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
@@ -296,10 +291,8 @@ static BuiltInCommandHandleMap GenerateMap()
 		{hash("reducebombs"), &fn_reducebombs},
 		{hash("reducedarts"), &fn_reducedarts},
 		{hash("reducerupees"), &fn_reducerupees},
-		{hash("removearrow"), &fn_removearrow},
 		{hash("removebomb"), &fn_removebomb},
 		{hash("removecompus"), &fn_removecompus},
-		{hash("removeexplo"), &fn_removeexplo},
 		{hash("removeguild"), &fn_removeguild},
 		{hash("removeguildmember"), &fn_removeguildmember},
 		{hash("removehorse"), &fn_removehorse},
@@ -327,7 +320,6 @@ static BuiltInCommandHandleMap GenerateMap()
 		{hash("setchargender"), &fn_setchargender},
 		{hash("setcharprop"), &fn_setcharprop},
 		{hash("setcoatcolor"), &fn_setcoatcolor},
-		{hash("seteffect"), &fn_seteffect},
 		{hash("setgender"), &fn_setgender},
 		{hash("setgif"), &fn_setimg},
 		{hash("setgifpart"), &fn_setimgpart},
@@ -354,7 +346,6 @@ static BuiltInCommandHandleMap GenerateMap()
 		{hash("setsword"), &fn_setsword},
 		{hash("setx"), &fn_setx},
 		{hash("sety"), &fn_sety},
-		{hash("setz"), &fn_setz},
 		{hash("shoot"), &fn_shoot},
 		{hash("shootarrow"), &fn_shootarrow},
 		{hash("shootball"), &fn_shootball},
@@ -389,7 +380,6 @@ static BuiltInCommandHandleMap GenerateMap()
 		{hash("unset"), &fn_unset},
 		{hash("updateboard"), &fn_updateboard},
 		{hash("updateboard2"), &fn_updateboard2},
-		{hash("updateterrain"), &fn_updateterrain},
 		{hash("warpto"), &fn_warpto},
 		// GR extensions
 		{hash("enabledamagereactions"), &fn_enabledamagereactions},
@@ -398,7 +388,74 @@ static BuiltInCommandHandleMap GenerateMap()
 	return map;
 }
 
-constexpr std::array<std::string_view, 8> flagProcessingCommands =
+/// @brief List of commands that are only supported on the client.
+constexpr std::array clientsideCommands =
+{
+	"addtiledef"sv,
+	"addtiledef2"sv,
+	"blockagainlocal"sv,
+	"callweapon"sv,
+	"disabledefmovement"sv,
+	"disablemap"sv,
+	"disablepause"sv,
+	"disableselectweapons"sv,
+	"dontblocklocal"sv,
+	"drawaslight"sv,
+	"enabledefmovement"sv,
+	"enablefeatures"sv,
+	"enablemap"sv,
+	"enablepause"sv,
+	"enableselectweapons"sv,
+	"followplayer"sv,
+	"freezeplayer"sv,
+	"hidelocal"sv,
+	"hideplayer"sv,
+	"hidesword"sv,
+	"loadmap"sv,
+	"noplayerkilling"sv,
+	"openurl"sv,
+	"openurl2"sv,
+	"play"sv,
+	"play2"sv,
+	"playlooped"sv,
+	"putleaps"sv,
+	"putobject"sv,
+	"reflectarrow"sv,
+	"removearrow"sv,
+	"removeexplo"sv,
+	"removetiledefs"sv,
+	"replaceani"sv,
+	"resetfocus"sv,
+	"setbackpal"sv,
+	"setbacktile"sv,
+	"setbacktile2"sv,
+	"setcoloreffect"sv,
+	"setcursor"sv,
+	"setcursor2"sv,
+	"seteffect"sv,
+	"seteffectmode"sv,
+	"setfocus"sv,
+	"setletters"sv,
+	"setmusicvolume"sv,
+	"setshape2"sv,
+	"setspritesimage"sv,
+	"setstatusimage"sv,
+	"seturllevel"sv,
+	"setz"sv,
+	"setzoomeffect"sv,
+	"showfile"sv,
+	"showlocal"sv,
+	"stopmidi"sv,
+	"stopsound"sv,
+	"timereverywhere"sv,
+	"toinventory"sv,
+	"updateterrain"sv,
+	"wraptext"sv,
+	"wraptext2"sv,
+};
+
+/// @brief List of commands that process flags.
+constexpr std::array flagProcessingCommands =
 {
 	"addstring"sv,
 	"deletestring"sv,
@@ -410,7 +467,8 @@ constexpr std::array<std::string_view, 8> flagProcessingCommands =
 	"unset"sv,
 };
 
-constexpr std::array<std::string_view, 2> translatableCommands =
+/// @brief List of commands that are automatically translated.
+constexpr std::array translatableCommands =
 {
 	"say2"sv,
 	"sendpm"sv,
@@ -439,91 +497,93 @@ void processBuiltInCommand(GS1Visitor* visitor, const antlr4::tree::ParseTree* n
 	if (commandName.empty())
 		throw std::runtime_error("processBuiltInCommand received an empty command name");
 
-	// Find the command in the map.
-	const size_t hash = string::string_hash{}(commandName);
-	const auto it = map.find(hash);
-	if (it == map.end())
-	{
-		log::printLine(log::script, "Unknown command in NPC [{}] '{}': {}", visitor->getOriginalSource().first, visitor->who, commandName);
-		return;
-	}
-
-	// Find the nearest player.  We use this for a couple calculations.
-	std::optional<ScriptObject> player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
-
-	// Special case for 'setplayerprop' and 'setcharprop', which need to push a unique context onto the stack.
-	// We need to bring the relevant context to the front so the message code links to the correct player or NPC, since it can touch both.
-	bool popContext = false;
-	if (commandName == "setcharprop")
-	{
-		auto npc = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC);
-		if (!npc.has_value())
-			npc = visitor->getOriginalSource();
-
-		visitor->pushSource(npc.value());
-		popContext = true;
-	}
-	else if (commandName == "setplayerprop")
-	{
-		if (!player.has_value())
-		{
-			if (visitor->getEvent().initiator.second != ScriptObjectType::PLAYER)
-				return;
-			player = visitor->getEvent().initiator;
-		}
-
-		visitor->pushSource(player.value());
-		popContext = true;
-	}
-
-	// Record if we are expecting a flag for the next argument.
-	visitor->expectingFlag = (std::ranges::find(flagProcessingCommands, commandName) != std::ranges::end(flagProcessingCommands));
-	const bool isTranslatable = std::ranges::contains(translatableCommands, commandName);
-
-	std::vector<GS1ScriptValue*> arguments;
-	std::vector<std::any> keepAlive;
-
-	// Helper to package a value and keep it alive for the duration of the command execution.
-	auto makeValue = [&](std::any&& anyValue)
-	{
-		if (!anyValue.has_value())
-			return;
-
-		keepAlive.emplace_back(std::move(anyValue));
-		auto* container = std::any_cast<GS1ScriptValue>(&keepAlive.back());
-		if (container == nullptr)
-			throw std::runtime_error("BuiltInCommand argument is not a valid GS1ScriptValue");
-
-		arguments.push_back(container);
-	};
-
-	// Save the player pointer so we don't keep searching for it.
-	PlayerPtr playerPtr = nullptr;
 	const auto server = BabyDI::Get<Server>();
-	if (isTranslatable && player.has_value())
-		playerPtr = server->getPlayer(player.value().first);
-
-	// Collect the arguments from the node.
-	for (const auto& child : node->children)
-	{
-		// If the command is translatable, run it through the translation process before packaging the value.
-		if (isTranslatable && visitor->expectingFlag == false && player.has_value())
-		{
-			if (const auto stringContext = visitor->walkToContext(child); stringContext != nullptr)
-			{
-				makeValue(translateStringForPlayer(stringContext, visitor, playerPtr));
-				continue;
-			}
-		}
-
-		makeValue(child->accept(visitor));
-	}
-
-	// Unset the expecting flag.
-	visitor->expectingFlag = false;
+	bool popContext = false;
 
 	try
 	{
+		// Check if this command is clientside.
+		if (std::ranges::find(clientsideCommands, commandName) != std::ranges::end(clientsideCommands))
+			throw std::logic_error(std::format("Clientside only command: '{}'", commandName));
+
+		// Find the command in the map.
+		const size_t hash = string::string_hash{}(commandName);
+		const auto it = map.find(hash);
+		if (it == map.end())
+			throw std::logic_error(std::format("Unknown command: '{}'", commandName));
+
+		// Find the nearest player.  We use this for a couple calculations.
+		std::optional<ScriptObject> player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
+
+		// Special case for 'setplayerprop' and 'setcharprop', which need to push a unique context onto the stack.
+		// We need to bring the relevant context to the front so the message code links to the correct player or NPC, since it can touch both.
+		if (commandName == "setcharprop")
+		{
+			auto npc = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC);
+			if (!npc.has_value())
+				npc = visitor->getOriginalSource();
+
+			visitor->pushSource(npc.value());
+			popContext = true;
+		}
+		else if (commandName == "setplayerprop")
+		{
+			if (!player.has_value())
+			{
+				if (visitor->getEvent().initiator.second != ScriptObjectType::PLAYER)
+					return;
+				player = visitor->getEvent().initiator;
+			}
+
+			visitor->pushSource(player.value());
+			popContext = true;
+		}
+
+		// Record if we are expecting a flag for the next argument.
+		visitor->expectingFlag = (std::ranges::find(flagProcessingCommands, commandName) != std::ranges::end(flagProcessingCommands));
+		const bool isTranslatable = std::ranges::contains(translatableCommands, commandName);
+
+		std::vector<GS1ScriptValue*> arguments;
+		std::vector<std::any> keepAlive;
+
+		// Helper to package a value and keep it alive for the duration of the command execution.
+		auto makeValue = [&](std::any&& anyValue)
+		{
+			if (!anyValue.has_value())
+				return;
+
+			keepAlive.emplace_back(std::move(anyValue));
+			auto* container = std::any_cast<GS1ScriptValue>(&keepAlive.back());
+			if (container == nullptr)
+				throw std::runtime_error("BuiltInCommand argument is not a valid GS1ScriptValue");
+
+			arguments.push_back(container);
+		};
+
+		// Save the player pointer so we don't keep searching for it.
+		PlayerPtr playerPtr = nullptr;
+		if (isTranslatable && player.has_value())
+			playerPtr = server->getPlayer(player.value().first);
+
+		// Collect the arguments from the node.
+		for (const auto& child : node->children)
+		{
+			// If the command is translatable, run it through the translation process before packaging the value.
+			if (isTranslatable && visitor->expectingFlag == false && player.has_value())
+			{
+				if (const auto stringContext = visitor->walkToContext(child); stringContext != nullptr)
+				{
+					makeValue(translateStringForPlayer(stringContext, visitor, playerPtr));
+					continue;
+				}
+			}
+
+			makeValue(child->accept(visitor));
+		}
+
+		// Unset the expecting flag.
+		visitor->expectingFlag = false;
+
 		// Execute the command.
 		it->second(visitor, arguments);
 	}
@@ -1857,12 +1917,6 @@ void fn_reducerupees(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& ar
 	}
 }
 
-// removearrow index;
-void fn_removearrow(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
-{
-	throw std::logic_error("removearrow is clientside only.");
-}
-
 // removebomb index;
 // Removes a bomb from the level.
 void fn_removebomb(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
@@ -1883,12 +1937,6 @@ void fn_removecompus(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& ar
 {
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 		(void)level->removeAllBaddies();
-}
-
-// removeexplo index;
-void fn_removeexplo(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
-{
-	throw std::logic_error("removeexplo is clientside only.");
 }
 
 // removeguild guild;
@@ -2412,15 +2460,6 @@ void fn_setcoatcolor(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& ar
 	}
 }
 
-// (1.20 to 1.31r1)	seteffect r,g,b;
-// (2.0+)			seteffect r,g,b,a;
-void fn_seteffect(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
-{
-	// The original seteffect command tinted the entire game screen.
-	// The newer seteffect command adjusts how an NPC is drawn, tinting it and making it translucent.
-	throw std::logic_error("seteffect is clientside only.");
-}
-
 // setgender gender;
 // Set's the player's gender (controls which voice is used).
 void fn_setgender(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
@@ -2928,12 +2967,6 @@ void fn_sety(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 			npc->setPropWith<NPCProp::Y>(SetBy::SERVER, position.y());
 		}
 	}
-}
-
-// setz x,y,width,height,a,b,c,d;
-void fn_setz(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
-{
-	throw std::logic_error("setz is clientside only.");
 }
 
 // shoot x,y,z,angle,zangle,power,gani,ganiattribs;
@@ -3697,12 +3730,6 @@ void fn_updateboard2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& ar
 
 		level->updateBoard2({{x, y}, {width, height}});
 	}
-}
-
-// updateterrain;
-void fn_updateterrain(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
-{
-	throw std::logic_error("updateterrain is clientside only.");
 }
 
 // warpto levelname,x,y;
