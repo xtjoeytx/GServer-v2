@@ -744,7 +744,8 @@ void GS1Visitor::execute(const ScriptEvent& event, const ScriptObject& source, G
 			if (!m_callStack.empty())
 				startNode = m_callStack.back().first;
 
-			assert(loops++ < 100);
+			if (loops++ > 100)
+				throw std::runtime_error("Script execution looped 100 times, possible infinite recursion.");
 		}
 		while (!m_callStack.empty());
 	}
