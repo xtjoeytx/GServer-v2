@@ -2271,6 +2271,9 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 		if (flagValue.has_value())
 			existing->assign<std::string>(cropFlag(flagValue.value()));
 		else existing->assign<bool>(true);
+
+		// Make the lifetime permanent.
+		existing->lifetime = variables::Lifetime::PERMANENT;
 	}
 	// New flag.
 	else
@@ -2279,8 +2282,8 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 			return false;
 
 		if (!flagValue.has_value())
-			Scripting.variables.add(flagName, GameValue{true});
-		else Scripting.variables.add(flagName, GameValue{cropFlag(flagValue.value())});
+			Scripting.variables.add(GameVariable{.name = std::string{flagName}, .value = GameValue{true}, .lifetime = variables::Lifetime::PERMANENT});
+		else Scripting.variables.add(GameVariable{.name = std::string{flagName}, .value = GameValue{cropFlag(flagValue.value())}, .lifetime = variables::Lifetime::PERMANENT});
 	}
 
 	// And share it.

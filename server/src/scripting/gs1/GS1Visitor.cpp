@@ -507,8 +507,8 @@ GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view iden
 		return builtInStore->get(identifier).lock().get();
 
 	// Second, check the server's global variable store.
-	if (server->Scripting.variables.contains(identifier))
-		return server->Scripting.variables.get(identifier).lock().get();
+	if (m_serverStore->contains(identifier))
+		return m_serverStore->get(identifier).lock().get();
 
 	auto checkStore = [&](const ScriptObject& source) -> std::optional<GameVariable*>
 	{
