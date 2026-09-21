@@ -769,6 +769,7 @@ void GS1Visitor::execute(const ScriptEvent& event, const ScriptObject& source, G
 		m_callStack.clear();
 
 		m_sleepCurrentSource = std::move(m_currentSource);
+		m_sleepCurrentSource.push_back(m_event->initiator);
 		m_currentSource.clear();
 	}
 	catch (...)

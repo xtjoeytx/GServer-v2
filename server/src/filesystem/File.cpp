@@ -129,7 +129,7 @@ std::filesystem::path getHTMLUnescapedFileName(const std::filesystem::path& file
 		pos = oldpos;
 	}
 	if (oldpos < native.length())
-		result.append(native.c_str() + oldpos);
+		result.append(native.c_str() + oldpos, native.length() - oldpos);
 
 	return result;
 }
