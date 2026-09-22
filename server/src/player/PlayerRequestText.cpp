@@ -155,7 +155,7 @@ HandlePacketResult Player::msgPLI_REQUESTTEXT(CString& pPacket)
 		}
 	}
 
-	log::printLine(log::server, "[ IN] [RequestText] from {} -> {}", string::toCSV(account.name), packet);
+	DEBUGPRINT("[ IN] [RequestText] from {} -> {}", string::toCSV(account.name), packet);
 	return HandlePacketResult::Handled;
 }
 
@@ -228,7 +228,7 @@ HandlePacketResult Player::msgPLI_SENDTEXT(CString& pPacket)
 						if (params3[0] == "!getserverinfo")
 						{
 							//list->sendPacket(CString() >> (char)SVO_REQUESTSVRINFO >> (short)id << weapon << ",irc,privmsg," << params3[1].gtokenize());
-							log::printLine(log::server, "[ IN] [SVO_SERVERINFO] {},{}", string::toCSV(account.name), packet);
+							DEBUGPRINT("[ IN] [SVO_SERVERINFO] {},{}", string::toCSV(account.name), packet);
 							//list->sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)id << params3[1]); // <-- this solves it for now
 
 							// I believe the following data is what it's looking for:
@@ -274,7 +274,7 @@ HandlePacketResult Player::msgPLI_SENDTEXT(CString& pPacket)
 		}
 	}
 
-	log::printLine(log::server, "[ IN] [SendText] {}: {}", string::toCSV(account.name), packet);
+	DEBUGPRINT("[ IN] [SendText] {}: {}", string::toCSV(account.name), packet);
 
 	return HandlePacketResult::Handled;
 }
