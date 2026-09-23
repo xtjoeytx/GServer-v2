@@ -286,30 +286,22 @@ bool PlayerClient::handleLogin(CString& pPacket)
 	m_type = (1 << pPacket.readGChar());
 
 	// Set the encryptions.
-	log::print(log::server, "New login:   ");
 	switch (m_type)
 	{
 		case PLTYPE_CLIENT:
-			log::printLine(log::server, "Client");
 			Encryption.setGen(ENCRYPT_GEN_2);
 			break;
 		case PLTYPE_CLIENT2:
-			log::printLine(log::server, "New Client (2.19 - 2.21, 3 - 3.01)");
 			Encryption.setGen(ENCRYPT_GEN_4);
 			break;
+		default:
 		case PLTYPE_CLIENT3:
-			log::printLine(log::server, "New Client (2.22+)");
 			Encryption.setGen(ENCRYPT_GEN_5);
 			break;
 		case PLTYPE_WEB:
-			log::printLine(log::server, "Web");
 			Encryption.setGen(ENCRYPT_GEN_1);
 			m_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
 			break;
-		default:
-			log::printLine(log::server, "Unknown ({})", m_type);
-			sendPacket(CString() >> (char)PLO_DISCMESSAGE << "Your client type is unknown.  Please inform the " << APP_VENDOR << " Team.  Type: " << CString((int)m_type) << ".");
-			return false;
 	}
 
 	// Handle old clients.
@@ -349,18 +341,33 @@ bool PlayerClient::handleLogin(CString& pPacket)
 	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
 	const CString identity = pPacket.readString("");
 
+	// Print the login.
+	log::print(log::server, "New login: {} ", account.name);
+	switch (m_type)
+	{
+		case PLTYPE_CLIENT:
+			log::print(log::server, "[Client]");
+			break;
+		case PLTYPE_CLIENT2:
+			log::print(log::server, "[New Client (2.19 - 2.21, 3 - 3.01)]");
+			break;
+		default:
+		case PLTYPE_CLIENT3:
+			log::print(log::server, "[New Client (2.22+)]");
+			break;
+		case PLTYPE_WEB:
+			log::print(log::server, "[Web]");
+			break;
+	}
+	log::printLine(log::server, " [{} ({})]", m_version, getVersionString(m_version, m_type));
+
+	// Identity parsing.
+	if (!identity.isEmpty())
 	{
 		auto indent = log::server.indent();
-
-		//log::printLine(log::server, "Key: {}", key);
-		log::printLine(log::server, "Version:     {} ({})", m_version, getVersionString(m_version, m_type));
-		log::printLine(log::server, "Account:     {}", account.name);
-		if (!identity.isEmpty())
-		{
-			log::printLine(log::server, "Identity:    {}", identity);
-			const auto identityTokens = identity.tokenize(",", true);
-			account.platform = identityTokens[0];
-		}
+		DEBUGPRINT("Identity:  {}", identity);
+		const auto identityTokens = identity.tokenize(",", true);
+		account.platform = identityTokens[0];
 	}
 
 	// Check if the specified client is allowed access.
