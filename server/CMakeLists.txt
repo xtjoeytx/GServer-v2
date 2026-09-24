@@ -109,6 +109,7 @@ set(
 	"include/utilities/std/inplace_vector.h"
 	"include/utilities/std/views_concat.h"
 	"src/Server.cpp"
+	"src/Server.Init.cpp"
 	"src/ServerList.cpp"
 	"src/TriggerCommandHandlers.cpp"
 	"src/UpdatePackage.cpp"

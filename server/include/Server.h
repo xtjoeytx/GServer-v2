@@ -204,8 +204,12 @@ public:
 	int init(std::string_view serverip, std::string_view serverport, std::string_view localip, std::string_view serverinterface);
 	bool doMain();
 
+	void initVariables();
+	void initTimedEvents();
+	void initFilesystemCallbacks();
+
 	// Server Configuration
-	static void performMigrations() ;
+	static void performMigrations();
 	int loadConfigFiles();
 	void prepareSettings();
 	void loadSettings();
