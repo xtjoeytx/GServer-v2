@@ -368,23 +368,44 @@ Server::Server(CString pName)
 			if (id == 0)
 				return;
 
-			const auto npc = getNPC(id);
+			auto npc = getNPC(id);
 			if (npc == nullptr || npc->lastSaveTime == file.getModTime()) return;
 			npc->lastSaveTime = file.getModTime();
 
-			// TODO: Ability to serialize all the attributes from the file and send changed ones.
+			// Record the current props and reload the NPC.
+			npc->recordCurrentPropModTime();
+			m_npcLoader->loadNPC(npcFile, npc, m_frameStartTime);
 
-			const auto script = npcFile.readConfigSection("NPCSCRIPT", "NPCSCRIPTEND");
-			if (script.has_value())
+			// If the NPC's script was updated, queue events, delete the NPC, and resend to everybody (so they get the new script).
+			if (npc->wasPropModified(NPCProp::SCRIPT))
 			{
-				npc->setScript(script.value());
 				npc->scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
 				npc->sendScriptUpdatesToLevel(file.getModTime());
-
-				const std::string logMsg = std::format("NPC script updated on filesystem: [{}] {}", npc->id, npc->name);
-				log::printLine(log::npc, logMsg);
-				sendToNC(logMsg);
 			}
+			// Otherwise, if the NPC is on a level, try to send only the modified props.
+			else if (auto level = npc->getLevel(); level != nullptr)
+			{
+				// If the level was changed, warp, which will send the props to players in the new level.
+				if (npc->level != level->levelName)
+				{
+					// NPC props ignore values that don't change.
+					// Since the level warping is done through NPC props, briefly reset the NPC level so the warp actually happens.
+					const auto warpLevel = getLoadedLevel(npc->level, level);
+					npc->level = level->levelName;
+					npc->warp(warpLevel, npc->getGlobalPosition());
+				}
+				else
+				{
+					// Send the modified properties to nearby players.
+					CString propsPacket = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getModifiedPropsPacket();
+					if (propsPacket.length() > 4)
+						sendPacketToNearby(propsPacket, npc->getGlobalPosition(), level);
+				}
+			}
+
+			const std::string logMsg = std::format("NPC updated on filesystem: [{}] {}", npc->id, npc->name);
+			log::printLine(log::npc, logMsg);
+			sendToNC(logMsg);
 		}
 	};
 	m_fsServer.categoryEventCallback[ENUM(fs::FileCategory::SCRIPTCLASS)] = [this](const fs::FileEventCollection events, const fs::FileData& file)

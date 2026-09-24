@@ -1351,25 +1351,45 @@ void Level::sendHorsesToPlayer(const std::shared_ptr<Player>& player) const
 // TODO: Replace with a function in server that sends npc props from a list of ids.
 void Level::sendNPCsToPlayer(const std::shared_ptr<Player>& player, const std::optional<clock::time_point> time) const
 {
-	for (const auto& npcId : m_npcs)
+	for (const auto& npcId : findInRangeNPCsForCommunication(player->getGlobalPosition()))
 	{
 		const auto npc = m_server->getNPC(npcId);
 		if (!npc) continue;
 
-		if (auto packet = npc->getAllPropsPacket(time); !packet.isEmpty())
-		{
-			player->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)npc->id << packet);
-			if (player->getVersion() >= CLVER_4_0211 && !npc->getScript().getClientByteCode().empty())
-			{
-				CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->id;
-				byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode().data()), static_cast<int>(npc->getScript().getClientByteCode().size()));
-				player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)byteCodePacket.length());
-				player->sendPacket(byteCodePacket);
-			}
-		}
+		sendNPCToPlayer(npc, player, time);
+	}
+}
 
-		npc->sendShowImagesToPlayer(player, time);
-		npc->sendMoveQueueToPlayer(player, time);
+void Level::sendNPCToPlayer(const std::shared_ptr<NPC>& npc, const std::shared_ptr<Player>& player, const std::optional<clock::time_point> time) const
+{
+	if (npc == nullptr)
+		return;
+
+	if (const auto packet = npc->getAllPropsPacket(time); !packet.isEmpty())
+	{
+		player->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)npc->id << packet);
+		if (player->getVersion() >= CLVER_4_0211 && !npc->getScript().getClientByteCode().empty())
+		{
+			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->id;
+			byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode().data()), static_cast<int>(npc->getScript().getClientByteCode().size()));
+			player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)byteCodePacket.length());
+			player->sendPacket(byteCodePacket);
+		}
+	}
+
+	npc->sendShowImagesToPlayer(player, time);
+	npc->sendMoveQueueToPlayer(player, time);
+}
+
+void Level::sendNPCToNearbyPlayers(const std::shared_ptr<NPC>& npc, const std::optional<clock::time_point> time) const
+{
+	if (npc == nullptr)
+		return;
+
+	for (const auto& pId : findInRangePlayersForCommunication(npc->getGlobalPosition()))
+	{
+		if (auto player = m_server->getPlayer(pId); player != nullptr)
+			sendNPCToPlayer(npc, player, time);
 	}
 }
 
@@ -3153,6 +3173,45 @@ std::generator<NPCID> Level::findInRangeNPCs(const PixelPosition& position) cons
 	{
 		if (npcInRange(npcId))
 			co_yield npcId;
+	}
+}
+
+std::generator<NPCID> Level::findInRangeNPCsForCommunication(const PixelPosition& position) const noexcept
+{
+	// If this is not a bigmap, use the default search.
+	if (!isOnBigMap())
+	{
+		for (const auto& npcId : findInRangeNPCs(position))
+			co_yield npcId;
+		co_return;
+	}
+
+	auto mapPositionOpt = m_map->getLevelPosition(levelName);
+	if (!mapPositionOpt.has_value())
+	{
+		co_return;
+	}
+
+	auto& mapPosition = mapPositionOpt.value();
+	int startX = mapPosition.x() - 1, endX = mapPosition.x() + 1;
+	int startY = mapPosition.y() - 1, endY = mapPosition.y() + 1;
+
+	if (startX < 0) startX = 0;
+	if (startY < 0) startY = 0;
+	if (endX >= m_map->size.width()) endX = m_map->size.width() - 1;
+	if (endY >= m_map->size.height()) endY = m_map->size.height() - 1;
+
+	for (int y = startY; y <= endY; ++y)
+	{
+		for (int x = startX; x <= endX; ++x)
+		{
+			const auto hintLevel = std::const_pointer_cast<Level>(shared_from_this());
+			if (auto level = m_server->getLoadedLevel(m_map->getLevelNameAt(x, y), hintLevel); level != nullptr)
+			{
+				for (const auto& npcId : level->m_npcs)
+					co_yield npcId;
+			}
+		}
 	}
 }
 

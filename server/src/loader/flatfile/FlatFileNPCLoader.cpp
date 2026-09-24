@@ -45,22 +45,22 @@ NPCPtr FlatFileNPCLoader::loadNPC(std::string_view npcName) noexcept
 
 NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcept
 {
-	auto server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 
 	// Load file
-	auto file = server->getFileSystemServer().open(fs::FileCategory::NPC, filePath);
+	const auto file = server->getFileSystemServer().open(fs::FileCategory::NPC, filePath);
 	if (file == nullptr)
 		return nullptr;
 
-	if (std::string header = string::trimMutate(file->readLine()); header != "GRNPC001")
+	if (const auto header = string::trimMutate(file->readLine()); header != "GRNPC001")
 		return nullptr;
 
-	auto npcNameFromFile = filePath.stem().string();
-	auto name = file->readConfigLine("NAME", " "sv).value_or(npcNameFromFile.substr(3, npcNameFromFile.length() - 7));
+	const auto npcNameFromFile = filePath.stem().string();
+	const auto name = file->readConfigLine("NAME", " "sv).value_or(npcNameFromFile.substr(3, npcNameFromFile.length() - 7));
 
 	// Search for the ID of the NPC from the file data.
 	NPCID id = 0;
-	if (auto sectionId = file->readConfigLine("ID", " "sv); sectionId.has_value())
+	if (const auto sectionId = file->readConfigLine("ID", " "sv); sectionId.has_value())
 	{
 		id = string::toNumber<NPCID>(sectionId.value());
 
@@ -89,23 +89,63 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	// Make the NPC.
 	auto npc = std::make_shared<NPC>(id, NPCStorageType::DATABASE);
 
-	// Set the default warp type.
-	auto warpRestriction = server->hasNPCServer() ? NPCWarpRestrictions::NOTALLOWED : NPCWarpRestrictions::ALLOWED;
+	// Load the NPC.
+	loadNPC(*file, npc, server->getServerStartTime());
+
+	// Save the loaded warp restriction.
+	// Adding the NPC to the server will change this.
+	const auto warpRestriction = npc->warpRestrictions;
+
+	// Add the NPC to the server.
+	server->addNPC(npc, false);
+
+	// Set the warp restriction (do this after adding to the server since that will overwrite the restriction).
+	npc->warpRestrictions = warpRestriction;
+
+	// Check if we need to rename the file.
+	const auto expectedFileName = fs::getHTMLEscapedFileName(std::format("npc{}.txt", npc->name)).string();
+	const auto currentFileName = fs::getANSIFileName(filePath);
+	if (expectedFileName != currentFileName)
+	{
+		if (const auto fileData = server->getFileSystemServer().infoi(fs::FileCategory::NPC, currentFileName); fileData != nullptr)
+		{
+			auto indent = log::server.indent();
+			if (server->getFileSystemServer().rename(*fileData, expectedFileName))
+				log::printLine(log::server, "Renamed NPC file [{}] to [{}]", currentFileName, expectedFileName);
+			else
+				log::printLine(log::server, "** Failed to rename NPC file [{}] to [{}]", currentFileName, expectedFileName);
+		}
+	}
+
+	return npc;
+}
+
+void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_point& updateTime) noexcept
+{
+	file.setStreamPosition(0);
+	if (const auto header = string::trimMutate(file.readLine()); header != "GRNPC001")
+		return;
 
 	// Set some default values.
 	bool isMale = true;
 	npc->visFlags = PROPID(NPCVisFlags::VISIBLE) | PROPID(NPCVisFlags::CREATED);
 
-	const auto& updateTime = server->getServerStartTime();
+	// Record if we saw a map X/Y entry.
+	// We need to properly handle situations where the map position is removed.
+	bool hasMapXPosition = false;
+	bool hasMapYPosition = false;
+
 	std::string script;
 	std::vector<std::string> joinedClasses;
 
 	// Parse File
+	bool scriptUpdated = false;
 	std::string line;
 	std::string command;
-	while (!file->finishedReading())
+	std::string strval;
+	while (!file.finishedReading())
 	{
-		line = string::trimMutate(file->readLine());
+		line = string::trimMutate(file.readLine());
 
 		std::string_view lineView = line;
 		command = string::extractLine(lineView, ' ');
@@ -113,8 +153,11 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		// Parse Line
 		if (command == "NAME")
 		{
-			npc->name = lineView;
-			npc->modTime[PROPID(NPCProp::NAME)] = updateTime;
+			if (npc->name != lineView)
+			{
+				npc->name = lineView;
+				npc->modTime[PROPID(NPCProp::NAME)] = updateTime;
+			}
 		}
 		else if (command == "ID")
 			; // npc->id = string::toNumber<NPCID>(std::string{ lineView });
@@ -122,22 +165,33 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			npc->scriptType = lineView;
 		else if (command == "SCRIPTER")
 		{
-			npc->scripter = lineView;
-			npc->modTime[PROPID(NPCProp::SCRIPTER)] = updateTime;
+			if (npc->scripter != lineView)
+			{
+				npc->scripter = lineView;
+				npc->modTime[PROPID(NPCProp::SCRIPTER)] = updateTime;
+			}
 		}
 		else if (command == "IMAGE")
 		{
-			npc->image = lineView;
-			npc->modTime[PROPID(NPCProp::IMAGE)] = updateTime;
+			if (npc->image != lineView)
+			{
+				npc->image = lineView;
+				npc->modTime[PROPID(NPCProp::IMAGE)] = updateTime;
+			}
 		}
 		else if (command == "IMGPART")
 		{
-			auto parts = string::splitToVectorView(lineView, " "sv);
+			const auto parts = string::splitToVectorView(lineView, " "sv);
 			if (parts.size() >= 4)
 			{
-				npc->imagePart.position = {string::toNumber<uint16_t>(parts[0]), string::toNumber<uint16_t>(parts[1])};
-				npc->imagePart.size = {string::toNumber<uint8_t>(parts[2]), string::toNumber<uint8_t>(parts[3])};
-				npc->modTime[PROPID(NPCProp::IMAGEPART)] = updateTime;
+				Rectangle<uint16_t, uint8_t> imagePart;
+				imagePart.position = {string::toNumber<uint16_t>(parts[0]), string::toNumber<uint16_t>(parts[1])};
+				imagePart.size = {string::toNumber<uint8_t>(parts[2]), string::toNumber<uint8_t>(parts[3])};
+				if (npc->imagePart.position != imagePart.position || npc->imagePart.size != imagePart.size)
+				{
+					npc->imagePart = imagePart;
+					npc->modTime[PROPID(NPCProp::IMAGEPART)] = updateTime;
+				}
 			}
 		}
 		else if (command == "STARTLEVEL")
@@ -162,135 +216,229 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			npc->groupName = lineView;
 		else if (command == "X")
 		{
-			npc->character.localPixelX = static_cast<int16_t>(string::toFloat(lineView) * 16);
-			npc->modTime[PROPID(NPCProp::X)] = updateTime;
-			npc->modTime[PROPID(NPCProp::X2)] = updateTime;
+			const auto val = static_cast<int16_t>(string::toFloat(lineView) * 16);
+			if (npc->character.localPixelX != val)
+			{
+				npc->character.localPixelX = val;
+				npc->modTime[PROPID(NPCProp::X)] = updateTime;
+				npc->modTime[PROPID(NPCProp::X2)] = updateTime;
+			}
 		}
 		else if (command == "Y")
 		{
-			npc->character.localPixelY = static_cast<int16_t>(string::toFloat(lineView) * 16);
-			npc->modTime[PROPID(NPCProp::Y)] = updateTime;
-			npc->modTime[PROPID(NPCProp::Y2)] = updateTime;
+			const auto val = static_cast<int16_t>(string::toFloat(lineView) * 16);
+			if (npc->character.localPixelY != val)
+			{
+				npc->character.localPixelY = val;
+				npc->modTime[PROPID(NPCProp::Y)] = updateTime;
+				npc->modTime[PROPID(NPCProp::Y2)] = updateTime;
+			}
 		}
 		else if (command == "Z")
 		{
-			npc->character.localPixelZ = static_cast<int16_t>(string::toFloat(lineView) * 16);
-			if (npc->character.localPixelZ.has_value() && (npc->character.localPixelZ.value() < Character::ValidZRangePixels[0] || npc->character.localPixelZ.value() > Character::ValidZRangePixels[1]))
-				npc->character.localPixelZ.reset();
-			else
+			const auto val = static_cast<int16_t>(string::toFloat(lineView) * 16);
+			if (npc->character.localPixelZ != val)
 			{
+				npc->character.localPixelZ = val;
+				if (npc->character.localPixelZ.has_value() && (npc->character.localPixelZ.value() < Character::ValidZRangePixels[0] || npc->character.localPixelZ.value() > Character::ValidZRangePixels[1]))
+					npc->character.localPixelZ.reset();
+
 				npc->modTime[PROPID(NPCProp::Z)] = updateTime;
 				npc->modTime[PROPID(NPCProp::Z2)] = updateTime;
 			}
 		}
 		else if (command == "MAPX")
 		{
-			npc->character.mapX = string::toNumber<uint8_t>(lineView);
-			npc->modTime[PROPID(NPCProp::GMAPLEVELX)] = updateTime;
+			hasMapXPosition = true;
+			const auto val = string::toNumber<uint8_t>(lineView);
+			if (npc->character.mapX != val)
+			{
+				npc->character.mapX = val;
+				npc->modTime[PROPID(NPCProp::GMAPLEVELX)] = updateTime;
+			}
 		}
 		else if (command == "MAPY")
 		{
-			npc->character.mapY = string::toNumber<uint8_t>(lineView);
-			npc->modTime[PROPID(NPCProp::GMAPLEVELY)] = updateTime;
+			hasMapYPosition = true;
+			const auto val = string::toNumber<uint8_t>(lineView);
+			if (npc->character.mapY != val)
+			{
+				npc->character.mapY = val;
+				npc->modTime[PROPID(NPCProp::GMAPLEVELY)] = updateTime;
+			}
 		}
 		else if (command == "NICK")
 		{
-			npc->character.nickName = lineView;
-			npc->modTime[PROPID(NPCProp::NICKNAME)] = updateTime;
+			if (npc->character.nickName != lineView)
+			{
+				npc->character.nickName = lineView;
+				npc->modTime[PROPID(NPCProp::NICKNAME)] = updateTime;
+			}
 		}
 		else if (command == "ANI")
 		{
-			npc->character.gani = lineView;
-			npc->modTime[PROPID(NPCProp::GANI)] = updateTime;
+			if (npc->character.gani != lineView)
+			{
+				npc->character.gani = lineView;
+				npc->modTime[PROPID(NPCProp::GANI)] = updateTime;
+			}
 		}
 		else if (command == "HP")
 		{
-			npc->character.hitpointsInHalves = static_cast<uint8_t>(2 * string::toFloat(lineView));
-			npc->modTime[PROPID(NPCProp::HALFHEARTS)] = updateTime;
+			const auto val = static_cast<uint8_t>(2 * string::toFloat(lineView));
+			if (npc->character.hitpointsInHalves != val)
+			{
+				npc->character.hitpointsInHalves = val;
+				npc->modTime[PROPID(NPCProp::HALFHEARTS)] = updateTime;
+			}
 		}
 		else if (command == "GRALATS")
 		{
-			npc->character.gralats = string::toNumber<uint32_t>(lineView);
-			npc->modTime[PROPID(NPCProp::GRALATS)] = updateTime;
+			const auto val = string::toNumber<uint32_t>(lineView);
+			if (npc->character.gralats != val)
+			{
+				npc->character.gralats = val;
+				npc->modTime[PROPID(NPCProp::GRALATS)] = updateTime;
+			}
 		}
 		else if (command == "ARROWS")
 		{
-			npc->character.arrows = string::toNumber<uint8_t>(lineView);
-			npc->modTime[PROPID(NPCProp::ARROWS)] = updateTime;
+			const auto val = string::toNumber<uint8_t>(lineView);
+			if (npc->character.arrows != val)
+			{
+				npc->character.arrows = val;
+				npc->modTime[PROPID(NPCProp::ARROWS)] = updateTime;
+			}
 		}
 		else if (command == "BOMBS")
 		{
-			npc->character.bombs = string::toNumber<uint8_t>(lineView);
-			npc->modTime[PROPID(NPCProp::BOMBS)] = updateTime;
+			const auto val = string::toNumber<uint8_t>(lineView);
+			if (npc->character.bombs != val)
+			{
+				npc->character.bombs = val;
+				npc->modTime[PROPID(NPCProp::BOMBS)] = updateTime;
+			}
 		}
 		else if (command == "GLOVEP")
 		{
-			npc->character.glovePower = string::toNumber<uint8_t>(lineView);
-			npc->modTime[PROPID(NPCProp::GLOVEPOWER)] = updateTime;
+			const auto val = string::toNumber<uint8_t>(lineView);
+			if (npc->character.glovePower != val)
+			{
+				npc->character.glovePower = val;
+				npc->modTime[PROPID(NPCProp::GLOVEPOWER)] = updateTime;
+			}
 		}
 		else if (command == "SWORDP")
 		{
-			npc->character.swordPower = string::toNumber<int8_t>(lineView);
-			npc->modTime[PROPID(NPCProp::SWORDIMAGE)] = updateTime;
+			const auto val = string::toNumber<int8_t>(lineView);
+			if (npc->character.swordPower != val)
+			{
+				npc->character.swordPower = val;
+				npc->modTime[PROPID(NPCProp::SWORDIMAGE)] = updateTime;
+			}
 		}
 		else if (command == "SHIELDP")
 		{
-			npc->character.shieldPower = string::toNumber<uint8_t>(lineView);
-			npc->modTime[PROPID(NPCProp::SHIELDIMAGE)] = updateTime;
+			const auto val = string::toNumber<uint8_t>(lineView);
+			if (npc->character.shieldPower != val)
+			{
+				npc->character.shieldPower = val;
+				npc->modTime[PROPID(NPCProp::SHIELDIMAGE)] = updateTime;
+			}
 		}
 		else if (command == "BOWP")
 		{
-			npc->character.bowPower = string::toNumber<uint8_t>(lineView);
-			npc->modTime[PROPID(NPCProp::GANI)] = updateTime;
+			const auto val = string::toNumber<uint8_t>(lineView);
+			if (npc->character.bowPower != val)
+			{
+				npc->character.bowPower = val;
+				npc->modTime[PROPID(NPCProp::GANI)] = updateTime;
+			}
 		}
 		else if (command == "BOW")
 		{
-			npc->character.bowImage = lineView;
-			npc->modTime[PROPID(NPCProp::GANI)] = updateTime;
+			if (npc->character.bowImage != lineView)
+			{
+				npc->character.bowImage = lineView;
+				npc->modTime[PROPID(NPCProp::GANI)] = updateTime;
+			}
 		}
 		else if (command == "HEAD")
 		{
-			npc->character.headImage = lineView;
-			npc->modTime[PROPID(NPCProp::HEADIMAGE)] = updateTime;
+			if (npc->character.headImage != lineView)
+			{
+				npc->character.headImage = lineView;
+				npc->modTime[PROPID(NPCProp::HEADIMAGE)] = updateTime;
+			}
 		}
 		else if (command == "BODY")
 		{
-			npc->character.bodyImage = lineView;
-			npc->modTime[PROPID(NPCProp::BODYIMAGE)] = updateTime;
+			if (npc->character.bodyImage != lineView)
+			{
+				npc->character.bodyImage = lineView;
+				npc->modTime[PROPID(NPCProp::BODYIMAGE)] = updateTime;
+			}
 		}
 		else if (command == "SWORD")
 		{
-			npc->character.swordImage = lineView;
-			npc->modTime[PROPID(NPCProp::SWORDIMAGE)] = updateTime;
+			if (npc->character.swordImage != lineView)
+			{
+				npc->character.swordImage = lineView;
+				npc->modTime[PROPID(NPCProp::SWORDIMAGE)] = updateTime;
+			}
 		}
 		else if (command == "SHIELD")
 		{
-			npc->character.shieldImage = lineView;
-			npc->modTime[PROPID(NPCProp::SHIELDIMAGE)] = updateTime;
+			if (npc->character.shieldImage != lineView)
+			{
+				npc->character.shieldImage = lineView;
+				npc->modTime[PROPID(NPCProp::SHIELDIMAGE)] = updateTime;
+			}
 		}
 		else if (command == "HORSE")
 		{
-			npc->character.horseImage = lineView;
-			npc->modTime[PROPID(NPCProp::HORSEIMAGE)] = updateTime;
+			if (npc->character.horseImage != lineView)
+			{
+				npc->character.horseImage = lineView;
+				npc->modTime[PROPID(NPCProp::HORSEIMAGE)] = updateTime;
+			}
 		}
 		else if (command == "COLORS")
 		{
+			bool updated = false;
 			auto tokens = string::splitToVectorView(lineView, ","sv);
 			for (size_t idx = 0; idx < std::min(tokens.size(), 8ZU); idx++)
-				npc->character.colors[idx] = string::toNumber<uint8_t>(tokens[idx]);
-			npc->modTime[PROPID(NPCProp::COLORS)] = updateTime;
+			{
+				const auto val = string::toNumber<uint8_t>(tokens[idx]);
+				if (npc->character.colors[idx] != val)
+				{
+					npc->character.colors[idx] = val;
+					updated = true;
+				}
+			}
+			if (updated)
+				npc->modTime[PROPID(NPCProp::COLORS)] = updateTime;
 		}
 		else if (command == "SPRITE")
 		{
-			auto sprite = string::toNumber<uint8_t>(lineView);
-			npc->character.sprite = sprite >> 2;
-			npc->character.direction = sprite & 0b11;
-			npc->modTime[PROPID(NPCProp::SPRITE)] = updateTime;
+			const auto spritedir = string::toNumber<uint8_t>(lineView);
+			const uint8_t sprite = spritedir >> 2;
+			const uint8_t dir = sprite & 0b11;
+			if (npc->character.sprite != sprite || npc->character.direction != dir)
+			{
+				npc->character.sprite = sprite;
+				npc->character.direction = dir;
+				npc->modTime[PROPID(NPCProp::SPRITE)] = updateTime;
+			}
 		}
 		else if (command == "AP")
 		{
-			npc->character.ap = string::toNumber<uint8_t>(lineView);
-			npc->modTime[PROPID(NPCProp::ALIGNMENT)] = updateTime;
+			const auto val = string::toNumber<uint8_t>(lineView);
+			if (npc->character.ap != val)
+			{
+				npc->character.ap = val;
+				npc->modTime[PROPID(NPCProp::ALIGNMENT)] = updateTime;
+			}
 		}
 		else if (command == "TIMEOUT")
 		{
@@ -298,18 +446,23 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "LAYER")
 		{
+			auto visFlags = npc->visFlags & ~(PROPID(NPCVisFlags::DRAWUNDERPLAYER) | PROPID(NPCVisFlags::DRAWOVERPLAYER));
 			switch (string::toNumber<int8_t>(lineView))
 			{
 				case -1:
-					npc->visFlags |= PROPID(NPCVisFlags::DRAWUNDERPLAYER);
+					visFlags |= PROPID(NPCVisFlags::DRAWUNDERPLAYER);
 					break;
 				case 1:
-					npc->visFlags |= PROPID(NPCVisFlags::DRAWOVERPLAYER);
+					visFlags |= PROPID(NPCVisFlags::DRAWOVERPLAYER);
 					break;
 				default:;
 			}
 
-			npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
+			if (visFlags != npc->visFlags)
+			{
+				npc->visFlags = visFlags;
+				npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
+			}
 		}
 		else if (command == "SHAPETYPE")
 		{
@@ -322,8 +475,12 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		}
 		else if (command == "DONTBLOCK")
 		{
-			npc->blockFlags = string::toNumber<uint8_t>(lineView);
-			npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
+			const auto val = string::toNumber<uint8_t>(lineView);
+			if (npc->blockFlags != val)
+			{
+				npc->blockFlags = val;
+				npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
+			}
 		}
 		else if (command == "NOPLAYERONWALL")
 		{
@@ -334,51 +491,75 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			auto tokens = string::splitToVectorView(lineView, ","sv);
 			for (size_t idx = 0; idx < std::min(tokens.size(), npc->saves.size()); idx++)
 			{
-				npc->saves[idx] = string::toNumber<uint8_t>(tokens[idx]);
-				npc->modTime[PROPID(NPCProp::SAVE0) + idx] = updateTime;
+				const auto val = string::toNumber<uint8_t>(tokens[idx]);
+				if (npc->saves[idx] != val)
+				{
+					npc->saves[idx] = val;
+					npc->modTime[PROPID(NPCProp::SAVE0) + idx] = updateTime;
+				}
 			}
 		}
 		else if (command == "CANWARP")
 		{
-			warpRestriction = NPCWarpRestrictions::ALLOWED;
+			npc->warpRestrictions = NPCWarpRestrictions::ALLOWED;
 		}
 		else if (command == "CANWARP2")
 		{
-			warpRestriction = NPCWarpRestrictions::ONLYOVERWORLD;
+			npc->warpRestrictions = NPCWarpRestrictions::ONLYOVERWORLD;
 		}
 
 		// Official variables for these are unknown.
 		else if (command == "CANCARRY")
 		{
-			npc->blockFlags |= PROPID(NPCBlockFlags::CANBECARRIED);
-			npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
+			const auto block = npc->blockFlags | PROPID(NPCBlockFlags::CANBECARRIED);
+			if (npc->blockFlags != block)
+			{
+				npc->blockFlags = block;
+				npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
+			}
 		}
 		else if (command == "CANPULL")
 		{
-			npc->blockFlags |= PROPID(NPCBlockFlags::CANBEPULLED);
-			npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
+			const auto block = npc->blockFlags | PROPID(NPCBlockFlags::CANBEPULLED);
+			if (npc->blockFlags != block)
+			{
+				npc->blockFlags = block;
+				npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
+			}
 		}
 		else if (command == "CANPUSH")
 		{
-			npc->blockFlags |= PROPID(NPCBlockFlags::CANBEPUSHED);
-			npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
+			const auto block = npc->blockFlags | PROPID(NPCBlockFlags::CANBEPUSHED);
+			if (npc->blockFlags != block)
+			{
+				npc->blockFlags = block;
+				npc->modTime[PROPID(NPCProp::BLOCKFLAGS)] = updateTime;
+			}
 		}
 		else if (command == "VISIBLE")
 		{
-			if (auto value = string::toNumber<uint8_t>(lineView); value == 0)
+			if (const auto value = string::toNumber<uint8_t>(lineView); value == 0)
 			{
-				npc->visFlags &= ~PROPID(NPCVisFlags::VISIBLE);
-				npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
+				const auto visFlags = npc->visFlags & ~PROPID(NPCVisFlags::VISIBLE);
+				if (npc->visFlags != visFlags)
+				{
+					npc->visFlags = visFlags;
+					npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
+				}
 			}
 		}
 		else if (command == "TIMERSHOW")
 		{
-			npc->visFlags |= PROPID(NPCVisFlags::TIMERSHOW);
-			npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
+			const auto visFlags = npc->visFlags | PROPID(NPCVisFlags::TIMERSHOW);
+			if (npc->visFlags != visFlags)
+			{
+				npc->visFlags = visFlags;
+				npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
+			}
 		}
 		else if (command == "MALE")
 		{
-			if (auto value = string::toNumber<uint8_t>(lineView); value == 0)
+			if (const auto value = string::toNumber<uint8_t>(lineView); value == 0)
 				isMale = false;
 		}
 		//---
@@ -395,9 +576,12 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 			int attrId = string::toNumber<uint8_t>(attrIdStr);
 			if (attrId > 0 && attrId < 30)
 			{
-				int idx = attrId - 1;
-				npc->character.ganiAttributes[idx] = lineView;
-				npc->modTime[attrPackets[idx]] = updateTime;
+				const int idx = attrId - 1;
+				if (npc->character.ganiAttributes[idx] != lineView)
+				{
+					npc->character.ganiAttributes[idx] = lineView;
+					npc->modTime[attrPackets[idx]] = updateTime;
+				}
 			}
 		}
 		else if (command == "JOINEDCLASSES")
@@ -408,36 +592,66 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 		{
 			do
 			{
-				line = string::trimNewlines(file->readLine());
+				line = string::trimNewlines(file.readLine());
 				if (string::trim(line) == "NPCSCRIPTEND")
 					break;
 
 				script.append(line).append(1, '\n');
 			}
-			while (!file->finishedReading());
+			while (!file.finishedReading());
 
-			npc->modTime[PROPID(NPCProp::SCRIPT)] = updateTime;
+			scriptUpdated = (script != npc->getScript().getOriginalSource());
 		}
 	}
-	file->close();
+	file.close();
+
+	// If the NPC is a character, always send the colors.
+	if (npc->isCharacter())
+	{
+		npc->modTime[PROPID(NPCProp::COLORS)] = updateTime;
+	}
 
 	// If the NPC is a character, set the gender prop.
 	// Also, set the gender.
 	if (npc->isCharacter() && isMale)
 	{
-		npc->visFlags |= PROPID(NPCVisFlags::MALE);
-		npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
+		const auto visFlags = npc->visFlags | PROPID(NPCVisFlags::MALE);
+		if (npc->visFlags != visFlags)
+		{
+			npc->visFlags = visFlags;
+			npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
+		}
 	}
 
 	// If the NPC has no image, make it invisible.
 	if (!npc->hasImage() && !npc->hasShape())
 	{
-		npc->visFlags &= ~PROPID(NPCVisFlags::VISIBLE);
-		npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
+		const auto visFlags = npc->visFlags & ~PROPID(NPCVisFlags::VISIBLE);
+		if (npc->visFlags != visFlags)
+		{
+			npc->visFlags = visFlags;
+			npc->modTime[PROPID(NPCProp::VISFLAGS)] = updateTime;
+		}
+	}
+
+	// If the NPC did not set a map position, and our mapX/Y property is set, reset it back to 0.
+	if (!hasMapXPosition && npc->character.mapX != 0)
+	{
+		npc->character.mapX = 0;
+		npc->modTime[PROPID(NPCProp::GMAPLEVELX)] = updateTime;
+	}
+	if (!hasMapYPosition && npc->character.mapY != 0)
+	{
+		npc->character.mapY = 0;
+		npc->modTime[PROPID(NPCProp::GMAPLEVELY)] = updateTime;
 	}
 
 	// Set the script.
-	npc->setScript(script);
+	if (scriptUpdated)
+	{
+		npc->setScript(script);
+		npc->modTime[PROPID(NPCProp::SCRIPT)] = updateTime;
+	}
 
 	// Join the classes.
 	for (const auto& className : joinedClasses)
@@ -447,30 +661,7 @@ NPCPtr FlatFileNPCLoader::loadNPC(const std::filesystem::path& filePath) noexcep
 	}
 
 	// Set our last update / save times.
-	npc->lastUpdateTime = npc->lastSaveTime = fs::getFileModTime(filePath);
-
-	// Add the NPC to the server.
-	server->addNPC(npc, false);
-
-	// Set the warp restriction (do this after adding to the server since that will overwrite the restriction).
-	npc->warpRestrictions = warpRestriction;
-
-	// Check if we need to rename the file.
-	auto expectedFileName = fs::getHTMLEscapedFileName(std::format("npc{}.txt", npc->name)).string();
-	auto currentFileName = fs::getANSIFileName(filePath);
-	if (expectedFileName != currentFileName)
-	{
-		if (auto fileData = server->getFileSystemServer().infoi(fs::FileCategory::NPC, currentFileName); fileData != nullptr)
-		{
-			auto indent = log::server.indent();
-			if (server->getFileSystemServer().rename(*fileData, expectedFileName))
-				log::printLine(log::server, "Renamed NPC file [{}] to [{}]", currentFileName, expectedFileName);
-			else
-				log::printLine(log::server, "** Failed to rename NPC file [{}] to [{}]", currentFileName, expectedFileName);
-		}
-	}
-
-	return npc;
+	npc->lastUpdateTime = npc->lastSaveTime = toSystemClock(file.modifiedTime());
 }
 
 bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept

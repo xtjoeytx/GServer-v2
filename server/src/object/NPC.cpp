@@ -1461,7 +1461,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 			newLevel->addNPC(id);
 
 			// Send our props to people in the new level.
-			m_server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), newLevel);
+			newLevel->sendNPCToNearbyPlayers(m_server->getNPC(id), m_server->getFrameStartTime());
 
 			// Tell NCs about our new position.
 			CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::LEVEL << getProp<NPCProp::LEVEL>().serialize();

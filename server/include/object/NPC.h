@@ -340,6 +340,9 @@ public:
 	/// @brief Records the current modification time of all properties.
 	[[a::inline]] void recordCurrentPropModTime();
 
+	/// @brief Checks if the NPC property was modified since the last call to recordCurrentPropModTime.
+	[[nodiscard]] [[a::inline]] bool wasPropModified(NPCProp prop) const noexcept;
+
 	/// @brief Constructs a PropertyContainer for NPCProp P with the given values.
 	/// @tparam P The NPCProp that determines the type of container to construct.
 	/// @param values The values to pass to the container's constructor.
@@ -524,6 +527,11 @@ inline std::generator<std::shared_ptr<ScriptClass>> NPC::getJoinedClasses() cons
 inline void NPC::recordCurrentPropModTime()
 {
 	m_savedModTime = modTime;
+}
+
+inline bool NPC::wasPropModified(const NPCProp prop) const noexcept
+{
+	return m_savedModTime[ENUM(prop)] != modTime[ENUM(prop)];
 }
 
 inline void NPC::recordInitialState()

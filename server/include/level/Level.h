@@ -237,6 +237,8 @@ public:
 	void sendBaddiesToPlayer(const std::shared_ptr<Player>& player) const;
 	void sendHorsesToPlayer(const std::shared_ptr<Player>& player) const;
 	void sendNPCsToPlayer(const std::shared_ptr<Player>& player, std::optional<clock::time_point> time) const;
+	void sendNPCToPlayer(const std::shared_ptr<NPC>& npc, const std::shared_ptr<Player>& player, std::optional<clock::time_point> time) const;
+	void sendNPCToNearbyPlayers(const std::shared_ptr<NPC>& npc, std::optional<clock::time_point> time) const;
 
 public:
 	bool hasPlayers() const { return !m_players.empty(); }
@@ -364,6 +366,7 @@ public:
 	std::generator<PlayerID> findPlayersInLevelPart(const MapPosition& mapLevel) const noexcept;
 	std::generator<NPCID> findInRangeNPCs(const PixelPosition& position) const noexcept;
 	std::generator<NPCID> findInRangeNPCsByDistance(const PixelPosition& position, uint32_t tileDistance) const noexcept;
+	std::generator<NPCID> findInRangeNPCsForCommunication(const PixelPosition& position) const noexcept;
 	std::generator<NPCID> findIntersectingNPCs(const PixelPosition& position, bool includeInvisible = false) const noexcept;
 	std::generator<NPCID> findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible = false) const noexcept;
 	std::generator<NPCID> findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept;
