@@ -154,6 +154,7 @@ struct ExternalServerCachedSettings
 	SettingCache<bool> itemDropEventsOnlyForGralats{"itemdropeventsonlyforgralats", false};
 	SettingCache<bool> projectilesStopOnWall{"projectilesstoponwall", true};
 	SettingCache<bool> runAllScriptEvents{"runallscriptevents", false};
+	SettingCache<std::vector<std::string>> npcCarryObjectImages{"npccarryobjectimages", {"bushitem.png","signitem.png","vaseitem.png","stoneitem.png","blackstoneitem.png","bombitem.png","hotbombitem.png","superbombitem.png","joltbombitem.png","hotjoltbombitem.png","noneitem.png"}};
 	// security
 	SettingCache<bool> normalAdminsCanChangeGralats{"normaladminscanchangegralats", true};
 	SettingCache<std::vector<std::string>> protectedWeapons{"protectedweapons", {}};

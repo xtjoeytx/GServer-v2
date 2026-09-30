@@ -237,6 +237,10 @@ classicstylelogs = false
 # If 0, inactive levels are not unloaded.  Levels are unloaded during maintenance cycles (every 5 minutes), so this may not be exact.
 unloadinactiveleveltime = 600
 
+# The images used for when an NPC carries an object.
+# These must be kept in the same order.
+# npccarryobjectimages = bushitem.png,signitem.png,vaseitem.png,stoneitem.png,blackstoneitem.png,bombitem.png,hotbombitem.png,superbombitem.png,joltbombitem.png,hotjoltbombitem.png,noneitem.png
+
 # --------------------------------------------------------------------------------------
 # --- Private server options.  The changestaffacct right is required to alter these. ---
 # --------------------------------------------------------------------------------------

@@ -929,14 +929,25 @@ void fn_canwarp2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argume
 // Sets the carry object type of the NPC.
 void fn_carryobject(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	// TODO: There is no NPC prop for the carry image type.  We may have to investigate official.
+	if (arguments.size() != 1)
+		throw std::invalid_argument("invalid arguments: carryobject carryobjecttype");
 
 	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
 	{
-		[[maybe_unused]] auto carryObjectTypeId = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		[[maybe_unused]] const auto carryObjectTypeId = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		const auto server = BabyDI::Get<Server>();
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr && npc->isCharacter())
-			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, "carrystill"s);
+		{
+			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, "carrystill"sv);
+
+			// Based off the default gani using "bushitem.png" for the ATTR3 default.
+			if (carryObjectTypeId < carryNames.size())
+			{
+				const auto& images = server->cached.npcCarryObjectImages.getValue();
+				const std::string carryItem = carryObjectTypeId < images.size() ? images[carryObjectTypeId] : std::format("{}item.png", carryNames[carryObjectTypeId]);
+				npc->setPropWith<NPCProp::GATTRIB3>(SetBy::SERVER, carryItem);
+			}
+		}
 	}
 }
 
@@ -3531,7 +3542,11 @@ void fn_throwcarry(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argu
 	{
 		const auto server = BabyDI::Get<Server>();
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr && npc->isCharacter() && npc->character.gani.starts_with("carry"))
+		{
 			npc->setPropWith<NPCProp::GANI>(SetBy::SERVER, "idle"sv);
+			if (!npc->character.ganiAttributes[3].empty())
+				npc->setPropWith<NPCProp::GATTRIB3>(SetBy::SERVER, ""sv);
+		}
 	}
 }
 

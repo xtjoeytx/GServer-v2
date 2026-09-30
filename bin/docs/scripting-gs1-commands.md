@@ -299,7 +299,13 @@ official serverside: ❌<br>
 
 Makes an NPC carry an object.  `carryobjecttype` is one of the [carry objects](scripting-gs1-variables.md#carry-objects).
 
-The NPC doesn't pass the carry item property, so it doesn't work correctly in online mode.
+The NPC doesn't have a carry item property, so this doesn't work properly in online mode.
+
+GS2Emu will instead set the NPC's gani attribute 3 to an image to represent the carried object.
+The image uses the name `<carryobjecttype>item.png`.  If `carryobject vase;` is used, then `vaseitem.png` will be set.
+This is based on `carry.gani` using `bushitem.png` as the default image.
+
+The `npccarryobjectimages` server option can be used to override the image used to avoid image clashes with other servers.
 
 ---
 ## changeimgcolors
@@ -3043,6 +3049,8 @@ gs2emu serverside: ✅<br>
 official serverside: ❌<br>
 
 The NPC throws away their carried object.
+
+On GS2Emu, this will also clear the NPC's gani attribute 3, which is used to store the image of the carried item.
 
 ---
 ## timereverywhere
