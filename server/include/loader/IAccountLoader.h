@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <Account.h>
+#include <object/Player.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace preagonal
@@ -19,6 +20,7 @@ public:
 
 public:
 	virtual bool loadAccount(std::string_view accountName, Account& account) = 0;
+	virtual bool loadAccount(std::string_view accountName, Player& player) = 0;
 	virtual bool saveAccount(const Account& account) = 0;
 
 public:

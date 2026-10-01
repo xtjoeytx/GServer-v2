@@ -1604,12 +1604,16 @@ inline std::string extractLine(std::string_view& str, const char delim = '\n')
 /// @return A pair of std::string_view objects: the first is the trimmed substring before the delimiter, the second is the trimmed substring after the delimiter (or empty if the delimiter is not found).
 inline std::pair<std::string_view, std::string_view> extractConfigParts(StringViewIshVariant auto const& str, const char delim = ' ')
 {
-	using StrType = std::remove_cvref_t<decltype(str)>;
+	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
+	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
+	using StringViewType = std::basic_string_view<Elem, Traits>;
 
-	const auto pos = str.find(delim);
-	if (pos == StrType::npos)
-		return { string::trim(str), std::string_view{} };
-	return { string::trim(str.substr(0, pos)), string::trim(str.substr(pos + 1)) };
+	StringViewType strview{str};
+
+	const auto pos = strview.find(delim);
+	if (pos == StringViewType::npos)
+		return {string::trim(strview), std::string_view{}};
+	return {string::trim(strview.substr(0, pos)), string::trim(strview.substr(pos + 1))};
 }
 
 ///////////////////////////////////////////////////////////////////////////////

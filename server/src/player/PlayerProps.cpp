@@ -1194,7 +1194,7 @@ void Player::sendPropsFromResults(PropertySendResults& results)
 
 void Player::setPropsFromRCPacket(CString& packet, const Player* rc)
 {
-	[[maybe_unused]] bool hadBomb = false, hadBow = false;
+	[[maybe_unused]] bool hadBomb = false;
 	CString outPacket;
 
 	// Skip playerworld
@@ -1206,53 +1206,16 @@ void Player::setPropsFromRCPacket(CString& packet, const Player* rc)
 	// Send props out.
 	setPropsFromPacket(props, props::SetBy::SERVER, rc);
 
-	// Clear flags
-	for (const auto& [flag, value] : account.variables.store | variables::serializable)
-		outPacket >> (char)PLO_FLAGDEL << flag << "\n";
-	account.variables.store.clear();
-
-	// Clear Weapons
-	for (const auto& weapon : account.weapons)
-	{
-		outPacket >> (char)PLO_NPCWEAPONDEL << weapon << "\n";
-
-		// Attempt to fix the funky client bomb capitalization issue.
-		// Also fix the bomb coming back when you set the player props through RC.
-		if (weapon == "bomb")
-		{
-			outPacket >> (char)PLO_NPCWEAPONDEL << "Bomb\n";
-			hadBomb = true;
-		}
-		if (weapon == "Bomb")
-			hadBomb = true;
-
-		// Do the same thing with the bow.
-		if (weapon == "bow")
-		{
-			outPacket >> (char)PLO_NPCWEAPONDEL << "Bow\n";
-			hadBow = true;
-		}
-		if (weapon == "Bow")
-			hadBow = true;
-	}
-	account.weapons.clear();
-
-	// Send the packet to clear the flags and weapons from the client.
-	if (isLoaded())
-		sendPacket(outPacket);
-
-	// Re-populate the flag list.
+	// Synchronize flags.
 	auto flagCount = packet.readGUShort();
+	std::vector<std::string> values;
+	values.reserve(flagCount);
 	while (flagCount-- > 0)
 	{
 		CString flag = packet.readChars(packet.readGUChar());
-		const auto flagView = flag.toStringView();
-		const auto& [name, val] = string::extractConfigParts(flagView, '=');
-
-		if (val.empty())
-			setFlag(name, std::nullopt, SetBy::SERVER);
-		else setFlag(name, std::string{val}, SetBy::SERVER);
+		values.push_back(flag.toString());
 	}
+	synchronizeFlags(values);
 
 	// Clear the chests and re-populate the chest list.
 	account.savedChests.clear();
@@ -1267,33 +1230,25 @@ void Player::setPropsFromRCPacket(CString& packet, const Player* rc)
 		--chestCount;
 	}
 
-	// Re-populate the weapons list.
+	// Synchronize weapons.
 	auto weaponCount = packet.readGUChar();
-	while (weaponCount > 0)
+	values.clear();
+	while (weaponCount-- > 0)
 	{
 		const unsigned char len = packet.readGUChar();
 		if (len == 0) continue;
 		CString wpn = packet.readChars(len);
+		values.push_back(wpn.toString());
 
-		// Allow the bomb through if we are actually adding it.
+		// Check if the bomb is in the list of weapons.
 		if (wpn == "bomb" || wpn == "Bomb")
 			hadBomb = true;
-
-		// Allow the bow through if we are actually adding it.
-		if (wpn == "bow" || wpn == "Bow")
-			hadBow = true;
-
-		// Send the weapon to the player.
-		this->addWeapon(wpn.toString());
-		--weaponCount;
 	}
+	synchronizeWeapons(values);
 
 	// KILL THE BOMB DEAD
-	if (isLoaded())
-	{
-		if (!hadBomb)
-			sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bomb");
-	}
+	if (isLoaded() && !hadBomb)
+		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bomb");
 
 	// Warp the player to his new location now.
 	if (isLoaded() && isClient())

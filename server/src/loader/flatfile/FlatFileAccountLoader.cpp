@@ -24,6 +24,8 @@
 #include <filesystem/FileSystem.h>
 #include <filesystem/FileSystemTypes.h>
 #include <loader/flatfile/FlatFileAccountLoader.h>
+#include <object/Player.h>
+#include <player/PlayerProps.h>
 #include <scripting/ScriptContainers.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/Log.h>
@@ -50,7 +52,7 @@ static bool setIfEmpty(std::string& str, const std::string_view value, const std
 
 static void writeLine(std::string& output, const std::string& section, const auto& value)
 {
-	output += section + " " + std::format("{}", value) + "\r\n";
+	output += section + " " + std::format("{}", value) + "\n";
 }
 
 static void writeLine(std::string& output, const std::string& section, const auto& value, const auto& defaultValue)
@@ -76,7 +78,7 @@ flagPair FlatFileAccountLoader::decomposeFlag(const std::string& flag)
 	return result;
 }
 
-chestPair FlatFileAccountLoader::decomposeChest(const std::string& chest)
+chestPair FlatFileAccountLoader::decomposeChest(const std::string_view chest)
 {
 	chestPair result;
 	const auto tokens = string::splitToVector(chest, ":"sv);
@@ -91,6 +93,16 @@ chestPair FlatFileAccountLoader::decomposeChest(const std::string& chest)
 
 bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Account& account)
 {
+	return loadAccount(accountName, account, nullptr);
+}
+
+bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Player& player)
+{
+	return loadAccount(accountName, player.account, &player);
+}
+
+bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Account& account, Player* player)
+{
 	auto server = BabyDI::Get<Server>();
 
 	// Find the account to load.
@@ -104,83 +116,256 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 	}
 
 	// Load the account data.
-	auto fileData = CString::loadToken(path.string(), "\n");
-	if (fileData.empty() || fileData[0].trim() != "GRACC001")
+	fs::File fileData{path};
+	if (!fileData.opened())
+		return false;
+
+	// Check for the header.
+	if (fileData.readLine() != "GRACC001")
 		return false;
 
 	// Set the account name.
 	account.name = accountName;
 
+	// Modtime handling for players.
+	const auto& updateTime = server->getFrameStartTime();
+	PlayerModTimes* modTime = (player != nullptr ? &player->modTime : nullptr);
+
+	auto updateModTime = [&](const PlayerProp prop)
+	{
+		if (modTime)
+			(*modTime)[PROPID(prop)] = updateTime;
+	};
+
+	// Clear some data structures, just in case we are loading into an already existing player or account.
+	account.savedChests.clear();
+	account.folderList.clear();
+	account.folderRights.clear();
+
+	// Store weapons / flags.
+	std::vector<std::string> flagList{};
+	std::vector<std::string> weaponList{};
+
 	// Parse File
-	for (auto& i : fileData)
+	for (const auto& line : fileData.readAllLines())
 	{
 		// Trim Line
-		i.trimI();
+		std::string_view lineview{line};
 
 		// Get the section and value.
-		auto sep = i.find(' ');
-		std::string section = i.subString(0, sep).toString();
-		std::string val;
-		if (sep != -1)
-			val = i.subString(sep + 1).toString();
+		auto [section, val] = string::extractConfigParts(lineview);
 
 		if (section == "NAME")
 			continue;
-		else if (section == "NICK")
+
+		if (section == "NICK")
 		{
 			// Load the nickname only if it is not yet set.
 			// Some clients, like RC, will send the nickname props immediately and not wait until the go-ahead to login.
 			if (account.character.nickName.empty())
+			{
 				account.character.nickName = val.substr(0, 223);
+				updateModTime(PlayerProp::NICKNAME);
+			}
 		}
 		else if (section == "COMMUNITYNAME")
 			account.communityName = val;
 		else if (section == "LEVEL")
-			account.level = val;
+		{
+			if (account.level != val)
+			{
+				account.level = val;
+				updateModTime(PlayerProp::LEVEL);
+			}
+		}
 		else if (section == "GROUPNAME") // GR
 			account.groupName = val;
 		else if (section == "X")
-			account.character.localPixelX = static_cast<int16_t>(string::toFloat(val) * 16);
+		{
+			const auto num = static_cast<int16_t>(string::toFloat(val) * 16);
+			if (account.character.localPixelX != num)
+			{
+				account.character.localPixelX = num;
+				updateModTime(PlayerProp::X);
+				updateModTime(PlayerProp::X2);
+			}
+		}
 		else if (section == "Y")
-			account.character.localPixelY = static_cast<int16_t>(string::toFloat(val) * 16);
+		{
+			const auto num = static_cast<int16_t>(string::toFloat(val) * 16);
+			if (account.character.localPixelY != num)
+			{
+				account.character.localPixelY = static_cast<int16_t>(string::toFloat(val) * 16);
+				updateModTime(PlayerProp::Y);
+				updateModTime(PlayerProp::Y2);
+			}
+		}
 		else if (section == "Z")
-			account.character.localPixelZ = static_cast<int16_t>(string::toFloat(val) * 16);
+		{
+			const auto num = static_cast<int16_t>(string::toFloat(val) * 16);
+			if (account.character.localPixelZ != num)
+			{
+				account.character.localPixelZ = static_cast<int16_t>(string::toFloat(val) * 16);
+				updateModTime(PlayerProp::Z);
+				updateModTime(PlayerProp::Z2);
+			}
+		}
 		else if (section == "MAPX")
-			account.character.mapX = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.character.mapX != num)
+			{
+				account.character.mapX = num;
+				updateModTime(PlayerProp::GMAPLEVELX);
+			}
+		}
 		else if (section == "MAPY")
-			account.character.mapY = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.character.mapY != num)
+			{
+				account.character.mapY = num;
+				updateModTime(PlayerProp::GMAPLEVELY);
+			}
+		}
 		else if (section == "MAXHP")
-			account.maxHitpoints = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.maxHitpoints != num)
+			{
+				account.maxHitpoints = num;
+				updateModTime(PlayerProp::FULLHEARTS);
+			}
+		}
 		else if (section == "HP")
-			account.character.hitpointsInHalves = static_cast<uint8_t>(string::toFloat(val) * 2);
+		{
+			const auto num = static_cast<uint8_t>(string::toFloat(val) * 2);
+			if (account.character.hitpointsInHalves != num)
+			{
+				account.character.hitpointsInHalves = num;
+				updateModTime(PlayerProp::HALFHEARTS);
+			}
+		}
 		else if (section == "GRALATS" || section == "RUPEES")
-			account.character.gralats = string::toNumber<uint32_t>(val);
+		{
+			const auto num = string::toNumber<uint32_t>(val);
+			if (account.character.gralats != num)
+			{
+				account.character.gralats = num;
+				updateModTime(PlayerProp::GRALATS);
+			}
+		}
 		else if (section == "ANI")
-			account.character.gani = val;
+		{
+			if (account.character.gani != val)
+			{
+				account.character.gani = val;
+				updateModTime(PlayerProp::GANI);
+			}
+		}
 		else if (section == "ARROWS")
-			account.character.arrows = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.character.arrows != num)
+			{
+				account.character.arrows = num;
+				updateModTime(PlayerProp::ARROWS);
+			}
+		}
 		else if (section == "BOMBS")
-			account.character.bombs = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.character.bombs != num)
+			{
+				account.character.bombs = num;
+				updateModTime(PlayerProp::BOMBS);
+			}
+		}
 		else if (section == "GLOVEP")
-			account.character.glovePower = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.character.glovePower != num)
+			{
+				account.character.glovePower = num;
+				updateModTime(PlayerProp::GLOVEPOWER);
+			}
+		}
 		else if (section == "SHIELDP")
-			account.character.shieldPower = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.character.shieldPower != num)
+			{
+				account.character.shieldPower = num;
+				updateModTime(PlayerProp::SHIELDIMAGE);
+			}
+		}
 		else if (section == "SWORDP")
-			account.character.swordPower = toSByte(val);
+		{
+			const auto num = toSByte(val);
+			if (account.character.swordPower != num)
+			{
+				account.character.swordPower = num;
+				updateModTime(PlayerProp::SWORDIMAGE);
+			}
+		}
 		else if (section == "BOMBP")
-			account.character.bombPower = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.character.bombPower != num)
+			{
+				account.character.bombPower = num;
+				updateModTime(PlayerProp::BOMBPOWER);
+			}
+		}
 		else if (section == "BOWP")
-			account.character.bowPower = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.character.bowPower != num)
+			{
+				account.character.bowPower = num;
+				updateModTime(PlayerProp::GANI);
+			}
+		}
 		else if (section == "BOW")
-			account.character.bowImage = val;
+		{
+			if (account.character.bowImage != val)
+			{
+				account.character.bowImage = val;
+				updateModTime(PlayerProp::GANI);
+			}
+		}
 		else if (section == "HEAD")
-			account.character.headImage = val;
+		{
+			if (account.character.headImage != val)
+			{
+				account.character.headImage = val;
+				updateModTime(PlayerProp::HEADIMAGE);
+			}
+		}
 		else if (section == "BODY")
-			account.character.bodyImage = val;
+		{
+			if (account.character.bodyImage != val)
+			{
+				account.character.bodyImage = val;
+				updateModTime(PlayerProp::BODYIMAGE);
+			}
+		}
 		else if (section == "SWORD")
-			account.character.swordImage = val;
+		{
+			if (account.character.swordImage != val)
+			{
+				account.character.swordImage = val;
+				updateModTime(PlayerProp::SWORDIMAGE);
+			}
+		}
 		else if (section == "SHIELD")
-			account.character.shieldImage = val;
+		{
+			if (account.character.shieldImage != val)
+			{
+				account.character.shieldImage = val;
+				updateModTime(PlayerProp::SHIELDIMAGE);
+			}
+		}
 		else if (section == "COLORS")
 		{
 			auto tokensAsNumbers = string::split(val, ","sv) | std::views::take(8) | std::views::transform([](const std::string_view& token)
@@ -188,31 +373,102 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 				return toByte(std::string{token});
 			});
 			std::ranges::copy(tokensAsNumbers, account.character.colors.begin());
+			updateModTime(PlayerProp::COLORS);
 		}
 		else if (section == "SPRITE")
 		{
-			auto sprite = toByte(val);
-			account.character.sprite = sprite >> 2;
-			account.character.direction = sprite & 0b11;
+			const auto num = toByte(val);
+			const auto sprite = num >> 2;
+			const auto dir = num & 0b11;
+			if (account.character.sprite != sprite || account.character.direction != dir)
+			{
+				account.character.sprite = sprite;
+				account.character.direction = dir;
+				updateModTime(PlayerProp::SPRITE);
+			}
 		}
 		else if (section == "STATUS")
-			account.status = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.status != num)
+			{
+				account.status = num;
+				updateModTime(PlayerProp::STATUS);
+			}
+		}
 		else if (section == "MP")
-			account.character.mp = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.character.mp != num)
+			{
+				account.character.mp = num;
+				updateModTime(PlayerProp::MAGICPOINTS);
+			}
+		}
 		else if (section == "AP")
-			account.character.ap = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.character.ap != num)
+			{
+				account.character.ap = num;
+				updateModTime(PlayerProp::ALIGNMENT);
+			}
+		}
 		else if (section == "APCOUNTER")
-			account.apCounter = toByte(val);
+		{
+			const auto num = toByte(val);
+			if (account.apCounter != num)
+			{
+				account.apCounter = num;
+				updateModTime(PlayerProp::APCOUNTER);
+			}
+		}
 		else if (section == "ONSECS")
-			account.onlineSeconds = string::toNumber<uint32_t>(val);
+		{
+			const auto num = string::toNumber<uint32_t>(val);
+			if (account.onlineSeconds != num)
+			{
+				account.onlineSeconds = num;
+				updateModTime(PlayerProp::ONLINESECONDS);
+				updateModTime(PlayerProp::ONLINESECONDS2);
+			}
+		}
 		else if (section == "KILLS")
-			account.kills = string::toNumber<uint32_t>(val);
+		{
+			const auto num = string::toNumber<uint32_t>(val);
+			if (account.kills != num)
+			{
+				account.kills = num;
+				updateModTime(PlayerProp::KILLS);
+			}
+		}
 		else if (section == "DEATHS")
-			account.deaths = string::toNumber<uint32_t>(val);
+		{
+			const auto num = string::toNumber<uint32_t>(val);
+			if (account.deaths != num)
+			{
+				account.deaths = num;
+				updateModTime(PlayerProp::DEATHS);
+			}
+		}
 		else if (section == "RATING")
-			account.eloRating = string::toFloat(val);
+		{
+			const auto num = string::toFloat(val);
+			if (account.eloRating != num)
+			{
+				account.eloRating = num;
+				updateModTime(PlayerProp::RATING);
+			}
+		}
 		else if (section == "DEVIATION")
-			account.eloDeviation = string::toFloat(val);
+		{
+			const auto num = string::toFloat(val);
+			if (account.eloDeviation != num)
+			{
+				account.eloDeviation = num;
+				updateModTime(PlayerProp::RATING);
+			}
+		}
 		else if (section == "LASTSPARTIME")
 			account.lastSparTime = clock::from_time_t(string::toNumber<time_t>(val));
 		else if (section == "IP")
@@ -223,16 +479,23 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 		// CODEPAGE - ignore
 		else if (section == "FLAG")
 		{
-			if (auto variable = GameVariable::deserialize(i.toString()); variable.has_value())
-				account.variables.add(std::move(variable.value()));
+			flagList.emplace_back(val);
 		}
 		else if (section.starts_with("ATTR"))
 		{
 			if (auto idx = toByte(section.substr(4)); idx > 0 && idx <= 30)
-				account.character.ganiAttributes[idx - 1] = val;
+			{
+				if (account.character.ganiAttributes[idx - 1] != val)
+				{
+					account.character.ganiAttributes[idx - 1] = val;
+					updateModTime(ENUM<PlayerProp>(GaniAttributePropList[idx - 1]));
+				}
+			}
 		}
 		else if (section == "WEAPON")
-			account.weapons.push_back(val);
+		{
+			weaponList.emplace_back(val);
+		}
 		else if (section == "CHEST")
 			account.savedChests.insert(decomposeChest(val));
 		else if (section == "BANNED")
@@ -253,7 +516,7 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 			account.loadOnly = toByte(val) != 0;
 		else if (section == "FOLDERRIGHT")
 		{
-			account.folderList.push_back(val);
+			account.folderList.emplace_back(val);
 			account.folderRights.addPermission(val);
 		}
 		else if (section == "LASTFOLDER")
@@ -287,6 +550,24 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 	// Fix Z if we need to.
 	if (account.character.localPixelZ.has_value() && (account.character.localPixelZ.value() < Character::ValidZRangePixels[0] || account.character.localPixelZ.value() > Character::ValidZRangePixels[1]))
 		account.character.localPixelZ.reset();
+
+	// Flag syncing.
+	if (player != nullptr)
+		player->synchronizeFlags(flagList);
+	else
+	{
+		for (auto& val : flagList)
+		{
+			if (auto variable = GameVariable::deserialize(val); variable.has_value())
+				account.variables.add(std::move(variable.value()));
+		}
+	}
+
+	// Weapon syncing.
+	if (player != nullptr)
+		player->synchronizeWeapons(weaponList);
+	else
+		account.weapons = weaponList;
 
 	// If we loaded from the default account, check if the settings is overriding the start level and position.
 	// Also, save the account and add it to the file system.
@@ -347,7 +628,10 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "MAPY", account.character.mapY);
 	writeLine(newFile, "MAXHP", account.maxHitpoints);
 	writeLine(newFile, "HP", static_cast<float>(account.character.hitpointsInHalves) / 2.0f);
-	writeLine(newFile, "ANI", account.character.gani);
+	if (server->Generation != ServerGeneration::CLASSIC)
+	{
+		writeLine(newFile, "ANI", account.character.gani);
+	}
 	writeLine(newFile, "SPRITE", (account.character.sprite << 2 | account.character.direction), 2);
 	writeLine(newFile, "GRALATS", account.character.gralats);
 	writeLine(newFile, "ARROWS", account.character.arrows);
@@ -356,8 +640,11 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "SWORDP", account.character.swordPower);
 	writeLine(newFile, "SHIELDP", account.character.shieldPower);
 	writeLine(newFile, "BOMBP", account.character.bombPower, 1_ui8);
-	writeLine(newFile, "BOWP", account.character.bowPower, 1_ui8);
-	writeLine(newFile, "BOW", account.character.bowImage, "");
+	if (server->Generation == ServerGeneration::CLASSIC)
+	{
+		writeLine(newFile, "BOWP", account.character.bowPower, 1_ui8);
+		writeLine(newFile, "BOW", account.character.bowImage, "");
+	}
 	writeLine(newFile, "HEAD", account.character.headImage);
 	writeLine(newFile, "BODY", account.character.bodyImage);
 	writeLine(newFile, "SWORD", account.character.swordImage);

@@ -39,15 +39,18 @@ public:
 	/// @param path The path to check for access.
 	/// @param types The types of permissions to check (e.g., Read, Write).
 	/// @return true if the path has all the required permissions, false otherwise.
-	[[a::inline]] auto hasPermission(std::string_view path, auto... types) const;
+	[[nodiscard]] [[a::inline]] auto hasPermission(std::string_view path, auto... types) const;
 
 	/// @brief Loads permissions from a string input.
 	/// @param permissionString The string input containing permissions (e.g., "rw accounts/*\n-rw config/settings.php").
 	void loadPermissions(std::string_view permissionString);
 
+	/// @brief Clears all permissions.
+	[[a::inline]] void clear();
+
 private:
 	/// @struct Permission
-	/// @brief Represents a single permission rule.	
+	/// @brief Represents a single permission rule.
 	struct Permission
 	{
 		std::bitset<Type::COUNT> flags;
@@ -65,6 +68,12 @@ private:
 inline auto FilePermissions::hasPermission(std::string_view path, auto... types) const
 {
 	return (hasPermission(path, types) && ...);
+}
+
+inline void FilePermissions::clear()
+{
+	permissions.clear();
+	negativePermissions.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

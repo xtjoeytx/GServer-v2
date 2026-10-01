@@ -9,6 +9,7 @@
 
 #include <Account.h>
 #include <loader/IAccountLoader.h>
+#include <object/Player.h>
 #include <utilities/Extents.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -23,14 +24,16 @@ class FlatFileAccountLoader : public IAccountLoader
 {
 public:
 	bool loadAccount(std::string_view accountName, Account& account) override;
+	bool loadAccount(std::string_view accountName, Player& player) override;
 	bool saveAccount(const Account& account) override;
 
 public:
 	[[nodiscard]] bool checkSearchConditions(std::string_view account, const std::vector<std::string>& searches) const override;
 
 protected:
+	[[nodiscard]] bool loadAccount(std::string_view accountName, Account& account, Player* player);
 	[[nodiscard]] static flagPair decomposeFlag(const std::string& flag);
-	[[nodiscard]] static chestPair decomposeChest(const std::string& chest);
+	[[nodiscard]] static chestPair decomposeChest(std::string_view chest);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -114,6 +114,7 @@ enum class PlayerProp : uint8_t
 	COUNT
 };
 constexpr int PLAYERPROP_COUNT = static_cast<int>(PlayerProp::COUNT);
+using PlayerModTimes = std::array<std::optional<clock::time_point>, PLAYERPROP_COUNT>;
 
 enum class PlayerListCategory : uint8_t
 {

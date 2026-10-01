@@ -641,7 +641,7 @@ bool Player::handleLogin(CString& pPacket)
 bool Player::sendLogin()
 {
 	// Load the account.
-	m_server->getAccountLoader().loadAccount(account.name, account);
+	m_server->getAccountLoader().loadAccount(account.name, *this);
 
 	// Check if they are ip-banned or not.
 	if (m_server->isIpBanned(m_playerSock->getRemoteIp()) && !account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
@@ -746,6 +746,7 @@ bool Player::sendLogin()
 
 	// Set loaded to true so our account is saved when we leave.
 	// This also lets us send data.
+	// Derived classes will usually set this to false until they send their own data (like PlayerClient).
 	m_loaded = true;
 
 	// Mark our login time.
@@ -990,6 +991,74 @@ bool Player::setFlag(const std::string_view flagName, const std::optional<std::s
 	return true;
 }
 
+void Player::synchronizeFlags(const std::vector<std::string>& flagPairs)
+{
+	std::unordered_map<std::string, std::string, string::string_hash, std::equal_to<>> flagMap;
+	std::vector<std::string> removedFlags;
+
+	for (const auto& flagPair : flagPairs)
+	{
+		const auto& [name, val] = string::extractConfigParts(flagPair, '=');
+		flagMap.try_emplace(std::string{name}, std::string{val});
+	}
+
+	for (const auto& [variable, value] : account.variables.store | variables::only_flags | variables::serializable)
+	{
+		const auto search = flagMap.find(variable);
+
+		// The variable is not in the map, so it was deleted.
+		if (search == flagMap.end())
+			removedFlags.emplace_back(variable);
+		else
+		// The variable was changed.
+		{
+			if (search->second.empty() && !value->value.has<bool>())
+			{
+				value->value.unassign<std::string>();
+				value->assign<bool>(true);
+				sendPacket(CString() >> (char)PLO_FLAGSET << search->first);
+			}
+			else if (!value->value.has<std::string>() || search->second != value->get<std::string>().value().get())
+			{
+				value->value.unassign<bool>();
+				value->assign(search->second);
+				sendPacket(CString() >> (char)PLO_FLAGSET << search->first << "=" << search->second);
+			}
+			flagMap.erase(search);
+		}
+	}
+
+	// Delete all the removed flags.
+	for (const auto& flag : removedFlags)
+	{
+		auto& store = account.variables.store;
+		if (auto search = store.find(flag); search != store.end() && search->second != nullptr)
+		{
+			sendPacket(CString() >> (char)PLO_FLAGDEL << flag);
+			store.erase(search);
+		}
+	}
+
+	// Add the new flags.
+	for (auto& [flag, value] : flagMap)
+	{
+		GameVariable var{.name = flag, .lifetime = variables::Lifetime::PERMANENT};
+
+		if (value.empty())
+		{
+			sendPacket(CString() >> (char)PLO_FLAGSET << flag);
+			var.value.set(true);
+			account.variables.add(std::move(var));
+		}
+		else
+		{
+			sendPacket(CString() >> (char)PLO_FLAGSET << flag << "=" << value);
+			var.value.set(value);
+			account.variables.add(std::move(var));
+		}
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Player::addWeapon(LevelItemType defaultWeapon)
@@ -1057,6 +1126,31 @@ bool Player::deleteWeapon(const std::shared_ptr<Weapon>& weapon)
 	}
 
 	return true;
+}
+
+void Player::synchronizeWeapons(const std::vector<std::string>& weapons)
+{
+	// Delete weapons.
+	std::vector<std::string> deletedWeapons;
+	for (const auto& weapon : account.weapons)
+	{
+		if (!std::ranges::contains(weapons, weapon))
+		{
+			sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << weapon);
+			deletedWeapons.push_back(weapon);
+		}
+	}
+	std::erase_if(account.weapons, [&deletedWeapons](const std::string& weapon)
+	{
+		return std::ranges::contains(deletedWeapons, weapon);
+	});
+
+	// Add new weapons.
+	for (const auto& weapon : weapons)
+	{
+		if (!account.hasWeapon(weapon))
+			addWeapon(weapon);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

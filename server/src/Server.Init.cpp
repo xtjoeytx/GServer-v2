@@ -233,7 +233,30 @@ void Server::initFilesystemCallbacks()
 	{
 		if (events.test(fs::FileEvent::Modified))
 		{
-			auto account = file.openFile();
+			const auto playerName = fs::getANSIFileName(file.file.stem());
+			if (const auto player = getPlayer<PlayerClient>(playerName, PLTYPE_ANYCLIENT); player != nullptr)
+			{
+				player->recordCurrentPropModTime();
+				m_accountLoader->loadAccount(playerName, *player);
+
+				if (player->wasPropModified(PlayerProp::LEVEL))
+				{
+					// Clear the level so the warp works.
+					// Otherwise, it will detect it as a same-level warp and just update the position.
+					const auto level = player->account.level;
+					player->account.level.clear();
+
+					player->warp(level, player->getGlobalPosition());
+				}
+
+				CString propsPacket;
+				propsPacket.write(player->getModifiedPropsPacket());
+				if (!propsPacket.isEmpty())
+				{
+					player->sendPacket(CString() >> (char)PLO_PLAYERPROPS << propsPacket);
+					sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << propsPacket, player->getGlobalPosition(), player->getLevel(), { player->getId() });
+				}
+			}
 		}
 	};
 

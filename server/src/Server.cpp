@@ -788,15 +788,8 @@ void Server::loadServerFlags()
 			if (flagPair.empty())
 				continue;
 
-			if (!flagPair.contains('='))
-				flagMap.try_emplace(std::string{flagPair}, std::string{});
-			else
-			{
-				const auto sep = flagPair.find('=');
-				std::string_view flagKey = string::trimRight(flagPair.substr(0, sep));
-				std::string_view flagValue = string::trimLeft(flagPair.substr(sep + 1));
-				flagMap.try_emplace(std::string{flagKey}, std::string{flagValue});
-			}
+			const auto& [name, val] = string::extractConfigParts(flagPair, '=');
+			flagMap.try_emplace(std::string{name}, std::string{val});
 		}
 
 		std::vector<std::string> removedFlags;

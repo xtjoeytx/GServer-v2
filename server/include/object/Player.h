@@ -213,6 +213,9 @@ public:
 	/// @brief Records the current modification time of all properties.
 	[[a::inline]] void recordCurrentPropModTime();
 
+	/// @brief Checks if the property was modified since the last call to recordCurrentPropModTime.
+	[[nodiscard]] [[a::inline]] bool wasPropModified(PlayerProp prop) const noexcept;
+
 	/// @brief Constructs a PropertyContainer for PlayerProp P with the given values.
 	/// @tparam P The PlayerProp that determines the type of container to construct.
 	/// @param values The values to pass to the container's constructor.
@@ -305,6 +308,7 @@ public:
 	bool deleteFlag(std::string_view flagName, SetBy setBy);
 	bool setFlag(std::string_view flagPair, SetBy setBy);
 	bool setFlag(std::string_view flagName, const std::optional<std::string>& flagValue, SetBy setBy);
+	void synchronizeFlags(const std::vector<std::string>& flagPairs);
 
 public:
 	virtual void setPosition(const PixelPosition& position);
@@ -357,6 +361,7 @@ public:
 	bool deleteWeapon(LevelItemType defaultWeapon);
 	bool deleteWeapon(std::string_view name);
 	bool deleteWeapon(const std::shared_ptr<Weapon>& weapon);
+	void synchronizeWeapons(const std::vector<std::string>& weapons);
 
 	std::string translate(std::string_view key) const;
 
@@ -378,7 +383,7 @@ public:
 
 public:
 	Account account;
-	std::array<std::optional<clock::time_point>, PLAYERPROP_COUNT> modTime;
+	PlayerModTimes modTime;
 	uint32_t loginTime = 0;
 	uint32_t lastDeadTime = 0;
 
@@ -657,6 +662,11 @@ inline std::string_view Player::getLanguage() const
 inline void Player::recordCurrentPropModTime()
 {
 	m_savedModTime = modTime;
+}
+
+inline bool Player::wasPropModified(const PlayerProp prop) const noexcept
+{
+	return m_savedModTime[ENUM(prop)] != modTime[ENUM(prop)];
 }
 
 //----------------------------

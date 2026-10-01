@@ -705,7 +705,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTSET(CString& pPacket)
 
 	// If the account is currently on RC, reload it.
 	if (const auto pRC = m_server->getPlayer(acc, PLTYPE_ANYRC); pRC)
-		m_server->getAccountLoader().loadAccount(acc.toStringView(), pRC->account);
+		m_server->getAccountLoader().loadAccount(acc.toStringView(), *pRC);
 
 	// If the player was just now banned, kick him off the server.
 	if (account.hasRight(PLPERM_BAN) && banned && p->getId() != 0)
@@ -875,7 +875,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSSET(CString& pPacket)
 	if (const auto pRC = m_server->getPlayer<PlayerRC>(acc, PLTYPE_ANYRC); pRC)
 	{
 		const std::string nickname = pRC->account.character.nickName;
-		m_server->getAccountLoader().loadAccount(acc.toStringView(), pRC->account);
+		m_server->getAccountLoader().loadAccount(acc.toStringView(), *pRC);
 		pRC->account.character.nickName = nickname;
 
 		if (changed_rights & PLPERM_NPCCONTROL)
@@ -962,7 +962,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERCOMMENTSSET(CString& pPacket)
 
 	// If the account is currently on RC, reload it.
 	if (const auto pRC = m_server->getPlayer(acc, PLTYPE_ANYRC); pRC)
-		m_server->getAccountLoader().loadAccount(acc.toStringView(), pRC->account);
+		m_server->getAccountLoader().loadAccount(acc.toStringView(), *pRC);
 
 	log::printLine(log::rc, "{} has set the comments of {}", account.name, acc.text());
 	m_server->sendPacketToType(PLTYPE_ANYRC, CString() >> (char)PLO_RC_CHAT << account.name << " has set the comments of " << acc);
@@ -1032,7 +1032,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERBANSET(CString& pPacket)
 
 	// If the account is currently on RC, reload it.
 	if (const auto pRC = m_server->getPlayer(acc, PLTYPE_ANYRC); pRC)
-		m_server->getAccountLoader().loadAccount(acc.toStringView(), pRC->account);
+		m_server->getAccountLoader().loadAccount(acc.toStringView(), *pRC);
 
 	// If the player was just now banned, kick him off the server.
 	if (banned && p->getId() != 0)
