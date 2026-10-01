@@ -3178,14 +3178,19 @@ std::generator<NPCID> Level::findInRangeNPCs(const PixelPosition& position) cons
 
 std::generator<NPCID> Level::findInRangeNPCsForCommunication(const PixelPosition& position) const noexcept
 {
-	// If this is not a bigmap, use the default search.
-	if (!isOnBigMap())
+	// If this is a bigmap, only send NPCs on the current level.
+	if (isOnBigMap())
 	{
-		for (const auto& npcId : findInRangeNPCs(position))
+		for (const auto& npcId : m_npcs)
 			co_yield npcId;
 		co_return;
 	}
 
+	// If this is not a bigmap, use the default search.
+	for (const auto& npcId : findInRangeNPCs(position))
+		co_yield npcId;
+
+	/*
 	auto mapPositionOpt = m_map->getLevelPosition(levelName);
 	if (!mapPositionOpt.has_value())
 	{
@@ -3213,6 +3218,7 @@ std::generator<NPCID> Level::findInRangeNPCsForCommunication(const PixelPosition
 			}
 		}
 	}
+	*/
 }
 
 std::generator<NPCID> Level::findInRangeNPCsByDistance(const PixelPosition& position, const uint32_t tileDistance) const noexcept
