@@ -339,7 +339,7 @@ PrototypeList registeredFunctions =
     {"min"sv,                   "(R,R)"sv},     // (R,R)
     {"onmapx"sv,                "(S)"sv},       // (S)
     {"onmapy"sv,                "(S)"sv},       // (S)
-    {"onwall"sv,                "(R)"sv},       // (R,R)
+    {"onwall"sv,                "(R,R)"sv},     // (R,R)
     {"onwall2"sv,               "(R,R,R,R)"sv}, // (R,R,R,R)
     {"onwater"sv,               "(R,R)"sv},     // (R,R)
     {"onwater2"sv,              "(R,R,R,R)"sv}, // (R,R,R,R)
