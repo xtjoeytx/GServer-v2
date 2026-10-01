@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 
@@ -51,6 +52,8 @@ Log& Log::reload()
 	}
 
 	file = std::make_unique<std::ofstream>();
+
+	std::filesystem::create_directory(filename.parent_path());
 	file->open(filename, std::ios::binary | std::ios::out | std::ios::app);
 	return *this;
 }
