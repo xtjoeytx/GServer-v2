@@ -1039,35 +1039,39 @@ official serverside: ✅<br>
 
 Moves the NPC.
 
-| Parameter | Description |
-| --------- | ----------- |
-| dx      | The number of tiles to move in the X direction. |
-| dy      | The number of tiles to move in the Y direction. |
-| time    | How many seconds the move will take to finish. |
-| options | Sum of flags to control how the movement will be processed. |
+When the NPC-Server is enabled, there is a bug with the 2.x clients where an NPC that is moving or has been moved stops being physically interactable.
+GS2Emu will pass the NPC's current position after the movement has been finished to restore interactivity; however,
+should you wish the NPC to respond to events like [washit](scripting-gs1-events.md#washit) while moving, you will need to design the NPC to have brief, short movements, with a frame of rest.
+
+| Parameter | Description                                                 |
+|-----------|-------------------------------------------------------------|
+| dx        | The number of tiles to move in the X direction.             |
+| dy        | The number of tiles to move in the Y direction.             |
+| time      | How many seconds the move will take to finish.              |
+| options   | Sum of flags to control how the movement will be processed. |
 
 `options` is the sum of: `cachingmode` + `blockcheck` + `informmewhendone` + `applydirection`
 
-| Caching mode | Description |
-| ------------ | ----------- |
-| 0 | Previous movements will be finished immediately. |
-| 1 | Cache movements, but immediately finish previous movements if remaining distance is over 5 tiles.
-| 2 | Append movement (limit to 100 cached movements). |
+| Caching mode | Description                                                                                       |
+|--------------|---------------------------------------------------------------------------------------------------|
+| 0            | Previous movements will be finished immediately.                                                  |
+| 1            | Cache movements, but immediately finish previous movements if remaining distance is over 5 tiles. |
+| 2            | Append movement (limit to 100 cached movements).                                                  |
 
-| Block check | Description |
-| ----------- | ----------- |
-| 0 | No collision detection. |
-| 4 | Stop when the NPC collides with an object. |
+| Block check | Description                                |
+|-------------|--------------------------------------------|
+| 0           | No collision detection.                    |
+| 4           | Stop when the NPC collides with an object. |
 
-| Inform when done | Description |
-| ---------------- | ----------- |
-| 0 | Do not inform. |
-| 8 | Trigger the [movementfinished](scripting-gs1-events.md#movementfinished) event when the movement is done. |
+| Inform when done | Description                                                                                               |
+|------------------|-----------------------------------------------------------------------------------------------------------|
+| 0                | Do not inform.                                                                                            |
+| 8                | Trigger the [movementfinished](scripting-gs1-events.md#movementfinished) event when the movement is done. |
 
-| Apply direction | Description |
-| --------------- | ----------- |
-| 0  | Do nothing. |
-| 16 | Change the NPC's `dir` property to face towards the direction of travel. |
+| Apply direction | Description                                                              |
+|-----------------|--------------------------------------------------------------------------|
+| 0               | Do nothing.                                                              |
+| 16              | Change the NPC's `dir` property to face towards the direction of travel. |
 
 ```
 // Queue up a move 10 tiles to the right, in 0.5 seconds,

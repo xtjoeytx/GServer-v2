@@ -319,6 +319,7 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 	if (moveQueue.empty())
 		return;
 
+	const bool hadMoveQueue = !moveQueue.empty();
 	while (deltaTime != 0ms && !moveQueue.empty())
 	{
 		NPCMove& move = moveQueue.front();
@@ -372,13 +373,6 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 		setPropWith<NPCProp::X2>(SetBy::SERVER, localPosition.x());
 		setPropWith<NPCProp::Y2>(SetBy::SERVER, localPosition.y());
 
-		// Adjust our saved mod times, just in case.
-		// We don't want the position to be accidentally sent.
-		m_savedModTime[PROPID(NPCProp::X)] = modTime[PROPID(NPCProp::X)];
-		m_savedModTime[PROPID(NPCProp::Y)] = modTime[PROPID(NPCProp::Y)];
-		m_savedModTime[PROPID(NPCProp::X2)] = modTime[PROPID(NPCProp::X2)];
-		m_savedModTime[PROPID(NPCProp::Y2)] = modTime[PROPID(NPCProp::Y2)];
-
 		bool movementFinished = false;
 
 		// If we are testing for walls, do that now.
@@ -421,6 +415,16 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 			moveQueue.pop_front();
 		}
 	}
+
+	// Still moving, so prevent position props from updating.
+	// If a client receives a position prop, the movement is ended.
+	if (hadMoveQueue && !moveQueue.empty())
+	{
+		m_savedModTime[PROPID(NPCProp::X)] = modTime[PROPID(NPCProp::X)];
+		m_savedModTime[PROPID(NPCProp::Y)] = modTime[PROPID(NPCProp::Y)];
+		m_savedModTime[PROPID(NPCProp::X2)] = modTime[PROPID(NPCProp::X2)];
+		m_savedModTime[PROPID(NPCProp::Y2)] = modTime[PROPID(NPCProp::Y2)];
+	}
 }
 
 std::pair<CString, CString> NPC::getMoveQueuePacketData(std::optional<clock::time_point> modTime) const noexcept
@@ -438,7 +442,7 @@ std::pair<CString, CString> NPC::getMoveQueuePacketData(std::optional<clock::tim
 			continue;
 
 		const auto durationLeftInSeconds = std::chrono::duration_cast<duration_seconds_double>(move.duration - move.elapsed);
-		const auto timeIn50msIncrements = static_cast<uint16_t>(durationLeftInSeconds.count() / 0.05f);
+		const auto timeIn50msIncrements = static_cast<uint16_t>((durationLeftInSeconds.count() / 0.05) + std::numeric_limits<double>::epsilon());
 
 		const auto currentPosition = move.getCurrentPosition();
 		const auto dx = static_cast<int16_t>(move.destination.x() - currentPosition.x());
@@ -514,8 +518,7 @@ void NPC::sendMoveQueueToLevel(const LevelPtr& level, const std::pair<CString, C
 
 void NPC::sendMoveQueueUpdatesToLevel(const LevelPtr& level) const noexcept
 {
-	const auto result = getMoveQueuePacketData(lastMoveQueueSentTime);
-	lastMoveQueueSentTime = m_server->getFrameStartTime();
+	const auto result = getMoveQueuePacketData(m_server->getFrameStartTime());
 	sendMoveQueueToLevel(level, result);
 }
 

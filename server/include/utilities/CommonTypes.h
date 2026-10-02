@@ -141,6 +141,7 @@ inline constexpr PlayerID PLAYERID_GEN = 3;
 inline constexpr PlayerID PLAYERID_GEN_EXTERNAL = 16000;
 
 // NPC IDs under 1000 can't be deleted, so require manual assignment.
+// The client checks the active level for NPC IDs under 1000 and checks a global NPC list for others.
 inline constexpr NPCID NPCID_GEN_MANUAL = 3;
 inline constexpr NPCID NPCID_GEN_LOCAL = 300;
 inline constexpr NPCID NPCID_GEN_DELETEABLE = 1000;
