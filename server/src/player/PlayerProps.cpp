@@ -1194,7 +1194,7 @@ void Player::sendPropsFromResults(PropertySendResults& results)
 
 void Player::setPropsFromRCPacket(CString& packet, const Player* rc)
 {
-	[[maybe_unused]] bool hadBomb = false;
+	[[maybe_unused]] bool hadBomb = false, hadBow = false;
 	CString outPacket;
 
 	// Skip playerworld
@@ -1240,15 +1240,19 @@ void Player::setPropsFromRCPacket(CString& packet, const Player* rc)
 		CString wpn = packet.readChars(len);
 		values.push_back(wpn.toString());
 
-		// Check if the bomb is in the list of weapons.
+		// Check if the bomb or bow is in the list of weapons.
 		if (wpn == "bomb" || wpn == "Bomb")
 			hadBomb = true;
+		if (wpn == "bow" || wpn == "Bow")
+			hadBow = true;
 	}
 	synchronizeWeapons(values);
 
-	// KILL THE BOMB DEAD
+	// KILL THE BOMB AND BOW DEAD
 	if (isLoaded() && !hadBomb)
 		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bomb");
+	if (isLoaded() && !hadBow)
+		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bow");
 
 	// Warp the player to his new location now.
 	if (isLoaded() && isClient())
