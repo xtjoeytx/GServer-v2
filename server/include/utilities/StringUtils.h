@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <charconv>
 #include <concepts>
 #include <cstdint>
 #include <cstdlib>
@@ -1320,13 +1321,9 @@ bool toNumber(const std::string_view str, T& result)
 {
 	try
 	{
-		char* p_end = nullptr;
-		const long num = std::strtol(str.data(), &p_end, 10);
-		if (p_end == str.data())
-			return false;
-
-		result = num;
-		return true;
+		const auto end = str.data() + str.size();
+		const auto ret = std::from_chars(str.data(), end, result, 10);
+		return ret.ptr == end;
 	}
 	catch (...)
 	{
@@ -1356,13 +1353,9 @@ inline bool toFloat(const std::string_view str, float& result)
 {
 	try
 	{
-		char* p_end = nullptr;
-		const float num = std::strtof(str.data(), &p_end);
-		if (p_end == str.data())
-			return false;
-
-		result = num;
-		return true;
+		const auto end = str.data() + str.size();
+		const auto ret = std::from_chars(str.data(), end, result);
+		return ret.ptr == end;
 	}
 	catch (...)
 	{
