@@ -1359,13 +1359,12 @@ bool PlayerClient::leaveLevel(const bool keepLevelReference)
 
 	// Tell everyone I left.
 	{
-		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)0, getGlobalPosition(), getLevel(), {m_id});
+		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)0, getGlobalPosition(), levelp, {m_id});
 
-		for (const auto& [pid, player] : players_of_type<PlayerClient>(m_server->getPlayerList()))
+		for (const auto& pid : levelp->findInRangePlayersForCommunication(getGlobalPosition()))
 		{
-			if (pid == getId()) continue;
-			if (player->getLevel() != getLevel()) continue;
-			sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() >> (char)PlayerProp::JOINLEAVELVL >> (char)0);
+			if (auto player = m_server->getPlayer<PlayerClient>(pid); player != nullptr)
+				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() >> (char)PlayerProp::JOINLEAVELVL >> (char)0);
 		}
 	}
 

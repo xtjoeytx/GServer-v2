@@ -237,7 +237,7 @@ void NPCServer::run(const TimeoutGenerator::time_delta delta)
 			if (propsPacket.isEmpty()) continue;
 
 			player->sendPacket(CString() >> (char)PLO_PLAYERPROPS << propsPacket);
-			m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << propsPacket, playerClient->getGlobalPosition(), playerClient->getLevel(), { player->getId() });
+			m_server->sendNonLevelBoundPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << propsPacket, playerClient->getGlobalPosition(), playerClient->getLevel(), {player->getId()});
 		}
 	}
 

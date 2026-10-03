@@ -677,7 +677,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 								// and tell the player to remove the NPC from memory.
 								sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::CARRYNPCID >> (int)0);
 								sendPacket(CString() >> (char)PLO_NPCDEL2 >> (char)level->levelName.length() << level->levelName >> (int)newNPCID);
-								m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::CARRYNPCID >> (int)0, player->getGlobalPosition(), level, {m_id});
+								m_server->sendNonLevelBoundPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::CARRYNPCID >> (int)0, player->getGlobalPosition(), level, {m_id});
 								isOwner = false;
 								newNPCID = 0;
 								break;
@@ -1186,7 +1186,7 @@ void Player::sendPropsFromResults(PropertySendResults& results)
 		m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << sendAll, {m_id});
 
 	if (const auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr && sendLevel.length() > 0)
-		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << sendLevel, player->getGlobalPosition(), player->getLevel(), {m_id});
+		m_server->sendNonLevelBoundPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id << sendLevel, player->getGlobalPosition(), player->getLevel(), {m_id});
 
 	if (sendSource.length() > 0)
 		sendPacket(CString() >> (char)PLO_PLAYERPROPS << sendSource);

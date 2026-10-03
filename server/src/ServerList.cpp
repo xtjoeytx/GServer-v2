@@ -962,7 +962,7 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 		if (result.resultFlags.test(props::SetResults::sendToAll))
 			m_server->sendPacketToAll(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop);
 		if (const auto player = std::dynamic_pointer_cast<PlayerClient>(p); p && result.resultFlags.test(props::SetResults::sendToLevel))
-			m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop, player->account.character.getGlobalPosition(), player->getLevel(), {pid});
+			m_server->sendNonLevelBoundPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)pid >> (char)propId << prop, player->account.character.getGlobalPosition(), player->getLevel(), {pid});
 		if (result.resultFlags.test(props::SetResults::sendToSource))
 			p->sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)propId << prop);
 	}

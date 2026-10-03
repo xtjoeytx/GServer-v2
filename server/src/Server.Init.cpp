@@ -254,7 +254,7 @@ void Server::initFilesystemCallbacks()
 				if (!propsPacket.isEmpty())
 				{
 					player->sendPacket(CString() >> (char)PLO_PLAYERPROPS << propsPacket);
-					sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << propsPacket, player->getGlobalPosition(), player->getLevel(), { player->getId() });
+					sendNonLevelBoundPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() << propsPacket, player->getGlobalPosition(), player->getLevel(), { player->getId() });
 				}
 			}
 		}

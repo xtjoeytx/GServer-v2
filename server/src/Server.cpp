@@ -2341,6 +2341,20 @@ void Server::sendPacketToOneLevelPart(const CString& packet, const LevelPtr& lev
 	}
 }
 
+void Server::sendNonLevelBoundPacketToNearby(const CString& packet, const PixelPosition& position, const LevelPtr& level, const std::set<PlayerID>& exclude, const PlayerPredicate& sendIf) const
+{
+	if (!running || level == nullptr) return;
+
+	auto players = level->findInRangePlayersForCommunication(position);
+	for (const auto& playerId : players)
+	{
+		if (exclude.contains(playerId))
+			continue;
+		if (auto player = getPlayer<PlayerClient>(playerId); player != nullptr && (!sendIf || sendIf(player.get())))
+			player->sendPacket(packet);
+	}
+}
+
 void Server::sendPacketToNearby(const CString& packet, const PixelPosition& position, const LevelPtr& level, const std::set<PlayerID>& exclude, const PlayerPredicate& sendIf) const
 {
 	if (!running || level == nullptr) return;
