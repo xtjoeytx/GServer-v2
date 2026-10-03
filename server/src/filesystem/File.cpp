@@ -107,7 +107,7 @@ std::filesystem::path getHTMLUnescapedFileName(const std::filesystem::path& file
 	writeDecoded = [](ST& result, const SVT code)
 	{
 		// We are in a wchar_t system, so first convert to ANSI so we can use string::toNumber.
-		result += string::toNumber<Elem>(ztd::text::transcode(code, ztd::text::wide_utf16, ztd::text::windows_1252, ztd::text::replacement_handler));
+		result += static_cast<Elem>(string::toNumber<int>(ztd::text::transcode(code, ztd::text::wide_utf16, ztd::text::windows_1252, ztd::text::replacement_handler)));
 	};
 #else
 	writeDecoded = [](ST& result, const SVT code)
