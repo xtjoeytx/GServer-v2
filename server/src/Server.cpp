@@ -1829,14 +1829,10 @@ bool Server::deleteFlag(const std::string_view flagName, const bool sendToPlayer
 	if (m_dontAddServerFlags.getValue())
 		return false;
 
-	if (Scripting.variables.remove(flagName))
-	{
-		if (sendToPlayers)
-			sendPacketToAll(CString() >> (char)PLO_FLAGDEL << flagName);
-		return true;
-	}
+	if (const auto flag = Scripting.variables.get(flagName); !flag.expired() && sendToPlayers)
+		sendPacketToAll(CString() >> (char)PLO_FLAGDEL << flagName);
 
-	return false;
+	return Scripting.variables.remove(flagName);
 }
 
 bool Server::setFlag(std::string_view flagPair, const bool sendToPlayers)
