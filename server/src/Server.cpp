@@ -104,7 +104,7 @@ void ExternalServerCachedSettings::bind(Server* server)
 	settings.track(maxPlayers, sleepWhenNoPlayers, localhostMode);
 	settings.track(unstickMeLevel, unstickMeTile[0], unstickMeTile[1], unstickMeSeconds);
 	settings.track(enableBushItemDrops, enableVaseItemDrops, disableItemDropping);
-	settings.track(enableInsideSyncDistance, syncDistance[0], syncDistance[1]);
+	settings.track(enableInsideSyncDistance, syncDistance[0], syncDistance[1], sendToNearbyBigmapLevels);
 	settings.track(eventDistance, triggerDistance, sendTriggerActionsToPlayers);
 	settings.track(enableFlagCropping, disableExplosions, enableClientsidePushPull, tileRespawnTime, enableIdleDisconnect, idleTimeoutSeconds);
 	settings.track(enablePermanentTileChanges, saveTileChangesToLevelFile);
@@ -2356,19 +2356,17 @@ void Server::sendPacketToNearby(const CString& packet, const PixelPosition& posi
 			// Levels on a gmap are the same level and thus this would be false.
 			const bool sameLevel = level->levelName == player->getLevelName();
 
-			// TODO: Enable nearby data for bigmaps again.
-			// The current problem is that the NPC-Server will send modified NPC props to players when they don't know about the NPC yet, which breaks the NPCs.
-			// We need to add the ability to send the full NPC details of adjacent levels when entering a bigmap level before we can re-enable this.
-			if (!sameLevel)
+			// TODO: Figure out when PLO_SETACTIVELEVEL was introduced.
+			if (!sameLevel && player->getVersion() < CLVER_2_17)
 				continue;
 
-			// TODO: Figure out when PLO_SETACTIVELEVEL was introduced.
-			//if (!sameLevel && player->getVersion() < CLVER_2_17)
-			//	continue;
-			//
-			//if (!sameLevel) player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
+			// If we aren't allowing sends to nearby levels, abort.
+			if (cached.sendToNearbyBigmapLevels.getValue() == false && !sameLevel)
+				continue;
+
+			if (!sameLevel) player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
 			player->sendPacket(packet);
-			//if (!sameLevel) player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << player->getLevelName());
+			if (!sameLevel) player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << player->getLevelName());
 		}
 	}
 }

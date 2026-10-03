@@ -393,7 +393,7 @@ protected:
 	void sendPropsFromResults(PropertySendResults& results);
 
 protected:
-	std::string_view whoAmI() const noexcept override { return account.name; }
+	std::string_view whoAmI() const noexcept override { return m_whoAmI; }
 	HandlePacketResult handlePacket(std::optional<uint8_t> id, CString& packet) override;
 
 public:
@@ -470,6 +470,8 @@ protected:
 	// Socket Variables
 	CSocket* m_playerSock;
 	CString m_recvBuffer;
+
+	std::string m_whoAmI;
 
 	// Variables
 	PlayerID m_id = 0;

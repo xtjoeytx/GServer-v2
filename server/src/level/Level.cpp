@@ -1351,10 +1351,19 @@ void Level::sendHorsesToPlayer(const std::shared_ptr<Player>& player) const
 // TODO: Replace with a function in server that sends npc props from a list of ids.
 void Level::sendNPCsToPlayer(const std::shared_ptr<Player>& player, const std::optional<clock::time_point> time) const
 {
+	const Level* currentLevel = nullptr;
+
 	for (const auto& npcId : findInRangeNPCsForCommunication(player->getGlobalPosition()))
 	{
 		const auto npc = m_server->getNPC(npcId);
 		if (!npc) continue;
+
+		// If this NPC belongs on a different level, tell the client to change the active level.
+		if (auto npcLevel = npc->getLevel(); currentLevel != npcLevel.get())
+		{
+			player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << npcLevel->levelName);
+			currentLevel = npcLevel.get();
+		}
 
 		sendNPCToPlayer(npc, player, time);
 	}
@@ -3178,22 +3187,21 @@ std::generator<NPCID> Level::findInRangeNPCs(const PixelPosition& position) cons
 
 std::generator<NPCID> Level::findInRangeNPCsForCommunication(const PixelPosition& position) const noexcept
 {
-	// If this is a bigmap, only send NPCs on the current level.
-	if (isOnBigMap())
+	// If this is not a bigmap, or we aren't sending nearby NPCs, use the default search.
+	if (!isOnBigMap() || m_server->cached.sendToNearbyBigmapLevels.getValue() == false)
 	{
-		for (const auto& npcId : m_npcs)
+		for (const auto& npcId : findInRangeNPCs(position))
 			co_yield npcId;
 		co_return;
 	}
 
-	// If this is not a bigmap, use the default search.
-	for (const auto& npcId : findInRangeNPCs(position))
-		co_yield npcId;
-
-	/*
+	// Get the position in the map.
+	// As a failsafe, use the default search.
 	auto mapPositionOpt = m_map->getLevelPosition(levelName);
 	if (!mapPositionOpt.has_value())
 	{
+		for (const auto& npcId : findInRangeNPCs(position))
+			co_yield npcId;
 		co_return;
 	}
 
@@ -3218,7 +3226,6 @@ std::generator<NPCID> Level::findInRangeNPCsForCommunication(const PixelPosition
 			}
 		}
 	}
-	*/
 }
 
 std::generator<NPCID> Level::findInRangeNPCsByDistance(const PixelPosition& position, const uint32_t tileDistance) const noexcept

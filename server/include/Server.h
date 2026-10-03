@@ -125,6 +125,7 @@ struct ExternalServerCachedSettings
 	SettingCache<bool> disableItemDropping{"disableitemdropping", false};
 	SettingCache<bool> enableInsideSyncDistance{"syncbydistanceinside", false};
 	std::array<SettingCache<uint32_t>, 2> syncDistance{{{"syncdistancex", 192}, {"syncdistancey", 192}}};
+	SettingCache<bool> sendToNearbyBigmapLevels{"sendtonearbybigmaplevels", true};
 	SettingCache<uint32_t> eventDistance{"eventdistance", 64};
 	SettingCache<uint32_t> triggerDistance{"triggerdistance", 10};
 	SettingCache<bool> sendTriggerActionsToPlayers{"sendplayertriggers", true};
@@ -400,6 +401,7 @@ public:
 	void sendPacketToType(int who, const CString& pPacket, const Player* pPlayer) const;
 	void sendPacketToOneLevelPart(const CString& packet, const PixelPosition& position, const LevelPtr& level, const std::set<PlayerID>& exclude = {}, const PlayerPredicate& sendIf = nullptr) const;
 	void sendPacketToOneLevelPart(const CString& packet, const LevelPtr& level, const MapPosition& mapPosition, const std::set<PlayerID>& exclude = {}, const PlayerPredicate& sendIf = nullptr) const;
+	void sendNonLevelBoundPacketToNearby(const CString& packet, const PixelPosition& position, const LevelPtr& level, const std::set<PlayerID>& exclude = {}, const PlayerPredicate& sendIf = nullptr) const;
 	void sendPacketToNearby(const CString& packet, const PixelPosition& position, const LevelPtr& level, const std::set<PlayerID>& exclude = {}, const PlayerPredicate& sendIf = nullptr) const;
 	void sendPacketToLevelAndPastVisitorsAfter(const StaticLevelData* level, clock::time_point modTime, const CString& packet) const;
 

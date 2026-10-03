@@ -329,6 +329,8 @@ Player::Player(CSocket* pSocket, const PlayerID pId)
 	m_lastData = clock::now();
 	m_serverName = m_server->getName();
 
+	m_whoAmI = std::format("[ID {}]", m_id);
+
 	account.variables.defaultLifetime = variables::Lifetime::PERMANENT;
 	account.variables.source = source::FromPlayer(pId);
 
@@ -502,8 +504,9 @@ void Player::sendPacket(CString pPacket, const bool appendNL)
 
 #ifdef PACKETLOGGING
 	// This will suck as long as we have gs2lib.
-	uint32_t pid = static_cast<uint32_t>(static_cast<uint8_t>(pPacket[0]) - 32);
-	log::printLine(log::networkdump, "< Out Packet to {}: [{}] {} ({} bytes)", account.name, pid, OutputPacketNamesArray[pid], pPacket.length());
+	const std::string_view who = whoAmI();
+	const uint32_t pid = static_cast<uint32_t>(static_cast<uint8_t>(pPacket[0]) - 32);
+	log::printLine(log::networkdump, "< Out Packet to {}: [{}] {} ({} bytes)", who, pid, OutputPacketNamesArray[pid], pPacket.length());
 	log::print(log::networkdump, "{}", pPacket.text());
 	if (pPacket[pPacket.length() - 1] != '\n')
 		log::print(log::networkdump, "\n");
@@ -642,6 +645,7 @@ bool Player::sendLogin()
 {
 	// Load the account.
 	m_server->getAccountLoader().loadAccount(account.name, *this);
+	m_whoAmI = std::format("{} [ID {}]", account.name, m_id);
 
 	// Check if they are ip-banned or not.
 	if (m_server->isIpBanned(m_playerSock->getRemoteIp()) && !account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))

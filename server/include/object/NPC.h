@@ -291,7 +291,7 @@ public:
 	void sendMoveQueueToPlayer(const PlayerPtr& player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
 	void sendMoveQueueToLevel(const LevelPtr& level, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
 	void sendMoveQueueToLevel(const LevelPtr& level, const std::pair<CString, CString>& queue) const noexcept;
-	void sendMoveQueueUpdatesToLevel(const LevelPtr& level) noexcept;
+	void sendMoveQueueUpdatesToLevel(const LevelPtr& level) const noexcept;
 	void refreshModTimes(clock::time_point modTime) noexcept;
 
 public:

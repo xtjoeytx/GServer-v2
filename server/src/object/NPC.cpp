@@ -512,14 +512,14 @@ void NPC::sendMoveQueueToLevel(const LevelPtr& level, const std::pair<CString, C
 	});
 }
 
-void NPC::sendMoveQueueUpdatesToLevel(const LevelPtr& level) noexcept
+void NPC::sendMoveQueueUpdatesToLevel(const LevelPtr& level) const noexcept
 {
 	const auto result = getMoveQueuePacketData(lastMoveQueueSentTime);
 	lastMoveQueueSentTime = m_server->getFrameStartTime();
 	sendMoveQueueToLevel(level, result);
 }
 
-void NPC::refreshModTimes(clock::time_point modTime) noexcept
+void NPC::refreshModTimes(const clock::time_point modTime) noexcept
 {
 	for (auto& time : this->modTime)
 	{

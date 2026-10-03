@@ -1522,10 +1522,10 @@ bool PlayerClient::sendDynamicLevelData(const std::shared_ptr<Level>& level, std
 	checkAndInformIfLevelLeader();
 
 	// Send NPCs.
-	sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
 	level->sendNPCsToPlayer(self, cachedModTime);
 
 	// Move the carry NPC to the new level.
+	sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
 	if (m_carryNPC != 0)
 	{
 		if (const auto npc = m_server->getNPC(m_carryNPC); npc)

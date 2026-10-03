@@ -241,6 +241,11 @@ unloadinactiveleveltime = 600
 # These must be kept in the same order.
 # npccarryobjectimages = bushitem.png,signitem.png,vaseitem.png,stoneitem.png,blackstoneitem.png,bombitem.png,hotbombitem.png,superbombitem.png,joltbombitem.png,hotjoltbombitem.png,noneitem.png
 
+# Sends data to players on nearby bigmap levels.
+# Official did not do this.  The upside is a more seamless experience as NPCs don`t pop in and you can see players moving around.
+# The downside is that NPCs used as lights render incorrectly until the player visits the level.
+# sendtonearbybigmaplevels = true
+
 # --------------------------------------------------------------------------------------
 # --- Private server options.  The changestaffacct right is required to alter these. ---
 # --------------------------------------------------------------------------------------

@@ -585,6 +585,10 @@ official serverside: ❌<br>
 
 Draws the NPC on the 3rd layer (above [seteffect](#seteffect)).
 
+The light layer is not recorded as part of the NPC's properties on the 2.x clients.
+Because of this, make sure this is called for every single player as part of a [playerenters](scripting-gs1-events.md#playerenters) event.
+If you only put this behind the [created](scripting-gs1-events.md#created) event, then lights will only render correctly for the first player to enter the level.
+
 See: [Draw layers](scripting-gs1-variables.md#draw-layers)
 
 ---
