@@ -891,7 +891,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			if (auto levelData = level->getStaticLevelDataAtPosition(getMapPosition()); levelData != nullptr)
 			{
-				auto lastEnteredTime = player->getLevelLastEnteredTime(levelData.get());
+				auto lastEnteredTime = player->getLevelLastEnteredTimeForWarping(levelData.get());
 				sendDynamicLevelData(level, lastEnteredTime);
 			}
 			break;
@@ -912,7 +912,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 
 			if (auto levelData = level->getStaticLevelDataAtPosition(getMapPosition()); levelData != nullptr)
 			{
-				auto lastEnteredTime = player->getLevelLastEnteredTime(levelData.get());
+				auto lastEnteredTime = player->getLevelLastEnteredTimeForWarping(levelData.get());
 				sendDynamicLevelData(level, lastEnteredTime);
 			}
 			break;

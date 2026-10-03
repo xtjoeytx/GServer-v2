@@ -32,7 +32,7 @@ PlayerClientOriginal::PlayerClientOriginal(CSocket* pSocket, const PlayerID pId)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool PlayerClientOriginal::warp(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
+bool PlayerClientOriginal::warp(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<time_t> clientCachedTime)
 {
 	// If we are warping to the same level, just update the player's location.
 	auto localPosition = toLocalPixelPosition(position);
@@ -56,7 +56,7 @@ bool PlayerClientOriginal::warp(const std::shared_ptr<Level>& level, const Pixel
 	return enterLevel(level, clientCachedTime);
 }
 
-bool PlayerClientOriginal::enterLevel(const std::shared_ptr<Level>& level, const std::optional<clock::time_point> clientCachedTime)
+bool PlayerClientOriginal::enterLevel(const std::shared_ptr<Level>& level, const std::optional<time_t> clientCachedTime)
 {
 	const auto currentLevel = getLevel();
 	const bool sameLevel = currentLevel == level;
@@ -119,14 +119,14 @@ bool PlayerClientOriginal::enterLevel(const std::shared_ptr<Level>& level, const
 	return true;
 }
 
-bool PlayerClientOriginal::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClientOriginal::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<time_t> clientCachedTime)
 {
 	if (staticLevelData == nullptr)
 		return false;
 
 	const PlayerPtr self = shared_from_this();
-	const auto levelModTime = staticLevelData->modTime;
-	const auto cachedModTime = getLevelLastEnteredTime(staticLevelData.get());
+	const auto levelModTime = clock::to_time_t(staticLevelData->modTime);
+	const auto cachedModTime = getLevelLastEnteredTimeForWarping(staticLevelData.get());
 
 	// If the player has seen this level before, don't sending anything.
 	if (cachedModTime.has_value())
@@ -159,7 +159,7 @@ bool PlayerClientOriginal::sendStaticLevelData(const std::shared_ptr<StaticLevel
 			staticLevelData->sendSignsToPlayer(self);
 
 			// Send the level mod time so the client can cache it.
-			sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)clock::to_time_t(levelModTime));
+			sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)levelModTime);
 		}
 		else
 		{
@@ -174,7 +174,7 @@ bool PlayerClientOriginal::sendStaticLevelData(const std::shared_ptr<StaticLevel
 	return true;
 }
 
-bool PlayerClientOriginal::sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClientOriginal::sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<time_t> clientCachedTime)
 {
 	if (level == nullptr) return false;
 

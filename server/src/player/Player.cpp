@@ -1204,19 +1204,19 @@ void Player::setPosition(const PixelPosition& position)
 	}
 }
 
-bool Player::warp(const std::string_view levelName, const PixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
+bool Player::warp(const std::string_view levelName, const PixelPosition& position, const std::optional<time_t> clientCachedTime)
 {
 	if (const auto level = m_server->getLoadedLevel(levelName, shared_from_this()); level != nullptr)
 		return enterLevel(level, position, clientCachedTime);
 	return false;
 }
 
-bool Player::warp(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
+bool Player::warp(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<time_t> clientCachedTime)
 {
 	return enterLevel(level, position, clientCachedTime);
 }
 
-bool Player::enterLevel(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
+bool Player::enterLevel(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<time_t> clientCachedTime)
 {
 	const auto localPosition = toLocalPixelPosition(position);
 	auto mapPosition = toMapPosition(position);
@@ -1228,7 +1228,7 @@ bool Player::enterLevel(const std::shared_ptr<Level>& level, const PixelPosition
 	return enterLevel(level, mapPosition, localPosition, clientCachedTime);
 }
 
-bool Player::enterLevel(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalPixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
+bool Player::enterLevel(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalPixelPosition& position, const std::optional<time_t> clientCachedTime)
 {
 	const auto now = m_server->getFrameStartTime();
 
@@ -1265,7 +1265,7 @@ bool Player::enterLevel(const std::shared_ptr<Level>& level, const MapPosition& 
 	return enterLevel(level, clientCachedTime);
 }
 
-bool Player::enterLevel(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime)
+bool Player::enterLevel(const std::shared_ptr<Level>& level, std::optional<time_t> clientCachedTime)
 {
 	return true;
 }
@@ -1290,12 +1290,12 @@ bool Player::leaveSubLevel(const std::shared_ptr<SubLevel>& subLevel)
 	return true;
 }
 
-bool Player::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<clock::time_point> clientCachedTime)
+bool Player::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<time_t> clientCachedTime)
 {
 	return true;
 }
 
-bool Player::sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime)
+bool Player::sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<time_t> clientCachedTime)
 {
 	return true;
 }

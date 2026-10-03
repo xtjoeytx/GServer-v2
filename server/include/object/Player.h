@@ -312,15 +312,15 @@ public:
 
 public:
 	virtual void setPosition(const PixelPosition& position);
-	virtual bool warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime);
-	virtual bool warp(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime);
-	virtual bool enterLevel(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime);
-	virtual bool enterLevel(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalPixelPosition& position, std::optional<clock::time_point> clientCachedTime);
-	virtual bool enterLevel(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime);
+	virtual bool warp(std::string_view levelName, const PixelPosition& position, std::optional<time_t> clientCachedTime);
+	virtual bool warp(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<time_t> clientCachedTime);
+	virtual bool enterLevel(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<time_t> clientCachedTime);
+	virtual bool enterLevel(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalPixelPosition& position, std::optional<time_t> clientCachedTime);
+	virtual bool enterLevel(const std::shared_ptr<Level>& level, std::optional<time_t> clientCachedTime);
 	virtual bool leaveLevel(bool keepLevelReference);
 	virtual bool leaveSubLevel(const std::shared_ptr<SubLevel>& subLevel);
-	virtual bool sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<clock::time_point> clientCachedTime);
-	virtual bool sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime);
+	virtual bool sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<time_t> clientCachedTime);
+	virtual bool sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<time_t> clientCachedTime);
 	virtual bool sendNearbyObjects(const std::shared_ptr<Level>& level);
 
 public:

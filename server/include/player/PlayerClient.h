@@ -106,12 +106,12 @@ public:
 	void setPosition(const PixelPosition& position) override;
 
 	// Forcibly move a player (the client doesn't know it is transitioning levels).
-	bool warp(std::string_view levelName, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime) override;
-	bool warp(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<clock::time_point> clientCachedTime) override;
+	bool warp(std::string_view levelName, const PixelPosition& position, std::optional<time_t> clientCachedTime) override;
+	bool warp(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<time_t> clientCachedTime) override;
 	using Player::warp;
 
 	// Place the player in a new level (the client knows it is transitioning levels).
-	bool enterLevel(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime) override;
+	bool enterLevel(const std::shared_ptr<Level>& level, std::optional<time_t> clientCachedTime) override;
 	using Player::enterLevel;
 
 	bool leaveLevel(bool keepLevelReference) override;
@@ -120,16 +120,17 @@ public:
 	bool leaveSubLevel(const std::shared_ptr<SubLevel>& subLevel) override;
 	using Player::leaveSubLevel;
 
-	bool sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<clock::time_point> clientCachedTime) override;
+	bool sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<time_t> clientCachedTime) override;
 	using Player::sendStaticLevelData;
 
-	bool sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime) override;
+	bool sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<time_t> clientCachedTime) override;
 	using Player::sendDynamicLevelData;
 
 	void checkAndInformIfLevelLeader();
 	void informPlayerIsLevelLeader();
 
 public:
+	std::optional<time_t> getLevelLastEnteredTimeForWarping(const StaticLevelData* level) const;
 	std::optional<clock::time_point> getLevelLastEnteredTime(const StaticLevelData* level) const;
 	std::optional<clock::time_point> getLevelLastEnteredTime(const SubLevel* level, std::string_view group = ""sv) const;
 	void resetLevelCache(const StaticLevelData* level) const;

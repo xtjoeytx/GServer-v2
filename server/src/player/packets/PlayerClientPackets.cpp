@@ -51,10 +51,10 @@ namespace preagonal
 
 HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 {
-	std::optional<clock::time_point> modTime;
+	std::optional<time_t> modTime;
 
 	if (pPacket[0] - 32 == PLI_LEVELWARPMOD)
-		modTime = clock::from_time_t((time_t)pPacket.readGUInt5());
+		modTime = static_cast<time_t>(pPacket.readGUInt5());
 
 	const LocalPixelPosition pos = {static_cast<int16_t>(pPacket.readGChar() * 8), static_cast<int16_t>(pPacket.readGChar() * 8)};
 	const CString newLevelC = pPacket.readString("");
@@ -992,7 +992,7 @@ HandlePacketResult PlayerClient::msgPLI_UPDATEFILE(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 {
-	const std::optional<clock::time_point> modTime = clock::from_time_t((time_t)pPacket.readGUInt5());
+	const auto modTime = static_cast<time_t>(pPacket.readGUInt5());
 
 	const CString levelNameC = pPacket.readString("");
 	const std::string_view levelName = levelNameC.toStringView();

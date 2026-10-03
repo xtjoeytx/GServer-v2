@@ -1186,7 +1186,7 @@ void PlayerClient::setPosition(const PixelPosition& position)
 	}
 }
 
-bool PlayerClient::warp(const std::string_view levelName, const PixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
+bool PlayerClient::warp(const std::string_view levelName, const PixelPosition& position, const std::optional<time_t> clientCachedTime)
 {
 	// Find the level.
 	const auto newLevel = m_server->getLoadedLevel(levelName, shared_from_this());
@@ -1212,7 +1212,7 @@ bool PlayerClient::warp(const std::string_view levelName, const PixelPosition& p
 	return warp(newLevel, position, clientCachedTime);
 }
 
-bool PlayerClient::warp(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<clock::time_point> clientCachedTime)
+bool PlayerClient::warp(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<time_t> clientCachedTime)
 {
 	// If we are warping to the same level, just update the player's location.
 	auto localPosition = toLocalPixelPosition(position);
@@ -1253,7 +1253,7 @@ bool PlayerClient::warp(const std::shared_ptr<Level>& level, const PixelPosition
 	return enterLevel(level, clientCachedTime);
 }
 
-bool PlayerClient::enterLevel(const std::shared_ptr<Level>& level, const std::optional<clock::time_point> clientCachedTime)
+bool PlayerClient::enterLevel(const std::shared_ptr<Level>& level, const std::optional<time_t> clientCachedTime)
 {
 	const auto currentLevel = getLevel();
 	const bool sameLevel = currentLevel == level;
@@ -1416,14 +1416,14 @@ bool PlayerClient::leaveSubLevel(const std::shared_ptr<SubLevel>& subLevel)
 	return true;
 }
 
-bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<time_t> clientCachedTime)
 {
 	if (staticLevelData == nullptr)
 		return false;
 
 	const PlayerPtr self = shared_from_this();
-	auto levelModTime = staticLevelData->modTime;
-	const auto cachedModTime = getLevelLastEnteredTime(staticLevelData.get());
+	auto levelModTime = clock::to_time_t(staticLevelData->modTime);
+	const auto cachedModTime = getLevelLastEnteredTimeForWarping(staticLevelData.get());
 	if (!clientCachedTime.has_value()) clientCachedTime = levelModTime;
 
 	bool sentBoard = false;
@@ -1483,7 +1483,7 @@ bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& s
 		sendPacket(CString() >> (char)PLO_LEVELBOARD);
 
 	// Send the level mod time so the client can cache it.
-	sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)clock::to_time_t(levelModTime));
+	sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)levelModTime);
 
 	// Fix the level name.
 	// If the player is on a gmap, we need to set the level back to the gmap.
@@ -1494,7 +1494,7 @@ bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& s
 	return true;
 }
 
-bool PlayerClient::sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<clock::time_point> clientCachedTime)
+bool PlayerClient::sendDynamicLevelData(const std::shared_ptr<Level>& level, std::optional<time_t> clientCachedTime)
 {
 	if (level == nullptr) return false;
 
@@ -1597,6 +1597,11 @@ void PlayerClient::informPlayerIsLevelLeader()
 
 ///////////////////////////////////////////////////////////////////////////////
 
+std::optional<time_t> PlayerClient::getLevelLastEnteredTimeForWarping(const StaticLevelData* level) const
+{
+	return getLevelLastEnteredTime(level).transform([](const auto& tp) { return clock::to_time_t(tp); });
+}
+
 std::optional<clock::time_point> PlayerClient::getLevelLastEnteredTime(const StaticLevelData* level) const
 {
 	if (level == nullptr)
@@ -1616,7 +1621,7 @@ std::optional<clock::time_point> PlayerClient::getLevelLastEnteredTime(const Sta
 	return std::nullopt;
 }
 
-std::optional<clock::time_point> PlayerClient::getLevelLastEnteredTime(const SubLevel* level, std::string_view group) const
+std::optional<clock::time_point> PlayerClient::getLevelLastEnteredTime(const SubLevel* level, const std::string_view group) const
 {
 	if (level == nullptr)
 		return std::nullopt;
@@ -1852,7 +1857,8 @@ bool PlayerClient::testForLinks(SetResults& result, const uint8_t movementDirect
 		{
 			const auto pos = linkTouched.value()->getDestinationForCharacter(account.character, source::FromPlayer(m_id));
 			const auto levelData = destSubLevel->staticData.lock();
-			warp(level->levelName, level->convertToMapPosition(destSubLevel->mapPosition.value_or(MapPosition{0, 0}), pos), getLevelLastEnteredTime(levelData.get()));
+			const auto lastEnteredTime = getLevelLastEnteredTimeForWarping(levelData.get());
+			warp(level->levelName, level->convertToMapPosition(destSubLevel->mapPosition.value_or(MapPosition{0, 0}), pos), lastEnteredTime);
 			return true;
 		}
 		// Level is outside of the map, so search normally.
@@ -1867,7 +1873,8 @@ bool PlayerClient::testForLinks(SetResults& result, const uint8_t movementDirect
 
 			const auto pos = toPixelPosition(origin, linkTouched.value()->getDestinationForCharacter(account.character, source::FromPlayer(m_id)));
 			const auto levelData = newLevel->getStaticLevelDataByName(destLevelName);
-			warp(newLevel->levelName, pos, getLevelLastEnteredTime(levelData.get()));
+			const auto lastEnteredTime = getLevelLastEnteredTimeForWarping(levelData.get());
+			warp(newLevel->levelName, pos, lastEnteredTime);
 			return true;
 		}
 	}
