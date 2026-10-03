@@ -57,6 +57,15 @@ std::string getANSIFileName(const std::filesystem::path& file)
 #endif
 }
 
+std::filesystem::path fromANSIFileName(const std::string& file)
+{
+#ifdef PLATFORM_WINDOWS
+	return std::filesystem::path{ztd::text::transcode(file, ztd::text::windows_1252, ztd::text::wide_utf16, ztd::text::replacement_handler)};
+#else
+	return std::filesystem::path{ztd::text::transcode(file, ztd::text::windows_1252, ztd::text::compat_utf8, ztd::text::replacement_handler)};
+#endif
+}
+
 std::filesystem::path getHTMLEscapedFileName(const std::filesystem::path& file)
 {
 	using ST = std::filesystem::path::string_type;

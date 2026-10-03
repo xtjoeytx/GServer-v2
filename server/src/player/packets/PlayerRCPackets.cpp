@@ -1227,16 +1227,16 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DOWN(CString& pPacket)
 	}
 
 	// Send file.
-	const std::filesystem::path file{pPacket.readString("").toString()};
+	const std::filesystem::path file{fs::fromANSIFileName(pPacket.readString("").toString())};
 	const std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
 	const CString checkFile = (lastFolderAccessed / file).generic_string();
 
 	// Don't let us download/view important files.
 	if (!account.hasRight(PLPERM_MODIFYSTAFFACCOUNT))
 	{
-		for (const auto& file : ProtectedFiles)
+		for (const auto& protectedFile : ProtectedFiles)
 		{
-			if (checkFile == file)
+			if (checkFile == protectedFile)
 			{
 				sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficient rights to download/view " << checkFile);
 				return HandlePacketResult::Handled;
@@ -1260,7 +1260,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	const std::filesystem::path file{pPacket.readChars(pPacket.readGUChar()).toString()};
+	const std::filesystem::path file{fs::fromANSIFileName(pPacket.readChars(pPacket.readGUChar()).toString())};
 	const std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
 	const CString fileData = pPacket.subString(pPacket.readPos());
 	const CString checkFile = (lastFolderAccessed / file).generic_string();
@@ -1324,7 +1324,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_MOVE(CString& pPacket)
 	}
 
 	const std::filesystem::path dir{pPacket.readChars(pPacket.readGUChar()).toString()};
-	const std::filesystem::path file{pPacket.readString("").toString()};
+	const std::filesystem::path file{fs::fromANSIFileName(pPacket.readString("").toString())};
 	const std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
 
 	// Assemble destination and source.
@@ -1364,14 +1364,14 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	CString file = pPacket.readString("");
-	const std::filesystem::path filePath = std::filesystem::path{account.lastFolderAccessed} / file.toStringView();
+	std::string file = pPacket.readString("").toString();
+	const std::filesystem::path filePath = std::filesystem::path{account.lastFolderAccessed} / fs::fromANSIFileName(file);
 
 	// Don't let us delete important files.
-	const CString checkFile = filePath.generic_string();
-	for (const auto& file : ImportantFiles)
+	const auto checkFile = filePath.generic_string();
+	for (const auto& importantFile : ImportantFiles)
 	{
-		if (checkFile == file)
+		if (checkFile == importantFile)
 		{
 			sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Not allowed to delete file " << checkFile);
 			return HandlePacketResult::Handled;
@@ -1414,7 +1414,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_DELETE(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	log::printLine(log::rc, "{} deleted file {}", account.name, file.text());
+	log::printLine(log::rc, "{} deleted file {}", account.name, file);
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Deleted file " << file);
 
 	return HandlePacketResult::Handled;
@@ -1428,15 +1428,15 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	CString f1 = pPacket.readChars(pPacket.readGUChar());
-	CString f2 = pPacket.readChars(pPacket.readGUChar());
+	const auto f1 = pPacket.readChars(pPacket.readGUChar()).toString();
+	const auto f2 = pPacket.readChars(pPacket.readGUChar()).toString();
 
-	const std::filesystem::path oldPath = std::filesystem::path{account.lastFolderAccessed} / f1.toStringView();
-	const std::filesystem::path newPath = std::filesystem::path{account.lastFolderAccessed} / f2.toStringView();
+	const std::filesystem::path oldPath = std::filesystem::path{account.lastFolderAccessed} / fs::fromANSIFileName(f1);
+	const std::filesystem::path newPath = std::filesystem::path{account.lastFolderAccessed} / fs::fromANSIFileName(f2);
 
 	// Don't let us rename/overwrite important files.
-	const CString checkFile1 = oldPath.generic_string();
-	const CString checkFile2 = newPath.generic_string();
+	const auto checkFile1 = oldPath.generic_string();
+	const auto checkFile2 = newPath.generic_string();
 	for (const auto& file : ImportantFiles)
 	{
 		if (checkFile1 == file || checkFile2 == file)
@@ -1482,7 +1482,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_RENAME(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	log::printLine(log::rc, "{} renamed file {} to {}", account.name, f1.text(), f2.text());
+	log::printLine(log::rc, "{} renamed file {} to {}", account.name, f1, f2);
 	sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Renamed file " << f1 << " to " << f2);
 
 	return HandlePacketResult::Handled;
@@ -1496,7 +1496,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILESTART(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	const std::filesystem::path file{pPacket.readString("").toString()};
+	const std::filesystem::path file{fs::fromANSIFileName(pPacket.readString("").toString())};
 	m_rcLargeFiles[file] = CString();
 
 	return HandlePacketResult::Handled;
@@ -1510,7 +1510,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_LARGEFILEEND(CString& pPacket)
 		return HandlePacketResult::Handled;
 	}
 
-	const std::filesystem::path file{pPacket.readString("").toString()};
+	const std::filesystem::path file{fs::fromANSIFileName(pPacket.readString("").toString())};
 	const std::filesystem::path filePath = std::filesystem::path{account.lastFolderAccessed} / file;
 
 	// Save the file.

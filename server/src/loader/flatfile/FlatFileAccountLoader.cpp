@@ -624,8 +624,12 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "Y", static_cast<float>(account.character.localPixelY) / 16.0f);
 	if (account.character.localPixelZ.has_value())
 		writeLine(newFile, "Z", static_cast<float>(account.character.localPixelZ.value()) / 16.0f, 0.0f);
-	writeLine(newFile, "MAPX", account.character.mapX);
-	writeLine(newFile, "MAPY", account.character.mapY);
+
+	if (account.character.mapX != 0)
+		writeLine(newFile, "MAPX", account.character.mapX);
+	if (account.character.mapY != 0)
+		writeLine(newFile, "MAPY", account.character.mapY);
+
 	writeLine(newFile, "MAXHP", account.maxHitpoints);
 	writeLine(newFile, "HP", static_cast<float>(account.character.hitpointsInHalves) / 2.0f);
 	if (server->Generation != ServerGeneration::CLASSIC)
@@ -639,9 +643,9 @@ bool FlatFileAccountLoader::saveAccount(const Account& account)
 	writeLine(newFile, "GLOVEP", account.character.glovePower);
 	writeLine(newFile, "SWORDP", account.character.swordPower);
 	writeLine(newFile, "SHIELDP", account.character.shieldPower);
-	writeLine(newFile, "BOMBP", account.character.bombPower, 1_ui8);
 	if (server->Generation == ServerGeneration::CLASSIC)
 	{
+		writeLine(newFile, "BOMBP", account.character.bombPower, 1_ui8);
 		writeLine(newFile, "BOWP", account.character.bowPower, 1_ui8);
 		writeLine(newFile, "BOW", account.character.bowImage, "");
 	}

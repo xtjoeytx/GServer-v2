@@ -48,6 +48,11 @@ namespace preagonal::fs
 /// @return A std::string containing the filename part of the path, encoded in ANSI.
 std::string getANSIFileName(const std::filesystem::path& file);
 
+/// @brief Converts an ANSI encoded filename to a std::filesystem::path.
+/// @param file The ANSI encoded filename.
+/// @return A std::filesystem::path constructed from the given filename.
+std::filesystem::path fromANSIFileName(const std::string& file);
+
 /// @brief Returns an HTML escaped version of the specified file name.
 /// @param file The file to escape.
 /// @return The escaped file name.
