@@ -173,6 +173,7 @@ public:
 	[[a::inline]] std::optional<size_t> getSubLevelIndex(std::string_view levelPart) const noexcept;
 	[[a::inline]] static std::optional<PixelPosition> getSubLevelOrigin(const SubLevelPtr& part) noexcept;
 	[[a::inline]] std::optional<MapPosition> getSubLevelPositionInMap(std::string_view levelPart) const noexcept;
+	[[a::inline]] auto& getSubLevels() const noexcept;
 	[[a::inline]] SubLevelPtr getSubLevelByName(std::string_view levelPart) const noexcept;
 	[[a::inline]] SubLevelPtr getSubLevelAtPosition(const PixelPosition& position) const noexcept;
 	[[a::inline]] SubLevelPtr getSubLevelAtPosition(const TilePosition& position) const noexcept;
@@ -521,6 +522,11 @@ inline std::optional<MapPosition> Level::getSubLevelPositionInMap(const std::str
 		return mapPosOpt.value();
 
 	return std::nullopt;
+}
+
+inline auto& Level::getSubLevels() const noexcept
+{
+	return m_levelParts;
 }
 
 inline SubLevelPtr Level::getSubLevelByName(const std::string_view levelPart) const noexcept

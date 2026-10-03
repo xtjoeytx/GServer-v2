@@ -304,6 +304,11 @@ public:
 	/// @return A shared pointer to a LevelStaticData.
 	std::shared_ptr<StaticLevelData> getCachedLevelData(std::string_view levelName);
 
+	/// @brief Restores archived board modifications for the given level.
+	/// @param levelName The name of the level for which to restore modifications.
+	/// @param subLevel The sub-level for which to restore modifications.
+	void restoreArchivedBoardModifications(std::string_view levelName, const std::shared_ptr<SubLevel>& subLevel);
+
 	/// @brief Finds a loaded map.
 	/// @param mapName The name of the map.
 	/// @return A shared pointer to a Map.
@@ -513,6 +518,7 @@ private:
 	string_map<std::shared_ptr<StaticLevelData>> m_cachedLevelDataList;
 	string_map<std::shared_ptr<Level>> m_levelList;
 	string_multimap<std::weak_ptr<Level>> m_gmapLevels;
+	string_map<std::vector<LevelBoardChange>> m_archivedBoardChanges;
 
 	string_map<std::shared_ptr<Weapon>> m_weaponList;
 	std::unordered_map<NPCID, std::shared_ptr<NPC>> m_npcList;

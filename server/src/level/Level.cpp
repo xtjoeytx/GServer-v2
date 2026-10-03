@@ -596,18 +596,10 @@ Level::~Level()
 
 //----------------------------
 
-std::shared_ptr<Level> Level::createLevel(std::string_view levelName)
+std::shared_ptr<Level> Level::createLevel(const std::string_view levelName)
 {
-	const auto server = BabyDI::Get<Server>();
-
 	auto level = std::make_shared<Level>();
 	level->levelName = levelName;
-
-	if (!levelName.empty())
-	{
-		auto& levelList = server->getLevelList();
-		levelList.insert(std::make_pair(string::toLower(levelName), level));
-	}
 	return level;
 }
 

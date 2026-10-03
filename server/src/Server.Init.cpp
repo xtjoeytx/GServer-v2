@@ -176,6 +176,13 @@ void Server::initTimedEvents()
 				}
 			}
 
+			// Archive the board changes so we can restore them if the level is reloaded.
+			for (const auto& subLevel : level->getSubLevels())
+			{
+				if (auto staticData = subLevel->staticData.lock(); staticData != nullptr)
+					m_archivedBoardChanges[staticData->levelName] = subLevel->boardChanges;
+			}
+
 			level = nullptr;
 		}
 

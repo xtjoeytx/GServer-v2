@@ -1259,7 +1259,7 @@ std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, const 
 	return getLoadedLevelNoHint(levelName);
 }
 
-std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, std::shared_ptr<Level> hintLevel)
+std::shared_ptr<Level> Server::getLoadedLevel(const std::string_view levelName, std::shared_ptr<Level> hintLevel)
 {
 	if (levelName.empty())
 		return nullptr;
@@ -1275,7 +1275,7 @@ std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, std::s
 	return getLoadedLevelNoHint(levelName);
 }
 
-std::shared_ptr<StaticLevelData> Server::getCachedLevelData(std::string_view levelName)
+std::shared_ptr<StaticLevelData> Server::getCachedLevelData(const std::string_view levelName)
 {
 	if (levelName.empty())
 		return nullptr;
@@ -1287,6 +1287,18 @@ std::shared_ptr<StaticLevelData> Server::getCachedLevelData(std::string_view lev
 	auto levelData = LevelLoader::loadStaticData(levelName);
 	m_cachedLevelDataList.insert(std::make_pair(lowerCaseLevel, levelData));
 	return levelData;
+}
+
+void Server::restoreArchivedBoardModifications(const std::string_view levelName, const std::shared_ptr<SubLevel>& subLevel)
+{
+	if (levelName.empty() || subLevel == nullptr)
+		return;
+
+	if (const auto changes = m_archivedBoardChanges.find(std::string{levelName}); changes != m_archivedBoardChanges.end())
+	{
+		subLevel->boardChanges = changes->second;
+		m_archivedBoardChanges.erase(changes);
+	}
 }
 
 std::shared_ptr<Map> Server::findMap(std::string_view mapName) const noexcept

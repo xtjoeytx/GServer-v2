@@ -15,7 +15,7 @@ struct LevelChest
 {
 	LocalWholeTilePosition position;
 	LevelItemType item;
-	uint8_t sign;
+	int8_t sign;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

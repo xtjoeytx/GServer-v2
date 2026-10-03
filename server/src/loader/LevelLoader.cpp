@@ -163,7 +163,11 @@ bool LevelLoader::loadLevelInto(const std::filesystem::path& levelName, const Le
 
 		level->m_filePath = levelData->filePath;
 		level->modTime = levelData->modTime;
-		level->m_levelParts.push_back(attachStaticDataToLevel(level, std::nullopt, levelData));
+
+		auto subLevel = attachStaticDataToLevel(level, std::nullopt, levelData);
+		server->restoreArchivedBoardModifications(levelData->levelName, subLevel);
+
+		level->m_levelParts.emplace_back(subLevel);
 		loadStaticDataNPCs(level, std::nullopt, levelData);
 
 		// Bind listeners for level data changes.
@@ -672,7 +676,7 @@ void LevelLoader::loadBinaryChests(const StaticLevelDataPtr& levelData, const fs
 		const uint8_t x = line[0] - 32;
 		const uint8_t y = line[1] - 32;
 		const char item = static_cast<char>(line[2] - 32);
-		const auto signindex = static_cast<uint8_t>(line[3] - 32);
+		const auto signindex = static_cast<int8_t>(line[3] - 32);
 
 		LevelChest chest{.position = LocalWholeTilePosition{x, y}, .item = ENUM<LevelItemType>(item), .sign = signindex};
 		levelData->chests.emplace_back(chest);
@@ -785,9 +789,9 @@ bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view f
 			{
 				const auto chestx = string::toNumber<uint8_t>(splitData[0]);
 				const auto chesty = string::toNumber<uint8_t>(splitData[1]);
-				char signidx = string::toNumber<char>(splitData[3]);
+				const auto signidx = string::toNumber<int8_t>(splitData[3]);
 
-				LevelChest chest{.position = LocalWholeTilePosition{chestx, chesty}, .item = itemType, .sign = (uint8_t)signidx};
+				LevelChest chest{.position = LocalWholeTilePosition{chestx, chesty}, .item = itemType, .sign = signidx};
 				levelData->chests.emplace_back(chest);
 			}
 		}

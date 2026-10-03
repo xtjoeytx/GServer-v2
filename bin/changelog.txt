@@ -18,6 +18,7 @@
 + Added support for 'GR-V1.04' and 'GR-V1.05' .graal levels
 + Tons of new server options (too many to list, see serveroptions.txt)
 + Added the ability to adjust the item drop rates for various item types
++ Support for loading NPCs in adjacent levels on bigmaps (see serveroption: sendtonearbybigmaplevels)
 + Classic translation system (old .po based system is not yet supported and has been removed)
 + Text code page handling and conversions
 + Support for v6 client HTML body colors (see serveroption: enableexbodycolors)
@@ -52,8 +53,6 @@ o Changed how IDs are assigned to players and NPCs
 o Any 2x2 tile change is respawned
 o Improved server stability
 o Improved serverlist connection stability
-
-> + NPCs in adjacent levels on bigmaps are loaded (maybe?)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   Changelog for:
