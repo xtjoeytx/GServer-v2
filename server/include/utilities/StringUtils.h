@@ -1579,7 +1579,7 @@ inline auto retrieveLine(StringVariant auto const& str, const char delim = '\n')
 inline std::string extractLine(std::string_view& str, const char delim = '\n')
 {
 	const auto pos = str.find(delim);
-	if (pos == std::string::npos)
+	if (pos == std::string_view::npos)
 	{
 		const std::string_view line = str;
 		str = {};
