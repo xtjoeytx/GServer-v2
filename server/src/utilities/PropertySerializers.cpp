@@ -129,10 +129,11 @@ void PropertySwordPower::deserialize(CString& data)
 	power = powerVal;
 
 	// Read the image name.
+	image = data.readChars(data.readGUChar());
+
 	// If there is no extension, assume its a .gif, for 1.x servers.
 	if (const auto server = BabyDI::Get<Server>(); server->Generation == ServerGeneration::CLASSIC)
 	{
-		image = data.readChars(data.readGUChar());
 		if (!image.contains('.'))
 			image += ".gif";
 	}
