@@ -120,11 +120,33 @@ HandlePacketResult PlayerClient::handlePacket(const std::optional<uint8_t> id, C
 	if (handle == nullptr)
 		return Player::handlePacket(id, packet);
 
-	const auto result = (this->*handle)(packet);
-	if (result == HandlePacketResult::Bubble)
-		return Player::handlePacket(id, packet);
+	try
+	{
+		m_lastData = clock::now();
 
-	return result;
+		const auto result = (this->*handle)(packet);
+		if (result == HandlePacketResult::Bubble)
+			return Player::handlePacket(id, packet);
+		return result;
+	}
+	catch (const std::exception& e)
+	{
+		if (m_server->cached.logCorruptPackets.getValue() == true)
+			Server::logPacketDump(std::format("Player '{}'", account.name), packet);
+
+		disconnect(e.what());
+		return HandlePacketResult::Failed;
+	}
+	catch (...)
+	{
+		if (m_server->cached.logCorruptPackets.getValue() == true)
+			Server::logPacketDump(std::format("Player '{}'", account.name), packet);
+
+		disconnect("Unknown exception while handling packet.");
+		return HandlePacketResult::Failed;
+	}
+
+	return HandlePacketResult::Failed;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -8,8 +8,8 @@
 #include <mutex>
 #include <ratio>
 #include <source_location>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <version>
 
@@ -19,11 +19,12 @@
 
 // Don't change this order.
 // For some reason the compile will fail in Windows for some versions of MSVC.
+// clang-format off
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <filesystem>
-//
+// clang-format on
 
 using namespace std::literals::string_view_literals;
 
@@ -53,7 +54,10 @@ inline constexpr auto TimestampLong = "[{0:%F} {0:%T}]"sv;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct IndentAbsolute_t { explicit IndentAbsolute_t() = default; };
+struct IndentAbsolute_t
+{
+	explicit IndentAbsolute_t() = default;
+};
 
 /// @brief Absolute indentation tag for the Indent class.
 inline constexpr IndentAbsolute_t IndentAbsolute{};
@@ -146,19 +150,22 @@ struct Log
 };
 
 /// @brief The serverlog.txt file.
-inline Log server{ .filename = std::filesystem::path{ "logs" } / "serverlog.txt", .sectionPrefix = ":: "s };
+inline Log server{.filename = std::filesystem::path{"logs"} / "serverlog.txt", .sectionPrefix = ":: "s};
 
 /// @brief The rclog.txt file.
-inline Log rc{ .filename = std::filesystem::path{ "logs" } / "rclog.txt" };
+inline Log rc{.filename = std::filesystem::path{"logs"} / "rclog.txt"};
 
 /// @brief The npclog.txt file.
-inline Log npc{ .filename = std::filesystem::path{ "logs" } / "npclog.txt" };
+inline Log npc{.filename = std::filesystem::path{"logs"} / "npclog.txt"};
 
 /// @brief The scriptlog.txt file.
-inline Log script{ .filename = std::filesystem::path{ "logs" } / "scriptlog.txt" };
+inline Log script{.filename = std::filesystem::path{"logs"} / "scriptlog.txt"};
+
+/// @brief The invalidpackets.txt file.
+inline Log invalidpackets{.filename = std::filesystem::path{"logs"} / "invalidpackets.txt", .sectionPrefix = ":: "s, .mirrorToCli = false};
 
 /// @brief The networkdump.txt file.
-inline Log networkdump{ .filename = std::filesystem::path{ "logs" } / "networkdump.txt", .mirrorToCli = false };
+inline Log networkdump{.filename = std::filesystem::path{"logs"} / "networkdump.txt", .mirrorToCli = false};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -167,7 +174,7 @@ inline Log networkdump{ .filename = std::filesystem::path{ "logs" } / "networkdu
 /// @param log The log instance.
 /// @param fmt The format string.
 /// @param args The arguments to format.
-template <typename ...Args>
+template<typename... Args>
 void print(Log& log, const std::string_view fmt, const Args&... args)
 {
 	std::lock_guard lock(log.mutex);
@@ -192,7 +199,7 @@ void print(Log& log, const std::string_view fmt, const Args&... args)
 	}
 
 	// Output the message.
-	if constexpr(sizeof...(args) == 0)
+	if constexpr (sizeof...(args) == 0)
 		text << fmt;
 	else
 		text << std::vformat(fmt, std::make_format_args(args...));
@@ -241,7 +248,7 @@ void print(Log& log, const std::string_view fmt, const Args&... args)
 /// @param log The log instance.
 /// @param fmt The format string.
 /// @param args The arguments to format.
-template <typename ...Args>
+template<typename... Args>
 void printLine(Log& log, const std::string_view fmt, const Args&... args)
 {
 	std::lock_guard lock(log.mutex);
@@ -258,7 +265,7 @@ void printLine(Log& log, const std::string_view fmt, const Args&... args)
 /// @param log The log instance.
 /// @param fmt The format string.
 /// @param args The arguments to format.
-template <typename ...Args>
+template<typename... Args>
 void printRawLine(Log& log, const std::string_view fmt, const Args&... args)
 {
 	std::lock_guard lock(log.mutex);
@@ -277,7 +284,7 @@ void printRawLine(Log& log, const std::string_view fmt, const Args&... args)
 /// @param log The log instance.
 /// @param fmt The format string.
 /// @param args The arguments to format.
-template <typename ...Args>
+template<typename... Args>
 void printBlock(Log& log, const std::string_view fmt, const Args&... args)
 {
 	std::lock_guard lock(log.mutex);
@@ -375,12 +382,12 @@ struct Profile
 } // end namespace preagonal::log
 ///////////////////////////////////////////////////////////////////////////////
 
-template <>
+template<>
 struct std::formatter<CString> : std::formatter<std::string>
 {
 	static auto format(const CString& str, std::format_context& ctx)
 	{
-		return std::format_to(ctx.out(), "{}", std::string_view{ str.text(), static_cast<size_t>(str.length()) });
+		return std::format_to(ctx.out(), "{}", std::string_view{str.text(), static_cast<size_t>(str.length())});
 	}
 };
 

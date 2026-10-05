@@ -297,7 +297,7 @@ static PacketHandleArray GeneratePacketHandlers()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HandlePacketResult Player::handlePacket(std::optional<uint8_t> id, CString& packet)
+HandlePacketResult Player::handlePacket(const std::optional<uint8_t> id, CString& packet)
 {
 	static PacketHandleArray PacketHandlers = GeneratePacketHandlers();
 
@@ -311,23 +311,16 @@ HandlePacketResult Player::handlePacket(std::optional<uint8_t> id, CString& pack
 	catch (const std::exception& e)
 	{
 		if (m_server->cached.logCorruptPackets.getValue() == true)
-		{
-			std::array<std::pair<uint8_t, std::string>, 2> logmessage;
-			logmessage[0] = {0, std::format("Invalid packet received for player {}:", account.name)};
-			auto& [indent, hexdump] = logmessage[0];
-			indent = 1;
-			for (int i = 0; i < packet.length(); ++i)
-				hexdump.append(std::format("{:02x} ", (unsigned char)((packet.text())[i])));
-			hexdump.append("\n");
-
-			log::batch(log::server, logmessage);
-		}
+			Server::logPacketDump(std::format("Player '{}'", account.name), packet);
 
 		disconnect(e.what());
 		return HandlePacketResult::Failed;
 	}
 	catch (...)
 	{
+		if (m_server->cached.logCorruptPackets.getValue() == true)
+			Server::logPacketDump(std::format("Player '{}'", account.name), packet);
+
 		disconnect("Unknown exception while handling packet.");
 		return HandlePacketResult::Failed;
 	}

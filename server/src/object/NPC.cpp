@@ -1660,17 +1660,7 @@ void NPC::setPropsFromPacket(CString& packet, const PlayerPtr& source)
 		DO_PACKETLOG(log::print(log::networkdump, "\n"));
 
 		if (m_server->cached.logCorruptPackets.getValue() == true)
-		{
-			std::array<std::pair<uint8_t, std::string>, 2> logmessage;
-			logmessage[0] = {0, std::format("Invalid packet received for NPC {}:", id)};
-			auto& [indent, hexdump] = logmessage[0];
-			indent = 1;
-			for (int i = 0; i < packet.length(); ++i)
-				hexdump.append(std::format("{:02x} ", (unsigned char)((packet.text())[i])));
-			hexdump.append("\n");
-
-			log::batch(log::server, logmessage);
-		}
+			Server::logPacketDump(std::format("NPC {} [{}]", id, level.empty() ? "<no level>"s : level), packet);
 
 		log::printLine(log::server, "** Error in NPC::setPropsFromPacket: {}", e.what());
 		if (source != nullptr)

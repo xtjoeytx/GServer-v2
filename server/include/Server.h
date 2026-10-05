@@ -247,7 +247,6 @@ public:
 	// Save Functions
 	void saveServerFlags();
 	void saveWeapons();
-	//void reportScriptException(const std::string& error_message);
 
 public:
 	const auto& getAllowedVersionString() const { return m_allowedVersionString; }
@@ -395,6 +394,7 @@ public:
 	[[a::inline]] void logToFile(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const;
 	void logToFileSafely(const std::filesystem::path& fileName, std::string_view message, bool writeTimestamp = true) const;
 	[[a::inline]] void logToFileSafely(std::filesystem::path fileName, string::InputRangeNotString auto&& messages) const;
+	static void logPacketDump(std::string_view from, const CString& packet);
 
 public:
 	bool processRCChat(std::string_view message, const std::weak_ptr<Player>& sender = {});

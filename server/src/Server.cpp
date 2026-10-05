@@ -1827,6 +1827,23 @@ void Server::logToFileSafely(const std::filesystem::path& fileName, std::string_
 	file.writeLine(message);
 }
 
+void Server::logPacketDump(std::string_view from, const CString& packet)
+{
+	const auto id = clock::now();
+
+	log::printLine(log::server, "Invalid packet received from {}, search for [{}].", from, id);
+
+	std::array<std::pair<uint8_t, std::string>, 2> logmessage;
+	logmessage[0] = {0, std::format("[{}] Invalid packet from {}:", id, from)};
+
+	auto& [indent, hexdump] = logmessage[1];
+	indent = 1;
+	for (int i = 0; i < packet.length(); ++i)
+		hexdump.append(std::format("{:02x} ", (unsigned char)((packet.text())[i])));
+
+	log::batch(log::invalidpackets, logmessage);
+}
+
 /*
 	Server: Server Flag Management
 */
