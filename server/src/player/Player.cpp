@@ -310,6 +310,19 @@ HandlePacketResult Player::handlePacket(std::optional<uint8_t> id, CString& pack
 	}
 	catch (const std::exception& e)
 	{
+		if (m_server->cached.logCorruptPackets.getValue() == true)
+		{
+			std::array<std::pair<uint8_t, std::string>, 2> logmessage;
+			logmessage[0] = {0, std::format("Invalid packet received for player {}:", account.name)};
+			auto& [indent, hexdump] = logmessage[0];
+			indent = 1;
+			for (int i = 0; i < packet.length(); ++i)
+				hexdump.append(std::format("{:02x} ", (unsigned char)((packet.text())[i])));
+			hexdump.append("\n");
+
+			log::batch(log::server, logmessage);
+		}
+
 		disconnect(e.what());
 		return HandlePacketResult::Failed;
 	}
@@ -562,13 +575,21 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 	{
 		const auto info = filesystem.infoi(fs::FileCategory::ALL, file.filename());
 		if (info == nullptr)
-			return {sendFailure("File not found when trying to send to player"), false};
+		{
+			if (m_server->cached.warnOnMissingFiles.getValue() == true)
+				return {sendFailure("File not found when trying to send to player"), false};
+			return {false, false};
+		}
 
 		// Open the file and read the data.
 		{
 			const auto openedFile = info->openFile();
 			if (openedFile == nullptr)
-				return {sendFailure("File failed to load"), false};
+			{
+				if (m_server->cached.warnOnFilesystemIssues.getValue() == true)
+					return {sendFailure("File failed to load"), false};
+				return {false, false};
+			}
 
 			fileData = openedFile->read();
 		}
@@ -578,7 +599,10 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 
 	// Warn for very large files.  These are the cause of many bug reports.
 	if (fileData.size() > 3145728) // 3MB
-		log::printLine(log::server, "[WARNING] Sending a large file (over 3MB): {}", filename);
+	{
+		if (m_server->cached.warnOnLargeFiles.getValue() == true)
+			log::printLine(log::server, "[WARNING] Sending a large file (over 3MB): {}", filename);
+	}
 
 	// See if we have enough room in the packet for the file.
 	// If not, we need to send it as a big file.

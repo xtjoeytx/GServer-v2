@@ -173,6 +173,12 @@ struct ExternalServerCachedSettings
 	std::array<SettingCache<uint16_t>, 5> apSystemThresholdSeconds{{{"aptime0", 30}, {"aptime1", 90}, {"aptime2", 300}, {"aptime3", 600}, {"aptime4", 1200}}};
 	SettingCache<std::vector<std::string>> playerProfileVariables{"profilevars", {"Kills:=playerkills", "Deaths:=playerdeaths", "Maxpower:=playerfullhearts", "Rating:=playerrating", "Alignment:=playerap", "Gralat:=playerrupees", "Swordpower:=playerswordpower", "Spin Attack:=canspin"}};
 	SettingCache<std::vector<std::string>> playerStatusList{"playerlisticons", {"Online", "Away", "DND", "Eating", "Hiding", "No PMs", "RPing", "Sparring", "PKing"}};
+	// diagnostics
+	SettingCache<bool> warnOnMissingFiles{"warnonmissingfiles", false};
+	SettingCache<bool> warnOnLargeFiles{"warnonlargefiles", false};
+	SettingCache<bool> warnOnFilesystemIssues{"warnonfilesystemissues", true};
+	SettingCache<bool> warnOnInvalidLevelSections{"warnoninvalidlevelsections", false};
+	SettingCache<bool> logCorruptPackets{"logcorruptpackets", false};
 
 	void bind(Server* server);
 };

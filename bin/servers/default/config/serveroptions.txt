@@ -349,6 +349,13 @@ runallscriptevents = false
 # Scripting
 default_scriptengine = gs1
 
+# Diagnostics
+# warnonmissingfiles = false
+# warnonlargefiles = false
+# warnonfilesystemissues = true
+# warnoninvalidlevelsections = false	# Invalid NW file sections
+# logcorruptpackets = false
+
 # --------------------------------------------------------------------------------------
 # --- Not implemented options.                                                       ---
 # --------------------------------------------------------------------------------------

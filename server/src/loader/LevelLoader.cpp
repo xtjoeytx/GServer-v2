@@ -725,7 +725,8 @@ void LevelLoader::loadBinaryHeights(const StaticLevelDataPtr& levelData, const f
 		// Double check the height data was valid.
 		if (levelData->heights.size() != 81)
 		{
-			log::printLine(log::server, "[WARNING] Level '{}' has an improper amount of heights. Expected: {}, found: {}.", levelData->levelName, 81, levelData->heights.size());
+			if (const auto server = BabyDI::Get<Server>(); server != nullptr && server->cached.warnOnInvalidLevelSections.getValue() == true)
+				log::printLine(log::server, "[WARNING] Level '{}' has an improper amount of heights. Expected: {}, found: {}.", levelData->levelName, 81, levelData->heights.size());
 			levelData->heights.clear();
 		}
 	}
@@ -910,13 +911,15 @@ bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view f
 
 			if (levelData->heights.size() != 81)
 			{
-				log::printLine(log::server, "[WARNING] Level '{}' has an improper amount of heights. Expected: {}, found: {}.", levelData->levelName, 81, levelData->heights.size());
+				if (const auto server = BabyDI::Get<Server>(); server != nullptr && server->cached.warnOnInvalidLevelSections.getValue() == true)
+					log::printLine(log::server, "[WARNING] Level '{}' has an improper amount of heights. Expected: {}, found: {}.", levelData->levelName, 81, levelData->heights.size());
 				levelData->heights.clear();
 			}
 		}
 		else
 		{
-			log::printLine(log::server, "[WARNING] Level '{}' has unhandled section '{}'.", levelData->levelName, section);
+			if (const auto server = BabyDI::Get<Server>(); server != nullptr && server->cached.warnOnInvalidLevelSections.getValue() == true)
+				log::printLine(log::server, "[WARNING] Level '{}' has unhandled section '{}'.", levelData->levelName, section);
 		}
 	}
 
