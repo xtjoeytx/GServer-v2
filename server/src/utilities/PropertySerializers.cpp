@@ -59,7 +59,8 @@ bool exBodyColorsEnabled()
 
 CString PropertyString::serialize() const
 {
-	return CString() >> (char)value.length() << value;
+	const auto len = std::clamp(value.length(), 0ZU, 223ZU);
+	return CString() >> (char)len << value.substr(0, len);
 }
 
 void PropertyString::deserialize(CString& data)
@@ -82,7 +83,8 @@ std::format_context::iterator PropertyString::format(std::format_context& ctx) c
 
 CString PropertyLongString::serialize() const
 {
-	return CString() >> (short)value.length() << value;
+	const auto len = std::clamp(value.length(), 0ZU, 28767ZU);
+	return CString() >> (short)len << value.substr(0, len);
 }
 
 void PropertyLongString::deserialize(CString& data)
@@ -100,7 +102,9 @@ CString PropertySwordPower::serialize() const
 		return CString() >> (char)0;
 	if (powerVal > 0 && powerVal <= 4 && image.empty())
 		return CString() >> (char)powerVal;
-	return CString() >> (char)(powerVal + 30) >> (char)image.length() << image;
+
+	const auto len = std::clamp(image.length(), 0ZU, 223ZU);
+	return CString() >> (char)(powerVal + 30) >> (char)len << image.substr(0, len);
 }
 
 void PropertySwordPower::deserialize(CString& data)
@@ -158,7 +162,9 @@ CString PropertyShieldPower::serialize() const
 		return CString() >> (char)0;
 	if (powerVal > 0 && powerVal <= 3 && image.empty())
 		return CString() >> (char)powerVal;
-	return CString() >> (char)(powerVal + 10) >> (char)image.length() << image;
+
+	const auto len = std::clamp(image.length(), 0ZU, 223ZU);
+	return CString() >> (char)(powerVal + 10) >> (char)len << image.substr(0, len);
 }
 
 void PropertyShieldPower::deserialize(CString& data)
@@ -217,13 +223,15 @@ CString PropertyGaniOrBowGif::serialize() const
 {
 	if (gani.has_value())
 		return CString() >> (char)gani->length() << *gani;
-	else if (bowGif.has_value())
+
+	if (bowGif.has_value())
 	{
 		auto& [image, preset] = *bowGif;
 		if (image.empty() && preset < 10)
 			return CString() >> (char)preset;
 
-		return CString() >> (char)(10 + image.length()) << image;
+		const auto len = std::clamp(image.length(), 0ZU, 223ZU - 10ZU);
+		return CString() >> (char)(10 + len) << image.substr(0, len);
 	}
 	return {};
 }
@@ -281,7 +289,8 @@ CString PropertyHeadGif::serialize() const
 	}
 
 	auto& headImage = std::get<std::string>(image);
-	return CString() >> (char)(100 + headImage.length()) << headImage;
+	const auto len = std::clamp(headImage.length(), 0ZU, 223ZU - 100ZU);
+	return CString() >> (char)(100 + len) << headImage.substr(0, len);
 }
 
 void PropertyHeadGif::deserialize(CString& data)
