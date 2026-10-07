@@ -108,6 +108,7 @@ void ExternalServerCachedSettings::bind(Server* server)
 	settings.track(eventDistance, triggerDistance, sendTriggerActionsToPlayers);
 	settings.track(enableFlagCropping, disableExplosions, enableClientsidePushPull, tileRespawnTime, enableIdleDisconnect, idleTimeoutSeconds);
 	settings.track(enablePermanentTileChanges, saveTileChangesToLevelFile);
+	settings.track(dontAddServerFlags);
 
 	// triggerhacks
 	settings.track(enableFlaghackMovement, enableTriggerhackExecscript, enableTriggerhackFiles, enableTriggerhackGroups, enableTriggerhackGuilds, enableTriggerhackLevels, enableTriggerhackProps, enableTriggerhackRC, enableTriggerhackWeapons);
@@ -658,7 +659,6 @@ void Server::prepareSettings()
 	// Set the cache bindings before we load so our settings will get cached.
 	cached.bind(this);
 	m_settings.track(m_generationString, m_classicStyleLogs);
-	m_settings.track(m_dontAddServerFlags);
 	m_settings.track(m_newTilesets, m_newTilesetLevels);
 	m_settings.track(m_unloadInactiveLevelTime);
 	m_settings.track(m_staffList, m_bushItemTypes, m_deathItemTypes);
@@ -1858,9 +1858,6 @@ std::optional<std::string> Server::getFlag(const std::string_view flagName) cons
 
 bool Server::deleteFlag(const std::string_view flagName, const bool sendToPlayers)
 {
-	if (m_dontAddServerFlags.getValue())
-		return false;
-
 	if (const auto flag = Scripting.variables.get(flagName); !flag.expired() && sendToPlayers)
 		sendPacketToAll(CString() >> (char)PLO_FLAGDEL << flagName);
 
@@ -1919,9 +1916,6 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	// New flag.
 	else
 	{
-		if (m_dontAddServerFlags.getValue())
-			return false;
-
 		if (!flagValue.has_value())
 			Scripting.variables.add(GameVariable{.name = std::string{flagName}, .value = GameValue{true}, .lifetime = variables::Lifetime::PERMANENT});
 		else Scripting.variables.add(GameVariable{.name = std::string{flagName}, .value = GameValue{cropFlag(flagValue.value())}, .lifetime = variables::Lifetime::PERMANENT});

@@ -662,7 +662,8 @@ HandlePacketResult PlayerClient::msgPLI_FLAGSET(CString& pPacket)
 	{
 		if (flagName.find("server.") != -1)
 		{
-			m_server->setFlag(flagName.toStringView(), flagValue.toString());
+			if (!m_server->cached.dontAddServerFlags.getValue())
+				m_server->setFlag(flagName.toStringView(), flagValue.toString());
 			return HandlePacketResult::Handled;
 		}
 	}
@@ -699,12 +700,12 @@ HandlePacketResult PlayerClient::msgPLI_FLAGDEL(CString& pPacket)
 	if (flagName.find("serverr.") != std::string_view::npos) return HandlePacketResult::Handled;
 
 	// Server flags are handled differently than client flags.
-	// TODO: check serveroptions
 	if (!m_server->hasNPCServer())
 	{
 		if (flagName.find("server.") != std::string_view::npos)
 		{
-			m_server->deleteFlag(std::string{flagName});
+			if (!m_server->cached.dontAddServerFlags.getValue())
+				m_server->deleteFlag(std::string{flagName});
 			return HandlePacketResult::Handled;
 		}
 	}
