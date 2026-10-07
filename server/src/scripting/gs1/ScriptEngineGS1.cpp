@@ -250,6 +250,7 @@ ScriptEngineGS1::ScriptEngineGS1()
 {
 	settings.track(config.strictMode, config.alwaysScopeVariables, config.alwaysTranslateStrings);
 	settings.track(config.damageReactions, config.groupCommands, config.shootball);
+	settings.track(config.fixSpelling);
 }
 
 void ScriptEngineGS1::loadConfiguration(const std::filesystem::path& file)

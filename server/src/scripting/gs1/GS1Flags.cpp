@@ -9,6 +9,7 @@
 #include <BabyDI.h>
 #include <Server.h>
 #include <level/LevelTileTypes.h>
+#include <npcserver/NPCServer.h>
 #include <object/NPC.h>
 #include <object/Player.h>
 #include <player/PlayerClient.h>
@@ -39,9 +40,13 @@ void setEventFlags(const ScriptEventType event, std::vector<ScriptEventType>* ad
 	variableStore.add("playerhurted", hasEvent(ScriptEventType::PLAYERHURT, event, additionalEventTypes));
 	variableStore.add("wasshooted", hasEvent(ScriptEventType::WASSHOT, event, additionalEventTypes));
 
-	// TODO: Put extensions under a server option?
-	variableStore.add("playertouchesme", hasEvent(ScriptEventType::PLAYERTOUCHSME, event, additionalEventTypes));
-	variableStore.add("playertouchesother", hasEvent(ScriptEventType::PLAYERTOUCHSOTHER, event, additionalEventTypes));
+	// Non-standard alternatives.
+	const auto npcserver = BabyDI::Get<Server>()->getNPCServer();
+	if (const auto gs1 = std::dynamic_pointer_cast<ScriptEngineGS1>(npcserver->gs1.lock()); gs1 != nullptr && gs1->config.fixSpelling.getValue() == true)
+	{
+		variableStore.add("playertouchesme", hasEvent(ScriptEventType::PLAYERTOUCHSME, event, additionalEventTypes));
+		variableStore.add("playertouchesother", hasEvent(ScriptEventType::PLAYERTOUCHSOTHER, event, additionalEventTypes));
+	}
 }
 
 void setTriggerActionAndCustomEventFlags(ScriptEvent& event, GameVariableStore& variableStore)

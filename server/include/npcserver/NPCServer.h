@@ -20,6 +20,7 @@
 #include <level/LevelTileTypes.h>
 #include <npcserver/PlayerNPCServer.h>
 #include <object/NPC.h>
+#include <scripting/IScriptEngine.h>
 #include <scripting/ScriptClass.h>
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
@@ -112,6 +113,8 @@ public:
 
 public:
 	ScriptSystem scripting;
+	std::weak_ptr<IScriptEngine> gs1;
+	std::weak_ptr<IScriptEngine> gs2;
 
 private:
 	void run(TimeoutGenerator::time_delta delta);

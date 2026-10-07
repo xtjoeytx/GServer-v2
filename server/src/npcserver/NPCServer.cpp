@@ -89,6 +89,8 @@ void NPCServer::initialize()
 	// They must always be loaded as the client will only accept GS1 or GS2 scripts.
 	scripting.registerScriptEngine(gs1::ScriptEngineGS1::EngineName, std::make_shared<gs1::ScriptEngineGS1>());
 	scripting.registerScriptEngine(gs2::ScriptEngineGS2::EngineName, std::make_shared<gs2::ScriptEngineGS2>());
+	gs1 = scripting.getScriptEngine(gs1::ScriptEngineGS1::EngineName);
+	gs2 = scripting.getScriptEngine(gs2::ScriptEngineGS2::EngineName);
 
 	log::printLine(log::server, "Loading classes...");
 	loadClasses();

@@ -26,3 +26,7 @@ group-commands=true
 
 # Enables the 'shootball dir;' command that accepts a direction argument.
 shootball=true
+
+# Fixes spelling errors in events/variables by adding alternatives.
+# Currently adds: playertouchesme and playertouchesother.
+fix-spelling=true
