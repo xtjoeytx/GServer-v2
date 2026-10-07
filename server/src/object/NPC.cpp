@@ -658,7 +658,7 @@ void NPC::setScript(const Script& script)
 {
 	m_script = script;
 
-	// TODO: Optimize this.  We need a better way to track joined classes and to assign them to the NPC.
+	// TODO(optimize-ns): Optimize this.  We need a better way to track joined classes and to assign them to the NPC.
 	const auto classes = string::join(m_script.getServerJoinedClasses() | std::views::keys);
 	setJoinedClasses(classes);
 

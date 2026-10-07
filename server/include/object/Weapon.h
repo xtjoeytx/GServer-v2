@@ -25,7 +25,7 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-// TODO: Weapon should probably just be inherited from NPC.
+// TODO(refactor): Weapon should probably just be inherited from NPC.
 class Server;
 class Player;
 

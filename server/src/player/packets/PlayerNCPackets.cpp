@@ -205,7 +205,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCSCRIPTSET(CString& pPacket)
 	const NPCID npcId = pPacket.readGUInt();
 	const CString npcScript = pPacket.readString("").guntokenize();
 
-	// TODO: Validate permissions
+	// TODO(permissions): Validate permissions
 
 	const auto npc = m_server->getNPC(npcId);
 	if (npc != nullptr)
@@ -651,7 +651,6 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONADD(CString& pPacket)
 			actionTaken = "added";
 	}
 
-	// TODO(joey): Log message should come before the script is executed
 	if (!actionTaken.isEmpty())
 	{
 		CString logMsg;

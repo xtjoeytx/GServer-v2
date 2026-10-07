@@ -137,7 +137,7 @@ void Server::initTimedEvents()
 		// Check if we need to unload any levels.
 		for (auto& [levelName, level] : m_levelList)
 		{
-			// TODO: Gmap sub-level (and maybe static level) unloading.  Needs to follow Map::keepAllLevelsLoaded and levelsToKeepInMemory settings.
+			// TODO(unloading): Gmap sub-level (and maybe static level) unloading.  Needs to follow Map::keepAllLevelsLoaded and levelsToKeepInMemory settings.
 
 			// Skip if the level is currently active with players in it.
 			// We always do this so we can abort early.
@@ -206,7 +206,7 @@ void Server::initFilesystemCallbacks()
 			{
 				loadSettings();
 
-				// TODO: Map loading needs to be improved to deal with maps being added/removed, and to fix a level's link to a map.
+				// TODO(unloading): Map loading needs to be improved to deal with maps being added/removed, and to fix a level's link to a map.
 				// Levels have a shared_ptr to the map.  Should it be switched to a weak_ptr?
 				//loadMaps();
 			}
@@ -289,7 +289,7 @@ void Server::initFilesystemCallbacks()
 			auto profile = log::Profile(log::server, "", " ({1:0.6} ms)");
 			if (const auto npc = m_npcServer->addNPCFromFile(file.file); npc != nullptr)
 			{
-				// TODO: Generic prop sending function NPCs.
+				// TODO(refactor): Generic prop sending function NPCs.
 				const CString packet = CString() >> (char)PLO_NPCPROPS >> (int)npc->id << npc->getAllPropsPacket();
 				sendPacketToNearby(packet, npc->getGlobalPosition(), npc->getLevel());
 

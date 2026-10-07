@@ -71,7 +71,7 @@ struct CachedLevel
 
 class PlayerClient : public Player
 {
-	// TODO: Need to refactor some Player functions like sendFile so this can be removed.
+	// TODO(refactor): Need to refactor some Player functions like sendFile so this can be removed.
 	friend class Player;
 
 public:

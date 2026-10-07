@@ -105,7 +105,6 @@ bool PlayerNC::handleLogin(CString& pPacket)
 	m_accountIp = inet_addr(account.ipAddress.c_str());
 #endif
 
-	// TODO(joey): Hijack type based on what graal sends, rather than use it directly.
 	m_type = (1 << pPacket.readGChar());
 
 	// Set the encryptions.

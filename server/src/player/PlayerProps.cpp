@@ -663,7 +663,8 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 					npc->sendPropsFromResults(level && level->isGmap() ? nullptr : player, results);
 				}
 
-				// TODO: Remove when an npcserver is created.
+				// TODO: Always de-duplicate and determine if the NPC delete can be removed.
+				// TODO: See if NPCID >1000 fixes the gmap problems.
 				if (m_server->getSettings().get<bool>("duplicatecanbecarried").value_or(false) == false)
 				{
 					[[maybe_unused]] bool isOwner = true;
@@ -1015,7 +1016,6 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		// TODO(Nalin): Does this need to be read?
 		case PlayerProp::ONLINESECONDS2:
 			break;
 

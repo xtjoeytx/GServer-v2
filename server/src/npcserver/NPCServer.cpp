@@ -101,7 +101,7 @@ void NPCServer::initialize()
 	m_runTimeout.callbackDuration = std::bind(&NPCServer::run, this, std::placeholders::_1);
 	m_timedSave.callbackDuration = std::bind(&NPCServer::saveNPCs, this);
 
-	// TODO(Nalin): Need an event system and this should be called after the Server sends an "all done loading" event.
+	// TODO(refactor): Need an event system and this should be called after the Server sends an "all done loading" event.
 	m_runTimeout.start();
 	m_timedSave.start();
 
@@ -162,7 +162,7 @@ void NPCServer::run(const TimeoutGenerator::time_delta delta)
 		{
 			npc->recordCurrentPropModTime();
 
-			// TODO(Nalin): Replace with TimeoutGenerator.
+			// TODO(refactor): Replace with TimeoutGenerator.
 			if (npc->timeout.count() != 0)
 			{
 				if (delta < npc->timeout)
@@ -484,7 +484,7 @@ void NPCServer::processUnloadedNPCs()
 		auto npc = m_server->getNPC(npcId);
 
 		// Don't remove database NPCs.
-		// TODO: Make it so database NPCs can be loaded/unloaded on demand.
+		// TODO(unloading): Make it so database NPCs can be loaded/unloaded on demand.
 		if (npc != nullptr && npc->storageType == NPCStorageType::DATABASE)
 		{
 			npcLoader.saveNPC(npc);

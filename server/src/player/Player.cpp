@@ -489,7 +489,7 @@ void Player::disconnect(const std::string_view message)
 {
 	if (!message.empty())
 	{
-		// TODO: Move this outside of this block, which is difficult since ServerList::msgSVI_VERIACC2 will call disconnect() after sendLogin(), which may add a disconnect message packet.
+		// TODO(refactor): Move this outside of this block, which is difficult since ServerList::msgSVI_VERIACC2 will call disconnect() after sendLogin(), which may add a disconnect message packet.
 		m_fileQueue.clearBuffers();
 		sendPacket(CString() >> (char)PLO_DISCMESSAGE << message);
 	}
@@ -1189,7 +1189,7 @@ void Player::sendPrivateMessage(const PlayerID from, const std::string_view mess
 	if (message.empty())
 		return;
 
-	// TODO: This is really hacky.  More effort into reverse engineering private messages is required.
+	// TODO(decomp): This is really hacky.  More effort into reverse engineering private messages is required.
 	constexpr bool isMultiLine = true; // message.find('\n') != std::string_view::npos || message.find("#b") != std::string_view::npos;
 
 	const auto convertedMessage = string::replace(message, "\n", "#b");
@@ -1198,7 +1198,7 @@ void Player::sendPrivateMessage(const PlayerID from, const std::string_view mess
 
 	// For some reason, if there are multiple lines, the client strips out the first line.
 	// If we don't start with a blank line, add one to avoid message loss.
-	// TODO: Hacky!  Figure out why this happens.
+	// TODO(decomp): Hacky!  Figure out why this happens.
 	if (isMultiLine && !finalMessage.starts_with(',') && !finalMessage.starts_with("\"\","))
 		finalMessage = "\"\"," + finalMessage;
 

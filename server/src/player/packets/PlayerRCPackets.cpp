@@ -733,8 +733,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_CHAT(CString& pPacket)
 
 	if (isNC())
 	{
-		// TODO(joey): All RC's with NC support are sending two messages at a time.
-		//  Can use this section for npc-server related commands though.
+		// RC's with NC support end up sending this twice, once for each connection, so ignore if it came from NC.
 		//m_server->sendToNC(CString(account.character.nickName) << ": " << message);
 		return HandlePacketResult::Handled;
 	}

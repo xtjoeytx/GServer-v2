@@ -132,7 +132,7 @@ void StaticLevelData::sendBoardLayerToPlayer(const std::shared_ptr<Player>& play
 	CString retVal;
 	retVal.writeGChar(PLO_BOARDLAYER);
 
-	// TODO: Only send the tiles that has been placed on the layer
+	// TODO(optimize): Only send the tiles that has been placed on the layer
 	retVal << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
 
 	tiles.writeLayerToPacket(layer, retVal);
@@ -424,7 +424,7 @@ void SubLevel::sendBoardLayerToPlayer(const std::shared_ptr<Player>& player, siz
 	CString retVal;
 	retVal.writeGChar(PLO_BOARDLAYER);
 
-	// TODO: Only send the tiles that has been placed on the layer
+	// TODO(optimize): Only send the tiles that has been placed on the layer
 	retVal << (char)layer << (char)0 << (char)0 << (char)64 << (char)64;
 
 	tiles.value()->writeLayerToPacket(layer, retVal);
@@ -495,7 +495,7 @@ void SubLevel::sendBoardChangesToPlayer(const std::shared_ptr<Player>& player, c
 		style = mapPosition.has_value() ? 1 : 3; // 2;
 
 	// The batched board changes seem to be sent when the player enters a level that it has cached.
-	// TODO: The current level sending implementation doesn't easily allow use to use this right now, so send individual changes (it won't hurt things).
+	// TODO(refactor): The current level sending implementation doesn't easily allow us to use this right now, so send individual changes (it won't hurt things).
 	if (style == 2)
 	{
 		CString retVal;
@@ -607,7 +607,7 @@ std::shared_ptr<Level> Level::clone(const LevelPtr& level, std::string_view name
 {
 	if (level == nullptr) return nullptr;
 	/*
-	* TODO: The level needs to be stubbed, and the new name has to be set, without being overwritten.
+	* TODO(refactor): The level needs to be stubbed, and the new name has to be set, without being overwritten.
 	* If not, then serverside NPCs are going to muck everything up when they try to register to the level.
 	auto server = BabyDI::Get<Server>();
 	auto cloned = server->getStubbedLevel(name);
@@ -1340,7 +1340,7 @@ void Level::sendHorsesToPlayer(const std::shared_ptr<Player>& player) const
 	}
 }
 
-// TODO: Replace with a function in server that sends npc props from a list of ids.
+// TODO(refactor): Replace with a function in server that sends npc props from a list of ids.
 void Level::sendNPCsToPlayer(const std::shared_ptr<Player>& player, const std::optional<clock::time_point> time) const
 {
 	const Level* currentLevel = nullptr;
@@ -1550,7 +1550,7 @@ bool Level::alterBoard(CString& tileData, const WholeTileRectangleArea& area, Pl
 
 	// Any 2x2 tile change can respawn.
 	// The list of tiles is mostly for security checks and should be a list of allowed replacements.
-	// TODO: Develop a way to specify valid tile replacements.
+	// TODO(feat-tilesecurity): Develop a way to specify valid tile replacements.
 	const auto respawnTime = m_server->cached.tileRespawnTime.getValue();
 	const bool doRespawn = allowRespawn && (forceRespawn || (area.size.width() == 2 && area.size.height() == 2));
 
@@ -2632,7 +2632,7 @@ bool Level::moveArrow(LevelArrow* arrow, const int iterations)
 		arrow->position.translate(arrow->speed.x(), arrow->speed.y());
 
 		// If the arrow has gone out of bounds, delete it.
-		// TODO: Maybe just set a max range and make it behave like a shoot?  Like the sync distance?  Or 2 levels distance?
+		// TODO(sync): Maybe just set a max range and make it behave like a shoot?  Like the sync distance?  Or 2 levels distance?
 		constexpr auto maxDistance = pixelsPerSubLevel().width() * 2;
 		if (std::abs(arrow->position.x() - arrow->startPosition.x()) > maxDistance || std::abs(arrow->position.y() - arrow->startPosition.y()) > maxDistance)
 			return false;
@@ -2764,7 +2764,7 @@ bool Level::isOnWall(const PixelPosition& position) const noexcept
 
 bool Level::isOnWall2(const WholeTileRectangleArea& tileArea) const noexcept
 {
-	// TODO: Optimize this.
+	// TODO(optimize): Optimize this.
 	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + tileArea.size.height(); ++cy)
 	{
 		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + tileArea.size.width(); ++cx)
@@ -2794,7 +2794,7 @@ bool Level::isOnWater(const PixelPosition& position) const noexcept
 
 bool Level::isOnWater2(const WholeTileRectangleArea& tileArea) const noexcept
 {
-	// TODO: Optimize this.
+	// TODO(optimize): Optimize this.
 	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + tileArea.size.height(); ++cy)
 	{
 		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + tileArea.size.width(); ++cx)
@@ -3169,7 +3169,7 @@ std::generator<NPCID> Level::findInRangeNPCs(const PixelPosition& position) cons
 	}
 
 	// Gmaps.
-	// TODO: Optimize by only checking levels in range.
+	// TODO(optimize): Optimize by only checking levels in range.
 	for (const auto& npcId : m_npcs)
 	{
 		if (npcInRange(npcId))
@@ -3243,7 +3243,7 @@ std::generator<NPCID> Level::findInRangeNPCsByDistance(const PixelPosition& posi
 		return false;
 	};
 
-	// TODO: Optimize by only checking levels in range.
+	// TODO(optimize): Optimize by only checking levels in range.
 	for (const auto& npcId : m_npcs)
 	{
 		if (npcInRange(npcId))

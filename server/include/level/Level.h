@@ -397,7 +397,7 @@ private:
 
 	std::deque<PlayerID> m_players;
 
-	// TODO: Could be optimized with flat_set, whenever that becomes generally available.
+	// TODO(optimize): Could be optimized with flat_set, whenever that becomes generally available.
 	std::unordered_set<NPCID> m_npcs;
 
 	std::vector<LevelArrow> m_arrows;

@@ -267,7 +267,7 @@ void LevelBaddy::setPropsFromPacket(CString& pProps)
 						// Set the baddy as dead for all the other players in the level.
 						m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BADDYPROPS >> (char)id >> (char)BaddyProp::MODE >> (char)mode, {0, 0}, level);
 
-						// TODO(Nalin): Record the last player who hit the baddy so we can record the source properly.
+						// TODO: Record the last player who hit the baddy so we can record the source properly.
 						if (!level->hasLivingBaddies())
 							m_server->queueNPCEventLocal(level, ScriptEventType::COMPUSDIED, source::FromLevel(level));
 					}

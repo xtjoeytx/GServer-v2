@@ -113,7 +113,7 @@ void setPlayerVariables(GameVariableStore& variableStore, const std::weak_ptr<Pl
 
 void setLevelVariables(GameVariableStore& variableStore, const std::weak_ptr<Level>& level, const std::weak_ptr<NPC>& npc, const std::weak_ptr<Player>& player)
 {
-	// TODO: These variables should be stored on the level so they don't get remade for every single script.  Like the object parameters stuff.
+	// TODO(refactor): These variables should be stored on the level so they don't get remade for every single script.  Like the object parameters stuff.
 
 	if (level.expired())
 		return;

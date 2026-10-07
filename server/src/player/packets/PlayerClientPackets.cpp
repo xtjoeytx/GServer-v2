@@ -180,7 +180,7 @@ HandlePacketResult PlayerClient::msgPLI_REQUESTUPDATEBOARD(CString& pPacket)
 	const short w = pPacket.readGShort();
 	const short h = pPacket.readGShort();
 
-	// TODO: What to return?
+	// TODO(decomp): What do we return?
 	log::printLine(log::server, "Received PLI_REQUESTUPDATEBOARD - level: {} - x: {} - y: {} - w: {} - h: {} - modtime: {}", level, x, y, w, h, modTime);
 
 	return HandlePacketResult::Handled;
@@ -1067,7 +1067,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 	// Grab action name.
 	auto actualActionName{string::trimMutate(string::toLower(actions[0]))};
 
-	// TODO(joey): move into trigger command dispatcher, some use private player vars.
+	// TODO(refactor): move into trigger command dispatcher, some use private player vars.
 	{
 		if (m_server->cached.enableTriggerhackExecscript.getValue())
 		{
@@ -1305,7 +1305,6 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 	{
 		if (actualActionName.starts_with("server") && m_server->hasNPCServer())
 		{
-			// TODO(Nalin): We really should be sending this to the NPC-Server player, not directly calling the NPC-Server.
 			m_server->getNPCServer()->addEventToControlNPC(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), actions);
 			return HandlePacketResult::Handled;
 		}
@@ -1347,7 +1346,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 		if (level->isGmap())
 			newPacket.position.translate(getSubLevelOrigin());
 
-		// TODO: calculate offsetx from pixelx/pixely/ - level offset
+		// TODO(decomp): calculate offsetx from pixelx/pixely/ - level offset
 		newPacket.offsetx = 0;
 		newPacket.offsety = 0;
 		//if (newPacket.pixelx < 0) {

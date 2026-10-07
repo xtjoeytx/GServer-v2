@@ -256,8 +256,8 @@ bool ServerList::connectServer()
 		localip.clear();
 	}
 
-	// TODO(joey): Some packets were being queued up from the server before we were connected, and would spam the serverlist
-	// upon connection. Clearing the outgoing buffer upon connection
+	// Some packets were being queued up from the server before we were connected, and would spam the serverlist upon connection.
+	// Clearing the outgoing buffer upon connection.
 	m_fileQueue.clearBuffers();
 
 	// Use the new protocol for communicating with the listserver
@@ -931,7 +931,6 @@ void ServerList::msgSVI_FILEEND3(CString& pPacket)
 	std::filesystem::rename(fileData->file, fileData->file.parent_path() / newFileName);
 
 	// Set the player props.
-	// TODO(joey): Confirm if we can use ANYCLIENT instead
 	if (const auto p = m_server->getPlayer(pid, PLTYPE_ANYPLAYER); p)
 	{
 		props::SetResults result;
@@ -1037,7 +1036,7 @@ void ServerList::msgSVI_REQUESTTEXT(CString& pPacket)
 		serverIds = CString() << std::to_string(serverCount) << "\n" << serverIds;
 		serverPCount = CString() << std::to_string(serverCount) << "\n" << serverPCount;
 
-		// TODO(joey): This is spamming clients non-stop!!!!!
+		// TODO(optimize): This is spamming clients non-stop!!!!!
 		m_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverIds.gtokenizeI()));
 		m_server->sendPacketToAll(CCommon::triggerAction(0, 0, "clientside", "-Serverlist_v4", serverPCount.gtokenizeI()));
 		serverIds.clear();

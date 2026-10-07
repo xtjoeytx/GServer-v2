@@ -17,8 +17,6 @@ namespace preagonal
 
 HandlePacketResult Player::msgPLI_REQUESTTEXT(CString& pPacket)
 {
-	// TODO(joey): So I believe these are just requests for information, while sendtext is used to actually do things.
-
 	const CString packet = pPacket.readString("");
 	CString data = packet.guntokenize();
 
@@ -258,7 +256,7 @@ HandlePacketResult Player::msgPLI_SENDTEXT(CString& pPacket)
 
 			if (isRC())
 			{
-				// TODO(joey): Implement for RC3
+				// TODO(RC3): Implement for RC3.
 				//	banhistory - each comma separated item per line, just text
 				//	staffactivity - each comma separated item per line, just text
 				//	localbans - each comma separated item per line, just text (each person banned)

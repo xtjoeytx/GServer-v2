@@ -553,7 +553,7 @@ GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view iden
 
 GameValue GS1Visitor::translateSourceText(antlr4::tree::ParseTree* node, const std::string_view language)
 {
-	// TODO: We should cache this somewhere.
+	// TODO(optimize): We should cache this somewhere.
 
 	if (node == nullptr)
 		return GameValue{std::string{}};
@@ -579,7 +579,7 @@ GameValue GS1Visitor::translateSourceText(antlr4::tree::ParseTree* node, const s
 
 GameValue GS1Visitor::translateSourceText(const std::string_view sourceText, const std::string_view language)
 {
-	// TODO: We should cache this somewhere.
+	// TODO(optimize): We should cache this somewhere.
 
 	// Get the translation manager.
 	// If we don't have one, just evaluate the original string.

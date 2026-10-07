@@ -1037,8 +1037,6 @@ void Server::loadWeapons(const bool print)
 				}
 				else
 				{
-					// TODO(joey): even though were deleting the weapon because its skipped, its still queuing its script action
-					//	and attempting to execute it. Technically the code needs to be run again though, will fix soon.
 					if (print) log::print(log::server, "{} [skipped]", weapon->name);
 				}
 			}
@@ -1662,7 +1660,7 @@ bool Server::deletePlayer(const PlayerPtr& player)
 	if (player->isLoaded())
 	{
 		// If we have an NPC-Server, let it process the player first.
-		// TODO(NPCServer): Might need to check for remote NPC-Servers in the future here.
+		// TODO(npcserver): Might need to check for remote NPC-Servers in the future here.
 		if (hasNPCServer() && (player->isClient() || player->isRC()))
 			m_npcServer->playerLogout(player);
 
@@ -2294,7 +2292,7 @@ bool Server::processRCChat(std::string_view message, const std::weak_ptr<Player>
 				player->sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,lister,ban," << pl->account.name << "," << std::to_string(pl->getDeviceId()));
 			else
 			{
-				// TODO: player not logged in, load from offline?
+				// TODO: Player not logged in, load from offline?
 			}
 			return true;
 		}
@@ -2495,7 +2493,7 @@ void Server::updateWeaponForPlayers(const std::shared_ptr<Weapon>& weapon)
 	updateWeaponForPlayers(weapon.get());
 }
 
-// TODO(Nalin): This should probably be in the NPCServer class.
+// TODO(refactor): This should probably be in the NPCServer class.
 void Server::updateClassForPlayers(const std::shared_ptr<ScriptClass>& scriptClass)
 {
 	const CString classPacket = scriptClass->getClassPacket();

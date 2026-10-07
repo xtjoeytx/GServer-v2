@@ -599,7 +599,7 @@ void LevelLoader::loadBinaryLinks(const StaticLevelDataPtr& levelData, const fs:
 
 		// Get the level name.
 		// Levels with spaces in the name are not supposed to be allowed, but we support it anyway.
-		// TODO: This will not work with levels with two+ spaces in a row.
+		// TODO(bug): This will not work with levels with two+ spaces in a row (technically, out of spec).
 		auto destLevel = string::join(splitData | std::views::take(end - 6), " "sv);
 
 		if (!fileSystem.has(fs::FileCategory::LEVEL, destLevel))
@@ -814,7 +814,7 @@ bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view f
 
 			// Get the level name.
 			// Levels with spaces in the name are not supposed to be allowed, but we support it anyway.
-			// TODO: This will not work with levels with two+ spaces in a row.
+			// TODO(bug): This will not work with levels with two+ spaces in a row (technically, out of spec).
 			auto destLevel = string::join(splitData | std::views::take(end - 6), " "sv);
 
 			if (!fileSystem.has(fs::FileCategory::LEVEL, destLevel))

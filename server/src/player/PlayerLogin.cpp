@@ -50,7 +50,7 @@ std::string_view PlayerLogin::whoAmI() const noexcept
 
 HandlePacketResult PlayerLogin::handlePacket(std::optional<uint8_t> id, CString& packet)
 {
-	// TODO: Websocket stuff somewhere.
+	// TODO(websocket): Websocket stuff somewhere.
 	if (msgLoginPacket(packet) == HandlePacketResult::Failed)
 		disconnect();
 
@@ -59,7 +59,6 @@ HandlePacketResult PlayerLogin::handlePacket(std::optional<uint8_t> id, CString&
 
 HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 {
-	// TODO(joey): Hijack type based on what graal sends, rather than use it directly.
 	m_type = (1 << pPacket.readGChar());
 
 	// Create our appropriate player.
