@@ -513,9 +513,13 @@ void Player::sendPacket(CString pPacket, const bool appendNL)
 	const std::string_view who = whoAmI();
 	const uint32_t pid = static_cast<uint32_t>(static_cast<uint8_t>(pPacket[0]) - 32);
 	log::printLine(log::networkdump, "< Out Packet to {}: [{}] {} ({} bytes)", who, pid, OutputPacketNamesArray[pid], pPacket.length());
-	log::print(log::networkdump, "{}", pPacket.text());
-	if (pPacket[pPacket.length() - 1] != '\n')
-		log::print(log::networkdump, "\n");
+	if (pid != ENUM(PLO_BOARDPACKET))
+	{
+		log::print(log::networkdump, "{}", pPacket.text());
+		const auto curPacketView = pPacket.toStringView();
+		if (const auto terminate = curPacketView.find('\0'); (terminate > 0 && terminate != std::string_view::npos && curPacketView[terminate - 1] != '\n') || curPacketView.back() != '\n')
+			log::print(log::networkdump, "\n");
+	}
 	for (int i = 0; i < pPacket.length(); ++i)
 		log::print(log::networkdump, "{:02x} ", (unsigned char)((pPacket.text())[i]));
 	log::print(log::networkdump, "\n\n");

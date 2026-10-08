@@ -351,7 +351,8 @@ inline void IPacketHandler::parsePacketsFromBundle(CString& bundle)
 		const std::string_view who = whoAmI();
 		log::printLine(log::networkdump, "> In Packet from {}: [{}] {} ({} bytes)", who, (uint32_t)id, InputPacketNamesArray[id], curPacket.length());
 		log::print(log::networkdump, "{}", curPacket.text());
-		if (curPacket[curPacket.length() - 1] != '\n')
+		const auto curPacketView = curPacket.toStringView();
+		if (const auto terminate = curPacketView.find('\0'); (terminate > 0 && terminate != std::string_view::npos && curPacketView[terminate - 1] != '\n') || curPacketView.back() != '\n')
 			log::print(log::networkdump, "\n");
 		for (int i = 0; i < curPacket.length(); ++i)
 			log::print(log::networkdump, "{:02x} ", (unsigned char)((curPacket.text())[i]));

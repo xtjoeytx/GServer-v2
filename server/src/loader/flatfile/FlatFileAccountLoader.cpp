@@ -552,7 +552,7 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 		account.character.localPixelZ.reset();
 
 	// Flag syncing.
-	if (player != nullptr && player->isClient())
+	if (player != nullptr && player->isClient() && player->isLoaded())
 		player->synchronizeFlags(flagList);
 	else
 	{
@@ -564,7 +564,7 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 	}
 
 	// Weapon syncing.
-	if (player != nullptr && player->isClient())
+	if (player != nullptr && player->isClient() && player->isLoaded())
 		player->synchronizeWeapons(weaponList);
 	else
 		account.weapons = weaponList;

@@ -59,30 +59,30 @@ HandlePacketResult PlayerLogin::handlePacket(std::optional<uint8_t> id, CString&
 
 HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 {
-	m_type = (1 << pPacket.readGChar());
+	const auto type = (1 << pPacket.readGChar());
 
 	// Create our appropriate player.
 	std::shared_ptr<Player> player = nullptr;
-	if (m_type & PLTYPE_ANYCLIENT)
+	if (type & PLTYPE_ANYCLIENT)
 	{
-		if (m_type == PLTYPE_CLIENT)
+		if (type == PLTYPE_CLIENT)
 			player = std::make_shared<PlayerClientOriginal>(m_playerSock, m_id);
 		else player = std::make_shared<PlayerClient>(m_playerSock, m_id);
 	}
-	else if (m_type & PLTYPE_ANYRC)
+	else if (type & PLTYPE_ANYRC)
 		player = std::make_shared<PlayerRC>(m_playerSock, m_id);
-	else if (m_type & PLTYPE_ANYNC)
+	else if (type & PLTYPE_ANYNC)
 		player = std::make_shared<PlayerNC>(m_playerSock, m_id);
-	else if (m_type & PLTYPE_NPCSERVER)
+	else if (type & PLTYPE_NPCSERVER)
 		player = std::make_shared<PlayerNPCServer>(m_playerSock, m_id);
 	else
 	{
-		log::printLine(log::server, "New login, but unknown player type: {}", m_type);
+		log::printLine(log::server, "New login, but unknown player type: {}", type);
 		return HandlePacketResult::Failed;
 	}
 
 	// Fix the type.
-	player->setType(m_type);
+	player->setType(type);
 
 	// Update the new player's current packet state to match ours.
 	player->PacketCount = 1;
