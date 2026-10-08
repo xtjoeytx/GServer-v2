@@ -1726,9 +1726,21 @@ bool Server::warpPlayerToSafePlace(const PlayerID playerId) const
 	if (player == nullptr) return false;
 
 	// Try unstick me level.
-	return player->warp(cached.unstickMeLevel.getValue(), {static_cast<int16_t>(cached.unstickMeTile[0].getValue() * 16.0f), static_cast<int16_t>(cached.unstickMeTile[1].getValue() * 16.0f)});
+	if (!player->warp(cached.unstickMeLevel.getValue(), {static_cast<int16_t>(cached.unstickMeTile[0].getValue() * 16.0f), static_cast<int16_t>(cached.unstickMeTile[1].getValue() * 16.0f)}))
+	{
+		// Unstick me failed, try the default account.
+		if (Account defaultAccount; getAccountLoader().loadAccount("(defaultaccount)", defaultAccount))
+		{
+			if (player->warp(defaultAccount.level, defaultAccount.character.getGlobalPosition()))
+				return true;
+		}
 
-	// TODO: Maybe try the default account level?
+		// Default account failed, disconnect the player.
+		player->disconnect("Could not warp the player to a safe level.");
+		return false;
+	}
+
+	return false;
 }
 
 //----------------------------
