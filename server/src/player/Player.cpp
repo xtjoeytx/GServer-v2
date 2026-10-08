@@ -603,11 +603,12 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 
 	// See if we have enough room in the packet for the file.
 	// If not, we need to send it as a big file.
-	// 1 (PLO_FILE) + 5 (modTime) + 1 (file.length()) + file.length() + 1 (\n)
 	bool isBigFile = false;
-	size_t packetLength = static_cast<size_t>(1) + 5 + 1 + filename.length() + 1;
 	if (fileData.size() > 32000)
 		isBigFile = true;
+
+	// 1 (PLO_FILE) + 5 (modTime) + 1 (file.length()) + file.length()
+	size_t packetLength = static_cast<size_t>(1) + 5 + 1 + filename.length();
 
 	// Clients before 2.14 didn't support large files.
 	if (isClient() && m_versionId < CLVER_2_14)
@@ -636,14 +637,13 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 		// Older client versions didn't send the modTime.
 		if (isClient() && m_versionId < CLVER_2_1)
 		{
-			// We don't add a \n to the end of the packet, so subtract 1 from the packet length.
-			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength - 1 + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)} << "\n", false);
+			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
+			sendPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)}, false);
 		}
 		else
 		{
 			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (long long)fileModTime >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)} << "\n", false);
+			sendPacket(CString() >> (char)PLO_FILE >> (long long)fileModTime >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)}, false);
 		}
 
 		fileDataSpan = fileDataSpan.subspan(sendSize);
