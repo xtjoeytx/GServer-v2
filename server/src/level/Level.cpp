@@ -114,8 +114,8 @@ void StaticLevelData::sendBoardToPlayer(const std::shared_ptr<Player>& player) c
 	retVal.writeGChar(PLO_BOARDPACKET);
 	tiles.writeLayerToPacket(0, retVal);
 
-	player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)retVal.length());
-	player->sendPacket(retVal, false);
+	player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(retVal.length() + 1));
+	player->sendPacket(retVal << "\n", false);
 }
 
 void StaticLevelData::sendBoardLayersToPlayer(const std::shared_ptr<Player>& player) const
@@ -137,8 +137,8 @@ void StaticLevelData::sendBoardLayerToPlayer(const std::shared_ptr<Player>& play
 
 	tiles.writeLayerToPacket(layer, retVal);
 
-	player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)retVal.length());
-	player->sendPacket(retVal, false);
+	player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(retVal.length() + 1));
+	player->sendPacket(retVal << "\n", false);
 }
 
 void StaticLevelData::sendChestsToPlayer(const std::shared_ptr<Player>& player) const
@@ -397,8 +397,8 @@ void SubLevel::sendBoardToPlayer(const std::shared_ptr<Player>& player) const
 	retVal.writeGChar(PLO_BOARDPACKET);
 	tiles.value()->writeLayerToPacket(0, retVal);
 
-	player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)retVal.length());
-	player->sendPacket(retVal, false);
+	player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(retVal.length() + 1));
+	player->sendPacket(retVal << "\n", false);
 }
 
 void SubLevel::sendBoardLayersToPlayer(const std::shared_ptr<Player>& player) const
@@ -428,8 +428,8 @@ void SubLevel::sendBoardLayerToPlayer(const std::shared_ptr<Player>& player, siz
 
 	tiles.value()->writeLayerToPacket(layer, retVal);
 
-	player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)retVal.length());
-	player->sendPacket(retVal, false);
+	player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(retVal.length() + 1));
+	player->sendPacket(retVal << "\n", false);
 }
 
 void SubLevel::sendBoardHeightsToPlayer(const std::shared_ptr<Player>& player) const
@@ -1371,8 +1371,8 @@ void Level::sendNPCToPlayer(const std::shared_ptr<NPC>& npc, const std::shared_p
 		{
 			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->id;
 			byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode().data()), static_cast<int>(npc->getScript().getClientByteCode().size()));
-			player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)byteCodePacket.length());
-			player->sendPacket(byteCodePacket);
+			player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(byteCodePacket.length() + 1));
+			player->sendPacket(byteCodePacket << "\n", false);
 		}
 	}
 

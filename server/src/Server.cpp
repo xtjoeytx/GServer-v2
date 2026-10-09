@@ -2496,18 +2496,18 @@ void Server::updateWeaponForPlayers(const std::shared_ptr<Weapon>& weapon)
 // TODO(refactor): This should probably be in the NPCServer class.
 void Server::updateClassForPlayers(const std::shared_ptr<ScriptClass>& scriptClass)
 {
-	const CString classPacket = scriptClass->getClassPacket();
+	CString classPacket = scriptClass->getClassPacket();
 	if (classPacket.isEmpty())
 		return;
 
 	// Update players.
-	for (auto& player : m_playerList | std::views::values)
+	for (const auto& player : m_playerList | std::views::values)
 	{
 		if (!player->isClient())
 			continue;
 
-		player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)classPacket.length());
-		player->sendPacket(classPacket);
+		player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(classPacket.length() + 1));
+		player->sendPacket(classPacket << "\n", false);
 	}
 }
 

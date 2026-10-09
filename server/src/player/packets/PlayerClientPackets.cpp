@@ -1522,9 +1522,9 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 		if (classObj->getCheckSum() == checkSum)
 			return HandlePacketResult::Handled;
 
-		const CString classPacket = classObj->getClassPacket();
-		sendPacket(CString() >> (char)PLO_RAWDATA >> (int)classPacket.length());
-		sendPacket(classPacket);
+		CString classPacket = classObj->getClassPacket();
+		sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(classPacket.length() + 1));
+		sendPacket(classPacket << "\n", false);
 	}
 	else
 	{

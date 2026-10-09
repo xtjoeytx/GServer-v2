@@ -637,13 +637,13 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 		// Older client versions didn't send the modTime.
 		if (isClient() && m_versionId < CLVER_2_1)
 		{
-			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)}, false);
+			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize + 1));
+			sendPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)} << "\n", false);
 		}
 		else
 		{
-			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize));
-			sendPacket(CString() >> (char)PLO_FILE >> (long long)fileModTime >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)}, false);
+			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize + 1));
+			sendPacket(CString() >> (char)PLO_FILE >> (long long)fileModTime >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)} << "\n", false);
 		}
 
 		fileDataSpan = fileDataSpan.subspan(sendSize);
