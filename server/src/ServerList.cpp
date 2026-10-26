@@ -312,15 +312,11 @@ void ServerList::sendVersionConfig()
 	sendText(std::format("Listserver,settings,allowedversions,{}", versionNames.text()));
 }
 
-void ServerList::sendPacket(CString& pPacket, const bool sendNow)
+void ServerList::sendPacket(const CString& pPacket, const bool sendNow)
 {
 	// empty buffer?
 	if (pPacket.isEmpty())
 		return;
-
-	// append '\n'
-	if (pPacket[pPacket.length() - 1] != '\n')
-		pPacket.writeChar('\n');
 
 	// append buffer
 	m_fileQueue.addPacket(pPacket);
@@ -1095,7 +1091,7 @@ void ServerList::msgSVI_PMPLAYER(CString& pPacket)
 		p->addPMServer(servername);
 		p->updatePMPlayers(servername, player);
 		auto tmpPlyr = p->getExternalPlayer(account);
-		p->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)tmpPlyr->getId() << pmMessageType << message3, true);
+		p->sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)tmpPlyr->getId() << pmMessageType << message3);
 	}
 
 	message2 = "";

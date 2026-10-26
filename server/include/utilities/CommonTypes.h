@@ -352,9 +352,11 @@ inline static auto toNonOwningRange(Ts&&... range)
 	using CommonType = std::common_type_t<Ts...>;
 	const size_t size = sizeof...(range);
 
+	// clang-format off
 	auto ptr_array = std::array<std::add_pointer_t<CommonType>, size>{&range...};
 	return std::views::iota(size_t{0}, size)
 		| std::views::transform([arr = std::move(ptr_array)](size_t index) { return *arr[index]; });
+	// clang-format on
 }
 
 // clang-format off

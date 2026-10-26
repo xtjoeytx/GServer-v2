@@ -498,42 +498,46 @@ void Player::disconnect(const std::string_view message)
 	m_server->deletePlayer(shared_from_this());
 }
 
-void Player::sendPacket(CString pPacket, const bool appendNL)
+void Player::sendPacket(const CString& packet)
 {
-	// empty buffer?
-	if (pPacket.isEmpty())
-		return;
-
-	// Not connected?
-	if (m_playerSock == nullptr || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+	if (packet.isEmpty() || m_playerSock == nullptr || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return;
 
 #ifdef PACKETLOGGING
 	// This will suck as long as we have gs2lib.
 	const std::string_view who = whoAmI();
-	const uint32_t pid = static_cast<uint32_t>(static_cast<uint8_t>(pPacket[0]) - 32);
-	log::printLine(log::networkdump, "< Out Packet to {}: [{}] {} ({} bytes)", who, pid, OutputPacketNamesArray[pid], pPacket.length());
-	if (pid != ENUM(PLO_BOARDPACKET))
-	{
-		log::print(log::networkdump, "{}", pPacket.text());
-		const auto curPacketView = pPacket.toStringView();
-		if (const auto terminate = curPacketView.find('\0'); (terminate > 0 && terminate != std::string_view::npos && curPacketView[terminate - 1] != '\n') || curPacketView.back() != '\n')
-			log::print(log::networkdump, "\n");
-	}
-	for (int i = 0; i < pPacket.length(); ++i)
-		log::print(log::networkdump, "{:02x} ", (unsigned char)((pPacket.text())[i]));
+	const uint32_t pid = static_cast<uint32_t>(static_cast<uint8_t>(packet[0]) - 32);
+	const auto curPacketView = packet.toStringView();
+	log::printLine(log::networkdump, "< Out Packet to {}: [{}] {} ({} bytes)", who, pid, OutputPacketNamesArray[pid], packet.length());
+	log::print(log::networkdump, "{}", curPacketView);
+	if (const auto terminate = curPacketView.find('\0'); (terminate > 0 && terminate != std::string_view::npos && curPacketView[terminate - 1] != '\n') || curPacketView.back() != '\n')
+		log::print(log::networkdump, "\n");
+	for (int i = 0; i < packet.length(); ++i)
+		log::print(log::networkdump, "{:02x} ", (unsigned char)((packet.text())[i]));
 	log::print(log::networkdump, "\n\n");
 #endif
 
-	// append '\n'
-	if (appendNL)
-	{
-		if (pPacket[pPacket.length() - 1] != '\n')
-			pPacket.writeChar('\n');
-	}
+	// append buffer
+	m_fileQueue.addPacket(packet);
+}
+
+void Player::sendRawPacket(const CString& packet)
+{
+	if (packet.isEmpty() || m_playerSock == nullptr || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
+		return;
+
+#ifdef PACKETLOGGING
+	// This will suck as long as we have gs2lib.
+	const std::string_view who = whoAmI();
+	const uint32_t pid = static_cast<uint32_t>(static_cast<uint8_t>(packet[0]) - 32);
+	log::printLine(log::networkdump, "< Out Packet to {}: [{} RAW] {} ({} bytes)", who, pid, OutputPacketNamesArray[pid], packet.length());
+	for (int i = 0; i < packet.length(); ++i)
+		log::print(log::networkdump, "{:02x} ", (unsigned char)((packet.text())[i]));
+	log::print(log::networkdump, "\n\n");
+#endif
 
 	// append buffer
-	m_fileQueue.addPacket(pPacket);
+	m_fileQueue.addRawPacket(packet);
 }
 
 std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
@@ -607,13 +611,9 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 	if (fileData.size() > 32000)
 		isBigFile = true;
 
-	// 1 (PLO_FILE) + 5 (modTime) + 1 (file.length()) + file.length()
-	size_t packetLength = static_cast<size_t>(1) + 5 + 1 + filename.length();
-
 	// Clients before 2.14 didn't support large files.
 	if (isClient() && m_versionId < CLVER_2_14)
 	{
-		if (m_versionId < CLVER_2_1) packetLength -= 5; // modTime isn't sent.
 		if (fileData.size() > 64000)
 			return {sendFailure("File too large for client version"), isBigFile};
 
@@ -637,13 +637,11 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 		// Older client versions didn't send the modTime.
 		if (isClient() && m_versionId < CLVER_2_1)
 		{
-			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize + 1));
-			sendPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)} << "\n", false);
+			sendRawPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)});
 		}
 		else
 		{
-			sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(packetLength + sendSize + 1));
-			sendPacket(CString() >> (char)PLO_FILE >> (long long)fileModTime >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)} << "\n", false);
+			sendRawPacket(CString() >> (char)PLO_FILE >> (long long)fileModTime >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)});
 		}
 
 		fileDataSpan = fileDataSpan.subspan(sendSize);

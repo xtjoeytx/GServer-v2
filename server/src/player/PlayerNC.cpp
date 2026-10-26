@@ -201,8 +201,11 @@ bool PlayerNC::sendLogin()
 		// Send classes
 		CString classPacket;
 		for (const auto& classList = npcServer->getClassList(); const auto& key : classList | std::views::keys)
-			classPacket >> (char)PLO_NC_CLASSADD << key << "\n";
-		sendPacket(classPacket);
+		{
+			classPacket.clear();
+			classPacket >> (char)PLO_NC_CLASSADD << key;
+			sendPacket(classPacket);
+		}
 	}
 
 	// Send list of currently connected NC's

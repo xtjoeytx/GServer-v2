@@ -120,10 +120,7 @@ CString GameAni::getBytecodePacket() const
 	CString out;
 	// filename ".gani" protection
 	if (!gani.empty() && !m_bytecode.isEmpty())
-	{
-		out >> (char)PLO_RAWDATA >> (int)(m_bytecode.length() + gani.length() + 2) << "\n";
 		out >> (char)PLO_GANISCRIPT >> (char)gani.length() << std::string(gani) << m_bytecode;
-	}
 
 	return out;
 }

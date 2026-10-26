@@ -2506,8 +2506,7 @@ void Server::updateClassForPlayers(const std::shared_ptr<ScriptClass>& scriptCla
 		if (!player->isClient())
 			continue;
 
-		player->sendPacket(CString() >> (char)PLO_RAWDATA >> (int)(classPacket.length() + 1));
-		player->sendPacket(classPacket << "\n", false);
+		player->sendRawPacket(classPacket);
 	}
 }
 

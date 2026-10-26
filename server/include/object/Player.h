@@ -335,7 +335,8 @@ public:
 
 public:
 	// Socket-Functions
-	void sendPacket(CString pPacket, bool appendNL = true);
+	void sendPacket(const CString& packet);
+	void sendRawPacket(const CString& packet);
 	std::pair<bool, bool> sendFile(const std::filesystem::path& file);
 	void setReceivedBuffer(const CString& buffer) { m_recvBuffer = buffer; }
 

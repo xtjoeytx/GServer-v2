@@ -55,7 +55,7 @@ public:
 	bool main(precise_clock::time_point time = precise_clock::now());
 	bool connectServer();
 	CSocket& getSocket() { return m_socket; }
-	void sendPacket(CString& pPacket, bool sendNow = false);
+	void sendPacket(const CString& pPacket, bool sendNow = false);
 
 	// Send players to the listserver
 	void addPlayer(const std::shared_ptr<Player>& player);
