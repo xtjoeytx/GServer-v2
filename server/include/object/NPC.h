@@ -434,6 +434,7 @@ public:
 public:
 	const NPCID id;
 	const NPCStorageType storageType;
+	std::optional<size_t> indexInLevelFile;
 	std::string level;
 	std::string groupName;
 	std::string name;
@@ -470,6 +471,7 @@ private:
 	Script m_script;
 	mutable std::vector<std::pair<EventHandle, std::weak_ptr<ScriptClass>>> m_joinedClasses;
 
+	std::optional<size_t> m_initialIndexInLevelFile;
 	std::string m_initialLevel;
 	std::weak_ptr<Level> m_currentLevel;
 	Position<uint8_t> m_initialMapPosition;
@@ -536,6 +538,7 @@ inline bool NPC::wasPropModified(const NPCProp prop) const noexcept
 
 inline void NPC::recordInitialState()
 {
+	m_initialIndexInLevelFile = indexInLevelFile;
 	m_initialLevel = level;
 	m_initialCharacter = character;
 }

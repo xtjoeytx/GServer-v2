@@ -104,6 +104,8 @@ GWEBL001
 GSERVL01
 	saves modified npcs in 'levelnpcs/levelfilename.save`
 	index "prop string"
+	the index is the 1-based index position of the npc in the level
+	if the index is -1, the npc does not originally belong to the level (putnpc)
 
 	REPLACENPCS
 	1 "prop string"
@@ -358,6 +360,7 @@ void LevelLoader::loadStaticDataNPCs(const LevelPtr& level, std::optional<MapPos
 		const auto npc = std::make_shared<NPC>(npcId, NPCStorageType::LEVEL);
 
 		// Cached data.
+		npc->indexInLevelFile = npcData.index;
 		npc->character.localPixelX = npcData.position.x();
 		npc->character.localPixelY = npcData.position.y();
 		npc->image = npcData.image;
@@ -660,7 +663,7 @@ void LevelLoader::loadBinaryNPCs(const StaticLevelDataPtr& levelData, const fs::
 		const auto image = string::extractLine(lineView, '#');
 		auto code = string::replace(lineView, "\xa7", "\n");
 
-		LevelNPCTemplate npc{.image = image, .position = toLocalPixelPosition(position)};
+		LevelNPCTemplate npc{.index = levelData->npcs.size() + 1, .image = image, .position = toLocalPixelPosition(position)};
 		npc.script.setOriginalSource(std::format("{}.{}", levelData->levelName, index), ScriptType::NPC, code);
 		levelData->npcs.emplace_back(std::move(npc));
 	}
@@ -896,7 +899,7 @@ bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view f
 				code += '\n';
 			}
 
-			LevelNPCTemplate npc{.image = image, .position = toLocalPixelPosition(position)};
+			LevelNPCTemplate npc{.index = levelData->npcs.size() + 1, .image = image, .position = toLocalPixelPosition(position)};
 			npc.script.setOriginalSource(std::format("{}.{}", levelData->levelName, npcIndex), ScriptType::NPC, code);
 			levelData->npcs.emplace_back(std::move(npc));
 		}

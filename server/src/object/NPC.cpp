@@ -126,6 +126,7 @@ void NPC::resetToInitialState()
 	hurtY = 0.0f;
 	noPlayerOnWall = false;
 	timeout = 0ms;
+	indexInLevelFile = m_initialIndexInLevelFile;
 	m_initialCharacter.nickName.clear();
 	character = m_initialCharacter;
 	saves.fill(0);
@@ -168,26 +169,33 @@ bool NPC::warp(const LevelPtr& level, const PixelPosition& position)
 		return false;
 
 	std::inplace_vector<SetResults, 5> warpResults;
-	auto localPosition = toLocalPixelPosition(position);
-	auto mapPosition = toMapPosition(position);
+	const auto destLocalPosition = toLocalPixelPosition(position);
+	const auto destMapPosition = toMapPosition(position);
+	const auto currentMapPosition = toMapPosition(getGlobalPosition());
+	const auto currentLevel = m_currentLevel.lock();
+
+	// If we are changing levels or the gmap sublevel, then clear our saved level file index.
+	// This will let the level NPC save it's modifications under the correct level.
+	if (level != currentLevel || destMapPosition != currentMapPosition)
+		indexInLevelFile = std::nullopt;
 
 	// Clear the move queue since we are being forcibly moved.
 	moveQueue.clear();
 
 	// Set our new position.
-	warpResults.push_back(setPropWith<NPCProp::X2>(SetBy::SERVER, localPosition.x()));
-	warpResults.push_back(setPropWith<NPCProp::Y2>(SetBy::SERVER, localPosition.y()));
+	warpResults.push_back(setPropWith<NPCProp::X2>(SetBy::SERVER, destLocalPosition.x()));
+	warpResults.push_back(setPropWith<NPCProp::Y2>(SetBy::SERVER, destLocalPosition.y()));
 
 	// If the level is a gmap, include the map position.
 	if (level->isGmap())
 	{
-		warpResults.push_back(setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, mapPosition.x()));
-		warpResults.push_back(setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, mapPosition.y()));
+		warpResults.push_back(setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, destMapPosition.x()));
+		warpResults.push_back(setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, destMapPosition.y()));
 	}
 
 	// If we are moving levels, change the current level.
 	// Do this last so our current position is passed on the warp.
-	if (level != m_currentLevel.lock())
+	if (level != currentLevel)
 		warpResults.push_back(setPropWith<NPCProp::LEVEL>(SetBy::SERVER, level->levelName));
 
 	sendPropsFromResults(warpResults);
@@ -363,6 +371,8 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 
 		// If the map position changed, set that now.
 		const auto& [mapX, mapY, _] = toMapPosition(currentPosition);
+		if (storageType == NPCStorageType::LEVEL && (mapX != character.mapX || mapY != character.mapY))
+			indexInLevelFile = std::nullopt;
 		if (mapX != character.mapX)
 			setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, mapX);
 		if (mapY != character.mapY)
@@ -1390,6 +1400,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 				SETPROP_RETURN_IGNORE;
 
 			character.mapX = numProp->value;
+			indexInLevelFile = std::nullopt;
 			break;
 		}
 
@@ -1400,6 +1411,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 				SETPROP_RETURN_IGNORE;
 
 			character.mapY = numProp->value;
+			indexInLevelFile = std::nullopt;
 			break;
 		}
 
@@ -1462,6 +1474,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 
 			// Add us to the new level.
 			newLevel->addNPC(id);
+			indexInLevelFile = std::nullopt;
 
 			// Send our props to people in the new level.
 			newLevel->sendNPCToNearbyPlayers(m_server->getNPC(id), m_server->getFrameStartTime());
@@ -1832,6 +1845,7 @@ void NPC::constructScriptParameters()
 					{
 						character.mapX = mapX;
 						modTime[PROPID(NPCProp::GMAPLEVELX)] = now;
+						indexInLevelFile = std::nullopt;
 					}
 				}
 			}
@@ -1862,6 +1876,7 @@ void NPC::constructScriptParameters()
 					{
 						character.mapY = mapY;
 						modTime[PROPID(NPCProp::GMAPLEVELY)] = now;
+						indexInLevelFile = std::nullopt;
 					}
 				}
 			}
@@ -2008,6 +2023,9 @@ void NPC::testForLinks(SetResults& result)
 
 		// Add a scripting event for the warp.
 		scripting.events.addEvent(ScriptEventType::NPCWARPED, source::FromNPC(id));
+
+		// Erase our saved file index.
+		indexInLevelFile = std::nullopt;
 	};
 
 	// Clamp NPC to the level.
@@ -2039,6 +2057,7 @@ void NPC::testForLinks(SetResults& result)
 			character.mapY = computedMapY;
 			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
 			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
+			indexInLevelFile = std::nullopt;
 
 			character.localPixelX = computedLocalX;
 			character.localPixelY = computedLocalY;

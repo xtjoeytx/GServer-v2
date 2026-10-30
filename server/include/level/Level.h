@@ -54,6 +54,7 @@ class Server;
 /// @brief Stores the basic data for an NPC in a level.
 struct LevelNPCTemplate
 {
+	size_t index;
 	std::string image;
 	LocalPixelPosition position;
 	Script script;
