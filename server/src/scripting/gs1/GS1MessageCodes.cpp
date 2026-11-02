@@ -332,7 +332,11 @@ GS1ScriptValue mc_6(const GS1Visitor* visitor, const std::string_view messageCod
 	if (arguments.size() == 1)
 		index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 
-	auto result = getPlayerOrNPCFromSource(visitor->getCurrentSource(), index);
+	ScriptObject source = visitor->getCurrentSource();
+	if (const auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); player.has_value())
+		source = player.value();
+
+	auto result = getPlayerOrNPCFromSource(source, index);
 	if (!result.has_value())
 		return makeGS1ScriptValue(std::string{});
 
@@ -366,8 +370,11 @@ GS1ScriptValue mc_a(const GS1Visitor* visitor, const std::string_view messageCod
 	if (arguments.size() == 1)
 		index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 
-	if (const auto client = getPlayerClientFromSource(visitor->getCurrentSource(), index); client != nullptr)
-		return makeGS1ScriptValue(client->account.name);
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	{
+		if (const auto player = getPlayerFromSource(source.value(), index); player != nullptr)
+			return makeGS1ScriptValue(player->account.name);
+	}
 
 	return makeGS1ScriptValue(std::string{});
 }
