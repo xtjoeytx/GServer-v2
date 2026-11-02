@@ -316,7 +316,7 @@ std::optional<const LevelTiles*> SubLevel::getTiles() const noexcept
 	return tiles;
 }
 
-std::optional<LevelTiles::TileArray*> SubLevel::getTiles(size_t layer) noexcept
+std::optional<LevelTiles::TileArray*> SubLevel::getTiles(const size_t layer) noexcept
 {
 	// Get the tiles.
 	const auto tiles = getTiles();
@@ -331,7 +331,7 @@ std::optional<LevelTiles::TileArray*> SubLevel::getTiles(size_t layer) noexcept
 	return std::nullopt;
 }
 
-std::optional<const LevelTiles::TileArray*> SubLevel::getTiles(size_t layer) const noexcept
+std::optional<const LevelTiles::TileArray*> SubLevel::getTiles(const size_t layer) const noexcept
 {
 	// Get the tiles.
 	const auto tiles = getTiles();
@@ -411,7 +411,7 @@ void SubLevel::sendBoardLayersToPlayer(const std::shared_ptr<Player>& player) co
 	}
 }
 
-void SubLevel::sendBoardLayerToPlayer(const std::shared_ptr<Player>& player, size_t layer) const
+void SubLevel::sendBoardLayerToPlayer(const std::shared_ptr<Player>& player, const size_t layer) const
 {
 	const auto tiles = getTiles();
 	if (!tiles.has_value())
@@ -586,6 +586,124 @@ Level::~Level()
 	// Warp players out.
 	for (const auto& playerId : m_players)
 		(void)m_server->warpPlayerToSafePlace(playerId);
+}
+
+//----------------------------
+
+void Level::doTimedEvents()
+{
+	const auto& now = m_server->getFrameStartTimeHighPrecision();
+
+	// Run board change events.
+	for (const auto& part : m_levelParts | removeNulls)
+	{
+		for (auto& change : part->boardChanges)
+			change.update(now);
+	}
+
+	// Run bomb events.
+	for (auto& bomb : m_bombs) bomb.timeout.update(now);
+	std::erase_if(m_bombs, [this](const LevelBomb& bomb)
+	{
+		const bool exploded = !bomb.timeout.isRunning();
+		if (exploded)
+		{
+			// Generate bomb explosions.
+			// Don't send to players as they should see the bomb already.
+			if (bomb.power != 2)
+				addExplosion(bomb.position, bomb.owner, 1, bomb.power);
+			else
+			{
+				addExplosion(bomb.position, bomb.owner, 4, bomb.power);
+				addExplosion(translatePosition(bomb.position, -32, -32), bomb.owner, 4, bomb.power);
+				addExplosion(translatePosition(bomb.position, 32, -32), bomb.owner, 4, bomb.power);
+				addExplosion(translatePosition(bomb.position, -32, 32), bomb.owner, 4, bomb.power);
+				addExplosion(translatePosition(bomb.position, 32, 32), bomb.owner, 4, bomb.power);
+			}
+		}
+		return exploded;
+	});
+
+	// Run explosion events.
+	for (auto& explosion : m_explosions) explosion.timeout.update(now);
+	std::erase_if(m_explosions, [](const LevelExplosion& explosion)
+	{
+		return !explosion.timeout.isRunning();
+	});
+
+	// Run item events.
+	for (auto& item : m_items) item.timeout.update(now);
+	std::erase_if(m_items, [](const LevelItem& item)
+	{
+		return !item.timeout.isRunning();
+	});
+
+	// Run horse events.
+	for (auto& horse : m_horses) horse.timeout.update(now);
+	std::erase_if(m_horses, [](const LevelHorse& horse)
+	{
+		return !horse.timeout.isRunning();
+	});
+
+	// Run baddy events.
+	if (const auto subLevel = getSubLevelAtPosition(MapPosition{}); subLevel != nullptr && !isGmap())
+	{
+		for (auto& baddy : subLevel->baddies)
+			baddy.timeout.update(now);
+	}
+}
+
+void Level::doFrameEvents(const precise_clock::time_point time)
+{
+	// Don't bother with shoot and arrow processing if we don't have an npc-server.
+	if (!m_server->hasNPCServer())
+		return;
+
+	// Determine elapsed time.
+	const auto elapsed = time - m_lastFrameTime;
+	m_frameEventDuration += elapsed;
+	m_lastFrameTime = time;
+
+	// Count the iterations.
+	const auto iterations = static_cast<int>(m_frameEventDuration / 50ms);
+	if (iterations == 0)
+		return;
+
+	// Subtract our iterations.
+	m_frameEventDuration -= iterations * 50ms;
+
+	// Run shoot events.
+	std::vector<size_t> deletedItems;
+	for (size_t i = 0; i < m_shoots.size(); ++i)
+	{
+		if (!moveShoot(&m_shoots[i], iterations))
+			deletedItems.push_back(i);
+	}
+	std::erase_if(m_shoots, [this, &deletedItems](const LevelShoot& shoot)
+	{
+		return std::ranges::find(deletedItems, &shoot - &m_shoots[0]) != deletedItems.end();
+	});
+
+	// Run arrow events.
+	deletedItems.clear();
+	for (size_t i = 0; i < m_arrows.size(); ++i)
+	{
+		if (!moveArrow(&m_arrows[i], iterations))
+			deletedItems.push_back(i);
+	}
+	std::erase_if(m_arrows, [this, &deletedItems](const LevelArrow& arrow)
+	{
+		return std::ranges::find(deletedItems, &arrow - &m_arrows[0]) != deletedItems.end();
+	});
+
+	// Run thrown item events.
+	for (size_t i = 0; i < m_thrownItems.size(); ++i)
+	{
+		if (!moveThrownItem(i, iterations))
+			m_thrownItems.at(i) = std::nullopt;
+	}
+	if (!m_thrownItems.empty() && !m_thrownItems.back().has_value())
+		m_thrownItems.pop_back(); // Will eventually collapse the vector.
 }
 
 //----------------------------
@@ -909,124 +1027,6 @@ bool Level::saveLevel(const MapPosition& mapPosition, const std::string_view fil
 	}
 
 	return true;
-}
-
-//----------------------------
-
-void Level::doTimedEvents()
-{
-	const auto& now = m_server->getFrameStartTimeHighPrecision();
-
-	// Run board change events.
-	for (const auto& part : m_levelParts | removeNulls)
-	{
-		for (auto& change : part->boardChanges)
-			change.update(now);
-	}
-
-	// Run bomb events.
-	for (auto& bomb : m_bombs) bomb.timeout.update(now);
-	std::erase_if(m_bombs, [this](const LevelBomb& bomb)
-	{
-		bool exploded = !bomb.timeout.isRunning();
-		if (exploded)
-		{
-			// Generate bomb explosions.
-			// Don't send to players as they should see the bomb already.
-			if (bomb.power != 2)
-				addExplosion(bomb.position, bomb.owner, 1, bomb.power);
-			else
-			{
-				addExplosion(bomb.position, bomb.owner, 4, bomb.power);
-				addExplosion(translatePosition(bomb.position, -32, -32), bomb.owner, 4, bomb.power);
-				addExplosion(translatePosition(bomb.position, 32, -32), bomb.owner, 4, bomb.power);
-				addExplosion(translatePosition(bomb.position, -32, 32), bomb.owner, 4, bomb.power);
-				addExplosion(translatePosition(bomb.position, 32, 32), bomb.owner, 4, bomb.power);
-			}
-		}
-		return exploded;
-	});
-
-	// Run explosion events.
-	for (auto& explosion : m_explosions) explosion.timeout.update(now);
-	std::erase_if(m_explosions, [](const LevelExplosion& explosion)
-	{
-		return !explosion.timeout.isRunning();
-	});
-
-	// Run item events.
-	for (auto& item : m_items) item.timeout.update(now);
-	std::erase_if(m_items, [](const LevelItem& item)
-	{
-		return !item.timeout.isRunning();
-	});
-
-	// Run horse events.
-	for (auto& horse : m_horses) horse.timeout.update(now);
-	std::erase_if(m_horses, [](const LevelHorse& horse)
-	{
-		return !horse.timeout.isRunning();
-	});
-
-	// Run baddy events.
-	if (auto subLevel = getSubLevelAtPosition(MapPosition{}); subLevel != nullptr && !isGmap())
-	{
-		for (auto& baddy : subLevel->baddies)
-			baddy.timeout.update(now);
-	}
-}
-
-void Level::doFrameEvents(precise_clock::time_point time)
-{
-	// Don't bother with shoot and arrow processing if we don't have an npc-server.
-	if (!m_server->hasNPCServer())
-		return;
-
-	// Determine elapsed time.
-	const auto elapsed = time - m_lastFrameTime;
-	m_frameEventDuration += elapsed;
-	m_lastFrameTime = time;
-
-	// Count the iterations.
-	const auto iterations = static_cast<int>(m_frameEventDuration / 50ms);
-	if (iterations == 0)
-		return;
-
-	// Subtract our iterations.
-	m_frameEventDuration -= iterations * 50ms;
-
-	// Run shoot events.
-	std::vector<size_t> deletedItems;
-	for (size_t i = 0; i < m_shoots.size(); ++i)
-	{
-		if (!moveShoot(&m_shoots[i], iterations))
-			deletedItems.push_back(i);
-	}
-	std::erase_if(m_shoots, [this, &deletedItems](const LevelShoot& shoot)
-	{
-		return std::ranges::find(deletedItems, &shoot - &m_shoots[0]) != deletedItems.end();
-	});
-
-	// Run arrow events.
-	deletedItems.clear();
-	for (size_t i = 0; i < m_arrows.size(); ++i)
-	{
-		if (!moveArrow(&m_arrows[i], iterations))
-			deletedItems.push_back(i);
-	}
-	std::erase_if(m_arrows, [this, &deletedItems](const LevelArrow& arrow)
-	{
-		return std::ranges::find(deletedItems, &arrow - &m_arrows[0]) != deletedItems.end();
-	});
-
-	// Run thrown item events.
-	for (size_t i = 0; i < m_thrownItems.size(); ++i)
-	{
-		if (!moveThrownItem(i, iterations))
-			m_thrownItems.at(i) = std::nullopt;
-	}
-	if (!m_thrownItems.empty() && !m_thrownItems.back().has_value())
-		m_thrownItems.pop_back(); // Will eventually collapse the vector.
 }
 
 //----------------------------

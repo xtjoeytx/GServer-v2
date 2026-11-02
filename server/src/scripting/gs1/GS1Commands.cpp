@@ -3764,7 +3764,7 @@ void fn_warpto(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argument
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			if (const auto level = server->getLoadedLevel(filename, npc->getLevel()); level != nullptr)
-				npc->warp(level, {static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16)});
+				npc->warp(level, PixelPosition{static_cast<int32_t>(x * 16), static_cast<int32_t>(y * 16)});
 		}
 	}
 }

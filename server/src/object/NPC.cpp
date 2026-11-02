@@ -163,31 +163,34 @@ void NPC::resetToInitialState()
 
 //----------------------------
 
-bool NPC::warp(const LevelPtr& level, const PixelPosition& position)
+bool NPC::warp(const LevelPtr& destinationLevel, const std::optional<PixelPosition> position)
 {
-	if (level == nullptr)
+	if (destinationLevel == nullptr)
 		return false;
 
 	std::inplace_vector<SetResults, 5> warpResults;
-	const auto destLocalPosition = toLocalPixelPosition(position);
-	const auto destMapPosition = toMapPosition(position);
+	const auto destLocalPosition = toLocalPixelPosition(position.value_or(character.getGlobalPosition()));
+	const auto destMapPosition = toMapPosition(position.value_or(character.getGlobalPosition()));
 	const auto currentMapPosition = toMapPosition(getGlobalPosition());
 	const auto currentLevel = m_currentLevel.lock();
 
 	// If we are changing levels or the gmap sublevel, then clear our saved level file index.
 	// This will let the level NPC save it's modifications under the correct level.
-	if (level != currentLevel || destMapPosition != currentMapPosition)
+	if (destinationLevel != currentLevel || destMapPosition != currentMapPosition)
 		indexInLevelFile = std::nullopt;
 
 	// Clear the move queue since we are being forcibly moved.
 	moveQueue.clear();
 
 	// Set our new position.
-	warpResults.push_back(setPropWith<NPCProp::X2>(SetBy::SERVER, destLocalPosition.x()));
-	warpResults.push_back(setPropWith<NPCProp::Y2>(SetBy::SERVER, destLocalPosition.y()));
+	if (position.has_value())
+	{
+		warpResults.push_back(setPropWith<NPCProp::X2>(SetBy::SERVER, destLocalPosition.x()));
+		warpResults.push_back(setPropWith<NPCProp::Y2>(SetBy::SERVER, destLocalPosition.y()));
+	}
 
 	// If the level is a gmap, include the map position.
-	if (level->isGmap())
+	if (destinationLevel->isGmap())
 	{
 		warpResults.push_back(setPropWith<NPCProp::GMAPLEVELX>(SetBy::SERVER, destMapPosition.x()));
 		warpResults.push_back(setPropWith<NPCProp::GMAPLEVELY>(SetBy::SERVER, destMapPosition.y()));
@@ -195,28 +198,55 @@ bool NPC::warp(const LevelPtr& level, const PixelPosition& position)
 
 	// If we are moving levels, change the current level.
 	// Do this last so our current position is passed on the warp.
-	if (level != currentLevel)
-		warpResults.push_back(setPropWith<NPCProp::LEVEL>(SetBy::SERVER, level->levelName));
+	if (destinationLevel != currentLevel)
+	{
+		// Remove ourself from the old level.
+		currentLevel->removeNPC(id);
 
-	sendPropsFromResults(warpResults);
+		// Tell people we moved.
+		auto localPosition = character.getLocalPosition();
+		m_server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) << destinationLevel->levelName);
+
+		// Set the new level.
+		warpResults.push_back(setPropWith<NPCProp::LEVEL>(SetBy::SERVER, destinationLevel->levelName));
+
+		// Add the warped event.
+		scripting.events.addEvent(ScriptEventType::NPCWARPED, source::FromNPC(id));
+
+		// Tell NCs about our new position.
+		if (storageType == NPCStorageType::DATABASE)
+		{
+			CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::LEVEL << getProp<NPCProp::LEVEL>().serialize();
+			m_server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
+		}
+
+		// Add ourself to the new level and send our props.
+		destinationLevel->addNPC(id);
+		destinationLevel->sendNPCToNearbyPlayers(m_server->getNPC(id), m_server->getFrameStartTime());
+	}
+	// Send new position props.
+	else
+	{
+		sendPropsFromResults(warpResults);
+	}
 
 	// If our initial level is not set, set it now.
 	if (m_initialLevel.empty())
 	{
-		m_initialLevel = level->levelName;
+		m_initialLevel = destinationLevel->levelName;
 		m_initialCharacter = character;
 	}
 
 	return true;
 }
 
-void NPC::setLevel(const LevelPtr& level)
+void NPC::setLevel(const LevelPtr& newLevel)
 {
 	// Refresh our mod times.
 	refreshModTimes(m_server->getFrameStartTime());
 
-	this->level = level != nullptr ? level->levelName : ""s;
-	m_currentLevel = level;
+	level = newLevel != nullptr ? newLevel->levelName : ""s;
+	m_currentLevel = newLevel;
 }
 
 //----------------------------
@@ -232,7 +262,7 @@ void NPC::addShowImg(const uint8_t index, ShowImg&& showImg)
 	showImgList[index] = std::move(showImg);
 }
 
-CString NPC::getShowImagesPacket(std::optional<clock::time_point> modTime) const noexcept
+CString NPC::getShowImagesPacket(const std::optional<clock::time_point> fromWhen) const noexcept
 {
 	// Construct the packet.
 	// Index 9 will cause all of the showimgs to be erased on the client.
@@ -240,13 +270,13 @@ CString NPC::getShowImagesPacket(std::optional<clock::time_point> modTime) const
 	packet >> (char)PLO_SHOWIMGNPC >> (int)id >> (char)9;
 
 	// Send all the showimgs.
-	for (const auto& [id, showimg] : showImgList)
-		packet >> (char)(id + 10) << showimg.getAllPropsPacket(modTime);
+	for (const auto& [showimgId, showimg] : showImgList)
+		packet >> (char)(showimgId + 10) << showimg.getAllPropsPacket(fromWhen);
 
 	return packet;
 }
 
-void NPC::sendShowImagesToPlayer(const PlayerPtr& player, std::optional<clock::time_point> modTime) const noexcept
+void NPC::sendShowImagesToPlayer(const PlayerPtr& player, const std::optional<clock::time_point> fromWhen) const noexcept
 {
 	// Only start sending showimg packets when the NPC gains showimgs.
 	if (!m_hadShowImgs && showImgList.empty())
@@ -254,10 +284,10 @@ void NPC::sendShowImagesToPlayer(const PlayerPtr& player, std::optional<clock::t
 
 	m_hadShowImgs = true;
 
-	player->sendPacket(getShowImagesPacket(modTime));
+	player->sendPacket(getShowImagesPacket(fromWhen));
 }
 
-void NPC::sendAllShowImagesToLevel(std::optional<clock::time_point> modTime) const noexcept
+void NPC::sendAllShowImagesToLevel(const std::optional<clock::time_point> fromWhen) const noexcept
 {
 	// Only start sending showimg packets when the NPC gains showimgs.
 	if (!m_hadShowImgs && showImgList.empty())
@@ -265,7 +295,7 @@ void NPC::sendAllShowImagesToLevel(std::optional<clock::time_point> modTime) con
 
 	m_hadShowImgs = true;
 
-	m_server->sendPacketToNearby(getShowImagesPacket(modTime), getGlobalPosition(), getLevel());
+	m_server->sendPacketToNearby(getShowImagesPacket(fromWhen), getGlobalPosition(), getLevel());
 }
 
 //----------------------------
@@ -437,7 +467,7 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 	}
 }
 
-std::pair<CString, CString> NPC::getMoveQueuePacketData(std::optional<clock::time_point> modTime) const noexcept
+std::pair<CString, CString> NPC::getMoveQueuePacketData(const std::optional<clock::time_point> fromWhen) const noexcept
 {
 	if (moveQueue.empty())
 		return {};
@@ -448,7 +478,7 @@ std::pair<CString, CString> NPC::getMoveQueuePacketData(std::optional<clock::tim
 	for (const auto& move : moveQueue)
 	{
 		// Only send newer movements.
-		if (modTime.has_value() && move.modTime < modTime.value())
+		if (fromWhen.has_value() && move.modTime < fromWhen.value())
 			continue;
 
 		const auto durationLeftInSeconds = std::chrono::duration_cast<duration_seconds_double>(move.duration - move.elapsed);
@@ -487,12 +517,12 @@ std::pair<CString, CString> NPC::getMoveQueuePacketData(std::optional<clock::tim
 	return result;
 }
 
-void NPC::sendMoveQueueToPlayer(const PlayerPtr& player, std::optional<clock::time_point> modTime) const noexcept
+void NPC::sendMoveQueueToPlayer(const PlayerPtr& player, const std::optional<clock::time_point> fromWhen) const noexcept
 {
 	if (moveQueue.empty())
 		return;
 
-	auto [move1, move2] = getMoveQueuePacketData(modTime);
+	auto [move1, move2] = getMoveQueuePacketData(fromWhen);
 	if (move1.isEmpty())
 		return;
 
@@ -502,42 +532,42 @@ void NPC::sendMoveQueueToPlayer(const PlayerPtr& player, std::optional<clock::ti
 		player->sendPacket(CString() >> (char)PLO_MOVE2 >> (int)id << move2);
 }
 
-void NPC::sendMoveQueueToLevel(const LevelPtr& level, std::optional<clock::time_point> modTime) const noexcept
+void NPC::sendMoveQueueToLevel(const LevelPtr& targetLevel, const std::optional<clock::time_point> fromWhen) const noexcept
 {
 	if (moveQueue.empty())
 		return;
 
-	sendMoveQueueToLevel(level, getMoveQueuePacketData(modTime));
+	sendMoveQueueToLevel(targetLevel, getMoveQueuePacketData(fromWhen));
 }
 
-void NPC::sendMoveQueueToLevel(const LevelPtr& level, const std::pair<CString, CString>& queue) const noexcept
+void NPC::sendMoveQueueToLevel(const LevelPtr& targetLevel, const std::pair<CString, CString>& queue) const noexcept
 {
 	if (queue.first.isEmpty())
 		return;
 
 	// Send them out.
-	m_server->sendPacketToNearby(CString() >> (char)PLO_MOVE2 >> (int)id << queue.second, character.getGlobalPosition(), level, {}, [](const Player* player)
+	m_server->sendPacketToNearby(CString() >> (char)PLO_MOVE2 >> (int)id << queue.second, character.getGlobalPosition(), targetLevel, {}, [](const Player* player)
 	{
 		return player->getVersion() >= CLVER_2_3;
 	});
-	m_server->sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)id << queue.first, character.getGlobalPosition(), level, {}, [](const Player* player)
+	m_server->sendPacketToNearby(CString() >> (char)PLO_MOVE >> (int)id << queue.first, character.getGlobalPosition(), targetLevel, {}, [](const Player* player)
 	{
 		return player->getVersion() < CLVER_2_3;
 	});
 }
 
-void NPC::sendMoveQueueUpdatesToLevel(const LevelPtr& level) const noexcept
+void NPC::sendMoveQueueUpdatesToLevel(const LevelPtr& targetLevel) const noexcept
 {
 	const auto result = getMoveQueuePacketData(m_server->getFrameStartTime());
-	sendMoveQueueToLevel(level, result);
+	sendMoveQueueToLevel(targetLevel, result);
 }
 
-void NPC::refreshModTimes(const clock::time_point modTime) noexcept
+void NPC::refreshModTimes(const clock::time_point fromWhen) noexcept
 {
-	for (auto& time : this->modTime)
+	for (auto& time : modTime)
 	{
 		if (time.has_value())
-			time = modTime;
+			time = fromWhen;
 	}
 }
 
@@ -562,13 +592,6 @@ double NPC::getCalculatedTileZ() const noexcept
 
 std::string NPC::getLevelName() const
 {
-	// If we are a control-NPC, our level constantly changes, so don't rely on our pointer.
-	if (scriptType == NPCTYPE_CONTROL)
-		return level;
-
-	if (const auto levelPtr = getLevel(); levelPtr != nullptr)
-		return levelPtr->levelName;
-
 	return level;
 }
 
@@ -1463,28 +1486,8 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 			if (newLevel == nullptr)
 				SETPROP_RETURN_IGNORE;
 
-			// Tell everybody we are moving.
-			// This should technically only be sent to players in the level or those who had been in the level.
-			auto localPosition = getLocalPosition();
-			m_server->sendPacketToType(PLTYPE_ANYCLIENT, CString() >> (char)PLO_NPCMOVED >> (int)id >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) << strProp->value);
-
-			// Remove ourself from the old level.
-			if (auto oldLevel = getLevel(); oldLevel != nullptr)
-				oldLevel->removeNPC(id);
-
-			// Add us to the new level.
-			newLevel->addNPC(id);
-			indexInLevelFile = std::nullopt;
-
-			// Send our props to people in the new level.
-			newLevel->sendNPCToNearbyPlayers(m_server->getNPC(id), m_server->getFrameStartTime());
-
-			// Tell NCs about our new position.
-			CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::LEVEL << getProp<NPCProp::LEVEL>().serialize();
-			m_server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
-
-			// Send the NPCWARPED event to the NPC.
-			scripting.events.addEvent(ScriptEventType::NPCWARPED, source::FromNPC(id));
+			// Set the level.
+			warp(newLevel);
 			break;
 		}
 
@@ -2004,30 +2007,6 @@ void NPC::testForLinks(SetResults& result)
 		result.resultPropIds.push_back(PROPID(NPCProp::Y2));
 	};
 
-	// The NPC changed their level and position.
-	auto informNPCWarped = [&]()
-	{
-		// Tell NCs about our new position.
-		const CString ncPacket = CString() >> (char)PLO_NC_NPCADD >> (int)id >> (char)NPCProp::LEVEL << getProp<NPCProp::LEVEL>().serialize();
-		m_server->sendPacketToType(PLTYPE_ANYNC, ncPacket);
-
-		// Set our level prop.
-		result.resultPropIds.clear();
-		result.resultPropIds.push_back(PROPID(NPCProp::LEVEL));
-		informNPCMoved();
-
-		// Tell players that we changed level.
-		auto localPosition = getLocalPosition();
-		m_server->sendPacketToType(PLTYPE_ANYPLAYER, CString() >> (char)PLO_NPCMOVED >> (int)id >> (char)(localPosition.x() / 8) >> (char)(localPosition.y() / 8) << getLevelName());
-		m_server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), levelPtr);
-
-		// Add a scripting event for the warp.
-		scripting.events.addEvent(ScriptEventType::NPCWARPED, source::FromNPC(id));
-
-		// Erase our saved file index.
-		indexInLevelFile = std::nullopt;
-	};
-
 	// Clamp NPC to the level.
 	auto clampToLevel = [&]()
 	{
@@ -2113,11 +2092,7 @@ void NPC::testForLinks(SetResults& result)
 		// Warp to the new level.
 		if (destLevel == levelPtr)
 			informNPCMoved();
-		else
-		{
-			setLevel(destLevel);
-			informNPCWarped();
-		}
+		else warp(destLevel);
 	}
 }
 

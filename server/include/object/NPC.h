@@ -279,20 +279,20 @@ public:
 	void resetToInitialState();
 
 public:
-	bool warp(const LevelPtr& level, const PixelPosition& position);
-	void setLevel(const LevelPtr& level);
+	bool warp(const LevelPtr& destinationLevel, std::optional<PixelPosition> position = std::nullopt);
+	void setLevel(const LevelPtr& newLevel);
 	void addShowImg(uint8_t index, ShowImg&& showImg);
-	CString getShowImagesPacket(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendShowImagesToPlayer(const PlayerPtr& player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendAllShowImagesToLevel(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
+	CString getShowImagesPacket(std::optional<clock::time_point> fromWhen = std::nullopt) const noexcept;
+	void sendShowImagesToPlayer(const PlayerPtr& player, std::optional<clock::time_point> fromWhen = std::nullopt) const noexcept;
+	void sendAllShowImagesToLevel(std::optional<clock::time_point> fromWhen = std::nullopt) const noexcept;
 	void addMoveToQueue(const LocalPixelPosition& moveDelta, float durationInSeconds, uint8_t options);
 	void processMoveQueue(std::chrono::milliseconds deltaTime);
-	std::pair<CString, CString> getMoveQueuePacketData(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendMoveQueueToPlayer(const PlayerPtr& player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendMoveQueueToLevel(const LevelPtr& level, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendMoveQueueToLevel(const LevelPtr& level, const std::pair<CString, CString>& queue) const noexcept;
-	void sendMoveQueueUpdatesToLevel(const LevelPtr& level) const noexcept;
-	void refreshModTimes(clock::time_point modTime) noexcept;
+	std::pair<CString, CString> getMoveQueuePacketData(std::optional<clock::time_point> fromWhen = std::nullopt) const noexcept;
+	void sendMoveQueueToPlayer(const PlayerPtr& player, std::optional<clock::time_point> fromWhen = std::nullopt) const noexcept;
+	void sendMoveQueueToLevel(const LevelPtr& targetLevel, std::optional<clock::time_point> fromWhen = std::nullopt) const noexcept;
+	void sendMoveQueueToLevel(const LevelPtr& targetLevel, const std::pair<CString, CString>& queue) const noexcept;
+	void sendMoveQueueUpdatesToLevel(const LevelPtr& targetLevel) const noexcept;
+	void refreshModTimes(clock::time_point fromWhen) noexcept;
 
 public:
 	void hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEventType = std::nullopt, const std::optional<ScriptObject>& source = std::nullopt, std::optional<CarryObjectType> hitByType = std::nullopt);
@@ -329,7 +329,7 @@ public:
 	void setJoinedClasses(std::string_view classes);
 	void joinClass(std::string_view className);
 	void leaveClass(std::string_view className);
-	void sendScriptUpdatesToLevel(clock::time_point when) const;
+	void sendScriptUpdatesToLevel(clock::time_point fromWhen) const;
 	void constructScriptParameters();
 	string_map<GameVariable> scriptParameters;
 

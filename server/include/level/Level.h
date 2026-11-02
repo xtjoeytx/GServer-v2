@@ -138,17 +138,17 @@ public:
 	static std::shared_ptr<Level> clone(const LevelPtr& level, std::string_view name);
 
 public:
+	void doTimedEvents();
+	void doFrameEvents(precise_clock::time_point time);
+	const auto& getLastFrameTime() const { return m_lastFrameTime; }
+	const auto& getFilePath() const { return m_filePath; }
+
+public:
 	bool loaded = false;
 	bool reload(std::string_view level) const;
 	bool reload(const MapPosition& position) const;
 	void reload(const StaticLevelDataPtr& staticData);
 	bool saveLevel(const MapPosition& mapPosition, std::string_view filename) const;
-
-public:
-	void doTimedEvents();
-	void doFrameEvents(precise_clock::time_point time);
-	const auto& getLastFrameTime() const { return m_lastFrameTime; }
-	const auto& getFilePath() const { return m_filePath; }
 
 private:
 	precise_clock::time_point m_lastFrameTime = precise_clock::now();

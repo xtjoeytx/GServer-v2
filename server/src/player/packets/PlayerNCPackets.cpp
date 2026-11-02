@@ -151,7 +151,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCWARP(CString& pPacket)
 	if (npcLevel != npc->getLevelName())
 	{
 		if (const auto newLevel = m_server->getLoadedLevel(npcLevel, npc->getLevel()); newLevel != nullptr)
-			npc->warp(newLevel, {tileX.pixelCoordinate, tileY.pixelCoordinate});
+			npc->warp(newLevel, PixelPosition{tileX.pixelCoordinate, tileY.pixelCoordinate});
 	}
 	// Changing position in the current level.
 	else
