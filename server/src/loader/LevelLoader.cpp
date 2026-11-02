@@ -842,7 +842,7 @@ bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view f
 			}
 
 			// Erase the final newline.
-			if (text.back() == '\n')
+			if (!text.empty() && text.back() == '\n')
 				text.pop_back();
 
 			// Add the new sign.

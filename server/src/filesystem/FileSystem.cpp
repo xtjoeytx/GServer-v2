@@ -269,7 +269,7 @@ void FileSystem::defaultWatchCallback(uint32_t id, const std::filesystem::path& 
 			}
 
 			// New file.
-			if (iter == m_files.end() && e.test(FileEvent::Added) && std::filesystem::exists(dir / file))
+			if (iter == m_files.end() && e.test(FileEvent::Added) && std::filesystem::exists(dir / file) && std::filesystem::is_regular_file(dir / file))
 			{
 				auto entry = std::make_unique<FileData>();
 				entry->file = dir / file;

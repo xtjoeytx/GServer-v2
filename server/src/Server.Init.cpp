@@ -318,7 +318,7 @@ void Server::initFilesystemCallbacks()
 				npc->sendScriptUpdatesToLevel(file.getModTime());
 			}
 			// Otherwise, if the NPC is on a level, try to send only the modified props.
-			else if (auto level = npc->getLevel(); level != nullptr)
+			else if (const auto level = npc->getLevel(); level != nullptr)
 			{
 				// If the level was changed, warp, which will send the props to players in the new level.
 				if (npc->level != level->levelName)

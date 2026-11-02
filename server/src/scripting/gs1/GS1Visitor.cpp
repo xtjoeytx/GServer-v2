@@ -688,7 +688,8 @@ void GS1Visitor::setCurrentPlayerVariables(const std::optional<ScriptObject>& so
 {
 	if (!source.has_value() || source.value().second != ScriptObjectType::PLAYER)
 	{
-		builtInStore->clearTemporary("player");
+		if (builtInStore != nullptr)
+			builtInStore->clearTemporary("player");
 		return;
 	}
 
@@ -866,7 +867,8 @@ std::any GS1Visitor::visitBlock(GS1Parser::BlockContext* ctx)
 			}
 			catch (...)
 			{
-				m_callStack.pop_back();
+				if (!m_callStack.empty())
+					m_callStack.pop_back();
 				throw;
 			}
 		}
@@ -875,7 +877,8 @@ std::any GS1Visitor::visitBlock(GS1Parser::BlockContext* ctx)
 		moveNext();
 	}
 
-	m_callStack.pop_back();
+	if (!m_callStack.empty())
+		m_callStack.pop_back();
 
 	return {};
 }
@@ -1002,7 +1005,8 @@ std::any GS1Visitor::visitStatementWith(GS1Parser::StatementWithContext* context
 	auto result = visit(context->block());
 
 	// Pop the source off the source stack.
-	m_currentSource.pop_back();
+	if (!m_currentSource.empty())
+		m_currentSource.pop_back();
 	setCurrentPlayerVariables(findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER));
 
 	return result;
@@ -1565,7 +1569,8 @@ std::any GS1Visitor::visitIdentifierAccess(GS1Parser::IdentifierAccessContext* c
 		{
 			first = visit(context->identifier_value(pos++));
 		}
-		m_currentSource.pop_back();
+		if (!m_currentSource.empty())
+			m_currentSource.pop_back();
 
 		// Check if the result is a ScriptObject.
 		value = getGS1ScriptValueFromAny(first);

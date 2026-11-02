@@ -598,7 +598,8 @@ void ScriptEngineGS1::cleanup(GS1ScriptWrapper& wrapper)
 {
 	// Clear the variables (to clear reference counted pointers, just in case).
 	wrapper.variables.clearTemporary();
-	wrapper.visitor->flagStore.clearTemporary();
+	if (wrapper.visitor != nullptr)
+		wrapper.visitor->flagStore.clearTemporary();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
