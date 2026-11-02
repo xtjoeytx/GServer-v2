@@ -461,6 +461,10 @@ public:
 	std::deque<NPCMove> moveQueue;
 	clock::time_point lastMoveQueueSentTime;
 
+	// If true, we will not process timeouts on the NPC server.
+	// We will still handle other events, though.
+	bool sleeping = false;
+
 private:
 	Server* m_server;
 

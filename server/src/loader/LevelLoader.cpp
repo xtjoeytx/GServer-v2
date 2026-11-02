@@ -242,7 +242,7 @@ StaticLevelDataPtr LevelLoader::loadStaticData(const std::filesystem::path& leve
 
 bool LevelLoader::loadStaticDataInto(const StaticLevelDataPtr& staticLevelData)
 {
-	auto* server = BabyDI::Get<Server>();
+	const auto server = BabyDI::Get<Server>();
 	auto& fileSystem = server->getFileSystem();
 
 	const auto fileInfo = fileSystem.infoi(fs::FileCategory::LEVEL, staticLevelData->levelName);
@@ -274,14 +274,22 @@ bool LevelLoader::loadStaticDataInto(const StaticLevelDataPtr& staticLevelData)
 
 SubLevelPtr LevelLoader::attachStaticDataToLevel(const LevelPtr& level, std::optional<MapPosition> mapPosition, const StaticLevelDataPtr& staticData)
 {
+	const auto server = BabyDI::Get<Server>();
 	auto subLevel = std::make_shared<SubLevel>();
+	subLevel->server = server;
 	subLevel->parentLevel = level;
 	subLevel->staticData = staticData;
 	subLevel->mapPosition = mapPosition;
 
 	// Record if this sub-level is related to a level that is a gmap or on a bigmap.
 	if (level->isGmap())
+	{
 		subLevel->isOnGmap = true;
+
+		// If this sublevel can be unloaded, set the last used timestamp.
+		if (const auto gmap = level->getMap(); !gmap->keepAllLevelsLoaded && !gmap->levelsToKeepInMemory.contains(staticData->levelName))
+			subLevel->timeSinceLastUsed = server->getFrameStartTime();
+	}
 	if (level->isOnBigMap())
 		subLevel->isOnBigMap = true;
 
@@ -364,7 +372,7 @@ void LevelLoader::loadStaticDataNPCs(const LevelPtr& level, std::optional<MapPos
 		npc->character.localPixelX = npcData.position.x();
 		npc->character.localPixelY = npcData.position.y();
 		npc->image = npcData.image;
-		npc->setLevel(level);
+		npc->level = level->levelName;
 
 		// Map position.
 		if (mapPosition.has_value())

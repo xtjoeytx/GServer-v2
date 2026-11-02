@@ -218,7 +218,6 @@ protected:
 	clock::time_point m_lastNick;
 	std::vector<std::unique_ptr<CachedLevel<StaticLevelData>>> m_cachedStaticLevels;
 	string_map<std::vector<std::unique_ptr<CachedLevel<SubLevel>>>> m_cachedDynamicLevels;
-	std::map<CString, std::shared_ptr<Level>> m_singleplayerLevels;
 	std::weak_ptr<Level> m_currentLevel;
 
 	std::unordered_set<std::string> m_knownFiles;

@@ -162,6 +162,10 @@ void NPCServer::run(const TimeoutGenerator::time_delta delta)
 		{
 			npc->recordCurrentPropModTime();
 
+			// Sleeping NPCs won't process timeouts.
+			if (npc->sleeping)
+				continue;
+
 			// TODO(refactor): Replace with TimeoutGenerator.
 			if (npc->timeout.count() != 0)
 			{
@@ -197,10 +201,12 @@ void NPCServer::run(const TimeoutGenerator::time_delta delta)
 	// Run all NPC scripts.
 	for (auto& [id, npc] : m_server->getNPCList())
 	{
-		// Process movement.
-		npc->processMoveQueue(delta);
+		// Process movement if the NPC is not sleeping.
+		if (!npc->sleeping)
+			npc->processMoveQueue(delta);
 
 		// Process scripts.
+		// We do these even if the NPC is sleeping.
 		npc->executeEvents(npc->scripting.events, source::FromNPC(id));
 	}
 

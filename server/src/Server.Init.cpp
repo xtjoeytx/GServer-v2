@@ -121,38 +121,24 @@ void Server::initTimedEvents()
 		saveServerFlags();
 		if (const auto guild = BabyDI::Get<GuildManager>(); guild != nullptr)
 			guild->saveGuilds();
-	};
-	m_timedNWTime5s.callbackIterations = [this](int)
-	{
-		calculateNWTime();
-		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
-	};
-	m_timedMaintenance5m.callbackIterations = [this](int)
-	{
-		// Reload some server settings.
-		loadAllowedVersions();
-		loadServerMessage();
-		loadIPBans();
 
 		// Check if we need to unload any levels.
 		for (auto& [levelName, level] : m_levelList)
 		{
-			// TODO(unloading): Gmap sub-level (and maybe static level) unloading.  Needs to follow Map::keepAllLevelsLoaded and levelsToKeepInMemory settings.
-
 			// Skip if the level is currently active with players in it.
 			// We always do this so we can abort early.
 			if (!level->timeSinceLastPlayerLeft.has_value())
 				continue;
 
 			// Register that we will skip if we have the unload time set to 0 (which means never unload).
-			bool skip = (m_unloadInactiveLevelTime.getValue() == 0);
+			bool skip = (cached.unloadInactiveLevelTime.getValue() == 0);
 
 			// Give a 10 minute grace period after the last player leaves.
 			auto inactiveDuration = timeDifference(m_frameStartTime, level->timeSinceLastPlayerLeft.value());
-			skip = skip || inactiveDuration < std::chrono::seconds(m_unloadInactiveLevelTime.getValue());
+			skip = skip || inactiveDuration < std::chrono::seconds(cached.unloadInactiveLevelTime.getValue());
 
 			// Group maps and single player maps will always unload after 10 minutes if the inactive time is not set.
-			if (level->isPrivateMap() && inactiveDuration > std::chrono::seconds(m_unloadInactiveLevelTime.get().value_or(600)))
+			if (level->isPrivateMap() && inactiveDuration > std::chrono::seconds(cached.unloadInactiveLevelTime.get().value_or(600)))
 				skip = false;
 
 			// Do the skip now.
@@ -190,6 +176,18 @@ void Server::initTimedEvents()
 		{
 			return entry.second == nullptr;
 		});
+	};
+	m_timedNWTime5s.callbackIterations = [this](int)
+	{
+		calculateNWTime();
+		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
+	};
+	m_timedMaintenance5m.callbackIterations = [this](int)
+	{
+		// Reload some server settings.
+		loadAllowedVersions();
+		loadServerMessage();
+		loadIPBans();
 	};
 }
 

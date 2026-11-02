@@ -895,6 +895,17 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				auto lastEnteredTime = player->getLevelLastEnteredTimeForWarping(levelData.get());
 				sendDynamicLevelData(level, lastEnteredTime);
 			}
+
+			for (int j = -1; j <= 1; ++j)
+			{
+				for (int k = -1; k <= 1; ++k)
+				{
+					if (j == 0 && k == 0) continue;
+					const auto pos = getMapPosition().translate(j, k);
+					if (const auto subLevel = level->getSubLevelAtPosition(pos); subLevel != nullptr)
+						subLevel->updateTimeSinceLastUsed();
+				}
+			}
 			break;
 		}
 
@@ -915,6 +926,17 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			{
 				auto lastEnteredTime = player->getLevelLastEnteredTimeForWarping(levelData.get());
 				sendDynamicLevelData(level, lastEnteredTime);
+			}
+
+			for (int j = -1; j <= 1; ++j)
+			{
+				for (int k = -1; k <= 1; ++k)
+				{
+					if (j == 0 && k == 0) continue;
+					const auto pos = getMapPosition().translate(j, k);
+					if (const auto subLevel = level->getSubLevelAtPosition(pos); subLevel != nullptr)
+						subLevel->updateTimeSinceLastUsed();
+				}
 			}
 			break;
 		}

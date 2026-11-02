@@ -183,7 +183,6 @@ void PlayerClient::cleanup()
 	// Clean up.
 	m_cachedStaticLevels.clear();
 	m_cachedDynamicLevels.clear();
-	m_singleplayerLevels.clear();
 
 	Player::cleanup();
 }
@@ -262,15 +261,6 @@ bool PlayerClient::doTimedEvents()
 						account.apCounter = m_server->cached.apSystemThresholdSeconds[4].getValue();
 				}
 			}
-		}
-	}
-
-	// Do singleplayer level events.
-	{
-		for (auto& level : m_singleplayerLevels | std::views::values)
-		{
-			if (level)
-				level->doTimedEvents();
 		}
 	}
 

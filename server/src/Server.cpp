@@ -109,6 +109,7 @@ void ExternalServerCachedSettings::bind(Server* server)
 	settings.track(enableFlagCropping, disableExplosions, enableClientsidePushPull, tileRespawnTime, enableIdleDisconnect, idleTimeoutSeconds);
 	settings.track(enablePermanentTileChanges, saveTileChangesToLevelFile);
 	settings.track(dontAddServerFlags);
+	settings.track(unloadInactiveLevelTime);
 
 	// triggerhacks
 	settings.track(enableFlaghackMovement, enableTriggerhackExecscript, enableTriggerhackFiles, enableTriggerhackGroups, enableTriggerhackGuilds, enableTriggerhackLevels, enableTriggerhackProps, enableTriggerhackRC, enableTriggerhackWeapons);
@@ -660,7 +661,6 @@ void Server::prepareSettings()
 	cached.bind(this);
 	m_settings.track(m_generationString, m_classicStyleLogs);
 	m_settings.track(m_newTilesets, m_newTilesetLevels);
-	m_settings.track(m_unloadInactiveLevelTime);
 	m_settings.track(m_staffList, m_bushItemTypes, m_deathItemTypes);
 	m_settings.track(m_gmaps, m_bigmaps, m_groupmaps, m_singleplayerLevels);
 }

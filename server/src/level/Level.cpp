@@ -385,11 +385,13 @@ double SubLevel::getHeightAt(const LocalPixelPosition& position) const noexcept
 	return point.z();
 }
 
-void SubLevel::sendBoardToPlayer(const std::shared_ptr<Player>& player) const
+void SubLevel::sendBoardToPlayer(const std::shared_ptr<Player>& player)
 {
 	const auto tiles = getTiles();
 	if (!tiles.has_value())
 		return;
+
+	updateTimeSinceLastUsed();
 
 	CString retVal;
 	retVal.writeGChar(PLO_BOARDPACKET);
@@ -398,11 +400,13 @@ void SubLevel::sendBoardToPlayer(const std::shared_ptr<Player>& player) const
 	player->sendRawPacket(retVal);
 }
 
-void SubLevel::sendBoardLayersToPlayer(const std::shared_ptr<Player>& player) const
+void SubLevel::sendBoardLayersToPlayer(const std::shared_ptr<Player>& player)
 {
 	const auto tiles = getTiles();
 	if (!tiles.has_value())
 		return;
+
+	updateTimeSinceLastUsed();
 
 	for (const auto layer : tiles.value()->getUsedTileLayers())
 	{
@@ -411,11 +415,13 @@ void SubLevel::sendBoardLayersToPlayer(const std::shared_ptr<Player>& player) co
 	}
 }
 
-void SubLevel::sendBoardLayerToPlayer(const std::shared_ptr<Player>& player, const size_t layer) const
+void SubLevel::sendBoardLayerToPlayer(const std::shared_ptr<Player>& player, const size_t layer)
 {
 	const auto tiles = getTiles();
 	if (!tiles.has_value())
 		return;
+
+	updateTimeSinceLastUsed();
 
 	CString retVal;
 	retVal.writeGChar(PLO_BOARDLAYER);
@@ -428,11 +434,13 @@ void SubLevel::sendBoardLayerToPlayer(const std::shared_ptr<Player>& player, con
 	player->sendRawPacket(retVal);
 }
 
-void SubLevel::sendBoardHeightsToPlayer(const std::shared_ptr<Player>& player) const
+void SubLevel::sendBoardHeightsToPlayer(const std::shared_ptr<Player>& player)
 {
 	// We only need to send heights if there are level overrides.
 	if (!mapPosition.has_value() || !terrain.has_value() || terrain.value().levelHeightOverrides.empty())
 		return;
+
+	updateTimeSinceLastUsed();
 
 	CString retVal;
 	retVal.writeGChar(PLO_BOARDHEIGHTS);
@@ -472,10 +480,12 @@ void SubLevel::sendBoardHeightsToPlayer(const std::shared_ptr<Player>& player) c
 	player->sendPacket(retVal);
 }
 
-void SubLevel::sendBoardChangesToPlayer(const std::shared_ptr<Player>& player, const std::optional<clock::time_point> time) const
+void SubLevel::sendBoardChangesToPlayer(const std::shared_ptr<Player>& player, const std::optional<clock::time_point> time)
 {
 	if (player == nullptr)
 		return;
+
+	updateTimeSinceLastUsed();
 
 	// Determine the style of board changes to send.
 	// 0 = PLO_BOARDMODIFY2 with pixel position (bad)
@@ -519,12 +529,79 @@ void SubLevel::sendBoardChangesToPlayer(const std::shared_ptr<Player>& player, c
 	}
 }
 
+void SubLevel::updateTimeSinceLastUsed()
+{
+	if (timeSinceLastUsed.has_value())
+		timeSinceLastUsed = server->getFrameStartTime();
+	if (sleeping)
+		wakeNPCs();
+}
+
+void SubLevel::sleepNPCs()
+{
+	bool processed = false;
+	if (const auto level = parentLevel.lock(); level != nullptr && server != nullptr)
+	{
+		for (const auto& npcId : level->findNPCsInLevelPart(mapPosition.value_or({0, 0})))
+		{
+			if (auto npc = server->getNPC(npcId); npc != nullptr)
+			{
+				npc->sleeping = true;
+				processed = true;
+			}
+		}
+	}
+	sleeping = true;
+
+#if DEBUG
+	if (processed)
+	{
+		if (const auto staticLevel = staticData.lock(); staticLevel != nullptr)
+		{
+			const auto [x, y, _] = mapPosition.value_or({0, 0});
+			log::printLine(log::server, "Putting NPCs to sleep in sublevel '{}' [{}, {}].", staticLevel->levelName, x, y);
+		}
+	}
+#endif
+}
+
+void SubLevel::wakeNPCs()
+{
+	bool processed = false;
+	if (const auto level = parentLevel.lock(); level != nullptr && server != nullptr)
+	{
+		for (const auto& npcId : level->findNPCsInLevelPart(mapPosition.value_or({0, 0})))
+		{
+			if (auto npc = server->getNPC(npcId); npc != nullptr)
+			{
+				npc->sleeping = false;
+				processed = true;
+			}
+		}
+	}
+	sleeping = false;
+	if (timeSinceLastUsed.has_value())
+		timeSinceLastUsed = server->getFrameStartTime();
+
+#if DEBUG
+	if (processed)
+	{
+		if (const auto staticLevel = staticData.lock(); staticLevel != nullptr)
+		{
+			const auto [x, y, _] = mapPosition.value_or({0, 0});
+			log::printLine(log::server, "Waking NPCs in sublevel '{}' [{}, {}].", staticLevel->levelName, x, y);
+		}
+	}
+#endif
+}
+
 //----------------------------
 
 Level::Level()
 {
 	m_server = BabyDI::Get<Server>();
 	assert(m_server != nullptr);
+	m_sleepTimeout1m.start();
 }
 
 Level::~Level()
@@ -650,6 +727,37 @@ void Level::doTimedEvents()
 	{
 		for (auto& baddy : subLevel->baddies)
 			baddy.timeout.update(now);
+	}
+
+	// If we are a gmap, try to sleep sublevels.
+	if (isGmap() && !m_map->keepAllLevelsLoaded && m_sleepTimeout1m.update(now) != 0)
+	{
+		m_sleepTimeout1m.runOnceFor(1min);
+		const auto nowInSeconds = m_server->getFrameStartTime();
+		for (const auto& subLevel : m_levelParts)
+		{
+			// If we are sleeping, skip it.
+			// If we have no recorded last used value, this sublevel will never get put to sleep.
+			if (subLevel->sleeping || !subLevel->timeSinceLastUsed.has_value())
+				continue;
+
+			if (timeDifference(subLevel->timeSinceLastUsed.value(), nowInSeconds) > std::chrono::seconds{m_server->cached.unloadInactiveLevelTime.getValue()})
+			{
+				// We might want to sleep this sublevel.  Check if any players are in range.
+				const auto mapPosition = subLevel->mapPosition.value_or({0, 0});
+				const auto pixelPosition = PixelPosition{mapPosition.x() * Level::pixelsPerSubLevel().width(), mapPosition.y() * Level::pixelsPerSubLevel().height()};
+				if (auto playersInRange = findInRangePlayersForCommunication(pixelPosition); playersInRange.begin() == playersInRange.end())
+				{
+					// No players in range, so sleep.
+					subLevel->sleepNPCs();
+				}
+				else
+				{
+					// We have players in range, so reset the timer.
+					subLevel->timeSinceLastUsed = nowInSeconds;
+				}
+			}
+		}
 	}
 }
 
@@ -1445,7 +1553,8 @@ bool Level::addNPC(const std::shared_ptr<NPC>& npc)
 		return false;
 
 	m_npcs.insert(npc->id);
-	npc->setLevel(shared_from_this());
+	if (const auto npclevel = npc->getLevel(); npclevel == nullptr || npclevel.get() != this)
+		npc->setLevel(shared_from_this());
 
 	if (const auto part = getSubLevelAtPosition(npc->getGlobalPosition()); part != nullptr)
 	{
@@ -3209,6 +3318,18 @@ std::generator<NPCID> Level::findInRangeNPCsForCommunication(const PixelPosition
 				for (const auto& npcId : level->m_npcs)
 					co_yield npcId;
 			}
+		}
+	}
+}
+
+std::generator<NPCID> Level::findNPCsInLevelPart(const MapPosition& mapLevel) const noexcept
+{
+	for (const auto& npcId : m_npcs)
+	{
+		if (auto npc = m_server->getNPC(npcId); npc != nullptr)
+		{
+			if (npc->character.mapX == mapLevel.x() && npc->character.mapY == mapLevel.y())
+				co_yield npcId;
 		}
 	}
 }

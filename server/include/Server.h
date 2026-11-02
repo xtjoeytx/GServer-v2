@@ -138,6 +138,7 @@ struct ExternalServerCachedSettings
 	SettingCache<bool> enablePermanentTileChanges{"savelevels", false};
 	SettingCache<bool> saveTileChangesToLevelFile{"levelsautosave", false};
 	SettingCache<bool> dontAddServerFlags{"dontaddserverflags", false};
+	SettingCache<uint32_t> unloadInactiveLevelTime{"unloadinactiveleveltime", 600};
 	// flag/triggerhacks
 	SettingCache<bool> enableFlaghackMovement{"flaghack_movement", true};
 	SettingCache<bool> enableTriggerhackExecscript{"triggerhack_execscript", false};
@@ -507,7 +508,6 @@ private:
 	SettingCache<std::string> m_generationString{"generation", "classic"};
 	SettingCache<bool> m_classicStyleLogs{"classicstylelogs", false};
 	SettingCache<bool> m_newTilesets{"newtilesets", false};
-	SettingCache<uint32_t> m_unloadInactiveLevelTime{"unloadinactiveleveltime", 600};
 	SettingCache<std::vector<std::string>> m_newTilesetLevels{"newtilesetlevels", {}};
 	SettingCache<std::vector<std::string>> m_staffList{"staff"};
 	SettingCache<std::vector<std::string>> m_bushItemTypes{"bushitemtypes", {"greenrupee", "bluerupee", "heart", "bombs"}};

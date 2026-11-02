@@ -234,7 +234,7 @@ cropflags = true
 classicstylelogs = false
 
 # Time in seconds after which inactive levels (levels without players) are unloaded from the server.
-# If 0, inactive levels are not unloaded.  Levels are unloaded during maintenance cycles (every 5 minutes), so this may not be exact.
+# If 0, inactive levels are not unloaded.  Levels are unloaded during maintenance cycles (every 1 minute), so this may not be exact.
 unloadinactiveleveltime = 600
 
 # The images used for when an NPC carries an object.
