@@ -469,6 +469,7 @@ private:
 	Server* m_server;
 
 	std::array<std::optional<clock::time_point>, NPCPROP_COUNT> m_savedModTime;
+	bool m_warping = false;
 	bool m_blockPositionUpdates = false;
 	mutable bool m_hadShowImgs = false;
 

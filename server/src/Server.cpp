@@ -1273,6 +1273,10 @@ std::shared_ptr<Level> Server::getLoadedLevel(const std::string_view levelName, 
 		return hintLevel;
 	}
 
+	// Check if the level belongs on a gmap.
+	if (auto gmapLevel = findGmapForLevel(levelName, nullptr); gmapLevel != nullptr)
+		return gmapLevel;
+
 	return getLoadedLevelNoHint(levelName);
 }
 

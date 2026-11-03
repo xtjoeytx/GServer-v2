@@ -168,6 +168,8 @@ bool NPC::warp(const LevelPtr& destinationLevel, const std::optional<PixelPositi
 	if (destinationLevel == nullptr)
 		return false;
 
+	m_warping = true;
+
 	std::inplace_vector<SetResults, 5> warpResults;
 	const auto destLocalPosition = toLocalPixelPosition(position.value_or(character.getGlobalPosition()));
 	const auto destMapPosition = toMapPosition(position.value_or(character.getGlobalPosition()));
@@ -236,6 +238,8 @@ bool NPC::warp(const LevelPtr& destinationLevel, const std::optional<PixelPositi
 		m_initialLevel = destinationLevel->levelName;
 		m_initialCharacter = character;
 	}
+
+	m_warping = false;
 
 	return true;
 }
@@ -1487,7 +1491,10 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 				SETPROP_RETURN_IGNORE;
 
 			// Set the level.
-			warp(newLevel);
+			if (!m_warping)
+				warp(newLevel);
+			else
+				setLevel(newLevel);
 			break;
 		}
 
@@ -2023,17 +2030,17 @@ void NPC::testForLinks(SetResults& result)
 	// Gmaps are treated as one large map, and so level npcs can freely walk across maps (source: post=1193766)
 	if (levelPtr->isGmap())
 	{
-		const uint8_t computedMapX = character.localPixelX / 1024;
-		const uint8_t computedMapY = character.localPixelY / 1024;
-		const auto computedLocalX = static_cast<int16_t>(character.localPixelX % 1024);
-		const auto computedLocalY = static_cast<int16_t>(character.localPixelY % 1024);
+		const auto computedMapChangeX = static_cast<int8_t>(character.localPixelX / 1024);
+		const auto computedMapChangeY = static_cast<int8_t>(character.localPixelY / 1024);
+		const auto computedLocalX = static_cast<int16_t>(std::abs(character.localPixelX % 1024));
+		const auto computedLocalY = static_cast<int16_t>(std::abs(character.localPixelY % 1024));
 
 		// We test the NPC's x/y position to see if they walked out of the bounds of the current level.
 		// If they did, alter their map location.
-		if (computedMapX != character.mapX || computedMapY != character.mapY)
+		if (computedMapChangeX != 0 || computedMapChangeY != 0)
 		{
-			character.mapX = computedMapX;
-			character.mapY = computedMapY;
+			character.mapX += computedMapChangeX;
+			character.mapY += computedMapChangeY;
 			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
 			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELY));
 			indexInLevelFile = std::nullopt;
@@ -2186,6 +2193,7 @@ std::vector<std::string> NPC::getVariableDump() const
 
 	std::vector<std::string> result;
 	std::string npcname = (!name.empty() ? name : std::format("npcs[{}]", id));
+	const auto [tileX, tileY, tileZ] = getTilePosition();
 
 	result.emplace_back(std::format("Variables dump from npc {}", npcname));
 	result.emplace_back();
@@ -2194,6 +2202,7 @@ std::vector<std::string> NPC::getVariableDump() const
 	if (!scripter.empty())
 		result.emplace_back(std::format("{}.scripter: {}", npcname, scripter));
 	result.emplace_back(std::format("{}.level: {}", npcname, level));
+	result.emplace_back(std::format("{}.pos: {:.2f}, {:.2f}, {}", npcname, tileX, tileY, static_cast<int8_t>(tileZ)));
 	result.emplace_back();
 	result.emplace_back("Attributes:");
 
