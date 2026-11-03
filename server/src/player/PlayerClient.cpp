@@ -1909,7 +1909,7 @@ void PlayerClient::dropItemsOnDeath()
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<uint32_t> gralatDistribution(mindeathgralats, maxdeathgralats);
 	std::uniform_int_distribution<uint32_t> itemDistribution(0, 3);
-	std::uniform_int_distribution<int8_t> displacementDistribution(-4, 4);
+	std::uniform_int_distribution<int32_t> displacementDistribution(-4, 4);
 
 	// Determine how many gralats to remove from the account.
 	uint32_t drop_gralats = 0;

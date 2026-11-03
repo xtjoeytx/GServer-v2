@@ -647,7 +647,7 @@ Level::~Level()
 
 	// Delete items.
 	for (size_t i = m_items.size(); i > 0; --i)
-		removeItem(inform_client, i - 1);
+		removeItem(i - 1);
 	m_items.clear();
 
 	// Delete sub level data.
