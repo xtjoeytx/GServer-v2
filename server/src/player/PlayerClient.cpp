@@ -1372,7 +1372,7 @@ bool PlayerClient::leaveLevel(const bool keepLevelReference)
 	{
 		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)0, getGlobalPosition(), levelp, {m_id});
 
-		for (const auto& pid : levelp->findInRangePlayersForCommunication(getGlobalPosition()))
+		for (const auto& pid : levelp->findPlayersInRangeForSync(getGlobalPosition()))
 		{
 			if (auto player = m_server->getPlayer<PlayerClient>(pid); player != nullptr)
 				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() >> (char)PlayerProp::JOINLEAVELVL >> (char)0);
@@ -1570,7 +1570,7 @@ bool PlayerClient::sendDynamicLevelData(const std::shared_ptr<Level>& level, std
 	if (!level->isSinglePlayer)
 	{
 		const CString myProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)1 << getPropsPacketFromList(loginPropsClientOthers);
-		for (const auto& playerId : level->findInRangePlayersForCommunication(getGlobalPosition()))
+		for (const auto& playerId : level->findPlayersInRangeForSync(getGlobalPosition()))
 		{
 			if (playerId == m_id) continue;
 			if (auto other = m_server->getPlayer(playerId); other != nullptr)
@@ -1799,8 +1799,8 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 		}
 		if (touchedNPC)
 		{
-			const auto eventDistance = m_server->cached.eventDistance.getValue();
-			for (const auto& npcId : level->findInRangeNPCsByDistance(testBox.position, eventDistance))
+			const auto eventDistance = m_server->cached.eventDistance.getValue() * Level::pixelsPerTile().width();
+			for (const auto& npcId : level->findNPCsInRangeByDistance(testBox.position, eventDistance))
 			{
 				auto intersectingNPCs = level->findIntersectingNPCsForCollision(testBox);
 				if (!std::ranges::contains(intersectingNPCs, npcId))

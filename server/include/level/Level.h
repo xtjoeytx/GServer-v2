@@ -167,10 +167,10 @@ public:
 	[[a::inline]] bool isOnBigMap() const noexcept;
 	[[a::inline]] static constexpr Dimension<uint8_t> tilesPerSubLevel() noexcept;
 	[[a::inline]] static constexpr Dimension<uint8_t> pixelsPerTile() noexcept;
-	[[a::inline]] static constexpr Dimension<uint16_t> pixelsPerSubLevel() noexcept;
+	[[a::inline]] static constexpr PixelDimension pixelsPerSubLevel() noexcept;
 	[[a::inline]] Dimension<uint8_t> sizeInSubLevels() const noexcept;
 	[[a::inline]] Dimension<uint32_t> sizeInTiles() const noexcept;
-	[[a::inline]] Dimension<uint32_t> sizeInPixels() const noexcept;
+	[[a::inline]] PixelDimension sizeInPixels() const noexcept;
 	[[a::inline]] Rectangle<uint32_t, uint32_t> getBoundingBox() const noexcept;
 	std::optional<uint16_t> getMapTileAtPosition(const TilePosition& position) const noexcept;
 	uint16_t* getMapTileForEditing(const TilePosition& position) const noexcept;
@@ -368,13 +368,13 @@ public:
 	tileset::TileType getTileTypeAt(const PixelPosition& position) const noexcept;
 
 public:
-	std::generator<PlayerID> findInRangePlayers(const PixelPosition& position, std::optional<std::pair<uint32_t, uint32_t>> range = std::nullopt) const noexcept;
-	std::generator<PlayerID> findInRangePlayersForCommunication(const PixelPosition& position) const noexcept;
+	std::generator<PlayerID> findPlayersInRange(const PixelPosition& position, const PixelDimension& range) const noexcept;
+	std::generator<PlayerID> findPlayersInRangeForSync(const PixelPosition& position) const noexcept;
+	std::generator<PlayerID> findPlayersInRangeForData(const PixelPosition& position) const noexcept;
 	std::generator<PlayerID> findPlayersInLevelPart(std::string_view levelPart) const noexcept;
 	std::generator<PlayerID> findPlayersInLevelPart(const MapPosition& mapLevel) const noexcept;
-	std::generator<NPCID> findInRangeNPCs(const PixelPosition& position) const noexcept;
-	std::generator<NPCID> findInRangeNPCsByDistance(const PixelPosition& position, uint32_t tileDistance) const noexcept;
-	std::generator<NPCID> findInRangeNPCsForCommunication(const PixelPosition& position) const noexcept;
+	std::generator<NPCID> findNPCsInRangeByDistance(const PixelPosition& position, uint32_t pixelDistance) const noexcept;
+	std::generator<NPCID> findNPCsInRangeForData(const PixelPosition& position) const noexcept;
 	std::generator<NPCID> findNPCsInLevelPart(const MapPosition& mapLevel) const noexcept;
 	std::generator<NPCID> findIntersectingNPCs(const PixelPosition& position, bool includeInvisible = false) const noexcept;
 	std::generator<NPCID> findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible = false) const noexcept;
@@ -448,9 +448,9 @@ inline constexpr Dimension<uint8_t> Level::pixelsPerTile() noexcept
 	return { 16_ui8, 16_ui8 };
 }
 
-inline constexpr Dimension<uint16_t> Level::pixelsPerSubLevel() noexcept
+inline constexpr PixelDimension Level::pixelsPerSubLevel() noexcept
 {
-	return Dimension<uint16_t>{ tilesPerSubLevel() } * pixelsPerTile();
+	return PixelDimension{ tilesPerSubLevel() } * pixelsPerTile();
 }
 
 inline Dimension<uint8_t> Level::sizeInSubLevels() const noexcept
@@ -466,7 +466,7 @@ inline Dimension<uint32_t> Level::sizeInTiles() const noexcept
 	return { static_cast<uint32_t>(size.width() * tileSize.width()), static_cast<uint32_t>(size.height() * tileSize.height()) };
 }
 
-inline Dimension<uint32_t> Level::sizeInPixels() const noexcept
+inline PixelDimension Level::sizeInPixels() const noexcept
 {
 	auto size = sizeInSubLevels();
 	auto pixelSize = pixelsPerSubLevel();

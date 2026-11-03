@@ -1460,7 +1460,7 @@ std::shared_ptr<NPC> Server::addNPC(const std::string_view image, const std::str
 		return nullptr;
 
 	// Pick the ID range for the NPC ID.
-	auto startId = NPCID_GEN_LOCAL;
+	auto startId = NPCID_GEN_DELETEABLE;
 	if (storageType == NPCStorageType::DATABASE)
 		startId = NPCID_GEN_DATABASE_LOCALN;
 
@@ -2377,8 +2377,7 @@ void Server::sendNonLevelBoundPacketToNearby(const CString& packet, const PixelP
 {
 	if (!running || level == nullptr) return;
 
-	auto players = level->findInRangePlayersForCommunication(position);
-	for (const auto& playerId : players)
+	for (const auto& playerId : level->findPlayersInRangeForData(position))
 	{
 		if (exclude.contains(playerId))
 			continue;
@@ -2391,8 +2390,7 @@ void Server::sendPacketToNearby(const CString& packet, const PixelPosition& posi
 {
 	if (!running || level == nullptr) return;
 
-	auto players = level->findInRangePlayersForCommunication(position);
-	for (const auto& playerId : players)
+	for (const auto& playerId : level->findPlayersInRangeForData(position))
 	{
 		if (exclude.contains(playerId))
 			continue;

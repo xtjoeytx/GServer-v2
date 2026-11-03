@@ -293,6 +293,7 @@ listip = listserver.graal.in
 listport = 14900
 
 # Maximum number of players allowed on the server.
+# Currently, the limit is around 1000.
 maxplayers = 128
 
 # Enables/disables staff only.  If true, only accounts in the staff option are allowed on.

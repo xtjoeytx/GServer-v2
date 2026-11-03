@@ -256,6 +256,9 @@ struct Dimension
 	std::array<T, 3> data;
 };
 
+using PixelDimension = Dimension<uint32_t>;
+using TileDimension = Dimension<float>;
+
 //----------------------------
 // Rectangle (area)
 

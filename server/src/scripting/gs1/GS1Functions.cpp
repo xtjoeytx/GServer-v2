@@ -396,19 +396,18 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, const std::vector<GS1Sc
 
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		const auto position = toPixelPosition({x, y});
+		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 
 		// Find the nearest player.
 		std::tuple<PlayerID, double> nearestPlayer{0, std::numeric_limits<double>::max()};
 		const auto* server = BabyDI::Get<Server>();
-		for (const auto& id : level->findInRangePlayers(position))
+		for (const auto& id : level->getPlayers())
 		{
 			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
 			{
 				TilePosition playerPos = toTilePosition(player->account.character.getGlobalPosition());
-				auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
+				const auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
 				if (distance < std::get<1>(nearestPlayer))
 					nearestPlayer = {id, distance};
 			}
@@ -572,17 +571,16 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, const std::vector<GS1Scr
 	{
 		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		const auto position = toPixelPosition({x, y});
 
 		// Find the nearest player.
 		std::tuple<PlayerID, double> nearestPlayer{0, std::numeric_limits<double>::max()};
 		const auto* server = BabyDI::Get<Server>();
-		for (const auto& id : level->findInRangePlayers(position))
+		for (const auto& id : level->getPlayers())
 		{
 			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
 			{
 				TilePosition playerPos = toTilePosition(player->account.character.getGlobalPosition());
-				auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
+				const auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
 				if (distance < std::get<1>(nearestPlayer))
 					nearestPlayer = {id, distance};
 			}
@@ -607,12 +605,11 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, const std::vector<GS1Sc
 	{
 		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		const auto position = toPixelPosition({x, y});
 
 		std::map<double, size_t> playersByDistance;
 		const auto* server = BabyDI::Get<Server>();
 		auto& players = level->getPlayers();
-		for (const auto& id : level->findInRangePlayers(position))
+		for (const auto& id : level->getPlayers())
 		{
 			// Execute the condition.
 			bool skip = false;
@@ -1587,7 +1584,7 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*
 
 		bool found = false;
 		size_t index = 0;
-		for (const auto& npcId : level->findInRangeNPCs(position))
+		for (const auto& npcId : level->findNPCsInRangeByDistance(position, Level::pixelsPerSubLevel().width()))
 		{
 			if (auto npc = server->getNPC(npcId); npc != nullptr)
 			{
@@ -1623,7 +1620,7 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, const std::vector<GS1ScriptVal
 	{
 		bool found = false;
 		size_t index = 0;
-		for (const auto& playerId : level->findInRangePlayers(position))
+		for (const auto& playerId : level->findPlayersInRange(position, Level::pixelsPerSubLevel()))
 		{
 			if (auto player = server->getPlayer(playerId); player != nullptr)
 			{

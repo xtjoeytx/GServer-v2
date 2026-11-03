@@ -223,7 +223,7 @@ bool PlayerClientOriginal::sendDynamicLevelData(const std::shared_ptr<Level>& le
 	// if (!level->isSingleplayer)
 	{
 		const CString myProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)1 << getPropsPacketFromList(loginPropsClientOthers);
-		for (const auto& playerId : level->findInRangePlayersForCommunication(getGlobalPosition()))
+		for (const auto& playerId : level->findPlayersInRangeForSync(getGlobalPosition()))
 		{
 			if (playerId == m_id) continue;
 			if (auto other = m_server->getPlayer(playerId); other != nullptr)
