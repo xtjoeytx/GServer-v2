@@ -460,7 +460,11 @@ void Server::initFilesystemCallbacks()
 		if (events.test(fs::FileEvent::Modified))
 		{
 			if (ext == ".gupd")
-				m_packageManager.findOrAddResource(fileName)->reload(this);
+			{
+				// A failed package load returns nullptr.
+				if (auto package = m_packageManager.findOrAddResource(fileName); package != nullptr)
+					package->reload(this);
+			}
 			else if (Generation == ServerGeneration::MODERN)
 			{
 				// Ganis need to be recompiled on update

@@ -777,7 +777,11 @@ void Server::loadWorldFileSystem()
 	{
 		if (fileData == nullptr) continue;
 		if (fileData->file.extension() == ".gupd")
-			getPackageManager().findOrAddResource(fileData->file.string())->reload(this);
+		{
+			// Look up the package by filename and skip failed loads.
+			if (auto package = getPackageManager().findOrAddResource(fs::getANSIFileName(fileData->file)); package != nullptr)
+				package->reload(this);
+		}
 	}
 }
 
