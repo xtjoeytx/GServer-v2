@@ -129,7 +129,6 @@ struct ExternalServerCachedSettings
 	SettingCache<uint32_t> eventDistance{"eventdistance", 64};
 	SettingCache<uint32_t> triggerDistance{"triggerdistance", 10};
 	SettingCache<bool> sendTriggerActionsToPlayers{"sendplayertriggers", true};
-	SettingCache<bool> enableFlagCropping{"cropflags", true};
 	SettingCache<bool> disableExplosions{"noexplosions", false};
 	SettingCache<bool> enableClientsidePushPull{"clientsidepushpull", true};
 	SettingCache<uint16_t> tileRespawnTime{"respawntime", 15};
@@ -176,6 +175,7 @@ struct ExternalServerCachedSettings
 	SettingCache<std::vector<std::string>> playerProfileVariables{"profilevars", {"Kills:=playerkills", "Deaths:=playerdeaths", "Maxpower:=playerfullhearts", "Rating:=playerrating", "Alignment:=playerap", "Gralat:=playerrupees", "Swordpower:=playerswordpower", "Spin Attack:=canspin"}};
 	SettingCache<std::vector<std::string>> playerStatusList{"playerlisticons", {"Online", "Away", "DND", "Eating", "Hiding", "No PMs", "RPing", "Sparring", "PKing"}};
 	// diagnostics
+	SettingCache<bool> warnOnCroppedFlags{"warnoncroppedflags", true};
 	SettingCache<bool> warnOnMissingFiles{"warnonmissingfiles", false};
 	SettingCache<bool> warnOnLargeFiles{"warnonlargefiles", false};
 	SettingCache<bool> warnOnFilesystemIssues{"warnonfilesystemissues", true};

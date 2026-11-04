@@ -68,13 +68,6 @@ flagPair FlatFileAccountLoader::decomposeFlag(const std::string& flag)
 	const auto server = BabyDI::Get<Server>();
 	const auto sep = flag.find('=');
 	flagPair result = (sep == std::string::npos) ? std::make_pair(flag, "") : std::make_pair(flag.substr(0, sep), flag.substr(sep + 1));
-	if (server->cached.enableFlagCropping.getValue())
-	{
-		// If cropflags is enabled, crop the flag to 223 characters.
-		// Subtract the length of the flag name and the = character from 223 to determine the space left for the flag value.
-		const int fixedLength = result.first.length() < 223 ? (223 - 1) - static_cast<int>(result.first.length()) : 0;
-		result.second = result.second.substr(0, fixedLength);
-	}
 	return result;
 }
 

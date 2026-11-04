@@ -106,7 +106,7 @@ void ExternalServerCachedSettings::bind(Server* server)
 	settings.track(enableBushItemDrops, enableVaseItemDrops, disableItemDropping);
 	settings.track(enableInsideSyncDistance, syncDistance[0], syncDistance[1], sendToNearbyBigmapLevels);
 	settings.track(eventDistance, triggerDistance, sendTriggerActionsToPlayers);
-	settings.track(enableFlagCropping, disableExplosions, enableClientsidePushPull, tileRespawnTime, enableIdleDisconnect, idleTimeoutSeconds);
+	settings.track(disableExplosions, enableClientsidePushPull, tileRespawnTime, enableIdleDisconnect, idleTimeoutSeconds);
 	settings.track(enablePermanentTileChanges, saveTileChangesToLevelFile);
 	settings.track(dontAddServerFlags);
 	settings.track(unloadInactiveLevelTime);
@@ -126,7 +126,7 @@ void ExternalServerCachedSettings::bind(Server* server)
 	settings.track(playerProfileVariables, playerStatusList);
 
 	// diagnostics
-	settings.track(warnOnMissingFiles, warnOnLargeFiles, warnOnFilesystemIssues, warnOnInvalidLevelSections, logCorruptPackets);
+	settings.track(warnOnCroppedFlags, warnOnMissingFiles, warnOnLargeFiles, warnOnFilesystemIssues, warnOnInvalidLevelSections, logCorruptPackets);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1894,8 +1894,14 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	// Function to crop flags.
 	auto cropFlag = [this, &flagName](std::string& value)
 	{
-		if (cached.enableFlagCropping.getValue())
+		bool crop = !hasNPCServer();
+		crop = crop || flagName.starts_with("client.") || flagName.starts_with("clientr.") || flagName.starts_with("serverr.");
+		if (crop && (flagName.length() + 1 + value.length()) > 223)
+		{
 			value.erase(std::min(value.length(), static_cast<size_t>(223 - 1) - flagName.length()));
+			if (cached.warnOnCroppedFlags.getValue() == true)
+				log::printLine(log::server, "[WARNING] Flag '{}' was cropped (over 223 characters in total).", flagName);
+		}
 		return value;
 	};
 

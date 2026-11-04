@@ -123,7 +123,7 @@ void Server::initTimedEvents()
 			guild->saveGuilds();
 
 		// Check if we need to unload any levels.
-		for (auto& [levelName, level] : m_levelList)
+		for (auto& level : m_levelList | std::views::values)
 		{
 			// Skip if the level is currently active with players in it.
 			// We always do this so we can abort early.
@@ -145,7 +145,7 @@ void Server::initTimedEvents()
 			if (skip)
 				continue;
 
-			DEBUGPRINT("Unloading level '{}' due to inactivity.", levelName);
+			DEBUGPRINT("Unloading level '{}' due to inactivity.", level->levelName);
 
 			// If we have an NPC-server, unload (or delete) our serverside NPCs.
 			if (hasNPCServer())
