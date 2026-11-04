@@ -165,7 +165,7 @@ for (i = 0; i < npcscount; i++) {
 
 `callweapon index,eventname,params;`
 
-> introduced: possibly 2.04<br>
+> introduced: 2.01<br>
 scope: 🧑 clientside<br>
 gs2emu serverside: ❌<br>
 official serverside: ❌<br>
@@ -493,7 +493,7 @@ Disables NPC damage reactions (taking damage and being pushed around like a play
 
 `disabledefmovement;`
 
-> introduced: revealed 2.02<br>
+> introduced: 2.0, revealed 2.02<br>
 scope: 🧑 clientside<br>
 gs2emu serverside: ❌<br>
 official serverside: ❌<br>
@@ -610,7 +610,7 @@ See: [Draw layers](scripting-gs1-variables.md#draw-layers)
 
 `drawovertrees;`
 
-> introduced: (newworld)<br>
+> introduced: (newworld 1.38)<br>
 scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
@@ -649,7 +649,7 @@ Enables NPC damage reactions (they take damage and are pushed around like a play
 
 `enabledefmovement;`
 
-> introduced: revealed 2.02<br>
+> introduced: 2.0, revealed 2.02<br>
 scope: 🧑 clientside<br>
 gs2emu serverside: ❌<br>
 official serverside: ❌<br>
@@ -1008,7 +1008,7 @@ Drops an item on the ground at the specified tile position.
 
 `loadmap map;`
 
-> introduced: possibly 2.12, revealed (???)<br>
+> introduced: 2.05, revealed (???)<br>
 scope: 🧑 clientside<br>
 gs2emu serverside: ❌<br>
 official serverside: ❌<br>
@@ -1129,7 +1129,7 @@ The `url` should not include the leading `http://`.
 
 `openurl2 url,width,height;`
 
-> introduced: 2.00<br>
+> introduced: 2.01<br>
 scope: 🧑 clientside<br>
 gs2emu serverside: ❌<br>
 official serverside: ❌<br>
@@ -1563,7 +1563,7 @@ replacestring test,3,triumph!;
 
 `resetfocus;`
 
-> introduced: possibly 2.12, revealed 2.16<br>
+> introduced: possibly 2.12, revealed 2.16, (newworld) 1.33<br>
 scope: 🧑 clientside<br>
 gs2emu serverside: ❌<br>
 official serverside: ❌<br>
@@ -1769,7 +1769,7 @@ Swaps the tileset's palette with the palette of the specified file.
 
 `setbacktile tileindex;`
 
-> introduced: (newworld)<br>
+> introduced: (newworld 1.33)<br>
 scope: 🧑 clientside<br>
 gs2emu serverside: ❌<br>
 official serverside: ❌<br>
@@ -1782,7 +1782,7 @@ Only valid for newworld clients.
 
 `setbacktile2 tileindex,x,y,width,height;`
 
-> introduced: (newworld)<br>
+> introduced: (newworld 2.05)<br>
 scope: 🧑 clientside<br>
 gs2emu serverside: ❌<br>
 official serverside: ❌<br>
@@ -2012,7 +2012,7 @@ Changes the rendering method of NPCs altered by [seteffect](#seteffect).
 
 `setfocus x,y;`
 
-> introduced: possibly 2.12, revealed 2.16<br>
+> introduced: possibly 2.12, revealed 2.16, (newworld 1.33)<br>
 scope: 🧑 clientside<br>
 gs2emu serverside: ❌<br>
 official serverside: ❌<br>
@@ -2469,7 +2469,7 @@ Sets the NPC's Y position.
 
 `setz x,y,width,height,a,b,c,d;`
 
-> introduced: possibly 2.12, revealed (???)<br>
+> introduced: 2.05, revealed (???)<br>
 scope: 🧑 clientside<br>
 gs2emu serverside: ❌<br>
 official serverside: ❌<br>
@@ -2942,7 +2942,7 @@ If an NPC with a sleeping script receives an event and sets a `timeout`, then th
 
 `spyfire length,power;`
 
-> introduced: sometime in 2.0x<br>
+> introduced: 2.0, (newworld 1.38)<br>
 scope: 🧑💻 clientside, serverside<br>
 gs2emu serverside: ✅<br>
 official serverside: ❌<br>
@@ -3265,7 +3265,7 @@ When a script changes the level's tiles, those changes will not take affect unti
 
 `updateterrain;`
 
-> introduced: possibly 2.17, revealed (???)<br>
+> introduced: 2.05, revealed (???)<br>
 scope: 🧑 clientside<br>
 gs2emu serverside: ❌<br>
 official serverside: ❌<br>
