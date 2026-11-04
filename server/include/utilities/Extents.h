@@ -385,6 +385,11 @@ inline constexpr PixelPosition toPixelPosition(const TilePosition& position)
 	return PixelPosition{static_cast<int32_t>(position.x() * 16), static_cast<int32_t>(position.y() * 16), static_cast<int32_t>(position.z() * 16)};
 }
 
+inline constexpr PixelPosition toPixelPositionWithHalfTilePrecision(const TilePosition& position)
+{
+	return PixelPosition{static_cast<int32_t>(position.x() * 2) * 8, static_cast<int32_t>(position.y() * 2) * 8, static_cast<int32_t>(position.z() * 16)};
+}
+
 template<typename Type>
 inline constexpr PixelPosition toPixelPosition(const PixelPosition& origin, const Position<Type>& position)
 {
