@@ -1,11 +1,14 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch_all.hpp>
 
+#include <any>
 #include <atomic>
+#include <cstdint>
 #include <memory>
 #include <source_location>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <CSocket.h>
 
@@ -71,6 +74,25 @@ struct ServerFixture
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+
+TEST_CASE("Script client bytecode", "[Scripting][Script]")
+{
+	Script script;
+	auto context = std::make_shared<ScriptExecutionContext>();
+	context->script = std::make_shared<std::any>(std::vector<uint8_t>{1, 2, 3});
+	script.setClientCompiledScript(context);
+	REQUIRE(script.getClientByteCode() == std::vector<uint8_t>{1, 2, 3});
+
+	context = std::make_shared<ScriptExecutionContext>();
+	context->script = nullptr;
+	script.setClientCompiledScript(context);
+	REQUIRE(script.getClientByteCode().empty());
+
+	context = std::make_shared<ScriptExecutionContext>();
+	context->script = std::make_shared<std::any>(std::string{"bytecode"});
+	script.setClientCompiledScript(context);
+	REQUIRE(script.getClientByteCode().empty());
+}
 
 TEST_CASE_METHOD(ServerFixture, "Script joins", "[Scripting][IScriptEngine][GS1]")
 {
