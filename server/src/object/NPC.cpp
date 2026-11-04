@@ -910,8 +910,12 @@ void NPC::leaveClass(std::string_view className)
 	m_joinedClasses.erase(it);
 }
 
-void NPC::sendScriptUpdatesToLevel(const clock::time_point when) const
+void NPC::sendScriptUpdatesToLevel(const clock::time_point fromWhen) const
 {
+	// Clients will ignore any script changes if the NPC already has the script set.
+	// Because of this, we have to delete the NPC entirely and re-send the whole thing.
+	// PLO_NPCSETSCRIPT (26) could hot-swap the script, but that packet only existed between 1.31 - 2.03.
+
 	if (const auto npclevel = getLevel(); npclevel != nullptr && npclevel->loaded)
 	{
 		if (const auto levelData = npclevel->getStaticLevelDataAtPosition(character.getMapPosition()); levelData != nullptr)
@@ -919,7 +923,7 @@ void NPC::sendScriptUpdatesToLevel(const clock::time_point when) const
 			const auto& levelName = npclevel->levelName;
 
 			const CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)id;
-			m_server->sendPacketToLevelAndPastVisitorsAfter(levelData.get(), when, packet);
+			m_server->sendPacketToLevelAndPastVisitorsAfter(levelData.get(), fromWhen, packet);
 			m_server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), npclevel);
 		}
 	}
@@ -1039,11 +1043,11 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 
 		case NPCProp::SCRIPT:
 		{
-			auto strProp = dynamic_cast<PropertyString*>(base);
+			auto strProp = dynamic_cast<PropertyGS1Script*>(base);
 			if (strProp == nullptr || setBy != SetBy::SERVER)
 				SETPROP_RETURN_IGNORE;
 
-			setScript(strProp->value);
+			setScript(strProp->script);
 			break;
 		}
 
