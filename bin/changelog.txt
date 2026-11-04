@@ -6,6 +6,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 + Improved documentation (see the new /docs folder)
 + GS1 NPC-server support with serverside scripting and events
++ GS1 compliance options to enable or disable non-standard commands (see scriptengine-gs1.txt)
 + Full, proper gmap support
 + Added support for heightmap-based gmap terrain
 + Serverside NPC showimg, projectiles / shoot tracking, and move commands

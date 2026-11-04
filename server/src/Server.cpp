@@ -611,8 +611,8 @@ void Server::prepareSettings()
 	// Bush drops.
 	m_bushItemTypes.onUpdate = [this](const std::optional<std::vector<std::string>>& newValue, const std::optional<std::vector<std::string>>& oldValue)
 	{
-		// greenrupee 10, bluerupee 5, bombs 5, heart 5
-		static constexpr std::array<int, 25> defaults = {10, 5, 0, 5, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+		// greenrupee 25, bluerupee 2, bombs 5, heart 5
+		static constexpr std::array<int, 25> defaults = {25, 2, 0, 5, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 		m_bushDrops.clear();
 		for (const auto& curItem : newValue.value())

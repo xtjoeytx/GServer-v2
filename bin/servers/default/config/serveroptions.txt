@@ -59,8 +59,8 @@ baddyitems = false
 
 # Value from 0-100 that determines the percent chance the item will drop from bushes.
 # Will check in order of the bushitemtypes list, so if the sum adds up to over 100, it will eventually stop early.
-# spawnrategreenrupee = 10
-# spawnratebluerupee = 5
+# spawnrategreenrupee = 25
+# spawnratebluerupee = 2
 # spawnrateheart = 5
 # spawnratebombs = 5
 
