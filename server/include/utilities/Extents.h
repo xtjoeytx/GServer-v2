@@ -20,6 +20,17 @@ namespace preagonal
 {
 ////////////////////////////////////////////////////////////////////////////////
 
+//----------------------------
+// Tags
+
+// clang-format off
+struct with_positions_t { explicit with_positions_t() = default; };
+inline constexpr with_positions_t with_positions{};
+// clang-format on
+
+//----------------------------
+// Concepts
+
 template<typename T>
 concept PixelBasedPosition = std::integral<T>;
 
@@ -39,27 +50,28 @@ struct Position
 		switch (direction)
 		{
 			case 0:
-				return Position<T>{ static_cast<T>(0), static_cast<T>(-1) };
+				return Position<T>{static_cast<T>(0), static_cast<T>(-1)};
 			case 1:
-				return Position<T>{ static_cast<T>(-1), static_cast<T>(0) };
+				return Position<T>{static_cast<T>(-1), static_cast<T>(0)};
 			case 2:
-				return Position<T>{ static_cast<T>(0), static_cast<T>(1) };
+				return Position<T>{static_cast<T>(0), static_cast<T>(1)};
 			case 3:
-				return Position<T>{ static_cast<T>(1), static_cast<T>(0) };
+				return Position<T>{static_cast<T>(1), static_cast<T>(0)};
 			default:
 				return Position<T>{0, 0};
 		}
 	}
 
-	constexpr Position() : data{ T{}, T{}, T{} } {}
-	constexpr Position(T x, T y) : data{ x, y, T{} } {}
-	constexpr Position(T x, T y, T z) : data{ x, y, z } {}
+	constexpr Position() : data{T{}, T{}, T{}} {}
+	constexpr Position(T x, T y) : data{x, y, T{}} {}
+	constexpr Position(T x, T y, T z) : data{x, y, z} {}
 	constexpr Position(const Position<T>& other) = default;
 
 	template<typename O>
 	// ReSharper disable once CppNonExplicitConvertingConstructor
 	// NOLINTNEXTLINE(*-explicit-constructor)
-	constexpr Position(const Position<O>& other) : data{ T{ other.data[0] }, T{ other.data[1] }, T{ other.data[2] } } {}
+	constexpr Position(const Position<O>& other) : data{T{other.data[0]}, T{other.data[1]}, T{other.data[2]}}
+	{}
 
 	constexpr bool operator==(const Position<T>& other) const
 	{
@@ -113,13 +125,13 @@ struct Position
 
 	[[nodiscard]] Position<T> translate(T dx, T dy) const
 	{
-		Position<T> result{ *this };
+		Position<T> result{*this};
 		result.translate(dx, dy);
 		return result;
 	}
 	[[nodiscard]] Position<T> translate(T dx, T dy, T dz) const
 	{
-		Position<T> result{ *this };
+		Position<T> result{*this};
 		result.translate(dx, dy, dz);
 		return result;
 	}
@@ -127,7 +139,7 @@ struct Position
 	template<typename O>
 	Position<T> translate(const Position<O>& delta) const
 	{
-		Position<T> result{ *this };
+		Position<T> result{*this};
 		result.translate(delta);
 		return result;
 	}
@@ -157,7 +169,7 @@ struct Position
 	{
 		if (length == O{})
 			throw std::invalid_argument("Cannot normalize a position with zero length.");
-		Position<T> result{ *this };
+		Position<T> result{*this};
 		result.data[0] = static_cast<T>(result.data[0] / length);
 		result.data[1] = static_cast<T>(result.data[1] / length);
 		return result;
@@ -179,7 +191,7 @@ struct Position
 	{
 		if (length == O{})
 			throw std::invalid_argument("Cannot normalize a position with zero length.");
-		Position<T> result{ *this };
+		Position<T> result{*this};
 		result.data[0] = static_cast<T>(result.data[0] / length);
 		result.data[1] = static_cast<T>(result.data[1] / length);
 		result.data[2] = static_cast<T>(result.data[2] / length);
@@ -214,17 +226,20 @@ struct MovingPosition
 template<typename T>
 struct Dimension
 {
-	constexpr Dimension() requires PixelBasedPosition<T> : data{ T{}, T{}, T{48} } {}
-	constexpr Dimension() requires TileBasedPosition<T> : data{ T{}, T{}, T{3} } {}
-	constexpr Dimension(T width, T height) requires PixelBasedPosition<T> : data{ width, height, T{48} } {}
-	constexpr Dimension(T width, T height) requires TileBasedPosition<T> : data{ width, height, T{3} } {}
-	constexpr Dimension(T width, T height, T length) : data{ width, height, length } {}
+	// clang-format off
+	constexpr Dimension() requires PixelBasedPosition<T> : data{T{}, T{}, T{48}} {}
+	constexpr Dimension() requires TileBasedPosition<T> : data{T{}, T{}, T{3}} {}
+	constexpr Dimension(T width, T height) requires PixelBasedPosition<T> : data{width, height, T{48}} {}
+	constexpr Dimension(T width, T height) requires TileBasedPosition<T> : data{width, height, T{3}} {}
+	constexpr Dimension(T width, T height, T length) : data{width, height, length} {}
 	constexpr Dimension(const Dimension<T>& other) = default;
+	// clang-format on
 
 	template<typename O>
 	// ReSharper disable once CppNonExplicitConvertingConstructor
 	// NOLINTNEXTLINE(*-explicit-constructor)
-	constexpr Dimension(const Dimension<O>& other) : data{ T{ other.data[0] }, T{ other.data[1] }, T{ other.data[2] } } {}
+	constexpr Dimension(const Dimension<O>& other) : data{T{other.data[0]}, T{other.data[1]}, T{other.data[2]}}
+	{}
 
 	constexpr bool operator==(const Dimension<T>& other) const
 	{
@@ -267,6 +282,10 @@ struct Rectangle
 {
 	constexpr Rectangle() = default;
 	constexpr Rectangle(Position<P> position, Dimension<S> size) : position(position), size(size) {}
+	constexpr Rectangle(with_positions_t, Position<P> corner1, Position<P> corner2)
+		: position(Position<P>{std::min(corner1.x(), corner2.x()), std::min(corner1.y(), corner2.y()), std::min(corner1.z(), corner2.z())}),
+		  size(Dimension<S>{std::abs(corner2.x() - corner1.x()), std::abs(corner2.y() - corner1.y()), std::abs(corner2.z() - corner1.z())})
+	{}
 
 	[[nodiscard]] constexpr P left() const noexcept { return position.x(); }
 	[[nodiscard]] constexpr P right() const noexcept { return position.x() + size.width(); }
@@ -274,7 +293,7 @@ struct Rectangle
 	[[nodiscard]] constexpr P bottom() const noexcept { return position.y() + size.height(); }
 	[[nodiscard]] constexpr P ground() const noexcept { return position.z(); }
 	[[nodiscard]] constexpr P sky() const noexcept { return position.z() + size.length(); }
-	[[nodiscard]] constexpr Position<P> center() const noexcept { return { position.x() + static_cast<P>(size.width() / static_cast<S>(2)), position.y() + static_cast<P>(size.height() / static_cast<S>(2)) }; }
+	[[nodiscard]] constexpr Position<P> center() const noexcept { return {position.x() + static_cast<P>(size.width() / static_cast<S>(2)), position.y() + static_cast<P>(size.height() / static_cast<S>(2))}; }
 
 	Position<P> position{};
 	Dimension<S> size{};
@@ -295,14 +314,17 @@ using ImagePartRectangle = Rectangle<uint16_t, uint8_t>;
 template<typename Pos, typename RectPos, typename RectDim>
 inline constexpr bool positionInRectangle(const Position<Pos>& pos, const Rectangle<RectPos, RectDim>& rect)
 {
+	// clang-format off
 	return pos.x() >= rect.left() && pos.x() <= rect.right()
 		&& pos.y() >= rect.top() && pos.y() <= rect.bottom()
 		&& pos.z() >= rect.ground() && pos.z() <= rect.sky();
+	// clang-format on
 }
 
 template<typename RectPosL, typename RectDimL, typename RectPosR, typename RectDimR>
 inline constexpr bool rectanglesIntersect(const Rectangle<RectPosL, RectDimL>& first, const Rectangle<RectPosR, RectDimR>& second)
 {
+	// clang-format off
 	return (first.right() < second.left()
 		|| second.right() < first.left()
 		|| first.bottom() < second.top()
@@ -310,17 +332,20 @@ inline constexpr bool rectanglesIntersect(const Rectangle<RectPosL, RectDimL>& f
 		|| first.sky() < second.ground()
 		|| second.sky() < first.ground()
 		) == false;
+	// clang-format on
 }
 
 template<typename RectPosL, typename RectDimL, typename RectPosR, typename RectDimR>
 inline constexpr bool rectangleContained(const Rectangle<RectPosL, RectDimL>& child, const Rectangle<RectPosR, RectDimR>& parent)
 {
+	// clang-format off
 	return (child.left() >= parent.left()
 		&& child.right() <= parent.right()
 		&& child.top() >= parent.top()
 		&& child.bottom() <= parent.bottom()
 		&& child.ground() >= parent.ground()
 		&& child.sky() <= parent.sky());
+	// clang-format on
 }
 
 //----------------------------
@@ -352,12 +377,12 @@ inline constexpr PixelPosition toPixelPosition(const PixelPosition& origin, std:
 	// Enforce half tile increments.  We will never have a float position that isn't a half tile.
 	const auto halfTileX = static_cast<int32_t>(x * 2);
 	const auto halfTileY = static_cast<int32_t>(y * 2);
-	return PixelPosition{ static_cast<int32_t>(origin.x() + (halfTileX * 8)), static_cast<int32_t>(origin.y() + (halfTileY * 8)), static_cast<int32_t>(origin.z()) };
+	return PixelPosition{static_cast<int32_t>(origin.x() + (halfTileX * 8)), static_cast<int32_t>(origin.y() + (halfTileY * 8)), static_cast<int32_t>(origin.z())};
 }
 
 inline constexpr PixelPosition toPixelPosition(const TilePosition& position)
 {
-	return PixelPosition{ static_cast<int32_t>(position.x() * 16), static_cast<int32_t>(position.y() * 16), static_cast<int32_t>(position.z() * 16) };
+	return PixelPosition{static_cast<int32_t>(position.x() * 16), static_cast<int32_t>(position.y() * 16), static_cast<int32_t>(position.z() * 16)};
 }
 
 template<typename Type>
@@ -371,12 +396,12 @@ inline constexpr PixelPosition toPixelPosition(const PixelPosition& origin, cons
 	// Tiles to pixels.
 	else if constexpr (std::same_as<Type, uint8_t> || std::same_as<Type, float>)
 	{
-		return PixelPosition{ origin.x() + static_cast<int32_t>(position.x() * 16), origin.y() + static_cast<int32_t>(position.y() * 16), origin.z() + static_cast<int32_t>(position.z() * 16) };
+		return PixelPosition{origin.x() + static_cast<int32_t>(position.x() * 16), origin.y() + static_cast<int32_t>(position.y() * 16), origin.z() + static_cast<int32_t>(position.z() * 16)};
 	}
 	// Just convert the units.
 	else
 	{
-		return PixelPosition{ origin.x() + static_cast<int32_t>(position.x()), origin.y() + static_cast<int32_t>(position.y()), origin.z() + static_cast<int32_t>(position.z()) };
+		return PixelPosition{origin.x() + static_cast<int32_t>(position.x()), origin.y() + static_cast<int32_t>(position.y()), origin.z() + static_cast<int32_t>(position.z())};
 	}
 }
 
@@ -385,7 +410,7 @@ inline constexpr LocalPixelPosition toLocalPixelPosition(std::floating_point aut
 	// Enforce half tile increments.  We will never have a float position that isn't a half tile.
 	const auto halfTileX = static_cast<int16_t>(x * 2);
 	const auto halfTileY = static_cast<int16_t>(y * 2);
-	return LocalPixelPosition{ static_cast<int16_t>((halfTileX * 8) % 1024), static_cast<int16_t>((halfTileY * 8) % 1024) };
+	return LocalPixelPosition{static_cast<int16_t>((halfTileX * 8) % 1024), static_cast<int16_t>((halfTileY * 8) % 1024)};
 }
 
 template<typename Type>
@@ -399,17 +424,17 @@ inline constexpr LocalPixelPosition toLocalPixelPosition(const Position<Type>& p
 	// Global pixel position to local.
 	else if constexpr (std::same_as<Type, int32_t>)
 	{
-		return LocalPixelPosition{ static_cast<int16_t>(position.x() % 1024), static_cast<int16_t>(position.y() % 1024), static_cast<int16_t>(position.z()) };
+		return LocalPixelPosition{static_cast<int16_t>(position.x() % 1024), static_cast<int16_t>(position.y() % 1024), static_cast<int16_t>(position.z())};
 	}
 	// Tiles to local pixels.
 	else if constexpr (std::same_as<Type, uint8_t> || std::same_as<Type, float>)
 	{
-		return LocalPixelPosition{ static_cast<int16_t>(static_cast<int16_t>(position.x() * 16) % 1024), static_cast<int16_t>(static_cast<int16_t>(position.y() * 16) % 1024), static_cast<int16_t>(position.z() * 16) };
+		return LocalPixelPosition{static_cast<int16_t>(static_cast<int16_t>(position.x() * 16) % 1024), static_cast<int16_t>(static_cast<int16_t>(position.y() * 16) % 1024), static_cast<int16_t>(position.z() * 16)};
 	}
 	// Just convert the units.
 	else
 	{
-		return LocalPixelPosition{ static_cast<int16_t>(position.x()), static_cast<int16_t>(position.y()), static_cast<int16_t>(position.z()) };
+		return LocalPixelPosition{static_cast<int16_t>(position.x()), static_cast<int16_t>(position.y()), static_cast<int16_t>(position.z())};
 	}
 }
 
@@ -419,7 +444,7 @@ inline constexpr TilePosition toTilePosition(const Position<Type>& position)
 	// Pixels to tiles.
 	if constexpr (std::same_as<Type, int16_t> || std::same_as<Type, int32_t>)
 	{
-		return TilePosition{ static_cast<float>(position.x()) / 16.0f, static_cast<float>(position.y()) / 16.0f, static_cast<float>(position.z()) / 16.0f };
+		return TilePosition{static_cast<float>(position.x()) / 16.0f, static_cast<float>(position.y()) / 16.0f, static_cast<float>(position.z()) / 16.0f};
 	}
 	// Same coordinates.
 	else if constexpr (std::same_as<Type, float>)
@@ -429,7 +454,7 @@ inline constexpr TilePosition toTilePosition(const Position<Type>& position)
 	// Just convert the units.
 	else
 	{
-		return TilePosition{ static_cast<float>(position.x()), static_cast<float>(position.y()), static_cast<float>(position.z()) };
+		return TilePosition{static_cast<float>(position.x()), static_cast<float>(position.y()), static_cast<float>(position.z())};
 	}
 }
 
@@ -442,7 +467,7 @@ inline constexpr LocalWholeTilePosition toLocalWholeTilePosition(const Position<
 		const auto x = static_cast<int32_t>((position.x() % 1024) / 16);
 		const auto y = static_cast<int32_t>((position.y() % 1024) / 16);
 		const auto z = static_cast<int32_t>(position.z() / 16);
-		return LocalWholeTilePosition{ static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(z) };
+		return LocalWholeTilePosition{static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(z)};
 	}
 	// Same coordinates.
 	else if constexpr (std::same_as<Type, uint8_t>)
@@ -455,7 +480,7 @@ inline constexpr LocalWholeTilePosition toLocalWholeTilePosition(const Position<
 		const auto x = static_cast<int32_t>(position.x() + std::numeric_limits<float>::epsilon());
 		const auto y = static_cast<int32_t>(position.y() + std::numeric_limits<float>::epsilon());
 		const auto z = static_cast<int32_t>(position.z() + std::numeric_limits<float>::epsilon());
-		return LocalWholeTilePosition{ static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z) };
+		return LocalWholeTilePosition{static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z)};
 	}
 	// Whole tiles to local whole tiles.
 	else if constexpr (std::same_as<Type, uint16_t>)
@@ -463,12 +488,12 @@ inline constexpr LocalWholeTilePosition toLocalWholeTilePosition(const Position<
 		const auto x = static_cast<int32_t>(position.x());
 		const auto y = static_cast<int32_t>(position.y());
 		const auto z = static_cast<int32_t>(position.z());
-		return LocalWholeTilePosition{ static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z) };
+		return LocalWholeTilePosition{static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z)};
 	}
 	// Just convert the units.
 	else
 	{
-		return LocalWholeTilePosition{ static_cast<uint8_t>(position.x()), static_cast<uint8_t>(position.y()), static_cast<uint8_t>(position.z()) };
+		return LocalWholeTilePosition{static_cast<uint8_t>(position.x()), static_cast<uint8_t>(position.y()), static_cast<uint8_t>(position.z())};
 	}
 }
 
@@ -481,7 +506,7 @@ inline constexpr WholeTilePosition toWholeTilePosition(const Position<Type>& pos
 		const auto x = static_cast<uint16_t>(position.x() / 16);
 		const auto y = static_cast<uint16_t>(position.y() / 16);
 		const auto z = static_cast<uint16_t>(position.z() / 16);
-		return WholeTilePosition{ static_cast<uint16_t>(x), static_cast<uint16_t>(y), static_cast<uint16_t>(z) };
+		return WholeTilePosition{static_cast<uint16_t>(x), static_cast<uint16_t>(y), static_cast<uint16_t>(z)};
 	}
 	// Same coordinates.
 	else if constexpr (std::same_as<Type, uint16_t>)
@@ -494,36 +519,36 @@ inline constexpr WholeTilePosition toWholeTilePosition(const Position<Type>& pos
 		const auto x = static_cast<int32_t>(position.x() + std::numeric_limits<float>::epsilon());
 		const auto y = static_cast<int32_t>(position.y() + std::numeric_limits<float>::epsilon());
 		const auto z = static_cast<int32_t>(position.z() + std::numeric_limits<float>::epsilon());
-		return WholeTilePosition{ static_cast<uint16_t>(x), static_cast<uint16_t>(y), static_cast<uint16_t>(z) };
+		return WholeTilePosition{static_cast<uint16_t>(x), static_cast<uint16_t>(y), static_cast<uint16_t>(z)};
 	}
 	// Just convert the units.
 	else
 	{
-		return WholeTilePosition{ static_cast<uint16_t>(position.x()), static_cast<uint16_t>(position.y()), static_cast<uint16_t>(position.z()) };
+		return WholeTilePosition{static_cast<uint16_t>(position.x()), static_cast<uint16_t>(position.y()), static_cast<uint16_t>(position.z())};
 	}
 }
 
 inline constexpr MapPosition toMapPosition(const PixelPosition& position)
 {
-	return { static_cast<uint8_t>(position.x() / 1024), static_cast<uint8_t>(position.y() / 1024) };
+	return {static_cast<uint8_t>(position.x() / 1024), static_cast<uint8_t>(position.y() / 1024)};
 }
 
 inline constexpr MapPosition toMapPosition(const TilePosition& position)
 {
-	return { static_cast<uint8_t>((position.x() + std::numeric_limits<float>::epsilon()) / 64), static_cast<uint8_t>((position.y() + std::numeric_limits<float>::epsilon()) / 64) };
+	return {static_cast<uint8_t>((position.x() + std::numeric_limits<float>::epsilon()) / 64), static_cast<uint8_t>((position.y() + std::numeric_limits<float>::epsilon()) / 64)};
 }
 
 inline constexpr MapPosition toMapPosition(const WholeTilePosition& position)
 {
-	return { static_cast<uint8_t>(position.x() / 64), static_cast<uint8_t>(position.y() / 64) };
+	return {static_cast<uint8_t>(position.x() / 64), static_cast<uint8_t>(position.y() / 64)};
 }
 
 //----------------------------
 
 inline constexpr PixelRectangleArea toPixelRectangleArea(const TileRectangleArea& rect)
 {
-	const Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width() * 16), static_cast<uint16_t>(rect.size.height() * 16), static_cast<uint16_t>(rect.size.length() * 16) };
-	return PixelRectangleArea{ toPixelPosition(rect.position), size };
+	const Dimension<uint16_t> size{static_cast<uint16_t>(rect.size.width() * 16), static_cast<uint16_t>(rect.size.height() * 16), static_cast<uint16_t>(rect.size.length() * 16)};
+	return PixelRectangleArea{toPixelPosition(rect.position), size};
 }
 
 template<typename P, typename S>
@@ -532,8 +557,8 @@ inline constexpr PixelRectangleArea toPixelRectangleArea(const MapPosition& orig
 	// Same coordinates.
 	if constexpr (std::same_as<P, int32_t>)
 	{
-		const Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width()), static_cast<uint16_t>(rect.size.height()), static_cast<uint16_t>(rect.size.length()) };
-		return PixelRectangleArea{ rect.position, size };
+		const Dimension<uint16_t> size{static_cast<uint16_t>(rect.size.width()), static_cast<uint16_t>(rect.size.height()), static_cast<uint16_t>(rect.size.length())};
+		return PixelRectangleArea{rect.position, size};
 	}
 	// Tiles to pixels.
 	else if constexpr (std::same_as<P, float>)
@@ -543,14 +568,14 @@ inline constexpr PixelRectangleArea toPixelRectangleArea(const MapPosition& orig
 	// Local tiles to pixels.
 	else if constexpr (std::same_as<P, uint8_t>)
 	{
-		const Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width() * 16), static_cast<uint16_t>(rect.size.height() * 16), static_cast<uint16_t>(rect.size.length() * 16) };
-		return PixelRectangleArea{ toPixelPosition(origin, rect.position), size };
+		const Dimension<uint16_t> size{static_cast<uint16_t>(rect.size.width() * 16), static_cast<uint16_t>(rect.size.height() * 16), static_cast<uint16_t>(rect.size.length() * 16)};
+		return PixelRectangleArea{toPixelPosition(origin, rect.position), size};
 	}
 	// Just convert the units.
 	else
 	{
-		const Dimension<uint16_t> size{ static_cast<uint16_t>(rect.size.width()), static_cast<uint16_t>(rect.size.height()), static_cast<uint16_t>(rect.size.length()) };
-		return PixelRectangleArea{ toPixelPosition(origin, rect.position), size };
+		const Dimension<uint16_t> size{static_cast<uint16_t>(rect.size.width()), static_cast<uint16_t>(rect.size.height()), static_cast<uint16_t>(rect.size.length())};
+		return PixelRectangleArea{toPixelPosition(origin, rect.position), size};
 	}
 }
 
@@ -560,8 +585,8 @@ inline constexpr LocalWholeTileRectangleArea toLocalWholeTileRectangleArea(const
 	// Same coordinates.
 	if constexpr (std::same_as<P, uint8_t>)
 	{
-		const Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
-		return LocalWholeTileRectangleArea{ rect.position, size };
+		const Dimension<uint8_t> size{static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length())};
+		return LocalWholeTileRectangleArea{rect.position, size};
 	}
 
 	int32_t x;
@@ -604,14 +629,14 @@ inline constexpr LocalWholeTileRectangleArea toLocalWholeTileRectangleArea(const
 	// Just convert the units.
 	else
 	{
-		const Position<uint8_t> pos{ static_cast<uint8_t>(rect.position.x()), static_cast<uint8_t>(rect.position.y()), static_cast<uint8_t>(rect.position.z()) };
-		const Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
-		return LocalWholeTileRectangleArea{ pos, size };
+		const Position<uint8_t> pos{static_cast<uint8_t>(rect.position.x()), static_cast<uint8_t>(rect.position.y()), static_cast<uint8_t>(rect.position.z())};
+		const Dimension<uint8_t> size{static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length())};
+		return LocalWholeTileRectangleArea{pos, size};
 	}
 
-	const LocalWholeTilePosition pos{ static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z) };
-	const Dimension<uint8_t> size{ static_cast<uint8_t>(width), static_cast<uint8_t>(height), static_cast<uint8_t>(length) };
-	return LocalWholeTileRectangleArea{ pos, size };
+	const LocalWholeTilePosition pos{static_cast<uint8_t>(x % 64), static_cast<uint8_t>(y % 64), static_cast<uint8_t>(z)};
+	const Dimension<uint8_t> size{static_cast<uint8_t>(width), static_cast<uint8_t>(height), static_cast<uint8_t>(length)};
+	return LocalWholeTileRectangleArea{pos, size};
 }
 
 template<typename P, typename S>
@@ -620,8 +645,8 @@ inline constexpr LocalWholeTileRectangleArea clipLocalWholeTileRectangleArea(con
 	// Same coordinates.
 	if constexpr (std::same_as<P, uint8_t>)
 	{
-		const Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
-		return LocalWholeTileRectangleArea{ rect.position, size };
+		const Dimension<uint8_t> size{static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length())};
+		return LocalWholeTileRectangleArea{rect.position, size};
 	}
 
 	int32_t x;
@@ -630,7 +655,7 @@ inline constexpr LocalWholeTileRectangleArea clipLocalWholeTileRectangleArea(con
 	int32_t width;
 	int32_t height;
 	int32_t length;
-	const auto pixelOrigin = PixelPosition{ static_cast<int32_t>(origin.x()) * 1024, static_cast<int32_t>(origin.y()) * 1024, 0 };
+	const auto pixelOrigin = PixelPosition{static_cast<int32_t>(origin.x()) * 1024, static_cast<int32_t>(origin.y()) * 1024, 0};
 
 	// Tiles to local whole tiles.
 	if constexpr (std::same_as<P, float>)
@@ -665,9 +690,9 @@ inline constexpr LocalWholeTileRectangleArea clipLocalWholeTileRectangleArea(con
 	// Just convert the units.
 	else
 	{
-		const Position<uint8_t> pos{ static_cast<uint8_t>(rect.position.x()), static_cast<uint8_t>(rect.position.y()), static_cast<uint8_t>(rect.position.z()) };
-		const Dimension<uint8_t> size{ static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length()) };
-		return LocalWholeTileRectangleArea{ pos, size };
+		const Position<uint8_t> pos{static_cast<uint8_t>(rect.position.x()), static_cast<uint8_t>(rect.position.y()), static_cast<uint8_t>(rect.position.z())};
+		const Dimension<uint8_t> size{static_cast<uint8_t>(rect.size.width()), static_cast<uint8_t>(rect.size.height()), static_cast<uint8_t>(rect.size.length())};
+		return LocalWholeTileRectangleArea{pos, size};
 	}
 
 	// If the relative position to the origin is negative, we need to adjust it to be within the local level.
@@ -690,21 +715,21 @@ inline constexpr LocalWholeTileRectangleArea clipLocalWholeTileRectangleArea(con
 	if (x + width > 64) width = 64 - x;
 	if (y + height > 64) height = 64 - y;
 
-	const LocalWholeTilePosition pos{ static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(z) };
-	const Dimension<uint8_t> size{ static_cast<uint8_t>(width), static_cast<uint8_t>(height), static_cast<uint8_t>(length) };
-	return LocalWholeTileRectangleArea{ pos, size };
+	const LocalWholeTilePosition pos{static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(z)};
+	const Dimension<uint8_t> size{static_cast<uint8_t>(width), static_cast<uint8_t>(height), static_cast<uint8_t>(length)};
+	return LocalWholeTileRectangleArea{pos, size};
 }
 
 inline constexpr WholeTileRectangleArea toWholeTileRectangleArea(const PixelRectangleArea& rect)
 {
-	return WholeTileRectangleArea{ toWholeTilePosition(rect.position), Dimension<uint8_t>(static_cast<uint8_t>(rect.size.width() / 16), static_cast<uint8_t>(rect.size.height() / 16)) };
+	return WholeTileRectangleArea{toWholeTilePosition(rect.position), Dimension<uint8_t>(static_cast<uint8_t>(rect.size.width() / 16), static_cast<uint8_t>(rect.size.height() / 16))};
 }
 
 inline constexpr WholeTileRectangleArea toWholeTileRectangleArea(const TileRectangleArea& rect)
 {
 	const auto width = static_cast<uint8_t>(rect.size.width() + std::numeric_limits<float>::epsilon());
 	const auto height = static_cast<uint8_t>(rect.size.height() + std::numeric_limits<float>::epsilon());
-	return WholeTileRectangleArea{ toWholeTilePosition(rect.position), Dimension<uint8_t>(width, height) };
+	return WholeTileRectangleArea{toWholeTilePosition(rect.position), Dimension<uint8_t>(width, height)};
 }
 
 //----------------------------
@@ -713,25 +738,25 @@ inline constexpr WholeTileRectangleArea toWholeTileRectangleArea(const TileRecta
 template<typename Type, std::integral OtherType>
 inline constexpr Position<Type> operator*(const Position<Type>& left, const OtherType& right)
 {
-	return Position<Type>{ static_cast<Type>(left.x() * right), static_cast<Type>(left.y() * right), static_cast<Type>(left.z() * right) };
+	return Position<Type>{static_cast<Type>(left.x() * right), static_cast<Type>(left.y() * right), static_cast<Type>(left.z() * right)};
 }
 
 template<typename Type, std::integral OtherType>
 inline constexpr Position<Type> operator+(const Position<Type>& left, const OtherType& right)
 {
-	return Position<Type>{ static_cast<Type>(left.x() + right), static_cast<Type>(left.y() + right), static_cast<Type>(left.z() + right) };
+	return Position<Type>{static_cast<Type>(left.x() + right), static_cast<Type>(left.y() + right), static_cast<Type>(left.z() + right)};
 }
 
 template<typename Type, std::integral OtherType>
 inline constexpr Position<Type> operator-(const Position<Type>& left, const OtherType& right)
 {
-	return Position<Type>{ static_cast<Type>(left.x() - right), static_cast<Type>(left.y() - right), static_cast<Type>(left.z() - right) };
+	return Position<Type>{static_cast<Type>(left.x() - right), static_cast<Type>(left.y() - right), static_cast<Type>(left.z() - right)};
 }
 
 template<typename Type, std::integral OtherType>
 inline constexpr Position<Type> operator/(const Position<Type>& left, const OtherType& right)
 {
-	return Position<Type>{ static_cast<Type>(left.x() / right), static_cast<Type>(left.y() / right), static_cast<Type>(left.z() / right) };
+	return Position<Type>{static_cast<Type>(left.x() / right), static_cast<Type>(left.y() / right), static_cast<Type>(left.z() / right)};
 }
 
 //
@@ -739,25 +764,25 @@ inline constexpr Position<Type> operator/(const Position<Type>& left, const Othe
 template<typename Type, std::floating_point OtherType>
 inline constexpr Position<OtherType> operator*(const Position<Type>& left, const OtherType& right)
 {
-	return Position<OtherType>{ static_cast<OtherType>(left.x() * right), static_cast<OtherType>(left.y() * right), static_cast<OtherType>(left.z() * right) };
+	return Position<OtherType>{static_cast<OtherType>(left.x() * right), static_cast<OtherType>(left.y() * right), static_cast<OtherType>(left.z() * right)};
 }
 
 template<typename Type, std::floating_point OtherType>
 inline constexpr Position<OtherType> operator+(const Position<Type>& left, const OtherType& right)
 {
-	return Position<OtherType>{ static_cast<OtherType>(left.x() + right), static_cast<OtherType>(left.y() + right), static_cast<OtherType>(left.z() + right) };
+	return Position<OtherType>{static_cast<OtherType>(left.x() + right), static_cast<OtherType>(left.y() + right), static_cast<OtherType>(left.z() + right)};
 }
 
 template<typename Type, std::floating_point OtherType>
 inline constexpr Position<OtherType> operator-(const Position<Type>& left, const OtherType& right)
 {
-	return Position<OtherType>{ static_cast<OtherType>(left.x() - right), static_cast<OtherType>(left.y() - right), static_cast<OtherType>(left.z() - right) };
+	return Position<OtherType>{static_cast<OtherType>(left.x() - right), static_cast<OtherType>(left.y() - right), static_cast<OtherType>(left.z() - right)};
 }
 
 template<typename Type, std::floating_point OtherType>
 inline constexpr Position<OtherType> operator/(const Position<Type>& left, const OtherType& right)
 {
-	return Position<OtherType>{ static_cast<OtherType>(left.x() / right), static_cast<OtherType>(left.y() / right), static_cast<OtherType>(left.z() / right) };
+	return Position<OtherType>{static_cast<OtherType>(left.x() / right), static_cast<OtherType>(left.y() / right), static_cast<OtherType>(left.z() / right)};
 }
 
 //
@@ -765,25 +790,25 @@ inline constexpr Position<OtherType> operator/(const Position<Type>& left, const
 template<typename Type, typename OtherType>
 inline constexpr Position<Type> operator*(const Position<Type>& left, const Position<OtherType>& right)
 {
-	return Position<Type>{ static_cast<Type>(left.x() * right.x()), static_cast<Type>(left.y() * right.y()), static_cast<Type>(left.z() * right.z()) };
+	return Position<Type>{static_cast<Type>(left.x() * right.x()), static_cast<Type>(left.y() * right.y()), static_cast<Type>(left.z() * right.z())};
 }
 
 template<typename Type, typename OtherType>
 inline constexpr Position<Type> operator+(const Position<Type>& left, const Position<OtherType>& right)
 {
-	return Position<Type>{ static_cast<Type>(left.x() + right.x()), static_cast<Type>(left.y() + right.y()), static_cast<Type>(left.z() + right.z()) };
+	return Position<Type>{static_cast<Type>(left.x() + right.x()), static_cast<Type>(left.y() + right.y()), static_cast<Type>(left.z() + right.z())};
 }
 
 template<typename Type, typename OtherType>
 inline constexpr Position<Type> operator-(const Position<Type>& left, const Position<OtherType>& right)
 {
-	return Position<Type>{ static_cast<Type>(left.x() - right.x()), static_cast<Type>(left.y() - right.y()), static_cast<Type>(left.z() - right.z()) };
+	return Position<Type>{static_cast<Type>(left.x() - right.x()), static_cast<Type>(left.y() - right.y()), static_cast<Type>(left.z() - right.z())};
 }
 
 template<typename Type, typename OtherType>
 inline constexpr Position<Type> operator/(const Position<Type>& left, const Position<OtherType>& right)
 {
-	return Position<Type>{ static_cast<Type>(left.x() / right.x()), static_cast<Type>(left.y() / right.y()), static_cast<Type>(left.z() / right.z()) };
+	return Position<Type>{static_cast<Type>(left.x() / right.x()), static_cast<Type>(left.y() / right.y()), static_cast<Type>(left.z() / right.z())};
 }
 
 //----------------------------
@@ -791,25 +816,25 @@ inline constexpr Position<Type> operator/(const Position<Type>& left, const Posi
 template<typename Type, std::integral OtherType>
 inline constexpr Dimension<Type> operator*(const Dimension<Type>& left, const OtherType& right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.width() * right), static_cast<Type>(left.height() * right), static_cast<Type>(left.length() * right) };
+	return Dimension<Type>{static_cast<Type>(left.width() * right), static_cast<Type>(left.height() * right), static_cast<Type>(left.length() * right)};
 }
 
 template<typename Type, std::integral OtherType>
 inline constexpr Dimension<Type> operator+(const Dimension<Type>& left, const OtherType& right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.width() + right), static_cast<Type>(left.height() + right), static_cast<Type>(left.length() + right) };
+	return Dimension<Type>{static_cast<Type>(left.width() + right), static_cast<Type>(left.height() + right), static_cast<Type>(left.length() + right)};
 }
 
 template<typename Type, std::integral OtherType>
 inline constexpr Dimension<Type> operator-(const Dimension<Type>& left, const OtherType& right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.width() - right), static_cast<Type>(left.height() - right), static_cast<Type>(left.length() - right) };
+	return Dimension<Type>{static_cast<Type>(left.width() - right), static_cast<Type>(left.height() - right), static_cast<Type>(left.length() - right)};
 }
 
 template<typename Type, std::integral OtherType>
 inline constexpr Dimension<Type> operator/(const Dimension<Type>& left, const OtherType& right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.width() / right), static_cast<Type>(left.height() / right), static_cast<Type>(left.length() / right) };
+	return Dimension<Type>{static_cast<Type>(left.width() / right), static_cast<Type>(left.height() / right), static_cast<Type>(left.length() / right)};
 }
 
 //
@@ -817,25 +842,25 @@ inline constexpr Dimension<Type> operator/(const Dimension<Type>& left, const Ot
 template<typename Type, std::floating_point OtherType>
 inline constexpr Dimension<OtherType> operator*(const Dimension<Type>& left, const OtherType& right)
 {
-	return Dimension<OtherType>{ static_cast<OtherType>(left.width() * right), static_cast<OtherType>(left.height() * right), static_cast<OtherType>(left.length() * right) };
+	return Dimension<OtherType>{static_cast<OtherType>(left.width() * right), static_cast<OtherType>(left.height() * right), static_cast<OtherType>(left.length() * right)};
 }
 
 template<typename Type, std::floating_point OtherType>
 inline constexpr Dimension<OtherType> operator+(const Dimension<Type>& left, const OtherType& right)
 {
-	return Dimension<OtherType>{ static_cast<OtherType>(left.width() + right), static_cast<OtherType>(left.height() + right), static_cast<OtherType>(left.length() + right) };
+	return Dimension<OtherType>{static_cast<OtherType>(left.width() + right), static_cast<OtherType>(left.height() + right), static_cast<OtherType>(left.length() + right)};
 }
 
 template<typename Type, std::floating_point OtherType>
 inline constexpr Dimension<OtherType> operator-(const Dimension<Type>& left, const OtherType& right)
 {
-	return Dimension<OtherType>{ static_cast<OtherType>(left.width() - right), static_cast<OtherType>(left.height() - right), static_cast<OtherType>(left.length() - right) };
+	return Dimension<OtherType>{static_cast<OtherType>(left.width() - right), static_cast<OtherType>(left.height() - right), static_cast<OtherType>(left.length() - right)};
 }
 
 template<typename Type, std::floating_point OtherType>
 inline constexpr Dimension<OtherType> operator/(const Dimension<Type>& left, const OtherType& right)
 {
-	return Dimension<OtherType>{ static_cast<OtherType>(left.width() / right), static_cast<OtherType>(left.height() / right), static_cast<OtherType>(left.length() / right) };
+	return Dimension<OtherType>{static_cast<OtherType>(left.width() / right), static_cast<OtherType>(left.height() / right), static_cast<OtherType>(left.length() / right)};
 }
 
 //
@@ -843,25 +868,25 @@ inline constexpr Dimension<OtherType> operator/(const Dimension<Type>& left, con
 template<typename Type, typename OtherType>
 inline constexpr Dimension<Type> operator*(const Dimension<Type>& left, const Dimension<OtherType>& right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.width() * right.width()), static_cast<Type>(left.height() * right.height()), static_cast<Type>(left.length() * right.length()) };
+	return Dimension<Type>{static_cast<Type>(left.width() * right.width()), static_cast<Type>(left.height() * right.height()), static_cast<Type>(left.length() * right.length())};
 }
 
 template<typename Type, typename OtherType>
 inline constexpr Dimension<Type> operator+(const Dimension<Type>& left, const Dimension<OtherType>& right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.width() + right.width()), static_cast<Type>(left.height() + right.height()), static_cast<Type>(left.length() + right.length()) };
+	return Dimension<Type>{static_cast<Type>(left.width() + right.width()), static_cast<Type>(left.height() + right.height()), static_cast<Type>(left.length() + right.length())};
 }
 
 template<typename Type, typename OtherType>
 inline constexpr Dimension<Type> operator-(const Dimension<Type>& left, const Dimension<OtherType>& right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.width() - right.width()), static_cast<Type>(left.height() - right.height()), static_cast<Type>(left.length() - right.length()) };
+	return Dimension<Type>{static_cast<Type>(left.width() - right.width()), static_cast<Type>(left.height() - right.height()), static_cast<Type>(left.length() - right.length())};
 }
 
 template<typename Type, typename OtherType>
 inline constexpr Dimension<Type> operator/(const Dimension<Type>& left, const Dimension<OtherType>& right)
 {
-	return Dimension<Type>{ static_cast<Type>(left.width() / right.width()), static_cast<Type>(left.height() / right.height()), static_cast<Type>(left.length() / right.length()) };
+	return Dimension<Type>{static_cast<Type>(left.width() / right.width()), static_cast<Type>(left.height() / right.height()), static_cast<Type>(left.length() / right.length())};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -874,21 +899,35 @@ namespace std
 
 // Position
 template<typename T>
-struct tuple_size<preagonal::Position<T>> : public std::integral_constant<size_t, 3> {};
+struct tuple_size<preagonal::Position<T>> : public std::integral_constant<size_t, 3>
+{
+};
 
 template<size_t I, typename T>
-struct tuple_element<I, preagonal::Position<T>> { public: using type = T; };
+struct tuple_element<I, preagonal::Position<T>>
+{
+public:
+	using type = T;
+};
 
 // Dimension
 template<typename T>
-struct tuple_size<preagonal::Dimension<T>> : public std::integral_constant<size_t, 3> {};
+struct tuple_size<preagonal::Dimension<T>> : public std::integral_constant<size_t, 3>
+{
+};
 
 template<size_t I, typename T>
-struct tuple_element<I, preagonal::Dimension<T>> { public: using type = T; };
+struct tuple_element<I, preagonal::Dimension<T>>
+{
+public:
+	using type = T;
+};
 
 // Rectangle
 template<typename P, typename D>
-struct tuple_size<preagonal::Rectangle<P, D>> : public std::integral_constant<size_t, 2> {};
+struct tuple_size<preagonal::Rectangle<P, D>> : public std::integral_constant<size_t, 2>
+{
+};
 
 template<size_t I, typename P, typename D>
 struct tuple_element<I, preagonal::Rectangle<P, D>> : conditional<I == 0, P, D>
@@ -897,12 +936,13 @@ struct tuple_element<I, preagonal::Rectangle<P, D>> : conditional<I == 0, P, D>
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-}
+} // end namespace std
 ////////////////////////////////////////////////////////////////////////////////
 namespace preagonal
 {
 ////////////////////////////////////////////////////////////////////////////////
 
+// clang-format off
 template<size_t I, typename T>
 constexpr T& get(preagonal::Position<T>& vec) { return vec.data[I]; }
 
@@ -914,8 +954,9 @@ constexpr T& get(preagonal::Dimension<T>& vec) { return vec.data[I]; }
 
 template<size_t I, typename T>
 constexpr const T& get(const preagonal::Dimension<T>& vec) { return vec.data[I]; }
+// clang-format on
 
-template <size_t I, typename P, typename D>
+template<size_t I, typename P, typename D>
 std::tuple_element_t<I, preagonal::Rectangle<P, D>>& get(preagonal::Rectangle<P, D>& rect)
 {
 	static_assert(I < 2, "Index out of bounds for get<Rectangle>");
@@ -928,7 +969,7 @@ std::tuple_element_t<I, preagonal::Rectangle<P, D>>& get(preagonal::Rectangle<P,
 	return {};
 }
 
-template <size_t I, typename P, typename D>
+template<size_t I, typename P, typename D>
 std::tuple_element_t<I, preagonal::Rectangle<P, D>>&& get(const preagonal::Rectangle<P, D>& rect)
 {
 	static_assert(I < 2, "Index out of bounds for get<Rectangle>");

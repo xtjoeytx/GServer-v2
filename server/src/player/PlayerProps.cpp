@@ -357,9 +357,10 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			// Ganis can be set to themselves to play it again from the beginning, so don't check for equality here.
 			std::string gani = ganiProp->gani.value_or("idle");
 			account.character.gani = props::Limits::apply(gani, props::Limits::GaniLength);
+			const auto ganiWithoutAttr = string::retrieveLine(account.character.gani, ',');
 
 			// Allow spin to hurt things.
-			if (account.character.gani == "spin")
+			if (ganiWithoutAttr == "spin")
 			{
 				float tX = static_cast<float>(account.character.localPixelX) / 16.0f + 1.5f;
 				float tY = static_cast<float>(account.character.localPixelY) / 16.0f + 2.0f;
@@ -367,6 +368,21 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				m_server->hitObjectsAtPoint({tX, tY - 2.0f}, account.character.swordPower, level, shared_from_this());
 				m_server->hitObjectsAtPoint({tX + 2.0f, tY}, account.character.swordPower, level, shared_from_this());
 				m_server->hitObjectsAtPoint({tX - 2.0f, tY}, account.character.swordPower, level, shared_from_this());
+			}
+			// Serverside washit.
+			else if (m_server->hasNPCServer() && std::ranges::contains(m_server->cached.playerSwordGanis.getValue(), ganiWithoutAttr))
+			{
+				constexpr std::array hitLocX = {1,2, -1,-1, 1,2, 4,4};
+				constexpr std::array hitLocY = {-1,-1, 1,1, 4,4, 1,2};
+
+				const PixelPosition p1{translatePosition(getGlobalPosition(), Level::pixelsPerTile().width() * hitLocX[account.character.direction % 4 * 2], 8 + Level::pixelsPerTile().height() * hitLocY[account.character.direction % 4 * 2])};
+				const PixelPosition p2{translatePosition(getGlobalPosition(), Level::pixelsPerTile().width() * hitLocX[account.character.direction % 4 * 2 + 1], 8 + Level::pixelsPerTile().height() * hitLocY[account.character.direction % 4 * 2 + 1])};
+
+				for (const auto& npcId : level->findIntersectingNPCsForCollision(PixelRectangleArea{with_positions, p1, p2}))
+				{
+					if (const auto npc = m_server->getNPC(npcId); npc != nullptr)
+						npc->scripting.events.addEvent(ScriptEventType::WASHIT, source::FromPlayer(m_id));
+				}
 			}
 			break;
 		}

@@ -174,6 +174,7 @@ struct ExternalServerCachedSettings
 	std::array<SettingCache<uint16_t>, 5> apSystemThresholdSeconds{{{"aptime0", 30}, {"aptime1", 90}, {"aptime2", 300}, {"aptime3", 600}, {"aptime4", 1200}}};
 	SettingCache<std::vector<std::string>> playerProfileVariables{"profilevars", {"Kills:=playerkills", "Deaths:=playerdeaths", "Maxpower:=playerfullhearts", "Rating:=playerrating", "Alignment:=playerap", "Gralat:=playerrupees", "Swordpower:=playerswordpower", "Spin Attack:=canspin"}};
 	SettingCache<std::vector<std::string>> playerStatusList{"playerlisticons", {"Online", "Away", "DND", "Eating", "Hiding", "No PMs", "RPing", "Sparring", "PKing"}};
+	SettingCache<std::vector<std::string>> playerSwordGanis{"playerswordganis", {"sword"}};
 	// diagnostics
 	SettingCache<bool> warnOnCroppedFlags{"warnoncroppedflags", true};
 	SettingCache<bool> warnOnMissingFiles{"warnonmissingfiles", false};

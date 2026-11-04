@@ -175,7 +175,7 @@ struct u8string_hash_equal
 	[[nodiscard]] bool operator()(const CString& lhs, const std::u8string& rhs) const noexcept
 	{
 		const auto sv = lhs.toStringView();
-		const std::u8string_view view{ reinterpret_cast<const char8_t*>(sv.data()), sv.length() };
+		const std::u8string_view view{reinterpret_cast<const char8_t*>(sv.data()), sv.length()};
 		return view == rhs;
 	}
 	[[nodiscard]] bool operator()(const size_t& lhs, const std::u8string& rhs) const noexcept
@@ -194,7 +194,7 @@ struct u8string_hash_equal
 	[[nodiscard]] bool operator()(const std::u8string& lhs, const CString& rhs) const noexcept
 	{
 		const auto sv = rhs.toStringView();
-		const std::u8string_view view{ reinterpret_cast<const char8_t*>(sv.data()), sv.length() };
+		const std::u8string_view view{reinterpret_cast<const char8_t*>(sv.data()), sv.length()};
 		return lhs == view;
 	}
 	[[nodiscard]] bool operator()(const std::u8string& lhs, const size_t& rhs) const noexcept
@@ -254,7 +254,7 @@ struct hash_string_equal
 /// @return A string_view to the trimmed string.
 std::string_view trimLeft(StringViewIshVariant auto const& str)
 {
-	const std::string_view view{ str };
+	const std::string_view view{str};
 	auto size = str.size();
 	for (size_t i = 0; i < size; ++i)
 	{
@@ -269,7 +269,7 @@ std::string_view trimLeft(StringViewIshVariant auto const& str)
 /// @return A string_view to the trimmed string.
 std::string_view trimRight(StringViewIshVariant auto const& str)
 {
-	const std::string_view view{ str };
+	const std::string_view view{str};
 	for (size_t i = view.size(); i > 0; --i)
 	{
 		if (const auto ch = view[i - 1]; !std::isspace(static_cast<unsigned char>(ch)) && ch != '\xa7')
@@ -283,7 +283,7 @@ std::string_view trimRight(StringViewIshVariant auto const& str)
 /// @return A string_view to the trimmed string.
 std::string_view trimNewlines(StringViewIshVariant auto const& str)
 {
-	const std::string_view view{ str };
+	const std::string_view view{str};
 	for (size_t i = view.size(); i > 0; --i)
 	{
 		if (const auto ch = view[i - 1]; ch != '\n' && ch != '\r' && ch != '\xa7')
@@ -396,7 +396,7 @@ inline std::string&& trimMutate(std::string&& str)
 inline std::string replace(const std::string_view in, const std::string_view from, const std::string_view to)
 {
 	if (from.empty())
-		return std::string{ in };
+		return std::string{in};
 
 	std::string out;
 	out.reserve(in.size() + 16); // Reserve some extra space for the new string.
@@ -442,7 +442,7 @@ inline std::string& replaceMutate(std::string& in, const std::string_view from, 
 inline std::string eraseChars(const std::string_view in, const std::string_view chars)
 {
 	if (chars.empty())
-		return std::string{ in };
+		return std::string{in};
 
 	auto filtered = in | std::views::filter([&chars](const char c) {
 		return chars.find(c) == std::string_view::npos;
@@ -476,7 +476,7 @@ inline auto removeExtension(StringViewIshVariant auto const& str)
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 	using StringViewType = std::basic_string_view<Elem, Traits>;
 
-	StringViewType view{ str };
+	StringViewType view{str};
 	auto pos = view.rfind('.');
 	if (pos == StringViewType::npos)
 		return view;
@@ -530,7 +530,7 @@ auto unescapeQuotes(StringViewIshVariant auto const& str)
 		if constexpr (StringVariant<decltype(str)>)
 			return str;
 		else
-			return std::basic_string<Elem, Traits>{ str };
+			return std::basic_string<Elem, Traits>{str};
 	}
 
 	std::basic_string<Elem, Traits> ret{};
@@ -620,7 +620,7 @@ auto split(StringViewVariant auto const str, StringViewVariant auto const delims
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 	using StringViewType = std::basic_string_view<Elem, Traits>;
-	StringViewType strview{ str };
+	StringViewType strview{str};
 
 	if (strview.empty())
 		co_return;
@@ -666,7 +666,7 @@ auto splitByString(StringViewVariant auto const str, StringViewVariant auto cons
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 	using StringViewType = std::basic_string_view<Elem, Traits>;
-	StringViewType strview{ str };
+	StringViewType strview{str};
 
 	if (strview.empty())
 		co_return;
@@ -714,8 +714,8 @@ auto splitToVector(StringViewIshVariant auto const& str, StringViewIshVariant au
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 	using StringType = std::basic_string<Elem, Traits>;
 	using StringViewType = std::basic_string_view<Elem, Traits>;
-	StringViewType strview{ str };
-	StringViewType delimview{ delims };
+	StringViewType strview{str};
+	StringViewType delimview{delims};
 
 	std::vector<StringType> tokens;
 	for (auto token : split(strview, delimview, ignoreEmpty))
@@ -734,8 +734,8 @@ auto splitToVectorView(StringViewIshVariant auto const& str, StringViewIshVarian
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 	using StringViewType = std::basic_string_view<Elem, Traits>;
-	StringViewType strview{ str };
-	StringViewType delimview{ delims };
+	StringViewType strview{str};
+	StringViewType delimview{delims};
 
 	std::vector<StringViewType> tokens;
 	for (auto token : split(strview, delimview, ignoreEmpty))
@@ -755,8 +755,8 @@ auto splitToVectorByString(StringViewIshVariant auto const& str, StringViewIshVa
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 	using StringType = std::basic_string<Elem, Traits>;
 	using StringViewType = std::basic_string_view<Elem, Traits>;
-	StringViewType strview{ str };
-	StringViewType delimview{ delim };
+	StringViewType strview{str};
+	StringViewType delimview{delim};
 
 	std::vector<StringType> tokens;
 	for (auto token : splitByString(strview, delimview, ignoreEmpty))
@@ -848,12 +848,12 @@ auto splitToVectorByString(StringViewIshVariant auto const& str, StringViewIshVa
 /// @return A generator yielding each token as a std::string_view.
 inline std::generator<std::string_view> split(const std::string& str, const std::string_view delims, const bool ignoreEmpty = true)
 {
-	for (auto item : split(std::string_view{ str }, delims, ignoreEmpty))
+	for (auto item : split(std::string_view{str}, delims, ignoreEmpty))
 		co_yield item;
 }
 inline std::generator<std::wstring_view> split(const std::wstring& str, const std::wstring_view delims, const bool ignoreEmpty = true)
 {
-	for (auto item : split(std::wstring_view{ str }, delims, ignoreEmpty))
+	for (auto item : split(std::wstring_view{str}, delims, ignoreEmpty))
 		co_yield item;
 }
 
@@ -864,7 +864,7 @@ inline std::generator<std::wstring_view> split(const std::wstring& str, const st
 /// @return A generator yielding each token as a std::string_view.
 inline std::generator<std::string_view> splitByString(const std::string& str, const std::string_view delim, const bool ignoreEmpty = true)
 {
-	for (auto item : splitByString(std::string_view{ str }, delim, ignoreEmpty))
+	for (auto item : splitByString(std::string_view{str}, delim, ignoreEmpty))
 		co_yield item;
 }
 
@@ -1033,7 +1033,7 @@ auto toCSV(StringViewIshVariant auto const& str, std::string_view delim = "\n"sv
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 	using StringViewType = std::basic_string_view<Elem, Traits>;
-	StringViewType strview{ str };
+	StringViewType strview{str};
 
 	auto s = splitByString(strview, delim, false);
 	return toCSV(s, force_quoted);
@@ -1212,7 +1212,7 @@ bool ends_withi(StringViewIshVariant auto const& str, StringViewIshVariant auto 
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 	using StringViewType = std::basic_string_view<Elem, Traits>;
-	StringViewType strview{ str };
+	StringViewType strview{str};
 
 	strview = strview.substr(strview.size() - suffix.size());
 	return equalsi(strview, suffix);
@@ -1223,7 +1223,7 @@ bool ends_withi(StringViewIshVariant auto const& str, StringViewIshVariant auto 
 /// @return true if the string is empty or consists solely of whitespace characters; otherwise false.
 bool empty_or_whitespace(StringViewIshVariant auto const& str)
 {
-	return str.empty() || std::ranges::all_of(str, [](char c) { return std::isspace(static_cast<unsigned char>(c)); });
+	return str.empty() || std::ranges::all_of(str, [](const char c) { return std::isspace(static_cast<unsigned char>(c)); });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1551,13 +1551,13 @@ inline auto retrieveLine(StringViewVariant auto const str, const char delim = '\
 	using Elem = std::remove_cvref_t<decltype(str)>::value_type;
 	using Traits = std::remove_cvref_t<decltype(str)>::traits_type;
 	using StringViewType = std::basic_string_view<Elem, Traits>;
-	StringViewType strview{ str };
+	StringViewType strview{str};
 
 	const auto pos = strview.find(delim);
 	if (pos == StringViewType::npos)
 		return strview;
 
-	return str.substr(0, pos);
+	return strview.substr(0, pos);
 }
 
 /// @brief Extracts a line from a string, using a specified delimiter.

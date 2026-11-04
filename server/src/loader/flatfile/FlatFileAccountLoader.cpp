@@ -65,7 +65,6 @@ static void writeLine(std::string& output, const std::string& section, const aut
 
 flagPair FlatFileAccountLoader::decomposeFlag(const std::string& flag)
 {
-	const auto server = BabyDI::Get<Server>();
 	const auto sep = flag.find('=');
 	flagPair result = (sep == std::string::npos) ? std::make_pair(flag, "") : std::make_pair(flag.substr(0, sep), flag.substr(sep + 1));
 	return result;

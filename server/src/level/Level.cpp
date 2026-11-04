@@ -539,7 +539,7 @@ void SubLevel::updateTimeSinceLastUsed()
 
 void SubLevel::sleepNPCs()
 {
-	bool processed = false;
+	[[maybe_unused]] bool processed = false;
 	if (const auto level = parentLevel.lock(); level != nullptr && server != nullptr)
 	{
 		for (const auto& npcId : level->findNPCsInLevelPart(mapPosition.value_or({0, 0})))
@@ -567,7 +567,7 @@ void SubLevel::sleepNPCs()
 
 void SubLevel::wakeNPCs()
 {
-	bool processed = false;
+	[[maybe_unused]] bool processed = false;
 	if (const auto level = parentLevel.lock(); level != nullptr && server != nullptr)
 	{
 		for (const auto& npcId : level->findNPCsInLevelPart(mapPosition.value_or({0, 0})))

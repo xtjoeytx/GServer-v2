@@ -434,7 +434,7 @@ inline constexpr bool inList(C&& check, const std::array<T, N>& arr)
 //----------------------------
 // Tags
 
-//clang-format off
+// clang-format off
 struct inform_client_t { explicit inform_client_t() = default; };
 inline constexpr inform_client_t inform_client{};
 

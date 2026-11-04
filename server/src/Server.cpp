@@ -123,7 +123,7 @@ void ExternalServerCachedSettings::bind(Server* server)
 	// player
 	settings.track(enableDefaultWeapons, maxHeartLimit, enableExBodyColors, playerTouchesMeNoZ, lockPlayerZ);
 	settings.track(enableAPSystem, apSystemThresholdSeconds[0], apSystemThresholdSeconds[1], apSystemThresholdSeconds[2], apSystemThresholdSeconds[3], apSystemThresholdSeconds[4]);
-	settings.track(playerProfileVariables, playerStatusList);
+	settings.track(playerProfileVariables, playerStatusList, playerSwordGanis);
 
 	// diagnostics
 	settings.track(warnOnCroppedFlags, warnOnMissingFiles, warnOnLargeFiles, warnOnFilesystemIssues, warnOnInvalidLevelSections, logCorruptPackets);

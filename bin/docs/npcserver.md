@@ -50,7 +50,7 @@ The following changes will be made to how the server responds to client requests
 - NPC property edits are ignored.
 - New NPCs (via `putnpc`) are ignored.
 - Deleting NPCs is ignored.
-- Only `client.` flags will be accepted (`server.` flag changes will be ignored).
+- Only `client.` flags will be accepted from players (`server.` flag changes will be ignored).
 - Items a player spawns will be taken from the player's inventory (under the assumption the player dropped the item).
 - Clientside `toweapons` is ignored.
 - Various player property updates from the client are ignored (`maxpower`, `rupees`, `glovepower`, `swordpower`, `shieldpower`, `mp`, `ap`, `kills`, `deaths`, `rating`).
@@ -69,6 +69,8 @@ The following options are available in the `serveroptions.txt` file:
         By default, NPCs will only respond to script events referenced in their scripts.  If true, the NPC will respond to all events.
     sleepwhennoplayers = true
         If true, the NPC-Server will not process scripts when there are no players connected.
+    default_scriptengine = gs1
+        Sets the default script engine for scripts.
 
 ---
 # Serverside NPC programming
@@ -166,10 +168,16 @@ Variable prefixes:
     flag - stored on the player account
     var - stored in the script execution context (not visible to joined classes)
 
-### Emulating sword hits
+### Serverside sword hits
 
-The `washit` event is only triggered for the `hitobjects` command on the server, so if you swing your sword at an NPC,
-the serverside script will not detect it.  To handle sword hits, make a system weapon that does the following:
+The [washit](scripting-gs1-events.md#washit) event traditionally only triggered for the [hitobjects](scripting-gs1-commands.md#hitobjects) command on the server,
+since the `sword.gani` animation could be altered with the [replaceani](scripting-gs1-commands.md#replaceani) command.
+
+By making use of the `playerswordganis` server option, a list of sword attack animations can be provided to the server,
+allowing hits to trigger the [washit](scripting-gs1-events.md) event.
+
+Additionally, you can emulate sword hits using the [hitobjects](scripting-gs1-commands.md#hitobjects) command manually.
+To handle sword hits, make a system weapon that does the following:
 
 ```
 //#CLIENTSIDE
