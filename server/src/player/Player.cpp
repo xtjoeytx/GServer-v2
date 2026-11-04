@@ -1041,7 +1041,7 @@ void Player::synchronizeFlags(const std::vector<std::string>& flagPairs)
 				value->assign<bool>(true);
 				sendPacket(CString() >> (char)PLO_FLAGSET << search->first);
 			}
-			else if (!value->value.has<std::string>() || search->second != value->get<std::string>().value().get())
+			else if (!search->second.empty() && (!value->value.has<std::string>() || search->second != value->get<std::string>().value().get()))
 			{
 				value->value.unassign<bool>();
 				value->assign(search->second);

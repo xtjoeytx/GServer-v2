@@ -119,18 +119,9 @@ bool GameValue::testAsFlag() const
 // GameVariable
 ////////////////////////////////////////////////////////////
 
-std::optional<GameVariable> GameVariable::deserialize(const std::string_view line)
+std::optional<GameVariable> GameVariable::deserialize(std::string_view line)
 {
-	if (line.starts_with("FLAG"))
-	{
-		auto data = string::trim(line.substr(5));
-		const auto separator = data.find('=');
-		if (separator == std::string_view::npos)
-			return GameVariable{.name = std::string{string::trim(data)}, .value = GameValue{true}};
-		return GameVariable{.name = std::string{string::trim(data.substr(0, separator))}, .value = GameValue{std::string{string::trim(data.substr(separator + 1))}}};
-	}
-
-	if (line.starts_with("VAR"))
+	if (line.starts_with("VAR "))
 	{
 		auto data = string::trim(line.substr(4));
 		const auto separator = data.find('=');
@@ -150,7 +141,14 @@ std::optional<GameVariable> GameVariable::deserialize(const std::string_view lin
 		return GameVariable{.name = std::string{identifier}, .value = GameValue{std::move(array)}};
 	}
 
-	return std::nullopt;
+	// Remove the flag prefix.
+	if (line.starts_with("FLAG "))
+		line = string::trim(line.substr(5));
+
+	const auto separator = line.find('=');
+	if (separator == std::string_view::npos)
+		return GameVariable{.name = std::string{string::trim(line)}, .value = GameValue{true}};
+	return GameVariable{.name = std::string{string::trim(line.substr(0, separator))}, .value = GameValue{std::string{string::trim(line.substr(separator + 1))}}};
 }
 
 std::optional<std::string> GameVariable::serializeModern() const noexcept
