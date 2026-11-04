@@ -2409,9 +2409,7 @@ void Server::sendPacketToNearby(const CString& packet, const PixelPosition& posi
 			// Are we on the same level?
 			// Levels on a gmap are the same level and thus this would be false.
 			const bool sameLevel = level->levelName == player->getLevelName();
-
-			// TODO: Figure out when PLO_SETACTIVELEVEL was introduced.
-			if (!sameLevel && player->getVersion() < CLVER_2_17)
+			if (!sameLevel && player->getVersion() < CLVER_2_01)
 				continue;
 
 			// If we aren't allowing sends to nearby levels, abort.
