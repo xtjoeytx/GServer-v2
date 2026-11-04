@@ -36,7 +36,13 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
-Z3-V1.03	(Zelda Online?)
+Z3-V1.02	(Zelda Online)
+	11 bit tiles
+	links
+	baddies (no verses)
+	signs
+
+Z3-V1.03	(Zelda Online)
 	12 bit tiles
 	links
 	baddies (no verses)
@@ -397,14 +403,16 @@ void LevelLoader::loadStaticDataNPCs(const LevelPtr& level, std::optional<MapPos
 bool LevelLoader::loadZelda(const StaticLevelDataPtr& levelData, const std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData)
 {
 	int version = -1;
-	if (fileVersion == "Z3-V1.03")
+	if (fileVersion == "Z3-V1.02")
+		version = 2;
+	else if (fileVersion == "Z3-V1.03")
 		version = 3;
 	else if (fileVersion == "Z3-V1.04")
 		version = 4;
 	else return false;
 
 	// Load tiles.
-	loadBinaryTiles(levelData, fileData, 12, 1);
+	loadBinaryTiles(levelData, fileData, version == 2 ? 11 : 12, 1);
 
 	// Load links.
 	loadBinaryLinks(levelData, fileData, fileSystem);
@@ -476,6 +484,7 @@ bool LevelLoader::loadGraal(const StaticLevelDataPtr& levelData, const std::stri
 
 void LevelLoader::loadBinaryTiles(const StaticLevelDataPtr& levelData, const fs::FilePtr& fileData, const uint32_t bits, const uint8_t layers)
 {
+	assert(bits >= 11 && bits <= 13);
 	for (uint8_t layer = 0; layer < layers; ++layer)
 	{
 		if (fileData->finishedReading())
@@ -496,6 +505,9 @@ void LevelLoader::loadBinaryTiles(const StaticLevelDataPtr& levelData, const fs:
 		// Read the tiles.
 		while (boardWriteIndex < MAX_TILE_COUNT && !fileData->finishedReading())
 		{
+			constexpr std::array bitMask = {0x7FF, 0xFFF, 0x1FFF};
+			constexpr std::array bitMaskRLE = {0x400, 0x800, 0x1000};
+
 			// Every control code/tile is either 12 or 13 bits.  WTF.
 			// Read in the bits.
 			while (read < bits)
@@ -505,13 +517,13 @@ void LevelLoader::loadBinaryTiles(const StaticLevelDataPtr& levelData, const fs:
 			}
 
 			// Pull out a single 12/13 bit code from the buffer.
-			code = buffer & (bits == 12 ? 0xFFF : 0x1FFF);
+			code = buffer & (bitMask[bits - 11]);
 			buffer >>= bits;
 			read -= bits;
 
 			// See if we have an RLE control code.
 			// Control codes determine how the RLE scheme works.
-			if (code & ((bits == 12) ? 0x800 : 0x1000))
+			if (code & bitMaskRLE[bits - 11])
 			{
 				// If the 0x100 bit is set, we are in a double repeat mode.
 				// {double 4}56 = 56565656
