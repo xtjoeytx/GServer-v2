@@ -236,10 +236,10 @@ const ScriptByteCode& Script::getClientByteCode() const noexcept
 {
 	static ScriptByteCode empty;
 
-	if (m_client_script == nullptr || !m_client_script->script->has_value())
+	if (m_client_script == nullptr || m_client_script->script == nullptr || !m_client_script->script->has_value())
 		return empty;
 
-	if (auto* bytecode = std::any_cast<ScriptByteCode*>(m_client_script->script); bytecode != nullptr)
+	if (auto* bytecode = std::any_cast<ScriptByteCode>(m_client_script->script.get()); bytecode != nullptr)
 		return *bytecode;
 
 	return empty;
