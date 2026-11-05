@@ -75,19 +75,26 @@ void UPNP::discover()
 			device = device->pNext;
 		}
 
-		// Get the first device in the list.
-		device = gatewayDevices.front();
-
-		// Get the XML description of the UPNP device.
-		if (auto xmlDescription = static_cast<char*>(miniwget(device->descURL, &xmlDescriptionSize, 0, &responseCode)))
+		if (gatewayDevices.empty())
 		{
-			// Parse the XML description.
-			parserootdesc(xmlDescription, xmlDescriptionSize, &m_data);
-			free(xmlDescription);
-			xmlDescription = nullptr;
+			logbatch.emplace_back(1_ui8, "** [UPnP] No Internet Gateway Device found.");
+		}
+		else
+		{
+			// Get the first device in the list.
+			device = gatewayDevices.front();
 
-			// Get the UPNP urls from the description.
-			GetUPNPUrls(&m_urls, &m_data, device->descURL, 0);
+			// Get the XML description of the UPNP device.
+			if (auto xmlDescription = static_cast<char*>(miniwget(device->descURL, &xmlDescriptionSize, 0, &responseCode)))
+			{
+				// Parse the XML description.
+				parserootdesc(xmlDescription, xmlDescriptionSize, &m_data);
+				free(xmlDescription);
+				xmlDescription = nullptr;
+
+				// Get the UPNP urls from the description.
+				GetUPNPUrls(&m_urls, &m_data, device->descURL, 0);
+			}
 		}
 		freeUPNPDevlist(device_list);
 	}
