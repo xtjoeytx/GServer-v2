@@ -327,7 +327,7 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type) c
 			break;
 		case ENUM(StorageType::SERVER):
 		case ENUM(StorageType::SERVERR):
-			store = m_serverStore;
+			store = getServerStore();
 			break;
 		case ENUM(StorageType::LEVEL):
 		{
@@ -507,8 +507,8 @@ GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view iden
 		return builtInStore->get(identifier).lock().get();
 
 	// Second, check the server's global variable store.
-	if (m_serverStore->contains(identifier))
-		return m_serverStore->get(identifier).lock().get();
+	if (const auto serverStore = getServerStore(); serverStore != nullptr && serverStore->contains(identifier))
+		return serverStore->get(identifier).lock().get();
 
 	auto checkStore = [&](const ScriptObject& source) -> std::optional<GameVariable*>
 	{
@@ -714,6 +714,15 @@ void GS1Visitor::setCurrentPlayerVariables(const std::optional<ScriptObject>& so
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+GameVariableStore* GS1Visitor::getServerStore() const
+{
+	// Expression evaluation (processMathExpression / processStringExpression) builds a visitor
+	// without going through execute(), so resolve the server store on first use.
+	if (m_serverStore == nullptr)
+		m_serverStore = getGameVariableStoreFromSource(source::FromServer());
+	return m_serverStore;
+}
 
 void GS1Visitor::execute(const ScriptEvent& event, const ScriptObject& source, GS1Parser& parser, ScriptExecutionContext& context, antlr4::tree::ParseTree* startNode)
 {
