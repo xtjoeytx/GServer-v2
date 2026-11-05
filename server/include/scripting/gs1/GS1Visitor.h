@@ -153,7 +153,8 @@ protected:
 	GS1Parser* m_parser = nullptr;
 	const ScriptEvent* m_event = nullptr;
 	ScriptObject m_originalSource;
-	GameVariableStore* m_serverStore = nullptr;
+	mutable GameVariableStore* m_serverStore = nullptr;
+	GameVariableStore* getServerStore() const;
 	std::deque<ScriptObject> m_currentSource;
 	std::deque<ScriptObject> m_sleepCurrentSource;
 	std::vector<std::pair<antlr4::tree::ParseTree*, size_t>> m_callStack;
