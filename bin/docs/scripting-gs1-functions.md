@@ -390,16 +390,6 @@ Returns true if the NPC has gralats greater than or equal to the specified value
 ---
 ## hasright
 
-> removed: beta 6<br>
-> scope: 🧑 clientside<br>
-> gs2emu serverside: ✅<br>
-> official serverside: ❌<br>
-
-Returns true if the NPC has bombs greater than or equal to the specified value.
-
----
-## hasright
-
 `hasright(rw, path)`
 
 > introduced: (npcserver)<br>

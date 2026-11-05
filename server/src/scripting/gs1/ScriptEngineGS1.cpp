@@ -227,10 +227,26 @@ GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string
 	parser = std::make_shared<GS1Parser>(tokens.get());
 	parser->removeErrorListeners();
 	parser->addErrorListener(errorListenerParser.get());
+	parser->setErrorHandler(std::make_shared<antlr4::BailErrorStrategy>());
+	parser->getInterpreter<antlr4::atn::ParserATNSimulator>()->setPredictionMode(antlr4::atn::PredictionMode::SLL);
+
+	// Create the visitor.
+	visitor = std::make_shared<GS1Visitor>();
 
 	// Run the parser and create our AST.
-	visitor = std::make_shared<GS1Visitor>();
-	program = parser->program();
+	try
+	{
+		program = parser->program();
+	}
+	catch (const antlr4::ParseCancellationException&)
+	{
+		DEBUGPRINT("[ANTLR4] SLL failed, trying LL.");
+		tokens->reset();
+		parser->reset();
+		parser->getInterpreter<antlr4::atn::ParserATNSimulator>()->setPredictionMode(antlr4::atn::PredictionMode::LL);
+		parser->setErrorHandler(std::make_shared<antlr4::DefaultErrorStrategy>());
+		program = parser->program();
+	}
 
 	// Set our variable lifetime to temporary.
 	variables.defaultLifetime = variables::Lifetime::TEMPORARY;

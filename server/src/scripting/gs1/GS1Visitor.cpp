@@ -1172,7 +1172,7 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	std::vector<double> values;
-	for (const auto& be : context->exponentiationExpression())
+	for (const auto& be : context->additiveExpression())
 		values.emplace_back(getScriptValueAsCopy<double>(visit(be)).value_or(0.0));
 
 	std::any right_any;

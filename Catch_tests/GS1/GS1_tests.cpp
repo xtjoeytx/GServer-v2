@@ -340,6 +340,10 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				this.rangeC1 = 40,44 in |40, 44>;
 				this.rangeC2 = 40,44 in <40, 44|;
 				this.rangeC3 = 40,44 in |40, 44|;
+				this.rangeG1 = 40,44 in {40, 42, 44};
+
+				if (1,2 in {1,2,3})
+					this.rangeG2 = true;
 
 				if (this.truevar)
 					this.testtruevar = 1;
@@ -392,6 +396,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK_THAT(store->getValue<double>("rangeC1").value_or(99.0), Catch::Matchers::WithinRel(0.0)); // false
 		CHECK_THAT(store->getValue<double>("rangeC2").value_or(99.0), Catch::Matchers::WithinRel(0.0)); // false
 		CHECK_THAT(store->getValue<double>("rangeC3").value_or(0.0), Catch::Matchers::WithinRel(1.0));
+		CHECK_THAT(store->getValue<double>("rangeG1").value_or(0.0), Catch::Matchers::WithinRel(1.0));
+		CHECK_THAT(store->getValue<double>("rangeG2").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 
 		// Implicit conversions to boolean only affect flags.
 		CHECK_THAT(store->getValue<double>("testtruevar").value_or(0.0), Catch::Matchers::WithinRel(0.0));
