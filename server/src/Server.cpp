@@ -126,7 +126,7 @@ void ExternalServerCachedSettings::bind(Server* server)
 	settings.track(playerProfileVariables, playerStatusList, playerSwordGanis);
 
 	// diagnostics
-	settings.track(warnOnCroppedFlags, warnOnMissingFiles, warnOnLargeFiles, warnOnFilesystemIssues, warnOnInvalidLevelSections, logCorruptPackets);
+	settings.track(warnOnMissingFiles, warnOnLargeFiles, warnOnFilesystemIssues, warnOnInvalidLevelSections, logCorruptPackets);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1889,22 +1889,8 @@ bool Server::setFlag(std::string_view flagPair, const bool sendToPlayers)
 	return setFlag(flagName, std::string{flagValue}, sendToPlayers);
 }
 
-bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagValue, const bool sendToPlayers)
+bool Server::setFlag(const std::string_view flagName, std::optional<std::string> flagValue, const bool sendToPlayers)
 {
-	// Function to crop flags.
-	auto cropFlag = [this, &flagName](std::string& value)
-	{
-		bool crop = !hasNPCServer();
-		crop = crop || flagName.starts_with("client.") || flagName.starts_with("clientr.") || flagName.starts_with("serverr.");
-		if (crop && (flagName.length() + 1 + value.length()) > 223)
-		{
-			value.erase(std::min(value.length(), static_cast<size_t>(223 - 1) - flagName.length()));
-			if (cached.warnOnCroppedFlags.getValue() == true)
-				log::printLine(log::server, "[WARNING] Flag '{}' was cropped (over 223 characters in total).", flagName);
-		}
-		return value;
-	};
-
 	// Alter the flag if it exists.
 	const auto existing = Scripting.variables.get(flagName).lock();
 	if (existing != nullptr)
@@ -1927,7 +1913,7 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 
 		// Alter value.
 		if (flagValue.has_value())
-			existing->assign<std::string>(cropFlag(flagValue.value()));
+			existing->assign<std::string>(std::move(flagValue.value()));
 		else existing->assign<bool>(true);
 
 		// Make the lifetime permanent.
@@ -1938,7 +1924,7 @@ bool Server::setFlag(std::string_view flagName, std::optional<std::string> flagV
 	{
 		if (!flagValue.has_value())
 			Scripting.variables.add(GameVariable{.name = std::string{flagName}, .value = GameValue{true}, .lifetime = variables::Lifetime::PERMANENT});
-		else Scripting.variables.add(GameVariable{.name = std::string{flagName}, .value = GameValue{cropFlag(flagValue.value())}, .lifetime = variables::Lifetime::PERMANENT});
+		else Scripting.variables.add(GameVariable{.name = std::string{flagName}, .value = GameValue{std::move(flagValue.value())}, .lifetime = variables::Lifetime::PERMANENT});
 	}
 
 	// And share it.

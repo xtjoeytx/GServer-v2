@@ -176,7 +176,6 @@ struct ExternalServerCachedSettings
 	SettingCache<std::vector<std::string>> playerStatusList{"playerlisticons", {"Online", "Away", "DND", "Eating", "Hiding", "No PMs", "RPing", "Sparring", "PKing"}};
 	SettingCache<std::vector<std::string>> playerSwordGanis{"playerswordganis", {"sword"}};
 	// diagnostics
-	SettingCache<bool> warnOnCroppedFlags{"warnoncroppedflags", true};
 	SettingCache<bool> warnOnMissingFiles{"warnonmissingfiles", false};
 	SettingCache<bool> warnOnLargeFiles{"warnonlargefiles", false};
 	SettingCache<bool> warnOnFilesystemIssues{"warnonfilesystemissues", true};

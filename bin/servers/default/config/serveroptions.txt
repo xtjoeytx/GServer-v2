@@ -350,7 +350,6 @@ runallscriptevents = false
 default_scriptengine = gs1
 
 # Diagnostics
-# warnoncroppedflags = true
 # warnonmissingfiles = false
 # warnonlargefiles = false
 # warnonfilesystemissues = true

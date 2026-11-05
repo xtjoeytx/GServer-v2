@@ -25,6 +25,7 @@
 + Text code page handling and conversions
 + Support for v6 client HTML body colors (see serveroption: enableexbodycolors)
 + Baddy names and item numbers can be used in .nw files
++ Removed 'cropflags' server option and added better handling around massive flags in RC (if the first 220 characters are identical and it ends with [!], it won't overwrite the original flag)
 * Worked around the ancient zlib bug that has been disconnecting clients since 2009 and removed the hardcoded -gr_zlib_fix weapon workaround
 * Fixed bugs with carryable NPCs
 * Fixed "update level" so it won't reset the X/Y locations of players in the level

@@ -1251,6 +1251,19 @@ void Player::setPropsFromRCPacket(CString& packet, const Player* rc)
 	while (flagCount-- > 0)
 	{
 		CString flag = packet.readChars(packet.readGUChar());
+		if (flag.length() > 220)
+		{
+			const auto flagView = flag.toStringView().substr(0, 220);
+			const auto [flagName, flagValue] = string::extractConfigParts(flagView, '=');
+			if (auto existing = account.variables.get(flagName).lock(); existing != nullptr && existing->has<std::string>())
+			{
+				if (auto& str = existing->get<std::string>().value().get(); str.starts_with(string::trim(flagValue)))
+				{
+					values.push_back(std::format("{}={}", flagName, str));
+					continue;
+				}
+			}
+		}
 		values.push_back(flag.toString());
 	}
 	synchronizeFlags(values);
@@ -1346,7 +1359,9 @@ CString Player::getPropsForRCPacket()
 		if (auto computedFlag = account.variables.serializeModern(flag); computedFlag.has_value())
 		{
 			++flagCount;
-			flags >> (char)(std::min(static_cast<size_t>(223), computedFlag.value().length())) << computedFlag.value().substr(0, 223);
+			if (computedFlag.value().length() > 220)
+				flags >> (char)223 << computedFlag.value().substr(0, 220) << "[!]";
+			else flags >> (char)computedFlag.value().length() << computedFlag.value();
 		}
 	}
 	ret >> (short)flagCount << flags;

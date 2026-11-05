@@ -340,7 +340,11 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 	for (const auto& [flag, value] : m_server->Scripting.variables.store | variables::serializable)
 	{
 		if (auto serialized = m_server->Scripting.variables.serializeModern(flag); serialized.has_value())
-			ret >> (char)serialized.value().length() << serialized.value();
+		{
+			if (serialized.value().length() > 220)
+				ret >> (char)223 << serialized.value().substr(0, 220) << "[!]";
+			else ret >> (char)serialized.value().length() << serialized.value();
+		}
 	}
 
 	sendPacket(ret);
@@ -357,8 +361,14 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 	}
 
 	// Open the serverflags.txt file.
-	if (const auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::CONFIG, "serverflags.txt", true); file && file->opened())
+	if (const auto file = m_server->getFileSystemServer().openiForWriting(fs::FileCategory::CONFIG, "serverflags.txt"); file && file->opened())
 	{
+		// Read back all the current flags.
+		// If we have flags over 220 characters long, we need to make extra sure we aren't wiping them out.
+		file->setStreamPosition(0);
+		auto serverflags = file->readAllLines() | std::ranges::to<std::vector<std::string>>();
+
+		// Clear the file.
 		file->clear();
 
 		// Read the flags and store them in the file.
@@ -366,6 +376,21 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSSET(CString& pPacket)
 		for (auto i = 0; i < count; ++i)
 		{
 			std::string flagPair = string::trimMutate(pPacket.readChars(pPacket.readGUChar()).toString());
+
+			// We have a max length string, so check our serverflag dump to make sure it changed.
+			// If the first 220 characters are identical, just write the old value back in.
+			if (flagPair.length() > 220)
+			{
+				std::string_view flagPairView{flagPair};
+				flagPairView = flagPairView.substr(0, 220);
+				if (auto existing = std::ranges::find_if(serverflags, [flagPairView](const std::string& flag){ return flag.starts_with(flagPairView); }); existing != std::ranges::end(serverflags))
+				{
+					file->writeLine(*existing);
+					continue;
+				}
+			}
+
+			// Write the new flag.
 			file->writeLine(flagPair);
 		}
 	}
@@ -389,8 +414,8 @@ HandlePacketResult PlayerRC::msgPLI_RC_ACCOUNTADD(CString& pPacket)
 	const std::string email = pPacket.readChars(pPacket.readGUChar()).toString();
 	const bool banned = (pPacket.readGUChar() != 0);
 	const bool onlyLoad = (pPacket.readGUChar() != 0);
-	const uint8_t adminLevel = pPacket.readGUChar();
-	const std::string adminWorlds = pPacket.readChars(pPacket.readGUChar()).toString();
+	[[maybe_unused]] const uint8_t adminLevel = pPacket.readGUChar();
+	[[maybe_unused]] const std::string adminWorlds = pPacket.readChars(pPacket.readGUChar()).toString();
 	const std::string banReason = pPacket.readChars(pPacket.readGUChar()).toString();
 
 	Account newAccount;
