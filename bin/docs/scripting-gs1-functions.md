@@ -590,8 +590,8 @@ Returns `-1` if not found.
 setstring test, Testing;
 addstring test, More;
 addstring test, Stuff;
-isFound = lindexof(#s(test), More);   // 1
-isNotFound = lindexof(#s(test), Hey); // -1
+isFound = lindexof(More, test);   // 1
+isNotFound = lindexof(Hey, test); // -1
 ```
 
 ---
