@@ -1605,7 +1605,7 @@ HandlePacketResult PlayerRC::msgPLI_NPCSERVERQUERY(CString& pPacket)
 	return HandlePacketResult::Handled;
 }
 
-HandlePacketResult PlayerRC::msgPLI_RC_UNKNOWN162(CString& pPacket)
+HandlePacketResult PlayerRC::msgPLI_PONG(CString& pPacket)
 {
 	// Stub.
 	return HandlePacketResult::Handled;

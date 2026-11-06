@@ -488,6 +488,9 @@ bool PlayerClient::sendLogin()
 		if (m_server->getServerList().getConnected())
 			sendPacket(CString() >> (char)PLO_SERVERLISTCONNECTED);
 
+		// Reset the client.
+		sendPacket(CString() >> (char)PLO_RESETCLIENT);
+
 		// Send the bigmap if it was set.
 		if (m_versionId >= CLVER_2_1)
 		{
@@ -575,9 +578,6 @@ bool PlayerClient::sendLogin()
 
 	// Stage 3 - Weapons
 	{
-		// Sent to rc and client, but rc ignores it so...
-		sendPacket(CString() >> (char)PLO_CLEARWEAPONS);
-
 		// Delete the bomb and bow.  They get automagically added by the client for
 		// God knows which reason.  Bomb and Bow must be capitalized.
 		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bomb");

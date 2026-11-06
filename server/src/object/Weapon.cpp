@@ -205,7 +205,7 @@ void Weapon::sendByteCodeToPlayer(const std::shared_ptr<Player>& player) const
 	{
 		const auto bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
 		const std::string_view bytecodeView(bytecodePtr, bytecode.size());
-		player->sendPacket(CString() >> (char)PLO_NPCWEAPONSCRIPT >> (short)m_header.length() << m_header << bytecodeView);
+		player->sendRawPacket(CString() >> (char)PLO_WEAPONBYTECODE2 >> (short)m_header.length() << m_header << bytecodeView);
 	}
 }
 

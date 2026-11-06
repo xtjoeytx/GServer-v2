@@ -1530,9 +1530,9 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 		const CString gstr = utilities::retokenizeCStringArray(headerData);
 
 		// Should technically be PLO_LOADSCRIPT but for some reason the client breaks player.join() scripts
-		// if a weapon decides to request an class that doesnt exist on the server. This seems to fix it by
-		// sending an empty bytecode
-		sendPacket(CString() >> (char)PLO_NPCWEAPONSCRIPT >> (short)gstr.length() << gstr);
+		// if a weapon decides to request an class that doesn't exist on the server.
+		// This seems to fix it by sending an empty bytecode.
+		sendPacket(CString() >> (char)PLO_WEAPONBYTECODE2 >> (short)gstr.length() << gstr);
 	}
 
 	return HandlePacketResult::Handled;

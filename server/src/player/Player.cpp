@@ -97,7 +97,7 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_ITEMDEL)                \
 		DO(PLO_NPCMOVED)               \
 		DO(PLO_SIGNATURE)              \
-		DO(PLO_NPCACTION)              \
+		DO(PLO_NPCSETSCRIPT)           \
 		DO(PLO_BADDYHURT)              \
 		DO(PLO_FLAGSET)                \
 		DO(PLO_NPCDEL)                 \
@@ -131,7 +131,7 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_RC_ACCOUNTPROPSGET)     \
 		DO(PLO_RC_ACCOUNTCHANGE)       \
 		DO(PLO_RC_PLAYERPROPSCHANGE)   \
-		DO(PLO_UNKNOWN60)              \
+		DO(PLO_UNHANDLED60)            \
 		DO(PLO_RC_SERVERFLAGSGET)      \
 		DO(PLO_RC_PLAYERRIGHTSGET)     \
 		DO(PLO_RC_PLAYERCOMMENTSGET)   \
@@ -152,26 +152,26 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_NC_CONTROL)             \
 		DO(PLO_NPCSERVERADDR)          \
 		DO(PLO_NC_LEVELLIST)           \
-		DO(PLO_UNKNOWN81)              \
+		DO(PLO_UNHANDLED81)            \
 		DO(PLO_SERVERTEXT)             \
-		DO(PLO_UNKNOWN83)              \
+		DO(PLO_UNHANDLED83)            \
 		DO(PLO_LARGEFILESIZE)          \
 		DO(PLO_RAWDATA)                \
 		DO(PLO_BOARDPACKET)            \
 		DO(PLO_FILE)                   \
 		DO(PLO_RC_MAXUPLOADFILESIZE)   \
-		DO(PLO_UNKNOWN104)             \
+		DO(PLO_FILEDECRYPTKEY)         \
 		DO(PLO_UPDATEPACKAGESIZE)      \
 		DO(PLO_UPDATEPACKAGEDONE)      \
 		DO(PLO_BOARDLAYER)             \
-		DO(PLO_UNKNOWN109)             \
+		DO(PLO_HTTPDOWNLOAD)           \
 		DO(PLO_SETNETCOOKIE)           \
-		DO(PLO_UNKNOWN124)             \
+		DO(PLO_RC_UNKNOWN124)          \
 		DO(PLO_NPCBYTECODE)            \
-		DO(PLO_UNKNOWN132)             \
-		DO(PLO_UNKNOWN133)             \
+		DO(PLO_WEAPONBYTECODE)         \
+		DO(PLO_CLASSBYTECODE)          \
 		DO(PLO_GANISCRIPT)             \
-		DO(PLO_NPCWEAPONSCRIPT)        \
+		DO(PLO_WEAPONBYTECODE2)        \
 		DO(PLO_NPCDEL2)                \
 		DO(PLO_HIDENPCS)               \
 		DO(PLO_SAY2)                   \
@@ -189,7 +189,7 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_MOVE)                   \
 		DO(PLO_SHOWIMGNPC)             \
 		DO(PLO_NC_WEAPONLISTGET)       \
-		DO(PLO_UNKNOWN168)             \
+		DO(PLO_ONLINEMODE)             \
 		DO(PLO_UPGRADEURL)             \
 		DO(PLO_GHOSTMODE)              \
 		DO(PLO_BIGMAP)                 \
@@ -202,7 +202,7 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_SERVERWARP)             \
 		DO(PLO_RPGWINDOW)              \
 		DO(PLO_STATUSLIST)             \
-		DO(PLO_UNKNOWN181)             \
+		DO(PLO_PLAYERNOUDP)            \
 		DO(PLO_LISTPROCESSES)          \
 		DO(PLO_HASPROCESSRUNNING)      \
 		DO(PLO_TAKESCREENSHOT)         \
@@ -214,8 +214,8 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_SERVERLISTCONNECTED)    \
 		DO(PLO_SHOOT2)                 \
 		DO(PLO_NC_WEAPONGET)           \
-		DO(PLO_UNKNOWN193)             \
-		DO(PLO_CLEARWEAPONS)           \
+		DO(PLO_WEAPONHASH)             \
+		DO(PLO_RESETCLIENT)            \
 		DO(PLO_LOADGANI)               \
 		DO(PLO_LOADSCRIPT)             \
 		DO(PLO_SERVEROPTIONS)          \
@@ -760,7 +760,7 @@ bool Player::sendLogin()
 			sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 
 		// This seems to inform the client that they have logged in.
-		sendPacket(CString() >> (char)PLO_UNKNOWN168);
+		sendPacket(CString() >> (char)PLO_ONLINEMODE);
 	}
 
 	// Tell the serverlist the player is logged in.
