@@ -75,6 +75,26 @@ struct ServerFixture
 
 ////////////////////////////////////////////////////////////////////////////////
 
+TEST_CASE("Script minify handles block comments at end of input", "[Scripting][Script]")
+{
+	SECTION("Unterminated comment consumes the remaining source")
+	{
+		CHECK(Script::minify("/* unfinished").empty());
+		CHECK(Script::minify("echo(1); /* unfinished") == "echo(1);");
+		CHECK(Script::minify("echo(1);\n/* unfinished\necho(2);") == "echo(1);");
+	}
+
+	SECTION("Clientside directive before an unterminated comment is retained")
+	{
+		CHECK(Script::minify("//#CLIENTSIDE\n/*\nfunction onCreated() { echo(1); }") == "//#CLIENTSIDE");
+	}
+
+	SECTION("Source after a terminated comment is retained")
+	{
+		CHECK(Script::minify("/* closed */echo(2);") == "echo(2);");
+	}
+}
+
 TEST_CASE("Script client bytecode", "[Scripting][Script]")
 {
 	Script script;
