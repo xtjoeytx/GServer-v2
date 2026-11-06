@@ -94,29 +94,37 @@ void LevelBaddy::dropItem() const
 {
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution itemTypeDistribution(0, 11);
+	std::uniform_int_distribution itemTypeDistribution(0, 100);
 
-	// 41.66...% chance of a green gralat.
-	// 41.66...% chance of something else.
-	// 16.66...% chance of nothing.
-	const auto itemId = itemTypeDistribution(gen);
+	// 10% green gralat.
+	// 5% blue gralat
+	// 15% heart.
+	// (45% arrow for arrow baddies).
+	auto roll = itemTypeDistribution(gen);
 	auto itemType = LevelItemType::INVALID;
 
-	switch (itemId)
+	// 10% green gralat.
+	if (roll < 10)
+		itemType = LevelItemType::GREENRUPEE;
+	else
 	{
-		case 0: //GREENRUPEE
-		case 1: //BLUERUPEE
-		case 2: //REDRUPEE
-		case 3: //BOMBS
-		case 4: //DARTS
-		case 5: //HEART
-			itemType = LevelItem::getItemId(static_cast<int8_t>(itemId));
-			break;
-
-		default:
-			if (itemId > 5 && itemId < 10)
-				itemType = LevelItemType::GREENRUPEE;
-			break;
+		// 5% blue gralat.
+		roll -= 10;
+		if (roll < 5)
+			itemType = LevelItemType::BLUERUPEE;
+		else
+		{
+			// 15% heart.
+			roll -= 15;
+			if (roll < 15)
+				itemType = LevelItemType::HEART;
+			else
+			{
+				// 45% arrow for arrow baddies.
+				if (roll < 45 && inList(type, BaddyType::SHOOTINGSOLDIER, BaddyType::SWAMPSOLDIER, BaddyType::DRAGON))
+					itemType = LevelItemType::DARTS;
+			}
+		}
 	}
 
 	if (itemType != LevelItemType::INVALID)
