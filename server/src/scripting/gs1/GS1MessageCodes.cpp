@@ -177,23 +177,27 @@ GS1ScriptValue processMessageCode(GS1Visitor* visitor, antlr4::tree::ParseTree* 
 	std::vector<GS1ScriptValue*> arguments;
 	std::vector<std::any> keepAlive;
 
-	// Helper to package a value and keep it alive for the duration of the command execution.
-	auto makeValue = [&](std::any&& anyValue)
-	{
-		if (!anyValue.has_value())
-			return;
-
-		keepAlive.emplace_back(std::move(anyValue));
-		auto* container = std::any_cast<GS1ScriptValue>(&keepAlive.back());
-		if (container == nullptr)
-			throw std::runtime_error("Message code argument is not a valid GS1ScriptValue");
-
-		arguments.push_back(container);
-	};
-
 	{
 		// Record if we are expecting a flag.
 		SetAndRestore<bool> expectingFlagGuard(visitor->expectingFlag, (std::ranges::find(flagProcessingMessageCodes, messageCode) != std::ranges::end(flagProcessingMessageCodes)));
+
+		// Helper to package a value and keep it alive for the duration of the command execution.
+		auto makeValue = [&](std::any&& anyValue)
+		{
+			if (!anyValue.has_value())
+				return;
+
+			keepAlive.emplace_back(std::move(anyValue));
+			auto* container = std::any_cast<GS1ScriptValue>(&keepAlive.back());
+			if (container == nullptr)
+				throw std::runtime_error("Message code argument is not a valid GS1ScriptValue");
+
+			// #I only needs a flag for the first argument.
+			if (visitor->expectingFlag)
+				visitor->expectingFlag = false;
+
+			arguments.push_back(container);
+		};
 
 		const auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
 
