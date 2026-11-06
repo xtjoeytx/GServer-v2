@@ -32,6 +32,17 @@ namespace preagonal
 
 constexpr auto clientSideTerminator = "//#CLIENTSIDE"sv;
 
+static std::string::iterator determineClientSideLocation(std::string& text)
+{
+	auto clientside = text.begin();
+	if (const auto pos = text.find(clientSideTerminator); pos != std::string::npos)
+		std::advance(clientside, pos);
+	else
+		clientside = text.end();
+
+	return clientside;
+}
+
 //----------------------------
 
 static std::string performClientSideJoinHack(std::string_view code)
@@ -413,17 +424,6 @@ std::string Script::minify(const std::string& src) noexcept
 
 void Script::split(std::string& source) noexcept
 {
-	auto determineClientSideLocation = [](std::string& text) -> std::string::iterator
-	{
-		auto clientside = text.begin();
-		if (const auto pos = text.find(clientSideTerminator); pos != std::string::npos)
-			std::advance(clientside, pos);
-		else
-			clientside = text.end();
-
-		return clientside;
-	};
-
 	const auto server = BabyDI::Get<Server>();
 
 	// Check if we have an npc-server or not.
@@ -433,8 +433,6 @@ void Script::split(std::string& source) noexcept
 		hasServerSide = false;
 
 	// If we have serverside code, find the start of the clientside terminator.
-	// We need to mangle the newlines on just the clientside code.
-	// The serverside code will be fed into a compiler so it should have normal line endings.
 	auto clientside = source.begin();
 	if (hasServerSide)
 		clientside = determineClientSideLocation(source);
@@ -451,9 +449,6 @@ void Script::split(std::string& source) noexcept
 			clientside = source.begin();
 	}
 
-	// Mangle the line terminators.
-	std::replace(clientside, source.end(), '\n', '\xa7');
-
 	// If we don't have an npc-server, we don't support serverside code.
 	if (!hasServerSide)
 	{
@@ -465,7 +460,7 @@ void Script::split(std::string& source) noexcept
 	// Split the code into clientside and serverside.
 	if (const auto clientSep = source.find(clientSideTerminator); clientSep != std::string::npos)
 	{
-		auto endOfLine = source.find('\xa7', clientSep);
+		auto endOfLine = source.find('\n', clientSep);
 		if (endOfLine == std::string::npos)
 			endOfLine = clientSep + clientSideTerminator.size();
 
@@ -495,6 +490,11 @@ void Script::compileScript() noexcept
 
 	if (server->Generation == ServerGeneration::NEWMAIN)
 	{
+		// Mangle the clientside line terminators.
+		const auto clientside = determineClientSideLocation(m_modified_source);
+		std::replace(clientside, m_modified_source.end(), '\n', '\xa7');
+
+		// Compile serverside scripts.
 		m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
 		if (m_server_script != nullptr && m_server_script->identifier.empty())
 			m_server_script->identifier = m_who.empty() ? "(server:unnamed)" : m_who;
@@ -507,6 +507,10 @@ void Script::compileScript() noexcept
 			m_client_script->identifier = m_who.empty() ? "(client:unnamed)" : m_who;
 		if (m_server_script != nullptr && m_server_script->identifier.empty())
 			m_server_script->identifier = m_who.empty() ? "(server:unnamed)" : m_who;
+
+		// If we failed to compile the script, remove the clientside code so it doesn't get sent raw.
+		if (m_client_script == nullptr)
+			m_clientside = {};
 	}
 }
 

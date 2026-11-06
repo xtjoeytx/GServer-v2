@@ -6,8 +6,8 @@
 #include <format>
 #include <functional>
 #include <memory>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -185,16 +185,19 @@ void Weapon::registerWeaponWithPlayer(const std::shared_ptr<Player>& player) con
 	// If we have bytecode, send the weapon headers.
 	else if (m_server->Generation == ServerGeneration::MODERN)
 	{
-		const auto classes = getJoinedClassesList();
-		if (!classes.empty())
-		{
+		if (const auto classes = getJoinedClassesList(); !classes.empty())
 			weaponPacket >> (char)NPCProp::CLASS >> (short)classes.length() << classes;
-			player->sendPacket(weaponPacket);
-		}
+
+		// Send the weapon.
+		player->sendPacket(weaponPacket);
 
 		// Tell the client the load the script.
 		if (!m_headerWithCRC.empty())
-			player->sendPacket(CString() >> (char)PLO_LOADSCRIPT << m_headerWithCRC);
+		{
+			if (player->getVersion() >= CLVER_5_07)
+				player->sendPacket(CString() >> (char)PLO_LOADSCRIPT << m_headerWithCRC);
+			else player->sendPacket(CString() >> (char)PLO_WEAPONHASH >> (long long)m_checksum << name);
+		}
 	}
 }
 
@@ -205,7 +208,10 @@ void Weapon::sendByteCodeToPlayer(const std::shared_ptr<Player>& player) const
 	{
 		const auto bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
 		const std::string_view bytecodeView(bytecodePtr, bytecode.size());
-		player->sendRawPacket(CString() >> (char)PLO_WEAPONBYTECODE2 >> (short)m_header.length() << m_header << bytecodeView);
+
+		if (player->getVersion() >= CLVER_5_07)
+			player->sendRawPacket(CString() >> (char)PLO_WEAPONBYTECODE2 >> (short)m_header.length() << m_header << bytecodeView);
+		else player->sendRawPacket(CString() >> (char)PLO_WEAPONBYTECODE >> (char)name.length() << name << bytecodeView);
 	}
 }
 
@@ -230,7 +236,10 @@ std::string Weapon::getJoinedClassesList() const
 	// If we have expired, clear them out.
 	if (hasExpired)
 	{
-		std::erase_if(m_joinedClasses, [](const decltype(m_joinedClasses)::value_type& pair) { return pair.second.expired(); });
+		std::erase_if(m_joinedClasses, [](const decltype(m_joinedClasses)::value_type& pair)
+		{
+			return pair.second.expired();
+		});
 	}
 
 	return result;
@@ -266,7 +275,10 @@ void Weapon::setJoinedClasses(std::string_view classes)
 
 void Weapon::joinClass(const std::string_view className)
 {
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
+	const auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp)
+	{
+		return kvp.second.lock()->name == className;
+	});
 	if (it != m_joinedClasses.end())
 		return;
 
@@ -287,7 +299,10 @@ void Weapon::joinClass(const std::string_view className)
 
 void Weapon::leaveClass(const std::string_view className)
 {
-	auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp) { return kvp.second.lock()->name == className; });
+	const auto it = std::ranges::find_if(m_joinedClasses, [&className](const decltype(m_joinedClasses)::value_type& kvp)
+	{
+		return kvp.second.lock()->name == className;
+	});
 	if (it == m_joinedClasses.end())
 		return;
 
@@ -303,7 +318,7 @@ void Weapon::leaveClass(const std::string_view className)
 
 std::string Weapon::getClientSideScript() const
 {
-	std::string result{ m_script.getClientSide() };
+	std::string result{m_script.getClientSide()};
 	for (const auto& classPtr : m_joinedClasses | std::views::values)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
@@ -321,6 +336,7 @@ std::string Weapon::getClientSideScript() const
 void Weapon::calculateHeaderChecksum()
 {
 	const auto& script = m_script.getOriginalSource();
+	const auto& bytecode = m_script.getClientByteCode();
 
 	// Set the cryptographic key to be the script's hash.
 	// This will become the DES encryption key the client will use the encrypt the bytecode.
@@ -332,9 +348,9 @@ void Weapon::calculateHeaderChecksum()
 	const CString key = CString() >> (long long)(hashBytes[0]) >> (long long)(hashBytes[1]);
 	m_desKey = key.toString();
 
-	// CRC32 checksum.
+	// CRC32 checksum the bytecode.
 	m_checksum = crc32(0L, Z_NULL, 0);
-	m_checksum = crc32(m_checksum, reinterpret_cast<const uint8_t*>(script.data()), script.length());
+	m_checksum = crc32(m_checksum, reinterpret_cast<const uint8_t*>(bytecode.data()), bytecode.size());
 
 	// Create the header.
 	// [GBYTE2 length_header_and_bytecode]

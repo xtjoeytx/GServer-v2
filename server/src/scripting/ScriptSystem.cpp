@@ -67,7 +67,7 @@ CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(const std::string_
 	{
 		// Read the line and get the script engine we are going to use.
 		if (const auto engine = string::extractLine(trimmed).substr(3); !engine.empty())
-			script_engine = engine;
+			script_engine = string::toLower(engine);
 	}
 
 	// Find the script engine.

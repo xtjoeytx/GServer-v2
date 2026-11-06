@@ -1517,22 +1517,30 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 		if (classObj->getCheckSum() == checkSum)
 			return HandlePacketResult::Handled;
 
-		sendRawPacket(classObj->getClassPacket());
+		sendRawPacket(classObj->getClassPacket(getVersion()));
 	}
 	else
 	{
-		std::vector<CString> headerData;
-		headerData.emplace_back("class");
-		headerData.emplace_back(className);
-		headerData.emplace_back('1');
-		headerData.emplace_back(CString() >> (long long)0 >> (long long)0);
-		headerData.emplace_back(CString() >> (long long)0);
-		const CString gstr = utilities::retokenizeCStringArray(headerData);
+		if (getVersion() >= CLVER_5_07)
+		{
+			std::vector<CString> headerData;
+			headerData.emplace_back("class");
+			headerData.emplace_back(className);
+			headerData.emplace_back('1');
+			headerData.emplace_back(CString() >> (long long)0 >> (long long)0);
+			headerData.emplace_back(CString() >> (long long)0);
+			const CString gstr = utilities::retokenizeCStringArray(headerData);
 
-		// Should technically be PLO_LOADSCRIPT but for some reason the client breaks player.join() scripts
-		// if a weapon decides to request an class that doesn't exist on the server.
-		// This seems to fix it by sending an empty bytecode.
-		sendPacket(CString() >> (char)PLO_WEAPONBYTECODE2 >> (short)gstr.length() << gstr);
+			// Should technically be PLO_LOADSCRIPT but for some reason the client breaks player.join() scripts
+			// if a weapon decides to request an class that doesn't exist on the server.
+			// This seems to fix it by sending an empty bytecode.
+			sendPacket(CString() >> (char)PLO_WEAPONBYTECODE2 >> (short)gstr.length() << gstr);
+		}
+		// v4
+		else
+		{
+			sendRawPacket(CString() >> (char)PLO_CLASSBYTECODE >> (char)className.length() << className);
+		}
 	}
 
 	return HandlePacketResult::Handled;
