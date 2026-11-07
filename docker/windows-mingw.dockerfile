@@ -19,8 +19,11 @@ COPY --chown=1001:1001 ./ /tmp/gserver
 
 
 RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
+    && wget https://packages.microsoft.com/config/debian/13/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
+    && sudo dpkg -i packages-microsoft-prod.deb \
+    && rm packages-microsoft-prod.deb \
     && apt update \
-    && apt install -y wget \
+    && apt install -y wget dotnet-sdk-10.0 \
 	&& wget -q https://github.com/berkley4/icu-74-debian/releases/download/74.2-2/libicu74_74.2-2_amd64.deb \
 	&& wget -q https://github.com/PowerShell/PowerShell/releases/download/v7.5.2/powershell_7.5.2-1.deb_amd64.deb \
     && apt -y install ./libicu74_74.2-2_amd64.deb \
