@@ -5,3 +5,11 @@ gs2compiler provides CMake targets:
 
 The target is a NativeAOT shared library. Its Release build is used by all
 CMake configurations.
+
+The compiler source is fetched from
+https://github.com/Preagonal/Preagonal.Scripting.GS2Compiler at the commit pinned
+by REF in portfile.cmake. A local dependencies/gs2compiler checkout is not needed.
+Publishing requires the .NET 10 SDK and the NativeAOT prerequisites for the target.
+
+To update the compiler, change REF to the published commit, increment port-version
+in vcpkg.json, and regenerate CMake.

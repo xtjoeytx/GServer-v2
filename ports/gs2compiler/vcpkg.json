@@ -1,7 +1,7 @@
 {
   "name": "gs2compiler",
   "version": "1.0.3",
-  "port-version": 3,
+  "port-version": 5,
   "description": "NativeAOT GS2 compiler library",
   "dependencies": [
     {

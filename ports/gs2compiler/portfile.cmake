@@ -55,8 +55,14 @@ if(NOT DOTNET_RID)
     endif()
 endif()
 
-get_filename_component(SOURCE_PATH "${CURRENT_PORT_DIR}/../.." ABSOLUTE)
-set(DOTNET_PROJECT_PATH "${SOURCE_PATH}/dependencies/gs2compiler")
+vcpkg_from_git(
+    OUT_SOURCE_PATH SOURCE_PATH
+    URL https://github.com/Preagonal/Preagonal.Scripting.GS2Compiler.git
+    REF 8420fa2769e2e5c7ff56c3a28a5159537a41b390
+    HEAD_REF dev
+)
+
+set(DOTNET_PROJECT_PATH "${SOURCE_PATH}")
 set(DOTNET_PROJECT
     "${DOTNET_PROJECT_PATH}/Preagonal.Scripting.GS2Compiler.Native/Preagonal.Scripting.GS2Compiler.Native.csproj")
 
