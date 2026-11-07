@@ -15,7 +15,6 @@
           "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
           "type": "FILEPATH"
         },
-        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true,
         "CMAKE_BUILD_WITH_INSTALL_RPATH": false,
         "PACKET_LOGGING": false
       }
@@ -34,7 +33,6 @@
           "value": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
           "type": "FILEPATH"
         },
-        "CMAKE_SUPPRESS_DEVELOPER_WARNINGS": true,
         "CMAKE_BUILD_WITH_INSTALL_RPATH": false,
         "CMAKE_VERBOSE_MAKEFILE": true,
         "PACKET_LOGGING": false,
