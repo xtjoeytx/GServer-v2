@@ -1,0 +1,59 @@
+if(TARGET gs2compiler::gs2compiler)
+    return()
+endif()
+
+# Resolve the installation prefix when the consuming project loads this file.
+get_filename_component(_gs2compiler_prefix
+    "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+
+set(_gs2compiler_library
+    "${_gs2compiler_prefix}/@GS2COMPILER_LIBRARY_RELATIVE_PATH@")
+if(NOT EXISTS "${_gs2compiler_library}")
+    set(gs2compiler_FOUND FALSE)
+    set(gs2compiler_NOT_FOUND_MESSAGE
+        "The installed GS2 compiler library is missing: ${_gs2compiler_library}")
+    return()
+endif()
+
+if(NOT "@GS2COMPILER_IMPLIB_RELATIVE_PATH@" STREQUAL "")
+    set(_gs2compiler_implib
+        "${_gs2compiler_prefix}/@GS2COMPILER_IMPLIB_RELATIVE_PATH@")
+    if(NOT EXISTS "${_gs2compiler_implib}")
+        set(gs2compiler_FOUND FALSE)
+        set(gs2compiler_NOT_FOUND_MESSAGE
+            "The installed GS2 compiler import library is missing: ${_gs2compiler_implib}")
+        return()
+    endif()
+endif()
+
+add_library(gs2compiler::gs2compiler SHARED IMPORTED)
+set_target_properties(gs2compiler::gs2compiler PROPERTIES
+    IMPORTED_LOCATION "${_gs2compiler_library}"
+)
+
+if(NOT "@GS2COMPILER_IMPLIB_RELATIVE_PATH@" STREQUAL "")
+    set_target_properties(gs2compiler::gs2compiler PROPERTIES
+        IMPORTED_IMPLIB "${_gs2compiler_implib}"
+        IMPORTED_LOCATION_DEBUG
+            "${_gs2compiler_prefix}/debug/@GS2COMPILER_LIBRARY_RELATIVE_PATH@"
+        IMPORTED_IMPLIB_DEBUG
+            "${_gs2compiler_prefix}/debug/@GS2COMPILER_IMPLIB_RELATIVE_PATH@"
+    )
+endif()
+
+if(NOT "@GS2COMPILER_SONAME@" STREQUAL "")
+    set_target_properties(gs2compiler::gs2compiler PROPERTIES
+        IMPORTED_SONAME "@GS2COMPILER_SONAME@"
+    )
+endif()
+
+if(NOT "@GS2COMPILER_INCLUDE_RELATIVE_PATH@" STREQUAL "")
+    set_target_properties(gs2compiler::gs2compiler PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES
+            "${_gs2compiler_prefix}/@GS2COMPILER_INCLUDE_RELATIVE_PATH@"
+    )
+endif()
+
+unset(_gs2compiler_prefix)
+unset(_gs2compiler_library)
+unset(_gs2compiler_implib)
