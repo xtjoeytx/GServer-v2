@@ -12,8 +12,11 @@ ENV VCPKG_DISABLE_METRICS=1
 COPY --chown=1001:1001 ./ /tmp/gserver
 
 RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
+    && wget https://packages.microsoft.com/config/debian/13/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
+    && sudo dpkg -i packages-microsoft-prod.deb \
+    && rm packages-microsoft-prod.deb \
     && apt update \
-    && apt install -y libssl-dev libzstd-dev cmake git ninja-build openjdk-21-jre gcc g++ \
+    && apt install -y libssl-dev libzstd-dev cmake git ninja-build openjdk-21-jre gcc g++ dotnet-sdk-10.0 \
     && git clone https://github.com/microsoft/vcpkg $VCPKG_ROOT \
 	&& cd $VCPKG_ROOT \
 	&& sh bootstrap-vcpkg.sh -disableMetrics \
