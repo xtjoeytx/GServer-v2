@@ -178,6 +178,12 @@ int Server::init(const std::string_view serverip, const std::string_view serverp
 	// Register the server start time.
 	m_serverStartTime = std::chrono::system_clock::now();
 
+	// Save the overrides.
+	m_overrideIp = serverip;
+	m_overridePort = serverport;
+	m_overrideLocalIp = localip;
+	m_overrideInterface = serverinterface;
+
 	// Perform any migrations, if necessary.
 	performMigrations();
 
@@ -198,21 +204,6 @@ int Server::init(const std::string_view serverip, const std::string_view serverp
 	// Load the server objects.
 	ret = loadServerObjects();
 	if (ret) return ret;
-
-	// If an override serverip and serverport were specified, fix the options now.
-	if (!serverip.empty())
-		m_settings.set("serverip", serverip);
-	if (!serverport.empty())
-		m_settings.set("serverport", serverport);
-	if (!localip.empty())
-		m_settings.set("localip", localip);
-	if (!serverinterface.empty())
-		m_settings.set("serverinterface", serverinterface);
-
-	m_overrideIp = serverip;
-	m_overridePort = serverport;
-	m_overrideLocalIp = localip;
-	m_overrideInterface = serverinterface;
 
 	// Fix up the interface to work properly with CSocket.
 	std::string_view oInter = m_overrideInterface;
@@ -668,6 +659,16 @@ void Server::prepareSettings()
 void Server::loadSettings()
 {
 	m_settings.load("serveroptions.txt");
+
+	// Restore our overrides.
+	if (!m_overrideIp.empty())
+		m_settings.set("serverip", m_overrideIp);
+	if (!m_overridePort.empty())
+		m_settings.set("serverport", m_overridePort);
+	if (!m_overrideLocalIp.empty())
+		m_settings.set("localip", m_overrideLocalIp);
+	if (!m_overrideInterface.empty())
+		m_settings.set("serverinterface", m_overrideInterface);
 
 	// Send our ServerHQ info in case we got changed the staffonly setting.
 	if (running) getServerList().sendServerHQ();
