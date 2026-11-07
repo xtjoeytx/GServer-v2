@@ -4,6 +4,8 @@
 #include <any>
 #include <atomic>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <source_location>
 #include <string>
@@ -15,6 +17,7 @@
 #include <BabyDI.h>
 #include <Server.h>
 #include <npcserver/NPCServer.h>
+#include <object/Weapon.h>
 #include <scripting/IScriptEngine.h>
 #include <scripting/Script.h>
 #include <scripting/ScriptSystem.h>
@@ -155,4 +158,41 @@ TEST_CASE_METHOD(ServerFixture, "Script joins", "[Scripting][IScriptEngine][GS1]
 		REQUIRE_FALSE(npc->getScript().getClientSide().empty());
 		CHECK(npc->getScript().getClientSide() == "//#CLIENTSIDE\xA7say2 join TestClass#b\xA7join TestClass;\xA7if (created) { say2 join TestClass; }"s);
 	}
+}
+
+TEST_CASE_METHOD(ServerFixture, "Saving a weapon does not reload it through the file watcher", "[Scripting][Weapon][FileSystem]")
+{
+	server->Generation = ServerGeneration::MODERN;
+	const auto directory = std::filesystem::temp_directory_path() / std::format("gserver-weapon-save-{}", precise_clock::now().time_since_epoch().count());
+	std::filesystem::create_directories(directory);
+	const auto fileName = directory / "weaponSaveWatchTest.txt";
+	{
+		std::ofstream file(fileName);
+		file << "GRAWP001\nREALNAME SaveWatchTest\nIMAGE test.png\nSCRIPT\n//#CLIENTSIDE\nfunction onCreated() { echo(\"initial\"); }\nSCRIPTEND\n";
+	}
+
+	auto& fileSystem = server->getFileSystemServer();
+	fileSystem.addFoldersConfigEntry(fs::FileCategory::WEAPON, directory / "*.txt");
+	fileSystem.bind(directory);
+	auto weapon = Weapon::loadWeapon(fileName);
+	REQUIRE(weapon != nullptr);
+	server->getWeaponList()[weapon->name] = weapon;
+
+	const std::string invalidSource = "//#CLIENTSIDE\nfunction onCreated() { echo(\"invalid\")s; }";
+	REQUIRE(weapon->updateWeapon("test.png", invalidSource).saveWeapon());
+	fileSystem.update();
+	CHECK(server->getWeapon(weapon->name) == weapon);
+
+	const auto savedTime = std::filesystem::last_write_time(fileName);
+	{
+		std::ofstream file(fileName);
+		file << "GRAWP001\nREALNAME SaveWatchTest\nIMAGE test.png\nSCRIPT\n//#CLIENTSIDE\nfunction onCreated() { echo(\"external\")s; }\nSCRIPTEND\n";
+	}
+	std::filesystem::last_write_time(fileName, savedTime + std::chrono::seconds(1));
+	fileSystem.update();
+	CHECK(server->getWeapon(weapon->name) != weapon);
+	CHECK(server->getWeapon(weapon->name)->getScript().getOriginalSource().find("external") != std::string::npos);
+
+	fileSystem.reset();
+	std::filesystem::remove_all(directory);
 }
