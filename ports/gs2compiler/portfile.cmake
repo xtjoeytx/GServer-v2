@@ -1,58 +1,42 @@
 find_program(DOTNET_EXECUTABLE NAMES dotnet REQUIRED)
 
 if(NOT DOTNET_RID)
-    set(DOTNET_ARCH "${VCPKG_TARGET_ARCHITECTURE}")
-
-    if(VCPKG_TARGET_IS_WINDOWS AND NOT VCPKG_TARGET_IS_UWP
-       AND DOTNET_ARCH MATCHES "^(x86|x64|arm64)$")
-        set(DOTNET_RID "win-${DOTNET_ARCH}")
-
-    elseif(VCPKG_TARGET_IS_LINUX
-           AND DOTNET_ARCH MATCHES "^(x64|arm|arm64)$")
-        vcpkg_cmake_get_vars(_cmake_vars)
-        include("${_cmake_vars}")
-
-        set(_config RELEASE)
-        if(VCPKG_BUILD_TYPE STREQUAL "debug")
-            set(_config DEBUG)
-        endif()
-
-        separate_arguments(_cflags NATIVE_COMMAND
-            "${VCPKG_COMBINED_C_FLAGS_${_config}}")
-        separate_arguments(_ldflags NATIVE_COMMAND
-            "${VCPKG_COMBINED_EXE_LINKER_FLAGS_${_config}}")
-
-        set(_probe "${CURRENT_BUILDTREES_DIR}/dotnet-libc-${TARGET_TRIPLET}")
-        file(WRITE "${_probe}.c" "int main(void) { return 0; }\n")
-
-        vcpkg_execute_required_process(
-            COMMAND "${VCPKG_DETECTED_CMAKE_C_COMPILER}"
-                ${_cflags} "${_probe}.c" ${_ldflags} -o "${_probe}"
-            WORKING_DIRECTORY "${CURRENT_BUILDTREES_DIR}"
-            LOGNAME "dotnet-libc-${TARGET_TRIPLET}"
-        )
-
-        # Read the target executable without executing it.
-        file(STRINGS "${_probe}" _loader
-            REGEX "^/.*/ld-(musl|linux)[^/]*[.]so([.][0-9]+)*$"
-        )
-        if(_loader MATCHES "/ld-musl-")
-            set(DOTNET_RID "linux-musl-${DOTNET_ARCH}")
-        elseif(_loader MATCHES "/ld-linux")
-            set(DOTNET_RID "linux-${DOTNET_ARCH}")
-        else()
-            message(FATAL_ERROR
-                "Cannot detect target libc. Set DOTNET_RID in your triplet.")
-        endif()
-
-    elseif(VCPKG_TARGET_IS_OSX
-           AND DOTNET_ARCH MATCHES "^(x64|arm64)$")
-        set(DOTNET_RID "osx-${DOTNET_ARCH}")
+    # 1. Map vcpkg target architecture to .NET architecture string
+    if(VCPKG_TARGET_ARCHITECTURE STREQUAL "x64")
+        set(DOTNET_ARCH "x64")
+    elseif(VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
+        set(DOTNET_ARCH "arm64")
+    elseif(VCPKG_TARGET_ARCHITECTURE STREQUAL "x86")
+        set(DOTNET_ARCH "x86")
+    elseif(VCPKG_TARGET_ARCHITECTURE STREQUAL "arm")
+        set(DOTNET_ARCH "arm")
     else()
-        message(FATAL_ERROR
-            "No automatic .NET RID mapping for ${TARGET_TRIPLET}. "
-            "Set DOTNET_RID explicitly in your triplet.")
+        set(DOTNET_ARCH ${VCPKG_TARGET_ARCHITECTURE})
     endif()
+
+    # 2. Map vcpkg target platform / triplet name to .NET OS string
+    if(NOT DEFINED VCPKG_CMAKE_SYSTEM_NAME OR VCPKG_CMAKE_SYSTEM_NAME STREQUAL "" OR VCPKG_CMAKE_SYSTEM_NAME STREQUAL "MinGW")
+        # Windows host/target (Empty system name in vcpkg implies Windows Desktop)
+        set(DOTNET_OS "win")
+
+    elseif(VCPKG_CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        # Determine if we are targeting a musl system based on the vcpkg triplet name
+        if(TARGET_TRIPLET MATCHES "musl")
+            set(DOTNET_OS "linux-musl")
+        else()
+            set(DOTNET_OS "linux")
+        endif()
+
+    elseif(VCPKG_CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        set(DOTNET_OS "osx")
+    else()
+        string(TOLOWER ${VCPKG_CMAKE_SYSTEM_NAME} DOTNET_OS)
+    endif()
+
+    # 3. Combine into the DOTNET_RID variable
+    set(DOTNET_RID "${DOTNET_OS}-${DOTNET_ARCH}")
+
+    message(STATUS "Detected .NET RID: ${DOTNET_RID}")
 endif()
 
 vcpkg_from_git(
