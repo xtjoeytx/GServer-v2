@@ -139,6 +139,14 @@ bool Weapon::saveWeapon()
 
 	file->close();
 
+	// Record our own save so the file watcher does not reload and compile it again.
+	modTime = toSystemClock(file->modifiedTime());
+	auto& fileSystem = m_server->getFileSystemServer();
+	if (const auto info = fileSystem.infoi(fs::FileCategory::WEAPON, file->filePath().filename()); info != nullptr)
+		info->refreshModTime();
+	else
+		fileSystem.addExisting(fs::FileCategory::WEAPON, file->filePath());
+
 	calculateHeaderChecksum();
 
 	// Queue the created event.
