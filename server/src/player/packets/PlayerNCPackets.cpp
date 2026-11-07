@@ -640,6 +640,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONADD(CString& pPacket)
 	CString actionTaken;
 
 	// Find Weapon
+	bool existing = false;
 	const auto weaponObj = m_server->getWeapon(weaponName);
 	if (weaponObj != nullptr)
 	{
@@ -654,6 +655,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONADD(CString& pPacket)
 		m_server->updateWeaponForPlayers(weaponObj);
 
 		actionTaken = "updated";
+		existing = true;
 	}
 	else
 	{
@@ -673,7 +675,8 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONADD(CString& pPacket)
 	}
 
 	// Send the updated weapon list to the player.
-	msgPLI_NC_WEAPONLISTGET(pPacket);
+	if (!existing)
+		msgPLI_NC_WEAPONLISTGET(pPacket);
 
 	return HandlePacketResult::Handled;
 }
