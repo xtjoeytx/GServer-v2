@@ -388,7 +388,7 @@ std::string Script::minify(const std::string& src) noexcept
 		if (const auto commentStart = line.find("/*"); commentStart != std::string_view::npos)
 		{
 			line = line.substr(0, commentStart);
-			nextLine = std::string_view::npos;
+			nextLine = srcView.size();
 			if (const auto commentEnd = srcView.find("*/", commentStart + 2); commentEnd != std::string_view::npos)
 			{
 				nextLine = commentEnd + 2;

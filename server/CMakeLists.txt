@@ -218,14 +218,9 @@ if(PACKET_LOGGING)
 endif()
 
 # ----------------------------
-# Dependency: gs2parser.
-FetchContent_Declare(gs2parser
-	GIT_REPOSITORY https://github.com/xtjoeytx/gs2-parser.git
-	GIT_SHALLOW    ON
-	GIT_TAG        73e7ea8d6ed88112967547c5e6941bfa035fec6c		# main 2026-07-02
-)
-FetchContent_MakeAvailable(gs2parser)
-target_link_libraries(${TARGET_NAME} PUBLIC gs2parser::gs2compiler)
+# Dependency: gs2compiler.
+find_package(gs2compiler CONFIG REQUIRED)
+target_link_libraries(${TARGET_NAME} PUBLIC gs2compiler::gs2compiler)
 
 # ----------------------------
 # Dependency: zlib.
@@ -285,6 +280,16 @@ FetchContent_Declare(libtommath
 )
 FetchContent_MakeAvailable(libtommath)
 target_include_directories(${TARGET_NAME} PUBLIC "${libtommath_SOURCE_DIR}")
+
+# Map libtomcrypt configurations as it fails with MinSizeRel.
+if(TARGET libtommath)
+	set_target_properties(libtommath PROPERTIES
+		MAP_IMPORTED_CONFIG_DEBUG Release
+		MAP_IMPORTED_CONFIG_RELEASE Release
+		MAP_IMPORTED_CONFIG_MINSIZEREL Release
+		MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release
+	)
+endif()
 
 # ----------------------------
 # Dependency: libtomcrypt-preagonal.

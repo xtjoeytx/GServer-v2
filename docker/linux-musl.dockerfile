@@ -34,6 +34,7 @@ RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
         openssl-dev \
         openssl-libs-static \
         python3 \
+        dotnet10-sdk \
     && git clone https://github.com/microsoft/vcpkg $VCPKG_ROOT \
     && cd $VCPKG_ROOT \
     && git checkout 1600ce2ba1b6b621bfc5a31a785c4963b817a1c7 \
