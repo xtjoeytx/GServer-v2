@@ -12,6 +12,7 @@
       "name": "catch2",
       "version>=": "3.4.0"
     },
+    "gs2compiler",
     "miniupnpc",
     "pkgconf",
     {

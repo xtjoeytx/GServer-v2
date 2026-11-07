@@ -1,0 +1,7 @@
+gs2compiler provides CMake targets:
+
+    find_package(gs2compiler CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE gs2compiler::gs2compiler)
+
+The target is a NativeAOT shared library. Its Release build is used by all
+CMake configurations.
