@@ -78,7 +78,9 @@ std::string ScriptEngineGS2::handleGS2Error(const GS2CompilerError& error)
 
 void ScriptEngineGS2::reportScriptException(const std::string& error_message)
 {
-	m_server->sendToNC(error_message);
+	std::string_view remaining{error_message};
+	while (!remaining.empty())
+		m_server->sendToNC(string::extractLine(remaining));
 	log::printLine(log::script, error_message);
 }
 
