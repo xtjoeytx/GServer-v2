@@ -2878,9 +2878,9 @@ bool Level::isOnWall(const PixelPosition& position) const noexcept
 bool Level::isOnWall2(const WholeTileRectangleArea& tileArea) const noexcept
 {
 	// TODO(optimize): Optimize this.
-	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + tileArea.size.height(); ++cy)
+	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + std::max(1_ui8, tileArea.size.height()); ++cy)
 	{
-		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + tileArea.size.width(); ++cx)
+		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + std::max(1_ui8, tileArea.size.width()); ++cx)
 		{
 			if (isOnWall(WholeTilePosition{cx, cy}))
 				return true;
@@ -2908,9 +2908,9 @@ bool Level::isOnWater(const PixelPosition& position) const noexcept
 bool Level::isOnWater2(const WholeTileRectangleArea& tileArea) const noexcept
 {
 	// TODO(optimize): Optimize this.
-	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + tileArea.size.height(); ++cy)
+	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + std::max(1_ui8, tileArea.size.height()); ++cy)
 	{
-		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + tileArea.size.width(); ++cx)
+		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + std::max(1_ui8, tileArea.size.width()); ++cx)
 		{
 			if (isOnWater(WholeTilePosition{cx, cy}))
 				return true;

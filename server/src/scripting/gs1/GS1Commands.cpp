@@ -1690,7 +1690,7 @@ void fn_move(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 
 		const auto server = BabyDI::Get<Server>();
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
-			npc->addMoveToQueue(toLocalPixelPosition(dx, dy), time, options);
+			npc->addMoveToQueue(toLocalPixelPosition(toPixelPosition({dx, dy})), time, options);
 	}
 }
 
