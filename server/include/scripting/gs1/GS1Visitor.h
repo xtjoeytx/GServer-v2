@@ -360,6 +360,11 @@ inline std::optional<T> GS1Visitor::getScriptValueAsCopy(const GS1ScriptValue& v
 		return gameVariable->getCopy<T>();
 	if (const auto gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
 		return gameValue->getCopy<T>();
+	if constexpr (std::same_as<ScriptObject, T>)
+	{
+		if (const auto scriptObject = std::get_if<ScriptObject>(&value); scriptObject != nullptr)
+			return *scriptObject;
+	}
 	return std::nullopt;
 }
 

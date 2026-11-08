@@ -668,7 +668,7 @@ inline std::optional<std::reference_wrapper<T>> GameVariable::get(std::optional<
 		{
 			// We did not get a direct reference, so store the index so we can properly set the value back later.
 			this->index = idx;
-			value.set(std::get<G>(variantValue));
+			value.set(std::move(std::get<G>(variantValue)));
 			result = value.get<G>();
 		}
 		else
@@ -1196,7 +1196,7 @@ struct StringProperty
 	{
 		return [value = value](std::optional<int64_t> index) -> GameValueVariantForGetter
 		{
-			return value.get();
+			return std::ref(value.get());
 		};
 	}
 
