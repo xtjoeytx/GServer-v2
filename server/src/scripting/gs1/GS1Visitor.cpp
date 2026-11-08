@@ -1442,7 +1442,12 @@ std::any GS1Visitor::visitExpressionMultiplicative(GS1Parser::ExpressionMultipli
 		else if (op.value() == GS1Parser::OP_DIV)
 			result /= right;
 		else if (op.value() == GS1Parser::OP_MOD)
-			result = static_cast<double>(static_cast<int64_t>(result) % static_cast<int64_t>(right));
+		{
+			// GS1 uses mathematical modulus.
+			const auto remainder = static_cast<int64_t>(result);
+			const auto divisor = static_cast<int64_t>(right);
+			result = static_cast<double>((remainder % divisor + divisor) % divisor);
+		}
 	}
 
 	return makeGS1ScriptValue(result);
