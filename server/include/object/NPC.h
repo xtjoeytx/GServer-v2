@@ -303,11 +303,13 @@ public:
 	[[a::inline]] bool isCharacter() const noexcept;
 	[[a::inline]] bool hasShape() const noexcept;
 	[[a::inline]] bool hasImage() const noexcept;
-	[[a::inline]] bool isBlocking() const noexcept;
 	[[a::inline]] bool isCreated() const noexcept;
+	[[a::inline]] bool isBlocking() const noexcept;
+	[[a::inline]] bool isVisible() const noexcept;
 	[[a::inline]] Dimension<uint16_t> getComputedShape() const noexcept;
 	[[a::inline]] PixelRectangleArea getBoundingBox() const noexcept;
 	[[a::inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
+	[[a::inline]] PixelRectangleArea getEventBoundingBox() const noexcept;
 	[[a::inline]] PixelPosition getGlobalPosition() const noexcept;
 	[[a::inline]] LocalPixelPosition getLocalPosition() const noexcept;
 	[[a::inline]] TilePosition getTilePosition() const noexcept;
@@ -509,14 +511,19 @@ inline bool NPC::hasImage() const noexcept
 	return !image.empty() && image != "-";
 }
 
+inline bool NPC::isCreated() const noexcept
+{
+	return (visFlags & ENUM(NPCVisFlags::CREATED)) != 0;
+}
+
 inline bool NPC::isBlocking() const noexcept
 {
 	return !(blockFlags & ENUM(NPCBlockFlags::NOBLOCK));
 }
 
-inline bool NPC::isCreated() const noexcept
+inline bool NPC::isVisible() const noexcept
 {
-	return (visFlags & ENUM(NPCVisFlags::CREATED)) != 0;
+	return (visFlags & ENUM(NPCVisFlags::VISIBLE)) != 0;
 }
 
 inline std::generator<std::shared_ptr<ScriptClass>> NPC::getJoinedClasses() const
@@ -550,8 +557,8 @@ inline void NPC::recordInitialState()
 
 inline Dimension<uint16_t> NPC::getComputedShape() const noexcept
 {
-	// Unless overridden, characters have a shape of 3 tiles in all directions.
-	if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
+	// Characters have a shape of 3 tiles in all directions.
+	if (isCharacter()) // && (shape.width() == 0 || shape.height() == 0))
 		return {48, 48, 48};
 
 	return shape;
@@ -564,13 +571,27 @@ inline PixelRectangleArea NPC::getBoundingBox() const noexcept
 
 inline PixelRectangleArea NPC::getCollisionBoundingBox() const noexcept
 {
-	// If the NPC has the NOBLOCK flag, it has no collision bounding box.
-	if (!isBlocking())
+	// If the NPC is invisible or has the NOBLOCK flag, it has no collision bounding box.
+	if (!isVisible() || !isBlocking())
 		return {{std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::min(), 0}, {0, 0, 0}};
 
 	// Character NPCs have a specific bounding box.
 	// It is a 2x2 square centered on the character's feet, with a height of 3 tiles.
-	if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
+	if (isCharacter())
+		return {getGlobalPosition().translate(8, 16), {32, 32, 48}};
+
+	return {getGlobalPosition(), shape};
+}
+
+inline PixelRectangleArea NPC::getEventBoundingBox() const noexcept
+{
+	// If the NPC is invisible, it doesn't get events.
+	if (!isVisible())
+		return {{std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::min(), 0}, {0, 0, 0}};
+
+	// Character NPCs have a specific bounding box.
+	// It is a 2x2 square centered on the character's feet, with a height of 3 tiles.
+	if (isCharacter())
 		return {getGlobalPosition().translate(8, 16), {32, 32, 48}};
 
 	return {getGlobalPosition(), shape};

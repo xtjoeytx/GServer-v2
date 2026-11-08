@@ -3653,12 +3653,10 @@ void fn_triggeraction(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& a
 	}
 	else
 	{
-		const auto& currentSource = visitor->getCurrentSource();
-		const LevelPtr targetLevel = visitor->findCurrentLevel();
 		uint32_t npcId = 0;
-		if (currentSource.second == ScriptObjectType::NPC)
-			npcId = currentSource.first;
-		if (targetLevel != nullptr)
+		if (const auto& [id, type] = visitor->getCurrentSource(); type == ScriptObjectType::NPC)
+			npcId = id;
+		if (const LevelPtr targetLevel = visitor->findCurrentLevel(); targetLevel != nullptr)
 			server->sendTriggerAction(targetLevel, npcId, {static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16)}, action, params);
 	}
 }

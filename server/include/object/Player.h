@@ -188,9 +188,11 @@ public:
 	NPCID getAttachedNPC() const { return m_attachNPC; }
 	uint8_t getCarrySprite() const { return m_carrySprite; }
 	[[a::inline]] bool isPaused() const noexcept;
+	[[a::inline]] bool isHidden() const noexcept;
 	bool isInNoPkLevel() const noexcept;
 	[[a::inline]] PixelRectangleArea getBoundingBox() const noexcept;
 	[[a::inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
+	[[a::inline]] PixelRectangleArea getEventBoundingBox() const noexcept;
 	[[a::inline]] PixelPosition getGlobalPosition() const noexcept;
 	[[a::inline]] LocalPixelPosition getLocalPosition() const noexcept;
 	[[a::inline]] TilePosition getTilePosition() const noexcept;
@@ -349,7 +351,7 @@ public:
 	bool isClient() const { return (m_type & PLTYPE_ANYCLIENT) != 0; }
 	bool isNPCServer() const { return (m_type & PLTYPE_NPCSERVER) != 0; }
 	bool isControlClient() const { return (m_type & PLTYPE_ANYCONTROL) != 0; }
-	bool isHiddenClient() const { return (m_type & PLTYPE_NONITERABLE) != 0; }
+	bool isHiddenClientType() const { return (m_type & PLTYPE_NONITERABLE) != 0; }
 	bool isLoaded() const { return m_loaded; }
 	bool isGuest() const { return account.loadOnly && account.communityName == "guest"; }
 	int getType() const { return m_type; }
@@ -593,6 +595,11 @@ inline bool Player::isPaused() const noexcept
 	return (account.status & PLSTATUS_PAUSED);
 }
 
+inline bool Player::isHidden() const noexcept
+{
+	return (account.status & PLSTATUS_HIDDEN);
+}
+
 inline PixelRectangleArea Player::getBoundingBox() const noexcept
 {
 	return {getGlobalPosition(), {48, 48, 48}};
@@ -604,6 +611,11 @@ inline PixelRectangleArea Player::getCollisionBoundingBox() const noexcept
 	if (isPaused() || isInNoPkLevel())
 		return {{std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::min(), 0}, {0, 0, 0}};
 
+	return {getGlobalPosition().translate(8, 16), {32, 32, 48}};
+}
+
+inline PixelRectangleArea Player::getEventBoundingBox() const noexcept
+{
 	return {getGlobalPosition().translate(8, 16), {32, 32, 48}};
 }
 

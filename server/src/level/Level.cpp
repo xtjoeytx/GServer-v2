@@ -2239,12 +2239,12 @@ void Level::addExplosion(const PixelPosition& position, const ScriptObject& from
 		const PixelRectangleArea vertTest = {position.translate(0, -(radius * 32)), {static_cast<uint16_t>(32), static_cast<uint16_t>((1 + (radius * 2)) * 32)}};
 		const PixelRectangleArea horzTest = {position.translate(-(radius * 32), 0), {static_cast<uint16_t>((1 + (radius * 2)) * 32), static_cast<uint16_t>(32)}};
 		const auto center = vertTest.center();
-		for (const NPCID& npcId : findIntersectingNPCsForCollision(vertTest))
+		for (const NPCID& npcId : findIntersectingNPCsForEvent(vertTest))
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 				npc->hurtAndPush(static_cast<int8_t>(power), center, ScriptEventType::EXPLODED, from);
 		}
-		for (const NPCID& npcId : findIntersectingNPCsForCollision(horzTest))
+		for (const NPCID& npcId : findIntersectingNPCsForEvent(horzTest))
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 				npc->hurtAndPush(static_cast<int8_t>(power), center, ScriptEventType::EXPLODED, from);
@@ -2299,7 +2299,7 @@ void Level::addSpyFire(const PixelPosition& position, const ScriptObject& from, 
 		};
 
 		const auto center = translatePosition(startingPosition, 16, 16);
-		for (const NPCID& npcId : findIntersectingNPCsForCollision({testPosition, testDimension}))
+		for (const NPCID& npcId : findIntersectingNPCsForEvent({testPosition, testDimension}))
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
 				npc->hurtAndPush(static_cast<int8_t>(power), center, ScriptEventType::EXPLODED, from);
@@ -3439,6 +3439,30 @@ std::generator<NPCID> Level::findIntersectingNPCsForCollision(const PixelRectang
 
 			// Check if the NPC intersects with the area.
 			if (rectanglesIntersect(area, npc->getCollisionBoundingBox()))
+				co_yield npcId;
+		}
+	}
+}
+
+std::generator<NPCID> Level::findIntersectingNPCsForEvent(const PixelPosition& position) const noexcept
+{
+	for (const auto& id : findIntersectingNPCsForEvent({position, {0, 0, 48}}))
+		co_yield id;
+}
+
+std::generator<NPCID> Level::findIntersectingNPCsForEvent(const PixelRectangleArea& area) const noexcept
+{
+	const auto maxDistance = std::max(Level::pixelsPerSubLevel().width(), static_cast<uint32_t>(std::max(area.size.width(), area.size.height())));
+	for (const auto& npcId : findNPCsInRangeByDistance(area.position, maxDistance))
+	{
+		if (auto npc = m_server->getNPC(npcId); npc != nullptr)
+		{
+			// If the NPC is invisible, skip it.
+			if (!npc->isVisible())
+				continue;
+
+			// Check if the NPC intersects with the area.
+			if (rectanglesIntersect(area, npc->getEventBoundingBox()))
 				co_yield npcId;
 		}
 	}

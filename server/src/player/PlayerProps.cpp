@@ -378,7 +378,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				const PixelPosition p1{translatePosition(getGlobalPosition(), Level::pixelsPerTile().width() * hitLocX[account.character.direction % 4 * 2], 8 + Level::pixelsPerTile().height() * hitLocY[account.character.direction % 4 * 2])};
 				const PixelPosition p2{translatePosition(getGlobalPosition(), Level::pixelsPerTile().width() * hitLocX[account.character.direction % 4 * 2 + 1], 8 + Level::pixelsPerTile().height() * hitLocY[account.character.direction % 4 * 2 + 1])};
 
-				for (const auto& npcId : level->findIntersectingNPCsForCollision(PixelRectangleArea{with_positions, p1, p2}))
+				for (const auto& npcId : level->findIntersectingNPCsForEvent(PixelRectangleArea{with_positions, p1, p2}))
 				{
 					if (const auto npc = m_server->getNPC(npcId); npc != nullptr)
 						npc->scripting.events.addEvent(ScriptEventType::WASHIT, source::FromPlayer(m_id));

@@ -256,8 +256,7 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(const ScriptEventType typ
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{
-			LocalPixelRectangleArea npcRect = {npc->getLocalPosition(), npc->shape};
-			if (positionInRectangle(pos, npcRect))
+			if (auto npcRect = toLocalPixelRectangleArea(npc->getEventBoundingBox()); positionInRectangle(pos, npcRect))
 			{
 				++count;
 				npc->scripting.events.addEvent(type, source, arg1, args...);
@@ -282,8 +281,7 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(const ScriptEventType typ
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{
-			LocalPixelRectangleArea npcRect = {npc->getLocalPosition(), npc->shape};
-			if (positionInRectangle(pos, npcRect))
+			if (auto npcRect = toLocalPixelRectangleArea(npc->getEventBoundingBox()); positionInRectangle(pos, npcRect))
 			{
 				++count;
 				npc->scripting.events.addEvent(type, source, std::forward<decltype(range)>(range));

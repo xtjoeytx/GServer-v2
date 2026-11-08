@@ -380,6 +380,8 @@ public:
 	std::generator<NPCID> findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible = false) const noexcept;
 	std::generator<NPCID> findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept;
 	std::generator<NPCID> findIntersectingNPCsForCollision(const PixelRectangleArea& area) const noexcept;
+	std::generator<NPCID> findIntersectingNPCsForEvent(const PixelPosition& position) const noexcept;
+	std::generator<NPCID> findIntersectingNPCsForEvent(const PixelRectangleArea& area) const noexcept;
 
 public:
 	std::string levelName;

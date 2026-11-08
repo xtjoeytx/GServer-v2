@@ -1160,7 +1160,7 @@ std::string PlayerClient::getLevelName() const
 
 std::shared_ptr<Level> PlayerClient::getLevel() const
 {
-	if (isHiddenClient())
+	if (isHiddenClientType())
 		return nullptr;
 
 	return m_currentLevel.lock();

@@ -585,6 +585,25 @@ inline constexpr PixelRectangleArea toPixelRectangleArea(const MapPosition& orig
 }
 
 template<typename P, typename S>
+inline constexpr LocalPixelRectangleArea toLocalPixelRectangleArea(const Rectangle<P, S>& rect)
+{
+	// Same coordinates.
+	if constexpr (std::same_as<P, int16_t> && std::same_as<S, uint16_t>)
+		return rect;
+
+	// Global pixels.
+	if constexpr (std::same_as<P, int32_t>)
+		return LocalPixelRectangleArea{toLocalPixelPosition(rect.position), Dimension<uint16_t>{static_cast<uint16_t>(rect.size.width()), static_cast<uint16_t>(rect.size.height())}};
+
+	// Tiles.
+	if constexpr (std::same_as<P, uint8_t> || std::same_as<P, float>)
+		return LocalPixelRectangleArea{toLocalPixelPosition(rect.position), Dimension<uint16_t>{static_cast<uint16_t>(rect.size.width() * 16.0f), static_cast<uint16_t>(rect.size.height() * 16.0f)}};
+
+	// Anything else, just convert.
+	return LocalPixelRectangleArea{LocalPixelPosition{static_cast<int16_t>(rect.position.x()), static_cast<int16_t>(rect.position.y())}, Dimension<uint16_t>{static_cast<uint16_t>(rect.size.width()), static_cast<uint16_t>(rect.size.height())}};
+}
+
+template<typename P, typename S>
 inline constexpr LocalWholeTileRectangleArea toLocalWholeTileRectangleArea(const Rectangle<P, S>& rect)
 {
 	// Same coordinates.
