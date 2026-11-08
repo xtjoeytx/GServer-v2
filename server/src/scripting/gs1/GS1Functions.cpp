@@ -494,36 +494,12 @@ GS1ScriptValue fn_getdir(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>
 			throw std::invalid_argument("invalid arguments: getdir(dx, dy)");
 
 		const auto dx = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		const auto dy = -1 * GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
+		const auto dy = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 
-		// Get the angle we are looking.
-		double angle = 0.0;
-		if (!DoubleIsZero(dx) || DoubleIsZero(dy))
-		{
-			// Get the angle.
-			angle = std::atan2(dy, dx);
+		if (std::abs(dy) >= std::abs(dx))
+			return GameValue{(DoubleIsZero(dy) || dy < 0.0) ? 0.0 : 2.0};
 
-			// If the angle is negative, we need to adjust it to be in the range [0, 2π).
-			if (angle < 0.0)
-				angle += std::numbers::pi * 2;
-		}
-
-		constexpr auto angleNE = std::numbers::pi * (1.0 / 4.0);
-		constexpr auto angleNW = std::numbers::pi * (3.0 / 4.0);
-		constexpr auto angleSW = std::numbers::pi + angleNE;
-		constexpr auto angleSE = std::numbers::pi + angleNW;
-
-		// Convert the angle to a direction.
-		// Diagonals are biased towards up (0) and down (2).
-		if (angle < angleNE)
-			return GameValue{3.0};
-		if (angle <= angleNW)
-			return GameValue{0.0};
-		if (angle < angleSW)
-			return GameValue{1.0};
-		if (angle <= angleSE)
-			return GameValue{2.0};
-		return GameValue{3.0};
+		return GameValue{(DoubleIsZero(dx) || dx < 0.0) ? 1.0 : 3.0};
 	}
 
 	// Default to looking down.
