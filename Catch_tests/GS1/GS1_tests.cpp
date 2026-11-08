@@ -267,6 +267,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				this.negativeIndex = { 42 };
 				this.negativeIndex[-1] = 99;
 				this.skip = {,,,3};
+				negativeValues = {1,1,0,-1,-1,0,1,1,0,-1,-1};
 			}
 		)";
 		auto result = engine->compileScript("test_script", script);
@@ -287,6 +288,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		REQUIRE(negativeIndex != nullptr);
 		auto skip = store->get("skip").lock();
 		REQUIRE(skip != nullptr);
+		auto negativeValues = store->get("negativeValues").lock();
+		REQUIRE(negativeValues != nullptr);
 
 		CHECK(myarray->value.has<std::vector<double>>());
 		CHECK(myarray->value.get<std::vector<double>>().value().get().size() == 5);
@@ -299,6 +302,9 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK(skip->value.get<std::vector<double>>().value().get().size() == 4);
 		CHECK_THAT(skip->value.get<std::vector<double>>().value().get().at(1), Catch::Matchers::WithinRel(0.0));
 		CHECK_THAT(skip->value.get<std::vector<double>>().value().get().at(3), Catch::Matchers::WithinRel(3.0));
+		CHECK(negativeValues->value.has<std::vector<double>>());
+		CHECK(negativeValues->value.get<std::vector<double>>().value().get().size() == 11);
+		CHECK_THAT(negativeValues->value.get<std::vector<double>>().value().get().at(3), Catch::Matchers::WithinRel(-1.0));
 	}
 
 	SECTION("logical expressions")
