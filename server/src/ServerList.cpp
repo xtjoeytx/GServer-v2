@@ -511,7 +511,7 @@ bool ServerList::parsePacket(CString& pPacket)
 void ServerList::msgSVI_NULL(CString& pPacket)
 {
 	pPacket.setRead(0);
-	log::printLine(log::server, "Unknown Serverlist Packet: %i (%s)\n", pPacket.readGUChar(), pPacket.text() + 1);
+	log::printLine(log::server, "Unknown Serverlist Packet: {} ({})\n", pPacket.readGUChar(), pPacket.text() + 1);
 }
 
 void ServerList::msgSVI_VERIACC(CString& pPacket)
