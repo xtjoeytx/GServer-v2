@@ -1257,7 +1257,11 @@ struct IntegralProperty
 			{
 				if (const auto val = std::get_if<std::reference_wrapper<double>>(&incoming); val != nullptr)
 				{
-					value.get() = static_cast<T>(val->get());
+					if constexpr (std::signed_integral<T>)
+						value.get() = static_cast<T>(val->get());
+					else
+						value.get() = static_cast<T>(std::max(0.0, val->get()));
+
 					if (modTime.has_value())
 						modTime.value().get() = helpers::currentFrameTime();
 				}
@@ -1299,7 +1303,11 @@ struct DivideByIntegralProperty
 			{
 				if (const auto val = std::get_if<std::reference_wrapper<double>>(&incoming); val != nullptr)
 				{
-					value.get() = static_cast<T>(val->get() * factor);
+					if constexpr (std::signed_integral<T>)
+						value.get() = static_cast<T>(val->get() * factor);
+					else
+						value.get() = static_cast<T>(std::max(0.0, val->get()) * factor);
+
 					if (modTime.has_value())
 						modTime.value().get() = helpers::currentFrameTime();
 				}
@@ -1375,15 +1383,11 @@ struct IntegralArrayProperty
 		return [value = value](std::optional<int64_t> index) -> GameValueVariantForGetter
 		{
 			if (index.has_value() && inRange(index.value(), 0, static_cast<int64_t>(ArraySize)))
-			{
 				return static_cast<double>(value.get()[index.value()]);
-			}
-			else
-			{
-				return value.get()
-					| std::views::transform([](const auto& v) { return static_cast<double>(v); })
-					| std::ranges::to<std::vector<double>>();
-			}
+
+			return value.get()
+				| std::views::transform([](const auto& v) { return static_cast<double>(v); })
+				| std::ranges::to<std::vector<double>>();
 		};
 	}
 
