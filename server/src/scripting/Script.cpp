@@ -297,7 +297,12 @@ void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source)
 
 			std::ranges::for_each(queue, [&event, &types, &processedTypes](const ScriptEvent& e)
 			{
-				if (e.type != event.type && e.initiator == event.initiator && e.args.empty() && !std::ranges::contains(processedTypes, e.type))
+				// Don't consolidate:
+				// - The same event type.
+				// - Timeout events.
+				// - Events that have a different initiator.
+				// - Events that contain arguments.
+				if (e.type != event.type && e.type != ScriptEventType::TIMEOUT && e.initiator == event.initiator && e.args.empty() && !std::ranges::contains(processedTypes, e.type))
 				{
 					types.emplace_back(e.type);
 					processedTypes.emplace_back(e.type);
