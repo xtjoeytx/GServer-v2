@@ -372,11 +372,20 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			// Serverside washit.
 			else if (m_server->hasNPCServer() && std::ranges::contains(m_server->cached.playerSwordGanis.getValue(), ganiWithoutAttr))
 			{
-				constexpr std::array hitLocX = {1,2, -1,-1, 1,2, 4,4};
-				constexpr std::array hitLocY = {-1,-1, 1,1, 4,4, 1,2};
+				// constexpr std::array hitLocX = { 1, 2, -1, -1, 1,2, 4,4};
+				// constexpr std::array hitLocY = {-1,-1,  1,  2, 4,4, 1,2};
+				// const PixelPosition p1{translatePosition(getGlobalPosition(), Level::pixelsPerTile().width() * hitLocX[account.character.direction % 4 * 2], 8 + Level::pixelsPerTile().height() * hitLocY[account.character.direction % 4 * 2])};
+				// const PixelPosition p2{translatePosition(getGlobalPosition(), Level::pixelsPerTile().width() * hitLocX[account.character.direction % 4 * 2 + 1], 8 + Level::pixelsPerTile().height() * hitLocY[account.character.direction % 4 * 2 + 1])};
 
-				const PixelPosition p1{translatePosition(getGlobalPosition(), Level::pixelsPerTile().width() * hitLocX[account.character.direction % 4 * 2], 8 + Level::pixelsPerTile().height() * hitLocY[account.character.direction % 4 * 2])};
-				const PixelPosition p2{translatePosition(getGlobalPosition(), Level::pixelsPerTile().width() * hitLocX[account.character.direction % 4 * 2 + 1], 8 + Level::pixelsPerTile().height() * hitLocY[account.character.direction % 4 * 2 + 1])};
+				// clang-format off
+				// The goal is to search for things up to 1.5 tiles away from the player.
+				// We we are slightly changing the normal in-game calculations because we are using rectangle intersections.
+				// Also, some things were slightly tweaked to make them feel better.  I gave an extra half-tile of tolerance.
+				constexpr std::array hitLocX = {   16,   32+16, /**/ -16-8, -16+24, /**/ 16,     32+16, /**/ 64-16,  64+8};
+				constexpr std::array hitLocY = { -8-8, -8-8+24, /**/    16,  32+16, /**/ 72-8, 72-8+16, /**/   16,  32+16};
+				const PixelPosition p1{translatePosition(getGlobalPosition(), hitLocX[account.character.direction % 4 * 2], hitLocY[account.character.direction % 4 * 2])};
+				const PixelPosition p2{translatePosition(getGlobalPosition(), hitLocX[account.character.direction % 4 * 2 + 1], hitLocY[account.character.direction % 4 * 2 + 1])};
+				// clang-format on
 
 				for (const auto& npcId : level->findIntersectingNPCsForEvent(PixelRectangleArea{with_positions, p1, p2}))
 				{
