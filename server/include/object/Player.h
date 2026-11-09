@@ -608,7 +608,8 @@ inline PixelRectangleArea Player::getBoundingBox() const noexcept
 inline PixelRectangleArea Player::getCollisionBoundingBox() const noexcept
 {
 	// Check if we are in a state that can't be collided with.
-	if (isPaused() || isInNoPkLevel())
+	// Tried to check pause, but it caused too many issues.
+	if (isInNoPkLevel())
 		return {{std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::min(), 0}, {0, 0, 0}};
 
 	return {getGlobalPosition().translate(8, 16), {32, 32, 48}};
