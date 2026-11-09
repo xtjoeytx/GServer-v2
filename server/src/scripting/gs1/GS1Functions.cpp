@@ -69,7 +69,6 @@ static GS1ScriptValue fn_getareanpcs(GS1Visitor* visitor, const std::vector<GS1S
 static GS1ScriptValue fn_getdir(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getflagkeys(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getnpc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getplayersingroup(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
@@ -147,7 +146,6 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{hash("getdir"), &fn_getdir},
 		{hash("getflagkeys"), &fn_getflagkeys},
 		{hash("getnearestplayer"), &fn_getnearestplayer},
-		{hash("getnearestplayers"), &fn_getnearestplayers},
 		{hash("getnpc"), &fn_getnpc},
 		{hash("getplayer"), &fn_getplayer},
 		{hash("getplayersingroup"), &fn_getplayersingroup},
@@ -208,6 +206,25 @@ static BuiltInFunctionHandleMap GenerateMap()
 	return map;
 }
 
+// ---------------------------
+
+using BuiltInAdvancedFunctionHandleFunc = GS1ScriptValue (*)(GS1Visitor*, const antlr4::tree::ParseTree*);
+using BuiltInAdvancedFunctionHandleMap = std::unordered_map<size_t, BuiltInAdvancedFunctionHandleFunc>;
+
+static GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, const antlr4::tree::ParseTree* node);
+
+static BuiltInAdvancedFunctionHandleMap GenerateAdvancedMap()
+{
+	constexpr string::string_hash hash{};
+	BuiltInAdvancedFunctionHandleMap map =
+	{
+		{hash("getnearestplayers"), &fn_getnearestplayers},
+	};
+	return map;
+}
+
+// ---------------------------
+
 constexpr std::array<std::string_view, 2> flagProcessingFunctions =
 {
 	"lindexof"sv,
@@ -219,6 +236,7 @@ constexpr std::array<std::string_view, 2> flagProcessingFunctions =
 GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, const antlr4::tree::ParseTree* node, const std::string_view functionName)
 {
 	static BuiltInFunctionHandleMap map = GenerateMap();
+	static BuiltInAdvancedFunctionHandleMap advancedMap = GenerateAdvancedMap();
 
 	if (visitor == nullptr)
 		throw std::runtime_error("processBuiltInFunction received an empty visitor");
@@ -230,6 +248,10 @@ GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, const antlr4::tree::P
 	const auto it = map.find(hash);
 	if (it == map.end())
 	{
+		// Check for the command in the advanced map.
+		if (const auto it2 = advancedMap.find(hash); it2 != advancedMap.end())
+			return it2->second(visitor, node);
+
 		log::printLine(log::script, "Unknown function in NPC '{}': {}", visitor->who, functionName);
 		return {};
 	}
@@ -572,15 +594,30 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, const std::vector<GS1Scr
 
 // getnearestplayers(x, y, condition)
 // Returns an array of all the level players sorted by how close they are to the specified position, matching the condition expression.
-GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
+GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, const antlr4::tree::ParseTree* node)
 {
-	if (arguments.size() < 2)
-		throw std::invalid_argument("invalid arguments: getnearestplayers(x, y, flag)");
+	size_t index = 0;
+	auto getNextArgument = [&]() -> std::optional<std::any>
+	{
+		while (index < node->children.size())
+		{
+			if (auto ret = node->children[index++]->accept(visitor); ret.has_value())
+				return ret;
+		}
+		return std::nullopt;
+	};
+
+	const auto anyX = getNextArgument();
+	const auto anyY = getNextArgument();
+
+	if (!anyX.has_value() || !anyY.has_value())
+		throw std::invalid_argument("invalid arguments: getnearestplayers(x, y, expression)");
 
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*anyX).value_or(0.0));
+		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*anyY).value_or(0.0));
+		const auto savedIndex = index;
 
 		std::map<double, size_t> playersByDistance;
 		const auto* server = BabyDI::Get<Server>();
@@ -589,10 +626,15 @@ GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, const std::vector<GS1Sc
 		{
 			// Execute the condition.
 			bool skip = false;
-			if (arguments.size() > 2)
+			if (index < node->children.size())
 			{
+				// Restore the saved index so we can re-run argument finding.
+				index = savedIndex;
+
+				// Push the new player source and run the expression.
 				visitor->pushSource(source::FromPlayer(id));
-				skip = DoubleIsZero(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+				auto anyExpression = getNextArgument();
+				skip = DoubleIsZero(GS1Visitor::getScriptValueAsCopy<double>(*anyExpression).value_or(0.0));
 				visitor->popSource();
 			}
 			if (skip) continue;
