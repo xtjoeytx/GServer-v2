@@ -200,9 +200,9 @@ Diagonals are biased to looking up (0) and down (2).
 | (-1, 0) left     | 1      |
 | ( 0, 1) down     | 2      |
 | ( 1, 0) right    | 3      |
-| ( 0.5,  0.5) SE  | 2      |
 | ( 0.5, -0.5) NE  | 0      |
 | (-0.5, -0.5) NW  | 0      |
+| ( 0.5,  0.5) SE  | 2      |
 | (-0.5,  0.5) SW  | 2      |
 | ( 0.5,  0.4) SWW | 3      |
 

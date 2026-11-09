@@ -122,8 +122,8 @@ Introduced in 1.39rev2.
 
 #### range
 
-> `|` _expression_ `,` _expression `|`<br>
-`<` _expression_ `,` _expression `>`<br>
+> `|` _expression_ `,` _expression_ `|`<br>
+> `<` _expression_ `,` _expression_ `>`<br>
 
 `|` denotes an _INCLUSIVE_ boundary.<br>
 `<` and `>` denotes an _EXCLUSIVE_ boundary.
