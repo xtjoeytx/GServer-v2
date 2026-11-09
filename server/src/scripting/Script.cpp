@@ -279,11 +279,19 @@ void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source)
 	std::vector<ScriptEventType> types;
 	std::vector<ScriptEventType> processedTypes;
 
+	bool hadTimeout = false;
 	ExecutionProfiler profiler{m_server_script.get()};
 	for (auto& event : queue)
 	{
-		// Execute events with args (or TIMEOUT) individually.
-		if (!event.args.empty() || event.type == ScriptEventType::TIMEOUT)
+		// Save timeouts for the very end.  Many things break unless you do that one last.
+		if (event.type == ScriptEventType::TIMEOUT)
+		{
+			hadTimeout = true;
+			continue;
+		}
+
+		// Execute events with args individually.
+		if (!event.args.empty())
 		{
 			engine->execute(event, source, m_server_script);
 			processedTypes.emplace_back(event.type);
@@ -311,6 +319,19 @@ void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source)
 
 			engine->execute(event, &types, source, m_server_script);
 			processedTypes.emplace_back(event.type);
+		}
+	}
+
+	// Execute the timeout last.
+	if (hadTimeout)
+	{
+		for (auto& event : queue)
+		{
+			if (event.type != ScriptEventType::TIMEOUT)
+				continue;
+
+			engine->execute(event, source, m_server_script);
+			break;
 		}
 	}
 }
