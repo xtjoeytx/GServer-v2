@@ -1708,21 +1708,7 @@ GS1ScriptValue fn_tiletype(GS1Visitor* visitor, const std::vector<GS1ScriptValue
 		const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 
 		const auto tilePosition = toTilePosition(Position<double>{x, y});
-		auto mapPosition = toMapPosition(tilePosition);
-
-		if (!level->isGmap())
-			mapPosition = {0, 0};
-
-		if (const auto tiles = level->getTiles(mapPosition); tiles.has_value())
-		{
-			const auto index = static_cast<size_t>(std::max(x, 0.0) + (std::max(y, 0.0) * 64));
-			if (index < 4096)
-			{
-				const auto server = BabyDI::Get<Server>();
-				const auto tile = tiles.value()->at(index);
-				return GameValue{static_cast<double>(ENUM(server->getNPCServer()->getTileType(tile, level)))};
-			}
-		}
+		return GameValue{static_cast<double>(ENUM(level->getTileTypeAt(toWholeTilePosition(tilePosition))))};
 	}
 
 	// Not found?  Default to blocking.
