@@ -39,6 +39,26 @@ void setNPCVariables(GameVariableStore& variableStore, const std::weak_ptr<NPC>&
 	// board[]
 	// This variable only checks the sub-level board data, so we need to know the NPC's level and position.
 	GameVariable board{.name = "board"};
+	board.registerSetter<double>([npc](const GameValueVariantForSetter& value, const std::optional<int64_t> index)
+	{
+		if (!index.has_value() || index.value_or(0) < 0 || index.value_or(0) >= 4096) return;
+
+		const auto npcPtr = npc.lock();
+		if (npcPtr == nullptr) return;
+
+		const auto levelPtr = npcPtr->getLevel();
+		if (levelPtr == nullptr) return;
+
+		if (const auto wrap = std::get_if<std::reference_wrapper<double>>(&value); wrap != nullptr)
+		{
+			const auto& levelTiles = levelPtr->getTiles(npcPtr->character.getMapPosition());
+			if (levelTiles.has_value())
+			{
+				if (static_cast<size_t>(index.value()) < levelTiles.value()->size())
+					levelTiles.value()->at(index.value()) = wrap->get();
+			}
+		}
+	});
 	board.registerGetter<double>([npc](const std::optional<int64_t> index) -> GameValueVariantForGetter
 	{
 		const auto npcPtr = npc.lock();
