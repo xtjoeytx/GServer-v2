@@ -1094,7 +1094,7 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>
 					return GameValue{true};
 				if (!npc->noPlayerOnWall && !subLevel->isNoPkZone && level->isOnPlayer(toPixelPosition({x, y})))
 					return GameValue{true};
-				if (level->isOnNPC(toPixelPosition({x, y})))
+				if (level->testNPC(toPixelPosition({x, y}), npc->id) >= 0)
 					return GameValue{true};
 			}
 		}
@@ -1134,7 +1134,7 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*
 				const PixelRectangleArea searchRect{toPixelPosition({x, y}), {width, height}};
 				if (!npc->noPlayerOnWall && !subLevel->isNoPkZone && level->isOnPlayer(searchRect))
 					return GameValue{true};
-				if (level->isOnNPC(searchRect))
+				if (level->testNPC(searchRect, npc->id) >= 0)
 					return GameValue{true};
 			}
 		}

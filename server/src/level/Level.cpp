@@ -2987,6 +2987,86 @@ bool Level::isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept
 	return false;
 }
 
+std::ptrdiff_t Level::testNPC(const PixelPosition& position, const std::optional<NPCID> initiator) const noexcept
+{
+	std::ptrdiff_t index = 0;
+
+	// NOLINTNEXTLINE(*-use-anyofallof)
+	for (const auto id : m_npcs)
+	{
+		if (auto npc = m_server->getNPC(id); npc != nullptr)
+		{
+			if (positionInRectangle(position, npc->getCollisionBoundingBox()))
+			{
+				if (initiator.has_value() && id == initiator.value())
+					return -1;
+				return index;
+			}
+		}
+		++index;
+	}
+
+	return -2;
+}
+
+std::ptrdiff_t Level::testNPC(const PixelRectangleArea& pixelArea, const std::optional<NPCID> initiator) const noexcept
+{
+	std::ptrdiff_t index = 0;
+
+	// NOLINTNEXTLINE(*-use-anyofallof)
+	for (const auto id : m_npcs)
+	{
+		if (auto npc = m_server->getNPC(id); npc != nullptr)
+		{
+			if (rectanglesIntersect(pixelArea, npc->getCollisionBoundingBox()))
+			{
+				if (initiator.has_value() && id == initiator.value())
+					return -1;
+				return index;
+			}
+		}
+		++index;
+	}
+
+	return -2;
+}
+
+std::ptrdiff_t Level::testPlayer(const PixelPosition& position) const noexcept
+{
+	std::ptrdiff_t index = 0;
+
+	// NOLINTNEXTLINE(*-use-anyofallof)
+	for (const auto id : m_players)
+	{
+		if (auto player = m_server->getPlayer(id); player != nullptr)
+		{
+			if (positionInRectangle(position, player->getCollisionBoundingBox()))
+				return index;
+		}
+		++index;
+	}
+
+	return -1;
+}
+
+std::ptrdiff_t Level::testPlayer(const PixelRectangleArea& pixelArea) const noexcept
+{
+	std::ptrdiff_t index = 0;
+
+	// NOLINTNEXTLINE(*-use-anyofallof)
+	for (const auto id : m_players)
+	{
+		if (auto player = m_server->getPlayer(id); player != nullptr)
+		{
+			if (rectanglesIntersect(pixelArea, player->getCollisionBoundingBox()))
+				return index;
+		}
+		++index;
+	}
+
+	return -1;
+}
+
 tileset::TileType Level::getTileTypeAt(const WholeTilePosition& tilePosition) const noexcept
 {
 	using namespace tileset;
