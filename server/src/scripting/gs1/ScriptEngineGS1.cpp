@@ -352,7 +352,6 @@ bool ScriptEngineGS1::prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, std
 
 	// Set variables.
 	setNPCVariables(wrapper.variables, npc);
-	setPlayerVariables(wrapper.variables, player);
 	setLevelVariables(wrapper.variables, level, npc, player);
 	setOtherVariables(wrapper.variables, event);
 
@@ -537,7 +536,6 @@ std::optional<double> ScriptEngineGS1::processMathExpression(const std::string_v
 		if (const auto player = npcserver->getPlayer<Player>(source.first); player != nullptr)
 		{
 			setPlayerFlags(visitor.flagStore, nullptr, player);
-			setPlayerVariables(variableStore, player);
 		}
 	}
 
@@ -584,7 +582,6 @@ std::optional<std::string> ScriptEngineGS1::processStringExpression(const std::s
 		if (const auto player = npcserver->getPlayer<PlayerClient>(source.first); player != nullptr)
 		{
 			setPlayerFlags(visitor.flagStore, nullptr, player);
-			setPlayerVariables(variableStore, player);
 		}
 	}
 

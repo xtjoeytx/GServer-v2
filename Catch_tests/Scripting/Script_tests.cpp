@@ -52,7 +52,7 @@ struct ServerFixture
 
 		// Configure NPC-Player.
 		const auto player = std::dynamic_pointer_cast<Player>(server->getNPCServer()->getPlayerNPCServer());
-		gs1::setPlayerVariables(player->account.variables, player);
+		player->constructScriptParameters();
 
 		// Configure Test NPC.
 		const auto npc = npcServer->addNPC("door.png"sv, ""sv, nullptr, TilePosition{20.0f, 30.0f}, NPCTYPE_OBJECT);

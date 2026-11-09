@@ -484,6 +484,15 @@ enum class Lifetime
 	PERMANENT,
 };
 
+enum class Visibility
+{
+	/// @brief Normal visibility.
+	NORMAL,
+
+	/// @brief Hidden property.
+	HIDDEN_PROPERTY
+};
+
 } // namespace variables
 
 /// @brief A game variable with a name and a value.
@@ -504,6 +513,9 @@ public:
 
 	/// @brief The lifetime of the game variable.
 	std::optional<variables::Lifetime> lifetime;
+
+	/// @brief The visibility of the game variable.
+	variables::Visibility visibility = variables::Visibility::NORMAL;
 
 	/// @brief The source of the game variable, if it was created from a script object.
 	std::optional<ScriptObject> source;
@@ -1084,9 +1096,10 @@ concept HasConstructibleScriptParameters = requires(T t) {
 /// @tparam T The type of the source object, which must satisfy the HasScriptParameters concept.
 /// @param source The source object from which to get the script parameter.
 /// @param name The name of the script parameter to get.
+/// @param allowHidden If true, variables that aren't normal visibility are not found.
 /// @return A pointer to the script parameter, or nullptr if it does not exist.
 template<HasScriptParameters T>
-inline GameVariable* getScriptParameter(T& source, std::string_view name)
+inline GameVariable* getScriptParameter(T& source, std::string_view name, const bool allowHidden)
 {
 	if constexpr (HasConstructibleScriptParameters<T>)
 	{
@@ -1099,7 +1112,11 @@ inline GameVariable* getScriptParameter(T& source, std::string_view name)
 		return nullptr;
 
 	// Is there no better way than this?
-	return const_cast<GameVariable*>(&it->second);
+	const auto variable = const_cast<GameVariable*>(&it->second);
+	if (variable->visibility != variables::Visibility::NORMAL && !allowHidden)
+		return nullptr;
+
+	return variable;
 }
 
 ////////////////////////////////////////////////////////////

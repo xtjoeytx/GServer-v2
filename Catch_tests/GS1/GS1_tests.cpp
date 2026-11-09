@@ -67,7 +67,7 @@ struct ServerFixture
 
 		// Configure NPC-Player.
 		const auto player = std::dynamic_pointer_cast<Player>(server->getNPCServer()->getPlayerNPCServer());
-		gs1::setPlayerVariables(player->account.variables, player);
+		player->constructScriptParameters();
 
 		// Configure Test NPC.
 		const auto npc = npcServer->addNPC("door.png"sv, ""sv, nullptr, TilePosition{20.0f, 30.0f}, NPCTYPE_OBJECT);
@@ -748,7 +748,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles and executes simple ex
 		// Tests the compilation and execution of a simple math expression that includes a variable.
 		// Used by the system in various places, such as level links and the playersays command.
 		constexpr std::string_view script = R"(
-			10 + x
+			10 + playerx
 		)";
 		const auto result = engine->processMathExpression(script, source::FromPlayer(NPCServerPlayerID));
 		CHECK_THAT(result.value_or(0.0), Catch::Matchers::WithinRel(40.5));
@@ -927,6 +927,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 				setbeltcolor cynober;
 				sprite = 14;
 				if (sprite == 14) sprite = 16;
+				playersprite = 10;
 			}
 		)";
 		auto result = engine->compileScript("test_script", script);
@@ -938,7 +939,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		CHECK(player->account.character.colors[3] == 13);
 		CHECK(player->account.character.colors[4] == 13);
 		CHECK(player->account.character.headImage == "head2.png");
-		CHECK(player->account.character.sprite == 16);
+		CHECK_FALSE(player->account.character.sprite == 16);
+		CHECK(player->account.character.sprite == 10);
 	}
 
 	SECTION("playersaysnumber processes math expressions")

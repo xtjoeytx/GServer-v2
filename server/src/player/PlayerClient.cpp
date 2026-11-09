@@ -646,6 +646,9 @@ bool PlayerClient::sendLogin()
 	// Queue up the login event.
 	if (m_server->hasNPCServer())
 	{
+		// Construct our script parameters.
+		constructScriptParameters();
+
 		auto npcServer = m_server->getNPCServer();
 		npcServer->playerLogin(shared_from_this());
 		npcServer->addEventToControlNPC(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), "playeronline");

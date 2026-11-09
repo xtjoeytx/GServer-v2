@@ -1390,24 +1390,6 @@ void Player::constructScriptParameters()
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "swordpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), .value = std::ref(account.character.swordPower)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "shieldpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), .value = std::ref(account.character.shieldPower)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "shootpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.bowPower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#1"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), .value = std::ref(account.character.swordImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#2"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), .value = std::ref(account.character.shieldImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#3"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HEADIMAGE)]), .value = std::ref(account.character.headImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#5"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HORSEIMAGE)]), .value = std::ref(account.character.horseImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#7"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.bowImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#8"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::BODYIMAGE)]), .value = std::ref(account.character.bodyImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#c"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::MESSAGE)]), .value = std::ref(account.character.chatMessage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#m"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.gani)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#n"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::NICKNAME)]), .value = std::ref(account.character.nickName)});
-
-	// colors
-	const size_t colorCount = m_server->isNewWorldMode() ? 8 : 5;
-	for (size_t i = 0; i < colorCount; ++i)
-		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = colorPropertyNames[i], .modTime = std::ref(modTime[PROPID(PlayerProp::COLORS)]), .value = std::ref(account.character.colors[i])});
-
-	// gani attributes
-	for (size_t i = 0; i < 30; ++i)
-		bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = ganiAttributePropertyNames[i], .modTime = std::ref(modTime[GaniAttributePropList[i]]), .value = std::ref(account.character.ganiAttributes[i])});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
 		.name = "x"sv,
@@ -1591,6 +1573,78 @@ void Player::constructScriptParameters()
 
 	// GR extensions.
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "carrysprite"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::CARRYSPRITE)]), .value = std::ref(m_carrySprite)});
+
+	// player* variants.
+	const auto paramsToCopy = scriptParameters
+		| std::views::filter([](const decltype(scriptParameters)::value_type& pair){ return !pair.first.starts_with('#'); })
+		| std::views::transform([](decltype(scriptParameters)::value_type& pair) { return &pair.second; })
+		| std::ranges::to<std::vector<GameVariable*>>();
+	for (auto* variable : paramsToCopy)
+	{
+		if (variable == nullptr || variable->name.starts_with('#'))
+			continue;
+
+		// Hide the variables we are aliasing.
+		variable->visibility = variables::Visibility::HIDDEN_PROPERTY;
+
+		GameVariable var{.name = std::format("player{}", variable->name), .lifetime = variables::Lifetime::TEMPORARY};
+		var.source = source::FromPlayer(m_id);
+		var.setters = variable->setters;
+		var.getters = variable->getters;
+		scriptParameters.emplace(var.name, std::move(var));
+	}
+
+	// message codes
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#1"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), .value = std::ref(account.character.swordImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#2"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), .value = std::ref(account.character.shieldImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#3"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HEADIMAGE)]), .value = std::ref(account.character.headImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#5"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HORSEIMAGE)]), .value = std::ref(account.character.horseImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#7"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.bowImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#8"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::BODYIMAGE)]), .value = std::ref(account.character.bodyImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#c"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::MESSAGE)]), .value = std::ref(account.character.chatMessage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#m"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.gani)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#n"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::NICKNAME)]), .value = std::ref(account.character.nickName)});
+
+	// colors
+	const size_t colorCount = m_server->isNewWorldMode() ? 8 : 5;
+	for (size_t i = 0; i < colorCount; ++i)
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = colorPropertyNames[i], .modTime = std::ref(modTime[PROPID(PlayerProp::COLORS)]), .value = std::ref(account.character.colors[i])});
+
+	// gani attributes
+	for (size_t i = 0; i < 30; ++i)
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = ganiAttributePropertyNames[i], .modTime = std::ref(modTime[GaniAttributePropList[i]]), .value = std::ref(account.character.ganiAttributes[i])});
+
+	// weaponscount
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		.name = "weaponscount"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.weapons.size()); }
+	});
+
+	// levelorgx / levelorgy
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		.name = "levelorgx"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter
+		{
+			if (m_attachNPC != 0)
+			{
+				if (const auto npc = m_server->getNPC(getAttachedNPC()); npc != nullptr)
+					return -npc->character.getGlobalPosition().x() / 16.0;
+			}
+			return 0.0;
+		}
+	});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		.name = "levelorgy"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter
+		{
+			if (m_attachNPC != 0)
+			{
+				if (const auto npc = m_server->getNPC(getAttachedNPC()); npc != nullptr)
+					return -npc->character.getGlobalPosition().y() / 16.0;
+			}
+			return 0.0;
+		}
+	});
 
 	// clang-format on
 }

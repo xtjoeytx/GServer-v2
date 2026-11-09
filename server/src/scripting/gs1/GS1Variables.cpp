@@ -62,55 +62,6 @@ void setNPCVariables(GameVariableStore& variableStore, const std::weak_ptr<NPC>&
 	variableStore.add(std::move(board));
 }
 
-void setPlayerVariables(GameVariableStore& variableStore, const std::weak_ptr<Player>& player)
-{
-	const auto playerPtr = player.lock();
-	if (playerPtr == nullptr)
-		return;
-
-	auto* server = BabyDI::Get<Server>();
-
-	// weaponscount
-	GameVariable weaponscount{.name = "weaponscount"};
-	weaponscount.registerGetter<double>([player](std::optional<int64_t> index) -> GameValueVariantForGetter
-	{
-		return player.expired() ? 0.0 : static_cast<double>(player.lock()->account.weapons.size());
-	});
-	variableStore.add(std::move(weaponscount));
-
-	// levelorgx / levelorgy
-	GameVariable levelorgx{.name = "levelorgx"};
-	GameVariable levelorgy{.name = "levelorgy"};
-	levelorgx.registerGetter<double>([server, player](std::optional<int64_t> index) -> GameValueVariantForGetter
-	{
-		if (player.expired()) return 0.0;
-		if (const auto npc = server->getNPC(player.lock()->getAttachedNPC()); npc != nullptr)
-			return -npc->character.getGlobalPosition().x() / 16.0;
-		return 0.0;
-	});
-	levelorgy.registerGetter<double>([server, player](std::optional<int64_t> index) -> GameValueVariantForGetter
-	{
-		if (player.expired()) return 0.0;
-		if (const auto npc = server->getNPC(player.lock()->getAttachedNPC()); npc != nullptr)
-			return -npc->character.getGlobalPosition().y() / 16.0;
-		return 0.0;
-	});
-	variableStore.add(std::move(levelorgx));
-	variableStore.add(std::move(levelorgy));
-
-	// all the player property shortcuts
-	playerPtr->constructScriptParameters();
-	for (const auto& [name, variable] : playerPtr->scriptParameters)
-	{
-		// Ignore the message code properties.
-		if (name.starts_with('#'))
-			continue;
-
-		GameVariable v{.name = std::format("player{}", name), .lifetime = variables::Lifetime::NORMAL, .getters = variable.getters, .setters = variable.setters};
-		variableStore.add(std::move(v));
-	}
-}
-
 void setLevelVariables(GameVariableStore& variableStore, const std::weak_ptr<Level>& level, const std::weak_ptr<NPC>& npc, const std::weak_ptr<Player>& player)
 {
 	// TODO(refactor): These variables should be stored on the level so they don't get remade for every single script.  Like the object parameters stuff.
@@ -300,7 +251,6 @@ void setLevelVariables(GameVariableStore& variableStore, const std::weak_ptr<Lev
 			return objectList;
 		}
 
-		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::ITEM)};
 		return std::vector<ScriptObject>{std::make_pair(index.value(), ScriptObjectType::ITEM)};
 	});
 	variableStore.add(std::move(items));

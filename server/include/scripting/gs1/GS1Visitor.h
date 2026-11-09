@@ -75,6 +75,7 @@ public:
 	bool expectingFlag = false;
 	bool expectingTimeoutAsVariable = false;
 	bool reparsingStringExpression = false;
+	bool findHiddenProperties = false;
 	std::string who;
 
 public:
@@ -134,8 +135,8 @@ public:
 	std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<StaticLevelData>> findCurrentLevelData() const;
 
 public:
-	GameVariable* getGameVariableFromSource(const ScriptObject& source, std::string_view identifier) const;
-	GameVariable* getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt) const;
+	GameVariable* getGameVariableFromSourceProperty(const ScriptObject& source, std::string_view identifier, bool allowHidden = false) const;
+	GameVariable* getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt, bool allowHidden = false) const;
 
 public:
 	GameValue translateSourceText(antlr4::tree::ParseTree* node, std::string_view language);
@@ -163,7 +164,6 @@ protected:
 protected:
 	std::any safeVisit(antlr4::tree::ParseTree* node);
 	std::any reparseExpression(std::string_view expression, std::string_view lexerMode, const std::function<antlr4::tree::ParseTree*(GS1Parser&)>& node);
-	void setCurrentPlayerVariables(const std::optional<ScriptObject>& source) const;
 
 public:
 	std::any visitProgram(GS1Parser::ProgramContext* ctx) override;

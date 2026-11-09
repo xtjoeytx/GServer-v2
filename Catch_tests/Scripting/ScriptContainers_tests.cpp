@@ -370,7 +370,7 @@ TEST_CASE("Script parameter lookup and property binding helper functions", "[Scr
 		ScriptParamSource::scriptParameters.clear();
 		ScriptParamSource::scriptParameters.try_emplace("value", GameVariable{.name = "value", .value = GameValue{3.0}});
 		ScriptParamSource source;
-		auto* found = getScriptParameter(source, "value");
+		auto* found = getScriptParameter(source, "value", false);
 		REQUIRE(found != nullptr);
 		REQUIRE(found->getCopy<double>().value() == 3.0);
 	}
@@ -379,7 +379,7 @@ TEST_CASE("Script parameter lookup and property binding helper functions", "[Scr
 	{
 		ConstructibleScriptParamSource::scriptParameters.clear();
 		ConstructibleScriptParamSource source;
-		auto* found = getScriptParameter(source, "constructed");
+		auto* found = getScriptParameter(source, "constructed", false);
 		REQUIRE(found != nullptr);
 		REQUIRE(found->name == "constructed");
 	}
