@@ -2087,7 +2087,7 @@ void NPC::testForLinks(SetResults& result)
 	}
 
 	// They aren't allowed to leave the level, so clamp them to the borders.
-	if (levelPtr->isGmap() || levelPtr->isOnBigMap())
+	if (!levelPtr->isGmap())
 		clampToLevel();
 
 	// If we have warp restrictions, don't process any further.
