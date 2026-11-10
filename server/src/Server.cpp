@@ -1964,7 +1964,7 @@ void Server::hitPlayer(const PlayerID playerId, const int8_t power, const float 
 	// Client ignores if PLO_DISABLECLASSICMODE was sent.
 	// Client ignores if the source wasn't within 10 tiles.
 
-	auto tilePosition = player->getTilePosition();
+	auto tilePosition = toTilePosition(player->getEventBoundingBox().center());
 	auto dx = tilePosition.x() - fromX;
 	auto dy = tilePosition.y() - fromY;
 
