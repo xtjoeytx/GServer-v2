@@ -277,24 +277,25 @@ target_link_libraries(${TARGET_NAME} PUBLIC gs2lib)
 
 # ----------------------------
 # Dependency: libtommath.
+# Avoid reusing a cached package config from another build directory.
+# This resolves an "IMPORTED_LOCATION not set" bug.
+set(_FETCHCONTENT_TRY_FIND_PACKAGE_MODE "${FETCHCONTENT_TRY_FIND_PACKAGE_MODE}")
+set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE NEVER)
 FetchContent_Declare(libtommath
 	GIT_REPOSITORY https://github.com/libtom/libtommath.git
 	GIT_SHALLOW    ON
 	GIT_TAG        develop
 	EXCLUDE_FROM_ALL
 )
+# Reset back to normal.
+set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE "${_FETCHCONTENT_TRY_FIND_PACKAGE_MODE}")
+unset(_FETCHCONTENT_TRY_FIND_PACKAGE_MODE)
+
 FetchContent_MakeAvailable(libtommath)
 target_include_directories(${TARGET_NAME} PUBLIC "${libtommath_SOURCE_DIR}")
 
-# Map libtomcrypt configurations as it fails with MinSizeRel.
-if(TARGET libtommath)
-	set_target_properties(libtommath PROPERTIES
-		MAP_IMPORTED_CONFIG_DEBUG Release
-		MAP_IMPORTED_CONFIG_RELEASE Release
-		MAP_IMPORTED_CONFIG_MINSIZEREL Release
-		MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release
-	)
-endif()
+# libtomcrypt calls find_package(libtommath); keep it on this build's generated config.
+set(libtommath_DIR "${libtommath_BINARY_DIR}")
 
 # ----------------------------
 # Dependency: libtomcrypt-preagonal.
