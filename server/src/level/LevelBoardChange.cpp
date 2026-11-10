@@ -57,7 +57,8 @@ void LevelBoardChange::sendToPlayersOnLevel() const
 			m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOARDMODIFY << getPropsForSingleLevel(), {0, 0}, level);
 		else
 		{
-			m_server->sendPacketToNearby(CString() >> (char)PLO_BOARDMODIFY2 << getPropsForMapClassic(), toPixelPosition(m_mapPosition.value(), area.position), level, {});
+			DEBUGPRINT("[BOARD] Sending board restore for {} [{},{}].", level->levelName, m_mapPosition.value().x(), m_mapPosition.value().y());
+			m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOARDMODIFY2 << getPropsForMapClassic(), level->convertToMapPosition(m_mapPosition.value(), area.position), level, {});
 
 			/*
 			// Classic mode clients don't support board updates in adjacent levels, but still need the map position.
