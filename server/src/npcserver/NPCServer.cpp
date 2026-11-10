@@ -326,6 +326,16 @@ void NPCServer::saveNPCs()
 	}
 }
 
+void NPCServer::saveNPC(const NPCID id)
+{
+	const auto npcIter = m_globalNPCList.find(id);
+	if (npcIter == m_globalNPCList.end())
+		return;
+
+	if (const auto npc = npcIter->second.lock(); npc != nullptr)
+		m_server->getNPCLoader().saveNPC(npc);
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 void NPCServer::playerLogin(const std::shared_ptr<Player>& player)

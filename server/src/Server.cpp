@@ -109,7 +109,7 @@ void ExternalServerCachedSettings::bind(Server* server)
 	settings.track(disableExplosions, enableClientsidePushPull, tileRespawnTime, enableIdleDisconnect, idleTimeoutSeconds);
 	settings.track(enablePermanentTileChanges, saveTileChangesToLevelFile);
 	settings.track(dontAddServerFlags);
-	settings.track(unloadInactiveLevelTime);
+	settings.track(unloadInactiveLevelTime, saveNPCsOnLevelCache);
 
 	// triggerhacks
 	settings.track(enableFlaghackMovement, enableTriggerhackExecscript, enableTriggerhackFiles, enableTriggerhackGroups, enableTriggerhackGuilds, enableTriggerhackLevels, enableTriggerhackProps, enableTriggerhackRC, enableTriggerhackWeapons);

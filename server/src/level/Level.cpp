@@ -1542,9 +1542,21 @@ void Level::removePlayer(const PlayerID id)
 	if (const auto player = m_server->getPlayer(id); player != nullptr)
 		m_server->queueNPCEvent(shared_from_this(), player->getGlobalPosition(), ScriptEventType::PLAYERLEAVES, source::FromPlayer(id));
 
-	// If there are no more players in the level, record the time so we can do level cleanup after a delay.
 	if (m_players.empty())
+	{
+		// If there are no more players in the level, record the time so we can do level cleanup after a delay.
 		timeSinceLastPlayerLeft = m_server->getFrameStartTime();
+
+		// If we save NPCs when nobody is left on the level, do that now.
+		if (m_server->cached.saveNPCsOnLevelCache.getValue() == true)
+		{
+			if (m_server->hasNPCServer())
+			{
+				for (const auto npcId : m_npcs)
+					m_server->getNPCServer()->saveNPC(npcId);
+			}
+		}
+	}
 }
 
 //----------------------------

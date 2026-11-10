@@ -138,6 +138,7 @@ struct ExternalServerCachedSettings
 	SettingCache<bool> saveTileChangesToLevelFile{"levelsautosave", false};
 	SettingCache<bool> dontAddServerFlags{"dontaddserverflags", false};
 	SettingCache<uint32_t> unloadInactiveLevelTime{"unloadinactiveleveltime", 600};
+	SettingCache<bool> saveNPCsOnLevelCache{"savenpcsonlevelcache", true};
 	// flag/triggerhacks
 	SettingCache<bool> enableFlaghackMovement{"flaghack_movement", true};
 	SettingCache<bool> enableTriggerhackExecscript{"triggerhack_execscript", false};

@@ -86,6 +86,7 @@ public:
 	void deleteNPC(NPCID id);
 	void unloadNPC(NPCID id);
 	void saveNPCs();
+	void saveNPC(NPCID id);
 	//std::vector<std::pair<double, std::string>> calculateNPCStats();
 
 public:

@@ -232,6 +232,9 @@ classicstylelogs = false
 # If 0, inactive levels are not unloaded.  Levels are unloaded during maintenance cycles (every 1 minute), so this may not be exact.
 unloadinactiveleveltime = 600
 
+# Forces saving all npcs on level exit, can be disabled for optimization.
+# savenpcsonlevelcache = true
+
 # The images used for when an NPC carries an object.
 # These must be kept in the same order.
 # npccarryobjectimages = bushitem.png,signitem.png,vaseitem.png,stoneitem.png,blackstoneitem.png,bombitem.png,hotbombitem.png,superbombitem.png,joltbombitem.png,hotjoltbombitem.png,noneitem.png
@@ -508,9 +511,6 @@ default_scriptengine = gs1
 
 # Logs attempts of modifying read-only variables to logs/scripterrors.txt
 # scriptlogwritetoreadonly = true/false
-
-# Forces saving all npcs on level exit, can be disabled for optimization.
-# savenpcsonlevelcache = true/false
 
 # Limits how many gralats can be stacked on the ground.
 # maxgralatvalue = 0 or number
