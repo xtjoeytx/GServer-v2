@@ -54,6 +54,7 @@ class Server;
 /// @brief Stores the basic data for an NPC in a level.
 struct LevelNPCTemplate
 {
+	size_t index;
 	std::string image;
 	LocalPixelPosition position;
 	Script script;
@@ -92,6 +93,7 @@ using StaticLevelDataPtr = std::shared_ptr<StaticLevelData>;
 /// @brief Stores the data for a specific level tile on a map.
 struct SubLevel
 {
+	Server* server;
 	std::weak_ptr<Level> parentLevel;
 	std::weak_ptr<StaticLevelData> staticData;
 	std::optional<MapPosition> mapPosition;
@@ -104,6 +106,8 @@ struct SubLevel
 	bool isNoPkZone = false;
 	bool isOnGmap = false;
 	bool isOnBigMap = false;
+	bool sleeping = false;
+	std::optional<clock::time_point> timeSinceLastUsed;
 	EventHandle staticDataRefreshedHandle;
 	//
 	[[nodiscard]] PixelRectangleArea clipRectangleToPart(const PixelRectangleArea& area) const noexcept;
@@ -114,11 +118,14 @@ struct SubLevel
 	[[nodiscard]] std::optional<LevelTiles::TileArray*> getTiles(size_t layer) noexcept;
 	[[nodiscard]] std::optional<const LevelTiles::TileArray*> getTiles(size_t layer) const noexcept;
 	[[nodiscard]] double getHeightAt(const LocalPixelPosition& position) const noexcept;
-	void sendBoardToPlayer(const std::shared_ptr<Player>& player) const;
-	void sendBoardLayersToPlayer(const std::shared_ptr<Player>& player) const;
-	void sendBoardLayerToPlayer(const std::shared_ptr<Player>& player, size_t layer) const;
-	void sendBoardHeightsToPlayer(const std::shared_ptr<Player>& player) const;
-	void sendBoardChangesToPlayer(const std::shared_ptr<Player>& player, std::optional<clock::time_point> time) const;
+	void sendBoardToPlayer(const std::shared_ptr<Player>& player);
+	void sendBoardLayersToPlayer(const std::shared_ptr<Player>& player);
+	void sendBoardLayerToPlayer(const std::shared_ptr<Player>& player, size_t layer);
+	void sendBoardHeightsToPlayer(const std::shared_ptr<Player>& player);
+	void sendBoardChangesToPlayer(const std::shared_ptr<Player>& player, std::optional<clock::time_point> time);
+	void updateTimeSinceLastUsed();
+	void sleepNPCs();
+	void wakeNPCs();
 };
 using SubLevelPtr = std::shared_ptr<SubLevel>;
 
@@ -137,17 +144,17 @@ public:
 	static std::shared_ptr<Level> clone(const LevelPtr& level, std::string_view name);
 
 public:
+	void doTimedEvents();
+	void doFrameEvents(precise_clock::time_point time);
+	const auto& getLastFrameTime() const { return m_lastFrameTime; }
+	const auto& getFilePath() const { return m_filePath; }
+
+public:
 	bool loaded = false;
 	bool reload(std::string_view level) const;
 	bool reload(const MapPosition& position) const;
 	void reload(const StaticLevelDataPtr& staticData);
 	bool saveLevel(const MapPosition& mapPosition, std::string_view filename) const;
-
-public:
-	void doTimedEvents();
-	void doFrameEvents(precise_clock::time_point time);
-	const auto& getLastFrameTime() const { return m_lastFrameTime; }
-	const auto& getFilePath() const { return m_filePath; }
 
 private:
 	precise_clock::time_point m_lastFrameTime = precise_clock::now();
@@ -160,10 +167,10 @@ public:
 	[[a::inline]] bool isOnBigMap() const noexcept;
 	[[a::inline]] static constexpr Dimension<uint8_t> tilesPerSubLevel() noexcept;
 	[[a::inline]] static constexpr Dimension<uint8_t> pixelsPerTile() noexcept;
-	[[a::inline]] static constexpr Dimension<uint16_t> pixelsPerSubLevel() noexcept;
+	[[a::inline]] static constexpr PixelDimension pixelsPerSubLevel() noexcept;
 	[[a::inline]] Dimension<uint8_t> sizeInSubLevels() const noexcept;
 	[[a::inline]] Dimension<uint32_t> sizeInTiles() const noexcept;
-	[[a::inline]] Dimension<uint32_t> sizeInPixels() const noexcept;
+	[[a::inline]] PixelDimension sizeInPixels() const noexcept;
 	[[a::inline]] Rectangle<uint32_t, uint32_t> getBoundingBox() const noexcept;
 	std::optional<uint16_t> getMapTileAtPosition(const TilePosition& position) const noexcept;
 	uint16_t* getMapTileForEditing(const TilePosition& position) const noexcept;
@@ -178,6 +185,7 @@ public:
 	[[a::inline]] SubLevelPtr getSubLevelAtPosition(const PixelPosition& position) const noexcept;
 	[[a::inline]] SubLevelPtr getSubLevelAtPosition(const TilePosition& position) const noexcept;
 	[[a::inline]] SubLevelPtr getSubLevelAtPosition(const MapPosition& position) const noexcept;
+	[[a::inline]] bool isValidMapPosition(const MapPosition& position) const noexcept;
 	[[a::inline]] StaticLevelDataPtr getStaticLevelDataByName(std::string_view levelPart) const noexcept;
 	[[a::inline]] StaticLevelDataPtr getStaticLevelDataAtPosition(const MapPosition& mapPosition) const noexcept;
 	[[a::inline]] std::pair<SubLevelPtr, StaticLevelDataPtr> getSubLevelAndStaticDataAtPosition(const MapPosition& position) const noexcept;
@@ -357,21 +365,28 @@ public:
 	bool isOnNPC(const PixelRectangleArea& pixelArea) const noexcept;
 	bool isOnPlayer(const PixelPosition& position) const noexcept;
 	bool isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept;
+	std::ptrdiff_t testNPC(const PixelPosition& position, std::optional<NPCID> initiator = std::nullopt) const noexcept;
+	std::ptrdiff_t testNPC(const PixelRectangleArea& pixelArea, std::optional<NPCID> initiator = std::nullopt) const noexcept;
+	std::ptrdiff_t testPlayer(const PixelPosition& position) const noexcept;
+	std::ptrdiff_t testPlayer(const PixelRectangleArea& pixelArea) const noexcept;
 	tileset::TileType getTileTypeAt(const WholeTilePosition& tilePosition) const noexcept;
 	tileset::TileType getTileTypeAt(const PixelPosition& position) const noexcept;
 
 public:
-	std::generator<PlayerID> findInRangePlayers(const PixelPosition& position, std::optional<std::pair<uint32_t, uint32_t>> range = std::nullopt) const noexcept;
-	std::generator<PlayerID> findInRangePlayersForCommunication(const PixelPosition& position) const noexcept;
+	std::generator<PlayerID> findPlayersInRange(const PixelPosition& position, const PixelDimension& range) const noexcept;
+	std::generator<PlayerID> findPlayersInRangeForSync(const PixelPosition& position) const noexcept;
+	std::generator<PlayerID> findPlayersInRangeForData(const PixelPosition& position) const noexcept;
 	std::generator<PlayerID> findPlayersInLevelPart(std::string_view levelPart) const noexcept;
 	std::generator<PlayerID> findPlayersInLevelPart(const MapPosition& mapLevel) const noexcept;
-	std::generator<NPCID> findInRangeNPCs(const PixelPosition& position) const noexcept;
-	std::generator<NPCID> findInRangeNPCsByDistance(const PixelPosition& position, uint32_t tileDistance) const noexcept;
-	std::generator<NPCID> findInRangeNPCsForCommunication(const PixelPosition& position) const noexcept;
+	std::generator<NPCID> findNPCsInRangeByDistance(const PixelPosition& position, uint32_t pixelDistance) const noexcept;
+	std::generator<NPCID> findNPCsInRangeForData(const PixelPosition& position) const noexcept;
+	std::generator<NPCID> findNPCsInLevelPart(const MapPosition& mapLevel) const noexcept;
 	std::generator<NPCID> findIntersectingNPCs(const PixelPosition& position, bool includeInvisible = false) const noexcept;
 	std::generator<NPCID> findIntersectingNPCs(const PixelRectangleArea& area, bool includeInvisible = false) const noexcept;
 	std::generator<NPCID> findIntersectingNPCsForCollision(const PixelPosition& position) const noexcept;
 	std::generator<NPCID> findIntersectingNPCsForCollision(const PixelRectangleArea& area) const noexcept;
+	std::generator<NPCID> findIntersectingNPCsForEvent(const PixelPosition& position) const noexcept;
+	std::generator<NPCID> findIntersectingNPCsForEvent(const PixelRectangleArea& area) const noexcept;
 
 public:
 	std::string levelName;
@@ -407,6 +422,8 @@ private:
 	std::vector<LevelItem> m_items;
 	std::vector<LevelShoot> m_shoots;
 	std::vector<std::optional<LevelThrownItem>> m_thrownItems;
+
+	TimeoutGenerator m_sleepTimeout1m{1min};
 };
 
 using LevelPtr = std::shared_ptr<Level>;
@@ -438,9 +455,9 @@ inline constexpr Dimension<uint8_t> Level::pixelsPerTile() noexcept
 	return { 16_ui8, 16_ui8 };
 }
 
-inline constexpr Dimension<uint16_t> Level::pixelsPerSubLevel() noexcept
+inline constexpr PixelDimension Level::pixelsPerSubLevel() noexcept
 {
-	return Dimension<uint16_t>{ tilesPerSubLevel() } * pixelsPerTile();
+	return PixelDimension{ tilesPerSubLevel() } * pixelsPerTile();
 }
 
 inline Dimension<uint8_t> Level::sizeInSubLevels() const noexcept
@@ -456,7 +473,7 @@ inline Dimension<uint32_t> Level::sizeInTiles() const noexcept
 	return { static_cast<uint32_t>(size.width() * tileSize.width()), static_cast<uint32_t>(size.height() * tileSize.height()) };
 }
 
-inline Dimension<uint32_t> Level::sizeInPixels() const noexcept
+inline PixelDimension Level::sizeInPixels() const noexcept
 {
 	auto size = sizeInSubLevels();
 	auto pixelSize = pixelsPerSubLevel();
@@ -543,9 +560,13 @@ inline SubLevelPtr Level::getSubLevelAtPosition(const PixelPosition& position) c
 		return !m_levelParts.empty() ? m_levelParts[0] : nullptr;
 
 	const auto mapPosition = position / 1024;
+	if (mapPosition.x() >= m_map->size.width() || mapPosition.y() >= m_map->size.height())
+		return nullptr;
+
 	const auto index = static_cast<size_t>(mapPosition.y()) * m_map->size.width() + mapPosition.x();
 	if (index < m_levelParts.size())
 		return m_levelParts[index];
+
 	return nullptr;
 }
 
@@ -554,10 +575,14 @@ inline SubLevelPtr Level::getSubLevelAtPosition(const TilePosition& position) co
 	if (!isGmap())
 		return !m_levelParts.empty() ? m_levelParts[0] : nullptr;
 
-	const auto mapPosition = position / 64;
+	const auto mapPosition = Position<uint8_t>{DoubleAsIntegralFloor<uint8_t>(position.x() / 64), DoubleAsIntegralFloor<uint8_t>(position.y() / 64)};
+	if (mapPosition.x() >= m_map->size.width() || mapPosition.y() >= m_map->size.height())
+		return nullptr;
+
 	const auto index = static_cast<size_t>(mapPosition.y()) * m_map->size.width() + static_cast<size_t>(mapPosition.x());
 	if (index < m_levelParts.size())
 		return m_levelParts[index];
+
 	return nullptr;
 }
 
@@ -566,10 +591,22 @@ inline SubLevelPtr Level::getSubLevelAtPosition(const MapPosition& position) con
 	if (!isGmap())
 		return !m_levelParts.empty() ? m_levelParts[0] : nullptr;
 
+	if (position.x() >= m_map->size.width() || position.y() >= m_map->size.height())
+		return nullptr;
+
 	const auto index = static_cast<size_t>(position.y()) * m_map->size.width() + static_cast<size_t>(position.x());
 	if (index < m_levelParts.size())
 		return m_levelParts[index];
+
 	return nullptr;
+}
+
+// True if the gmap has a cell at this column/row (a plain level only has cell 0,0). getSubLevelAtPosition() alone is not enough: column == width wraps into the next row.
+inline bool Level::isValidMapPosition(const MapPosition& position) const noexcept
+{
+	if (!isGmap() || m_map == nullptr)
+		return position.x() == 0 && position.y() == 0;
+	return position.x() < m_map->size.width() && position.y() < m_map->size.height();
 }
 
 inline StaticLevelDataPtr Level::getStaticLevelDataByName(const std::string_view levelPart) const noexcept

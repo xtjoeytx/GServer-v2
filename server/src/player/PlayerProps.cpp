@@ -357,9 +357,10 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			// Ganis can be set to themselves to play it again from the beginning, so don't check for equality here.
 			std::string gani = ganiProp->gani.value_or("idle");
 			account.character.gani = props::Limits::apply(gani, props::Limits::GaniLength);
+			const auto ganiWithoutAttr = string::retrieveLine(account.character.gani, ',');
 
 			// Allow spin to hurt things.
-			if (account.character.gani == "spin")
+			if (ganiWithoutAttr == "spin")
 			{
 				float tX = static_cast<float>(account.character.localPixelX) / 16.0f + 1.5f;
 				float tY = static_cast<float>(account.character.localPixelY) / 16.0f + 2.0f;
@@ -367,6 +368,30 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				m_server->hitObjectsAtPoint({tX, tY - 2.0f}, account.character.swordPower, level, shared_from_this());
 				m_server->hitObjectsAtPoint({tX + 2.0f, tY}, account.character.swordPower, level, shared_from_this());
 				m_server->hitObjectsAtPoint({tX - 2.0f, tY}, account.character.swordPower, level, shared_from_this());
+			}
+			// Serverside washit.
+			else if (m_server->hasNPCServer() && std::ranges::contains(m_server->cached.playerSwordGanis.getValue(), ganiWithoutAttr))
+			{
+				// constexpr std::array hitLocX = { 1, 2, -1, -1, 1,2, 4,4};
+				// constexpr std::array hitLocY = {-1,-1,  1,  2, 4,4, 1,2};
+				// const PixelPosition p1{translatePosition(getGlobalPosition(), Level::pixelsPerTile().width() * hitLocX[account.character.direction % 4 * 2], 8 + Level::pixelsPerTile().height() * hitLocY[account.character.direction % 4 * 2])};
+				// const PixelPosition p2{translatePosition(getGlobalPosition(), Level::pixelsPerTile().width() * hitLocX[account.character.direction % 4 * 2 + 1], 8 + Level::pixelsPerTile().height() * hitLocY[account.character.direction % 4 * 2 + 1])};
+
+				// clang-format off
+				// The goal is to search for things up to 1.5 tiles away from the player.
+				// We we are slightly changing the normal in-game calculations because we are using rectangle intersections.
+				// Also, some things were slightly tweaked to make them feel better.  I gave an extra half-tile of tolerance.
+				constexpr std::array hitLocX = {   16,   32+16, /**/ -16-8, -16+24, /**/ 16,     32+16, /**/ 64-16,  64+8};
+				constexpr std::array hitLocY = { -8-8, -8-8+24, /**/    16,  32+16, /**/ 72-8, 72-8+16, /**/   16,  32+16};
+				const PixelPosition p1{translatePosition(getGlobalPosition(), hitLocX[account.character.direction % 4 * 2], hitLocY[account.character.direction % 4 * 2])};
+				const PixelPosition p2{translatePosition(getGlobalPosition(), hitLocX[account.character.direction % 4 * 2 + 1], hitLocY[account.character.direction % 4 * 2 + 1])};
+				// clang-format on
+
+				for (const auto& npcId : level->findIntersectingNPCsForEvent(PixelRectangleArea{with_positions, p1, p2}))
+				{
+					if (const auto npc = m_server->getNPC(npcId); npc != nullptr)
+						npc->scripting.events.addEvent(ScriptEventType::WASHIT, source::FromPlayer(m_id));
+				}
 			}
 			break;
 		}
@@ -884,6 +909,9 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				SETPROP_RETURN_IGNORE;
 			if (level == nullptr || !level->isGmap())
 				SETPROP_RETURN_REVERT;
+			// Refuse a cell outside the gmap: it would be saved to the account and the next login would find no level to send.
+			if (!level->isValidMapPosition(MapPosition{numProp->value, account.character.mapY}))
+				SETPROP_RETURN_REVERT;
 
 			if (auto subLevel = level->getSubLevelAtPosition(getMapPosition()); subLevel != nullptr)
 				leaveSubLevel(subLevel);
@@ -895,6 +923,17 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				auto lastEnteredTime = player->getLevelLastEnteredTimeForWarping(levelData.get());
 				sendDynamicLevelData(level, lastEnteredTime);
 			}
+
+			for (int j = -1; j <= 1; ++j)
+			{
+				for (int k = -1; k <= 1; ++k)
+				{
+					if (j == 0 && k == 0) continue;
+					const auto pos = getMapPosition().translate(j, k);
+					if (const auto subLevel = level->getSubLevelAtPosition(pos); subLevel != nullptr)
+						subLevel->updateTimeSinceLastUsed();
+				}
+			}
 			break;
 		}
 
@@ -904,6 +943,9 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (numProp == nullptr || numProp->value == account.character.mapY)
 				SETPROP_RETURN_IGNORE;
 			if (level == nullptr || !level->isGmap())
+				SETPROP_RETURN_REVERT;
+			// Refuse a cell outside the gmap: it would be saved to the accoount and the next login would find no level to send.
+			if (!level->isValidMapPosition(MapPosition{account.character.mapX, numProp->value}))
 				SETPROP_RETURN_REVERT;
 
 			if (auto subLevel = level->getSubLevelAtPosition(getMapPosition()); subLevel != nullptr)
@@ -915,6 +957,17 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			{
 				auto lastEnteredTime = player->getLevelLastEnteredTimeForWarping(levelData.get());
 				sendDynamicLevelData(level, lastEnteredTime);
+			}
+
+			for (int j = -1; j <= 1; ++j)
+			{
+				for (int k = -1; k <= 1; ++k)
+				{
+					if (j == 0 && k == 0) continue;
+					const auto pos = getMapPosition().translate(j, k);
+					if (const auto subLevel = level->getSubLevelAtPosition(pos); subLevel != nullptr)
+						subLevel->updateTimeSinceLastUsed();
+				}
 			}
 			break;
 		}
@@ -1213,6 +1266,19 @@ void Player::setPropsFromRCPacket(CString& packet, const Player* rc)
 	while (flagCount-- > 0)
 	{
 		CString flag = packet.readChars(packet.readGUChar());
+		if (flag.length() > 220)
+		{
+			const auto flagView = flag.toStringView().substr(0, 220);
+			const auto [flagName, flagValue] = string::extractConfigParts(flagView, '=');
+			if (auto existing = account.variables.get(flagName).lock(); existing != nullptr && existing->has<std::string>())
+			{
+				if (auto& str = existing->get<std::string>().value().get(); str.starts_with(string::trim(flagValue)))
+				{
+					values.push_back(std::format("{}={}", flagName, str));
+					continue;
+				}
+			}
+		}
 		values.push_back(flag.toString());
 	}
 	synchronizeFlags(values);
@@ -1308,7 +1374,9 @@ CString Player::getPropsForRCPacket()
 		if (auto computedFlag = account.variables.serializeModern(flag); computedFlag.has_value())
 		{
 			++flagCount;
-			flags >> (char)(std::min(static_cast<size_t>(223), computedFlag.value().length())) << computedFlag.value().substr(0, 223);
+			if (computedFlag.value().length() > 220)
+				flags >> (char)223 << computedFlag.value().substr(0, 220) << "[!]";
+			else flags >> (char)computedFlag.value().length() << computedFlag.value();
 		}
 	}
 	ret >> (short)flagCount << flags;

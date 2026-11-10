@@ -183,7 +183,6 @@ void PlayerClient::cleanup()
 	// Clean up.
 	m_cachedStaticLevels.clear();
 	m_cachedDynamicLevels.clear();
-	m_singleplayerLevels.clear();
 
 	Player::cleanup();
 }
@@ -262,15 +261,6 @@ bool PlayerClient::doTimedEvents()
 						account.apCounter = m_server->cached.apSystemThresholdSeconds[4].getValue();
 				}
 			}
-		}
-	}
-
-	// Do singleplayer level events.
-	{
-		for (auto& level : m_singleplayerLevels | std::views::values)
-		{
-			if (level)
-				level->doTimedEvents();
 		}
 	}
 
@@ -498,6 +488,9 @@ bool PlayerClient::sendLogin()
 		if (m_server->getServerList().getConnected())
 			sendPacket(CString() >> (char)PLO_SERVERLISTCONNECTED);
 
+		// Reset the client.
+		sendPacket(CString() >> (char)PLO_RESETCLIENT);
+
 		// Send the bigmap if it was set.
 		if (m_versionId >= CLVER_2_1)
 		{
@@ -585,9 +578,6 @@ bool PlayerClient::sendLogin()
 
 	// Stage 3 - Weapons
 	{
-		// Sent to rc and client, but rc ignores it so...
-		sendPacket(CString() >> (char)PLO_CLEARWEAPONS);
-
 		// Delete the bomb and bow.  They get automagically added by the client for
 		// God knows which reason.  Bomb and Bow must be capitalized.
 		sendPacket(CString() >> (char)PLO_NPCWEAPONDEL << "Bomb");
@@ -656,6 +646,9 @@ bool PlayerClient::sendLogin()
 	// Queue up the login event.
 	if (m_server->hasNPCServer())
 	{
+		// Construct our script parameters.
+		constructScriptParameters();
+
 		auto npcServer = m_server->getNPCServer();
 		npcServer->playerLogin(shared_from_this());
 		npcServer->addEventToControlNPC(ScriptEventType::TRIGGERACTION, source::FromPlayer(m_id), "playeronline");
@@ -1170,7 +1163,7 @@ std::string PlayerClient::getLevelName() const
 
 std::shared_ptr<Level> PlayerClient::getLevel() const
 {
-	if (isHiddenClient())
+	if (isHiddenClientType())
 		return nullptr;
 
 	return m_currentLevel.lock();
@@ -1252,10 +1245,27 @@ bool PlayerClient::warp(const std::shared_ptr<Level>& level, const PixelPosition
 	{
 		// We have to do this manually since if we set it via setPropWith, it will cause a second level warp.
 		auto mapPosition = toMapPosition(position);
+		// An account saved outside the gmap (e.g. MAPX 255 from a client that walked off the edge) would get no level: use the first cell.
+		if (!level->isValidMapPosition(mapPosition))
+		{
+			log::printLine(log::server, "** [Warp] '{}': gmap cell ({}, {}) is outside {}, using cell (0, 0).", account.name, static_cast<int>(mapPosition.x()), static_cast<int>(mapPosition.y()), level->levelName);
+			mapPosition = MapPosition{0, 0};
+		}
 		account.character.mapX = mapPosition.x();
 		account.character.mapY = mapPosition.y();
 		this->modTime[PROPID(PlayerProp::GMAPLEVELX)] = m_server->getFrameStartTime();
 		this->modTime[PROPID(PlayerProp::GMAPLEVELY)] = m_server->getFrameStartTime();
+		// FIX v6: The client needs the .gmap file to know the names of the levels around it.
+                // A client that does not have it yet asks only after PLAYERWARP2, and the board/NPC packets of the level that follow arrive before it knows what they belong to.
+		// So send the map file first. files wait in the queue's low priority file buffer.
+		// Whatever was queued before goes out first, in order, then the map file. The warp is queued after it.
+
+		if (!hasSeenFile(level->levelName))
+		{
+			sendFile(std::filesystem::path{level->levelName});
+			for (int flushes = 0; flushes < 4096 && m_fileQueue.canSend(); ++flushes)
+				m_fileQueue.sendCompress(true);
+		}
 		sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << getProp<PlayerProp::Z>().serialize() >> (char)mapPosition.x() >> (char)mapPosition.y() << level->levelName);
 	}
 	else
@@ -1291,6 +1301,13 @@ bool PlayerClient::enterLevel(const std::shared_ptr<Level>& level, const std::op
 
 	// Send the level now.
 	const auto subLevel = level->getSubLevelAtPosition(getMapPosition());
+	if (subLevel == nullptr)
+	{
+		leaveLevel();
+		sendPacket(CString() >> (char)PLO_WARPFAILED << level->levelName);
+		return false;
+	}
+
 	bool succeed = sendStaticLevelData(subLevel->staticData.lock(), subLevel, clientCachedTime);
 	succeed = succeed && sendDynamicLevelData(level, clientCachedTime);
 
@@ -1382,7 +1399,7 @@ bool PlayerClient::leaveLevel(const bool keepLevelReference)
 	{
 		m_server->sendPacketToNearby(CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)0, getGlobalPosition(), levelp, {m_id});
 
-		for (const auto& pid : levelp->findInRangePlayersForCommunication(getGlobalPosition()))
+		for (const auto& pid : levelp->findPlayersInRangeForSync(getGlobalPosition()))
 		{
 			if (auto player = m_server->getPlayer<PlayerClient>(pid); player != nullptr)
 				sendPacket(CString() >> (char)PLO_OTHERPLPROPS >> (short)player->getId() >> (char)PlayerProp::JOINLEAVELVL >> (char)0);
@@ -1580,7 +1597,7 @@ bool PlayerClient::sendDynamicLevelData(const std::shared_ptr<Level>& level, std
 	if (!level->isSinglePlayer)
 	{
 		const CString myProps = CString() >> (char)PLO_OTHERPLPROPS >> (short)m_id >> (char)PlayerProp::JOINLEAVELVL >> (char)1 << getPropsPacketFromList(loginPropsClientOthers);
-		for (const auto& playerId : level->findInRangePlayersForCommunication(getGlobalPosition()))
+		for (const auto& playerId : level->findPlayersInRangeForSync(getGlobalPosition()))
 		{
 			if (playerId == m_id) continue;
 			if (auto other = m_server->getPlayer(playerId); other != nullptr)
@@ -1809,8 +1826,8 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 		}
 		if (touchedNPC)
 		{
-			const auto eventDistance = m_server->cached.eventDistance.getValue();
-			for (const auto& npcId : level->findInRangeNPCsByDistance(testBox.position, eventDistance))
+			const auto eventDistance = m_server->cached.eventDistance.getValue() * Level::pixelsPerTile().width();
+			for (const auto& npcId : level->findNPCsInRangeByDistance(testBox.position, eventDistance))
 			{
 				auto intersectingNPCs = level->findIntersectingNPCsForCollision(testBox);
 				if (!std::ranges::contains(intersectingNPCs, npcId))
@@ -1919,7 +1936,7 @@ void PlayerClient::dropItemsOnDeath()
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<uint32_t> gralatDistribution(mindeathgralats, maxdeathgralats);
 	std::uniform_int_distribution<uint32_t> itemDistribution(0, 3);
-	std::uniform_int_distribution<int8_t> displacementDistribution(-4, 4);
+	std::uniform_int_distribution<int32_t> displacementDistribution(-4, 4);
 
 	// Determine how many gralats to remove from the account.
 	uint32_t drop_gralats = 0;
