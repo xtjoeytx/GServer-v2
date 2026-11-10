@@ -57,7 +57,9 @@ void NPCServer::initialize()
 	const auto& settings = m_server->getSettings();
 
 	// Default script engine.
-	scripting.defaultScriptEngine = settings.get<std::string>("default_scriptengine").value_or(std::string{gs1::ScriptEngineGS1::EngineName});
+	auto defaultScriptEngine = settings.get<std::string>("default_scriptengine").value_or(std::string{gs1::ScriptEngineGS1::EngineName});
+	scripting.defaultScriptEngineClient = settings.get<std::string>("default_scriptengine_client").value_or(defaultScriptEngine);
+	scripting.defaultScriptEngineServer = settings.get<std::string>("default_scriptengine_server").value_or(defaultScriptEngine);
 
 	// NC options.
 	m_ncHost = string::toLower(m_server->getAdminSettings().get<std::string>("ns_ip").value_or("auto"s));

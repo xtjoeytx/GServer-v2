@@ -349,8 +349,11 @@ flaghack_ip = false				# gr.ip
 # If true, the server will process all script events, even if the NPC doesn`t check for the event flag.
 runallscriptevents = false
 
-# Scripting
-default_scriptengine = gs1
+# Controls the default script engine for all scripts, clientside scripts, or serverside scripts.
+# Built-in options: gs1 or gs2
+# default_scriptengine = gs1
+# default_scriptengine_client =
+# default_scriptengine_server =
 
 # Diagnostics
 # warnonmissingfiles = false

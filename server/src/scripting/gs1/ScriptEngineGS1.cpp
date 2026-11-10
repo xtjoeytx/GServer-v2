@@ -274,8 +274,11 @@ void ScriptEngineGS1::loadConfiguration(const std::filesystem::path& file)
 
 //----------------------------
 
-CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::string_view script)
+CompiledScriptResult ScriptEngineGS1::compileScript(const ScriptCompilationTarget target, std::string_view who, std::string_view script)
 {
+	if (target != ScriptCompilationTarget::SERVER)
+		return std::make_pair(ScriptCompilationFailureType::REJECTED, ""s);
+
 	ScriptExecutionContext result{.engine = this};
 	try
 	{
@@ -284,7 +287,7 @@ CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::s
 	catch (const std::exception& ex)
 	{
 		//log::printLine(log::script, "GS1 script compilation SUPER failed: {}", ex.what());
-		return std::string(ex.what());
+		return std::make_pair(ScriptCompilationFailureType::SYNTAX_ERROR, std::string(ex.what()));
 	}
 
 	return result;

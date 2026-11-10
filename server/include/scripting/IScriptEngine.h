@@ -26,6 +26,12 @@ enum class ScriptExecutionType
 	COMPILED
 };
 
+enum class ScriptCompilationTarget
+{
+	CLIENT,
+	SERVER
+};
+
 class IScriptEngine
 {
 public:
@@ -40,7 +46,7 @@ public:
 	virtual void loadConfiguration(const std::filesystem::path& file) = 0;
 
 public:
-	virtual CompiledScriptResult compileScript(std::string_view who, std::string_view script) = 0;
+	virtual CompiledScriptResult compileScript(ScriptCompilationTarget target, std::string_view who, std::string_view script) = 0;
 	virtual bool reset() = 0;
 
 public:

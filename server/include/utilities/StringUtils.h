@@ -983,7 +983,7 @@ auto toCSV(InputRangeNotString auto&& range, const bool force_quoted = false)
 
 		// Check if the word contains any complex characters.
 		const bool complex = std::ranges::any_of(word,
-			[&complexChars](const auto& c) { return std::ranges::find(complexChars, c) != complexChars.end(); });
+			[&complexChars](const auto& c) { return c < 32 || c > 126 || std::ranges::find(complexChars, c) != complexChars.end(); });
 
 		// Output the word.
 		if (!complex && !force_quoted)

@@ -70,7 +70,11 @@ The following options are available in the `serveroptions.txt` file:
     sleepwhennoplayers = true
         If true, the NPC-Server will not process scripts when there are no players connected.
     default_scriptengine = gs1
-        Sets the default script engine for scripts.
+        Sets the default script engine for all scripts.
+    default_scriptengine_client = gs1
+        Sets the default script engine for clientside scripts.
+    default_scriptengine_server = gs1
+        Sets the default script engine for serverside scripts.
 
 ---
 # Serverside NPC programming
@@ -119,7 +123,7 @@ In order for serverside collision detection to work, you must provide an NPC wit
     if (created) { setshape 1,32,32; }
 
 That will set the width and height of the NPC to 32 pixels.  This will enable collision detection and let events such as `playertouchsme` and `exploded` work.
-NPCs that use the `showcharacter;` command will get a normal player's collision box, although you may call `setshape` again to overwrite it.
+NPCs that use the `showcharacter;` command will get a normal player's collision box.
 Triggeractions will also hit within the collision bounds of an NPC rather than at the exact coordinates.
 
 ### Script classes
@@ -177,13 +181,13 @@ By making use of the `playerswordganis` server option, a list of sword attack an
 allowing hits to trigger the [washit](scripting-gs1-events.md) event.
 
 Additionally, you can emulate sword hits using the [hitobjects](scripting-gs1-commands.md#hitobjects) command manually.
-To handle sword hits, make a system weapon that does the following:
+To do that, make a system weapon that does the following:
 
 ```
 //#CLIENTSIDE
 if (created) {
   this.hitlocx = {1,2, -1,-1, 1,2, 4,4};
-  this.hitlocy = {-1,-1, 1,1, 4,4, 1,2};
+  this.hitlocy = {-1,-1, 1,2, 4,4, 1,2};
   this.wait = 0;
 }
 if (keypressed && keydown(5) && this.wait == 0) {

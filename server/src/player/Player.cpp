@@ -1351,7 +1351,7 @@ void Player::constructScriptParameters()
 			if (m_server->hasNPCServer())
 			{
 				const auto npcServer = m_server->getNPCServer();
-				if (const auto engine = npcServer->scripting.getDefaultScriptEngine(); engine != nullptr)
+				if (const auto engine = npcServer->scripting.getDefaultScriptEngineClient(); engine != nullptr)
 				{
 					// Retrieve up to the first space.
 					auto line = string::retrieveLine(std::string_view{ account.character.chatMessage }, ' ');

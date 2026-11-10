@@ -39,7 +39,7 @@ public:
 	void loadConfiguration(const std::filesystem::path& file) override {}
 
 public:
-	CompiledScriptResult compileScript(std::string_view who, std::string_view script) override;
+	CompiledScriptResult compileScript(ScriptCompilationTarget, std::string_view who, std::string_view script) override;
 	bool reset() override { return false; }
 
 public:

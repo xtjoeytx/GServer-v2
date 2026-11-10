@@ -21,6 +21,15 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+enum class ScriptCompilationFailureType
+{
+	REJECTED,
+	ENGINE_NOT_FOUND,
+	SYNTAX_ERROR,
+};
+
+//----------------------------
+
 class IScriptEngine;
 class ScriptClass;
 
@@ -33,7 +42,7 @@ struct ScriptExecutionContext
 	std::deque<std::pair<precise_clock::time_point, precise_clock::duration>> executionProfiles;
 };
 
-using CompiledScriptResult = std::variant<ScriptExecutionContext, std::string>;
+using CompiledScriptResult = std::variant<ScriptExecutionContext, std::pair<ScriptCompilationFailureType, std::string>>;
 using CompiledScriptResultPtr = std::shared_ptr<ScriptExecutionContext>;
 
 //----------------------------
@@ -58,7 +67,11 @@ public:
 
 	/// @brief Gets the default script engine.
 	/// @return The default script engine, or nullptr if no default engine is set or registered.
-	[[a::inline]] std::shared_ptr<IScriptEngine> getDefaultScriptEngine() const;
+	[[a::inline]] std::shared_ptr<IScriptEngine> getDefaultScriptEngineClient() const;
+
+	/// @brief Gets the default script engine.
+	/// @return The default script engine, or nullptr if no default engine is set or registered.
+	[[a::inline]] std::shared_ptr<IScriptEngine> getDefaultScriptEngineServer() const;
 
 	/// @brief Gets the execution profiles of the scripts over the last second.
 	/// @param count The maximum number of execution profiles to retrieve. Defaults to 50.
@@ -66,10 +79,8 @@ public:
 	std::vector<std::tuple<precise_clock::duration, size_t, std::string_view>> getExecutionProfiles(size_t count = 50) const;
 
 public:
-	std::string defaultScriptEngine = "gs1";
-
-private:
-	CompiledScriptResultPtr getCompiledScript(IScriptEngine* engine, std::string_view who, std::string_view source);
+	std::string defaultScriptEngineClient = "gs1";
+	std::string defaultScriptEngineServer = "gs1";
 
 private:
 	string_map<std::shared_ptr<IScriptEngine>> m_script_engines;
@@ -78,9 +89,14 @@ private:
 
 //----------------------------
 
-inline std::shared_ptr<IScriptEngine> ScriptSystem::getDefaultScriptEngine() const
+inline std::shared_ptr<IScriptEngine> ScriptSystem::getDefaultScriptEngineClient() const
 {
-	return getScriptEngine(defaultScriptEngine);
+	return getScriptEngine(defaultScriptEngineClient);
+}
+
+inline std::shared_ptr<IScriptEngine> ScriptSystem::getDefaultScriptEngineServer() const
+{
+	return getScriptEngine(defaultScriptEngineServer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

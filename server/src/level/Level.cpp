@@ -1471,7 +1471,8 @@ void Level::sendNPCToPlayer(const std::shared_ptr<NPC>& npc, const std::shared_p
 	if (const auto packet = npc->getAllPropsPacket(time); !packet.isEmpty())
 	{
 		player->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)npc->id << packet);
-		if (player->getVersion() >= CLVER_4_0211 && !npc->getScript().getClientByteCode().empty())
+
+		if (m_server->Generation == ServerGeneration::MODERN && !npc->getScript().getClientByteCode().empty())
 		{
 			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->id;
 			byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode().data()), static_cast<int>(npc->getScript().getClientByteCode().size()));
