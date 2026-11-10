@@ -18,6 +18,7 @@
 	  "name": "wolfssl",
 	  "version>=": "5.8.0"
 	},
-	"zlib"
+	"zlib",
+	"gs2compiler"
   ]
 }
