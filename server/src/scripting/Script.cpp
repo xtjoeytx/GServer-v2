@@ -367,14 +367,18 @@ std::string Script::minify(const std::string& src) noexcept
 	std::string minified;
 	std::string_view srcView{src};
 
-	const auto server = BabyDI::Get<Server>();
+	// If we have an NPC-Server, then skip the serverside code.
+	// We won't minify the code so that script errors have correct line numbers.
+	if (const auto server = BabyDI::Get<Server>(); server && server->hasNPCServer())
+	{
+		// No clientside?  Just return the whole script.
+		const auto clientsidePos = srcView.find(clientSideTerminator);
+		if (clientsidePos == std::string_view::npos)
+			return src;
 
-	// We don't want to trim serverside code so check if we have any.
-	bool hasServerSide = true;
-	if (server && !server->hasNPCServer())
-		hasServerSide = false;
-
-	bool inServerSide = true;
+		minified = srcView.substr(0, clientsidePos);
+		srcView.remove_prefix(clientsidePos);
+	}
 
 	// Trim the lines.
 	while (!srcView.empty())
@@ -402,11 +406,6 @@ std::string Script::minify(const std::string& src) noexcept
 				line = line.substr(0, comment);
 				newline = comment;
 			}
-			else if (line.find(clientSideTerminator) != std::string_view::npos)
-			{
-				// If we have a clientside terminator, we are now in clientside code.
-				inServerSide = false;
-			}
 		}
 
 		// Check if a multi-line comment starts in this line.
@@ -422,8 +421,7 @@ std::string Script::minify(const std::string& src) noexcept
 		}
 
 		// Trim the line.
-		if (!hasServerSide || !inServerSide)
-			line = string::trim(line);
+		line = string::trim(line);
 
 		// Append the line to minified.
 		if (!line.empty())
