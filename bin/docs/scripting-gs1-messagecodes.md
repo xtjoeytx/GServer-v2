@@ -277,8 +277,8 @@ The player's account level.
 
 `index` targets the player in the `players[]` array.
 
-| Levels |
-| ------ |
+| Levels  |
+|---------|
 | Trial   |
 | Classic |
 | Gold    |

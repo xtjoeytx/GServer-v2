@@ -112,11 +112,11 @@ namespace
 {
 CString overrideServer;
 CString overridePort;
-CString overrideServerIp = nullptr;
-CString overrideLocalIp = nullptr;
-CString overrideServerInterface = nullptr;
-CString overrideName = nullptr;
-CString overrideStaff = nullptr;
+CString overrideServerIp;
+CString overrideLocalIp;
+CString overrideServerInterface;
+CString overrideName;
+CString overrideStaff;
 }
 
 std::atomic_bool shutdownProgram{false};
@@ -335,17 +335,17 @@ bool parseArgs(const int argc, char* argv[])
 
 					if (key == "server")
 						overrideServer = *i;
-					else if (key == "port" && !overrideServer.isEmpty())
+					else if (key == "port" && overrideServer.isEmpty())
 						overridePort = *i;
-					else if (key == "localip" && !overrideServer.isEmpty())
+					else if (key == "localip" && overrideServer.isEmpty())
 						overrideLocalIp = *i;
-					else if (key == "serverip" && !overrideServer.isEmpty())
+					else if (key == "serverip" && overrideServer.isEmpty())
 						overrideServerIp = *i;
-					else if (key == "interface" && !overrideServer.isEmpty())
+					else if (key == "interface" && overrideServer.isEmpty())
 						overrideServerInterface = *i;
-					else if (key == "staff" && !overrideServer.isEmpty())
+					else if (key == "staff" && overrideServer.isEmpty())
 						overrideStaff = *i;
-					else if (key == "name" && !overrideServer.isEmpty())
+					else if (key == "name" && overrideServer.isEmpty())
 						overrideName = *i;
 				}
 			}
@@ -379,22 +379,22 @@ bool parseArgs(const int argc, char* argv[])
 		if (getenv("SERVER"))
 			overrideServer = getenv("SERVER");
 
-		if (getenv("PORT") && !overrideServer.isEmpty())
+		if (getenv("PORT") && overrideServer.isEmpty())
 			overridePort = getenv("PORT");
 
-		if (getenv("LOCALIP") && !overrideServer.isEmpty())
+		if (getenv("LOCALIP") && overrideServer.isEmpty())
 			overrideLocalIp = getenv("LOCALIP");
 
-		if (getenv("SERVERIP") && !overrideServer.isEmpty())
+		if (getenv("SERVERIP") && overrideServer.isEmpty())
 			overrideServerIp = getenv("SERVERIP");
 
-		if (getenv("INTERFACE") && !overrideServer.isEmpty())
+		if (getenv("INTERFACE") && overrideServer.isEmpty())
 			overrideServerInterface = getenv("INTERFACE");
 
-		if (getenv("STAFFACCOUNT") && !overrideServer.isEmpty())
+		if (getenv("STAFFACCOUNT") && overrideServer.isEmpty())
 			overrideStaff = getenv("STAFFACCOUNT");
 
-		if (getenv("SERVERNAME") && !overrideServer.isEmpty())
+		if (getenv("SERVERNAME") && overrideServer.isEmpty())
 			overrideName = getenv("SERVERNAME");
 	}
 

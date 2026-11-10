@@ -200,9 +200,9 @@ Diagonals are biased to looking up (0) and down (2).
 | (-1, 0) left     | 1      |
 | ( 0, 1) down     | 2      |
 | ( 1, 0) right    | 3      |
-| ( 0.5,  0.5) SE  | 2      |
 | ( 0.5, -0.5) NE  | 0      |
 | (-0.5, -0.5) NW  | 0      |
+| ( 0.5,  0.5) SE  | 2      |
 | (-0.5,  0.5) SW  | 2      |
 | ( 0.5,  0.4) SWW | 3      |
 
@@ -386,16 +386,6 @@ Returns true if the NPC has arrows greater than or equal to the specified value.
 > official serverside: ❌<br>
 
 Returns true if the NPC has gralats greater than or equal to the specified value.
-
----
-## hasright
-
-> removed: beta 6<br>
-> scope: 🧑 clientside<br>
-> gs2emu serverside: ✅<br>
-> official serverside: ❌<br>
-
-Returns true if the NPC has bombs greater than or equal to the specified value.
 
 ---
 ## hasright
@@ -600,8 +590,8 @@ Returns `-1` if not found.
 setstring test, Testing;
 addstring test, More;
 addstring test, Stuff;
-isFound = lindexof(#s(test), More);   // 1
-isNotFound = lindexof(#s(test), Hey); // -1
+isFound = lindexof(More, test);   // 1
+isNotFound = lindexof(Hey, test); // -1
 ```
 
 ---

@@ -279,20 +279,20 @@ public:
 	void resetToInitialState();
 
 public:
-	bool warp(const LevelPtr& level, const PixelPosition& position);
-	void setLevel(const LevelPtr& level);
+	bool warp(const LevelPtr& destinationLevel, std::optional<PixelPosition> position = std::nullopt);
+	void setLevel(const LevelPtr& newLevel);
 	void addShowImg(uint8_t index, ShowImg&& showImg);
-	CString getShowImagesPacket(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendShowImagesToPlayer(const PlayerPtr& player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendAllShowImagesToLevel(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
+	CString getShowImagesPacket(std::optional<clock::time_point> fromWhen = std::nullopt) const noexcept;
+	void sendShowImagesToPlayer(const PlayerPtr& player, std::optional<clock::time_point> fromWhen = std::nullopt) const noexcept;
+	void sendAllShowImagesToLevel(std::optional<clock::time_point> fromWhen = std::nullopt) const noexcept;
 	void addMoveToQueue(const LocalPixelPosition& moveDelta, float durationInSeconds, uint8_t options);
 	void processMoveQueue(std::chrono::milliseconds deltaTime);
-	std::pair<CString, CString> getMoveQueuePacketData(std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendMoveQueueToPlayer(const PlayerPtr& player, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendMoveQueueToLevel(const LevelPtr& level, std::optional<clock::time_point> modTime = std::nullopt) const noexcept;
-	void sendMoveQueueToLevel(const LevelPtr& level, const std::pair<CString, CString>& queue) const noexcept;
-	void sendMoveQueueUpdatesToLevel(const LevelPtr& level) const noexcept;
-	void refreshModTimes(clock::time_point modTime) noexcept;
+	std::pair<CString, CString> getMoveQueuePacketData(std::optional<clock::time_point> fromWhen = std::nullopt) const noexcept;
+	void sendMoveQueueToPlayer(const PlayerPtr& player, std::optional<clock::time_point> fromWhen = std::nullopt) const noexcept;
+	void sendMoveQueueToLevel(const LevelPtr& targetLevel, std::optional<clock::time_point> fromWhen = std::nullopt) const noexcept;
+	void sendMoveQueueToLevel(const LevelPtr& targetLevel, const std::pair<CString, CString>& queue) const noexcept;
+	void sendMoveQueueUpdatesToLevel(const LevelPtr& targetLevel) const noexcept;
+	void refreshModTimes(clock::time_point fromWhen) noexcept;
 
 public:
 	void hurt(int8_t damageInHalves, std::optional<ScriptEventType> damageEventType = std::nullopt, const std::optional<ScriptObject>& source = std::nullopt, std::optional<CarryObjectType> hitByType = std::nullopt);
@@ -303,11 +303,13 @@ public:
 	[[a::inline]] bool isCharacter() const noexcept;
 	[[a::inline]] bool hasShape() const noexcept;
 	[[a::inline]] bool hasImage() const noexcept;
-	[[a::inline]] bool isBlocking() const noexcept;
 	[[a::inline]] bool isCreated() const noexcept;
+	[[a::inline]] bool isBlocking() const noexcept;
+	[[a::inline]] bool isVisible() const noexcept;
 	[[a::inline]] Dimension<uint16_t> getComputedShape() const noexcept;
 	[[a::inline]] PixelRectangleArea getBoundingBox() const noexcept;
 	[[a::inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
+	[[a::inline]] PixelRectangleArea getEventBoundingBox() const noexcept;
 	[[a::inline]] PixelPosition getGlobalPosition() const noexcept;
 	[[a::inline]] LocalPixelPosition getLocalPosition() const noexcept;
 	[[a::inline]] TilePosition getTilePosition() const noexcept;
@@ -329,7 +331,7 @@ public:
 	void setJoinedClasses(std::string_view classes);
 	void joinClass(std::string_view className);
 	void leaveClass(std::string_view className);
-	void sendScriptUpdatesToLevel(clock::time_point when) const;
+	void sendScriptUpdatesToLevel(clock::time_point fromWhen) const;
 	void constructScriptParameters();
 	string_map<GameVariable> scriptParameters;
 
@@ -434,6 +436,7 @@ public:
 public:
 	const NPCID id;
 	const NPCStorageType storageType;
+	std::optional<size_t> indexInLevelFile;
 	std::string level;
 	std::string groupName;
 	std::string name;
@@ -460,16 +463,22 @@ public:
 	std::deque<NPCMove> moveQueue;
 	clock::time_point lastMoveQueueSentTime;
 
+	// If true, we will not process timeouts on the NPC server.
+	// We will still handle other events, though.
+	bool sleeping = false;
+
 private:
 	Server* m_server;
 
 	std::array<std::optional<clock::time_point>, NPCPROP_COUNT> m_savedModTime;
+	bool m_warping = false;
 	bool m_blockPositionUpdates = false;
 	mutable bool m_hadShowImgs = false;
 
 	Script m_script;
 	mutable std::vector<std::pair<EventHandle, std::weak_ptr<ScriptClass>>> m_joinedClasses;
 
+	std::optional<size_t> m_initialIndexInLevelFile;
 	std::string m_initialLevel;
 	std::weak_ptr<Level> m_currentLevel;
 	Position<uint8_t> m_initialMapPosition;
@@ -502,14 +511,19 @@ inline bool NPC::hasImage() const noexcept
 	return !image.empty() && image != "-";
 }
 
+inline bool NPC::isCreated() const noexcept
+{
+	return (visFlags & ENUM(NPCVisFlags::CREATED)) != 0;
+}
+
 inline bool NPC::isBlocking() const noexcept
 {
 	return !(blockFlags & ENUM(NPCBlockFlags::NOBLOCK));
 }
 
-inline bool NPC::isCreated() const noexcept
+inline bool NPC::isVisible() const noexcept
 {
-	return (visFlags & ENUM(NPCVisFlags::CREATED)) != 0;
+	return (visFlags & ENUM(NPCVisFlags::VISIBLE)) != 0;
 }
 
 inline std::generator<std::shared_ptr<ScriptClass>> NPC::getJoinedClasses() const
@@ -536,14 +550,15 @@ inline bool NPC::wasPropModified(const NPCProp prop) const noexcept
 
 inline void NPC::recordInitialState()
 {
+	m_initialIndexInLevelFile = indexInLevelFile;
 	m_initialLevel = level;
 	m_initialCharacter = character;
 }
 
 inline Dimension<uint16_t> NPC::getComputedShape() const noexcept
 {
-	// Unless overridden, characters have a shape of 3 tiles in all directions.
-	if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
+	// Characters have a shape of 3 tiles in all directions.
+	if (isCharacter()) // && (shape.width() == 0 || shape.height() == 0))
 		return {48, 48, 48};
 
 	return shape;
@@ -556,13 +571,27 @@ inline PixelRectangleArea NPC::getBoundingBox() const noexcept
 
 inline PixelRectangleArea NPC::getCollisionBoundingBox() const noexcept
 {
-	// If the NPC has the NOBLOCK flag, it has no collision bounding box.
-	if (!isBlocking())
+	// If the NPC is invisible or has the NOBLOCK flag, it has no collision bounding box.
+	if (!isVisible() || !isBlocking())
 		return {{std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::min(), 0}, {0, 0, 0}};
 
 	// Character NPCs have a specific bounding box.
 	// It is a 2x2 square centered on the character's feet, with a height of 3 tiles.
-	if (isCharacter() && (shape.width() == 0 || shape.height() == 0))
+	if (isCharacter())
+		return {getGlobalPosition().translate(8, 16), {32, 32, 48}};
+
+	return {getGlobalPosition(), shape};
+}
+
+inline PixelRectangleArea NPC::getEventBoundingBox() const noexcept
+{
+	// If the NPC is invisible, it doesn't get events.
+	if (!isVisible())
+		return {{std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::min(), 0}, {0, 0, 0}};
+
+	// Character NPCs have a specific bounding box.
+	// It is a 2x2 square centered on the character's feet, with a height of 3 tiles.
+	if (isCharacter())
 		return {getGlobalPosition().translate(8, 16), {32, 32, 48}};
 
 	return {getGlobalPosition(), shape};

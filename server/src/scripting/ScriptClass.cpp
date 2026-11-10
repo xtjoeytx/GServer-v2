@@ -8,6 +8,7 @@
 
 #include <CString.h>
 #include <IEnums.h>
+#include <IUtil.h>
 
 #include <scripting/ScriptClass.h>
 #include <utilities/StringUtils.h>
@@ -62,15 +63,18 @@ ScriptClass& ScriptClass::setScript(std::string_view classScript)
 	return *this;
 }
 
-// -- Function: Get Player Packet -- //
-CString ScriptClass::getClassPacket() const
+CString ScriptClass::getClassPacket(const int clientVersion) const
 {
 	if (const auto& bytecode = m_script.getClientByteCode(); !bytecode.empty())
 	{
 		const auto bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
 		const std::string_view bytecodeView(bytecodePtr, bytecode.size());
 
-		return CString() >> (char)PLO_LOADSCRIPT >> (char)m_header.length() << m_header << bytecodeView;
+		if (clientVersion >= CLVER_5_07)
+			return CString() >> (char)PLO_LOADSCRIPT >> (char)m_header.length() << m_header << bytecodeView;
+
+		// v4
+		return CString() >> (char)PLO_CLASSBYTECODE >> (char)name.length() << name << bytecodeView;
 	}
 
 	return {};

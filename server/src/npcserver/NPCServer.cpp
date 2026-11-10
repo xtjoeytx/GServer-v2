@@ -57,7 +57,9 @@ void NPCServer::initialize()
 	const auto& settings = m_server->getSettings();
 
 	// Default script engine.
-	scripting.defaultScriptEngine = settings.get<std::string>("default_scriptengine").value_or(std::string{gs1::ScriptEngineGS1::EngineName});
+	auto defaultScriptEngine = settings.get<std::string>("default_scriptengine").value_or(std::string{gs1::ScriptEngineGS1::EngineName});
+	scripting.defaultScriptEngineClient = settings.get<std::string>("default_scriptengine_client").value_or(defaultScriptEngine);
+	scripting.defaultScriptEngineServer = settings.get<std::string>("default_scriptengine_server").value_or(defaultScriptEngine);
 
 	// NC options.
 	m_ncHost = string::toLower(m_server->getAdminSettings().get<std::string>("ns_ip").value_or("auto"s));
@@ -162,6 +164,10 @@ void NPCServer::run(const TimeoutGenerator::time_delta delta)
 		{
 			npc->recordCurrentPropModTime();
 
+			// Sleeping NPCs won't process timeouts.
+			if (npc->sleeping)
+				continue;
+
 			// TODO(refactor): Replace with TimeoutGenerator.
 			if (npc->timeout.count() != 0)
 			{
@@ -197,10 +203,12 @@ void NPCServer::run(const TimeoutGenerator::time_delta delta)
 	// Run all NPC scripts.
 	for (auto& [id, npc] : m_server->getNPCList())
 	{
-		// Process movement.
-		npc->processMoveQueue(delta);
+		// Process movement if the NPC is not sleeping.
+		if (!npc->sleeping)
+			npc->processMoveQueue(delta);
 
 		// Process scripts.
+		// We do these even if the NPC is sleeping.
 		npc->executeEvents(npc->scripting.events, source::FromNPC(id));
 	}
 
@@ -318,6 +326,16 @@ void NPCServer::saveNPCs()
 			m_server->getNPCLoader().saveNPC(npc);
 		}
 	}
+}
+
+void NPCServer::saveNPC(const NPCID id)
+{
+	const auto npcIter = m_globalNPCList.find(id);
+	if (npcIter == m_globalNPCList.end())
+		return;
+
+	if (const auto npc = npcIter->second.lock(); npc != nullptr)
+		m_server->getNPCLoader().saveNPC(npc);
 }
 
 //////////////////////////////////////////////////////////////////////////////

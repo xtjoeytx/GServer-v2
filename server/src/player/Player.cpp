@@ -97,7 +97,7 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_ITEMDEL)                \
 		DO(PLO_NPCMOVED)               \
 		DO(PLO_SIGNATURE)              \
-		DO(PLO_NPCACTION)              \
+		DO(PLO_NPCSETSCRIPT)           \
 		DO(PLO_BADDYHURT)              \
 		DO(PLO_FLAGSET)                \
 		DO(PLO_NPCDEL)                 \
@@ -131,7 +131,7 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_RC_ACCOUNTPROPSGET)     \
 		DO(PLO_RC_ACCOUNTCHANGE)       \
 		DO(PLO_RC_PLAYERPROPSCHANGE)   \
-		DO(PLO_UNKNOWN60)              \
+		DO(PLO_UNHANDLED60)            \
 		DO(PLO_RC_SERVERFLAGSGET)      \
 		DO(PLO_RC_PLAYERRIGHTSGET)     \
 		DO(PLO_RC_PLAYERCOMMENTSGET)   \
@@ -152,26 +152,26 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_NC_CONTROL)             \
 		DO(PLO_NPCSERVERADDR)          \
 		DO(PLO_NC_LEVELLIST)           \
-		DO(PLO_UNKNOWN81)              \
+		DO(PLO_UNHANDLED81)            \
 		DO(PLO_SERVERTEXT)             \
-		DO(PLO_UNKNOWN83)              \
+		DO(PLO_UNHANDLED83)            \
 		DO(PLO_LARGEFILESIZE)          \
 		DO(PLO_RAWDATA)                \
 		DO(PLO_BOARDPACKET)            \
 		DO(PLO_FILE)                   \
 		DO(PLO_RC_MAXUPLOADFILESIZE)   \
-		DO(PLO_UNKNOWN104)             \
+		DO(PLO_FILEDECRYPTKEY)         \
 		DO(PLO_UPDATEPACKAGESIZE)      \
 		DO(PLO_UPDATEPACKAGEDONE)      \
 		DO(PLO_BOARDLAYER)             \
-		DO(PLO_UNKNOWN109)             \
+		DO(PLO_HTTPDOWNLOAD)           \
 		DO(PLO_SETNETCOOKIE)           \
-		DO(PLO_UNKNOWN124)             \
+		DO(PLO_RC_UNKNOWN124)          \
 		DO(PLO_NPCBYTECODE)            \
-		DO(PLO_UNKNOWN132)             \
-		DO(PLO_UNKNOWN133)             \
+		DO(PLO_WEAPONBYTECODE)         \
+		DO(PLO_CLASSBYTECODE)          \
 		DO(PLO_GANISCRIPT)             \
-		DO(PLO_NPCWEAPONSCRIPT)        \
+		DO(PLO_WEAPONBYTECODE2)        \
 		DO(PLO_NPCDEL2)                \
 		DO(PLO_HIDENPCS)               \
 		DO(PLO_SAY2)                   \
@@ -189,7 +189,7 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_MOVE)                   \
 		DO(PLO_SHOWIMGNPC)             \
 		DO(PLO_NC_WEAPONLISTGET)       \
-		DO(PLO_UNKNOWN168)             \
+		DO(PLO_ONLINEMODE)             \
 		DO(PLO_UPGRADEURL)             \
 		DO(PLO_GHOSTMODE)              \
 		DO(PLO_BIGMAP)                 \
@@ -202,7 +202,7 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_SERVERWARP)             \
 		DO(PLO_RPGWINDOW)              \
 		DO(PLO_STATUSLIST)             \
-		DO(PLO_UNKNOWN181)             \
+		DO(PLO_PLAYERNOUDP)            \
 		DO(PLO_LISTPROCESSES)          \
 		DO(PLO_HASPROCESSRUNNING)      \
 		DO(PLO_TAKESCREENSHOT)         \
@@ -214,8 +214,8 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_SERVERLISTCONNECTED)    \
 		DO(PLO_SHOOT2)                 \
 		DO(PLO_NC_WEAPONGET)           \
-		DO(PLO_UNKNOWN193)             \
-		DO(PLO_CLEARWEAPONS)           \
+		DO(PLO_WEAPONHASH)             \
+		DO(PLO_RESETCLIENT)            \
 		DO(PLO_LOADGANI)               \
 		DO(PLO_LOADSCRIPT)             \
 		DO(PLO_SERVEROPTIONS)          \
@@ -760,7 +760,7 @@ bool Player::sendLogin()
 			sendPacket(CString() >> (char)PLO_HASNPCSERVER);
 
 		// This seems to inform the client that they have logged in.
-		sendPacket(CString() >> (char)PLO_UNKNOWN168);
+		sendPacket(CString() >> (char)PLO_ONLINEMODE);
 	}
 
 	// Tell the serverlist the player is logged in.
@@ -1041,7 +1041,7 @@ void Player::synchronizeFlags(const std::vector<std::string>& flagPairs)
 				value->assign<bool>(true);
 				sendPacket(CString() >> (char)PLO_FLAGSET << search->first);
 			}
-			else if (!value->value.has<std::string>() || search->second != value->get<std::string>().value().get())
+			else if (!search->second.empty() && (!value->value.has<std::string>() || search->second != value->get<std::string>().value().get()))
 			{
 				value->value.unassign<bool>();
 				value->assign(search->second);
@@ -1351,7 +1351,7 @@ void Player::constructScriptParameters()
 			if (m_server->hasNPCServer())
 			{
 				const auto npcServer = m_server->getNPCServer();
-				if (const auto engine = npcServer->scripting.getDefaultScriptEngine(); engine != nullptr)
+				if (const auto engine = npcServer->scripting.getDefaultScriptEngineClient(); engine != nullptr)
 				{
 					// Retrieve up to the first space.
 					auto line = string::retrieveLine(std::string_view{ account.character.chatMessage }, ' ');
@@ -1390,24 +1390,6 @@ void Player::constructScriptParameters()
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "swordpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), .value = std::ref(account.character.swordPower)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "shieldpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), .value = std::ref(account.character.shieldPower)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "shootpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.bowPower)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#1"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), .value = std::ref(account.character.swordImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#2"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), .value = std::ref(account.character.shieldImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#3"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HEADIMAGE)]), .value = std::ref(account.character.headImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#5"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HORSEIMAGE)]), .value = std::ref(account.character.horseImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#7"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.bowImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#8"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::BODYIMAGE)]), .value = std::ref(account.character.bodyImage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#c"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::MESSAGE)]), .value = std::ref(account.character.chatMessage)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#m"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.gani)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#n"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::NICKNAME)]), .value = std::ref(account.character.nickName)});
-
-	// colors
-	const size_t colorCount = m_server->isNewWorldMode() ? 8 : 5;
-	for (size_t i = 0; i < colorCount; ++i)
-		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = colorPropertyNames[i], .modTime = std::ref(modTime[PROPID(PlayerProp::COLORS)]), .value = std::ref(account.character.colors[i])});
-
-	// gani attributes
-	for (size_t i = 0; i < 30; ++i)
-		bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = ganiAttributePropertyNames[i], .modTime = std::ref(modTime[GaniAttributePropList[i]]), .value = std::ref(account.character.ganiAttributes[i])});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
 		.name = "x"sv,
@@ -1591,6 +1573,78 @@ void Player::constructScriptParameters()
 
 	// GR extensions.
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "carrysprite"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::CARRYSPRITE)]), .value = std::ref(m_carrySprite)});
+
+	// player* variants.
+	const auto paramsToCopy = scriptParameters
+		| std::views::filter([](const decltype(scriptParameters)::value_type& pair){ return !pair.first.starts_with('#'); })
+		| std::views::transform([](decltype(scriptParameters)::value_type& pair) { return &pair.second; })
+		| std::ranges::to<std::vector<GameVariable*>>();
+	for (auto* variable : paramsToCopy)
+	{
+		if (variable == nullptr || variable->name.starts_with('#'))
+			continue;
+
+		// Hide the variables we are aliasing.
+		variable->visibility = variables::Visibility::HIDDEN_PROPERTY;
+
+		GameVariable var{.name = std::format("player{}", variable->name), .lifetime = variables::Lifetime::TEMPORARY};
+		var.source = source::FromPlayer(m_id);
+		var.setters = variable->setters;
+		var.getters = variable->getters;
+		scriptParameters.emplace(var.name, std::move(var));
+	}
+
+	// message codes
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#1"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), .value = std::ref(account.character.swordImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#2"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), .value = std::ref(account.character.shieldImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#3"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HEADIMAGE)]), .value = std::ref(account.character.headImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#5"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::HORSEIMAGE)]), .value = std::ref(account.character.horseImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#7"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.bowImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#8"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::BODYIMAGE)]), .value = std::ref(account.character.bodyImage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#c"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::MESSAGE)]), .value = std::ref(account.character.chatMessage)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#m"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.gani)});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = "#n"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::NICKNAME)]), .value = std::ref(account.character.nickName)});
+
+	// colors
+	const size_t colorCount = m_server->isNewWorldMode() ? 8 : 5;
+	for (size_t i = 0; i < colorCount; ++i)
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = colorPropertyNames[i], .modTime = std::ref(modTime[PROPID(PlayerProp::COLORS)]), .value = std::ref(account.character.colors[i])});
+
+	// gani attributes
+	for (size_t i = 0; i < 30; ++i)
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::StringProperty{.name = ganiAttributePropertyNames[i], .modTime = std::ref(modTime[GaniAttributePropList[i]]), .value = std::ref(account.character.ganiAttributes[i])});
+
+	// weaponscount
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		.name = "weaponscount"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter { return static_cast<double>(account.weapons.size()); }
+	});
+
+	// levelorgx / levelorgy
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		.name = "levelorgx"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter
+		{
+			if (m_attachNPC != 0)
+			{
+				if (const auto npc = m_server->getNPC(getAttachedNPC()); npc != nullptr)
+					return -npc->character.getGlobalPosition().x() / 16.0;
+			}
+			return 0.0;
+		}
+	});
+	bind::bindPropertyAsReadOnly(scriptParameters, bind::ManuallyDefinedProperty<double>{
+		.name = "levelorgy"sv,
+		.getter = [this](std::optional<size_t>) -> GameValueVariantForGetter
+		{
+			if (m_attachNPC != 0)
+			{
+				if (const auto npc = m_server->getNPC(getAttachedNPC()); npc != nullptr)
+					return -npc->character.getGlobalPosition().y() / 16.0;
+			}
+			return 0.0;
+		}
+	});
 
 	// clang-format on
 }

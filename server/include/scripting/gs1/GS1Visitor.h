@@ -75,6 +75,7 @@ public:
 	bool expectingFlag = false;
 	bool expectingTimeoutAsVariable = false;
 	bool reparsingStringExpression = false;
+	bool findHiddenProperties = false;
 	std::string who;
 
 public:
@@ -134,8 +135,8 @@ public:
 	std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<StaticLevelData>> findCurrentLevelData() const;
 
 public:
-	GameVariable* getGameVariableFromSource(const ScriptObject& source, std::string_view identifier) const;
-	GameVariable* getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt) const;
+	GameVariable* getGameVariableFromSourceProperty(const ScriptObject& source, std::string_view identifier, bool allowHidden = false) const;
+	GameVariable* getGameVariableFromStorage(std::string_view identifier, std::optional<size_t> type = std::nullopt, bool allowHidden = false) const;
 
 public:
 	GameValue translateSourceText(antlr4::tree::ParseTree* node, std::string_view language);
@@ -153,7 +154,8 @@ protected:
 	GS1Parser* m_parser = nullptr;
 	const ScriptEvent* m_event = nullptr;
 	ScriptObject m_originalSource;
-	GameVariableStore* m_serverStore = nullptr;
+	mutable GameVariableStore* m_serverStore = nullptr;
+	GameVariableStore* getServerStore() const;
 	std::deque<ScriptObject> m_currentSource;
 	std::deque<ScriptObject> m_sleepCurrentSource;
 	std::vector<std::pair<antlr4::tree::ParseTree*, size_t>> m_callStack;
@@ -162,7 +164,6 @@ protected:
 protected:
 	std::any safeVisit(antlr4::tree::ParseTree* node);
 	std::any reparseExpression(std::string_view expression, std::string_view lexerMode, const std::function<antlr4::tree::ParseTree*(GS1Parser&)>& node);
-	void setCurrentPlayerVariables(const std::optional<ScriptObject>& source) const;
 
 public:
 	std::any visitProgram(GS1Parser::ProgramContext* ctx) override;
@@ -359,6 +360,11 @@ inline std::optional<T> GS1Visitor::getScriptValueAsCopy(const GS1ScriptValue& v
 		return gameVariable->getCopy<T>();
 	if (const auto gameValue = std::get_if<GameValue>(&value); gameValue != nullptr)
 		return gameValue->getCopy<T>();
+	if constexpr (std::same_as<ScriptObject, T>)
+	{
+		if (const auto scriptObject = std::get_if<ScriptObject>(&value); scriptObject != nullptr)
+			return *scriptObject;
+	}
 	return std::nullopt;
 }
 

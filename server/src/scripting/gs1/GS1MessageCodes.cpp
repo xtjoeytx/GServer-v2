@@ -177,23 +177,27 @@ GS1ScriptValue processMessageCode(GS1Visitor* visitor, antlr4::tree::ParseTree* 
 	std::vector<GS1ScriptValue*> arguments;
 	std::vector<std::any> keepAlive;
 
-	// Helper to package a value and keep it alive for the duration of the command execution.
-	auto makeValue = [&](std::any&& anyValue)
-	{
-		if (!anyValue.has_value())
-			return;
-
-		keepAlive.emplace_back(std::move(anyValue));
-		auto* container = std::any_cast<GS1ScriptValue>(&keepAlive.back());
-		if (container == nullptr)
-			throw std::runtime_error("Message code argument is not a valid GS1ScriptValue");
-
-		arguments.push_back(container);
-	};
-
 	{
 		// Record if we are expecting a flag.
 		SetAndRestore<bool> expectingFlagGuard(visitor->expectingFlag, (std::ranges::find(flagProcessingMessageCodes, messageCode) != std::ranges::end(flagProcessingMessageCodes)));
+
+		// Helper to package a value and keep it alive for the duration of the command execution.
+		auto makeValue = [&](std::any&& anyValue)
+		{
+			if (!anyValue.has_value())
+				return;
+
+			keepAlive.emplace_back(std::move(anyValue));
+			auto* container = std::any_cast<GS1ScriptValue>(&keepAlive.back());
+			if (container == nullptr)
+				throw std::runtime_error("Message code argument is not a valid GS1ScriptValue");
+
+			// #I only needs a flag for the first argument.
+			if (visitor->expectingFlag)
+				visitor->expectingFlag = false;
+
+			arguments.push_back(container);
+		};
 
 		const auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
 
@@ -332,7 +336,11 @@ GS1ScriptValue mc_6(const GS1Visitor* visitor, const std::string_view messageCod
 	if (arguments.size() == 1)
 		index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 
-	auto result = getPlayerOrNPCFromSource(visitor->getCurrentSource(), index);
+	ScriptObject source = visitor->getCurrentSource();
+	if (const auto player = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); player.has_value())
+		source = player.value();
+
+	auto result = getPlayerOrNPCFromSource(source, index);
 	if (!result.has_value())
 		return makeGS1ScriptValue(std::string{});
 
@@ -366,8 +374,11 @@ GS1ScriptValue mc_a(const GS1Visitor* visitor, const std::string_view messageCod
 	if (arguments.size() == 1)
 		index = DoubleAsIntegralFloor<size_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 
-	if (const auto client = getPlayerClientFromSource(visitor->getCurrentSource(), index); client != nullptr)
-		return makeGS1ScriptValue(client->account.name);
+	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
+	{
+		if (const auto player = getPlayerFromSource(source.value(), index); player != nullptr)
+			return makeGS1ScriptValue(player->account.name);
+	}
 
 	return makeGS1ScriptValue(std::string{});
 }

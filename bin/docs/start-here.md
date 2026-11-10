@@ -44,6 +44,15 @@ If your server is set to `classic` mode, and you allow a 2.x client to connect, 
 Likewise, connecting to a `newmain` server with a 1.x client can also corrupt the packet stream.
 The properties between `classic` and `newmain` clients differ, so a mismatch will cause them to be read incorrectly.
 
+## Flags end with [!] in RC
+
+The old RC limits player and server flags to 223 characters.
+In the instance of a flag over 220 characters, the first 220 characters are written and a `[!]` indicator is appened to the end.
+This lets you know the flag was truncated.
+
+When you save the player or server flags, if the flag is over 220 characters, the first 220 characters are compared against the existing flag.
+If they are the same, the existing flag is not overwritten.
+
 # Further reading
 
 - [Server](server.md) - Learn about server generations, client versions, and other server options.

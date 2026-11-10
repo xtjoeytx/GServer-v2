@@ -696,8 +696,8 @@ struct PropertyHurtDxDy : public PropertyBase
 struct PropertyImagePart : public PropertyBase
 {
 	PropertyImagePart() = default;
-	PropertyImagePart(uint16_t x, uint16_t y, uint8_t width, uint8_t height)
-		: imagePart({ x, y }, { width, height }) {}
+	PropertyImagePart(const uint16_t x, const uint16_t y, const uint8_t width, const uint8_t height)
+		: imagePart({x, y}, {width, height}) {}
 	explicit PropertyImagePart(const ImagePartRectangle& imagePart) : imagePart(imagePart) {}
 	explicit PropertyImagePart(ImagePartRectangle&& imagePart) noexcept : imagePart(imagePart) {}
 

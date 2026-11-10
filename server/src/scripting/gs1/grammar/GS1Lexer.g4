@@ -738,14 +738,14 @@ void popNextMode(bool terminateEarly = false)
             case 'M':
             case 'S':
             {
-                emitIdentifierAfter(GS1Lexer::STRING, getText());
+                emitIdentifierAfter(GS1Lexer::START_STRING, getText());
                 setMode(shouldStartRawStringBrace() ? IN_PARAM_N : IN_PARAM_S);
                 break;
             }
-            case 'N': setMode(IN_PARAM_N); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
-            case 'U': setMode(IN_PARAM_U); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
-            case 'K': setMode(IN_PARAM_K); emitIdentifierAfter(GS1Lexer::STRING, getText()); break;
-            case 'X': setMode(IN_PARAM_X); emitIdentifierAfter(GS1Lexer::RAWMESSAGECODE, getText()); break;
+            case 'N': setMode(IN_PARAM_N); emitIdentifierAfter(GS1Lexer::START_STRING, getText()); break;
+            case 'U': setMode(IN_PARAM_U); emitIdentifierAfter(GS1Lexer::START_STRING, getText()); break;
+            case 'K': setMode(IN_PARAM_K); emitIdentifierAfter(GS1Lexer::START_STRING, getText()); break;
+            case 'X': setMode(IN_PARAM_X); emitIdentifierAfter(GS1Lexer::START_MESSAGECODE, getText()); break;
             case 'B': setMode(IN_PARAM_B); break;
             case 'I': setMode(IN_PARAM_I); break;
             case 'C': setMode(IN_PARAM_C); break;
@@ -766,7 +766,7 @@ std::deque<std::unique_ptr<antlr4::Token>> m_pendingTokensAfter{};
 }
 
 
-tokens { MESSAGECODE, RAWMESSAGECODE, STRING, BADDY, ITEM, COLOR, GENDER, CARRY, DIRECTION }
+tokens { MESSAGECODE, START_MESSAGECODE, STRING, START_STRING, BADDY, ITEM, COLOR, GENDER, CARRY, DIRECTION, MODE_COMMA }
 
 COMMAND
     : [a-zA-Z0-9]+[ ]?  { isRegisteredCommand(getText()) }?     { pushCommand(getPrototype(registeredCommands, getText())); }
@@ -1004,7 +1004,7 @@ PARAM_V_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?          { popNextM
 PARAM_V_POP_PAREN_LEFT  : TOKEN_PAREN_LEFT  { isNextArgLeftParen() }? { popNextMode(); popNextMode(); } -> type(TOKEN_PAREN_LEFT);
 PARAM_V_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }?         { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_V_POP_END         : END               { canCmdPop() }?          { popNextMode(true); } -> type(END);
-PARAM_V_POP_COMMA       : TOKEN_COMMA                                 { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_V_POP_COMMA       : TOKEN_COMMA                                 { popNextMode(); }     -> type(MODE_COMMA);
 PARAM_V_FUNCTION        : FUNCTION      { pushFunction(getPrototype(registeredFunctions, getText())); } -> type(FUNCTION);
 PARAM_V_MC_ESCAPE       : MC_ESCAPE     { setText("#"); }           -> type(IDENTIFIER);
 PARAM_V_MC_NOINDEX      : MC_NOINDEX                                -> type(MESSAGECODE);
@@ -1038,8 +1038,8 @@ PARAM_R_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
 PARAM_R_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { shouldCmdPop()  }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_R_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { shouldFuncPop() }?  { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_R_POP_END         : END               { canCmdPop() }?      { popNextMode(true); } -> type(END);
-PARAM_R_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }?    { popNextMode(); }     -> type(TOKEN_COMMA);
-PARAM_R_COMMA           : TOKEN_COMMA       { !canCommaPop() }?   -> type(TOKEN_COMMA);
+PARAM_R_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }?    { popNextMode(); }     -> type(MODE_COMMA);
+PARAM_R_COMMA           : TOKEN_COMMA       { !canCommaPop() }?   -> type(MODE_COMMA);
 PARAM_R_FUNCTION        : FUNCTION      { pushFunction(getPrototype(registeredFunctions, getText())); } -> type(FUNCTION);
 PARAM_R_LITERAL         : LITERAL       -> type(LITERAL);
 PARAM_R_IDENTIFIER      : IDENTIFIER    -> type(IDENTIFIER);
@@ -1082,7 +1082,7 @@ mode IN_PARAM_S;
 PARAM_S_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?   { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_S_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }?  { popNextMode(true); }   -> type(TOKEN_PAREN_RIGHT);
 PARAM_S_POP_END         : END               { canCmdPop() }?   { popNextMode(true); }   -> type(END);
-PARAM_S_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }? { popNextMode(); }       -> type(TOKEN_COMMA);
+PARAM_S_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }? { popNextMode(); }       -> type(MODE_COMMA);
 PARAM_S_MC_ESCAPE       : MC_ESCAPE     { setText("#"); }           -> type(STRING);
 PARAM_S_MC_NOINDEX      : MC_NOINDEX                                -> type(MESSAGECODE);
 PARAM_S_MC_SIMPLE       : MC_SIMPLE     { pushFunction("(R)"); }    -> type(MESSAGECODE);
@@ -1110,7 +1110,7 @@ mode IN_PARAM_M;
 PARAM_M_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?   { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_M_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }?  { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_M_POP_END         : END               { canCmdPop() }?   { popNextMode(true); } -> type(END);
-PARAM_M_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }? { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_M_POP_COMMA       : TOKEN_COMMA       { canCommaPop() }? { popNextMode(); }     -> type(MODE_COMMA);
 PARAM_M_STRING_LITERAL1 : ~[),]+        { canFuncPop() && canCommaPop()  }?  -> type(STRING);
 PARAM_M_STRING_LITERAL2 : ~[};,]+       { canCmdPop()  && canCommaPop()  }?  -> type(STRING);
 PARAM_M_STRING_LITERAL_END1 : ~[)]+     { canFuncPop() && !canCommaPop() }?  -> type(STRING);
@@ -1126,7 +1126,7 @@ PARAM_N_RAW_BRACE_CLOSE : TOKEN_BRACE_RIGHT { !shouldRawStringPop() }?          
 PARAM_N_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { shouldRawStringPop() && canCmdPop()   }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_N_POP_END         : END               { shouldRawStringPop() && canCmdPop()   }?  { popNextMode(true); }  -> type(END);
 PARAM_N_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { shouldRawStringPop() && canFuncPop()  }?  { popNextMode(true); }  -> type(TOKEN_PAREN_RIGHT);
-PARAM_N_POP_COMMA       : TOKEN_COMMA       { shouldRawStringPop() && canCommaPop() }?  { popNextMode(); }      -> type(TOKEN_COMMA);
+PARAM_N_POP_COMMA       : TOKEN_COMMA       { shouldRawStringPop() && canCommaPop() }?  { popNextMode(); }      -> type(MODE_COMMA);
 PARAM_N_END                 : END               { !shouldRawStringPop() }?  -> type(STRING);
 PARAM_N_TOKEN_PAREN_RIGHT   : TOKEN_PAREN_RIGHT { !shouldRawStringPop() }?  -> type(STRING);
 PARAM_N_TOKEN_COMMA         : TOKEN_COMMA       { !shouldRawStringPop() }?  -> type(STRING);
@@ -1143,7 +1143,7 @@ mode IN_PARAM_U;
 PARAM_U_POP_BRACE_RIGHT   : TOKEN_BRACE_RIGHT { shouldCmdPop() }?       { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_U_POP_PAREN_RIGHT   : TOKEN_PAREN_RIGHT { shouldFuncPop() }?      { popNextMode(true); }  -> type(TOKEN_PAREN_RIGHT);
 PARAM_U_POP_END           : END               { canCmdPop() }?          { popNextMode(true); }  -> type(END);
-PARAM_U_POP_COMMA         : TOKEN_COMMA       { canCommaPop() }?        { popNextMode(); }      -> type(TOKEN_COMMA);
+PARAM_U_POP_COMMA         : TOKEN_COMMA       { canCommaPop() }?        { popNextMode(); }      -> type(MODE_COMMA);
 PARAM_U_TOKEN_PAREN_LEFT  : TOKEN_PAREN_LEFT  { canFuncPop() }?                     { incParen(); } -> type(STRING);
 PARAM_U_TOKEN_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() && !shouldFuncPop() }? { decParen(); } -> type(STRING);
 PARAM_U_TOKEN_BRACE_LEFT  : TOKEN_BRACE_LEFT  { canCmdPop() }?                      { incParen(); } -> type(STRING);
@@ -1162,7 +1162,7 @@ mode IN_PARAM_K;
 PARAM_K_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_K_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_K_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
-PARAM_K_COMMA           : TOKEN_COMMA   { emitIdentifierAfter(GS1Lexer::STRING, getText()); } -> type(TOKEN_COMMA);
+PARAM_K_COMMA           : TOKEN_COMMA   { emitIdentifierAfter(GS1Lexer::START_STRING, getText()); } -> type(MODE_COMMA);
 PARAM_K_MC_ESCAPE       : MC_ESCAPE     { setText("#"); }           -> type(STRING);
 PARAM_K_MC_NOINDEX      : MC_NOINDEX                                -> type(MESSAGECODE);
 PARAM_K_MC_SIMPLE       : MC_SIMPLE     { pushFunction("(R)"); }    -> type(MESSAGECODE);
@@ -1190,7 +1190,7 @@ PARAM_X_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
 PARAM_X_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_X_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_X_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
-PARAM_X_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_X_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(MODE_COMMA);
 PARAM_X_MC_ESCAPE       : MC_ESCAPE                           { setText("#"); }      -> type(IDENTIFIER);
 PARAM_X_MC_NOINDEX      : MC_NOINDEX                                -> type(MESSAGECODE);
 PARAM_X_MC_SIMPLE       : MC_SIMPLE     { pushFunction("(R)"); }    -> type(MESSAGECODE);
@@ -1227,7 +1227,7 @@ PARAM_B_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
 PARAM_B_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_B_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_B_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
-PARAM_B_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_B_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(MODE_COMMA);
 PARAM_B_BADDY           : BADDY -> type(BADDY);
 
 // --------------------------------------------------------
@@ -1239,7 +1239,7 @@ PARAM_I_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
 PARAM_I_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_I_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_I_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
-PARAM_I_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_I_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(MODE_COMMA);
 PARAM_I_ITEM            : ITEMNAMES -> type(ITEM);
 
 // --------------------------------------------------------
@@ -1251,7 +1251,7 @@ PARAM_C_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
 PARAM_C_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_C_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_C_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
-PARAM_C_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_C_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(MODE_COMMA);
 PARAM_C_COLOR           : COLORS -> type(COLOR);
 
 // --------------------------------------------------------
@@ -1263,7 +1263,7 @@ PARAM_L_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
 PARAM_L_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_L_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_L_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
-PARAM_L_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_L_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(MODE_COMMA);
 PARAM_L_CARRY           : CARRYNAMES -> type(CARRY);
 
 // --------------------------------------------------------
@@ -1275,7 +1275,7 @@ PARAM_D_WS              : WHITESPACE+ -> type(WS), channel(HIDDEN);
 PARAM_D_POP_BRACE_RIGHT : TOKEN_BRACE_RIGHT { canCmdPop() }?  { popNextMode(true); emitIdentifierBefore(GS1Lexer::END, getText()); } -> type(TOKEN_BRACE_RIGHT);
 PARAM_D_POP_PAREN_RIGHT : TOKEN_PAREN_RIGHT { canFuncPop() }? { popNextMode(true); } -> type(TOKEN_PAREN_RIGHT);
 PARAM_D_POP_END         : END               { canCmdPop() }?  { popNextMode(true); } -> type(END);
-PARAM_D_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(TOKEN_COMMA);
+PARAM_D_POP_COMMA       : TOKEN_COMMA                         { popNextMode(); }     -> type(MODE_COMMA);
 PARAM_D_FUNCTION        : FUNCTION      { pushFunction(getPrototype(registeredFunctions, getText())); } -> type(FUNCTION);
 PARAM_D_DIR             : DIR           -> type(DIRECTION);
 PARAM_D_LITERAL         : LITERAL       -> type(LITERAL);

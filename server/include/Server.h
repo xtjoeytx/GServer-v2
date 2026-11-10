@@ -129,7 +129,6 @@ struct ExternalServerCachedSettings
 	SettingCache<uint32_t> eventDistance{"eventdistance", 64};
 	SettingCache<uint32_t> triggerDistance{"triggerdistance", 10};
 	SettingCache<bool> sendTriggerActionsToPlayers{"sendplayertriggers", true};
-	SettingCache<bool> enableFlagCropping{"cropflags", true};
 	SettingCache<bool> disableExplosions{"noexplosions", false};
 	SettingCache<bool> enableClientsidePushPull{"clientsidepushpull", true};
 	SettingCache<uint16_t> tileRespawnTime{"respawntime", 15};
@@ -138,6 +137,8 @@ struct ExternalServerCachedSettings
 	SettingCache<bool> enablePermanentTileChanges{"savelevels", false};
 	SettingCache<bool> saveTileChangesToLevelFile{"levelsautosave", false};
 	SettingCache<bool> dontAddServerFlags{"dontaddserverflags", false};
+	SettingCache<uint32_t> unloadInactiveLevelTime{"unloadinactiveleveltime", 600};
+	SettingCache<bool> saveNPCsOnLevelCache{"savenpcsonlevelcache", true};
 	// flag/triggerhacks
 	SettingCache<bool> enableFlaghackMovement{"flaghack_movement", true};
 	SettingCache<bool> enableTriggerhackExecscript{"triggerhack_execscript", false};
@@ -174,6 +175,7 @@ struct ExternalServerCachedSettings
 	std::array<SettingCache<uint16_t>, 5> apSystemThresholdSeconds{{{"aptime0", 30}, {"aptime1", 90}, {"aptime2", 300}, {"aptime3", 600}, {"aptime4", 1200}}};
 	SettingCache<std::vector<std::string>> playerProfileVariables{"profilevars", {"Kills:=playerkills", "Deaths:=playerdeaths", "Maxpower:=playerfullhearts", "Rating:=playerrating", "Alignment:=playerap", "Gralat:=playerrupees", "Swordpower:=playerswordpower", "Spin Attack:=canspin"}};
 	SettingCache<std::vector<std::string>> playerStatusList{"playerlisticons", {"Online", "Away", "DND", "Eating", "Hiding", "No PMs", "RPing", "Sparring", "PKing"}};
+	SettingCache<std::vector<std::string>> playerSwordGanis{"playerswordganis", {"sword"}};
 	// diagnostics
 	SettingCache<bool> warnOnMissingFiles{"warnonmissingfiles", false};
 	SettingCache<bool> warnOnLargeFiles{"warnonlargefiles", false};
@@ -448,8 +450,8 @@ public:
 	{
 		if (!hasNPCServer()) return;
 		if (level == nullptr) return;
-		const auto eventDistance = cached.eventDistance.getValue();
-		for (const auto npcid : level->findInRangeNPCsByDistance(position, eventDistance))
+		const auto eventDistance = cached.eventDistance.getValue() * Level::pixelsPerTile().width();
+		for (const auto npcid : level->findNPCsInRangeByDistance(position, eventDistance))
 		{
 			if (const auto npc = getNPC(npcid); npc)
 				npc->scripting.events.addEvent(type, source, std::forward<decltype(args)>(args)...);
@@ -507,7 +509,6 @@ private:
 	SettingCache<std::string> m_generationString{"generation", "classic"};
 	SettingCache<bool> m_classicStyleLogs{"classicstylelogs", false};
 	SettingCache<bool> m_newTilesets{"newtilesets", false};
-	SettingCache<uint32_t> m_unloadInactiveLevelTime{"unloadinactiveleveltime", 600};
 	SettingCache<std::vector<std::string>> m_newTilesetLevels{"newtilesetlevels", {}};
 	SettingCache<std::vector<std::string>> m_staffList{"staff"};
 	SettingCache<std::vector<std::string>> m_bushItemTypes{"bushitemtypes", {"greenrupee", "bluerupee", "heart", "bombs"}};

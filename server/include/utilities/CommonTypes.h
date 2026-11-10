@@ -282,7 +282,7 @@ inline clock::time_point toSystemClock(const std::filesystem::file_time_type& fi
 {
 #if __cpp_lib_chrono < 201907L
 	// Clang doesn't support clock_cast, so convert to UTC, then the system clock.
-	return std::chrono::file_clock::to_sys(fileTime));
+	return std::chrono::time_point_cast<clock::duration>(std::chrono::file_clock::to_sys(fileTime));
 #else
 	return std::chrono::clock_cast<clock>(fileTime);
 #endif
@@ -434,7 +434,7 @@ inline constexpr bool inList(C&& check, const std::array<T, N>& arr)
 //----------------------------
 // Tags
 
-//clang-format off
+// clang-format off
 struct inform_client_t { explicit inform_client_t() = default; };
 inline constexpr inform_client_t inform_client{};
 

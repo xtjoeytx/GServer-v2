@@ -484,6 +484,15 @@ enum class Lifetime
 	PERMANENT,
 };
 
+enum class Visibility
+{
+	/// @brief Normal visibility.
+	NORMAL,
+
+	/// @brief Hidden property.
+	HIDDEN_PROPERTY
+};
+
 } // namespace variables
 
 /// @brief A game variable with a name and a value.
@@ -504,6 +513,9 @@ public:
 
 	/// @brief The lifetime of the game variable.
 	std::optional<variables::Lifetime> lifetime;
+
+	/// @brief The visibility of the game variable.
+	variables::Visibility visibility = variables::Visibility::NORMAL;
 
 	/// @brief The source of the game variable, if it was created from a script object.
 	std::optional<ScriptObject> source;
@@ -668,7 +680,7 @@ inline std::optional<std::reference_wrapper<T>> GameVariable::get(std::optional<
 		{
 			// We did not get a direct reference, so store the index so we can properly set the value back later.
 			this->index = idx;
-			value.set(std::get<G>(variantValue));
+			value.set(std::move(std::get<G>(variantValue)));
 			result = value.get<G>();
 		}
 		else
@@ -1084,9 +1096,10 @@ concept HasConstructibleScriptParameters = requires(T t) {
 /// @tparam T The type of the source object, which must satisfy the HasScriptParameters concept.
 /// @param source The source object from which to get the script parameter.
 /// @param name The name of the script parameter to get.
+/// @param allowHidden If true, variables that aren't normal visibility are not found.
 /// @return A pointer to the script parameter, or nullptr if it does not exist.
 template<HasScriptParameters T>
-inline GameVariable* getScriptParameter(T& source, std::string_view name)
+inline GameVariable* getScriptParameter(T& source, std::string_view name, const bool allowHidden)
 {
 	if constexpr (HasConstructibleScriptParameters<T>)
 	{
@@ -1099,7 +1112,11 @@ inline GameVariable* getScriptParameter(T& source, std::string_view name)
 		return nullptr;
 
 	// Is there no better way than this?
-	return const_cast<GameVariable*>(&it->second);
+	const auto variable = const_cast<GameVariable*>(&it->second);
+	if (variable->visibility != variables::Visibility::NORMAL && !allowHidden)
+		return nullptr;
+
+	return variable;
 }
 
 ////////////////////////////////////////////////////////////
@@ -1196,7 +1213,7 @@ struct StringProperty
 	{
 		return [value = value](std::optional<int64_t> index) -> GameValueVariantForGetter
 		{
-			return value.get();
+			return std::ref(value.get());
 		};
 	}
 
@@ -1257,7 +1274,11 @@ struct IntegralProperty
 			{
 				if (const auto val = std::get_if<std::reference_wrapper<double>>(&incoming); val != nullptr)
 				{
-					value.get() = static_cast<T>(val->get());
+					if constexpr (std::signed_integral<T>)
+						value.get() = static_cast<T>(val->get());
+					else
+						value.get() = static_cast<T>(std::max(0.0, val->get()));
+
 					if (modTime.has_value())
 						modTime.value().get() = helpers::currentFrameTime();
 				}
@@ -1299,7 +1320,11 @@ struct DivideByIntegralProperty
 			{
 				if (const auto val = std::get_if<std::reference_wrapper<double>>(&incoming); val != nullptr)
 				{
-					value.get() = static_cast<T>(val->get() * factor);
+					if constexpr (std::signed_integral<T>)
+						value.get() = static_cast<T>(val->get() * factor);
+					else
+						value.get() = static_cast<T>(std::max(0.0, val->get()) * factor);
+
 					if (modTime.has_value())
 						modTime.value().get() = helpers::currentFrameTime();
 				}
@@ -1375,15 +1400,11 @@ struct IntegralArrayProperty
 		return [value = value](std::optional<int64_t> index) -> GameValueVariantForGetter
 		{
 			if (index.has_value() && inRange(index.value(), 0, static_cast<int64_t>(ArraySize)))
-			{
 				return static_cast<double>(value.get()[index.value()]);
-			}
-			else
-			{
-				return value.get()
-					| std::views::transform([](const auto& v) { return static_cast<double>(v); })
-					| std::ranges::to<std::vector<double>>();
-			}
+
+			return value.get()
+				| std::views::transform([](const auto& v) { return static_cast<double>(v); })
+				| std::ranges::to<std::vector<double>>();
 		};
 	}
 

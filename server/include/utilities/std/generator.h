@@ -257,6 +257,12 @@ private:
 
 struct use_allocator_arg {};
 
+#define NEED_ELEMENTS_OF 1
+#if defined(_LIBCPP_VERSION) && __has_include(<__ranges/elements_of.h>)
+#define NEED_ELEMENTS_OF 0
+#endif
+
+#if NEED_ELEMENTS_OF
 namespace ranges
 {
 
@@ -302,6 +308,7 @@ template <typename _Rng, typename Allocator>
 elements_of(_Rng&&, Allocator&&) -> elements_of<_Rng, Allocator>;
 
 } // namespace ranges
+#endif
 
 template <typename _Alloc>
 static constexpr bool __allocator_needs_to_be_stored =

@@ -139,8 +139,8 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCWARP(CString& pPacket)
 	}
 
 	const NPCID npcId = pPacket.readGUInt();
-	PropertyTileCoordinate tileX{static_cast<float>(pPacket.readGUChar()) / 2.0f};
-	PropertyTileCoordinate tileY{static_cast<float>(pPacket.readGUChar()) / 2.0f};
+	const PropertyTileCoordinate tileX{static_cast<float>(pPacket.readGUChar()) / 2.0f};
+	const PropertyTileCoordinate tileY{static_cast<float>(pPacket.readGUChar()) / 2.0f};
 	const std::string npcLevel = pPacket.readString("").trimI().toString();
 
 	const auto npc = m_server->getNPC(npcId);
@@ -150,8 +150,21 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCWARP(CString& pPacket)
 	// Warping to a different level entirely.
 	if (npcLevel != npc->getLevelName())
 	{
+		auto position = PixelPosition{tileX.pixelCoordinate, tileY.pixelCoordinate};
 		if (const auto newLevel = m_server->getLoadedLevel(npcLevel, npc->getLevel()); newLevel != nullptr)
-			npc->warp(newLevel, {tileX.pixelCoordinate, tileY.pixelCoordinate});
+		{
+			// If this is a gmap and the level names don't match, fix the position of the warp.
+			if (newLevel->isGmap() && newLevel->levelName != npcLevel)
+			{
+				const auto subLevel = newLevel->getSubLevelByName(npcLevel);
+				if (subLevel != nullptr)
+				{
+					const auto origin = Level::getSubLevelOrigin(subLevel).value_or(PixelPosition{});
+					position.translate(origin);
+				}
+			}
+			npc->warp(newLevel, position);
+		}
 	}
 	// Changing position in the current level.
 	else
@@ -627,6 +640,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONADD(CString& pPacket)
 	CString actionTaken;
 
 	// Find Weapon
+	bool existing = false;
 	const auto weaponObj = m_server->getWeapon(weaponName);
 	if (weaponObj != nullptr)
 	{
@@ -641,6 +655,7 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONADD(CString& pPacket)
 		m_server->updateWeaponForPlayers(weaponObj);
 
 		actionTaken = "updated";
+		existing = true;
 	}
 	else
 	{
@@ -660,7 +675,8 @@ HandlePacketResult PlayerNC::msgPLI_NC_WEAPONADD(CString& pPacket)
 	}
 
 	// Send the updated weapon list to the player.
-	msgPLI_NC_WEAPONLISTGET(pPacket);
+	if (!existing)
+		msgPLI_NC_WEAPONLISTGET(pPacket);
 
 	return HandlePacketResult::Handled;
 }

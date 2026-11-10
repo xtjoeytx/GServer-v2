@@ -121,45 +121,31 @@ void Server::initTimedEvents()
 		saveServerFlags();
 		if (const auto guild = BabyDI::Get<GuildManager>(); guild != nullptr)
 			guild->saveGuilds();
-	};
-	m_timedNWTime5s.callbackIterations = [this](int)
-	{
-		calculateNWTime();
-		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
-	};
-	m_timedMaintenance5m.callbackIterations = [this](int)
-	{
-		// Reload some server settings.
-		loadAllowedVersions();
-		loadServerMessage();
-		loadIPBans();
 
 		// Check if we need to unload any levels.
-		for (auto& [levelName, level] : m_levelList)
+		for (auto& level : m_levelList | std::views::values)
 		{
-			// TODO(unloading): Gmap sub-level (and maybe static level) unloading.  Needs to follow Map::keepAllLevelsLoaded and levelsToKeepInMemory settings.
-
 			// Skip if the level is currently active with players in it.
 			// We always do this so we can abort early.
 			if (!level->timeSinceLastPlayerLeft.has_value())
 				continue;
 
 			// Register that we will skip if we have the unload time set to 0 (which means never unload).
-			bool skip = (m_unloadInactiveLevelTime.getValue() == 0);
+			bool skip = (cached.unloadInactiveLevelTime.getValue() == 0);
 
 			// Give a 10 minute grace period after the last player leaves.
 			auto inactiveDuration = timeDifference(m_frameStartTime, level->timeSinceLastPlayerLeft.value());
-			skip = skip || inactiveDuration < std::chrono::seconds(m_unloadInactiveLevelTime.getValue());
+			skip = skip || inactiveDuration < std::chrono::seconds(cached.unloadInactiveLevelTime.getValue());
 
 			// Group maps and single player maps will always unload after 10 minutes if the inactive time is not set.
-			if (level->isPrivateMap() && inactiveDuration > std::chrono::seconds(m_unloadInactiveLevelTime.get().value_or(600)))
+			if (level->isPrivateMap() && inactiveDuration > std::chrono::seconds(cached.unloadInactiveLevelTime.get().value_or(600)))
 				skip = false;
 
 			// Do the skip now.
 			if (skip)
 				continue;
 
-			DEBUGPRINT("Unloading level '{}' due to inactivity.", levelName);
+			DEBUGPRINT("Unloading level '{}' due to inactivity.", level->levelName);
 
 			// If we have an NPC-server, unload (or delete) our serverside NPCs.
 			if (hasNPCServer())
@@ -190,6 +176,18 @@ void Server::initTimedEvents()
 		{
 			return entry.second == nullptr;
 		});
+	};
+	m_timedNWTime5s.callbackIterations = [this](int)
+	{
+		calculateNWTime();
+		sendPacketToAll(CString() >> (char)PLO_NEWWORLDTIME << CString().writeGInt4(getNWTime()));
+	};
+	m_timedMaintenance5m.callbackIterations = [this](int)
+	{
+		// Reload some server settings.
+		loadAllowedVersions();
+		loadServerMessage();
+		loadIPBans();
 	};
 }
 
@@ -318,7 +316,7 @@ void Server::initFilesystemCallbacks()
 				npc->sendScriptUpdatesToLevel(file.getModTime());
 			}
 			// Otherwise, if the NPC is on a level, try to send only the modified props.
-			else if (auto level = npc->getLevel(); level != nullptr)
+			else if (const auto level = npc->getLevel(); level != nullptr)
 			{
 				// If the level was changed, warp, which will send the props to players in the new level.
 				if (npc->level != level->levelName)
@@ -462,7 +460,11 @@ void Server::initFilesystemCallbacks()
 		if (events.test(fs::FileEvent::Modified))
 		{
 			if (ext == ".gupd")
-				m_packageManager.findOrAddResource(fileName)->reload(this);
+			{
+				// A failed package load returns nullptr.
+				if (auto package = m_packageManager.findOrAddResource(fileName); package != nullptr)
+					package->reload(this);
+			}
 			else if (Generation == ServerGeneration::MODERN)
 			{
 				// Ganis need to be recompiled on update

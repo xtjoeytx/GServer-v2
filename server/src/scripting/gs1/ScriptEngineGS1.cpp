@@ -227,13 +227,26 @@ GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string
 	parser = std::make_shared<GS1Parser>(tokens.get());
 	parser->removeErrorListeners();
 	parser->addErrorListener(errorListenerParser.get());
+	parser->setErrorHandler(std::make_shared<antlr4::BailErrorStrategy>());
+	parser->getInterpreter<antlr4::atn::ParserATNSimulator>()->setPredictionMode(antlr4::atn::PredictionMode::SLL);
+
+	// Create the visitor.
+	visitor = std::make_shared<GS1Visitor>();
 
 	// Run the parser and create our AST.
-	visitor = std::make_shared<GS1Visitor>();
-	program = parser->program();
-
-	// Set our variable lifetime to temporary.
-	variables.defaultLifetime = variables::Lifetime::TEMPORARY;
+	try
+	{
+		program = parser->program();
+	}
+	catch (const antlr4::ParseCancellationException&)
+	{
+		DEBUGPRINT("[ANTLR4] SLL failed, trying LL.");
+		tokens->reset();
+		parser->reset();
+		parser->getInterpreter<antlr4::atn::ParserATNSimulator>()->setPredictionMode(antlr4::atn::PredictionMode::LL);
+		parser->setErrorHandler(std::make_shared<antlr4::DefaultErrorStrategy>());
+		program = parser->program();
+	}
 
 #ifdef DEBUG
 	//if (who == "MoveTester")
@@ -249,7 +262,7 @@ GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string
 ScriptEngineGS1::ScriptEngineGS1()
 {
 	settings.track(config.strictMode, config.alwaysScopeVariables, config.alwaysTranslateStrings);
-	settings.track(config.damageReactions, config.groupCommands, config.shootball);
+	settings.track(config.damageReactions, config.groupCommands, config.shootball, config.explodedWithJolt);
 	settings.track(config.fixSpelling);
 }
 
@@ -261,8 +274,11 @@ void ScriptEngineGS1::loadConfiguration(const std::filesystem::path& file)
 
 //----------------------------
 
-CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::string_view script)
+CompiledScriptResult ScriptEngineGS1::compileScript(const ScriptCompilationTarget target, std::string_view who, std::string_view script)
 {
+	if (target != ScriptCompilationTarget::SERVER)
+		return std::make_pair(ScriptCompilationFailureType::REJECTED, ""s);
+
 	ScriptExecutionContext result{.engine = this};
 	try
 	{
@@ -271,7 +287,7 @@ CompiledScriptResult ScriptEngineGS1::compileScript(std::string_view who, std::s
 	catch (const std::exception& ex)
 	{
 		//log::printLine(log::script, "GS1 script compilation SUPER failed: {}", ex.what());
-		return std::string(ex.what());
+		return std::make_pair(ScriptCompilationFailureType::SYNTAX_ERROR, std::string(ex.what()));
 	}
 
 	return result;
@@ -326,9 +342,6 @@ bool ScriptEngineGS1::prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, std
 	// Set the built-in store.
 	wrapper.visitor->builtInStore = &wrapper.variables;
 
-	// Temporarily switch to normal storage for setting our flags.
-	SetAndRestore defaultLifetime{wrapper.variables.defaultLifetime, variables::Lifetime::NORMAL};
-
 	// Set events.
 	setTriggerActionAndCustomEventFlags(event, wrapper.visitor->flagStore);
 	setEventFlags(event.type, additionalEventTypes, wrapper.visitor->flagStore);
@@ -342,7 +355,6 @@ bool ScriptEngineGS1::prepare(GS1ScriptWrapper& wrapper, ScriptEvent& event, std
 
 	// Set variables.
 	setNPCVariables(wrapper.variables, npc);
-	setPlayerVariables(wrapper.variables, player);
 	setLevelVariables(wrapper.variables, level, npc, player);
 	setOtherVariables(wrapper.variables, event);
 
@@ -440,11 +452,7 @@ bool ScriptEngineGS1::execute(ScriptEvent& event, std::vector<ScriptEventType>* 
 
 	// Special case to handle "created" events for the NPC.
 	if (npc != nullptr && hasCreated)
-	{
 		npc->setPropWith<NPCProp::VISFLAGS>(SetBy::SERVER, static_cast<uint8_t>(npc->visFlags | PROPID(NPCVisFlags::CREATED)));
-		if (npc->storageType == NPCStorageType::DATABASE)
-			server->getNPCLoader().saveNPC(npc);
-	}
 
 	cleanup(*wrapper);
 	return true;
@@ -527,7 +535,6 @@ std::optional<double> ScriptEngineGS1::processMathExpression(const std::string_v
 		if (const auto player = npcserver->getPlayer<Player>(source.first); player != nullptr)
 		{
 			setPlayerFlags(visitor.flagStore, nullptr, player);
-			setPlayerVariables(variableStore, player);
 		}
 	}
 
@@ -574,7 +581,6 @@ std::optional<std::string> ScriptEngineGS1::processStringExpression(const std::s
 		if (const auto player = npcserver->getPlayer<PlayerClient>(source.first); player != nullptr)
 		{
 			setPlayerFlags(visitor.flagStore, nullptr, player);
-			setPlayerVariables(variableStore, player);
 		}
 	}
 
@@ -598,7 +604,8 @@ void ScriptEngineGS1::cleanup(GS1ScriptWrapper& wrapper)
 {
 	// Clear the variables (to clear reference counted pointers, just in case).
 	wrapper.variables.clearTemporary();
-	wrapper.visitor->flagStore.clearTemporary();
+	if (wrapper.visitor != nullptr)
+		wrapper.visitor->flagStore.clearTemporary();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

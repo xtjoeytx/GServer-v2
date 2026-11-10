@@ -86,6 +86,7 @@ public:
 	void deleteNPC(NPCID id);
 	void unloadNPC(NPCID id);
 	void saveNPCs();
+	void saveNPC(NPCID id);
 	//std::vector<std::pair<double, std::string>> calculateNPCStats();
 
 public:
@@ -252,12 +253,11 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(const ScriptEventType typ
 		eventDistance = m_server->cached.triggerDistance.getValue();
 
 	size_t count = 0;
-	for (const auto& id : levelPtr->findInRangeNPCsByDistance(pos, eventDistance))
+	for (const auto& id : levelPtr->findNPCsInRangeByDistance(pos, eventDistance * Level::pixelsPerTile().width()))
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{
-			LocalPixelRectangleArea npcRect = {npc->getLocalPosition(), npc->shape};
-			if (positionInRectangle(pos, npcRect))
+			if (auto npcRect = toLocalPixelRectangleArea(npc->getEventBoundingBox()); positionInRectangle(pos, npcRect))
 			{
 				++count;
 				npc->scripting.events.addEvent(type, source, arg1, args...);
@@ -278,12 +278,11 @@ inline size_t NPCServer::addEventToLevelNPCsAtPosition(const ScriptEventType typ
 		eventDistance = m_server->cached.triggerDistance.getValue();
 
 	size_t count = 0;
-	for (const auto& id : levelPtr->findInRangeNPCsByDistance(pos, eventDistance))
+	for (const auto& id : levelPtr->findNPCsInRangeByDistance(pos, eventDistance * Level::pixelsPerTile().width()))
 	{
 		if (auto npc = m_server->getNPC(id); npc != nullptr)
 		{
-			LocalPixelRectangleArea npcRect = {npc->getLocalPosition(), npc->shape};
-			if (positionInRectangle(pos, npcRect))
+			if (auto npcRect = toLocalPixelRectangleArea(npc->getEventBoundingBox()); positionInRectangle(pos, npcRect))
 			{
 				++count;
 				npc->scripting.events.addEvent(type, source, std::forward<decltype(range)>(range));

@@ -625,14 +625,14 @@ static std::optional<PixelPosition> getPositionForArrow(const ScriptObject& sour
 	{
 		if (const auto npc = server->getNPC(source.first); npc != nullptr)
 		{
-			PixelPosition sourcePosition = npc->character.getGlobalPosition();
+			auto sourcePosition = npc->character.getTilePosition();
 			if (npc->isCharacter())
 			{
-				const auto dX = static_cast<int16_t>(dir == 1 ? -24 : (dir == 3 ? 24 : 0));
-				const auto dY = static_cast<int16_t>(dir == 0 ? -24 : (dir == 2 ? 24 : 0));
-				sourcePosition.translate(16 + dX, 24 + dY);
+				const auto dX = (dir == 1 ? -1.5f : (dir == 3 ? 1.5f : 0));
+				const auto dY = (dir == 0 ? -1.5f : (dir == 2 ? 1.5f : 0));
+				sourcePosition.translate(1.0f + dX, 1.5f + dY);
 			}
-			return sourcePosition;
+			return toPixelPositionWithHalfTilePrecision(sourcePosition);
 		}
 	}
 
@@ -1630,14 +1630,14 @@ void fn_lay(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 		const auto server = BabyDI::Get<Server>();
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
-			PixelPosition layPosition = npc->character.getGlobalPosition();
+			auto layPosition = npc->character.getTilePosition();
 
 			// Characters lay (+0.5, +3) no matter which direction they are looking.
 			if (npc->isCharacter())
-				layPosition.translate(static_cast<int16_t>(8), static_cast<int16_t>(16 * 3));
+				layPosition.translate(0.5f, 3.0f);
 
 			if (const auto level = npc->getLevel(); level != nullptr)
-				level->addItem(inform_client, layPosition, static_cast<LevelItemType>(itemname));
+				level->addItem(inform_client, toPixelPositionWithHalfTilePrecision(layPosition), static_cast<LevelItemType>(itemname));
 		}
 	}
 }
@@ -1654,7 +1654,7 @@ void fn_lay2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 		auto itemname = std::clamp(DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)), 0_ui8, 24_ui8);
 		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		level->addItem(inform_client, toPixelPosition({x, y}), static_cast<LevelItemType>(itemname));
+		level->addItem(inform_client, toPixelPositionWithHalfTilePrecision({x, y}), static_cast<LevelItemType>(itemname));
 	}
 }
 
@@ -1690,7 +1690,7 @@ void fn_move(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 
 		const auto server = BabyDI::Get<Server>();
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
-			npc->addMoveToQueue(toLocalPixelPosition(dx, dy), time, options);
+			npc->addMoveToQueue(toLocalPixelPosition(toPixelPosition({dx, dy})), time, options);
 	}
 }
 
@@ -1718,7 +1718,7 @@ void fn_putbomb(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argumen
 		const auto power = std::clamp(DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)), 1_ui8, 3_ui8);
 		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		level->addBomb(inform_client, toPixelPosition({x, y}), power);
+		level->addBomb(inform_client, toPixelPositionWithHalfTilePrecision({x, y}), power);
 	}
 }
 
@@ -1750,7 +1750,7 @@ void fn_putexplosion(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& ar
 		const auto radius = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		level->addExplosion(inform_client, toPixelPosition({x, y}), visitor->getCurrentSource(), radius, 1);
+		level->addExplosion(inform_client, toPixelPositionWithHalfTilePrecision({x, y}), visitor->getCurrentSource(), radius, 1);
 	}
 }
 
@@ -1767,7 +1767,7 @@ void fn_putexplosion2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& a
 		const auto radius = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
 		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
-		level->addExplosion(inform_client, toPixelPosition({x, y}), visitor->getCurrentSource(), radius, power);
+		level->addExplosion(inform_client, toPixelPositionWithHalfTilePrecision({x, y}), visitor->getCurrentSource(), radius, power);
 	}
 }
 
@@ -1789,7 +1789,7 @@ void fn_puthorse(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argume
 		const auto imagefile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		level->addHorse(inform_client, imagefile, toPixelPosition({x, y}), 2, 0);
+		level->addHorse(inform_client, imagefile, toPixelPositionWithHalfTilePrecision({x, y}), 2, 0);
 	}
 }
 
@@ -3653,12 +3653,10 @@ void fn_triggeraction(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& a
 	}
 	else
 	{
-		const auto& currentSource = visitor->getCurrentSource();
-		const LevelPtr targetLevel = visitor->findCurrentLevel();
 		uint32_t npcId = 0;
-		if (currentSource.second == ScriptObjectType::NPC)
-			npcId = currentSource.first;
-		if (targetLevel != nullptr)
+		if (const auto& [id, type] = visitor->getCurrentSource(); type == ScriptObjectType::NPC)
+			npcId = id;
+		if (const LevelPtr targetLevel = visitor->findCurrentLevel(); targetLevel != nullptr)
 			server->sendTriggerAction(targetLevel, npcId, {static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16)}, action, params);
 	}
 }
@@ -3764,7 +3762,7 @@ void fn_warpto(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argument
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			if (const auto level = server->getLoadedLevel(filename, npc->getLevel()); level != nullptr)
-				npc->warp(level, {static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16)});
+				npc->warp(level, PixelPosition{static_cast<int32_t>(x * 16), static_cast<int32_t>(y * 16)});
 		}
 	}
 }

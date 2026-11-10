@@ -79,7 +79,6 @@ players[index]		On gmaps, it includes players in a 3x3 area around the player.  
 */
 
 void setNPCVariables(GameVariableStore& variableStore, const std::weak_ptr<NPC>& npc);
-void setPlayerVariables(GameVariableStore& variableStore, const std::weak_ptr<Player>& player);
 void setLevelVariables(GameVariableStore& variableStore, const std::weak_ptr<Level>& level, const std::weak_ptr<NPC>& npc, const std::weak_ptr<Player>& player);
 void setOtherVariables(GameVariableStore& variableStore, ScriptEvent& event);
 

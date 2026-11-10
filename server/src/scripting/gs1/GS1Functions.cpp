@@ -69,7 +69,6 @@ static GS1ScriptValue fn_getareanpcs(GS1Visitor* visitor, const std::vector<GS1S
 static GS1ScriptValue fn_getdir(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getflagkeys(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
-static GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getnpc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getplayer(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
 static GS1ScriptValue fn_getplayersingroup(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments);
@@ -147,7 +146,6 @@ static BuiltInFunctionHandleMap GenerateMap()
 		{hash("getdir"), &fn_getdir},
 		{hash("getflagkeys"), &fn_getflagkeys},
 		{hash("getnearestplayer"), &fn_getnearestplayer},
-		{hash("getnearestplayers"), &fn_getnearestplayers},
 		{hash("getnpc"), &fn_getnpc},
 		{hash("getplayer"), &fn_getplayer},
 		{hash("getplayersingroup"), &fn_getplayersingroup},
@@ -208,6 +206,25 @@ static BuiltInFunctionHandleMap GenerateMap()
 	return map;
 }
 
+// ---------------------------
+
+using BuiltInAdvancedFunctionHandleFunc = GS1ScriptValue (*)(GS1Visitor*, const antlr4::tree::ParseTree*);
+using BuiltInAdvancedFunctionHandleMap = std::unordered_map<size_t, BuiltInAdvancedFunctionHandleFunc>;
+
+static GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, const antlr4::tree::ParseTree* node);
+
+static BuiltInAdvancedFunctionHandleMap GenerateAdvancedMap()
+{
+	constexpr string::string_hash hash{};
+	BuiltInAdvancedFunctionHandleMap map =
+	{
+		{hash("getnearestplayers"), &fn_getnearestplayers},
+	};
+	return map;
+}
+
+// ---------------------------
+
 constexpr std::array<std::string_view, 2> flagProcessingFunctions =
 {
 	"lindexof"sv,
@@ -219,6 +236,7 @@ constexpr std::array<std::string_view, 2> flagProcessingFunctions =
 GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, const antlr4::tree::ParseTree* node, const std::string_view functionName)
 {
 	static BuiltInFunctionHandleMap map = GenerateMap();
+	static BuiltInAdvancedFunctionHandleMap advancedMap = GenerateAdvancedMap();
 
 	if (visitor == nullptr)
 		throw std::runtime_error("processBuiltInFunction received an empty visitor");
@@ -230,6 +248,10 @@ GS1ScriptValue processBuiltInFunction(GS1Visitor* visitor, const antlr4::tree::P
 	const auto it = map.find(hash);
 	if (it == map.end())
 	{
+		// Check for the command in the advanced map.
+		if (const auto it2 = advancedMap.find(hash); it2 != advancedMap.end())
+			return it2->second(visitor, node);
+
 		log::printLine(log::script, "Unknown function in NPC '{}': {}", visitor->who, functionName);
 		return {};
 	}
@@ -396,19 +418,18 @@ GS1ScriptValue fn_findnearestplayer(GS1Visitor* visitor, const std::vector<GS1Sc
 
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		const auto position = toPixelPosition({x, y});
+		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 
 		// Find the nearest player.
 		std::tuple<PlayerID, double> nearestPlayer{0, std::numeric_limits<double>::max()};
 		const auto* server = BabyDI::Get<Server>();
-		for (const auto& id : level->findInRangePlayers(position))
+		for (const auto& id : level->getPlayers())
 		{
 			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
 			{
 				TilePosition playerPos = toTilePosition(player->account.character.getGlobalPosition());
-				auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
+				const auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
 				if (distance < std::get<1>(nearestPlayer))
 					nearestPlayer = {id, distance};
 			}
@@ -475,8 +496,8 @@ GS1ScriptValue fn_getareanpcs(GS1Visitor* visitor, const std::vector<GS1ScriptVa
 	{
 		auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
 		auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
-		auto width = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
-		auto height = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
+		auto width = std::max(16_ui16, DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16));
+		auto height = std::max(16_ui16, DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16));
 
 		auto npcs = level->findIntersectingNPCs({{x, y}, {width, height}}, true);
 		for (const auto id : npcs)
@@ -495,36 +516,12 @@ GS1ScriptValue fn_getdir(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>
 			throw std::invalid_argument("invalid arguments: getdir(dx, dy)");
 
 		const auto dx = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		const auto dy = -1 * GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
+		const auto dy = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 
-		// Get the angle we are looking.
-		double angle = 0.0;
-		if (!DoubleIsZero(dx) || DoubleIsZero(dy))
-		{
-			// Get the angle.
-			angle = std::atan2(dy, dx);
+		if (std::abs(dy) >= std::abs(dx))
+			return GameValue{(DoubleIsZero(dy) || dy < 0.0) ? 0.0 : 2.0};
 
-			// If the angle is negative, we need to adjust it to be in the range [0, 2π).
-			if (angle < 0.0)
-				angle += std::numbers::pi * 2;
-		}
-
-		constexpr auto angleNE = std::numbers::pi * (1.0 / 4.0);
-		constexpr auto angleNW = std::numbers::pi * (3.0 / 4.0);
-		constexpr auto angleSW = std::numbers::pi + angleNE;
-		constexpr auto angleSE = std::numbers::pi + angleNW;
-
-		// Convert the angle to a direction.
-		// Diagonals are biased towards up (0) and down (2).
-		if (angle < angleNE)
-			return GameValue{3.0};
-		if (angle <= angleNW)
-			return GameValue{0.0};
-		if (angle < angleSW)
-			return GameValue{1.0};
-		if (angle <= angleSE)
-			return GameValue{2.0};
-		return GameValue{3.0};
+		return GameValue{(DoubleIsZero(dx) || dx < 0.0) ? 1.0 : 3.0};
 	}
 
 	// Default to looking down.
@@ -572,17 +569,16 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, const std::vector<GS1Scr
 	{
 		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		const auto position = toPixelPosition({x, y});
 
 		// Find the nearest player.
 		std::tuple<PlayerID, double> nearestPlayer{0, std::numeric_limits<double>::max()};
 		const auto* server = BabyDI::Get<Server>();
-		for (const auto& id : level->findInRangePlayers(position))
+		for (const auto& id : level->getPlayers())
 		{
 			if (auto player = server->getNPCServer()->getPlayer(id); player != nullptr)
 			{
 				TilePosition playerPos = toTilePosition(player->account.character.getGlobalPosition());
-				auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
+				const auto distance = std::hypot(playerPos.x() - x, playerPos.y() - y);
 				if (distance < std::get<1>(nearestPlayer))
 					nearestPlayer = {id, distance};
 			}
@@ -598,28 +594,47 @@ GS1ScriptValue fn_getnearestplayer(GS1Visitor* visitor, const std::vector<GS1Scr
 
 // getnearestplayers(x, y, condition)
 // Returns an array of all the level players sorted by how close they are to the specified position, matching the condition expression.
-GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
+GS1ScriptValue fn_getnearestplayers(GS1Visitor* visitor, const antlr4::tree::ParseTree* node)
 {
-	if (arguments.size() < 2)
-		throw std::invalid_argument("invalid arguments: getnearestplayers(x, y, flag)");
+	size_t index = 0;
+	auto getNextArgument = [&]() -> std::optional<std::any>
+	{
+		while (index < node->children.size())
+		{
+			if (auto ret = node->children[index++]->accept(visitor); ret.has_value())
+				return ret;
+		}
+		return std::nullopt;
+	};
+
+	const auto anyX = getNextArgument();
+	const auto anyY = getNextArgument();
+
+	if (!anyX.has_value() || !anyY.has_value())
+		throw std::invalid_argument("invalid arguments: getnearestplayers(x, y, expression)");
 
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
-		const auto position = toPixelPosition({x, y});
+		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*anyX).value_or(0.0));
+		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*anyY).value_or(0.0));
+		const auto savedIndex = index;
 
 		std::map<double, size_t> playersByDistance;
 		const auto* server = BabyDI::Get<Server>();
 		auto& players = level->getPlayers();
-		for (const auto& id : level->findInRangePlayers(position))
+		for (const auto& id : level->getPlayers())
 		{
 			// Execute the condition.
 			bool skip = false;
-			if (arguments.size() > 2)
+			if (index < node->children.size())
 			{
+				// Restore the saved index so we can re-run argument finding.
+				index = savedIndex;
+
+				// Push the new player source and run the expression.
 				visitor->pushSource(source::FromPlayer(id));
-				skip = DoubleIsZero(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+				auto anyExpression = getNextArgument();
+				skip = DoubleIsZero(GS1Visitor::getScriptValueAsCopy<double>(*anyExpression).value_or(0.0));
 				visitor->popSource();
 			}
 			if (skip) continue;
@@ -1121,7 +1136,7 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>
 					return GameValue{true};
 				if (!npc->noPlayerOnWall && !subLevel->isNoPkZone && level->isOnPlayer(toPixelPosition({x, y})))
 					return GameValue{true};
-				if (level->isOnNPC(toPixelPosition({x, y})))
+				if (level->testNPC(toPixelPosition({x, y}), npc->id) >= 0)
 					return GameValue{true};
 			}
 		}
@@ -1161,7 +1176,7 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*
 				const PixelRectangleArea searchRect{toPixelPosition({x, y}), {width, height}};
 				if (!npc->noPlayerOnWall && !subLevel->isNoPkZone && level->isOnPlayer(searchRect))
 					return GameValue{true};
-				if (level->isOnNPC(searchRect))
+				if (level->testNPC(searchRect, npc->id) >= 0)
 					return GameValue{true};
 			}
 		}
@@ -1587,7 +1602,7 @@ GS1ScriptValue fn_testnpc(GS1Visitor* visitor, const std::vector<GS1ScriptValue*
 
 		bool found = false;
 		size_t index = 0;
-		for (const auto& npcId : level->findInRangeNPCs(position))
+		for (const auto& npcId : level->findNPCsInRangeByDistance(position, Level::pixelsPerSubLevel().width()))
 		{
 			if (auto npc = server->getNPC(npcId); npc != nullptr)
 			{
@@ -1623,7 +1638,7 @@ GS1ScriptValue fn_testplayer(GS1Visitor* visitor, const std::vector<GS1ScriptVal
 	{
 		bool found = false;
 		size_t index = 0;
-		for (const auto& playerId : level->findInRangePlayers(position))
+		for (const auto& playerId : level->findPlayersInRange(position, Level::pixelsPerSubLevel()))
 		{
 			if (auto player = server->getPlayer(playerId); player != nullptr)
 			{
@@ -1693,21 +1708,7 @@ GS1ScriptValue fn_tiletype(GS1Visitor* visitor, const std::vector<GS1ScriptValue
 		const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 
 		const auto tilePosition = toTilePosition(Position<double>{x, y});
-		auto mapPosition = toMapPosition(tilePosition);
-
-		if (!level->isGmap())
-			mapPosition = {0, 0};
-
-		if (const auto tiles = level->getTiles(mapPosition); tiles.has_value())
-		{
-			const auto index = static_cast<size_t>(std::max(x, 0.0) + (std::max(y, 0.0) * 64));
-			if (index < 4096)
-			{
-				const auto server = BabyDI::Get<Server>();
-				const auto tile = tiles.value()->at(index);
-				return GameValue{static_cast<double>(ENUM(server->getNPCServer()->getTileType(tile, level)))};
-			}
-		}
+		return GameValue{static_cast<double>(ENUM(level->getTileTypeAt(toWholeTilePosition(tilePosition))))};
 	}
 
 	// Not found?  Default to blocking.

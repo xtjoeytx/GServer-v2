@@ -67,7 +67,7 @@ struct ServerFixture
 
 		// Configure NPC-Player.
 		const auto player = std::dynamic_pointer_cast<Player>(server->getNPCServer()->getPlayerNPCServer());
-		gs1::setPlayerVariables(player->account.variables, player);
+		player->constructScriptParameters();
 
 		// Configure Test NPC.
 		const auto npc = npcServer->addNPC("door.png"sv, ""sv, nullptr, TilePosition{20.0f, 30.0f}, NPCTYPE_OBJECT);
@@ -267,6 +267,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				this.negativeIndex = { 42 };
 				this.negativeIndex[-1] = 99;
 				this.skip = {,,,3};
+				negativeValues = {1,1,0,-1,-1,0,1,1,0,-1,-1};
 			}
 		)";
 		auto result = engine->compileScript("test_script", script);
@@ -287,6 +288,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		REQUIRE(negativeIndex != nullptr);
 		auto skip = store->get("skip").lock();
 		REQUIRE(skip != nullptr);
+		auto negativeValues = store->get("negativeValues").lock();
+		REQUIRE(negativeValues != nullptr);
 
 		CHECK(myarray->value.has<std::vector<double>>());
 		CHECK(myarray->value.get<std::vector<double>>().value().get().size() == 5);
@@ -299,6 +302,9 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK(skip->value.get<std::vector<double>>().value().get().size() == 4);
 		CHECK_THAT(skip->value.get<std::vector<double>>().value().get().at(1), Catch::Matchers::WithinRel(0.0));
 		CHECK_THAT(skip->value.get<std::vector<double>>().value().get().at(3), Catch::Matchers::WithinRel(3.0));
+		CHECK(negativeValues->value.has<std::vector<double>>());
+		CHECK(negativeValues->value.get<std::vector<double>>().value().get().size() == 11);
+		CHECK_THAT(negativeValues->value.get<std::vector<double>>().value().get().at(3), Catch::Matchers::WithinRel(-1.0));
 	}
 
 	SECTION("logical expressions")
@@ -340,6 +346,10 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				this.rangeC1 = 40,44 in |40, 44>;
 				this.rangeC2 = 40,44 in <40, 44|;
 				this.rangeC3 = 40,44 in |40, 44|;
+				this.rangeG1 = 40,44 in {40, 42, 44};
+
+				if (1,2 in {1,2,3})
+					this.rangeG2 = true;
 
 				if (this.truevar)
 					this.testtruevar = 1;
@@ -392,6 +402,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		CHECK_THAT(store->getValue<double>("rangeC1").value_or(99.0), Catch::Matchers::WithinRel(0.0)); // false
 		CHECK_THAT(store->getValue<double>("rangeC2").value_or(99.0), Catch::Matchers::WithinRel(0.0)); // false
 		CHECK_THAT(store->getValue<double>("rangeC3").value_or(0.0), Catch::Matchers::WithinRel(1.0));
+		CHECK_THAT(store->getValue<double>("rangeG1").value_or(0.0), Catch::Matchers::WithinRel(1.0));
+		CHECK_THAT(store->getValue<double>("rangeG2").value_or(0.0), Catch::Matchers::WithinRel(1.0));
 
 		// Implicit conversions to boolean only affect flags.
 		CHECK_THAT(store->getValue<double>("testtruevar").value_or(0.0), Catch::Matchers::WithinRel(0.0));
@@ -736,7 +748,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles and executes simple ex
 		// Tests the compilation and execution of a simple math expression that includes a variable.
 		// Used by the system in various places, such as level links and the playersays command.
 		constexpr std::string_view script = R"(
-			10 + x
+			10 + playerx
 		)";
 		const auto result = engine->processMathExpression(script, source::FromPlayer(NPCServerPlayerID));
 		CHECK_THAT(result.value_or(0.0), Catch::Matchers::WithinRel(40.5));
@@ -915,6 +927,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 				setbeltcolor cynober;
 				sprite = 14;
 				if (sprite == 14) sprite = 16;
+				playersprite = 10;
 			}
 		)";
 		auto result = engine->compileScript("test_script", script);
@@ -926,7 +939,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		CHECK(player->account.character.colors[3] == 13);
 		CHECK(player->account.character.colors[4] == 13);
 		CHECK(player->account.character.headImage == "head2.png");
-		CHECK(player->account.character.sprite == 16);
+		CHECK_FALSE(player->account.character.sprite == 16);
+		CHECK(player->account.character.sprite == 10);
 	}
 
 	SECTION("playersaysnumber processes math expressions")

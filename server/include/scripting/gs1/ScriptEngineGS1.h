@@ -170,6 +170,7 @@ struct CachedSettings
 	SettingCache<bool> damageReactions{"damagereactions", true};
 	SettingCache<bool> groupCommands{"group-commands", true};
 	SettingCache<bool> shootball{"shootball", true};
+	SettingCache<bool> explodedWithJolt{"explodedwithjolt", true};
 	SettingCache<bool> fixSpelling{"fix-spelling", true};
 };
 
@@ -191,7 +192,7 @@ public:
 	void loadConfiguration(const std::filesystem::path& file) override;
 
 public:
-	CompiledScriptResult compileScript(std::string_view who, std::string_view script) override;
+	CompiledScriptResult compileScript(ScriptCompilationTarget, std::string_view who, std::string_view script) override;
 	bool reset() override { return false; }
 
 public:

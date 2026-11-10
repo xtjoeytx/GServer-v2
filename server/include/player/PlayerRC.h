@@ -134,7 +134,7 @@ public:
 	HandlePacketResult msgPLI_RC_LARGEFILESTART(CString& pPacket);
 	HandlePacketResult msgPLI_RC_LARGEFILEEND(CString& pPacket);
 	HandlePacketResult msgPLI_RC_FOLDERDELETE(CString& pPacket);
-	HandlePacketResult msgPLI_RC_UNKNOWN162(CString& pPacket);
+	HandlePacketResult msgPLI_PONG(CString& pPacket);
 
 protected:
 	bool m_isFtp = false;

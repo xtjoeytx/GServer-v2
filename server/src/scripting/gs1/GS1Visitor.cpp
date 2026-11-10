@@ -181,11 +181,11 @@ static GameVariableStore* getGameVariableStoreFromSource(const ScriptObject& sou
 	return nullptr;
 }
 
-static GS1ScriptValue getGS1ScriptValueFromAny(std::any& value)
+static std::optional<std::reference_wrapper<GS1ScriptValue>> getGS1ScriptValueFromAny(std::any& value)
 {
 	if (auto* gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
-		return *gs1ScriptValue;
-	return {};
+		return std::ref(*gs1ScriptValue);
+	return std::nullopt;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -242,6 +242,8 @@ const GameVariable* GS1Visitor::getGameVariable(const GS1ScriptValue& value)
 
 std::optional<ScriptObject> GS1Visitor::getScriptObject(std::any& value)
 {
+	if (const auto gs1ScriptValue = std::any_cast<GS1ScriptValue>(&value); gs1ScriptValue != nullptr)
+		return getScriptObject(*gs1ScriptValue);
 	if (const auto scriptObject = std::any_cast<ScriptObject>(&value); scriptObject != nullptr)
 		return *scriptObject;
 	return getScriptValueAsCopy<ScriptObject>(value);
@@ -327,7 +329,7 @@ GameVariableStore* GS1Visitor::getGameVariableStoreForStorageType(size_t type) c
 			break;
 		case ENUM(StorageType::SERVER):
 		case ENUM(StorageType::SERVERR):
-			store = m_serverStore;
+			store = getServerStore();
 			break;
 		case ENUM(StorageType::LEVEL):
 		{
@@ -438,17 +440,17 @@ std::tuple<std::shared_ptr<Level>, std::shared_ptr<SubLevel>, std::shared_ptr<St
 
 //--
 
-GameVariable* GS1Visitor::getGameVariableFromSource(const ScriptObject& source, const std::string_view identifier) const
+GameVariable* GS1Visitor::getGameVariableFromSourceProperty(const ScriptObject& source, const std::string_view identifier, bool allowHidden) const
 {
 	switch (source.second)
 	{
 		case ScriptObjectType::NPC:
 			if (const auto npc = server->getNPC(source.first); npc != nullptr)
-				return getScriptParameter(*npc, identifier);
+				return getScriptParameter(*npc, identifier, allowHidden);
 			break;
 		case ScriptObjectType::PLAYER:
 			if (const auto player = server->getNPCServer()->getPlayer(source.first); player != nullptr)
-				return getScriptParameter(*player, identifier);
+				return getScriptParameter(*player, identifier, allowHidden);
 			break;
 		default:;
 	}
@@ -461,31 +463,31 @@ GameVariable* GS1Visitor::getGameVariableFromSource(const ScriptObject& source, 
 	{
 		case ScriptObjectType::BADDY:
 			if (const auto baddy = level->getBaddyById(source.first); baddy.has_value())
-				return getScriptParameter(*baddy.value(), identifier);
+				return getScriptParameter(*baddy.value(), identifier, allowHidden);
 			break;
 		case ScriptObjectType::BOMB:
 			if (const auto bomb = level->getBomb(source.first); bomb.has_value())
-				return getScriptParameter(*bomb.value(), identifier);
+				return getScriptParameter(*bomb.value(), identifier, allowHidden);
 			break;
 		case ScriptObjectType::ARROW:
 			if (const auto arrow = level->getArrow(source.first); arrow.has_value())
-				return getScriptParameter(*arrow.value(), identifier);
+				return getScriptParameter(*arrow.value(), identifier, allowHidden);
 			break;
 		case ScriptObjectType::ITEM:
 			if (const auto item = level->getItem(source.first); item.has_value())
-				return getScriptParameter(*item.value(), identifier);
+				return getScriptParameter(*item.value(), identifier, allowHidden);
 			break;
 		case ScriptObjectType::EXPLOSION:
 			if (const auto explo = level->getExplosion(source.first); explo.has_value())
-				return getScriptParameter(*explo.value(), identifier);
+				return getScriptParameter(*explo.value(), identifier, allowHidden);
 			break;
 		case ScriptObjectType::HORSE:
 			if (const auto horse = level->getHorse(source.first); horse.has_value())
-				return getScriptParameter(*horse.value(), identifier);
+				return getScriptParameter(*horse.value(), identifier, allowHidden);
 			break;
 		case ScriptObjectType::SIGN:
 			if (const auto sign = level->getSign(source.first); sign.has_value())
-				return getScriptParameter(*sign.value(), identifier);
+				return getScriptParameter(*sign.value(), identifier, allowHidden);
 			break;
 		default:;
 	}
@@ -493,7 +495,7 @@ GameVariable* GS1Visitor::getGameVariableFromSource(const ScriptObject& source, 
 	return nullptr;
 }
 
-GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view identifier, const std::optional<size_t> type) const
+GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view identifier, const std::optional<size_t> type, const bool allowHidden) const
 {
 	// If we have a specific storage type, try to get the store for it.
 	if (type.has_value())
@@ -507,8 +509,8 @@ GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view iden
 		return builtInStore->get(identifier).lock().get();
 
 	// Second, check the server's global variable store.
-	if (m_serverStore->contains(identifier))
-		return m_serverStore->get(identifier).lock().get();
+	if (const auto serverStore = getServerStore(); serverStore != nullptr && serverStore->contains(identifier))
+		return serverStore->get(identifier).lock().get();
 
 	auto checkStore = [&](const ScriptObject& source) -> std::optional<GameVariable*>
 	{
@@ -516,11 +518,12 @@ GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view iden
 		const bool storeHasIdentifier = store != nullptr && store->contains(identifier);
 
 		// First, if we have a storage type, get directly from the variable store.
+		// Otherwise, we want to defer to a property.
 		if (type.has_value() && storeHasIdentifier)
 			return store->get(identifier).lock().get();
 
 		// Second, if we have no storage type, check for a property.
-		if (auto property = getGameVariableFromSource(source, identifier); property != nullptr)
+		if (auto property = getGameVariableFromSourceProperty(source, identifier, allowHidden); property != nullptr)
 			return property;
 
 		// Lastly, check the variable store.
@@ -539,7 +542,7 @@ GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view iden
 		return result.value();
 
 	// Lastly, look at the initiator's store.
-	if (m_event->initiator != getOriginalSource())
+	if (m_event != nullptr && m_event->initiator != getOriginalSource())
 	{
 		if (const auto result = checkStore(m_event->initiator); result.has_value())
 			return result.value();
@@ -684,35 +687,16 @@ std::any GS1Visitor::reparseExpression(std::string_view expression, const std::s
 	return tree->accept(this);
 }
 
-void GS1Visitor::setCurrentPlayerVariables(const std::optional<ScriptObject>& source) const
-{
-	if (!source.has_value() || source.value().second != ScriptObjectType::PLAYER)
-	{
-		builtInStore->clearTemporary("player");
-		return;
-	}
-
-	const auto player = server->getNPCServer()->getPlayer(source.value().first);
-	if (player == nullptr)
-		return;
-
-	// All the player property shortcuts.
-	player->constructScriptParameters();
-	auto playerSource = source::FromPlayer(player->getId());
-	for (const auto& [name, variable] : player->scriptParameters)
-	{
-		if (name.starts_with('#'))
-			continue;
-
-		GameVariable var{.name = std::format("player{}", name), .lifetime = variables::Lifetime::TEMPORARY};
-		var.source = playerSource;
-		var.setters = variable.setters;
-		var.getters = variable.getters;
-		builtInStore->add(std::move(var));
-	}
-}
-
 ///////////////////////////////////////////////////////////////////////////////
+
+GameVariableStore* GS1Visitor::getServerStore() const
+{
+	// Expression evaluation (processMathExpression / processStringExpression) builds a visitor
+	// without going through execute(), so resolve the server store on first use.
+	if (m_serverStore == nullptr)
+		m_serverStore = getGameVariableStoreFromSource(source::FromServer());
+	return m_serverStore;
+}
 
 void GS1Visitor::execute(const ScriptEvent& event, const ScriptObject& source, GS1Parser& parser, ScriptExecutionContext& context, antlr4::tree::ParseTree* startNode)
 {
@@ -866,7 +850,8 @@ std::any GS1Visitor::visitBlock(GS1Parser::BlockContext* ctx)
 			}
 			catch (...)
 			{
-				m_callStack.pop_back();
+				if (!m_callStack.empty())
+					m_callStack.pop_back();
 				throw;
 			}
 		}
@@ -875,7 +860,8 @@ std::any GS1Visitor::visitBlock(GS1Parser::BlockContext* ctx)
 		moveNext();
 	}
 
-	m_callStack.pop_back();
+	if (!m_callStack.empty())
+		m_callStack.pop_back();
 
 	return {};
 }
@@ -987,8 +973,7 @@ std::any GS1Visitor::visitStatementWhile(GS1Parser::StatementWhileContext* conte
 std::any GS1Visitor::visitStatementWith(GS1Parser::StatementWithContext* context)
 {
 	auto expression = visit(context->expression());
-	auto value = getGS1ScriptValueFromAny(expression);
-	auto scriptObject = getScriptObject(value);
+	auto scriptObject = getScriptObject(expression);
 
 	// No object?  Don't execute the block.
 	if (!scriptObject.has_value())
@@ -996,14 +981,13 @@ std::any GS1Visitor::visitStatementWith(GS1Parser::StatementWithContext* context
 
 	// Push the source object onto the source stack.
 	m_currentSource.emplace_back(*scriptObject);
-	setCurrentPlayerVariables(*scriptObject);
 
 	// Execute the block with the new source.
 	auto result = visit(context->block());
 
 	// Pop the source off the source stack.
-	m_currentSource.pop_back();
-	setCurrentPlayerVariables(findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER));
+	if (!m_currentSource.empty())
+		m_currentSource.pop_back();
 
 	return result;
 }
@@ -1033,14 +1017,17 @@ std::any GS1Visitor::visitStatementUserFunctionCall(GS1Parser::StatementUserFunc
 	}
 
 	// Try to call the function in our joined classes.
-	ScriptEvent eventCopy = *m_event;
-	for (const auto script : getJoinedClassesFromSource(m_originalSource))
+	if (m_event != nullptr)
 	{
-		if (script->runUserDefinedFunction(identifier, eventCopy, m_originalSource))
-			return {};
-	}
+		ScriptEvent eventCopy = *m_event;
+		for (const auto script : getJoinedClassesFromSource(m_originalSource))
+		{
+			if (script->runUserDefinedFunction(identifier, eventCopy, m_originalSource))
+				return {};
+		}
 
-	RECOVERABLE_PARSE_ERROR(std::format("Could not find user function '{}'.", identifier), {});
+		RECOVERABLE_PARSE_ERROR(std::format("Could not find user function '{}'.", identifier), {});
+	}
 	return {};
 }
 
@@ -1168,7 +1155,7 @@ std::any GS1Visitor::visitExpressionIn(GS1Parser::ExpressionInContext* context)
 	SetAndRestore sar{expectingTimeoutAsVariable, true};
 
 	std::vector<double> values;
-	for (const auto& be : context->exponentiationExpression())
+	for (const auto& be : context->additiveExpression())
 		values.emplace_back(getScriptValueAsCopy<double>(visit(be)).value_or(0.0));
 
 	std::any right_any;
@@ -1428,7 +1415,12 @@ std::any GS1Visitor::visitExpressionMultiplicative(GS1Parser::ExpressionMultipli
 		else if (op.value() == GS1Parser::OP_DIV)
 			result /= right;
 		else if (op.value() == GS1Parser::OP_MOD)
-			result = static_cast<double>(static_cast<int64_t>(result) % static_cast<int64_t>(right));
+		{
+			// GS1 uses mathematical modulus.
+			const auto remainder = static_cast<int64_t>(result);
+			const auto divisor = static_cast<int64_t>(right);
+			result = static_cast<double>((remainder % divisor + divisor) % divisor);
+		}
 	}
 
 	return makeGS1ScriptValue(result);
@@ -1548,13 +1540,13 @@ std::any GS1Visitor::visitIdentifierAccess(GS1Parser::IdentifierAccessContext* c
 	}
 
 	// The first identifier value should be a ScriptObject.
-	auto value = getGS1ScriptValueFromAny(first);
-	auto objectSource = getScriptObject(value);
+	auto objectSource = getScriptObject(first);
 	if (!objectSource.has_value())
 		RECOVERABLE_PARSE_ERROR(std::format("Identifier did not contain a script object: {}.", context->children[0]->getText()), 0.0);
 
 	size_t pos = 1;
 	const size_t identifierCount = context->identifier_value().size();
+	SetAndRestore sarFindHidden{findHiddenProperties, true};
 
 	// Iterate through the identifier values, adjusting our current source object as we go.
 	do
@@ -1565,18 +1557,20 @@ std::any GS1Visitor::visitIdentifierAccess(GS1Parser::IdentifierAccessContext* c
 		{
 			first = visit(context->identifier_value(pos++));
 		}
-		m_currentSource.pop_back();
+		if (!m_currentSource.empty())
+			m_currentSource.pop_back();
 
 		// Check if the result is a ScriptObject.
-		value = getGS1ScriptValueFromAny(first);
-		objectSource = getScriptObject(value);
+		objectSource = getScriptObject(first);
 
 		// If not, we might be done.
 		if (!objectSource.has_value())
 		{
 			if (pos > identifierCount)
 				throw std::runtime_error("IdentifierAccess has no valid identifier value.");
-			return makeGS1ScriptValue(std::move(value));
+
+			if (auto value = getGS1ScriptValueFromAny(first); value.has_value())
+				return makeGS1ScriptValue(std::move(value.value().get()));
 		}
 	}
 	while (pos < identifierCount);
@@ -1650,7 +1644,7 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 
 	// Get the game variable store for the identifier.
 	// If there is no storage type, it pulls from the built-in variable store (saved on the script context).
-	if (auto variable = getGameVariableFromStorage(*identifier, storage); variable != nullptr)
+	if (auto variable = getGameVariableFromStorage(*identifier, storage, findHiddenProperties); variable != nullptr)
 	{
 		// If it is temp storage, make sure the variable is marked as temporary so it isn't saved.
 		if (storage.value_or(ENUM(StorageType::THIS)) == ENUM(StorageType::TEMP))

@@ -23,7 +23,7 @@ namespace preagonal::gs2
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-CompiledScriptResult ScriptEngineGS2::compileScript(std::string_view who, std::string_view script)
+CompiledScriptResult ScriptEngineGS2::compileScript(ScriptCompilationTarget, std::string_view who, const std::string_view script)
 {
 	// Compile the script.
 	auto result = m_scriptManager.compileScript(std::string{ script });
@@ -31,7 +31,7 @@ CompiledScriptResult ScriptEngineGS2::compileScript(std::string_view who, std::s
 
 	// Error.
 	if (!response.success)
-		return CompiledScriptResult{ string::join(response.errors | std::views::transform([this](const GS2CompilerError& error) -> std::string { return handleGS2Error(error); }), "\n") };
+		return CompiledScriptResult{std::make_pair(ScriptCompilationFailureType::SYNTAX_ERROR, string::join(response.errors | std::views::transform([](const GS2CompilerError& error) -> std::string { return handleGS2Error(error); }), "\n"))};
 
 	// Construct the compilation result.
 	ScriptExecutionContext scriptContext{ .engine = this };

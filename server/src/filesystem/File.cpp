@@ -168,6 +168,8 @@ bool File::open()
 		log::printLine(log::server, "** File '{}' read error: {}", m_file.string(), error);
 	}
 
+	fstream->seekg(0);
+
 	m_inputStreamHandle = std::move(fstream);
 	m_inputStream = dynamic_cast<std::ifstream*>(m_inputStreamHandle.get());
 
@@ -203,9 +205,12 @@ std::vector<char> File::read(const std::size_t count)
 		return {};
 
 	std::vector<char> result(count);
-	m_inputStream->read(result.data(), static_cast<std::streamsize>(count));
-	const auto amount = m_inputStream->gcount();
-	result.resize(static_cast<size_t>(amount));
+	if (count > 0)
+	{
+		m_inputStream->read(result.data(), static_cast<std::streamsize>(count));
+		const auto amount = m_inputStream->gcount();
+		result.resize(static_cast<size_t>(amount));
+	}
 	return result;
 }
 
@@ -215,12 +220,14 @@ std::string File::readChars(const std::size_t count)
 		return std::string{};
 
 	std::string result;
-	result.reserve(count);
+	if (count > 0)
+	{
+		result.resize(count);
 
-	std::copy_n(std::istreambuf_iterator(*m_inputStream), count, std::back_inserter(result));
-
-	// For some reason it doesn't advance the last byte read, so do it manually.
-	m_inputStream->seekg(1, std::ios::cur);
+		m_inputStream->read(result.data(), static_cast<std::streamsize>(count));
+		const auto amount = m_inputStream->gcount();
+		result.resize(static_cast<size_t>(amount));
+	}
 
 	return result;
 }

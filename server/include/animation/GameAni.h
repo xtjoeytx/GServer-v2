@@ -15,6 +15,20 @@ namespace preagonal
 
 class Server;
 
+// SPRITE  ID  SHEET  X  Y  W  H  DESC
+namespace GaniSheets
+{
+constexpr auto BODY = "BODY"sv;
+constexpr auto HEAD = "HEAD"sv;
+constexpr auto SHIELD = "SHIELD"sv;
+constexpr auto SWORD = "SWORD"sv;
+constexpr auto HORSE = "HORSE"sv;
+constexpr auto SPRITES = "SPRITES"sv;
+constexpr auto PICS = "PICS"sv;
+constexpr auto PARAM = "PARAM"sv;	// setani gani,param1,param2;
+constexpr auto ATTR = "ATTR"sv;		// setcharprop #P1,attr1;
+} // end namespace GaniSheets
+
 class GameAni
 {
 	enum AniFlags : uint8_t

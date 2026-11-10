@@ -32,6 +32,17 @@ namespace preagonal
 
 constexpr auto clientSideTerminator = "//#CLIENTSIDE"sv;
 
+static std::string::iterator determineClientSideLocation(std::string& text)
+{
+	auto clientside = text.begin();
+	if (const auto pos = text.find(clientSideTerminator); pos != std::string::npos)
+		std::advance(clientside, pos);
+	else
+		clientside = text.end();
+
+	return clientside;
+}
+
 //----------------------------
 
 static std::string performClientSideJoinHack(std::string_view code)
@@ -236,10 +247,10 @@ const ScriptByteCode& Script::getClientByteCode() const noexcept
 {
 	static ScriptByteCode empty;
 
-	if (m_client_script == nullptr || !m_client_script->script->has_value())
+	if (m_client_script == nullptr || m_client_script->script == nullptr || !m_client_script->script->has_value())
 		return empty;
 
-	if (auto* bytecode = std::any_cast<ScriptByteCode*>(m_client_script->script); bytecode != nullptr)
+	if (auto* bytecode = std::any_cast<ScriptByteCode>(m_client_script->script.get()); bytecode != nullptr)
 		return *bytecode;
 
 	return empty;
@@ -268,11 +279,19 @@ void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source)
 	std::vector<ScriptEventType> types;
 	std::vector<ScriptEventType> processedTypes;
 
+	bool hadTimeout = false;
 	ExecutionProfiler profiler{m_server_script.get()};
 	for (auto& event : queue)
 	{
-		// Execute events with args (or TIMEOUT) individually.
-		if (!event.args.empty() || event.type == ScriptEventType::TIMEOUT)
+		// Save timeouts for the very end.  Many things break unless you do that one last.
+		if (event.type == ScriptEventType::TIMEOUT)
+		{
+			hadTimeout = true;
+			continue;
+		}
+
+		// Execute events with args individually.
+		if (!event.args.empty())
 		{
 			engine->execute(event, source, m_server_script);
 			processedTypes.emplace_back(event.type);
@@ -286,7 +305,12 @@ void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source)
 
 			std::ranges::for_each(queue, [&event, &types, &processedTypes](const ScriptEvent& e)
 			{
-				if (e.type != event.type && e.initiator == event.initiator && e.args.empty() && !std::ranges::contains(processedTypes, e.type))
+				// Don't consolidate:
+				// - The same event type.
+				// - Timeout events.
+				// - Events that have a different initiator.
+				// - Events that contain arguments.
+				if (e.type != event.type && e.type != ScriptEventType::TIMEOUT && e.initiator == event.initiator && e.args.empty() && !std::ranges::contains(processedTypes, e.type))
 				{
 					types.emplace_back(e.type);
 					processedTypes.emplace_back(e.type);
@@ -295,6 +319,19 @@ void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source)
 
 			engine->execute(event, &types, source, m_server_script);
 			processedTypes.emplace_back(event.type);
+		}
+	}
+
+	// Execute the timeout last.
+	if (hadTimeout)
+	{
+		for (auto& event : queue)
+		{
+			if (event.type != ScriptEventType::TIMEOUT)
+				continue;
+
+			engine->execute(event, source, m_server_script);
+			break;
 		}
 	}
 }
@@ -330,14 +367,18 @@ std::string Script::minify(const std::string& src) noexcept
 	std::string minified;
 	std::string_view srcView{src};
 
-	const auto server = BabyDI::Get<Server>();
+	// If we have an NPC-Server, then skip the serverside code.
+	// We won't minify the code so that script errors have correct line numbers.
+	if (const auto server = BabyDI::Get<Server>(); server && server->hasNPCServer())
+	{
+		// No clientside?  Just return the whole script.
+		const auto clientsidePos = srcView.find(clientSideTerminator);
+		if (clientsidePos == std::string_view::npos)
+			return src;
 
-	// We don't want to trim serverside code so check if we have any.
-	bool hasServerSide = true;
-	if (server && !server->hasNPCServer())
-		hasServerSide = false;
-
-	bool inServerSide = true;
+		minified = srcView.substr(0, clientsidePos);
+		srcView.remove_prefix(clientsidePos);
+	}
 
 	// Trim the lines.
 	while (!srcView.empty())
@@ -365,11 +406,6 @@ std::string Script::minify(const std::string& src) noexcept
 				line = line.substr(0, comment);
 				newline = comment;
 			}
-			else if (line.find(clientSideTerminator) != std::string_view::npos)
-			{
-				// If we have a clientside terminator, we are now in clientside code.
-				inServerSide = false;
-			}
 		}
 
 		// Check if a multi-line comment starts in this line.
@@ -385,8 +421,7 @@ std::string Script::minify(const std::string& src) noexcept
 		}
 
 		// Trim the line.
-		if (!hasServerSide || !inServerSide)
-			line = string::trim(line);
+		line = string::trim(line);
 
 		// Append the line to minified.
 		if (!line.empty())
@@ -413,17 +448,6 @@ std::string Script::minify(const std::string& src) noexcept
 
 void Script::split(std::string& source) noexcept
 {
-	auto determineClientSideLocation = [](std::string& text) -> std::string::iterator
-	{
-		auto clientside = text.begin();
-		if (const auto pos = text.find(clientSideTerminator); pos != std::string::npos)
-			std::advance(clientside, pos);
-		else
-			clientside = text.end();
-
-		return clientside;
-	};
-
 	const auto server = BabyDI::Get<Server>();
 
 	// Check if we have an npc-server or not.
@@ -433,8 +457,6 @@ void Script::split(std::string& source) noexcept
 		hasServerSide = false;
 
 	// If we have serverside code, find the start of the clientside terminator.
-	// We need to mangle the newlines on just the clientside code.
-	// The serverside code will be fed into a compiler so it should have normal line endings.
 	auto clientside = source.begin();
 	if (hasServerSide)
 		clientside = determineClientSideLocation(source);
@@ -451,9 +473,6 @@ void Script::split(std::string& source) noexcept
 			clientside = source.begin();
 	}
 
-	// Mangle the line terminators.
-	std::replace(clientside, source.end(), '\n', '\xa7');
-
 	// If we don't have an npc-server, we don't support serverside code.
 	if (!hasServerSide)
 	{
@@ -465,7 +484,7 @@ void Script::split(std::string& source) noexcept
 	// Split the code into clientside and serverside.
 	if (const auto clientSep = source.find(clientSideTerminator); clientSep != std::string::npos)
 	{
-		auto endOfLine = source.find('\xa7', clientSep);
+		auto endOfLine = source.find('\n', clientSep);
 		if (endOfLine == std::string::npos)
 			endOfLine = clientSep + clientSideTerminator.size();
 
@@ -495,6 +514,11 @@ void Script::compileScript() noexcept
 
 	if (server->Generation == ServerGeneration::NEWMAIN)
 	{
+		// Mangle the clientside line terminators.
+		const auto clientside = determineClientSideLocation(m_modified_source);
+		std::replace(clientside, m_modified_source.end(), '\n', '\xa7');
+
+		// Compile serverside scripts.
 		m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
 		if (m_server_script != nullptr && m_server_script->identifier.empty())
 			m_server_script->identifier = m_who.empty() ? "(server:unnamed)" : m_who;
@@ -507,6 +531,10 @@ void Script::compileScript() noexcept
 			m_client_script->identifier = m_who.empty() ? "(client:unnamed)" : m_who;
 		if (m_server_script != nullptr && m_server_script->identifier.empty())
 			m_server_script->identifier = m_who.empty() ? "(server:unnamed)" : m_who;
+
+		// If we failed to compile the script, remove the clientside code so it doesn't get sent raw.
+		if (m_client_script == nullptr)
+			m_clientside = {};
 	}
 }
 

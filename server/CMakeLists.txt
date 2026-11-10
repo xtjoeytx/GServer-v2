@@ -267,7 +267,7 @@ endif()
 FetchContent_Declare(gs2lib
 	GIT_REPOSITORY https://xtjoeytx@bitbucket.org/xtjoeytx/gs2lib.git
 	GIT_SHALLOW    ON
-	GIT_TAG        5c36ab82aa55adffc49b8019a85cd6cc3b1047e1
+	GIT_TAG        35056f83c856091eacab50853876bfa9fa6f6967
 	#URL "${PROJECT_SOURCE_DIR}/../gs2lib"
 )
 FetchContent_MakeAvailable(gs2lib)
@@ -285,6 +285,16 @@ FetchContent_Declare(libtommath
 )
 FetchContent_MakeAvailable(libtommath)
 target_include_directories(${TARGET_NAME} PUBLIC "${libtommath_SOURCE_DIR}")
+
+# Map libtomcrypt configurations as it fails with MinSizeRel.
+if(TARGET libtommath)
+	set_target_properties(libtommath PROPERTIES
+		MAP_IMPORTED_CONFIG_DEBUG Release
+		MAP_IMPORTED_CONFIG_RELEASE Release
+		MAP_IMPORTED_CONFIG_MINSIZEREL Release
+		MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release
+	)
+endif()
 
 # ----------------------------
 # Dependency: libtomcrypt-preagonal.

@@ -83,7 +83,7 @@ static PacketHandleArray GeneratePacketHandlers()
 	handlers[PLI_RC_LARGEFILESTART] = &PlayerRC::msgPLI_RC_LARGEFILESTART;
 	handlers[PLI_RC_LARGEFILEEND] = &PlayerRC::msgPLI_RC_LARGEFILEEND;
 	handlers[PLI_RC_FOLDERDELETE] = &PlayerRC::msgPLI_RC_FOLDERDELETE;
-	handlers[PLI_RC_UNKNOWN162] = &PlayerRC::msgPLI_RC_UNKNOWN162;
+	handlers[PLI_PONG] = &PlayerRC::msgPLI_PONG;
 
 	return handlers;
 }
@@ -230,9 +230,9 @@ bool PlayerRC::sendLogin()
 
 	const auto& settings = m_server->getSettings();
 
-	// This packet clears the players weapons on the client, but official
-	// also sends it to the RC's so we are maintaining the same behavior
-	sendPacket(CString() >> (char)PLO_CLEARWEAPONS);
+	// This packet resets the client, but official
+	// also sends it to the RC's so we are maintaining the same behavior.
+	sendPacket(CString() >> (char)PLO_RESETCLIENT);
 
 	// If no nickname was specified, set the nickname to the account name.
 	if (account.character.nickName.empty())

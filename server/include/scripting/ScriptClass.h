@@ -24,7 +24,7 @@ public:
 	ScriptClass(std::string_view className, std::string_view classScript);
 	~ScriptClass() = default;
 
-	CString getClassPacket() const;
+	CString getClassPacket(int clientVersion) const;
 
 	[[a::inline]] Script& getScript();
 	[[a::inline]] const Script& getScript() const;

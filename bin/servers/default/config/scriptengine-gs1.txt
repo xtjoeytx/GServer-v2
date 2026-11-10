@@ -27,6 +27,9 @@ group-commands=true
 # Enables the 'shootball dir;' command that accepts a direction argument.
 shootball=true
 
+# Enables an extra flag to detect joltbomb damage.
+explodedwithjolt=true
+
 # Fixes spelling errors in events/variables by adding alternatives.
 # Currently adds: playertouchesme and playertouchesother.
 fix-spelling=true

@@ -131,13 +131,11 @@ userFunctionStatement
 //----------------------------------------------------------
 
 builtinCommandStatement
-	: COMMAND builtInCommandExpression (TOKEN_COMMA builtInCommandExpression)*				# StatementBuiltInCommand
-	| COMMAND																				# StatementBuiltInCommand
+	: COMMAND (builtInCommandExpression (MODE_COMMA builtInCommandExpression)*)?			# StatementBuiltInCommand
 	;
 
 builtInCommandExpression
-	: special_literal
-	| expression
+	: (special_literal | expression)
 	;
 
 //----------------------------------------------------------
@@ -165,8 +163,14 @@ equalityExpression
 	;
 
 relationalExpression
+	: inExpression
+		((OP_LESS | OP_GREAT | OP_LESS_EQ | OP_GREAT_EQ) inExpression)?				        # ExpressionRelational
+	;
+
+inExpression
 	: additiveExpression
-		((OP_LESS | OP_GREAT | OP_LESS_EQ | OP_GREAT_EQ) additiveExpression)?				# ExpressionRelational
+		((TOKEN_COMMA additiveExpression)*
+			OP_IN (range_literal | primaryExpression))?										# ExpressionIn
 	;
 
 additiveExpression
@@ -174,13 +178,8 @@ additiveExpression
 	;
 
 multiplicativeExpression
-	: inExpression ((OP_MUL | OP_DIV | OP_MOD) (LITERAL | inExpression))*					# ExpressionMultiplicative
-	;
-
-inExpression
 	: exponentiationExpression
-		((TOKEN_COMMA exponentiationExpression)*
-			OP_IN (range_literal | primaryExpression))?										# ExpressionIn
+	    ((OP_MUL | OP_DIV | OP_MOD) (LITERAL | exponentiationExpression))*					# ExpressionMultiplicative
 	;
 
 exponentiationExpression
@@ -200,7 +199,7 @@ primaryExpression
 	: literal_literal
 	| array_literal
 	| TOKEN_PAREN_LEFT expression TOKEN_PAREN_RIGHT
-	| RAWMESSAGECODE messagecode_string
+	| START_MESSAGECODE messagecode_string
 	| builtin_function
 	| compound_string
 	| identifier_access
@@ -209,7 +208,7 @@ primaryExpression
 //----------------------------------------------------------
 
 builtin_function
-	: FUNCTION ((TOKEN_PAREN_LEFT expression (TOKEN_COMMA expression)* TOKEN_PAREN_RIGHT) | expression)
+	: FUNCTION ((TOKEN_PAREN_LEFT expression (MODE_COMMA expression)* TOKEN_PAREN_RIGHT) | expression)
 		{ if ($FUNCTION->getText().starts_with("playersays")) add_identifier("playerchats");
 		}																					# BuiltInFunctionCall
 	;
@@ -221,7 +220,7 @@ identifier_access
 identifier_value
 	: compound_identifier
 		(TOKEN_BRACKET_LEFT
-			expression (TOKEN_COMMA expression)?
+			expression ((TOKEN_COMMA | MODE_COMMA) expression)?
 		TOKEN_BRACKET_RIGHT)?
 		{ add_identifier($compound_identifier.ctx->getText()); }							# IdentifierValue
 	;
@@ -231,12 +230,12 @@ compound_identifier
 	;
 
 compound_string
-	: (STRING | messagecode_string)+														# CompoundString
+    : START_STRING (STRING | messagecode_string)*                                           # CompoundString
 	;
 
 messagecode_string
 	: MESSAGECODE
-		(TOKEN_PAREN_LEFT expression (TOKEN_COMMA expression)* TOKEN_PAREN_RIGHT)?			# MessageCode
+		(TOKEN_PAREN_LEFT expression (MODE_COMMA expression)* TOKEN_PAREN_RIGHT)?			# MessageCode
 	;
 
 //----------------------------------------------------------
@@ -253,7 +252,8 @@ assignment_operator
 	;
 
 array_literal
-	: TOKEN_BRACE_LEFT expression? (TOKEN_COMMA expression?)* END? TOKEN_BRACE_RIGHT		# ArrayLiteral
+	: TOKEN_BRACE_LEFT expression?
+	    ((TOKEN_COMMA | MODE_COMMA) expression?)* END? TOKEN_BRACE_RIGHT		            # ArrayLiteral
 	;
 
 literal_literal
@@ -261,7 +261,8 @@ literal_literal
 	;
 
 range_literal
-	: (TOKEN_PIPE | OP_LESS) expression TOKEN_COMMA expression (TOKEN_PIPE | OP_GREAT)		# RangeLiteral
+	: (TOKEN_PIPE | OP_LESS) expression
+	    (TOKEN_COMMA | MODE_COMMA) expression (TOKEN_PIPE | OP_GREAT)		                # RangeLiteral
 	;
 
 special_literal
