@@ -170,6 +170,7 @@ struct CachedSettings
 	SettingCache<bool> damageReactions{"damagereactions", true};
 	SettingCache<bool> groupCommands{"group-commands", true};
 	SettingCache<bool> shootball{"shootball", true};
+	SettingCache<bool> explodedWithJolt{"explodedwithjolt", true};
 	SettingCache<bool> fixSpelling{"fix-spelling", true};
 };
 

@@ -162,6 +162,20 @@ void setNPCFlags(const ScriptEvent& event, GameVariableStore& variableStore, con
 	variableStore.add("peltwithstone", carryType == CarryObjectType::STONE);
 	variableStore.add("peltwithvase", carryType == CarryObjectType::VASE);
 	variableStore.add("peltwithplayer", carryType == CarryObjectType::PLAYER);
+
+	// The EXPLODED event has the bomb type in the event args.
+	if (event.type == ScriptEventType::EXPLODED && !event.args.empty())
+	{
+		const auto npcserver = BabyDI::Get<Server>()->getNPCServer();
+		if (const auto gs1 = std::dynamic_pointer_cast<ScriptEngineGS1>(npcserver->gs1.lock()); gs1 != nullptr && gs1->config.explodedWithJolt.getValue() == true)
+		{
+			bool joltBomb = false;
+			if (const auto type = std::any_cast<CarryObjectType>(&event.args.front()); type != nullptr)
+				joltBomb = *type == CarryObjectType::JOLTBOMB || *type == CarryObjectType::HOTJOLTBOMB;
+
+			variableStore.add("explodedwithjolt", joltBomb);
+		}
+	}
 }
 
 void setLevelFlags(GameVariableStore& variableStore, const NPCPtr& npc, const LevelPtr& level)

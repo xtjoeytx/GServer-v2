@@ -2255,12 +2255,12 @@ void Level::addExplosion(const PixelPosition& position, const ScriptObject& from
 		for (const NPCID& npcId : findIntersectingNPCsForEvent(vertTest))
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
-				npc->hurtAndPush(static_cast<int8_t>(power), center, ScriptEventType::EXPLODED, from);
+				npc->hurtAndPush(static_cast<int8_t>(power), center, ScriptEventType::EXPLODED, from, power == 3 ? CarryObjectType::JOLTBOMB : CarryObjectType::BOMB);
 		}
 		for (const NPCID& npcId : findIntersectingNPCsForEvent(horzTest))
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
-				npc->hurtAndPush(static_cast<int8_t>(power), center, ScriptEventType::EXPLODED, from);
+				npc->hurtAndPush(static_cast<int8_t>(power), center, ScriptEventType::EXPLODED, from, power == 3 ? CarryObjectType::JOLTBOMB : CarryObjectType::BOMB);
 		}
 	}
 }
@@ -2315,7 +2315,7 @@ void Level::addSpyFire(const PixelPosition& position, const ScriptObject& from, 
 		for (const NPCID& npcId : findIntersectingNPCsForEvent({testPosition, testDimension}))
 		{
 			if (auto npc = m_server->getNPC(npcId); npc != nullptr)
-				npc->hurtAndPush(static_cast<int8_t>(power), center, ScriptEventType::EXPLODED, from);
+				npc->hurtAndPush(static_cast<int8_t>(power), center, ScriptEventType::EXPLODED, from, power == 3 ? CarryObjectType::JOLTBOMB : CarryObjectType::BOMB);
 		}
 	}
 }

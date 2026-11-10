@@ -262,7 +262,7 @@ GS1ScriptWrapper::GS1ScriptWrapper(const std::string_view who, const std::string
 ScriptEngineGS1::ScriptEngineGS1()
 {
 	settings.track(config.strictMode, config.alwaysScopeVariables, config.alwaysTranslateStrings);
-	settings.track(config.damageReactions, config.groupCommands, config.shootball);
+	settings.track(config.damageReactions, config.groupCommands, config.shootball, config.explodedWithJolt);
 	settings.track(config.fixSpelling);
 }
 
