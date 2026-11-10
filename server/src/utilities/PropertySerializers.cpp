@@ -476,9 +476,16 @@ CString PropertyTileCoordinate::serialize() const
 
 	// Writing 223 will break the packet flow (as it will overflow to the newline char), so avoid doing that.
 	// 223 will be -11 and 224 will be -10.5.
-	auto halftile = static_cast<uint8_t>(pixelCoordinate / 8);
+	// Kixt: the value is read back as 0..215 or, from 216 up, as negative (-40..-1 half tiles): keep it in that range, and never write 233
+	// (-11.5 tiles), which writeGCharUnsafe refuses with an exception that took the whole server down when a player saved at x = -11.5 in a
+	// level logged in again (ServerList::addPlayer).
+	int halftileValue = pixelCoordinate >= 0 ? pixelCoordinate / 8 : -((-pixelCoordinate + 7) / 8);
+	halftileValue = std::clamp(halftileValue, -40, 215);
+	auto halftile = static_cast<uint8_t>(static_cast<int8_t>(halftileValue));
 	if (halftile == 223)
 		halftile = 224;
+	if (halftile == 233)
+		halftile = 234;
 
 	result.writeGCharUnsafe(halftile);
 	return result;

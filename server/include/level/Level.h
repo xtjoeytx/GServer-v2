@@ -601,7 +601,8 @@ inline SubLevelPtr Level::getSubLevelAtPosition(const MapPosition& position) con
 	return nullptr;
 }
 
-// True if the gmap has a cell at this column/row (a plain level only has cell 0,0). getSubLevelAtPosition() alone is not enough: column == width wraps into the next row.
+// True if the gmap has a cell at this column/row (a plain level only has cell 0,0).
+// getSubLevelAtPosition() alone is not enough: column == width wraps into the next row.
 inline bool Level::isValidMapPosition(const MapPosition& position) const noexcept
 {
 	if (!isGmap() || m_map == nullptr)

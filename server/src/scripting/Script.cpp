@@ -1,7 +1,12 @@
+#include <cctype>
 #include <algorithm>
 #include <any>
 #include <array>
 #include <format>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <numeric>
 #include <iterator>
 #include <string>
@@ -250,7 +255,11 @@ const ScriptByteCode& Script::getClientByteCode() const noexcept
 	if (m_client_script == nullptr || m_client_script->script == nullptr || !m_client_script->script->has_value())
 		return empty;
 
+<<<<<<< HEAD
 	if (auto* bytecode = std::any_cast<ScriptByteCode>(m_client_script->script.get()); bytecode != nullptr)
+=======
+	if (auto* bytecode = std::any_cast<ScriptByteCode>(m_client_script->script.get()); bytecode != nullptr)   // the any holds the vector itself; the pointer form never throws
+>>>>>>> 40d49ca8 (Transfer to new system)
 		return *bytecode;
 
 	return empty;
@@ -501,6 +510,172 @@ void Script::split(std::string& source) noexcept
 	}
 }
 
+// GS1 client scripts cannot run in v6. tools/gs1_to_gs2.py translates them offline; the result sits in "gs2cache/<key>.gs2" (relative to the
+// server folder), where <key> is the FNV-1a 64 hash (16 hex digits) of the client script with its line breaks restored and the ends trimmed.
+static std::string gs1CacheKey(std::string_view src)
+{
+	std::string text{src};
+	const auto first = text.find_first_not_of(" \t\r\n");
+	if (first == std::string::npos)
+		return {};
+	const auto last = text.find_last_not_of(" \t\r\n");
+	std::uint64_t h = 1469598103934665603ull;
+	for (size_t i = first; i <= last; ++i)
+	{
+		h ^= static_cast<unsigned char>(text[i]);
+		h *= 1099511628211ull;
+	}
+	return std::format("{:016x}", h);
+}
+
+// The translation of a GS1 client script, newlines mangled like the rest of the client-side code. Empty when there is none.
+static const std::string& translatedClientScript(std::string_view original)
+{
+	// The client part of the ORIGINAL source (m_clientside has been minified, so it cannot be matched with the offline translation).
+	std::string_view src;
+	if (const auto sep = original.find(clientSideTerminator); sep != std::string_view::npos)
+	{
+		const auto eol = original.find('\n', sep);
+		src = eol == std::string_view::npos ? std::string_view{} : original.substr(eol + 1);
+	}
+	else if (original.find("//#SERVERSIDE") == std::string_view::npos)
+	{
+		// A script without any marker (the old doors, lamps ...) was written for a client that also ran it: the whole text is the key.
+		src = original;
+	}
+	static std::unordered_map<std::string, std::string> cache;
+	static const std::string none;
+	const auto key = gs1CacheKey(src);
+	if (key.empty())
+		return none;
+	if (const auto it = cache.find(key); it != cache.end())
+	{
+				return it->second;
+	}
+	std::string out;
+	// Not translated yet (a level uploaded after the last offline run): ask the translator once, the result is kept in gs2cache.
+	// gs2cache/<key>.none means it was tried and gave nothing.
+	if (!std::ifstream{"gs2cache/" + key + ".gs2", std::ios::binary} && !std::ifstream{"gs2cache/" + key + ".none", std::ios::binary} && !std::ifstream{"gs2cache/" + key + ".bad", std::ios::binary}
+	    && std::ifstream{"gs2cache/gs1_to_gs2.py", std::ios::binary})
+	{
+		{
+			std::ofstream in{"gs2cache/" + key + ".in", std::ios::binary};
+			in << src;
+		}
+		const std::string cmd = "python3 -I gs2cache/gs1_to_gs2.py --one gs2cache/" + key + ".in --classes scripts > gs2cache/" + key + ".tmp 2>/dev/null";
+		const int rc = std::system(cmd.c_str());
+		std::error_code ec;
+		std::filesystem::remove("gs2cache/" + key + ".in", ec);
+		if (rc == 0 && std::filesystem::exists("gs2cache/" + key + ".tmp", ec) && std::filesystem::file_size("gs2cache/" + key + ".tmp", ec) > 0)
+			std::filesystem::rename("gs2cache/" + key + ".tmp", "gs2cache/" + key + ".gs2", ec);
+		else
+		{
+			std::filesystem::remove("gs2cache/" + key + ".tmp", ec);
+			std::ofstream{"gs2cache/" + key + ".none"};
+		}
+	}
+	if (std::ifstream in{"gs2cache/" + key + ".gs2", std::ios::binary}; in)
+	{
+		std::ostringstream ss;
+		ss << in.rdbuf();
+		std::string text = ss.str();
+		// leave out the //#CLIENTSIDE line
+		if (text.starts_with("//#CLIENTSIDE"))
+		{
+			const auto eol = text.find('\n');
+			text = eol == std::string::npos ? std::string{} : text.substr(eol + 1);
+		}
+		std::replace(text.begin(), text.end(), '\n', '\xa7');
+		out = string::trim(text);
+	}
+	return cache.emplace(key, std::move(out)).first->second;
+}
+
+// With a file gs2cache/CHECK present, every translation in gs2cache is compiled once (the way the server compiles it for a client) and the ones the
+// GS2 compiler refuses are renamed to <key>.bad; their keys go to gs2cache/CHECK.out. A script that does not compile is simply missing in the game.
+static void checkGs2Cache(ScriptSystem& scripting)
+{
+	static bool done = false;
+	if (done || !std::filesystem::exists("gs2cache/CHECK"))
+		return;
+	done = true;
+	std::ofstream report{"gs2cache/CHECK.out", std::ios::trunc};
+	size_t total = 0, bad = 0;
+	std::error_code ec;
+	std::vector<std::filesystem::path> files;
+	for (const auto& entry : std::filesystem::directory_iterator{"gs2cache", ec})
+		if (entry.path().extension() == ".gs2")
+			files.push_back(entry.path());
+	for (const auto& path : files)
+	{
+		std::ifstream in{path, std::ios::binary};
+		std::ostringstream ss;
+		ss << in.rdbuf();
+		std::string text = ss.str();
+		if (text.starts_with("//#CLIENTSIDE"))
+		{
+			const auto eol = text.find('\n');
+			text = eol == std::string::npos ? std::string{} : text.substr(eol + 1);
+		}
+		std::replace(text.begin(), text.end(), '\n', '\xa7');
+		++total;
+		if (scripting.getCompiledClientScript(path.stem().string(), string::trim(text)) == nullptr)
+		{
+			++bad;
+			report << path.stem().string() << "\n";
+			auto badPath = path;
+			badPath.replace_extension(".bad");
+			std::filesystem::rename(path, badPath, ec);
+		}
+	}
+	report << "checked " << total << ", refused " << bad << "\n";
+	std::filesystem::remove("gs2cache/CHECK", ec);
+}
+
+// Does this client-side source look like GS2? v6 clients cannot run GS1, and feeding GS1 to the GS2 compiler only printed one "missing semicolon"
+// error per NPC. GS1 has functions of its own ("function clear() { ... }"), so the word "function" alone is no sign. Signs of GS2: a "//#GS2"
+// marker, "new Gui...", "public function", an event function ("function onCreated"), or a control handler ("function Name.onAction").
+// (Newlines are mangled to \xa7 in client-side code.)
+static bool looksLikeGs2(std::string_view src) noexcept
+{
+	if (src.empty())
+		return false;
+	if (src.find("//#GS2") != std::string_view::npos || src.find("new Gui") != std::string_view::npos)
+		return true;
+
+	auto isSpace = [](char c) { return c == ' ' || c == '\t' || c == '\r' || c == '\xa7'; };
+	auto isIdent = [](char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '.'; };
+
+	constexpr std::string_view kw = "function";
+	for (auto pos = src.find(kw); pos != std::string_view::npos; pos = src.find(kw, pos + 1))
+	{
+		if (pos > 0 && (std::isalnum(static_cast<unsigned char>(src[pos - 1])) || src[pos - 1] == '_'))
+			continue;
+
+		// "public function"
+		auto back = pos;
+		while (back > 0 && isSpace(src[back - 1]))
+			--back;
+		if (back >= 6 && src.substr(back - 6, 6) == "public" && back != pos)
+			return true;
+
+		// The name after "function".
+		auto i = pos + kw.size();
+		const auto afterKw = i;
+		while (i < src.size() && isSpace(src[i]))
+			++i;
+		if (i == afterKw)
+			continue;
+		const auto nameStart = i;
+		while (i < src.size() && isIdent(src[i]))
+			++i;
+		const auto name = src.substr(nameStart, i - nameStart);
+		if (name.size() > 2 && ((name[0] == 'o' && name[1] == 'n') || name.find('.') != std::string_view::npos))
+			return true;
+	}
+	return false;
+}
+
 void Script::compileScript() noexcept
 {
 	m_client_script.reset();
@@ -525,7 +700,17 @@ void Script::compileScript() noexcept
 	}
 	else if (server->Generation == ServerGeneration::MODERN)
 	{
-		m_client_script = npcServer->scripting.getCompiledClientScript(m_who, m_clientside);
+		checkGs2Cache(npcServer->scripting);
+		if (looksLikeGs2(m_clientside))
+		{
+			m_client_script = npcServer->scripting.getCompiledClientScript(m_who, m_clientside);
+		}
+		else
+		{
+			if (const auto& translated = translatedClientScript(m_original_source); !translated.empty())
+				m_client_script = npcServer->scripting.getCompiledClientScript(m_who, translated);
+		}
+		// The server script engine is chosen by getCompiledServerScript (GS1 server scripts such as the doors run in the GS1 engine).
 		m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
 		if (m_client_script != nullptr && m_client_script->identifier.empty())
 			m_client_script->identifier = m_who.empty() ? "(client:unnamed)" : m_who;

@@ -174,11 +174,13 @@ void FileSystem::defaultWatchCallback(uint32_t id, const std::filesystem::path& 
 			// The file got changed.
 			if (e.test(FileEvent::Modified) || e.test(FileEvent::Renamed))
 			{
-				if (std::filesystem::exists(dir / file))
+				std::error_code ec;
+				if (std::filesystem::is_regular_file(dir / file, ec))
 				{
 					// Check for no change in mod time.
 					// Sometimes a modify event can get spawned multiple times.
-					const auto fileModTime = std::filesystem::last_write_time(dir / file);
+					const auto fileModTime = std::filesystem::last_write_time(dir / file, ec);
+					if (ec) return;
 					if (iter->second->modifiedTime == fileModTime)
 						return;
 
@@ -243,7 +245,9 @@ void FileSystem::defaultWatchCallback(uint32_t id, const std::filesystem::path& 
 					// Update the file entry.
 					iter->second->file = dir / file;
 					iter->second->file.make_preferred();
-					iter->second->modifiedTime = std::filesystem::last_write_time(iter->second->file);
+					std::error_code ec;
+					const auto renamedModTime = std::filesystem::last_write_time(iter->second->file, ec);
+					if (!ec) iter->second->modifiedTime = renamedModTime;
 					iter->second->categories.reset();
 					assignCategoriesToFileData(*iter->second.get());
 
@@ -269,13 +273,21 @@ void FileSystem::defaultWatchCallback(uint32_t id, const std::filesystem::path& 
 			}
 
 			// New file.
+<<<<<<< HEAD
 			if (iter == m_files.end() && e.test(FileEvent::Added) && std::filesystem::exists(dir / file) && std::filesystem::is_regular_file(dir / file))
+=======
+			std::error_code ec;
+			if (iter == m_files.end() && e.test(FileEvent::Added) && std::filesystem::is_regular_file(dir / file, ec))
+>>>>>>> 40d49ca8 (Transfer to new system)
 			{
+				// A new folder (or a file that is gone again) used to reach file_size() and abort the server.
 				auto entry = std::make_unique<FileData>();
 				entry->file = dir / file;
 				entry->file.make_preferred();
-				entry->fileSize = std::filesystem::file_size(entry->file);
-				entry->modifiedTime = std::filesystem::last_write_time(entry->file);
+				entry->fileSize = std::filesystem::file_size(entry->file, ec);
+				if (ec) return;
+				entry->modifiedTime = std::filesystem::last_write_time(entry->file, ec);
+				if (ec) return;
 				assignCategoriesToFileData(*entry);
 
 				iter = m_files.insert(std::make_pair(file.filename(), std::move(entry)));
@@ -663,8 +675,11 @@ void FileSystem::addExisting(FileCategory category, const std::filesystem::path&
 	auto entry = std::make_unique<FileData>();
 	entry->file = fullFilePath;
 	entry->file.make_preferred();
-	entry->fileSize = std::filesystem::file_size(entry->file);
-	entry->modifiedTime = std::filesystem::last_write_time(entry->file);
+	std::error_code ec;
+	entry->fileSize = std::filesystem::file_size(entry->file, ec);
+	if (ec) return;
+	entry->modifiedTime = std::filesystem::last_write_time(entry->file, ec);
+	if (ec) return;
 	assignCategoriesToFileData(*entry);
 
 	m_files.insert(std::make_pair(fullFilePath.filename(), std::move(entry)));

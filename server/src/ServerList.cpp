@@ -187,7 +187,7 @@ bool ServerList::doTimedEvents(const precise_clock::time_point time)
 
 		const auto& settings = m_server->getSettings();
 		const CString ip(settings.get<std::string>("serverip").value_or("AUTO"s));
-		sendPacket(CString() >> (char)SVO_SETIP >> (char)ip.length() << ip, true);
+		sendPacket(CString() >> (char)SVO_SETIP << ip, true);
 	}
 
 	// Reconnect to the listserver, with connection backoff to prevent a flood of connections

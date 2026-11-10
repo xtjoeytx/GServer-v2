@@ -1255,7 +1255,7 @@ bool PlayerClient::warp(const std::shared_ptr<Level>& level, const PixelPosition
 		account.character.mapY = mapPosition.y();
 		this->modTime[PROPID(PlayerProp::GMAPLEVELX)] = m_server->getFrameStartTime();
 		this->modTime[PROPID(PlayerProp::GMAPLEVELY)] = m_server->getFrameStartTime();
-		// FIX v6: The client needs the .gmap file to know the names of the levels around it.
+		// The client needs the .gmap file to know the names of the levels around it.
                 // A client that does not have it yet asks only after PLAYERWARP2, and the board/NPC packets of the level that follow arrive before it knows what they belong to.
 		// So send the map file first. files wait in the queue's low priority file buffer.
 		// Whatever was queued before goes out first, in order, then the map file. The warp is queued after it.
