@@ -2083,7 +2083,7 @@ std::optional<LevelBaddy*> Level::getAliveBaddyByIndex(const size_t index) const
 
 //----------------------------
 
-LevelBomb* Level::addBomb(inform_client_t, const PixelPosition& position, uint8_t power)
+LevelBomb* Level::addBomb(inform_client_t, const PixelPosition& position, const uint8_t power)
 {
 	if (!m_server->hasNPCServer())
 		return nullptr;
@@ -2096,7 +2096,6 @@ LevelBomb* Level::addBomb(inform_client_t, const PixelPosition& position, uint8_
 		const auto y = static_cast<char>(localPosition.y() / 8);
 		const uint8_t timeToExplode = static_cast<uint8_t>(std::min<std::chrono::milliseconds::rep>(MAX_LENGTH_BEFORE_OVERFLOW, std::chrono::duration_cast<std::chrono::milliseconds>(result->timeout.timeout).count() / 50));
 		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOMBADD >> (short)0 >> (char)x >> (char)y >> (char)result->power >> (char)timeToExplode, position, shared_from_this());
-		// PLO_BOMBADD might support a bomb image at the end of the packet.
 	}
 	return result;
 }

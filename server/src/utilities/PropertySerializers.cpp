@@ -493,7 +493,7 @@ void PropertyTileCoordinate::deserialize(CString& data)
 	// CString currently cannot do that calculation correctly, so read it into a larger data type and subtract 256, if it should be a negative number.
 	const auto read = data.readGUChar();
 	int16_t halfTile = read;
-	if (halfTile > MAX_LENGTH_BEFORE_OVERFLOW)
+	if (halfTile > static_cast<int16_t>(MAX_LENGTH_BEFORE_OVERFLOW))
 		halfTile -= 256;
 
 	pixelCoordinate = static_cast<int16_t>(halfTile * 8);

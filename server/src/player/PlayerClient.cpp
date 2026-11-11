@@ -1244,9 +1244,9 @@ bool PlayerClient::warp(const std::shared_ptr<Level>& level, const PixelPosition
 	if (level->isGmap())
 	{
 		// We have to do this manually since if we set it via setPropWith, it will cause a second level warp.
-		auto mapPosition = toMapPosition(position);
-		account.character.mapX = mapPosition.x();
-		account.character.mapY = mapPosition.y();
+		auto mapPosition = level->clampMapPosition(toMapPosition(position));
+		account.character.mapX = std::min(mapPosition.x(), static_cast<uint8_t>(level->getMap()->size.width() - 1));
+		account.character.mapY = std::min(mapPosition.y(), static_cast<uint8_t>(level->getMap()->size.height() - 1));
 		this->modTime[PROPID(PlayerProp::GMAPLEVELX)] = m_server->getFrameStartTime();
 		this->modTime[PROPID(PlayerProp::GMAPLEVELY)] = m_server->getFrameStartTime();
 		sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << getProp<PlayerProp::Z>().serialize() >> (char)mapPosition.x() >> (char)mapPosition.y() << level->levelName);
@@ -1282,8 +1282,16 @@ bool PlayerClient::enterLevel(const std::shared_ptr<Level>& level, const std::op
 		account.level = level->levelName;
 	}
 
-	// Send the level now.
+	// Get the sub level.
 	const auto subLevel = level->getSubLevelAtPosition(getMapPosition());
+	if (subLevel == nullptr)
+	{
+		leaveLevel();
+		sendPacket(CString() >> (char)PLO_WARPFAILED << level->levelName);
+		return false;
+	}
+
+	// Send the level now.
 	bool succeed = sendStaticLevelData(subLevel->staticData.lock(), subLevel, clientCachedTime);
 	succeed = succeed && sendDynamicLevelData(level, clientCachedTime);
 

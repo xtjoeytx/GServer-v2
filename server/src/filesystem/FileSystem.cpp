@@ -174,12 +174,12 @@ void FileSystem::defaultWatchCallback(uint32_t id, const std::filesystem::path& 
 			// The file got changed.
 			if (e.test(FileEvent::Modified) || e.test(FileEvent::Renamed))
 			{
-				if (std::filesystem::exists(dir / file))
+				if (std::error_code ec; std::filesystem::is_regular_file(dir / file, ec))
 				{
 					// Check for no change in mod time.
 					// Sometimes a modify event can get spawned multiple times.
-					const auto fileModTime = std::filesystem::last_write_time(dir / file);
-					if (iter->second->modifiedTime == fileModTime)
+					const auto fileModTime = std::filesystem::last_write_time(dir / file, ec);
+					if (ec || iter->second->modifiedTime == fileModTime)
 						return;
 
 					iter->second->modifiedTime = fileModTime;
@@ -269,7 +269,7 @@ void FileSystem::defaultWatchCallback(uint32_t id, const std::filesystem::path& 
 			}
 
 			// New file.
-			if (iter == m_files.end() && e.test(FileEvent::Added) && std::filesystem::exists(dir / file) && std::filesystem::is_regular_file(dir / file))
+			if (iter == m_files.end() && e.test(FileEvent::Added) && std::filesystem::is_regular_file(dir / file))
 			{
 				auto entry = std::make_unique<FileData>();
 				entry->file = dir / file;

@@ -231,7 +231,7 @@ static constexpr std::array<std::string, 255> FillOutputPacketNamesArray()
 	return names;
 }
 
-std::array<std::string, 255> OutputPacketNamesArray = FillOutputPacketNamesArray();
+static std::array<std::string, 255> OutputPacketNamesArray = FillOutputPacketNamesArray();
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -547,6 +547,10 @@ void Player::sendRawPacket(const CString& packet)
 
 std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 {
+	// Don't let the client request level files.
+	if (inList(fs::getANSIFileName(file.extension()), ".nw"s, ".graal"s, ".zelda"s))
+		return {false, false};
+
 	// Add the filename to the list of known files so we can resend the file
 	// to the client if it gets changed after it was originally sent
 	if (const auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); isClient() && client != nullptr)
@@ -571,7 +575,7 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 	time_t fileModTime = 0;
 
 	// Find the file.
-	if (std::filesystem::exists(file))
+	if (isRC() && std::filesystem::exists(file))
 	{
 		fs::File openedFile{file};
 		fileData = openedFile.read();
@@ -1222,7 +1226,7 @@ void Player::setPosition(const PixelPosition& position)
 
 	if (const auto level = getLevel(); level != nullptr && level->isGmap())
 	{
-		auto mapPosition = toMapPosition(position);
+		const auto mapPosition = level->clampMapPosition(toMapPosition(position));
 		account.character.mapX = mapPosition.x();
 		account.character.mapY = mapPosition.y();
 	}
@@ -1415,7 +1419,7 @@ void Player::constructScriptParameters()
 				// Fix the map position if applicable.
 				if (const auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
 				{
-					if (const auto mapX = toMapPosition(globalPosition).x(); mapX != account.character.mapX)
+					if (const auto mapX = levelPtr->clampMapPosition(toMapPosition(globalPosition)).x(); mapX != account.character.mapX)
 					{
 						account.character.mapX = mapX;
 						modTime[PROPID(PlayerProp::GMAPLEVELX)] = now;
@@ -1444,7 +1448,7 @@ void Player::constructScriptParameters()
 				// Fix the map position if applicable.
 				if (const auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
 				{
-					if (const auto mapY = toMapPosition(globalPosition).y(); mapY != account.character.mapY)
+					if (const auto mapY = levelPtr->clampMapPosition(toMapPosition(globalPosition)).y(); mapY != account.character.mapY)
 					{
 						account.character.mapY = mapY;
 						modTime[PROPID(PlayerProp::GMAPLEVELY)] = now;
