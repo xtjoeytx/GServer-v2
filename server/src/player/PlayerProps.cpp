@@ -1367,9 +1367,10 @@ CString Player::getPropsForRCPacket()
 	{
 		if (auto computedFlag = account.variables.serializeModern(flag); computedFlag.has_value())
 		{
+			constexpr auto maxLength = MAX_LENGTH_BEFORE_OVERFLOW - 3;
 			++flagCount;
-			if (computedFlag.value().length() > 220)
-				flags >> (char)223 << computedFlag.value().substr(0, 220) << "[!]";
+			if (computedFlag.value().length() > maxLength)
+				flags >> (char)MAX_LENGTH_BEFORE_OVERFLOW << computedFlag.value().substr(0, maxLength) << "[!]";
 			else flags >> (char)computedFlag.value().length() << computedFlag.value();
 		}
 	}

@@ -2094,7 +2094,7 @@ LevelBomb* Level::addBomb(inform_client_t, const PixelPosition& position, uint8_
 		auto localPosition = toLocalPixelPosition(result->position);
 		const auto x = static_cast<char>(localPosition.x() / 8);
 		const auto y = static_cast<char>(localPosition.y() / 8);
-		const uint8_t timeToExplode = static_cast<uint8_t>(std::min<std::chrono::milliseconds::rep>(223, std::chrono::duration_cast<std::chrono::milliseconds>(result->timeout.timeout).count() / 50));
+		const uint8_t timeToExplode = static_cast<uint8_t>(std::min<std::chrono::milliseconds::rep>(MAX_LENGTH_BEFORE_OVERFLOW, std::chrono::duration_cast<std::chrono::milliseconds>(result->timeout.timeout).count() / 50));
 		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOMBADD >> (short)0 >> (char)x >> (char)y >> (char)result->power >> (char)timeToExplode, position, shared_from_this());
 		// PLO_BOMBADD might support a bomb image at the end of the packet.
 	}

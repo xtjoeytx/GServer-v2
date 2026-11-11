@@ -156,7 +156,7 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 			// Some clients, like RC, will send the nickname props immediately and not wait until the go-ahead to login.
 			if (account.character.nickName.empty())
 			{
-				account.character.nickName = val.substr(0, 223);
+				account.character.nickName = val.substr(0, MAX_LENGTH_BEFORE_OVERFLOW);
 				updateModTime(PlayerProp::NICKNAME);
 			}
 		}

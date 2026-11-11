@@ -28,7 +28,7 @@ namespace preagonal::props
 {
 ////////////////////////////////////////////////////////////////////////////////
 
-int getServerGeneration()
+static int getServerGeneration()
 {
 	const auto server = BabyDI::Get<Server>();
 	return static_cast<int>(server->Generation);
@@ -59,8 +59,8 @@ bool exBodyColorsEnabled()
 
 CString PropertyString::serialize() const
 {
-	const auto len = std::clamp(value.length(), 0ZU, 223ZU);
-	return CString() >> (char)len << value.substr(0, len);
+	const auto len = std::clamp(value.length(), 0ZU, MAX_LENGTH_BEFORE_OVERFLOW);
+	return CString() >> (char)len << std::string_view{value}.substr(0, len);
 }
 
 void PropertyString::deserialize(CString& data)
@@ -84,7 +84,7 @@ std::format_context::iterator PropertyString::format(std::format_context& ctx) c
 CString PropertyLongString::serialize() const
 {
 	const auto len = std::clamp(value.length(), 0ZU, 28767ZU);
-	return CString() >> (short)len << value.substr(0, len);
+	return CString() >> (short)len << std::string_view{value}.substr(0, len);
 }
 
 void PropertyLongString::deserialize(CString& data)
@@ -103,8 +103,8 @@ CString PropertySwordPower::serialize() const
 	if (powerVal > 0 && powerVal <= 4 && image.empty())
 		return CString() >> (char)powerVal;
 
-	const auto len = std::clamp(image.length(), 0ZU, 223ZU);
-	return CString() >> (char)(powerVal + 30) >> (char)len << image.substr(0, len);
+	const auto len = std::clamp(image.length(), 0ZU, Limits::SwordImageLength);
+	return CString() >> (char)(powerVal + 30) >> (char)len << std::string_view{image}.substr(0, len);
 }
 
 void PropertySwordPower::deserialize(CString& data)
@@ -131,11 +131,11 @@ void PropertySwordPower::deserialize(CString& data)
 	// Read the image name.
 	image = data.readChars(data.readGUChar());
 
-	// If there is no extension, assume its a .gif, for 1.x servers.
-	if (const auto server = BabyDI::Get<Server>(); server->Generation == ServerGeneration::CLASSIC)
+	// If there is no extension, add it.
+	if (!image.contains('.'))
 	{
-		if (!image.contains('.'))
-			image += ".gif";
+		image += '.';
+		image += Limits::defaultImageExtension();
 	}
 }
 
@@ -164,8 +164,8 @@ CString PropertyShieldPower::serialize() const
 	if (powerVal > 0 && powerVal <= 3 && image.empty())
 		return CString() >> (char)powerVal;
 
-	const auto len = std::clamp(image.length(), 0ZU, 223ZU);
-	return CString() >> (char)(powerVal + 10) >> (char)len << image.substr(0, len);
+	const auto len = std::clamp(image.length(), 0ZU, Limits::ShieldImageLength);
+	return CString() >> (char)(powerVal + 10) >> (char)len << std::string_view{image}.substr(0, len);
 }
 
 void PropertyShieldPower::deserialize(CString& data)
@@ -195,11 +195,11 @@ void PropertyShieldPower::deserialize(CString& data)
 	// Read the image name.
 	image = data.readChars(data.readGUChar());
 
-	// If there is no extension, assume its a .gif, for 1.x servers.
-	if (const auto server = BabyDI::Get<Server>(); server->Generation == ServerGeneration::CLASSIC)
+	// If there is no extension, add it.
+	if (!image.contains('.'))
 	{
-		if (!image.contains('.'))
-			image += ".gif";
+		image += '.';
+		image += Limits::defaultImageExtension();
 	}
 }
 
@@ -223,7 +223,10 @@ std::format_context::iterator PropertyShieldPower::format(std::format_context& c
 CString PropertyGaniOrBowGif::serialize() const
 {
 	if (gani.has_value())
-		return CString() >> (char)gani->length() << *gani;
+	{
+		const auto len = std::clamp(gani->length(), 0ZU, Limits::GaniLength);
+		return CString() >> (char)len << std::string_view{*gani}.substr(0, len);
+	}
 
 	if (bowGif.has_value())
 	{
@@ -231,8 +234,8 @@ CString PropertyGaniOrBowGif::serialize() const
 		if (image.empty() && preset < 10)
 			return CString() >> (char)preset;
 
-		const auto len = std::clamp(image.length(), 0ZU, 223ZU - 10ZU);
-		return CString() >> (char)(10 + len) << image.substr(0, len);
+		const auto len = std::clamp(image.length(), 0ZU, Limits::BowImageLength);
+		return CString() >> (char)(10 + len) << std::string_view{image}.substr(0, len);
 	}
 	return {};
 }
@@ -290,8 +293,8 @@ CString PropertyHeadGif::serialize() const
 	}
 
 	auto& headImage = std::get<std::string>(image);
-	const auto len = std::clamp(headImage.length(), 0ZU, 223ZU - 100ZU);
-	return CString() >> (char)(100 + len) << headImage.substr(0, len);
+	const auto len = std::clamp(headImage.length(), 0ZU, Limits::HeadImageLength);
+	return CString() >> (char)(100 + len) << std::string_view{headImage}.substr(0, len);
 }
 
 void PropertyHeadGif::deserialize(CString& data)
@@ -304,11 +307,10 @@ void PropertyHeadGif::deserialize(CString& data)
 	}
 
 	auto headImage = data.readChars(length - 100);
-
-	if (getServerGeneration() == 0)
+	if (!headImage.contains("."))
 	{
-		if (!headImage.contains("."))
-			headImage += ".gif";
+		headImage += '.';
+		headImage += Limits::defaultImageExtension();
 	}
 
 	image = headImage.toString();
@@ -474,30 +476,27 @@ CString PropertyTileCoordinate::serialize() const
 {
 	CString result;
 
-	// Writing 223 will break the packet flow (as it will overflow to the newline char), so avoid doing that.
-	// 223 will be -11 and 224 will be -10.5.
-	auto halftile = static_cast<uint8_t>(pixelCoordinate / 8);
-	if (halftile == 223)
-		halftile = 224;
+	// Full range is -16 to 111.5, excluding -11 since it would break the packet flow.
+	auto clampedRange = std::clamp(pixelCoordinate, static_cast<int16_t>(-256), 1784_i16);
+	if (clampedRange == static_cast<int16_t>(BAD_BYTE_CAUSES_PACKET_CORRUPTION_SIGNED / 2) * 16)
+		clampedRange += 8;
 
+	// Write.
+	const auto halftile = static_cast<uint8_t>(clampedRange / 8);
 	result.writeGCharUnsafe(halftile);
 	return result;
 }
 
 void PropertyTileCoordinate::deserialize(CString& data)
 {
-	int16_t halftile = 0;
-	const auto read = static_cast<int8_t>(data.readGChar());
-	if (const auto uread = static_cast<uint8_t>(read); uread >= 216)
-	{
-		// Screw you clang-tidy.
-		// NOLINTNEXTLINE(bugprone-signed-char-misuse)
-		// NOLINTNEXTLINE(cert-str34-c)
-		halftile = static_cast<int16_t>(read);
-	}
-	else halftile = uread;
+	// Official client reads a uint8_t, converts to an integer, then subtracts 32.
+	// CString currently cannot do that calculation correctly, so read it into a larger data type and subtract 256, if it should be a negative number.
+	const auto read = data.readGUChar();
+	int16_t halfTile = read;
+	if (halfTile > MAX_LENGTH_BEFORE_OVERFLOW)
+		halfTile -= 256;
 
-	pixelCoordinate = static_cast<int16_t>(halftile * 8);
+	pixelCoordinate = static_cast<int16_t>(halfTile * 8);
 }
 
 void PropertyTileCoordinate::apply(const GameValue& gameValue)
@@ -550,11 +549,12 @@ CString PropertyGS1Script::serialize() const
 {
 	auto server = BabyDI::Get<Server>();
 
+	// TODO: v4 GS1 scripts!
 	// Modern sends scripts in a different way.
 	if (server->Generation == ServerGeneration::MODERN)
 		return CString() >> (short)0;
 
-	return CString() >> (short)(script.length() > 0x705F ? 0x705F : script.length()) << script.substr(0, 0x705F);
+	return CString() >> (short)(script.length() > 0x705F ? 0x705F : script.length()) << std::string_view{script}.substr(0, 0x705F);
 }
 
 void PropertyGS1Script::deserialize(CString& data)

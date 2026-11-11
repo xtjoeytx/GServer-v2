@@ -529,6 +529,13 @@ inline constexpr CarryObjectType getCarryObjectType(const CarryObjectSprite spri
 	return CarryObjectType::NONE;
 }
 
+//----------------------------
+// Other constants
+
+constexpr size_t MAX_LENGTH_BEFORE_OVERFLOW = 223;
+constexpr uint8_t BAD_BYTE_CAUSES_PACKET_CORRUPTION = 234;			// 234 + 32 = overflow to 10 (\n).
+constexpr int8_t BAD_BYTE_CAUSES_PACKET_CORRUPTION_SIGNED = -22;	// 234 + 32 = overflow to 10 (\n).
+
 ////////////////////////////////////////////////////////////////////////////////
 }; // end namespace preagonal
 ////////////////////////////////////////////////////////////////////////////////

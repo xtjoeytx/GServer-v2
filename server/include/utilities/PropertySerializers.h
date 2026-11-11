@@ -104,13 +104,15 @@ struct SetResults
 /// @brief Apply length or value limits to a property value.
 struct Limits
 {
-	static constexpr uint8_t HeadImageLength = 123;
-	static constexpr uint8_t BodyImageLength = 223;
-	static constexpr uint8_t SwordImageLength = 223;
-	static constexpr uint8_t ShieldImageLength = 223;
-	static constexpr uint8_t HorseImageLength = 119;
-	static constexpr uint8_t GaniLength = 223;
-	static constexpr uint8_t ChatMessageLength = 223;
+	static constexpr size_t HeadImageLength = MAX_LENGTH_BEFORE_OVERFLOW - 100;
+	static constexpr size_t BodyImageLength = MAX_LENGTH_BEFORE_OVERFLOW;
+	static constexpr size_t SwordImageLength = MAX_LENGTH_BEFORE_OVERFLOW;
+	static constexpr size_t ShieldImageLength = MAX_LENGTH_BEFORE_OVERFLOW;
+	static constexpr size_t BowImageLength = MAX_LENGTH_BEFORE_OVERFLOW - 10;
+	static constexpr size_t HorseImageLength = MAX_LENGTH_BEFORE_OVERFLOW;
+	static constexpr size_t GaniLength = MAX_LENGTH_BEFORE_OVERFLOW;
+	static constexpr size_t ChatMessageLength = MAX_LENGTH_BEFORE_OVERFLOW;
+	static constexpr size_t NickNameLength = MAX_LENGTH_BEFORE_OVERFLOW;
 	static constexpr uint8_t MaxHitpoints = 20;
 	static constexpr uint8_t MaxArrows = 99;
 	static constexpr uint8_t MaxBombs = 99;

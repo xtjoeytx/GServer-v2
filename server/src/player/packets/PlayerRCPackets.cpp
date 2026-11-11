@@ -341,8 +341,9 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVERFLAGSGET(CString& pPacket)
 	{
 		if (auto serialized = m_server->Scripting.variables.serializeModern(flag); serialized.has_value())
 		{
-			if (serialized.value().length() > 220)
-				ret >> (char)223 << serialized.value().substr(0, 220) << "[!]";
+			constexpr auto maxLength = MAX_LENGTH_BEFORE_OVERFLOW - 3;
+			if (serialized.value().length() > maxLength)
+				ret >> (char)MAX_LENGTH_BEFORE_OVERFLOW << serialized.value().substr(0, maxLength) << "[!]";
 			else ret >> (char)serialized.value().length() << serialized.value();
 		}
 	}
