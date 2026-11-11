@@ -143,8 +143,10 @@ CompiledScriptResultPtr ScriptSystem::getCompiledServerScript(const std::string_
 	if (trimmed.starts_with("//#"))
 	{
 		// Read the line and get the script engine we are going to use.
-		if (const auto engine = string::extractLine(trimmed).substr(3); !engine.empty())
-			script_engine = string::toLower(engine);
+		// Only a name of a registered engine selects one: the old worlds start their server part with a marker comment such as "//#SERVERSIDE"
+		// (512 NPCs in Valikorlia), which is no engine; with it taken for one the lookup below failed and the NPC got no server script at all.
+		if (const auto engine = string::extractLine(trimmed).substr(3); !engine.empty() && m_script_engines.contains(engine))
+			script_engine = engine;
 	}
 
 	auto compileScript = [this](const std::string_view scriptEngine, const std::string_view target, const std::string_view script) -> std::variant<ScriptCompilationFailureType, CompiledScriptResultPtr>

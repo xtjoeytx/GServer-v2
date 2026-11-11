@@ -115,6 +115,15 @@ HandlePacketResult PlayerClient::msgPLI_BOARDMODIFY(CString& pPacket)
 	const uint8_t dim[2] = {pPacket.readGUChar(), pPacket.readGUChar()};
 	CString tiles = pPacket.readString("");
 
+	// Kixt: a client changes the board for everyone, and the server took any size: a changed client could paint over a whole level. Graal's
+	// own changes are 2x2 or smaller (cutting a bush, lifting a stone or pot, a bomb) and 4x4 (a push-pull block); the tile data must match.
+	if (!((dim[0] <= 2 && dim[1] <= 2) || (dim[0] == 4 && dim[1] == 4)) || dim[0] == 0 || dim[1] == 0 ||
+		static_cast<size_t>(tiles.length()) != static_cast<size_t>(dim[0]) * dim[1] * 2)
+	{
+		log::printLine(log::server, "** [BoardModify] '{}': refused a {}x{} change at {},{}", account.name, dim[0], dim[1], loc[0], loc[1]);
+		return HandlePacketResult::Handled;
+	}
+
 	const auto level = getLevel();
 	if (level == nullptr)
 		return HandlePacketResult::Handled;

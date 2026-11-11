@@ -1,3 +1,4 @@
+#include <cctype>
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -565,8 +566,20 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 	// Get the file mod time.
 	time_t fileModTime = 0;
 
+	// Kixt: a client (not RC, whose file browser checks folder rights before it gets here) only gets files of the game folders, found by
+	// file name - before, any path that existed was sent, so a client could ask for servers/default/accounts/<name>.txt, the server options
+	// or ../../ListServer/bin/passwords.txt - and never level files (.nw / .graal: links, signs and NPC scripts; the board, links and signs
+	// come in packets). .gmap files are still sent: clients need the map layout.
+	if (!isRC())
+	{
+		auto ext = fs::getANSIFileName(file.extension());
+		for (auto& c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+		if (ext == ".nw" || ext == ".graal")
+			return {sendFailure(""), false};
+	}
+
 	// Find the file.
-	if (std::filesystem::exists(file))
+	if (isRC() && std::filesystem::exists(file))
 	{
 		fs::File openedFile{file};
 		fileData = openedFile.read();
@@ -1205,6 +1218,25 @@ void Player::sendPrivateMessage(const PlayerID from, const std::string_view mess
 		finalMessage = "\"\"," + finalMessage;
 
 	sendPacket(CString() >> (char)PLO_PRIVATEMESSAGE >> (short)from << finalMessage);
+
+	// A v6 client only writes a private message in its console. It also gets it as a trigger action for the weapon -Players, which shows it.
+	if (isClient())
+	{
+		if (const auto sender = m_server->getPlayer(from, PLTYPE_ANYPLAYER | PLTYPE_NPCSERVER); sender != nullptr && !sender->isNC() && !sender->account.name.starts_with('('))
+		{
+			std::string text{message};
+			std::string msgKind = "pm";
+			for (const std::string_view prefix : {"#bPrivate message:#b"sv, "#bMass message:#b"sv})
+				if (text.starts_with(prefix)) { if (prefix.find("Mass") != std::string_view::npos) msgKind = "mass"; text.erase(0, prefix.size()); break; }
+			std::vector<std::string> fields{"clientside", "-Players", "pm", sender->account.name, sender->account.character.nickName, sender->isRC() ? "rc" : "player", msgKind};
+			for (size_t from = 0, comma = 0; comma != std::string::npos; from = comma + 1)      // the text in fields without commas: no quotes in the CSV
+			{
+				comma = text.find(',', from);
+				fields.push_back(text.substr(from, comma == std::string::npos ? std::string::npos : comma - from));
+			}
+			sendPacket(CString() >> (char)PLO_TRIGGERACTION >> (short)0 >> (int)0 >> (char)0 >> (char)0 << string::toCSV(fields));
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

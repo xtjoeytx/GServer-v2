@@ -106,6 +106,21 @@ Guild* GuildManager::loadGuild(const std::filesystem::path& filePath)
 		if (lineView.empty())
 			continue;
 
+		// "#leader Account" / "#officer Account": the rank of a member. Other lines starting with # are comments.
+		if (lineView.starts_with('#'))
+		{
+			auto rankLine = lineView.substr(1);
+			auto space = rankLine.find(' ');
+			if (space != std::string_view::npos)
+			{
+				auto word = string::toLower(std::string{rankLine.substr(0, space)});
+				auto account = std::string{string::trim(rankLine.substr(space + 1))};
+				if (!account.empty() && word == "leader") guild.ranks[account] = GUILD_LEADER;
+				else if (!account.empty() && word == "officer") guild.ranks[account] = GUILD_OFFICER;
+			}
+			continue;
+		}
+
 		if (auto pos = lineView.find(':'); pos == std::string_view::npos)
 		{
 			guild.members.emplace(lineView, std::string{});
@@ -137,13 +152,13 @@ bool GuildManager::verifyPlayerInGuild(const std::string_view guildName, const s
 {
 	if (const auto it = m_guilds.find(guildName); it != m_guilds.end())
 	{
-		const auto& members = it->second.members;
-		auto memberIt = members.find(account);
-		while (memberIt != members.end())
+		// Only this account's own entries: the old loop went on from find() through the rest of the map, so another member's
+		// "any name" entry let this account wear the tag with any name too (Kixt: guild names).
+		const auto [start, end] = it->second.members.equal_range(account);
+		for (auto memberIt = start; memberIt != end; ++memberIt)
 		{
 			if (memberIt->second.empty() || memberIt->second == nickName)
 				return true;
-			++memberIt;
 		}
 	}
 	return false;
@@ -220,6 +235,11 @@ bool GuildManager::saveGuild(const std::string_view guildName)
 			return false;
 		}
 
+		for (const auto& [account, rank] : it->second.ranks)
+		{
+			if (rank == GUILD_LEADER) file << "#leader " << account << std::endl;
+			else if (rank == GUILD_OFFICER) file << "#officer " << account << std::endl;
+		}
 		for (const auto& [account, nickName] : it->second.members)
 		{
 			file << account;
@@ -289,10 +309,72 @@ bool GuildManager::removePlayerEntirelyFromGuild(const std::string_view guildNam
 	{
 		auto& members = it->second.members;
 		const auto result = members.erase(std::string{account});
+		it->second.ranks.erase(std::string{account});
 		it->second.modifiedSinceLastSave = true;
 		return result > 0;
 	}
 	return false;
+}
+
+//----------------------------
+
+const Guild* GuildManager::getGuild(const std::string_view guildName) const
+{
+	if (const auto it = m_guilds.find(guildName); it != m_guilds.end())
+		return &it->second;
+	return nullptr;
+}
+
+int GuildManager::getRank(const std::string_view guildName, const std::string_view account) const
+{
+	const auto guild = getGuild(guildName);
+	if (guild == nullptr || !guild->members.contains(account))
+		return -1;
+	if (const auto r = guild->ranks.find(account); r != guild->ranks.end())
+		return r->second;
+	return GUILD_MEMBER;
+}
+
+bool GuildManager::setRank(const std::string_view guildName, const std::string_view account, const int rank)
+{
+	if (const auto it = m_guilds.find(guildName); it != m_guilds.end() && it->second.members.contains(account))
+	{
+		if (rank == GUILD_LEADER || rank == GUILD_OFFICER) it->second.ranks[std::string{account}] = rank;
+		else it->second.ranks.erase(std::string{account});
+		it->second.modifiedSinceLastSave = true;
+		return true;
+	}
+	return false;
+}
+
+bool GuildManager::setMemberNick(const std::string_view guildName, const std::string_view account, const std::string_view nickName)
+{
+	if (const auto it = m_guilds.find(guildName); it != m_guilds.end() && it->second.members.contains(account))
+	{
+		// One entry per account: "account:nickname", or just "account" when any name may wear the tag. The rank stays.
+		it->second.members.erase(std::string{account});
+		it->second.members.emplace(std::string{account}, std::string{nickName});
+		it->second.modifiedSinceLastSave = true;
+		return true;
+	}
+	return false;
+}
+
+std::string GuildManager::getMemberNick(const std::string_view guildName, const std::string_view account) const
+{
+	if (const auto guild = getGuild(guildName); guild != nullptr)
+		if (const auto m = guild->members.find(account); m != guild->members.end())
+			return m->second;
+	return {};
+}
+
+std::vector<const Guild*> GuildManager::guildsOfAccount(const std::string_view account) const
+{
+	std::vector<const Guild*> out;
+	for (const auto& guild : m_guilds | std::views::values)
+		if (guild.members.contains(account))
+			out.push_back(&guild);
+	return out;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

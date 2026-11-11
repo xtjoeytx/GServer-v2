@@ -1245,10 +1245,27 @@ bool PlayerClient::warp(const std::shared_ptr<Level>& level, const PixelPosition
 	{
 		// We have to do this manually since if we set it via setPropWith, it will cause a second level warp.
 		auto mapPosition = toMapPosition(position);
+		// An account saved outside the gmap (e.g. MAPX 255 from a client that walked off the edge) would get no level: use the first cell.
+		if (!level->isValidMapPosition(mapPosition))
+		{
+			log::printLine(log::server, "** [Warp] '{}': gmap cell ({}, {}) is outside {}, using cell (0, 0).", account.name, static_cast<int>(mapPosition.x()), static_cast<int>(mapPosition.y()), level->levelName);
+			mapPosition = MapPosition{0, 0};
+		}
 		account.character.mapX = mapPosition.x();
 		account.character.mapY = mapPosition.y();
 		this->modTime[PROPID(PlayerProp::GMAPLEVELX)] = m_server->getFrameStartTime();
 		this->modTime[PROPID(PlayerProp::GMAPLEVELY)] = m_server->getFrameStartTime();
+		// The client needs the .gmap file to know the names of the levels around it.
+                // A client that does not have it yet asks only after PLAYERWARP2, and the board/NPC packets of the level that follow arrive before it knows what they belong to.
+		// So send the map file first. files wait in the queue's low priority file buffer.
+		// Whatever was queued before goes out first, in order, then the map file. The warp is queued after it.
+
+		if (!hasSeenFile(level->levelName))
+		{
+			sendFile(std::filesystem::path{level->levelName});
+			for (int flushes = 0; flushes < 4096 && m_fileQueue.canSend(); ++flushes)
+				m_fileQueue.sendCompress(true);
+		}
 		sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << getProp<PlayerProp::Z>().serialize() >> (char)mapPosition.x() >> (char)mapPosition.y() << level->levelName);
 	}
 	else
@@ -1284,6 +1301,13 @@ bool PlayerClient::enterLevel(const std::shared_ptr<Level>& level, const std::op
 
 	// Send the level now.
 	const auto subLevel = level->getSubLevelAtPosition(getMapPosition());
+	if (subLevel == nullptr)
+	{
+		leaveLevel();
+		sendPacket(CString() >> (char)PLO_WARPFAILED << level->levelName);
+		return false;
+	}
+
 	bool succeed = sendStaticLevelData(subLevel->staticData.lock(), subLevel, clientCachedTime);
 	succeed = succeed && sendDynamicLevelData(level, clientCachedTime);
 

@@ -185,6 +185,7 @@ public:
 	[[a::inline]] SubLevelPtr getSubLevelAtPosition(const PixelPosition& position) const noexcept;
 	[[a::inline]] SubLevelPtr getSubLevelAtPosition(const TilePosition& position) const noexcept;
 	[[a::inline]] SubLevelPtr getSubLevelAtPosition(const MapPosition& position) const noexcept;
+	[[a::inline]] bool isValidMapPosition(const MapPosition& position) const noexcept;
 	[[a::inline]] StaticLevelDataPtr getStaticLevelDataByName(std::string_view levelPart) const noexcept;
 	[[a::inline]] StaticLevelDataPtr getStaticLevelDataAtPosition(const MapPosition& mapPosition) const noexcept;
 	[[a::inline]] std::pair<SubLevelPtr, StaticLevelDataPtr> getSubLevelAndStaticDataAtPosition(const MapPosition& position) const noexcept;
@@ -598,6 +599,15 @@ inline SubLevelPtr Level::getSubLevelAtPosition(const MapPosition& position) con
 		return m_levelParts[index];
 
 	return nullptr;
+}
+
+// True if the gmap has a cell at this column/row (a plain level only has cell 0,0).
+// getSubLevelAtPosition() alone is not enough: column == width wraps into the next row.
+inline bool Level::isValidMapPosition(const MapPosition& position) const noexcept
+{
+	if (!isGmap() || m_map == nullptr)
+		return position.x() == 0 && position.y() == 0;
+	return position.x() < m_map->size.width() && position.y() < m_map->size.height();
 }
 
 inline StaticLevelDataPtr Level::getStaticLevelDataByName(const std::string_view levelPart) const noexcept
