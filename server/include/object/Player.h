@@ -131,12 +131,12 @@ struct ShootPacketWrapper
 {
 	NPCID source;
 	PixelPosition position;
-	int8_t offsetx;
-	int8_t offsety;
+	uint8_t gmapx;
+	uint8_t gmapy;
 	uint8_t sangle;
 	uint8_t sanglez;
 	uint8_t power;
-	uint8_t gravity;
+	float gravityInTiles;
 	std::string gani;
 	std::string shootParams;
 

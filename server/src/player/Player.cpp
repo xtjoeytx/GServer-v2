@@ -255,17 +255,22 @@ CString ShootPacketWrapper::constructShootV1() const
 
 CString ShootPacketWrapper::constructShootV2() const
 {
+	const PropertyPixelCoordinate x{position.x()};
+	const PropertyPixelCoordinate y{position.y()};
+	const PropertyPixelCoordinate z{position.z()};
+	const PropertyPixelCoordinate pgravity{static_cast<int16_t>(gravityInTiles * 256)};
+
 	CString packet;
-	packet.writeGShort(position.x());
-	packet.writeGShort(position.y());
-	packet.writeGShort(position.z());
-	packet.writeChar(static_cast<int8_t>(offsetx + 32));
-	packet.writeChar(static_cast<int8_t>(offsety + 32));
+	packet.write(x.serialize());
+	packet.write(y.serialize());
+	packet.write(z.serialize());
+	packet.writeGChar(gmapx);
+	packet.writeGChar(gmapy);
 	packet.writeGChar(sangle);
 	packet.writeGChar(sanglez);
 	packet.writeGChar(power);
-	packet.writeGChar(gravity);
-	packet.writeGShort(gani.length());
+	packet.write(pgravity.serialize());
+	packet.writeGChar(gani.length());
 	packet.write(gani);
 	packet.writeGChar(shootParams.length());
 	packet.write(shootParams);

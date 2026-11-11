@@ -1331,7 +1331,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 	if (const auto level = getLevel(); level != nullptr)
 	{
 		ShootPacketWrapper newPacket{};
-		[[maybe_unused]] int unknown = pPacket.readGInt(); // May be a shoot id for the npc-server. (5/25d/19) joey: all my tests just give 0, my guess would be different types of projectiles but it never came to fruition
+		newPacket.source = pPacket.readGInt();
 
 		newPacket.position.x() = 8 * pPacket.readGChar();
 		newPacket.position.y() = 8 * pPacket.readGChar();
@@ -1341,20 +1341,13 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 		if (level->isGmap())
 			newPacket.position.translate(getSubLevelOrigin());
 
-		// TODO(decomp): calculate offsetx from pixelx/pixely/ - level offset
-		newPacket.offsetx = 0;
-		newPacket.offsety = 0;
-		//if (newPacket.pixelx < 0) {
-		//	newPacket.offsetx = -1;
-		//}
-		//if (newPacket.pixely < 0) {
-		//	newPacket.offsety = -1;
-		//}
+		newPacket.gmapx = account.character.mapX;
+		newPacket.gmapy = account.character.mapY;
 
 		newPacket.sangle = pPacket.readGUChar();  // 0 to 2*pi  = 0-220
 		newPacket.sanglez = pPacket.readGUChar(); // -pi to pi  = 0-220
 		newPacket.power = pPacket.readGUChar();   // power = 44 parts of a tile, up to 5 whole tiles (220)
-		newPacket.gravity = static_cast<uint8_t>(m_server->Scripting.variables.getValue<double>("gravity").value_or(2.0));
+		newPacket.gravityInTiles = static_cast<float>(m_server->Scripting.variables.getValue<double>("gravity").value_or(2.0));
 		newPacket.gani = pPacket.readChars(pPacket.readGUChar());
 
 		// This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
@@ -1370,7 +1363,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 		// clang-format on
 
 		if (m_server->hasNPCServer())
-			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravity, newPacket.gani, source::FromPlayer(m_id));
+			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravityInTiles, newPacket.gani, source::FromPlayer(m_id));
 	}
 
 	return HandlePacketResult::Handled;
@@ -1380,16 +1373,24 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 {
 	if (const auto level = getLevel(); level != nullptr)
 	{
+		PropertyPixelCoordinate x, y, z, gravity;
+		x.deserialize(pPacket);
+		y.deserialize(pPacket);
+		z.deserialize(pPacket);
+
 		ShootPacketWrapper newPacket{};
-		newPacket.position.x() = static_cast<int16_t>(pPacket.readGUShort());
-		newPacket.position.y() = static_cast<int16_t>(pPacket.readGUShort());
-		newPacket.position.z() = static_cast<int16_t>(pPacket.readGUShort());
-		newPacket.offsetx = pPacket.readGChar();  // level offset x
-		newPacket.offsety = pPacket.readGChar();  // level offset y
+		newPacket.position.x() = x.pixelCoordinate;
+		newPacket.position.y() = y.pixelCoordinate;
+		newPacket.position.z() = z.pixelCoordinate;
+		newPacket.gmapx = pPacket.readGChar();  // gmap x
+		newPacket.gmapy = pPacket.readGChar();  // gmap y
 		newPacket.sangle = pPacket.readGUChar();  // 0 to 2*pi  = 0-220
 		newPacket.sanglez = pPacket.readGUChar(); // -pi to pi  = 0-220
 		newPacket.power = pPacket.readGUChar();   // power = 44 parts of a tile, up to 5 whole tiles (220)
-		newPacket.gravity = pPacket.readGUChar();
+
+		gravity.deserialize(pPacket);
+		newPacket.gravityInTiles = gravity.pixelCoordinate / 256.0f;
+
 		newPacket.gani = pPacket.readChars(pPacket.readGUShort());
 		[[maybe_unused]] unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 		newPacket.shootParams = pPacket.readString("");
@@ -1403,7 +1404,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 		// clang-format on
 
 		if (m_server->hasNPCServer())
-			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, static_cast<float>(newPacket.gravity) / 16.0f, newPacket.gani, source::FromPlayer(m_id));
+			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravityInTiles, newPacket.gani, source::FromPlayer(m_id));
 	}
 
 	return HandlePacketResult::Handled;
