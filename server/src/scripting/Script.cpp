@@ -255,11 +255,7 @@ const ScriptByteCode& Script::getClientByteCode() const noexcept
 	if (m_client_script == nullptr || m_client_script->script == nullptr || !m_client_script->script->has_value())
 		return empty;
 
-<<<<<<< HEAD
-	if (auto* bytecode = std::any_cast<ScriptByteCode>(m_client_script->script.get()); bytecode != nullptr)
-=======
 	if (auto* bytecode = std::any_cast<ScriptByteCode>(m_client_script->script.get()); bytecode != nullptr)   // the any holds the vector itself; the pointer form never throws
->>>>>>> 40d49ca8 (Transfer to new system)
 		return *bytecode;
 
 	return empty;

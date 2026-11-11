@@ -263,11 +263,7 @@ bool LevelLoader::loadStaticDataInto(const StaticLevelDataPtr& staticLevelData)
 	// Get the file version.
 	const auto version = fileData->readChars(8);
 	if (version.size() < 8)
-<<<<<<< HEAD
-		return false;
-=======
 		return false;		// empty or truncated level file
->>>>>>> 40d49ca8 (Transfer to new system)
 
 	// Save some level details.
 	staticLevelData->filePath = fileInfo->file;
