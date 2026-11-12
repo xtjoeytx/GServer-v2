@@ -520,7 +520,9 @@ void PropertyTileCoordinateZ::fixCoordinate()
 
 CString PropertyTileCoordinateZ::serialize() const
 {
-	return CString() >> (char)((pixelCoordinate.value_or(Character::InvalidZPixels) / 16) + 50);
+	CString result;
+	result.writeGCharUnsafe((pixelCoordinate.value_or(Character::InvalidZPixels) / 16) + 50);
+	return result;
 }
 
 void PropertyTileCoordinateZ::deserialize(CString& data)
