@@ -382,11 +382,17 @@ inline void IPacketHandler::parseLoginPacket(CString& buffer)
 #ifdef PACKETLOGGING
 	const std::string_view who = whoAmI();
 	log::printLine(log::networkdump, "> Login Packet from {} ({} bytes)", who, packet.length());
-	log::print(log::networkdump, "{}", packet.text());
+	const auto nameLength = packet.text()[10] - 32;
+	const auto passwordStart = 10 + 1 + nameLength;
+	log::print(log::networkdump, "{}", std::string_view{packet.text()}.substr(0, passwordStart));
+	for (int i = passwordStart; i < packet.length(); ++i)
+		log::print(log::networkdump, "*");
 	if (packet[packet.length() - 1] != '\n')
 		log::print(log::networkdump, "\n");
-	for (int i = 0; i < packet.length(); ++i)
+	for (int i = 0; i < passwordStart; ++i)
 		log::print(log::networkdump, "{:02x} ", (unsigned char)((packet.text())[i]));
+	for (int i = passwordStart; i < packet.length(); ++i)
+		log::print(log::networkdump, "xx ");
 	log::print(log::networkdump, "\n\n");
 #endif
 
