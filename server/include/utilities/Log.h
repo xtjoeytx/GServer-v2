@@ -108,6 +108,9 @@ struct Log
 	/// @brief Indicates whether the next output is at the start of a new line. Used internally to determine when to add prefixes and indentation.
 	bool atLineStart = true;
 
+	/// @brief Append to the log file.
+	bool append = true;
+
 	/// @brief A unique pointer to an output file stream.
 	std::unique_ptr<std::ofstream> file;
 
@@ -165,7 +168,7 @@ inline Log script{.filename = std::filesystem::path{"logs"} / "scriptlog.txt"};
 inline Log invalidpackets{.filename = std::filesystem::path{"logs"} / "invalidpackets.txt", .sectionPrefix = ":: "s, .mirrorToCli = false};
 
 /// @brief The networkdump.txt file.
-inline Log networkdump{.filename = std::filesystem::path{"logs"} / "networkdump.txt", .mirrorToCli = false};
+inline Log networkdump{.filename = std::filesystem::path{"logs"} / "networkdump.txt", .mirrorToCli = false, .append = false};
 
 ///////////////////////////////////////////////////////////////////////////////
 

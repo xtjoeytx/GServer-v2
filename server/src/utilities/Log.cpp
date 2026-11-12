@@ -54,7 +54,10 @@ Log& Log::reload()
 	file = std::make_unique<std::ofstream>();
 
 	std::filesystem::create_directory(filename.parent_path());
-	file->open(filename, std::ios::binary | std::ios::out | std::ios::app);
+	auto flags = std::ios::binary | std::ios::out;
+	if (append) flags |= std::ios::app;
+
+	file->open(filename, flags);
 	return *this;
 }
 
