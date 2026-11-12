@@ -1005,13 +1005,17 @@ HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 		if (const auto subLevel = currentLevel->getSubLevelByName(levelName); subLevel != nullptr)
 		{
 			sendStaticLevelData(subLevel->staticData.lock(), subLevel, modTime);
+			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << currentLevel->levelName);
 			return HandlePacketResult::Handled;
 		}
 	}
 
 	// Otherwise, send the normal static data.
 	if (const auto cachedData = m_server->getCachedLevelData(levelName); cachedData != nullptr)
+	{
 		sendStaticLevelData(cachedData, nullptr, modTime);
+		sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << levelName);
+	}
 
 	return HandlePacketResult::Handled;
 }

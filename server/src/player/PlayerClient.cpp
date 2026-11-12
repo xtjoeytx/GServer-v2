@@ -1243,6 +1243,14 @@ bool PlayerClient::warp(const std::shared_ptr<Level>& level, const PixelPosition
 	// Tell the client their new level.
 	if (level->isGmap())
 	{
+		// If the player has not seen this gmap, force it to be sent FIRST.
+		// If we don't, the client will fail to warp.
+		if (!hasSeenFile(level->levelName))
+		{
+			sendFile(level->levelName, PacketQueue::NORMAL);
+			m_fileQueue.sendCompress();
+		}
+
 		// We have to do this manually since if we set it via setPropWith, it will cause a second level warp.
 		auto mapPosition = level->clampMapPosition(toMapPosition(position));
 		account.character.mapX = std::min(mapPosition.x(), static_cast<uint8_t>(level->getMap()->size.width() - 1));
@@ -1482,7 +1490,16 @@ bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& s
 		// This is important because the client will get stuck on "Loading" until it gets board data,
 		// so we need to know if we should send a blank board packet later.
 		sentBoard = true;
+	}
 
+	// The client will get stuck on "Loading" until it gets board data.
+	// So, if we did not send any data, send an empty packet so the client knows it can move on.
+	if (!sentBoard)
+		sendPacket(CString() >> (char)PLO_LEVELBOARD);
+
+	// If we sent board data, send other static things now.
+	if (sentBoard)
+	{
 		// Send links (if applicable).
 		// We need to always send map links for bigmaps due to overflow issues that easily occur while waiting for the warp.
 		// (The client may start to go beyond the edge of the level and cause an integer overflow in their position).
@@ -1497,11 +1514,6 @@ bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& s
 	// Send chests.
 	// Always send chests since RC could have modified them.
 	staticLevelData->sendChestsToPlayer(self);
-
-	// The client will get stuck on "Loading" until it gets board data.
-	// So, if we did not send any data, send an empty packet so the client knows it can move on.
-	if (!sentBoard)
-		sendPacket(CString() >> (char)PLO_LEVELBOARD);
 
 	// Send the level mod time so the client can cache it.
 	sendPacket(CString() >> (char)PLO_LEVELMODTIME >> (long long)levelModTime);
