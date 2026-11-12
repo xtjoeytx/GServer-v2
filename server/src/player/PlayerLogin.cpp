@@ -25,6 +25,25 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+static bool isOriginalClient(CString& pPacket)
+{
+	// Read Client-Version for v1.3 clients
+	auto version = pPacket.readChars(8);
+	auto versionId = getVersionID(version);
+
+	// 1.41 registers itself as PLTYPE_CLIENT, but starts with an encryption key, so skip that for the version check.
+	if (versionId == CLVER_UNKNOWN)
+	{
+		pPacket.setRead(2);	// type + key
+		version = pPacket.readChars(8);
+		versionId = getVersionID(version);
+	}
+
+	return versionId <= CLVER_1_411;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 PlayerLogin::PlayerLogin(CSocket* pSocket, const PlayerID pId)
 	: Player(pSocket, pId)
 {
@@ -65,7 +84,8 @@ HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 	std::shared_ptr<Player> player = nullptr;
 	if (type & PLTYPE_ANYCLIENT)
 	{
-		if (type == PLTYPE_CLIENT)
+		// PlayerClientOriginal is for 1.x clients, so try to read the version information first.
+		if (type == PLTYPE_CLIENT && isOriginalClient(pPacket))
 			player = std::make_shared<PlayerClientOriginal>(m_playerSock, m_id);
 		else player = std::make_shared<PlayerClient>(m_playerSock, m_id);
 	}
