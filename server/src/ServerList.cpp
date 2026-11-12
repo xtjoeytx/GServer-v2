@@ -319,7 +319,7 @@ void ServerList::sendPacket(const CString& pPacket, const bool sendNow)
 		return;
 
 	// append buffer
-	m_fileQueue.addPacket(pPacket);
+	m_fileQueue.addPacket(PacketQueue::NORMAL, pPacket);
 
 	// send buffer now?
 	if (sendNow)

@@ -221,7 +221,7 @@ endif()
 # Dependency: gs2parser.
 FetchContent_Declare(gs2parser
 	GIT_REPOSITORY https://github.com/xtjoeytx/gs2-parser.git
-	GIT_SHALLOW    ON
+	GIT_SHALLOW    OFF
 	GIT_TAG        73e7ea8d6ed88112967547c5e6941bfa035fec6c		# main 2026-07-02
 )
 FetchContent_MakeAvailable(gs2parser)
@@ -266,8 +266,8 @@ endif()
 # Dependency: gs2lib.
 FetchContent_Declare(gs2lib
 	GIT_REPOSITORY https://xtjoeytx@bitbucket.org/xtjoeytx/gs2lib.git
-	GIT_SHALLOW    ON
-	GIT_TAG        35056f83c856091eacab50853876bfa9fa6f6967
+	GIT_SHALLOW    OFF
+	GIT_TAG        e269a794a593969d9a13b477c3c5c49fe50fa7b5
 	#URL "${PROJECT_SOURCE_DIR}/../gs2lib"
 )
 FetchContent_MakeAvailable(gs2lib)
@@ -277,25 +277,16 @@ target_link_libraries(${TARGET_NAME} PUBLIC gs2lib)
 
 # ----------------------------
 # Dependency: libtommath.
-# Avoid reusing a cached package config from another build directory.
-# This resolves an "IMPORTED_LOCATION not set" bug.
-set(_FETCHCONTENT_TRY_FIND_PACKAGE_MODE "${FETCHCONTENT_TRY_FIND_PACKAGE_MODE}")
-set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE NEVER)
 FetchContent_Declare(libtommath
 	GIT_REPOSITORY https://github.com/libtom/libtommath.git
 	GIT_SHALLOW    ON
 	GIT_TAG        develop
 	EXCLUDE_FROM_ALL
+	FIND_PACKAGE_ARGS CONFIG
 )
-# Reset back to normal.
-set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE "${_FETCHCONTENT_TRY_FIND_PACKAGE_MODE}")
-unset(_FETCHCONTENT_TRY_FIND_PACKAGE_MODE)
-
 FetchContent_MakeAvailable(libtommath)
-target_include_directories(${TARGET_NAME} PUBLIC "${libtommath_SOURCE_DIR}")
-
-# libtomcrypt calls find_package(libtommath); keep it on this build's generated config.
 set(libtommath_DIR "${libtommath_BINARY_DIR}")
+target_include_directories(${TARGET_NAME} PUBLIC "${libtommath_SOURCE_DIR}")
 
 # ----------------------------
 # Dependency: libtomcrypt-preagonal.

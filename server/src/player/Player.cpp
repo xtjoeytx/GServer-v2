@@ -503,7 +503,7 @@ void Player::disconnect(const std::string_view message)
 	m_server->deletePlayer(shared_from_this());
 }
 
-void Player::sendPacket(const CString& packet)
+void Player::sendPacket(const CString& packet, const PacketQueue channel)
 {
 	if (packet.isEmpty() || m_playerSock == nullptr || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return;
@@ -523,10 +523,10 @@ void Player::sendPacket(const CString& packet)
 #endif
 
 	// append buffer
-	m_fileQueue.addPacket(packet);
+	m_fileQueue.addPacket(channel, packet);
 }
 
-void Player::sendRawPacket(const CString& packet)
+void Player::sendRawPacket(const CString& packet, const PacketQueue channel)
 {
 	if (packet.isEmpty() || m_playerSock == nullptr || m_playerSock->getState() == SOCKET_STATE_DISCONNECTED)
 		return;
@@ -542,10 +542,10 @@ void Player::sendRawPacket(const CString& packet)
 #endif
 
 	// append buffer
-	m_fileQueue.addRawPacket(packet);
+	m_fileQueue.addRawPacket(channel, packet);
 }
 
-std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
+std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file, const PacketQueue channel)
 {
 	// Don't let the client request level files.
 	if (inList(fs::getANSIFileName(file.extension()), ".nw"s, ".graal"s, ".zelda"s))
@@ -561,11 +561,11 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 	const auto& filesystem = m_server->getFileSystem();
 	std::string filename = fs::getANSIFileName(file);
 
-	auto sendFailure = [this, &filename](const std::string_view message) -> bool
+	auto sendFailure = [this, &filename, &channel](const std::string_view message) -> bool
 	{
 		if (!message.empty())
 			log::printLine(log::server, "[WARNING] {}: {}", message, filename);
-		sendPacket(CString() >> (char)PLO_FILESENDFAILED << filename);
+		sendPacket(CString() >> (char)PLO_FILESENDFAILED << filename, channel);
 		return false;
 	};
 
@@ -632,8 +632,8 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 	// If we are sending a big file, let the client know now.
 	if (isBigFile)
 	{
-		sendPacket(CString() >> (char)PLO_LARGEFILESTART << filename);
-		sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.size());
+		sendPacket(CString() >> (char)PLO_LARGEFILESTART << filename, channel);
+		sendPacket(CString() >> (char)PLO_LARGEFILESIZE >> (long long)fileData.size(), channel);
 	}
 
 	// Send the file now.
@@ -646,18 +646,18 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file)
 		// Older client versions didn't send the modTime.
 		if (isClient() && m_versionId < CLVER_2_1)
 		{
-			sendRawPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)});
+			sendRawPacket(CString() >> (char)PLO_FILE >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)}, channel);
 		}
 		else
 		{
-			sendRawPacket(CString() >> (char)PLO_FILE >> (long long)fileModTime >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)});
+			sendRawPacket(CString() >> (char)PLO_FILE >> (long long)fileModTime >> (char)filename.length() << filename << std::string_view{fileDataSpan.subspan(0, sendSize)}, channel);
 		}
 
 		fileDataSpan = fileDataSpan.subspan(sendSize);
 	}
 
 	// If we had sent a large file, let the client know we finished sending it.
-	if (isBigFile) sendPacket(CString() >> (char)PLO_LARGEFILEEND << filename);
+	if (isBigFile) sendPacket(CString() >> (char)PLO_LARGEFILEEND << filename, channel);
 
 	return {true, isBigFile};
 }

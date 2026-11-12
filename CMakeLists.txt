@@ -21,6 +21,8 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+message(STATUS "CMake binary dir: ${CMAKE_BINARY_DIR}")
+
 # Add custom CMake modules path for external dependencies.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/dependencies")

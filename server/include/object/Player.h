@@ -337,9 +337,9 @@ public:
 
 public:
 	// Socket-Functions
-	void sendPacket(const CString& packet);
-	void sendRawPacket(const CString& packet);
-	std::pair<bool, bool> sendFile(const std::filesystem::path& file);
+	void sendPacket(const CString& packet, PacketQueue channel = PacketQueue::NORMAL);
+	void sendRawPacket(const CString& packet, PacketQueue channel = PacketQueue::NORMAL);
+	std::pair<bool, bool> sendFile(const std::filesystem::path& file, PacketQueue channel = PacketQueue::FILE);
 	void setReceivedBuffer(const CString& buffer) { m_recvBuffer = buffer; }
 
 	// Type of player
