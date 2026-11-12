@@ -1247,8 +1247,8 @@ bool PlayerClient::warp(const std::shared_ptr<Level>& level, const PixelPosition
 		// If we don't, the client will fail to warp.
 		if (!hasSeenFile(level->levelName))
 		{
+			m_fileQueue.moveInProgressFileTransferToNormalQueue();
 			sendFile(level->levelName, PacketQueue::NORMAL);
-			m_fileQueue.sendCompress();
 		}
 
 		// We have to do this manually since if we set it via setPropWith, it will cause a second level warp.
