@@ -825,7 +825,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERRIGHTSGET(CString& pPacket)
 	}
 
 	// Get the folder list.
-	const auto folders = string::toCSV(p->account.folderList);
+	const auto folders = string::toCSV(p->account.folderList, true);
 
 	// Send the packet.
 	const auto adminIp = string::join(p->account.adminIpRange);
