@@ -28,10 +28,10 @@ namespace preagonal::props
 {
 ////////////////////////////////////////////////////////////////////////////////
 
-static int getServerGeneration()
+static ServerGeneration getServerGeneration()
 {
 	const auto server = BabyDI::Get<Server>();
-	return static_cast<int>(server->Generation);
+	return server->Generation;
 }
 
 bool isModernGeneration()
@@ -222,28 +222,28 @@ std::format_context::iterator PropertyShieldPower::format(std::format_context& c
 
 CString PropertyGaniOrBowGif::serialize() const
 {
-	if (gani.has_value())
+	if (getServerGeneration() == ServerGeneration::CLASSIC)
 	{
-		const auto len = std::clamp(gani->length(), 0ZU, Limits::GaniLength);
-		return CString() >> (char)len << std::string_view{*gani}.substr(0, len);
-	}
-
-	if (bowGif.has_value())
-	{
-		auto& [image, preset] = *bowGif;
+		static std::pair<std::string, uint8_t> empty{{}, 1};
+		auto& [image, preset] = bowGif.has_value() ? *bowGif : empty;
 		if (image.empty() && preset < 10)
 			return CString() >> (char)preset;
 
 		const auto len = std::clamp(image.length(), 0ZU, Limits::BowImageLength);
 		return CString() >> (char)(10 + len) << std::string_view{image}.substr(0, len);
 	}
-	return {};
+
+	if (!gani.has_value())
+		return CString() >> (char)0;
+
+	const auto len = std::clamp(gani->length(), 0ZU, Limits::GaniLength);
+	return CString() >> (char)len << std::string_view{*gani}.substr(0, len);
 }
 
 void PropertyGaniOrBowGif::deserialize(CString& data)
 {
 	// Gani for later clients.
-	if (getServerGeneration() != 0)
+	if (getServerGeneration() != ServerGeneration::CLASSIC)
 	{
 		gani = data.readChars(data.readGUChar());
 	}
@@ -268,17 +268,26 @@ void PropertyGaniOrBowGif::deserialize(CString& data)
 
 void PropertyGaniOrBowGif::apply(const GameValue& gameValue)
 {
-	gani = gameValue.getCopy<std::string>().value_or(""s);
+	if (getServerGeneration() == ServerGeneration::CLASSIC)
+	{
+		uint8_t currentBowPower = 1;
+		if (bowGif.has_value())
+			currentBowPower = bowGif.value().second;
+		bowGif = std::make_pair(gameValue.getCopy<std::string>().value_or(""s), currentBowPower);
+	}
+	else
+	{
+		gani = gameValue.getCopy<std::string>().value_or(""s);
+	}
 }
 
 std::format_context::iterator PropertyGaniOrBowGif::format(std::format_context& ctx) const
 {
 	if (gani.has_value())
 		return std::format_to(ctx.out(), "gani: {}", (gani.value().empty() ? "(empty)" : gani.value()));
-	else if (bowGif.has_value())
+	if (bowGif.has_value())
 		return std::format_to(ctx.out(), "bowGif: {}, bowPower: {}", (bowGif.value().first.empty() ? "(empty)" : bowGif.value().first), bowGif.value().second);
-	else
-		return std::format_to(ctx.out(), "(empty)");
+	return std::format_to(ctx.out(), "(empty)");
 }
 
 // -----------------------------------------------
