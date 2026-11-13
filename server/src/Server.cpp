@@ -1964,7 +1964,7 @@ void Server::hitPlayer(const PlayerID playerId, const int8_t power, const float 
 	// Client ignores if PLO_DISABLECLASSICMODE was sent.
 	// Client ignores if the source wasn't within 10 tiles.
 
-	auto tilePosition = toTilePosition(player->getEventBoundingBox().center());
+	auto tilePosition = toTilePosition(player->getCenterPosition());
 	auto dx = tilePosition.x() - fromX;
 	auto dy = tilePosition.y() - fromY;
 
@@ -1983,8 +1983,13 @@ void Server::hitPlayer(const PlayerID playerId, const int8_t power, const float 
 	const auto encodedDX = static_cast<uint8_t>(static_cast<int16_t>(dx * 16) + 64);
 	const auto encodedDY = static_cast<uint8_t>(static_cast<int16_t>(dy * 16) + 64);
 
+	// Get the NPC source.
+	NPCID sourceId = 0;
+	if (source != nullptr)
+		sourceId = source->id;
+
 	// Send the final packet.
-	player->sendPacket(CString() >> (char)PLO_HURTPLAYER >> (short)0 >> (char)(encodedDX) >> (char)(encodedDY) >> (char)power >> (int)source->id);
+	player->sendPacket(CString() >> (char)PLO_HURTPLAYER >> (short)0 >> (char)(encodedDX) >> (char)(encodedDY) >> (char)power >> (int)sourceId);
 }
 
 void Server::sendTriggerAction(const PlayerID toPlayerId, const NPCID fromNpcId, const LocalPixelPosition& localPosition, const std::string_view action, const std::string_view params) const

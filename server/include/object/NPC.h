@@ -313,6 +313,7 @@ public:
 	[[a::inline]] PixelPosition getGlobalPosition() const noexcept;
 	[[a::inline]] LocalPixelPosition getLocalPosition() const noexcept;
 	[[a::inline]] TilePosition getTilePosition() const noexcept;
+	[[a::inline]] PixelPosition getCenterPosition() const noexcept;
 	double getCalculatedTileZ() const noexcept;
 	std::string getLevelName() const;
 	std::shared_ptr<Level> getLevel() const;
@@ -616,6 +617,15 @@ inline TilePosition NPC::getTilePosition() const noexcept
 	auto pos = character.getTilePosition();
 	pos.z() = static_cast<float>(getCalculatedTileZ());
 	return pos;
+}
+
+inline PixelPosition NPC::getCenterPosition() const noexcept
+{
+	if (isCharacter())
+		return getGlobalPosition().translate(24, 32);
+
+	const auto computedShape = getComputedShape();
+	return getGlobalPosition().translate(computedShape.width() / 2, computedShape.height() / 2);
 }
 
 //----------------------------

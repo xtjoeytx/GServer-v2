@@ -197,6 +197,7 @@ public:
 	[[a::inline]] PixelPosition getGlobalPosition() const noexcept;
 	[[a::inline]] LocalPixelPosition getLocalPosition() const noexcept;
 	[[a::inline]] TilePosition getTilePosition() const noexcept;
+	[[a::inline]] PixelPosition getCenterPosition() const noexcept;
 	[[a::inline]] PixelPosition getSubLevelOrigin() const noexcept;
 	[[a::inline]] MapPosition getMapPosition() const noexcept;
 	virtual double getCalculatedTileZ() const noexcept;
@@ -641,6 +642,11 @@ inline TilePosition Player::getTilePosition() const noexcept
 	auto pos = account.character.getTilePosition();
 	pos.z() = static_cast<float>(getCalculatedTileZ());
 	return pos;
+}
+
+inline PixelPosition Player::getCenterPosition() const noexcept
+{
+	return getGlobalPosition().translate(24, 32);
 }
 
 inline PixelPosition Player::getSubLevelOrigin() const noexcept

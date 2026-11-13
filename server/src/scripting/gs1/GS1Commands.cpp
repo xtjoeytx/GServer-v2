@@ -1540,15 +1540,22 @@ void fn_hurt(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 	if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
 	{
 		const auto halfhearts = DoubleAsIntegralFloor<int8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-		auto npcId = visitor->getOriginalSource().first;
+		std::optional<NPCID> npcId = visitor->getOriginalSource().first;
 		if (visitor->getOriginalSource().second != ScriptObjectType::NPC)
-			npcId = 0;
+			npcId = std::nullopt;
 
 		const auto server = BabyDI::Get<Server>();
 		if (const auto player = server->getNPCServer()->getPlayer(source.value().first); player != nullptr)
 		{
-			auto tilePos = toTilePosition(player->account.character.getLocalPosition());
-			server->hitPlayer(player->getId(), halfhearts, tilePos.x() + 1.5f, tilePos.y() + 2, server->getNPC(npcId));
+			NPCPtr npc = nullptr;
+			auto tilePos = toTilePosition(player->getCenterPosition());
+			if (npcId.has_value())
+			{
+				if (npc = server->getNPC(npcId.value()); npc != nullptr)
+					tilePos = toTilePosition(npc->getCenterPosition());
+			}
+
+			server->hitPlayer(player->getId(), halfhearts, tilePos.x(), tilePos.y(), npc);
 		}
 	}
 }
