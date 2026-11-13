@@ -547,17 +547,6 @@ void Player::sendRawPacket(const CString& packet, const PacketQueue channel)
 
 std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file, const PacketQueue channel)
 {
-	// Don't let the client request level files.
-	if (inList(fs::getANSIFileName(file.extension()), ".nw"s, ".graal"s, ".zelda"s))
-		return {false, false};
-
-	// Add the filename to the list of known files so we can resend the file
-	// to the client if it gets changed after it was originally sent
-	if (const auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); isClient() && client != nullptr)
-	{
-		client->m_knownFiles.insert(fs::getANSIFileName(file));
-	}
-
 	const auto& filesystem = m_server->getFileSystem();
 	std::string filename = fs::getANSIFileName(file);
 
@@ -568,6 +557,15 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file, const 
 		sendPacket(CString() >> (char)PLO_FILESENDFAILED << filename, channel);
 		return false;
 	};
+
+	// Don't let the client request level files.
+	if (inList(fs::getANSIFileName(file.extension()), ".nw"s, ".graal"s, ".zelda"s))
+		return {sendFailure({}), false};
+
+	// Add the filename to the list of known files so we can resend the file
+	// to the client if it gets changed after it was originally sent
+	if (const auto client = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); isClient() && client != nullptr)
+		client->m_knownFiles.insert(fs::getANSIFileName(file));
 
 	std::vector<char> fileData;
 
@@ -588,7 +586,7 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file, const 
 		{
 			if (m_server->cached.warnOnMissingFiles.getValue() == true)
 				return {sendFailure("File not found when trying to send to player"), false};
-			return {false, false};
+			return {sendFailure({}), false};
 		}
 
 		// Open the file and read the data.
@@ -598,7 +596,7 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file, const 
 			{
 				if (m_server->cached.warnOnFilesystemIssues.getValue() == true)
 					return {sendFailure("File failed to load"), false};
-				return {false, false};
+				return {sendFailure({}), false};
 			}
 
 			fileData = openedFile->read();
@@ -624,7 +622,7 @@ std::pair<bool, bool> Player::sendFile(const std::filesystem::path& file, const 
 	if (isClient() && m_versionId < CLVER_2_14)
 	{
 		if (fileData.size() > 64000)
-			return {sendFailure("File too large for client version"), isBigFile};
+			return {sendFailure(std::format("File '{}' is too large for client version", filename)), isBigFile};
 
 		isBigFile = false;
 	}
