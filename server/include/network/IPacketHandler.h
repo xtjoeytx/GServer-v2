@@ -205,6 +205,7 @@ public:
 
 protected:
 	bool m_nextIsRaw = false;
+	bool m_processedLoginPacket = false;
 	size_t m_rawPacketSize = 0;
 };
 
@@ -224,13 +225,15 @@ inline void IPacketHandler::processBuffer(CString& buffer)
 		processPacketBundle(bundle);
 
 		// Parse the packets.
-		if (PacketCount != 0) [[likely]]
+		if (m_processedLoginPacket) [[likely]]
 			parsePacketsFromBundle(bundle);
 		else
 		{
 			// Login packet should parse differently.
 			// We also break immediately after parsing it since we are going to create a new player.
 			parseLoginPacket(bundle);
+			parsePacketsFromBundle(bundle);
+			m_processedLoginPacket = true;
 			break;
 		}
 	}
