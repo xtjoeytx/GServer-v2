@@ -180,6 +180,7 @@ public:
 	CString getGuild() const { return m_guild; }
 	int getVersion() const { return m_versionId; }
 	const std::string& getVersionStr() const { return m_version; }
+	const std::string& getIdentity() const { return m_identity; }
 	const std::string& getServerName() const { return m_serverName; }
 	const std::string& getPlatform() const { return account.platform; }
 	[[a::inline]] std::string_view getLanguage() const;
@@ -481,6 +482,7 @@ protected:
 	int m_type = PLTYPE_AWAIT;
 	int m_versionId = CLVER_UNKNOWN;
 	std::string m_version;
+	std::string m_identity;
 	std::string m_serverName;
 	uint8_t m_statusMsg = 0;
 	uint8_t m_additionalFlags = 0;

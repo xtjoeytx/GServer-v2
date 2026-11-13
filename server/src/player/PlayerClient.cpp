@@ -350,7 +350,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 
 	// Client Identity: win,"",02e2465a2bf38f8a115f6208e9938ac8,ff144a9abb9eaff4b606f0336d6d8bc5,"6.2 9200 "
 	//					{platform}, {mobile provides 'dc:id2'}, {md5hash:harddisk-id}, {md5hash:network-id}, {uname(release, version)}, {android-id}
-	const CString identity = pPacket.readString("");
+	m_identity = pPacket.readString("");
 
 	// Print the login.
 	log::print(log::server, "New login: {} ", account.name);
@@ -373,12 +373,13 @@ bool PlayerClient::handleLogin(CString& pPacket)
 	log::printLine(log::server, " [{} ({})]", m_version, getVersionString(m_version, m_type));
 
 	// Identity parsing.
-	if (!identity.isEmpty())
+	if (!m_identity.empty())
 	{
 		auto indent = log::server.indent();
-		DEBUGPRINT("Identity:  {}", identity);
-		const auto identityTokens = identity.tokenize(",", true);
-		account.platform = identityTokens[0];
+		DEBUGPRINT("Identity:  {}", m_identity);
+		auto identityTokens = string::tokenize(std::string_view{m_identity});
+		if (const auto platform = identityTokens.begin(); platform != identityTokens.end())
+			account.platform = *platform;
 	}
 
 	// Check if the specified client is allowed access.
@@ -425,6 +426,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 
 	if (m_server->cached.localhostMode.getValue())
 	{
+		account.name = fs::getANSIFileName(std::filesystem::path{account.name});
 		log::printLine(log::server, "[Login] Localhost mode: accepting '{}' without listserver verification.", account.name);
 		return sendLogin();
 	}
@@ -436,7 +438,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 		return false;
 	}
 
-	m_server->getServerList().sendLoginPacketForPlayer(shared_from_this(), password, identity);
+	m_server->getServerList().sendLoginPacketForPlayer(shared_from_this(), password, m_identity);
 	return true;
 }
 

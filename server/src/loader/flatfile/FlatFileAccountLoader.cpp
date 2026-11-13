@@ -14,6 +14,8 @@
 #include <utility>
 #include <vector>
 
+#include <zlib.h>
+
 #include <CString.h>
 #include <IEnums.h>
 
@@ -535,17 +537,29 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 	if (string::equalsi(accountName, "guest"sv))
 	{
 		account.loadOnly = true;
-		srand(static_cast<unsigned int>(time(nullptr)));
+
+		unsigned long pcid = 0;
+		if (player != nullptr && !player->getIdentity().empty())
+		{
+			// To make a stable PCID, crc32 the 3 identity hashes.
+			pcid = crc32(0L, Z_NULL, 0);
+			const auto identity = string::tokenize(std::string_view{player->getIdentity()}) | std::ranges::to<std::vector<std::string_view>>();
+			for (size_t i = 1; i <= std::min(3ZU, identity.size()); ++i)
+			{
+				if (i >= identity.size() || identity[i].empty()) continue;
+				pcid = crc32(pcid, reinterpret_cast<const uint8_t*>(identity[i].data()), identity[i].length());
+			}
+		}
 
 		// Try to create a unique account number.
 		while (true)
 		{
-			int v = (rand() * rand()) % 9999999;
-			if (server->getPlayer("pc:" + CString(v).subString(0, 6), PLTYPE_ANYPLAYER) == nullptr)
+			if (server->getPlayer(std::format("pc:{}", pcid), PLTYPE_ANYPLAYER) == nullptr)
 			{
-				account.name = std::format("pc:{:6}", v);
+				account.name = std::format("pc:{}", pcid);
 				break;
 			}
+			++pcid;
 		}
 
 		account.communityName = "guest";

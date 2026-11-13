@@ -2,6 +2,13 @@
 
 On v4+ clients, the login packet contains a CSV formatted identity string.
 
+The listserver keeps track of the identity strings.
+If the first two fields are identical to a record in the database, and the second field is not empty, it returns the PCID assigned to that record.
+
+If it fails to find a record, it checks a record that contains a match on fields 3 and 4.
+
+If that still fails, it creates a new PCID.
+
 ---
 ### Platform
 
