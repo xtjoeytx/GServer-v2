@@ -3041,24 +3041,55 @@ void fn_shootball(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argum
 {
 	// Conformance.
 	const auto& config = visitor->scriptEngine->config;
-	if (config.strictMode.getValue() || config.shootball.getValue() == false)
-		throw std::logic_error("shootball is clientside only.");
+	if (arguments.size() != 0 && (config.strictMode.getValue() || config.shootball.getValue() == false))
+		throw std::invalid_argument("invalid arguments: shootball");
 
-	if (arguments.size() != 1)
-		throw std::invalid_argument("invalid arguments: shootball dir");
+	// Zero argument version needs a player.
+	const auto currentPlayer = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER);
+	if (!currentPlayer.has_value() && arguments.size() == 0)
+		throw std::invalid_argument("shootball called without player context");
+
+	const auto& source = visitor->getOriginalSource();
+	if (source.second != ScriptObjectType::NPC)
+		throw std::invalid_argument("shootball needs to be called from an npc source");
 
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		const auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		// No argument, shoot towards the player.
+		// Normally, the ball should shoot directly at the player, but the packet only allows arrows in the 4 cardinal directions.
+		if (arguments.size() == 0)
+		{
+			const auto server = BabyDI::Get<Server>();
+			assert(server);
+			const auto npc = server->getNPC(source.first);
+			const auto player = server->getPlayer(currentPlayer.value().first);
+			if (npc && player)
+			{
+				const auto npcPos = npc->getCenterPosition();
+				const auto playerPos = player->getCenterPosition();
+				auto displacement = playerPos - npcPos;
+				uint8_t dir = 0;
+				if (std::abs(displacement.x()) > std::abs(displacement.y()))
+					dir = displacement.x() < 0 ? 1 : 3;
+				if (std::abs(displacement.y()) >= std::abs(displacement.x()))
+					dir = displacement.y() < 0 ? 0 : 2;
 
-		const auto& source = visitor->getOriginalSource();
-		const PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
+				level->addArrow(inform_client, npcPos, displacement, dir, arrowTypeBall, source);
+			}
+		}
+		// GR extension, allow a direction.
+		else
+		{
+			const auto dir = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 
-		const auto sourcePosition = getPositionForArrow(source, dir);
-		if (!sourcePosition.has_value())
-			return;
+			const PixelPosition speed = {(dir == 0 || dir == 2) ? 0 : (dir == 1 ? -16 : 16), (dir == 1 || dir == 3) ? 0 : (dir == 0 ? -16 : 16)};
 
-		level->addArrow(inform_client, sourcePosition.value(), speed, dir, arrowTypeBall, source);
+			const auto sourcePosition = getPositionForArrow(source, dir);
+			if (!sourcePosition.has_value())
+				return;
+
+			level->addArrow(inform_client, sourcePosition.value(), speed, dir, arrowTypeBall, source);
+		}
 	}
 }
 

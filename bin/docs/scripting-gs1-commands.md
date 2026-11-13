@@ -2579,6 +2579,7 @@ Shoots an arrow projectile in the specified [direction](scripting-gs1-variables.
 Shoots a ball projectile at the player.
 
 **gs2emu** adds an optional [direction](scripting-gs1-variables.md#directions) in the serverside version.
+Without the extension enabled, serverside `shootball` will shoot towards the player in one of the 4 cardinal directions, but will not shoot directly at the player's position.  This is because the packet to spawn a projectile only sends one of the 4 directions and does not include an exact flight path.
 
 ---
 ## shootfireball
