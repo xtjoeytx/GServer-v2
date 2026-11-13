@@ -31,6 +31,17 @@ namespace preagonal
 
 static constexpr std::array<uint8_t, 30> attrPackets = {36, 37, 38, 39, 40, 44, 45, 46, 47, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73};
 
+static uint8_t toByte(const std::string_view value)
+{
+	const auto result = string::toFloat(value);
+	return static_cast<uint8_t>(result);
+}
+static int8_t toSByte(const std::string_view value)
+{
+	const auto result = string::toFloat(value);
+	return static_cast<int8_t>(result);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 NPCPtr FlatFileNPCLoader::loadNPC(std::string_view npcName) noexcept
@@ -185,8 +196,8 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 			if (parts.size() >= 4)
 			{
 				Rectangle<uint16_t, uint8_t> imagePart;
-				imagePart.position = {string::toNumber<uint16_t>(parts[0]), string::toNumber<uint16_t>(parts[1])};
-				imagePart.size = {string::toNumber<uint8_t>(parts[2]), string::toNumber<uint8_t>(parts[3])};
+				imagePart.position = {static_cast<uint16_t>(string::toFloat(parts[0])), static_cast<uint16_t>(string::toFloat(parts[1]))};
+				imagePart.size = {toByte(parts[2]), toByte(parts[3])};
 				if (npc->imagePart.position != imagePart.position || npc->imagePart.size != imagePart.size)
 				{
 					npc->imagePart = imagePart;
@@ -207,9 +218,9 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 				npc->m_initialCharacter.localPixelZ.reset();
 		}
 		else if (command == "STARTMAPX")
-			npc->m_initialCharacter.mapX = string::toNumber<uint8_t>(lineView);
+			npc->m_initialCharacter.mapX = toByte(lineView);
 		else if (command == "STARTMAPY")
-			npc->m_initialCharacter.mapY = string::toNumber<uint8_t>(lineView);
+			npc->m_initialCharacter.mapY = toByte(lineView);
 		else if (command == "LEVEL")
 			npc->level = lineView;
 		else if (command == "GROUPNAME")
@@ -250,7 +261,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		else if (command == "MAPX")
 		{
 			hasMapXPosition = true;
-			const auto val = string::toNumber<uint8_t>(lineView);
+			const auto val = toByte(lineView);
 			if (npc->character.mapX != val)
 			{
 				npc->character.mapX = val;
@@ -260,7 +271,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		else if (command == "MAPY")
 		{
 			hasMapYPosition = true;
-			const auto val = string::toNumber<uint8_t>(lineView);
+			const auto val = toByte(lineView);
 			if (npc->character.mapY != val)
 			{
 				npc->character.mapY = val;
@@ -294,7 +305,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "GRALATS")
 		{
-			const auto val = string::toNumber<uint32_t>(lineView);
+			const auto val = static_cast<uint32_t>(string::toFloat(lineView));
 			if (npc->character.gralats != val)
 			{
 				npc->character.gralats = val;
@@ -303,7 +314,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "ARROWS")
 		{
-			const auto val = string::toNumber<uint8_t>(lineView);
+			const auto val = toByte(lineView);
 			if (npc->character.arrows != val)
 			{
 				npc->character.arrows = val;
@@ -312,7 +323,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "BOMBS")
 		{
-			const auto val = string::toNumber<uint8_t>(lineView);
+			const auto val = toByte(lineView);
 			if (npc->character.bombs != val)
 			{
 				npc->character.bombs = val;
@@ -321,7 +332,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "GLOVEP")
 		{
-			const auto val = string::toNumber<uint8_t>(lineView);
+			const auto val = toByte(lineView);
 			if (npc->character.glovePower != val)
 			{
 				npc->character.glovePower = val;
@@ -330,7 +341,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "SWORDP")
 		{
-			const auto val = string::toNumber<int8_t>(lineView);
+			const auto val = toSByte(lineView);
 			if (npc->character.swordPower != val)
 			{
 				npc->character.swordPower = val;
@@ -339,7 +350,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "SHIELDP")
 		{
-			const auto val = string::toNumber<uint8_t>(lineView);
+			const auto val = toByte(lineView);
 			if (npc->character.shieldPower != val)
 			{
 				npc->character.shieldPower = val;
@@ -348,7 +359,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "BOWP")
 		{
-			const auto val = string::toNumber<uint8_t>(lineView);
+			const auto val = toByte(lineView);
 			if (npc->character.bowPower != val)
 			{
 				npc->character.bowPower = val;
@@ -409,7 +420,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 			auto tokens = string::splitToVectorView(lineView, ","sv);
 			for (size_t idx = 0; idx < std::min(tokens.size(), 8ZU); idx++)
 			{
-				const auto val = string::toNumber<uint8_t>(tokens[idx]);
+				const auto val = toByte(tokens[idx]);
 				if (npc->character.colors[idx] != val)
 				{
 					npc->character.colors[idx] = val;
@@ -421,7 +432,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "SPRITE")
 		{
-			const auto spritedir = string::toNumber<uint8_t>(lineView);
+			const auto spritedir = toByte(lineView);
 			const uint8_t sprite = spritedir >> 2;
 			const uint8_t dir = sprite & 0b11;
 			if (npc->character.sprite != sprite || npc->character.direction != dir)
@@ -433,7 +444,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "AP")
 		{
-			const auto val = string::toNumber<uint8_t>(lineView);
+			const auto val = toByte(lineView);
 			if (npc->character.ap != val)
 			{
 				npc->character.ap = val;
@@ -447,7 +458,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		else if (command == "LAYER")
 		{
 			auto visFlags = npc->visFlags & ~(PROPID(NPCVisFlags::DRAWUNDERPLAYER) | PROPID(NPCVisFlags::DRAWOVERPLAYER));
-			switch (string::toNumber<int8_t>(lineView))
+			switch (toSByte(lineView))
 			{
 				case -1:
 					visFlags |= PROPID(NPCVisFlags::DRAWUNDERPLAYER);
@@ -470,12 +481,12 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "SHAPE")
 		{
-			std::get<0>(npc->shape.data) = string::toNumber<uint16_t>(string::extractLine(lineView, ' '));
-			std::get<1>(npc->shape.data) = string::toNumber<uint16_t>(std::string{string::trim(lineView)});
+			std::get<0>(npc->shape.data) = static_cast<uint16_t>(string::toFloat(string::extractLine(lineView, ' ')));
+			std::get<1>(npc->shape.data) = static_cast<uint16_t>(string::toFloat(std::string{string::trim(lineView)}));
 		}
 		else if (command == "DONTBLOCK")
 		{
-			const auto val = string::toNumber<uint8_t>(lineView);
+			const auto val = toByte(lineView);
 			if (npc->blockFlags != val)
 			{
 				npc->blockFlags = val;
@@ -484,14 +495,14 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "NOPLAYERONWALL")
 		{
-			npc->noPlayerOnWall = string::toNumber<uint8_t>(lineView) != 0;
+			npc->noPlayerOnWall = toByte(lineView) != 0;
 		}
 		else if (command == "SAVEARR")
 		{
 			auto tokens = string::splitToVectorView(lineView, ","sv);
 			for (size_t idx = 0; idx < std::min(tokens.size(), npc->saves.size()); idx++)
 			{
-				const auto val = string::toNumber<uint8_t>(tokens[idx]);
+				const auto val = toByte(tokens[idx]);
 				if (npc->saves[idx] != val)
 				{
 					npc->saves[idx] = val;
@@ -538,7 +549,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "VISIBLE")
 		{
-			if (const auto value = string::toNumber<uint8_t>(lineView); value == 0)
+			if (const auto value = toByte(lineView); value == 0)
 			{
 				const auto visFlags = npc->visFlags & ~PROPID(NPCVisFlags::VISIBLE);
 				if (npc->visFlags != visFlags)
@@ -559,7 +570,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 		}
 		else if (command == "MALE")
 		{
-			if (const auto value = string::toNumber<uint8_t>(lineView); value == 0)
+			if (const auto value = toByte(lineView); value == 0)
 				isMale = false;
 		}
 		//---

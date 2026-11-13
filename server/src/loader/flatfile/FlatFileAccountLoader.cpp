@@ -39,8 +39,16 @@ namespace preagonal
 ///////////////////////////////////////////////////////////////////////////////
 
 // Helper to avoid having to write uint8_t everywhere.
-const auto& toByte = static_cast<uint8_t (*)(std::string_view)>(string::toNumber);
-const auto& toSByte = static_cast<int8_t (*)(std::string_view)>(string::toNumber);
+static uint8_t toByte(const std::string_view value)
+{
+	const auto result = string::toFloat(value);
+	return static_cast<uint8_t>(result);
+}
+static int8_t toSByte(const std::string_view value)
+{
+	const auto result = string::toFloat(value);
+	return static_cast<int8_t>(result);
+}
 
 static bool setIfEmpty(std::string& str, const std::string_view value, const std::string_view defaultValue = {})
 {
@@ -76,8 +84,8 @@ chestPair FlatFileAccountLoader::decomposeChest(const std::string_view chest)
 	const auto tokens = string::splitToVector(chest, ":"sv);
 	if (tokens.size() == 3)
 	{
-		result.second.x() = string::toNumber<uint8_t>(tokens[0]);
-		result.second.y() = string::toNumber<uint8_t>(tokens[1]);
+		result.second.x() = toByte(tokens[0]);
+		result.second.y() = toByte(tokens[1]);
 		result.first = string::trim(tokens[2]);
 	}
 	return result;
@@ -222,7 +230,9 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 		}
 		else if (section == "MAXHP")
 		{
-			const auto num = toByte(val);
+			auto num = toByte(val);
+			num = std::min(num, static_cast<uint8_t>(server->cached.maxHeartLimit.getValue()));
+
 			if (account.maxHitpoints != num)
 			{
 				account.maxHitpoints = num;
@@ -231,7 +241,9 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 		}
 		else if (section == "HP")
 		{
-			const auto num = static_cast<uint8_t>(string::toFloat(val) * 2);
+			auto num = static_cast<uint8_t>(string::toFloat(val) * 2);
+			num = std::clamp(num, 1_ui8, static_cast<uint8_t>(server->cached.maxHeartLimit.getValue() * 2));
+
 			if (account.character.hitpointsInHalves != num)
 			{
 				account.character.hitpointsInHalves = num;
@@ -240,7 +252,7 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 		}
 		else if (section == "GRALATS" || section == "RUPEES")
 		{
-			const auto num = string::toNumber<uint32_t>(val);
+			const auto num = static_cast<uint32_t>(string::toFloat(val));
 			if (account.character.gralats != num)
 			{
 				account.character.gralats = num;
@@ -381,7 +393,11 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 		}
 		else if (section == "STATUS")
 		{
-			const auto num = toByte(val);
+			auto num = toByte(val);
+
+			// Undo statuses we don't want to load.
+			num &= ~(PLSTATUS_HIDDEN | PLSTATUS_HIDESWORD | PLSTATUS_DEAD | PLSTATUS_PAUSED);
+
 			if (account.status != num)
 			{
 				account.status = num;
@@ -417,7 +433,7 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 		}
 		else if (section == "ONSECS")
 		{
-			const auto num = string::toNumber<uint32_t>(val);
+			const auto num = static_cast<uint32_t>(string::toFloat(val));
 			if (account.onlineSeconds != num)
 			{
 				account.onlineSeconds = num;
@@ -427,7 +443,7 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 		}
 		else if (section == "KILLS")
 		{
-			const auto num = string::toNumber<uint32_t>(val);
+			const auto num = static_cast<uint32_t>(string::toFloat(val));
 			if (account.kills != num)
 			{
 				account.kills = num;
@@ -436,7 +452,7 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 		}
 		else if (section == "DEATHS")
 		{
-			const auto num = string::toNumber<uint32_t>(val);
+			const auto num = static_cast<uint32_t>(string::toFloat(val));
 			if (account.deaths != num)
 			{
 				account.deaths = num;
@@ -655,7 +671,11 @@ bool FlatFileAccountLoader::forceSaveAccount(const Account& account)
 		writeLine(newFile, "COLORS", colorStrEx, defaultColorStrEx);
 	else writeLine(newFile, "COLORS", colorStr, defaultColorStr);
 
-	writeLine(newFile, "STATUS", account.status);
+	// Undo statuses we don't want to save.
+	auto status = account.status;
+	status &= ~(PLSTATUS_HIDDEN | PLSTATUS_HIDESWORD | PLSTATUS_DEAD | PLSTATUS_PAUSED);
+	writeLine(newFile, "STATUS", status);
+
 	writeLine(newFile, "MP", account.character.mp, 0_ui8);
 	writeLine(newFile, "AP", account.character.ap);
 	writeLine(newFile, "APCOUNTER", account.apCounter, 0_ui8);
