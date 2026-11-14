@@ -122,6 +122,7 @@
           "value": "${sourceDir}/cmake/crosscompile/x86_64-mingw64.cmake",
           "type": "FILEPATH"
         },
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlays/ports",
         "CMAKE_BUILD_WITH_INSTALL_RPATH": true
       }
     },
