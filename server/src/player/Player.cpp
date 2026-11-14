@@ -1615,7 +1615,25 @@ void Player::constructScriptParameters()
 	// colors
 	const size_t colorCount = m_server->isNewWorldMode() ? 8 : 5;
 	for (size_t i = 0; i < colorCount; ++i)
+	{
 		bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = colorPropertyNames[i], .modTime = std::ref(modTime[PROPID(PlayerProp::COLORS)]), .value = std::ref(account.character.colors[i])});
+		bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<std::string>{
+			.name = colorPropertyNames[i],
+			.getter = [this, i](std::optional<size_t>) -> GameValueVariantForGetter
+			{
+				return std::string{getColorNameFromId(account.character.colors[i])};
+			},
+			.setter = [this, i](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
+			{
+				if (const auto value = std::get_if<std::reference_wrapper<std::string>>(&incoming); value != nullptr)
+				{
+					const auto colorId = getColorIdFromName(value->get());
+					account.character.colors[i] = colorId;
+					modTime[PROPID(PlayerProp::COLORS)] = m_server->getFrameStartTime();
+				}
+			}
+		});
+	}
 
 	// gani attributes
 	for (size_t i = 0; i < 30; ++i)

@@ -1460,9 +1460,17 @@ struct ManuallyDefinedProperty
 void bindPropertyAsReadOnly(MapContainer auto& scriptParameters, bind::IsPropertyBinder auto&& binder)
 {
 	using BinderType = std::remove_cvref_t<decltype(binder)>;
-	GameVariable value{.name{binder.name}};
-	value.registerGetter<typename BinderType::DataType>(binder.get());
-	scriptParameters.try_emplace(std::string{binder.name}, std::move(value));
+	if (auto it = scriptParameters.find(std::string{binder.name}); it != scriptParameters.end())
+	{
+		GameVariable& existing = it->second;
+		existing.registerGetter<typename BinderType::DataType>(binder.get());
+	}
+	else
+	{
+		GameVariable value{.name{binder.name}};
+		value.registerGetter<typename BinderType::DataType>(binder.get());
+		scriptParameters.try_emplace(std::string{binder.name}, std::move(value));
+	}
 }
 
 /// @brief Binds a property as read-write to the script parameters.
@@ -1471,13 +1479,22 @@ void bindPropertyAsReadOnly(MapContainer auto& scriptParameters, bind::IsPropert
 void bindPropertyAsReadWrite(MapContainer auto& scriptParameters, bind::IsPropertyBinder auto&& binder)
 {
 	using BinderType = std::remove_cvref_t<decltype(binder)>;
-	GameVariable value{.name{binder.name}};
-	value.registerGetter<typename BinderType::DataType>(binder.get());
+	if (auto it = scriptParameters.find(std::string{binder.name}); it != scriptParameters.end())
+	{
+		GameVariable& existing = it->second;
+		existing.registerGetter<typename BinderType::DataType>(binder.get());
+		if (auto setter = binder.set(); setter)
+			existing.registerSetter<typename BinderType::DataType>(std::move(setter));
+	}
+	else
+	{
+		GameVariable value{.name{binder.name}};
+		value.registerGetter<typename BinderType::DataType>(binder.get());
+		if (auto setter = binder.set(); setter)
+			value.registerSetter<typename BinderType::DataType>(std::move(setter));
 
-	if (auto setter = binder.set(); setter)
-		value.registerSetter<typename BinderType::DataType>(std::move(setter));
-
-	scriptParameters.try_emplace(std::string{binder.name}, std::move(value));
+		scriptParameters.try_emplace(std::string{binder.name}, std::move(value));
+	}
 }
 
 #define bindGETSIMPLE(func, ...) [__VA_ARGS__](std::optional<int64_t> index) -> GameValueVariantForGetter { return func; }

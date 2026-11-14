@@ -904,6 +904,11 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 				setstring this.message,Hello, #n!;
 				setplayerprop #n,Altered;
 				setstring this.message2,Hello, #n!;
+				setplayerprop #C0,green;
+				setplayerprop #C1,black;
+				setplayerprop #C2,red;
+				setplayerprop #C2,#C2;
+				setplayerprop #C3,#C0;
 			}
 		)";
 		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
@@ -915,6 +920,10 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		CHECK(store->getValue<std::string>("message2").value_or(std::string{}) == "Hello, Altered!");
 
 		CHECK(player->account.character.nickName == "Altered");
+		CHECK(player->account.character.colors[0] == ENUM(ClassicColors::GREEN));
+		CHECK(player->account.character.colors[1] == ENUM(ClassicColors::BLACK));
+		CHECK(player->account.character.colors[2] == ENUM(ClassicColors::RED));
+		CHECK(player->account.character.colors[3] == ENUM(ClassicColors::GREEN));
 	}
 
 	SECTION("player properties can be changed")
@@ -933,11 +942,12 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
-		CHECK(player->account.character.colors[0] == 2);
-		CHECK(player->account.character.colors[1] == 0);
-		CHECK(player->account.character.colors[2] == 10);
-		CHECK(player->account.character.colors[3] == 13);
-		CHECK(player->account.character.colors[4] == 13);
+		// std::array<uint8_t, 8> colors{2, 0, 10, 4, 18, 18, 18, 18}; // 0-19 are ClassicColors, 20+ are HTMLColors
+		CHECK(player->account.character.colors[0] == ENUM(ClassicColors::ORANGE));
+		CHECK(player->account.character.colors[1] == ENUM(ClassicColors::WHITE));
+		CHECK(player->account.character.colors[2] == ENUM(ClassicColors::BLUE));
+		CHECK(player->account.character.colors[3] == ENUM(ClassicColors::CYNOBER));
+		CHECK(player->account.character.colors[4] == ENUM(ClassicColors::CYNOBER));
 		CHECK(player->account.character.headImage == "head2.png");
 		CHECK_FALSE(player->account.character.sprite == 16);
 		CHECK(player->account.character.sprite == 10);

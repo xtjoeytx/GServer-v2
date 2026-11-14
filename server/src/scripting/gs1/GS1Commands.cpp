@@ -2696,14 +2696,7 @@ void fn_setplayerprop(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& a
 			if (arguments.size() == 2)
 				text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
 
-			if (messagecode->name.starts_with("#C"))
-			{
-				messagecode->assign<double>(GS1Visitor::getColorValueFromString(text));
-			}
-			else
-			{
-				messagecode->assign<std::string>(std::move(text));
-			}
+			messagecode->assign<std::string>(std::move(text));
 		}
 	}
 }

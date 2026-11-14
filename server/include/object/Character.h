@@ -189,6 +189,41 @@ inline std::string_view getClassicColorName(const ClassicColors color)
 	return {};
 }
 
+/// @brief Gets the ClassicColors from a color name.
+inline std::optional<ClassicColors> getClassicColorFromName(const std::string_view color)
+{
+	static const std::unordered_map<std::string_view, ClassicColors> colorNames =
+	{
+		{"white"sv, ClassicColors::WHITE},
+		{"yellow"sv, ClassicColors::YELLOW},
+		{"orange"sv, ClassicColors::ORANGE},
+		{"pink"sv, ClassicColors::PINK},
+		{"red"sv, ClassicColors::RED},
+		{"darkred"sv, ClassicColors::DARKRED},
+		{"lightgreen"sv, ClassicColors::LIGHTGREEN},
+		{"green"sv, ClassicColors::GREEN},
+		{"darkgreen"sv, ClassicColors::DARKGREEN},
+		{"lightblue"sv, ClassicColors::LIGHTBLUE},
+		{"blue"sv, ClassicColors::BLUE},
+		{"darkblue"sv, ClassicColors::DARKBLUE},
+		{"brown"sv, ClassicColors::BROWN},
+		{"cynober"sv, ClassicColors::CYNOBER},
+		{"purple"sv, ClassicColors::PURPLE},
+		{"darkpurple"sv, ClassicColors::DARKPURPLE},
+		{"lightgray"sv, ClassicColors::LIGHTGRAY},
+		{"gray"sv, ClassicColors::GRAY},
+		{"black"sv, ClassicColors::BLACK},
+		{"transparent"sv, ClassicColors::TRANSPARENT},
+	};
+
+	if (colorNames.contains(color))
+		return colorNames.at(color);
+	if (const auto lower = string::toLower(color); colorNames.contains(lower))
+		return colorNames.at(lower);
+
+	return std::nullopt;
+}
+
 //----------------------------
 
 /// @brief Defines the HTML colors for a character's appearance.
@@ -510,6 +545,193 @@ inline std::string_view getHTMLColorName(const HTMLColors color)
 		return colorNames.at(color);
 
 	return {};
+}
+
+/// @brief Gets the HTMLColors from a color name.
+inline std::optional<HTMLColors> getHTMLColorFromName(const std::string_view color)
+{
+	static const std::unordered_map<std::string_view, HTMLColors> colorNames =
+	{
+		{"aliceblue"sv, HTMLColors::ALICEBLUE},
+		{"antiquewhite"sv, HTMLColors::ANTIQUEWHITE},
+		{"aqua"sv, HTMLColors::AQUA},
+		{"aquamarine"sv, HTMLColors::AQUAMARINE},
+		{"azure"sv, HTMLColors::AZURE},
+		{"beige"sv, HTMLColors::BEIGE},
+		{"bisque"sv, HTMLColors::BISQUE},
+		{"black"sv, HTMLColors::BLACK},
+		{"blanchedalmond"sv, HTMLColors::BLANCHEDALMOND},
+		{"blue"sv, HTMLColors::BLUE},
+		{"blueviolet"sv, HTMLColors::BLUEVIOLET},
+		{"brown"sv, HTMLColors::BROWN},
+		{"burlywood"sv, HTMLColors::BURLYWOOD},
+		{"cadetblue"sv, HTMLColors::CADETBLUE},
+		{"chartreuse"sv, HTMLColors::CHARTREUSE},
+		{"chocolate"sv, HTMLColors::CHOCOLATE},
+		{"coral"sv, HTMLColors::CORAL},
+		{"cornflowerblue"sv, HTMLColors::CORNFLOWERBLUE},
+		{"cornsilk"sv, HTMLColors::CORNSILK},
+		{"crimson"sv, HTMLColors::CRIMSON},
+		{"cyan"sv, HTMLColors::CYAN},
+		{"darkblue"sv, HTMLColors::DARKBLUE},
+		{"darkcyan"sv, HTMLColors::DARKCYAN},
+		{"darkgoldenrod"sv, HTMLColors::DARKGOLDENROD},
+		{"darkgray"sv, HTMLColors::DARKGRAY},
+		{"darkgreen"sv, HTMLColors::DARKGREEN},
+		{"darkgrey"sv, HTMLColors::DARKGREY},
+		{"darkkhaki"sv, HTMLColors::DARKKHAKI},
+		{"darkmagenta"sv, HTMLColors::DARKMAGENTA},
+		{"darkolivegreen"sv, HTMLColors::DARKOLIVEGREEN},
+		{"darkorange"sv, HTMLColors::DARKORANGE},
+		{"darkorchid"sv, HTMLColors::DARKORCHID},
+		{"darkred"sv, HTMLColors::DARKRED},
+		{"darksalmon"sv, HTMLColors::DARKSALMON},
+		{"darkseagreen"sv, HTMLColors::DARKSEAGREEN},
+		{"darkslateblue"sv, HTMLColors::DARKSLATEBLUE},
+		{"darkslategray"sv, HTMLColors::DARKSLATEGRAY},
+		{"darkslategrey"sv, HTMLColors::DARKSLATEGREY},
+		{"darkturquoise"sv, HTMLColors::DARKTURQUOISE},
+		{"darkviolet"sv, HTMLColors::DARKVIOLET},
+		{"deeppink"sv, HTMLColors::DEEPPINK},
+		{"deepskyblue"sv, HTMLColors::DEEPSKYBLUE},
+		{"dimgray"sv, HTMLColors::DIMGRAY},
+		{"dimgrey"sv, HTMLColors::DIMGREY},
+		{"dodgerblue"sv, HTMLColors::DODGERBLUE},
+		{"feldspar"sv, HTMLColors::FELDSPAR},
+		{"firebrick"sv, HTMLColors::FIREBRICK},
+		{"floralwhite"sv, HTMLColors::FLORALWHITE},
+		{"forestgreen"sv, HTMLColors::FORESTGREEN},
+		{"fuchsia"sv, HTMLColors::FUCHSIA},
+		{"gainsboro"sv, HTMLColors::GAINSBORO},
+		{"ghostwhite"sv, HTMLColors::GHOSTWHITE},
+		{"gold"sv, HTMLColors::GOLD},
+		{"goldenrod"sv, HTMLColors::GOLDENROD},
+		{"gray"sv, HTMLColors::GRAY},
+		{"green"sv, HTMLColors::GREEN},
+		{"greenyellow"sv, HTMLColors::GREENYELLOW},
+		{"grey"sv, HTMLColors::GREY},
+		{"honeydew"sv, HTMLColors::HONEYDEW},
+		{"hotpink"sv, HTMLColors::HOTPINK},
+		{"indianred"sv, HTMLColors::INDIANRED},
+		{"indigo"sv, HTMLColors::INDIGO},
+		{"ivory"sv, HTMLColors::IVORY},
+		{"khaki"sv, HTMLColors::KHAKI},
+		{"lavender"sv, HTMLColors::LAVENDER},
+		{"lavenderblush"sv, HTMLColors::LAVENDERBLUSH},
+		{"lawngreen"sv, HTMLColors::LAWNGREEN},
+		{"lemonchiffon"sv, HTMLColors::LEMONCHIFFON},
+		{"lightblue"sv, HTMLColors::LIGHTBLUE},
+		{"lightcoral"sv, HTMLColors::LIGHTCORAL},
+		{"lightcyan"sv, HTMLColors::LIGHTCYAN},
+		{"lightgoldenrodyellow"sv, HTMLColors::LIGHTGOLDENRODYELLOW},
+		{"lightgray"sv, HTMLColors::LIGHTGRAY},
+		{"lightgreen"sv, HTMLColors::LIGHTGREEN},
+		{"lightgrey"sv, HTMLColors::LIGHTGREY},
+		{"lightpink"sv, HTMLColors::LIGHTPINK},
+		{"lightsalmon"sv, HTMLColors::LIGHTSALMON},
+		{"lightseagreen"sv, HTMLColors::LIGHTSEAGREEN},
+		{"lightskyblue"sv, HTMLColors::LIGHTSKYBLUE},
+		{"lightslateblue"sv, HTMLColors::LIGHTSLATEBLUE},
+		{"lightslategray"sv, HTMLColors::LIGHTSLATEGRAY},
+		{"lightslategrey"sv, HTMLColors::LIGHTSLATEGREY},
+		{"lightsteelblue"sv, HTMLColors::LIGHTSTEELBLUE},
+		{"lightyellow"sv, HTMLColors::LIGHTYELLOW},
+		{"lime"sv, HTMLColors::LIME},
+		{"limegreen"sv, HTMLColors::LIMEGREEN},
+		{"linen"sv, HTMLColors::LINEN},
+		{"magenta"sv, HTMLColors::MAGENTA},
+		{"maroon"sv, HTMLColors::MAROON},
+		{"mediumaquamarine"sv, HTMLColors::MEDIUMAQUAMARINE},
+		{"mediumblue"sv, HTMLColors::MEDIUMBLUE},
+		{"mediumorchid"sv, HTMLColors::MEDIUMORCHID},
+		{"mediumpurple"sv, HTMLColors::MEDIUMPURPLE},
+		{"mediumseagreen"sv, HTMLColors::MEDIUMSEAGREEN},
+		{"mediumslateblue"sv, HTMLColors::MEDIUMSLATEBLUE},
+		{"mediumspringgreen"sv, HTMLColors::MEDIUMSPRINGGREEN},
+		{"mediumturquoise"sv, HTMLColors::MEDIUMTURQUOISE},
+		{"mediumvioletred"sv, HTMLColors::MEDIUMVIOLETRED},
+		{"midnightblue"sv, HTMLColors::MIDNIGHTBLUE},
+		{"mintcream"sv, HTMLColors::MINTCREAM},
+		{"mistyrose"sv, HTMLColors::MISTYROSE},
+		{"moccasin"sv, HTMLColors::MOCCASIN},
+		{"navajowhite"sv, HTMLColors::NAVAJOWHITE},
+		{"navy"sv, HTMLColors::NAVY},
+		{"oldlace"sv, HTMLColors::OLDLACE},
+		{"olive"sv, HTMLColors::OLIVE},
+		{"olivedrab"sv, HTMLColors::OLIVEDRAB},
+		{"orange"sv, HTMLColors::ORANGE},
+		{"orangered"sv, HTMLColors::ORANGERED},
+		{"orchid"sv, HTMLColors::ORCHID},
+		{"palegoldenrod"sv, HTMLColors::PALEGOLDENROD},
+		{"palegreen"sv, HTMLColors::PALEGREEN},
+		{"paleturquoise"sv, HTMLColors::PALETURQUOISE},
+		{"palevioletred"sv, HTMLColors::PALEVIOLETRED},
+		{"papayawhip"sv, HTMLColors::PAPAYAWHIP},
+		{"peachpuff"sv, HTMLColors::PEACHPUFF},
+		{"peru"sv, HTMLColors::PERU},
+		{"pink"sv, HTMLColors::PINK},
+		{"plum"sv, HTMLColors::PLUM},
+		{"powderblue"sv, HTMLColors::POWDERBLUE},
+		{"purple"sv, HTMLColors::PURPLE},
+		{"red"sv, HTMLColors::RED},
+		{"rosybrown"sv, HTMLColors::ROSYBROWN},
+		{"royalblue"sv, HTMLColors::ROYALBLUE},
+		{"saddlebrown"sv, HTMLColors::SADDLEBROWN},
+		{"salmon"sv, HTMLColors::SALMON},
+		{"sandybrown"sv, HTMLColors::SANDYBROWN},
+		{"seagreen"sv, HTMLColors::SEAGREEN},
+		{"seashell"sv, HTMLColors::SEASHELL},
+		{"sienna"sv, HTMLColors::SIENNA},
+		{"silver"sv, HTMLColors::SILVER},
+		{"skyblue"sv, HTMLColors::SKYBLUE},
+		{"slateblue"sv, HTMLColors::SLATEBLUE},
+		{"slategray"sv, HTMLColors::SLATEGRAY},
+		{"slategrey"sv, HTMLColors::SLATEGREY},
+		{"snow"sv, HTMLColors::SNOW},
+		{"springgreen"sv, HTMLColors::SPRINGGREEN},
+		{"steelblue"sv, HTMLColors::STEELBLUE},
+		{"tan"sv, HTMLColors::TAN},
+		{"teal"sv, HTMLColors::TEAL},
+		{"thistle"sv, HTMLColors::THISTLE},
+		{"tomato"sv, HTMLColors::TOMATO},
+		{"turquoise"sv, HTMLColors::TURQUOISE},
+		{"violet"sv, HTMLColors::VIOLET},
+		{"violetred"sv, HTMLColors::VIOLETRED},
+		{"wheat"sv, HTMLColors::WHEAT},
+		{"white"sv, HTMLColors::WHITE},
+		{"whitesmoke"sv, HTMLColors::WHITESMOKE},
+		{"yellow"sv, HTMLColors::YELLOW},
+		{"yellowgreen"sv, HTMLColors::YELLOWGREEN},
+	};
+
+	if (colorNames.contains(color))
+		return colorNames.at(color);
+	if (const auto lower = string::toLower(color); colorNames.contains(lower))
+		return colorNames.at(lower);
+
+	return std::nullopt;
+}
+
+//----------------------------
+
+/// @brief Gets the name of a color from a property color ID.
+inline std::string_view getColorNameFromId(const uint8_t colorId)
+{
+	if (colorId >= CLASSICCOLORS_COUNT + HTMLCOLORS_COUNT)
+		return {};
+	if (colorId >= CLASSICCOLORS_COUNT)
+		return getHTMLColorName(ENUM<HTMLColors>(colorId - CLASSICCOLORS_COUNT));
+	return getClassicColorName(ENUM<ClassicColors>(colorId));
+}
+
+/// @brief Gets a property color ID from a color name.
+inline uint8_t getColorIdFromName(const std::string_view name)
+{
+	if (const auto color = getClassicColorFromName(name); color.has_value())
+		return ENUM(color.value());
+	if (const auto color = getHTMLColorFromName(name); color.has_value())
+		return ENUM(color.value()) + CLASSICCOLORS_COUNT;
+	return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
