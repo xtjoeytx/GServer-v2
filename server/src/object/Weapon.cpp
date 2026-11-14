@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include <tomcrypt.h>
 #include <zlib.h>
 
 #include <BabyDI.h>
@@ -196,7 +197,9 @@ void Weapon::registerWeaponWithPlayer(const std::shared_ptr<Player>& player) con
 		{
 			if (player->getVersion() >= CLVER_5_07)
 				player->sendPacket(CString() >> (char)PLO_LOADSCRIPT << m_headerWithCRC);
-			else player->sendPacket(CString() >> (char)PLO_WEAPONHASH >> (long long)m_checksum << name);
+			else if (player->getVersion() >= CLVER_4_042)
+				player->sendPacket(CString() >> (char)PLO_WEAPONHASH >> (long long)m_plainChecksum << name);
+			else sendByteCodeToPlayer(player);
 		}
 	}
 }
@@ -337,9 +340,11 @@ void Weapon::calculateHeaderChecksum()
 {
 	const auto& script = m_script.getOriginalSource();
 	const auto& bytecode = m_script.getClientByteCode();
+	if (bytecode.empty())
+		return;
 
 	// Set the cryptographic key to be the script's hash.
-	// This will become the DES encryption key the client will use the encrypt the bytecode.
+	// This will become the DES encryption key the client will use to encrypt the bytecode.
 	constexpr string::string_hash hash{};
 	auto scriptHash = static_cast<uint64_t>(hash(script));
 
@@ -349,8 +354,41 @@ void Weapon::calculateHeaderChecksum()
 	m_desKey = key.toString();
 
 	// CRC32 checksum the bytecode.
-	m_checksum = crc32(0L, Z_NULL, 0);
-	m_checksum = crc32(m_checksum, reinterpret_cast<const uint8_t*>(bytecode.data()), bytecode.size());
+	m_plainChecksum = crc32(0L, Z_NULL, 0);
+	m_plainChecksum = crc32(m_plainChecksum, bytecode.data(), static_cast<uint32_t>(bytecode.size()));
+
+	ScriptByteCode encrypt{bytecode};
+	{
+		// Convert the hash into individual bytes.
+		std::array<uint8_t, 8> keyBytes{};
+		for (size_t i = 0; i < 4; ++i)
+		{
+			keyBytes[i] = static_cast<uint8_t>(hashBytes[0] >> (8 * i));
+			keyBytes[i + 4] = static_cast<uint8_t>(hashBytes[1] >> (8 * i));
+		}
+
+		// Reverse the bits.
+		// The client has a non-standard DES method that reads every byte of the key in a bit-reversed way.
+		for (size_t i = 0; i < 8; ++i)
+		{
+			uint8_t& b = keyBytes[i];
+			b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+			b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+			b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+		}
+
+		// Encrypt the bytecode.
+		symmetric_key skey;
+		if (des_setup(keyBytes.data(), static_cast<int>(keyBytes.size()), 0, &skey) == CRYPT_OK)
+		{
+			for (size_t i = 0; i + 8 <= encrypt.size(); i += 8)
+				des_ecb_encrypt(&encrypt[i], &encrypt[i], &skey);
+			des_done(&skey);
+		}
+	}
+
+ 	m_encryptedChecksum = crc32(0L, Z_NULL, 0);
+	m_encryptedChecksum = crc32(m_encryptedChecksum, encrypt.data(), static_cast<uint32_t>(encrypt.size()));
 
 	// Create the header.
 	// [GBYTE2 length_header_and_bytecode]
@@ -365,7 +403,7 @@ void Weapon::calculateHeaderChecksum()
 	m_header = string::toCSV(headerParts);
 
 	// Header with CRC32.
-	const CString crc32{static_cast<long long>(m_checksum)};
+	const CString crc32 = CString() >> (long long)m_encryptedChecksum;
 	headerParts.push_back(crc32.toString());
 	m_headerWithCRC = string::toCSV(headerParts);
 }

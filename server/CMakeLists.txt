@@ -276,46 +276,11 @@ target_include_directories(${TARGET_NAME} PUBLIC "${gs2lib_SOURCE_DIR}/include")
 target_link_libraries(${TARGET_NAME} PUBLIC gs2lib)
 
 # ----------------------------
-# Dependency: libtommath.
-FetchContent_Declare(libtommath
-	GIT_REPOSITORY https://github.com/libtom/libtommath.git
-	GIT_SHALLOW    ON
-	GIT_TAG        develop
-	EXCLUDE_FROM_ALL
-	FIND_PACKAGE_ARGS CONFIG
-)
-FetchContent_MakeAvailable(libtommath)
-set(libtommath_DIR "${libtommath_BINARY_DIR}")
-target_include_directories(${TARGET_NAME} PUBLIC "${libtommath_SOURCE_DIR}")
-
-# ----------------------------
-# Dependency: libtomcrypt-preagonal.
-FetchContent_Declare(tomcrypt
-	GIT_REPOSITORY https://github.com/Preagonal/libtomcrypt.git
-	GIT_SHALLOW    ON
-	GIT_TAG        cipher-desgr
-	EXCLUDE_FROM_ALL
-	FIND_PACKAGE_ARGS CONFIG
-)
-FetchContent_MakeAvailable(tomcrypt)
-target_compile_definitions(libtomcrypt PUBLIC LTC_NOTHING LTC_MD5 LTC_DES LTC_DESGR LTC_BASE64 LTC_SHA256)
-target_compile_definitions(libtomcrypt PUBLIC LTC_ECB_MODE) # Need to define this to avoid a broken header.
-set_target_properties(libtomcrypt PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
-
-# Map libtomcrypt configurations as it fails with MinSizeRel.
-if(TARGET tomcrypt)
-	set_target_properties(tomcrypt PROPERTIES
-		MAP_IMPORTED_CONFIG_DEBUG Release
-		MAP_IMPORTED_CONFIG_RELEASE Release
-		MAP_IMPORTED_CONFIG_MINSIZEREL Release
-		MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release
-	)
-endif()
-
-target_include_directories(${TARGET_NAME} PUBLIC "${libtomcrypt_SOURCE_DIR}/src/headers")
-target_link_libraries(${TARGET_NAME} PUBLIC tomcrypt$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>)
-add_dependencies(libtomcrypt libtommath)
-add_dependencies(${TARGET_NAME} libtomcrypt)
+# Dependency: libtomcrypt.
+find_path(LIBTOMCRYPT_INCLUDE_DIRS "tomcrypt.h" REQUIRED)
+find_library(LIBTOMCRYPT_LIBRARIES NAMES tomcrypt REQUIRED)
+target_include_directories(${TARGET_NAME} PUBLIC ${LIBTOMCRYPT_INCLUDE_DIRS})
+target_link_libraries(${TARGET_NAME} PUBLIC ${LIBTOMCRYPT_LIBRARIES})
 
 # ----------------------------
 # Dependency: ztd.idk.

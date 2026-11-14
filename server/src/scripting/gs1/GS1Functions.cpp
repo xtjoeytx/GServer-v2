@@ -361,9 +361,9 @@ GS1ScriptValue fn_base64decode(GS1Visitor* visitor, const std::vector<GS1ScriptV
 		throw std::invalid_argument("invalid arguments: base64decode(string)");
 
 	const auto input = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or(""s);
-	const auto output = std::make_unique<unsigned char[]>(input.length());
+	const auto output = std::make_unique<uint8_t[]>(input.length());
 	unsigned long outputLength = input.length();
-	base64_decode(input.c_str(), input.length(), output.get(), &outputLength);
+	base64_decode(reinterpret_cast<const uint8_t*>(input.c_str()), input.length(), output.get(), &outputLength);
 
 	return GameValue{std::string{reinterpret_cast<const char*>(output.get()), outputLength}};
 }
@@ -382,7 +382,7 @@ GS1ScriptValue fn_base64encode(GS1Visitor* visitor, const std::vector<GS1ScriptV
 
 	// Encode.
 	const auto output = std::make_unique<char[]>(outputLength);
-	base64_encode(reinterpret_cast<const unsigned char*>(input.c_str()), static_cast<unsigned long>(input.length()), output.get(), &outputLength);
+	base64_encode(reinterpret_cast<const uint8_t*>(input.c_str()), static_cast<unsigned long>(input.length()), reinterpret_cast<uint8_t*>(output.get()), &outputLength);
 
 	return GameValue{std::string{output.get(), outputLength}};
 }
@@ -1243,14 +1243,14 @@ GS1ScriptValue fn_passwordmatches(GS1Visitor* visitor, const std::vector<GS1Scri
 	std::array<uint8_t, 32> hash{};
 	hash_state sha256state{};
 	sha256_init(&sha256state);
-	sha256_process(&sha256state, reinterpret_cast<const unsigned char*>(password.data()), password.size());
+	sha256_process(&sha256state, reinterpret_cast<const uint8_t*>(password.data()), password.size());
 	sha256_done(&sha256state, hash.data());
 
 	// Calculate the length of the resulting base64 string.
 	constexpr unsigned long SHA256BASE64 = 4 * ((hash.size() + 2) / 3) + 1;
 	unsigned long outputLength = SHA256BASE64;
 	std::array<char, SHA256BASE64> output{};
-	base64_encode(reinterpret_cast<const unsigned char*>(hash.data()), static_cast<unsigned long>(hash.size()), output.data(), &outputLength);
+	base64_encode(reinterpret_cast<const uint8_t*>(hash.data()), static_cast<unsigned long>(hash.size()), reinterpret_cast<uint8_t*>(output.data()), &outputLength);
 
 	return GameValue{(encrypted == std::string{output.data(), outputLength})};
 }

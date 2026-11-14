@@ -1511,18 +1511,21 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 {
 	// Get the checksum and class name.
 	const uint32_t checkSum = pPacket.readGInt5();
-	std::string className = pPacket.readString("").toString();
+	const std::string className = pPacket.readString("").toString();
 
 	if (!m_server->hasNPCServer())
 		return HandlePacketResult::Handled;
 
 	const auto npcServer = m_server->getNPCServer();
-	if (const auto classObj = npcServer->getClass(className); classObj != nullptr)
+	if (const auto classObject = npcServer->getClass(className); classObject != nullptr)
 	{
-		if (classObj->getCheckSum() == checkSum)
+		if (classObject->hasChecksum(checkSum))
+		{
+			classObject->registerWithPlayer(shared_from_this());
 			return HandlePacketResult::Handled;
+		}
 
-		sendRawPacket(classObj->getClassPacket(getVersion()));
+		classObject->sendByteCodeToPlayer(shared_from_this());
 	}
 	else
 	{
@@ -1532,11 +1535,9 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 			std::string_view des{empty.data(), 10};
 			std::string_view crc{empty.data(), 5};
 
-			const auto header = string::toCSVFromPack("class"sv, std::string_view{className}, "1"sv, des, crc);
+			// Header disables client caching of this empty class.
+			const auto header = string::toCSVFromPack("class"sv, std::string_view{className}, "0"sv, des, crc);
 
-			// Should technically be PLO_LOADSCRIPT but for some reason the client breaks player.join() scripts
-			// if a weapon decides to request an class that doesn't exist on the server.
-			// This seems to fix it by sending an empty bytecode.
 			sendPacket(CString() >> (char)PLO_WEAPONBYTECODE2 >> (short)header.length() << header);
 		}
 		// v4

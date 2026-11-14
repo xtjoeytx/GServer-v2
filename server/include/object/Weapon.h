@@ -78,7 +78,8 @@ protected:
 	Server* m_server;
 	LevelItemType m_weaponDefault;
 	Script m_script;
-	uint32_t m_checksum = 0;
+	uint32_t m_plainChecksum = 0;
+	uint32_t m_encryptedChecksum = 0;
 	std::string m_desKey;
 	std::string m_header;
 	std::string m_headerWithCRC;

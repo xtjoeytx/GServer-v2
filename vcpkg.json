@@ -3,21 +3,22 @@
   "version": "4.0.0",
   "builtin-baseline": "1600ce2ba1b6b621bfc5a31a785c4963b817a1c7",
   "dependencies": [
-	{
-	  "name": "antlr4",
-	  "version>=": "4.13.2#1"
-	},
-	"bzip2",
-	{
-	  "name": "catch2",
-	  "version>=": "3.4.0"
-	},
-	"miniupnpc",
-	"pkgconf",
-	{
-	  "name": "wolfssl",
-	  "version>=": "5.8.0"
-	},
-	"zlib"
+    {
+      "name": "antlr4",
+      "version>=": "4.13.2#1"
+    },
+    "bzip2",
+    {
+      "name": "catch2",
+      "version>=": "3.4.0"
+    },
+    "miniupnpc",
+    "pkgconf",
+    {
+      "name": "wolfssl",
+      "version>=": "5.8.0"
+    },
+    "libtomcrypt",
+    "zlib"
   ]
 }

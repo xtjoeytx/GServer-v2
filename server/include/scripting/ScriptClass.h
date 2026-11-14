@@ -4,10 +4,8 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
-#include <string_view>
 #include <string>
-
-#include <CString.h>
+#include <string_view>
 
 #include <scripting/Script.h>
 #include <utilities/CommonTypes.h>
@@ -18,19 +16,23 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+class Server;
+class Player;
+
 class ScriptClass
 {
 public:
 	ScriptClass(std::string_view className, std::string_view classScript);
 	~ScriptClass() = default;
 
-	CString getClassPacket(int clientVersion) const;
+	void registerWithPlayer(const std::shared_ptr<Player>& player) const;
+	void sendByteCodeToPlayer(const std::shared_ptr<Player>& player) const;
+
+	[[a::inline]] bool hasChecksum(uint32_t checksum) const noexcept;
 
 	[[a::inline]] Script& getScript();
 	[[a::inline]] const Script& getScript() const;
 	ScriptClass& setScript(std::string_view classScript);
-
-	[[a::inline]] uint32_t getCheckSum() const;
 
 public:
 	const std::string name;
@@ -40,14 +42,22 @@ public:
 	EventDispatcher<ScriptClass*> onScriptModified;
 
 private:
+	Server* m_server;
 	Script m_script;
-	uint32_t m_checksum;
+	uint32_t m_plainChecksum;
+	uint32_t m_encryptedChecksum;
 	std::string m_desKey;
 	std::string m_header;
+	std::string m_headerWithCRC;
 };
 using ScriptClassPtr = std::shared_ptr<ScriptClass>;
 
 //----------------------------
+
+inline bool ScriptClass::hasChecksum(const uint32_t checksum) const noexcept
+{
+	return m_plainChecksum == checksum || m_encryptedChecksum == checksum;
+}
 
 inline Script& ScriptClass::getScript()
 {
@@ -57,11 +67,6 @@ inline Script& ScriptClass::getScript()
 inline const Script& ScriptClass::getScript() const
 {
 	return m_script;
-}
-
-inline uint32_t ScriptClass::getCheckSum() const
-{
-	return m_checksum;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
