@@ -113,8 +113,8 @@ static gs1::GS1ScriptWrapper* get_wrapper(const CompiledScriptResult& result, co
 
 static bool execute_script(IScriptEngine& engine, ScriptEvent& event, const ScriptObject& source, CompiledScriptResult& result, const std::source_location location = std::source_location::current())
 {
-	const auto str = std::get_if<std::string>(&result);
-	const std::string error{str ? *str : ""};
+	const auto str = std::get_if<std::pair<ScriptCompilationFailureType, std::string>>(&result);
+	const std::string error{str != nullptr ? str->second : ""};
 
 	CAPTURE(location.line());
 	CAPTURE(location.function_name());
@@ -150,7 +150,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles scripts", "[Scripting]
 			if (created) {x=10}
 			if (created) {y=5;say2HEY!}
 		)";
-		auto result = engine->compileScript("valid_script", validScript);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "valid_script", validScript);
 		REQUIRE(std::holds_alternative<ScriptExecutionContext>(result));
 	}
 
@@ -162,8 +162,8 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles scripts", "[Scripting]
 				setanimg light2.png;
 				doblock;
 		)";
-		auto result = engine->compileScript("invalid_script", invalidScript);
-		REQUIRE(std::holds_alternative<std::string>(result));
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "invalid_script", invalidScript);
+		REQUIRE(std::holds_alternative<std::pair<ScriptCompilationFailureType, std::string>>(result));
 	}
 
 	SECTION("compiled script identifiers are found")
@@ -176,7 +176,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles scripts", "[Scripting]
 				setstring mystring,Hello, world!;
 			}
 		)";
-		auto result = engine->compileScript("script_with_identifiers", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "script_with_identifiers", script);
 		REQUIRE(std::holds_alternative<ScriptExecutionContext>(result));
 
 		auto& context = std::get<ScriptExecutionContext>(result);
@@ -200,7 +200,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles scripts", "[Scripting]
 		constexpr std::string_view script = R"(
 			function testFunc() {}
 		)";
-		auto result = engine->compileScript("script_with_functions", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "script_with_functions", script);
 		REQUIRE(std::holds_alternative<ScriptExecutionContext>(result));
 
 		auto& context = std::get<ScriptExecutionContext>(result);
@@ -228,7 +228,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				this.myvar2 := 42;
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -247,7 +247,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				setstring this.mystring,Hello, world!;
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -270,7 +270,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				negativeValues = {1,1,0,-1,-1,0,1,1,0,-1,-1};
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -359,7 +359,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 					this.testtruestring = 1;
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -443,7 +443,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				this.as_power ^= 3;
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -499,7 +499,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				insertstring this.test8,3,Two;
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -530,7 +530,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				setstring this.t2,#t(2);
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -551,7 +551,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 			setstring s, thisisatest;
 			test1 = indexof(isa, #s(s));
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -577,7 +577,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 			for (i=0; i<tokenscount; i++)
 				setstring tokens2_t#v(i),#t(i);
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		const auto player = npcServer->getPlayerNPCServer();
@@ -616,7 +616,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		)";
 		ScriptEvent timeout{.type = ScriptEventType::TIMEOUT, .initiator = source::FromPlayer(NPCServerPlayerID)};
 
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		[[maybe_unused]] auto wrapper = get_wrapper(result);
@@ -653,7 +653,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				this.test = 3;
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		[[maybe_unused]] auto wrapper = get_wrapper(result);
@@ -666,7 +666,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		constexpr std::string_view script = R"(
             pi = 3.14;
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE_THROWS_AS(execute_script(*engine, created, source::FromNPC(testNPC), result), script_error);
 	}
 
@@ -675,7 +675,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 		constexpr std::string_view script = R"(
             this.pi = 3.14;
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		[[maybe_unused]] auto wrapper = get_wrapper(result);
@@ -702,7 +702,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 				k = 5;
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		[[maybe_unused]] auto wrapper = get_wrapper(result);
@@ -718,7 +718,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 			this.message = 1;
 			this.onmapx = 3;
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		[[maybe_unused]] auto wrapper = get_wrapper(result);
@@ -730,7 +730,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 executes basic expressions", "[
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles and executes simple expressions", "[Scripting][IScriptEngine][GS1]")
+TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 compiles and executes simple targeted expressions", "[Scripting][IScriptEngine][GS1]")
 {
 	SECTION("compiled string expression")
 	{
@@ -794,7 +794,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		client->account.character.localPixelX = (36 * 16);
 		level->addPlayer(client->getId());
 
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		auto wrapper = get_wrapper(result);
@@ -829,7 +829,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 			this.x = 3;
 		)";
 
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		auto npc = server->getNPC(testNPC);
@@ -849,7 +849,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 
 		// Test conforming mode.
 		engine->settings.set("strict", true);
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -861,7 +861,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		// Test non-conforming mode.
 		store->store.clear();
 		engine->settings.set("strict", false);
-		result = engine->compileScript("test_script", script);
+		result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		wrapper = get_wrapper(result);
@@ -882,7 +882,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 				thiso.myvar = 3;
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -906,7 +906,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 				setstring this.message2,Hello, #n!;
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -930,7 +930,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 				playersprite = 10;
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		CHECK(player->account.character.colors[0] == 2);
@@ -949,7 +949,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 npc and player bindings and cro
 		constexpr std::string_view script = R"(
 			this.test = playersaysnumber;
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 
 		player->account.character.chatMessage = "10 playerhearts";
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
@@ -1053,7 +1053,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 server bindings", "[Scripting][
 		constexpr std::string_view script = R"(
 			this.test = allplayerscount;
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		const auto wrapper = get_wrapper(result);
@@ -1078,7 +1078,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 functions", "[Scripting][IScrip
 			this.testSuccess = passwordmatches(#s(this.passwordHash), hunter2);
 			this.testFail = passwordmatches(#s(this.passwordHash), hunter3);
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -1100,7 +1100,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 functions", "[Scripting][IScrip
 				this.test2 = 3;
 			}
 		)";
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(3), result));
 
 		auto wrapper = get_wrapper(result);
@@ -1156,7 +1156,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 message codes", "[Scripting][IS
 		engine->settings.set("always-translate-strings", false);
 
 		// English.
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		CHECK(playerstore->getValue<std::string>("client.animal").value_or(std::string{}) == "cat"s);
@@ -1170,7 +1170,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 message codes", "[Scripting][IS
 
 		// Spanish.
 		player->account.language = "spanish";
-		result = engine->compileScript("test_script", script);
+		result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		CHECK(playerstore->getValue<std::string>("client.animal").value_or(std::string{}) == "cat"s);
@@ -1200,7 +1200,7 @@ TEST_CASE_METHOD(ServerFixture, "ScriptEngineGS1 commands", "[Scripting][IScript
 
 		npcServer->addClass("TestClass"sv, "if (created) { this.test = 42; }"sv);
 
-		auto result = engine->compileScript("test_script", script);
+		auto result = engine->compileScript(ScriptCompilationTarget::SERVER, "test_script", script);
 		REQUIRE(execute_script(*engine, created, source::FromNPC(testNPC), result));
 
 		auto npc = server->getNPC(testNPC);
