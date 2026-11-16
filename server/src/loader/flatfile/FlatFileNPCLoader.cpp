@@ -195,7 +195,7 @@ void FlatFileNPCLoader::loadNPC(fs::File& file, NPCPtr& npc, const clock::time_p
 			const auto parts = string::splitToVectorView(lineView, " "sv);
 			if (parts.size() >= 4)
 			{
-				Rectangle<uint16_t, uint8_t> imagePart;
+				ImagePartRectangle imagePart;
 				imagePart.position = {static_cast<uint16_t>(string::toFloat(parts[0])), static_cast<uint16_t>(string::toFloat(parts[1]))};
 				imagePart.size = {toByte(parts[2]), toByte(parts[3])};
 				if (npc->imagePart.position != imagePart.position || npc->imagePart.size != imagePart.size)

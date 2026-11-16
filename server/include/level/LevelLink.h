@@ -25,14 +25,14 @@ class LevelLink
 public:
 	LevelLink() = default;
 	explicit LevelLink(const std::vector<CString>& pLink);
-	LevelLink(const Rectangle<uint8_t, uint8_t>& coordinates, std::string_view destinationX, std::string_view destinationY, std::string_view destinationLevel);
+	LevelLink(const LocalWholeTileRectangleArea& coordinates, std::string_view destinationX, std::string_view destinationY, std::string_view destinationLevel);
 
 public:
 	[[nodiscard]] CString getLinkStr() const;
 	void parseLinkStr(const std::vector<CString>& pLink);
 
 public:
-	[[nodiscard]] [[a::inline]] const Rectangle<uint8_t, uint8_t>& getBoundingBox() const;
+	[[nodiscard]] [[a::inline]] const LocalWholeTileRectangleArea& getBoundingBox() const;
 	[[a::inline]] void setX(uint8_t posX = 0);
 	[[a::inline]] void setY(uint8_t posY = 0);
 	[[a::inline]] void setWidth(uint8_t width = 0);
@@ -53,7 +53,7 @@ public:
 private:
 	Server* m_server = nullptr;
 	std::string m_destinationLevel, m_destinationX, m_destinationY;
-	Rectangle<uint8_t, uint8_t> m_boundingBox;
+	LocalWholeTileRectangleArea m_boundingBox;
 	bool m_constantX = false;
 	bool m_constantY = false;
 	std::array<bool, 2> m_complex{false, false};
@@ -76,7 +76,7 @@ inline const std::string& LevelLink::getDestinationY() const
 	return m_destinationY;
 }
 
-inline const Rectangle<uint8_t, uint8_t>& LevelLink::getBoundingBox() const
+inline const LocalWholeTileRectangleArea& LevelLink::getBoundingBox() const
 {
 	return m_boundingBox;
 }

@@ -31,7 +31,7 @@ struct LevelTerrainWorker
 	std::vector<double>* levelHeightOverrides = nullptr;
 };
 
-void generateTerrain(LevelTerrain& levelTerrain, const MapTerrain& mapTerrain, const Position<uint8_t>& mapPosition, const Dimension<uint8_t>& gridDimension);
+void generateTerrain(LevelTerrain& levelTerrain, const MapTerrain& mapTerrain, const MapPosition& mapPosition, const MapDimension& gridDimension);
 void floodFillHeights(LevelTerrainWorker& terrain, uint32_t rowWidth, double chaos, double height, size_t bottom, size_t right, size_t top, size_t left);
 void floodFillQuadrant(LevelTerrainWorker& terrain, uint32_t rowWidth, double chaos, double height, size_t bottom, size_t right, size_t top, size_t left);
 

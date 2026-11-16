@@ -1224,7 +1224,7 @@ void Player::setPosition(const PixelPosition& position)
 
 	if (const auto level = getLevel(); level != nullptr && level->isGmap())
 	{
-		const auto mapPosition = level->clampMapPosition(toMapPosition(position));
+		const auto mapPosition = level->clampMapPositionToLevel(toMapPosition(position));
 		account.character.mapX = mapPosition.x();
 		account.character.mapY = mapPosition.y();
 	}
@@ -1234,6 +1234,13 @@ bool Player::warp(const std::string_view levelName, const PixelPosition& positio
 {
 	if (const auto level = m_server->getLoadedLevel(levelName, shared_from_this()); level != nullptr)
 		return enterLevel(level, position, clientCachedTime);
+	return false;
+}
+
+bool Player::warp(const std::string_view levelName, const LocalPixelPosition& position, const std::optional<time_t> clientCachedTime)
+{
+	if (const auto level = m_server->getLoadedLevel(levelName, shared_from_this()); level != nullptr)
+		return enterLevel(level, toPixelPosition({0, 0}, position), clientCachedTime);
 	return false;
 }
 
@@ -1417,7 +1424,7 @@ void Player::constructScriptParameters()
 				// Fix the map position if applicable.
 				if (const auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
 				{
-					if (const auto mapX = levelPtr->clampMapPosition(toMapPosition(globalPosition)).x(); mapX != account.character.mapX)
+					if (const auto mapX = levelPtr->clampMapPositionToLevel(toMapPosition(globalPosition)).x(); mapX != account.character.mapX)
 					{
 						account.character.mapX = mapX;
 						modTime[PROPID(PlayerProp::GMAPLEVELX)] = now;
@@ -1446,7 +1453,7 @@ void Player::constructScriptParameters()
 				// Fix the map position if applicable.
 				if (const auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
 				{
-					if (const auto mapY = levelPtr->clampMapPosition(toMapPosition(globalPosition)).y(); mapY != account.character.mapY)
+					if (const auto mapY = levelPtr->clampMapPositionToLevel(toMapPosition(globalPosition)).y(); mapY != account.character.mapY)
 					{
 						account.character.mapY = mapY;
 						modTime[PROPID(PlayerProp::GMAPLEVELY)] = now;

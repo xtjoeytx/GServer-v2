@@ -165,13 +165,13 @@ public:
 	[[a::inline]] auto getMap() const noexcept;
 	bool isGmap() const noexcept;
 	[[a::inline]] bool isOnBigMap() const noexcept;
-	[[a::inline]] static constexpr Dimension<uint8_t> tilesPerSubLevel() noexcept;
-	[[a::inline]] static constexpr Dimension<uint8_t> pixelsPerTile() noexcept;
+	[[a::inline]] static constexpr WholeTileDimension tilesPerSubLevel() noexcept;
+	[[a::inline]] static constexpr Dimension<in_pixels, uint8_t> pixelsPerTile() noexcept;
 	[[a::inline]] static constexpr PixelDimension pixelsPerSubLevel() noexcept;
-	[[a::inline]] Dimension<uint8_t> sizeInSubLevels() const noexcept;
-	[[a::inline]] Dimension<uint32_t> sizeInTiles() const noexcept;
+	[[a::inline]] MapDimension sizeInSubLevels() const noexcept;
+	[[a::inline]] WholeTileDimension sizeInTiles() const noexcept;
 	[[a::inline]] PixelDimension sizeInPixels() const noexcept;
-	[[a::inline]] Rectangle<uint32_t, uint32_t> getBoundingBox() const noexcept;
+	[[a::inline]] PixelRectangleArea getBoundingBox() const noexcept;
 	std::optional<uint16_t> getMapTileAtPosition(const TilePosition& position) const noexcept;
 	uint16_t* getMapTileForEditing(const TilePosition& position) const noexcept;
 	[[a::inline]] std::string_view getLevelNameAtPosition(const PixelPosition& position) const noexcept;
@@ -193,7 +193,7 @@ public:
 	[[a::inline]] PixelPosition convertToMapPosition(std::string_view levelPart, const LocalWholeTilePosition& position) const noexcept;
 	[[a::inline]] PixelPosition convertToMapPosition(const MapPosition& mapPosition, const LocalPixelPosition& position) const noexcept;
 	[[a::inline]] PixelPosition convertToMapPosition(const MapPosition& mapPosition, const LocalWholeTilePosition& position) const noexcept;
-	[[a::inline]] MapPosition clampMapPosition(const MapPosition& mapPosition) const noexcept;
+	[[a::inline]] MapPosition clampMapPositionToLevel(const MapPosition& mapPosition) const noexcept;
 	std::generator<SubLevelPtr> getSubLevelsInRectangle(const PixelRectangleArea& area) const noexcept;
 	std::generator<SubLevelPtr> getSubLevelsInRectangle(const WholeTileRectangleArea& area) const noexcept;
 	std::generator<SubLevelPtr> getNearbySubLevels(const PixelPosition& position, uint32_t tileDistance = 64) const noexcept;
@@ -272,8 +272,8 @@ public:
 	bool alterBoard(CString& tileData, const WholeTileRectangleArea& area, Player* player, bool forceRespawn = false, bool allowRespawn = true, bool sendToPlayers = false);
 	void applyBoardChangeFromScriptTiles(const WholeTileRectangleArea& area, bool forceRespawn = false, bool allowRespawn = true);
 	void saveBoardChangeFromScriptTiles(const WholeTileRectangleArea& area) const;
-	void updateBoard(const TileRectangleArea& area) noexcept;
-	void updateBoard2(const TileRectangleArea& area) noexcept;
+	void updateBoard(const WholeTileRectangleArea& area) noexcept;
+	void updateBoard2(const WholeTileRectangleArea& area) noexcept;
 
 public:
 	LevelArrow* addArrow(inform_client_t, const PixelPosition& position, const PixelPosition& speed, uint8_t direction, int8_t type, const ScriptObject& from);
@@ -446,45 +446,44 @@ inline bool Level::isOnBigMap() const noexcept
 	return m_map != nullptr && m_map->isBigMap();
 }
 
-inline constexpr Dimension<uint8_t> Level::tilesPerSubLevel() noexcept
+inline constexpr WholeTileDimension Level::tilesPerSubLevel() noexcept
 {
 	return { 64_ui8, 64_ui8 };
 }
 
-inline constexpr Dimension<uint8_t> Level::pixelsPerTile() noexcept
+inline constexpr Dimension<in_pixels, uint8_t> Level::pixelsPerTile() noexcept
 {
 	return { 16_ui8, 16_ui8 };
 }
 
 inline constexpr PixelDimension Level::pixelsPerSubLevel() noexcept
 {
-	return PixelDimension{ tilesPerSubLevel() } * pixelsPerTile();
+	return toPixelDimension(tilesPerSubLevel());
 }
 
-inline Dimension<uint8_t> Level::sizeInSubLevels() const noexcept
+inline MapDimension Level::sizeInSubLevels() const noexcept
 {
 	if (m_map == nullptr || m_map->isBigMap()) return { 1, 1 };
 	return m_map->size;
 }
 
-inline Dimension<uint32_t> Level::sizeInTiles() const noexcept
+inline WholeTileDimension Level::sizeInTiles() const noexcept
 {
-	auto size = sizeInSubLevels();
-	auto tileSize = tilesPerSubLevel();
-	return { static_cast<uint32_t>(size.width() * tileSize.width()), static_cast<uint32_t>(size.height() * tileSize.height()) };
+	const auto size = sizeInSubLevels();
+	constexpr auto tileSize = tilesPerSubLevel();
+	return {static_cast<WholeTileDimension::ValueType>(size.width() * tileSize.width()), static_cast<WholeTileDimension::ValueType>(size.height() * tileSize.height())};
 }
 
 inline PixelDimension Level::sizeInPixels() const noexcept
 {
-	auto size = sizeInSubLevels();
-	auto pixelSize = pixelsPerSubLevel();
-	return { static_cast<uint32_t>(size.width()) * pixelSize.width(), static_cast<uint32_t>(size.height()) * pixelSize.height() };
+	const auto size = sizeInSubLevels();
+	constexpr auto pixelSize = pixelsPerSubLevel();
+	return {static_cast<PixelDimension::ValueType>(size.width()) * pixelSize.width(), static_cast<PixelDimension::ValueType>(size.height()) * pixelSize.height()};
 }
 
-inline Rectangle<uint32_t, uint32_t> Level::getBoundingBox() const noexcept
+inline PixelRectangleArea Level::getBoundingBox() const noexcept
 {
-	//return { getMapPixelOffset(), { 1024_ui16, 1024_ui16 } };
-	return { { 0_ui32, 0_ui32 }, sizeInPixels() };
+	return {{0, 0}, sizeInPixels()};
 }
 
 inline std::string_view Level::getLevelNameAtPosition(const PixelPosition& position) const noexcept
@@ -537,8 +536,8 @@ inline std::optional<PixelPosition> Level::getSubLevelOrigin(const SubLevelPtr& 
 	if (part == nullptr || !part->mapPosition.has_value())
 		return std::nullopt;
 
-	auto pixelPerPart = pixelsPerSubLevel();
-	return PixelPosition{ static_cast<int32_t>(part->mapPosition.value().x()) * pixelPerPart.width(), static_cast<int32_t>(part->mapPosition.value().y()) * pixelPerPart.height(), 0};
+	constexpr auto pixelPerPart = pixelsPerSubLevel();
+	return PixelPosition{static_cast<PixelDimension::ValueType>(part->mapPosition.value().x()) * pixelPerPart.width(), static_cast<PixelDimension::ValueType>(part->mapPosition.value().y()) * pixelPerPart.height(), 0};
 }
 
 inline std::optional<MapPosition> Level::getSubLevelPositionInMap(const std::string_view levelPart) const noexcept
@@ -574,7 +573,7 @@ inline SubLevelPtr Level::getSubLevelAtPosition(const PixelPosition& position) c
 	if (!isGmap())
 		return !m_levelParts.empty() ? m_levelParts[0] : nullptr;
 
-	const auto mapPosition = position / 1024;
+	const auto mapPosition = toMapPosition(position);
 	if (mapPosition.x() >= m_map->size.width() || mapPosition.y() >= m_map->size.height())
 		return nullptr;
 
@@ -590,7 +589,7 @@ inline SubLevelPtr Level::getSubLevelAtPosition(const TilePosition& position) co
 	if (!isGmap())
 		return !m_levelParts.empty() ? m_levelParts[0] : nullptr;
 
-	const auto mapPosition = Position<uint8_t>{DoubleAsIntegralFloor<uint8_t>(position.x() / 64), DoubleAsIntegralFloor<uint8_t>(position.y() / 64)};
+	const auto mapPosition = toMapPosition(position);
 	if (mapPosition.x() >= m_map->size.width() || mapPosition.y() >= m_map->size.height())
 		return nullptr;
 
@@ -638,21 +637,21 @@ inline std::pair<SubLevelPtr, StaticLevelDataPtr> Level::getSubLevelAndStaticDat
 	if (subLevel != nullptr)
 	{
 		if (auto levelData = subLevel->staticData.lock(); levelData != nullptr)
-			return { subLevel, levelData };
+			return {subLevel, levelData};
 	}
 
-	return { nullptr, nullptr };
+	return {nullptr, nullptr};
 }
 
 inline PixelPosition Level::convertToMapPosition(const std::string_view levelPart, const LocalPixelPosition& position) const noexcept
 {
 	if (isGmap())
 	{
-		auto mapPosition = getSubLevelPositionInMap(levelPart).value_or(MapPosition{});
-		auto pixelPerPart = pixelsPerSubLevel();
-		return { position.x() + static_cast<int32_t>(mapPosition.x()) * pixelPerPart.width(), position.y() + static_cast<int32_t>(mapPosition.y()) * pixelPerPart.height(), static_cast<int32_t>(position.z()) };
+		const auto mapPosition = getSubLevelPositionInMap(levelPart).value_or(MapPosition{});
+		constexpr auto pixelPerPart = pixelsPerSubLevel();
+		return {position.x() + static_cast<int32_t>(mapPosition.x()) * pixelPerPart.width(), position.y() + static_cast<int32_t>(mapPosition.y()) * pixelPerPart.height(), static_cast<int32_t>(position.z())};
 	}
-	return { position.x(), position.y(), position.z() };
+	return {position.x(), position.y(), position.z()};
 }
 
 inline PixelPosition Level::convertToMapPosition(const std::string_view levelPart, const LocalWholeTilePosition& position) const noexcept
@@ -665,11 +664,11 @@ inline PixelPosition Level::convertToMapPosition(const MapPosition& mapPosition,
 {
 	if (isGmap())
 	{
-		auto pixelPerPart = pixelsPerSubLevel();
-		auto correctMapPosition = clampMapPosition(mapPosition);
-		return { static_cast<int32_t>(position.x()) + (correctMapPosition.x() * pixelPerPart.width()), static_cast<int32_t>(position.y()) + (correctMapPosition.y() * pixelPerPart.height()), static_cast<int32_t>(position.z()) };
+		constexpr auto pixelPerPart = pixelsPerSubLevel();
+		const auto correctMapPosition = clampMapPositionToLevel(mapPosition);
+		return {static_cast<PixelDimension::ValueType>(position.x()) + (correctMapPosition.x() * pixelPerPart.width()), static_cast<PixelDimension::ValueType>(position.y()) + (correctMapPosition.y() * pixelPerPart.height()), static_cast<PixelDimension::ValueType>(position.z())};
 	}
-	return { static_cast<int32_t>(position.x()), static_cast<int32_t>(position.y()), static_cast<int32_t>(position.z()) };
+	return {static_cast<PixelDimension::ValueType>(position.x()), static_cast<PixelDimension::ValueType>(position.y()), static_cast<PixelDimension::ValueType>(position.z())};
 }
 
 inline PixelPosition Level::convertToMapPosition(const MapPosition& mapPosition, const LocalWholeTilePosition& position) const noexcept
@@ -678,19 +677,21 @@ inline PixelPosition Level::convertToMapPosition(const MapPosition& mapPosition,
 
 	if (isGmap())
 	{
-		auto pixelPerPart = pixelsPerSubLevel();
-		auto correctMapPosition = clampMapPosition(mapPosition);
-		return { (static_cast<int32_t>(position.x()) * pixelPerTile.width()) + (correctMapPosition.x() * pixelPerPart.width()), (static_cast<int32_t>(position.y()) * pixelPerTile.height()) + (correctMapPosition.y() * pixelPerPart.height()), static_cast<int32_t>(position.z()) * pixelPerTile.length() };
+		constexpr auto pixelPerPart = pixelsPerSubLevel();
+		const auto correctMapPosition = clampMapPositionToLevel(mapPosition);
+		return {(static_cast<PixelDimension::ValueType>(position.x()) * pixelPerTile.width()) + (correctMapPosition.x() * pixelPerPart.width()), (static_cast<PixelDimension::ValueType>(position.y()) * pixelPerTile.height()) + (correctMapPosition.y() * pixelPerPart.height()), static_cast<PixelDimension::ValueType>(position.z()) * pixelPerTile.length()};
 	}
-	return { static_cast<int32_t>(position.x() * pixelPerTile.width()), static_cast<int32_t>(position.y() * pixelPerTile.height()), static_cast<int32_t>(position.z() * pixelPerTile.length()) };
+	return {static_cast<PixelDimension::ValueType>(position.x() * pixelPerTile.width()), static_cast<PixelDimension::ValueType>(position.y() * pixelPerTile.height()), static_cast<PixelDimension::ValueType>(position.z() * pixelPerTile.length())};
 }
 
-inline MapPosition Level::clampMapPosition(const MapPosition& mapPosition) const noexcept
+inline MapPosition Level::clampMapPositionToLevel(const MapPosition& mapPosition) const noexcept
 {
 	if (!isGmap() || m_map->size.width() == 0 || m_map->size.height() == 0)
 		return {0, 0};
 
-	return {std::min(mapPosition.x(), static_cast<uint8_t>(m_map->size.width() - 1)), std::min(mapPosition.y(), static_cast<uint8_t>(m_map->size.height() - 1))};
+	const auto x = std::clamp(mapPosition.x(), static_cast<MapPosition::ValueType>(0), static_cast<MapPosition::ValueType>(m_map->size.width() - 1));
+	const auto y = std::clamp(mapPosition.y(), static_cast<MapPosition::ValueType>(0), static_cast<MapPosition::ValueType>(m_map->size.height() - 1));
+	return {x, y};
 }
 
 //----------------------------

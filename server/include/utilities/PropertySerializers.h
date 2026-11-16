@@ -621,18 +621,18 @@ struct PropertyHurtDxDy : public PropertyBase
 	}
 
 	/// @brief Displacement in tiles from -TileDistance to TileDistance.
-	explicit PropertyHurtDxDy(const Position<float>& displacement)
+	explicit PropertyHurtDxDy(const TilePosition& displacement)
 	{
 		hurtDX = static_cast<int8_t>((std::clamp(displacement.x(), -TileDistance, TileDistance) / TileDistance) * MidPoint);
 		hurtDY = static_cast<int8_t>((std::clamp(displacement.y(), -TileDistance, TileDistance) / TileDistance) * MidPoint);
 	}
 
 	/// @brief Displacement in pixel tiles from -TileDistance*16 to TileDistance*16.
-	explicit PropertyHurtDxDy(const Position<int16_t>& displacement)
+	explicit PropertyHurtDxDy(const PixelPosition& displacement)
 	{
-		int16_t pixels = TileDistance * 16;
-		hurtDX = (std::clamp(displacement.x(), static_cast<int16_t>(-pixels), pixels) * MidPoint) / pixels;
-		hurtDY = (std::clamp(displacement.y(), static_cast<int16_t>(-pixels), pixels) * MidPoint) / pixels;
+		const auto pixels = static_cast<PixelPosition::ValueType>(TileDistance * 16);
+		hurtDX = (std::clamp(displacement.x(), -pixels, pixels) * MidPoint) / pixels;
+		hurtDY = (std::clamp(displacement.y(), -pixels, pixels) * MidPoint) / pixels;
 	}
 
 	[[nodiscard]] CString serialize() const override

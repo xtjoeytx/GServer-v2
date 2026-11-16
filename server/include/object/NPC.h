@@ -306,7 +306,7 @@ public:
 	[[a::inline]] bool isCreated() const noexcept;
 	[[a::inline]] bool isBlocking() const noexcept;
 	[[a::inline]] bool isVisible() const noexcept;
-	[[a::inline]] Dimension<uint16_t> getComputedShape() const noexcept;
+	[[a::inline]] PixelDimension getComputedShape() const noexcept;
 	[[a::inline]] PixelRectangleArea getBoundingBox() const noexcept;
 	[[a::inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
 	[[a::inline]] PixelRectangleArea getEventBoundingBox() const noexcept;
@@ -445,8 +445,8 @@ public:
 	std::string scriptType;
 	std::string image;
 	Character character;
-	Dimension<uint16_t> shape;
-	Rectangle<uint16_t, uint8_t> imagePart;
+	PixelDimension shape;
+	ImagePartRectangle imagePart;
 	uint8_t visFlags = PROPID(NPCVisFlags::VISIBLE);
 	uint8_t blockFlags = PROPID(NPCBlockFlags::BLOCK);
 	float hurtX = 0.0f;
@@ -482,7 +482,7 @@ private:
 	std::optional<size_t> m_initialIndexInLevelFile;
 	std::string m_initialLevel;
 	std::weak_ptr<Level> m_currentLevel;
-	Position<uint8_t> m_initialMapPosition;
+	MapPosition m_initialMapPosition;
 	Character m_initialCharacter;
 	std::string m_weaponName;
 };
@@ -556,7 +556,7 @@ inline void NPC::recordInitialState()
 	m_initialCharacter = character;
 }
 
-inline Dimension<uint16_t> NPC::getComputedShape() const noexcept
+inline PixelDimension NPC::getComputedShape() const noexcept
 {
 	// Characters have a shape of 3 tiles in all directions.
 	if (isCharacter()) // && (shape.width() == 0 || shape.height() == 0))

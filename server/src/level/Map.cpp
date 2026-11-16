@@ -47,9 +47,9 @@ Map::Map(is_bigmap_t, const std::filesystem::path& fileName)
 		throw std::runtime_error("Map file not found!");
 
 	// Stupid.
-	auto& constructSize = const_cast<Dimension<uint8_t>&>(size);
-	auto& constructLevels = const_cast<string_map<Position<uint8_t>>&>(levels);
-	Position<uint8_t> currentPosition;
+	auto& constructSize = const_cast<MapDimension&>(size);
+	auto& constructLevels = const_cast<string_map<MapPosition>&>(levels);
+	MapPosition currentPosition;
 
 	// Load the levels.
 	for (auto& line : CString::loadToken(fullFilePath.string()))
@@ -107,11 +107,11 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 	std::string mapName{fs::getANSIFileName(fileName.stem())};
 
 	// Stupid.
-	auto& constructSize = const_cast<Dimension<uint8_t>&>(size);
-	auto& constructLevels = const_cast<string_map<Position<uint8_t>>&>(levels);
+	auto& constructSize = const_cast<MapDimension&>(size);
+	auto& constructLevels = const_cast<string_map<MapPosition>&>(levels);
 	auto& constructPreload = const_cast<string_set&>(levelsToKeepInMemory);
 	auto& constructTerrain = const_cast<MapTerrain&>(terrain);
-	Position<uint8_t> currentPosition;
+	MapPosition currentPosition;
 
 	std::string generatedLastLevel;
 	std::vector<double> terrainGridHeights;
@@ -334,7 +334,7 @@ Map::Map(is_gmap_t, const std::filesystem::path& fileName)
 			for (size_t x = 0; x < constructSize.width(); ++x)
 			{
 				auto levelName = std::format("{}{}{}{}{}.nw", levelPrefix, columnSeparator, toColumnName(columnDigits, x), rowSeparator, row);
-				constructLevels.insert({string::toLower(levelName), Position<uint8_t>{static_cast<uint8_t>(x), static_cast<uint8_t>(y)}});
+				constructLevels.insert({string::toLower(levelName), MapPosition{static_cast<uint8_t>(x), static_cast<uint8_t>(y)}});
 			}
 		}
 	}
@@ -486,9 +486,10 @@ std::shared_ptr<StaticLevelData> Map::getLevelDataAt(const PixelPosition& global
 
 std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> Map::getLevelDataInRange(const TilePosition& position, const int syncTilesX, const int syncTilesY) const noexcept
 {
-	Position<int16_t> searchPos{static_cast<int16_t>(position.x() / 64), static_cast<int16_t>(position.y() / 64)};
-	Dimension<uint8_t> levelSyncDistance{static_cast<uint8_t>(std::ceilf(static_cast<float>(syncTilesX) / 64)), static_cast<uint8_t>(std::ceilf(static_cast<float>(syncTilesY) / 64))};
-	const Rectangle<int16_t, uint8_t> area{searchPos.translate(static_cast<int16_t>(-levelSyncDistance.width()), static_cast<int16_t>(-levelSyncDistance.height())), levelSyncDistance * 2};
+	const TileDimension syncTiles{syncTilesX, syncTilesY};
+	const auto searchPos = toMapPosition(position);
+	const auto levelSyncDistance = toMapDimension(syncTiles);
+	const Rectangle area{searchPos.translate(static_cast<int16_t>(-levelSyncDistance.width()), static_cast<int16_t>(-levelSyncDistance.height())), levelSyncDistance * 2};
 
 	for (const auto& [levelName, levelPos] : levels)
 	{
@@ -504,8 +505,7 @@ std::generator<std::pair<std::shared_ptr<StaticLevelData>, MapPosition>> Map::ge
 {
 	for (const auto& [levelName, levelPos] : levels)
 	{
-		PixelPosition levelOrigin{levelPos.x() * 1024, levelPos.y() * 1024};
-		if (positionInRectangle(levelOrigin, area))
+		if (const auto levelOrigin = toPixelPosition(levelPos); positionInRectangle(levelOrigin, area))
 		{
 			const auto index = (levelPos.y() * size.width()) + levelPos.x();
 			co_yield std::make_pair(getLevelDataPtr(levelName, levelDataByPosition[index]), levelPos);

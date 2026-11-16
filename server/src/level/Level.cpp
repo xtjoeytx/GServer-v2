@@ -351,7 +351,7 @@ double SubLevel::getHeightAt(const LocalPixelPosition& position) const noexcept
 	if (!terrain.has_value() || terrain.value().heightmap.empty())
 		return 0.0;
 
-	auto tilePosition = toTilePosition(position);
+	auto tilePosition = toLocalTilePosition(position);
 
 	// Determine the origin tile for our calculation.
 	// This will be the top-left tile within the quad we are calculating the height for.
@@ -359,28 +359,28 @@ double SubLevel::getHeightAt(const LocalPixelPosition& position) const noexcept
 	if (tilePosition.x() > 64) originTile.x() = 64;
 	if (tilePosition.y() > 64) originTile.y() = 64;
 
-	auto heightAtPosition = [&](const TilePosition& pos) -> double
+	auto heightAtPosition = [&](const LocalTilePosition& pos) -> double
 	{
 		return terrain.value().heightmap[static_cast<size_t>(pos.y() * 65 + pos.x())];
 	};
 
 	// Generate 3D coordinates for our tiles.
-	TilePosition topLeft = toTilePosition(originTile);
-	TilePosition topRight = toTilePosition(translatePosition(originTile, 1_ui8, 0_ui8));
-	TilePosition bottomLeft = toTilePosition(translatePosition(originTile, 0_ui8, 1_ui8));
+	LocalTilePosition topLeft = toLocalTilePosition(originTile);
+	LocalTilePosition topRight = toLocalTilePosition(translatePosition(originTile, 1, 0));
+	LocalTilePosition bottomLeft = toLocalTilePosition(translatePosition(originTile, 0, 1));
 	topLeft.z() = static_cast<float>(heightAtPosition(topLeft));
 	topRight.z() = static_cast<float>(heightAtPosition(topRight));
 	bottomLeft.z() = static_cast<float>(heightAtPosition(bottomLeft));
 
 	// Calculate our direction vectors.
-	const Position<float> vecU = topRight - topLeft;
-	const Position<float> vecV = bottomLeft - topLeft;
+	const LocalTilePosition vecU = topRight - topLeft;
+	const LocalTilePosition vecV = bottomLeft - topLeft;
 
 	// Determine our tile offset.
-	TilePosition offset{tilePosition.x() - topLeft.x(), tilePosition.y() - topLeft.y()};
+	LocalTilePosition offset{tilePosition.x() - topLeft.x(), tilePosition.y() - topLeft.y()};
 
 	// Calculate our point using the offset along the direction vectors.
-	TilePosition point = topLeft + (vecU * offset.x()) + (vecV * offset.y());
+	LocalTilePosition point = topLeft + (vecU * offset.x()) + (vecV * offset.y());
 
 	return point.z();
 }
@@ -1235,7 +1235,7 @@ std::generator<std::pair<const LevelSign*, WholeTilePosition>> Level::getSignPos
 		if (const auto sdata = m_levelParts.at(0)->staticData.lock(); sdata != nullptr)
 		{
 			for (const auto& sign : sdata->signs)
-				co_yield std::make_pair(&sign, WholeTilePosition{static_cast<uint16_t>(sign.getTileX()), static_cast<uint16_t>(sign.getTileY())});
+				co_yield std::make_pair(&sign, toWholeTilePosition(TilePosition{sign.getTileX(), sign.getTileY()}));
 		}
 	}
 	else
@@ -1246,7 +1246,7 @@ std::generator<std::pair<const LevelSign*, WholeTilePosition>> Level::getSignPos
 			{
 				auto origin = toWholeTilePosition(getSubLevelOrigin(levelPtr).value_or(PixelPosition{}));
 				for (const auto& sign : sdata->signs)
-					co_yield std::make_pair(&sign, translatePosition(origin, static_cast<uint16_t>(sign.getTileX()), static_cast<uint16_t>(sign.getTileY())));
+					co_yield std::make_pair(&sign, translatePosition(origin, toWholeTilePosition(TilePosition{sign.getTileX(), sign.getTileY()})));
 			}
 		}
 	}
@@ -1700,6 +1700,8 @@ bool Level::alterBoard(CString& tileData, const WholeTileRectangleArea& area, Pl
 			// Determine the area within the part.
 			auto localRect = clipLocalWholeTileRectangleArea(mapPosition, area);
 
+			DEBUGPRINT("[BOARD] Creating {}x{} board alteration on map ({}, {}): pos ({}, {}), size: ({},{})", area.size.width(), area.size.height(), partX, partY, localRect.position.x(), localRect.position.y(), localRect.size.width(), localRect.size.height());
+
 			// Delete any existing changes contained within the same region.
 			std::erase_if(sourcePart->boardChanges, [&localRect](const LevelBoardChange& change)
 			{
@@ -1779,12 +1781,12 @@ void Level::applyBoardChangeFromScriptTiles(const WholeTileRectangleArea& area, 
 			for (size_t x = 0; x < localArea.size.width(); ++x)
 			{
 				// Get the tile from the sub-level.
-				auto sourcePosition = Position<size_t>(localArea.position.x() + x, localArea.position.y() + y);
-				auto tile = subTiles->at(sourcePosition.y() * 64 + sourcePosition.x());
+				const auto sourcePosition = Position<in_tiles, size_t>(localArea.position.x() + x, localArea.position.y() + y);
+				const auto tile = subTiles->at(sourcePosition.y() * 64 + sourcePosition.x());
 
 				// Set the tile in the destination array, calculating the position relative to the origin of the area.
 				// This will let us pick the appropriate index.
-				auto destPosition = Position<size_t>(displacement.x() + x, displacement.y() + y);
+				const auto destPosition = Position<in_tiles, size_t>(displacement.x() + x, displacement.y() + y);
 				tiles[destPosition.y() * area.size.width() + destPosition.x()] = tile;
 			}
 		}
@@ -1844,12 +1846,12 @@ void Level::saveBoardChangeFromScriptTiles(const WholeTileRectangleArea& area) c
 	}
 }
 
-void Level::updateBoard(const TileRectangleArea& area) noexcept
+void Level::updateBoard(const WholeTileRectangleArea& area) noexcept
 {
-	applyBoardChangeFromScriptTiles(toWholeTileRectangleArea(area), true);
+	applyBoardChangeFromScriptTiles(area, true);
 }
 
-void Level::updateBoard2(const TileRectangleArea& area) noexcept
+void Level::updateBoard2(const WholeTileRectangleArea& area) noexcept
 {
 	// If we don't allow permanent tile modifications, just call updateBoard().
 	if (m_server->cached.enablePermanentTileChanges.getValue() == false)
@@ -1858,8 +1860,7 @@ void Level::updateBoard2(const TileRectangleArea& area) noexcept
 		return;
 	}
 
-	const auto wholeTileArea = toWholeTileRectangleArea(area);
-	applyBoardChangeFromScriptTiles(wholeTileArea, false, false);
+	applyBoardChangeFromScriptTiles(area, false, false);
 
 	// ReSharper disable once CppTooWideScope
 	const bool levelsAutoSave = m_server->cached.saveTileChangesToLevelFile.getValue();
@@ -1868,7 +1869,7 @@ void Level::updateBoard2(const TileRectangleArea& area) noexcept
 		const auto mapPosition = toMapPosition(area.position);
 		if (const auto staticData = getStaticLevelDataAtPosition(mapPosition); staticData != nullptr)
 		{
-			saveBoardChangeFromScriptTiles(wholeTileArea);
+			saveBoardChangeFromScriptTiles(area);
 			saveLevel(mapPosition, staticData->levelName);
 		}
 	}
@@ -2300,14 +2301,14 @@ void Level::addSpyFire(const PixelPosition& position, const ScriptObject& from, 
 		// clang-format off
 		const auto lengthInPixels = static_cast<int16_t>((length + 1) * 32);
 		PixelPosition testPosition = startingPosition.translate(
-			static_cast<int16_t>((direction == 1) ? -lengthInPixels : 0),
-			static_cast<int16_t>((direction == 0) ? -lengthInPixels : 0)
+			static_cast<PixelPosition::ValueType>((direction == 1) ? -lengthInPixels : 0),
+			static_cast<PixelPosition::ValueType>((direction == 0) ? -lengthInPixels : 0)
 		);
 		// clang-format on
 
-		Dimension<uint16_t> testDimension{
-			static_cast<uint16_t>((direction == 0 || direction == 2) ? 32 : lengthInPixels),
-			static_cast<uint16_t>((direction == 1 || direction == 3) ? 32 : lengthInPixels)
+		PixelDimension testDimension{
+			static_cast<PixelDimension::ValueType>((direction == 0 || direction == 2) ? 32 : lengthInPixels),
+			static_cast<PixelDimension::ValueType>((direction == 1 || direction == 3) ? 32 : lengthInPixels)
 		};
 
 		const auto center = translatePosition(startingPosition, 16, 16);
@@ -2762,11 +2763,11 @@ bool Level::moveArrow(LevelArrow* arrow, const int iterations)
 		if (std::abs(arrow->position.x() - arrow->startPosition.x()) > maxDistance || std::abs(arrow->position.y() - arrow->startPosition.y()) > maxDistance)
 			return false;
 
-		constexpr std::array<Dimension<uint16_t>, 4> hitboxDimensions = {
-			Dimension<uint16_t>{3_i32, 0_i32},  // up
-			Dimension<uint16_t>{32_i32, 0_i32}, // left
-			Dimension<uint16_t>{3_i32, 32_i32}, // down
-			Dimension<uint16_t>{32_i32, 0_i32}, // right
+		constexpr std::array hitboxDimensions = {
+			PixelDimension{3_i32, 0_i32},  // up
+			PixelDimension{32_i32, 0_i32}, // left
+			PixelDimension{3_i32, 32_i32}, // down
+			PixelDimension{32_i32, 0_i32}, // right
 		};
 
 		// Arrow collision bounding box.
@@ -2890,9 +2891,9 @@ bool Level::isOnWall(const PixelPosition& position) const noexcept
 bool Level::isOnWall2(const WholeTileRectangleArea& tileArea) const noexcept
 {
 	// TODO(optimize): Optimize this.
-	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + std::max(1_ui8, tileArea.size.height()); ++cy)
+	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + std::max(1_ui16, tileArea.size.height()); ++cy)
 	{
-		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + std::max(1_ui8, tileArea.size.width()); ++cx)
+		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + std::max(1_ui16, tileArea.size.width()); ++cx)
 		{
 			if (isOnWall(WholeTilePosition{cx, cy}))
 				return true;
@@ -2920,9 +2921,9 @@ bool Level::isOnWater(const PixelPosition& position) const noexcept
 bool Level::isOnWater2(const WholeTileRectangleArea& tileArea) const noexcept
 {
 	// TODO(optimize): Optimize this.
-	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + std::max(1_ui8, tileArea.size.height()); ++cy)
+	for (auto cy = tileArea.position.y(); cy < tileArea.position.y() + std::max(1_ui16, tileArea.size.height()); ++cy)
 	{
-		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + std::max(1_ui8, tileArea.size.width()); ++cx)
+		for (auto cx = tileArea.position.x(); cx < tileArea.position.x() + std::max(1_ui16, tileArea.size.width()); ++cx)
 		{
 			if (isOnWater(WholeTilePosition{cx, cy}))
 				return true;
@@ -3617,7 +3618,7 @@ std::shared_ptr<NPC> Level::generateItemNPC(const PixelPosition& position, const
 	// Create a new npc for this item.
 	if (!itemNPC)
 	{
-		itemNPC = m_server->getNPCServer()->addNPC("", std::format("if (created) join {};", itemName), shared_from_this(), {loc[0], loc[1]}, NPCTYPE_ITEM);
+		itemNPC = m_server->getNPCServer()->addNPC("", std::format("if (created) join {};", itemName), shared_from_this(), loc, NPCTYPE_ITEM);
 		itemNPC->character.gralats = itemNPC->character.arrows = itemNPC->character.bombs = itemNPC->character.hitpointsInHalves = 0;
 	}
 

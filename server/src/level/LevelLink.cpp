@@ -48,7 +48,7 @@ LevelLink::LevelLink(const std::vector<CString>& pLink)
 	m_complex[1] = checkIfComplex(m_destinationY);
 }
 
-LevelLink::LevelLink(const Rectangle<uint8_t, uint8_t>& coordinates, const std::string_view destinationX, const std::string_view destinationY, const std::string_view destinationLevel)
+LevelLink::LevelLink(const LocalWholeTileRectangleArea& coordinates, const std::string_view destinationX, const std::string_view destinationY, const std::string_view destinationLevel)
 	: m_destinationLevel{destinationLevel}, m_destinationX{destinationX}, m_destinationY{destinationY}, m_boundingBox{coordinates}
 {
 	if (m_destinationX == "-1")

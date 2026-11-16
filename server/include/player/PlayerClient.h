@@ -69,6 +69,7 @@ struct CachedLevel
 
 //----------------------------
 
+/// @brief Player that represents a 2.x+ client.
 class PlayerClient : public Player
 {
 	// TODO(refactor): Need to refactor some Player functions like sendFile so this can be removed.
@@ -107,6 +108,7 @@ public:
 
 	// Forcibly move a player (the client doesn't know it is transitioning levels).
 	bool warp(std::string_view levelName, const PixelPosition& position, std::optional<time_t> clientCachedTime) override;
+	bool warp(std::string_view levelName, const LocalPixelPosition& position, std::optional<time_t> clientCachedTime) override;
 	bool warp(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<time_t> clientCachedTime) override;
 	using Player::warp;
 

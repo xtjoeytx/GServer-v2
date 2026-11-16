@@ -104,7 +104,7 @@ public:
 	const std::filesystem::path fileName;
 	const std::string mapImage;
 	const std::string miniMapImage;
-	const Dimension<uint8_t> size;
+	const MapDimension size;
 	const bool keepAllLevelsLoaded = false;
 	const string_map<MapPosition> levels;
 	const string_set levelsToKeepInMemory;

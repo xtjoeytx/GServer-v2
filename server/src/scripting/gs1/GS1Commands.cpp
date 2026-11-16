@@ -1421,7 +1421,7 @@ void fn_hitcompu(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argume
 			auto& baddy = baddyOpt.value();
 
 			// Get the DX/DY.
-			auto tilePosition = toTilePosition(baddy->position);
+			auto tilePosition = toLocalTilePosition(baddy->position);
 			auto dx = tilePosition.x() - fromx;
 			auto dy = tilePosition.y() - fromy;
 			const float length = std::sqrt(dx * dx + dy * dy);
@@ -1697,7 +1697,7 @@ void fn_move(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 
 		const auto server = BabyDI::Get<Server>();
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
-			npc->addMoveToQueue(toLocalPixelPosition(toPixelPosition({dx, dy})), time, options);
+			npc->addMoveToQueue(toLocalPixelPosition(LocalTilePosition({dx, dy})), time, options);
 	}
 }
 
@@ -1736,12 +1736,12 @@ void fn_putcomp(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argumen
 	if (arguments.size() != 3)
 		throw std::invalid_argument("invalid arguments: putcomp baddyname,x,y");
 
-	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr && !level->isGmap())
 	{
 		const auto baddyname = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
-		level->putNewBaddy(toLocalPixelPosition(x, y), static_cast<BaddyType>(baddyname));
+		level->putNewBaddy(toLocalPixelPosition(LocalTilePosition{x, y}), static_cast<BaddyType>(baddyname));
 	}
 }
 
@@ -1807,14 +1807,14 @@ void fn_putnewcomp(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argu
 	if (arguments.size() != 5)
 		throw std::invalid_argument("invalid arguments: putnewcomp baddyname,x,y,imagefile,power");
 
-	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
+	if (const auto level = visitor->findCurrentLevel(); level != nullptr && !level->isGmap())
 	{
 		const auto baddyname = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 		const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
 		const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
 		const auto imagefile = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[3]).value_or("");
 		const auto power = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0));
-		level->putNewBaddy(toLocalPixelPosition(x, y), static_cast<BaddyType>(baddyname), power, imagefile);
+		level->putNewBaddy(toLocalPixelPosition(LocalTilePosition{x, y}), static_cast<BaddyType>(baddyname), power, imagefile);
 	}
 }
 
@@ -2595,7 +2595,7 @@ void fn_setlevel(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argume
 		const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 		const auto server = BabyDI::Get<Server>();
 		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
-			player->warp(filename, player->account.character.getLocalPosition());
+			player->warp(filename, player->account.character.getGlobalPosition());
 	}
 }
 
@@ -2614,7 +2614,7 @@ void fn_setlevel2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argum
 
 		const auto server = BabyDI::Get<Server>();
 		if (const auto player = server->getNPCServer()->getPlayer<PlayerClient>(source.value().first); player != nullptr)
-			player->warp(filename, {static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16)});
+			player->warp(filename, toPixelPosition(TilePosition{x, y}));
 	}
 }
 
@@ -3749,10 +3749,10 @@ void fn_updateboard(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arg
 
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		const auto x = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)));
-		const auto y = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
-		const auto width = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0)));
-		const auto height = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0)));
+		const auto x = DoubleAsIntegralFloor<WholeTilePosition::ValueType>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)));
+		const auto y = DoubleAsIntegralFloor<WholeTilePosition::ValueType>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
+		const auto width = DoubleAsIntegralFloor<WholeTileDimension::ValueType>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0)));
+		const auto height = DoubleAsIntegralFloor<WholeTileDimension::ValueType>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0)));
 
 		level->updateBoard({{x, y}, {width, height}});
 	}
@@ -3767,10 +3767,10 @@ void fn_updateboard2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& ar
 
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		const auto x = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)));
-		const auto y = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
-		const auto width = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0)));
-		const auto height = static_cast<float>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0)));
+		const auto x = DoubleAsIntegralFloor<WholeTilePosition::ValueType>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0)));
+		const auto y = DoubleAsIntegralFloor<WholeTilePosition::ValueType>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0)));
+		const auto width = DoubleAsIntegralFloor<WholeTileDimension::ValueType>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0)));
+		const auto height = DoubleAsIntegralFloor<WholeTileDimension::ValueType>(std::max(0.0, GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0)));
 
 		level->updateBoard2({{x, y}, {width, height}});
 	}
@@ -3793,7 +3793,7 @@ void fn_warpto(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argument
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			if (const auto level = server->getLoadedLevel(filename, npc->getLevel()); level != nullptr)
-				npc->warp(level, PixelPosition{static_cast<int32_t>(x * 16), static_cast<int32_t>(y * 16)});
+				npc->warp(level, toPixelPosition(TilePosition{x, y}));
 		}
 	}
 }

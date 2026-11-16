@@ -14,7 +14,7 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void generateTerrain(LevelTerrain& levelTerrain, const MapTerrain& mapTerrain, const Position<uint8_t>& mapPosition, const Dimension<uint8_t>& gridDimension)
+void generateTerrain(LevelTerrain& levelTerrain, const MapTerrain& mapTerrain, const MapPosition& mapPosition, const MapDimension& gridDimension)
 {
 	constexpr size_t numberOfHeights = static_cast<size_t>(65) * 65;
 	constexpr size_t topRowStart = 0;

@@ -913,7 +913,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (auto subLevel = level->getSubLevelAtPosition(getMapPosition()); subLevel != nullptr)
 				leaveSubLevel(subLevel);
 
-			auto mapPosition = level->clampMapPosition({numProp->value, account.character.mapY});
+			auto mapPosition = level->clampMapPositionToLevel({numProp->value, account.character.mapY});
 			if (auto levelData = level->getStaticLevelDataAtPosition(mapPosition); levelData != nullptr)
 			{
 				account.character.mapX = mapPosition.x();
@@ -946,7 +946,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (auto subLevel = level->getSubLevelAtPosition(getMapPosition()); subLevel != nullptr)
 				leaveSubLevel(subLevel);
 
-			auto mapPosition = level->clampMapPosition({account.character.mapX, numProp->value});
+			auto mapPosition = level->clampMapPositionToLevel({account.character.mapX, numProp->value});
 			if (auto levelData = level->getStaticLevelDataAtPosition(mapPosition); levelData != nullptr)
 			{
 				account.character.mapY = mapPosition.y();
@@ -1320,7 +1320,7 @@ void Player::setPropsFromRCPacket(CString& packet, const Player* rc)
 	if (isLoaded() && isClient())
 	{
 		if (const auto player = std::dynamic_pointer_cast<PlayerClient>(shared_from_this()); player != nullptr)
-			player->warp(account.level, account.character.getLocalPosition(), std::nullopt);
+			player->warp(account.level, account.character.getGlobalPosition(), std::nullopt);
 	}
 }
 

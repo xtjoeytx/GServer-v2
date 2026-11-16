@@ -791,7 +791,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_WARPPLAYER(CString& pPacket)
 	const auto p = m_server->getPlayer<PlayerClient>(pPacket.readGUShort(), PLTYPE_ANYPLAYER);
 	if (p == nullptr) return HandlePacketResult::Handled;
 
-	Position<int16_t> pos = {static_cast<int16_t>(pPacket.readGChar() * 8), static_cast<int16_t>(pPacket.readGChar() * 8)};
+	const PixelPosition pos = {static_cast<PixelPosition::ValueType>(pPacket.readGChar() * 8), static_cast<PixelPosition::ValueType>(pPacket.readGChar() * 8)};
 	CString wLevel = pPacket.readString("");
 	p->warp(wLevel, pos);
 

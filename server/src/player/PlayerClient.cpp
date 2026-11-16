@@ -954,7 +954,7 @@ bool PlayerClient::processChat(const CString& pChat)
 			auto player = m_server->getPlayer<PlayerClient>(chatParse[1], PLTYPE_ANYCLIENT);
 			LevelPtr level;
 			if (player && (level = player->getLevel()) != nullptr)
-				warp(level->levelName, player->getLocalPosition());
+				warp(level, player->getGlobalPosition());
 		}
 		// To location
 		else
@@ -971,7 +971,7 @@ bool PlayerClient::processChat(const CString& pChat)
 				setPropsFromPacket(CString() >> (char)PlayerProp::X >> (char)(strtofloat(chatParse[1]) * 2) >> (char)PlayerProp::Y >> (char)(strtofloat(chatParse[2]) * 2), props::SetBy::SERVER);
 			// x y level
 			else if (chatParse.size() == 4)
-				warp(chatParse[3], {static_cast<int16_t>(string::toFloat(chatParse[1].toString()) * 16.0f), static_cast<int16_t>(string::toFloat(chatParse[2].toString()) * 16.0f)});
+				warp(chatParse[3], toPixelPosition(TilePosition{string::toFloat(chatParse[1].toString()), string::toFloat(chatParse[2].toString())}));
 		}
 	}
 	else if (chatParse[0] == "summon" && chatParse.size() == 2)
@@ -986,7 +986,7 @@ bool PlayerClient::processChat(const CString& pChat)
 		}
 
 		auto p = m_server->getPlayer<PlayerClient>(chatParse[1], PLTYPE_ANYCLIENT);
-		if (p) p->warp(account.level, getLocalPosition());
+		if (p) p->warp(account.level, getGlobalPosition());
 	}
 	else if (chatParse[0] == "unstick" || chatParse[0] == "unstuck")
 	{
@@ -1007,7 +1007,7 @@ bool PlayerClient::processChat(const CString& pChat)
 				const auto& unstickLevel = m_server->cached.unstickMeLevel.getValue();
 				const auto& unstickX = m_server->cached.unstickMeTile[0].getValue();
 				const auto& unstickY = m_server->cached.unstickMeTile[1].getValue();
-				warp(unstickLevel, {static_cast<int16_t>(unstickX * 16.0f), static_cast<int16_t>(unstickY * 16.0f)});
+				warp(unstickLevel, toPixelPosition(TilePosition{unstickX, unstickY}));
 				setChat("Warped!");
 			}
 		}
@@ -1183,7 +1183,7 @@ std::shared_ptr<SubLevel> PlayerClient::getSubLevel() const
 
 void PlayerClient::setPosition(const PixelPosition& position)
 {
-	auto localPosition = toLocalPixelPosition(position);
+	const auto localPosition = toLocalPixelPosition(position);
 	if (const auto level = getLevel(); level != nullptr)
 	{
 		std::inplace_vector<props::SetResults, 4> propResults{
@@ -1214,6 +1214,21 @@ bool PlayerClient::warp(const std::string_view levelName, const PixelPosition& p
 		return false;
 	}
 
+	return warp(newLevel, position, clientCachedTime);
+}
+
+bool PlayerClient::warp(const std::string_view levelName, const LocalPixelPosition& position, const std::optional<time_t> clientCachedTime)
+{
+	// Find the level.
+	const auto newLevel = m_server->getLoadedLevel(levelName, shared_from_this());
+
+	// Check if the new level exists.
+	if (newLevel == nullptr)
+	{
+		sendPacket(CString() >> (char)PLO_WARPFAILED << levelName);
+		return false;
+	}
+
 	// If this is a gmap and the level names don't match, fix the position of the warp.
 	if (newLevel->isGmap() && newLevel->levelName != levelName)
 	{
@@ -1221,11 +1236,11 @@ bool PlayerClient::warp(const std::string_view levelName, const PixelPosition& p
 		if (subLevel != nullptr)
 		{
 			const auto origin = Level::getSubLevelOrigin(subLevel).value_or(PixelPosition{});
-			return warp(newLevel, position.translate(origin), clientCachedTime);
+			return warp(newLevel, toPixelPosition(origin, position), clientCachedTime);
 		}
 	}
 
-	return warp(newLevel, position, clientCachedTime);
+	return warp(newLevel, toPixelPosition({0, 0}, position), clientCachedTime);
 }
 
 bool PlayerClient::warp(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<time_t> clientCachedTime)
@@ -1254,9 +1269,9 @@ bool PlayerClient::warp(const std::shared_ptr<Level>& level, const PixelPosition
 		}
 
 		// We have to do this manually since if we set it via setPropWith, it will cause a second level warp.
-		auto mapPosition = level->clampMapPosition(toMapPosition(position));
-		account.character.mapX = std::min(mapPosition.x(), static_cast<uint8_t>(level->getMap()->size.width() - 1));
-		account.character.mapY = std::min(mapPosition.y(), static_cast<uint8_t>(level->getMap()->size.height() - 1));
+		auto mapPosition = level->clampMapPositionToLevel(toMapPosition(position));
+		account.character.mapX = mapPosition.x();
+		account.character.mapY = mapPosition.y();
 		this->modTime[PROPID(PlayerProp::GMAPLEVELX)] = m_server->getFrameStartTime();
 		this->modTime[PROPID(PlayerProp::GMAPLEVELY)] = m_server->getFrameStartTime();
 		sendPacket(CString() >> (char)PLO_PLAYERWARP2 << getProp<PlayerProp::X>().serialize() << getProp<PlayerProp::Y>().serialize() << getProp<PlayerProp::Z>().serialize() >> (char)mapPosition.x() >> (char)mapPosition.y() << level->levelName);
@@ -1799,7 +1814,7 @@ void PlayerClient::testForTouch(SetResults& result, uint8_t movementDirection)
 	// Subtract an extra 1 pixel from the top touch test since the 2.31 client was rendering the location of the NPC weirdly.
 	// When a pixel coordinate of 223 was sent (tile 13.9375), the client would render the NPC at y=14 and break the collision detection.
 	// Oddly enough, it renders in the correct spot on a reconnect.  By allowing a single extra pixel on the touch test, this problem is resolved.
-	static Position<int16_t> touchTest[] = {{24, 16 - 1}, {0, 32}, {24, 56}, {48, 32}};
+	static PixelPosition touchTest[] = {{24, 16 - 1}, {0, 32}, {24, 56}, {48, 32}};
 
 	// Get the bounding box to test with.
 	PixelRectangleArea testBox{getGlobalPosition().translate(touchTest[movementDirection].x(), touchTest[movementDirection].y()), {0, 0, 48}};
@@ -1850,7 +1865,7 @@ bool PlayerClient::testForSigns(SetResults& result, const uint8_t movementDirect
 		{
 			for (const auto& sign : level->getSigns())
 			{
-				LocalPixelPosition signPos = toLocalPixelPosition(sign.getTileX(), sign.getTileY());
+				const auto signPos = toLocalPixelPosition(LocalTilePosition{sign.getTileX(), sign.getTileY()});
 				if (account.character.localPixelY == signPos.y() && account.character.localPixelX >= signPos.x() - 24 && account.character.localPixelX <= signPos.x() + 8)
 				{
 					sendSignMessage(sign.text);
@@ -1864,7 +1879,7 @@ bool PlayerClient::testForSigns(SetResults& result, const uint8_t movementDirect
 
 bool PlayerClient::testForLinks(SetResults& result, const uint8_t movementDirection)
 {
-	static Position<int16_t> touchTest[] = {{24, 16}, {0, 32}, {24, 56}, {48, 32}};
+	static PixelPosition touchTest[] = {{24, 16}, {0, 32}, {24, 56}, {48, 32}};
 
 	if (!m_server->hasNPCServer() || m_server->cached.forceClientsideLinks.getValue())
 		return false;
@@ -1968,7 +1983,7 @@ void PlayerClient::dropItemsOnDeath()
 		drop_gralats = 0;
 
 	// Add gralats to the level.
-	TilePosition localTilePos = toTilePosition(getLocalPosition());
+	const auto playerPos = getCenterPosition();
 	while (drop_gralats != 0)
 	{
 		char item = 0;
@@ -1996,26 +2011,20 @@ void PlayerClient::dropItemsOnDeath()
 			item = 0;
 		}
 
-		const float pX = localTilePos.x() + 1.5f + static_cast<float>(displacementDistribution(gen));
-		const float pY = localTilePos.y() + 2.0f + static_cast<float>(displacementDistribution(gen));
-
-		level->addItem(inform_client, toPixelPosition(getSubLevelOrigin(), pX, pY), static_cast<LevelItemType>(item));
+		const auto dropPosition = playerPos.translate(displacementDistribution(gen) * 16, displacementDistribution(gen) * 16);
+		level->addItem(inform_client, dropPosition, static_cast<LevelItemType>(item));
 	}
 
 	// Add arrows and bombs to the level.
 	for (unsigned int i = 0; i < drop_arrows; ++i)
 	{
-		const float pX = localTilePos.x() + 1.5f + static_cast<float>(displacementDistribution(gen));
-		const float pY = localTilePos.y() + 2.0f + static_cast<float>(displacementDistribution(gen));
-
-		level->addItem(inform_client, toPixelPosition(getSubLevelOrigin(), pX, pY), LevelItemType::DARTS);
+		const auto dropPosition = playerPos.translate(displacementDistribution(gen) * 16, displacementDistribution(gen) * 16);
+		level->addItem(inform_client, dropPosition, LevelItemType::DARTS);
 	}
 	for (unsigned int i = 0; i < drop_bombs; ++i)
 	{
-		const float pX = localTilePos.x() + 1.5f + static_cast<float>(displacementDistribution(gen));
-		const float pY = localTilePos.y() + 2.0f + static_cast<float>(displacementDistribution(gen));
-
-		level->addItem(inform_client, toPixelPosition(getSubLevelOrigin(), pX, pY), LevelItemType::BOMBS);
+		const auto dropPosition = playerPos.translate(displacementDistribution(gen) * 16, displacementDistribution(gen) * 16);
+		level->addItem(inform_client, dropPosition, LevelItemType::BOMBS);
 	}
 }
 

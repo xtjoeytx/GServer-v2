@@ -321,7 +321,7 @@ void NPC::addMoveToQueue(const LocalPixelPosition& moveDelta, const float durati
 
 	// Determine our start and stop positions.
 	move.origin = moveQueue.empty() ? getGlobalPosition() : moveQueue.back().destination;
-	move.destination = translatePosition(move.origin, moveDelta);
+	move.destination = translatePosition(move.origin, moveDelta.x(), moveDelta.y());
 
 	bool finishAllMovements = false;
 
@@ -459,7 +459,7 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 		if (!movementFinished)
 		{
 			// If the map position changed, set that now.
-			const auto& [mapX, mapY, _] = currentLevel->clampMapPosition(toMapPosition(potentialPosition));
+			const auto& [mapX, mapY, _] = currentLevel->clampMapPositionToLevel(toMapPosition(potentialPosition));
 			if (storageType == NPCStorageType::LEVEL && (mapX != character.mapX || mapY != character.mapY))
 				indexInLevelFile = std::nullopt;
 			if (mapX != character.mapX)
@@ -1468,7 +1468,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 
 			if (const auto map = levelPtr->getMap(); map != nullptr)
 			{
-				auto clamped = levelPtr->clampMapPosition({numProp->value, character.mapY});
+				auto clamped = levelPtr->clampMapPositionToLevel({numProp->value, character.mapY});
 				character.mapX = clamped.x();
 				indexInLevelFile = std::nullopt;
 			}
@@ -1483,7 +1483,7 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 
 			if (const auto map = levelPtr->getMap(); map != nullptr)
 			{
-				auto clamped = levelPtr->clampMapPosition({character.mapX, numProp->value});
+				auto clamped = levelPtr->clampMapPositionToLevel({character.mapX, numProp->value});
 				character.mapY = clamped.y();
 				indexInLevelFile = std::nullopt;
 			}
@@ -1899,7 +1899,7 @@ void NPC::constructScriptParameters()
 				// Fix the map position if applicable.
 				if (const auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
 				{
-					if (const auto mapX = levelPtr->clampMapPosition(toMapPosition(globalPosition)).x(); mapX != character.mapX)
+					if (const auto mapX = levelPtr->clampMapPositionToLevel(toMapPosition(globalPosition)).x(); mapX != character.mapX)
 					{
 						character.mapX = mapX;
 						modTime[PROPID(NPCProp::GMAPLEVELX)] = now;
@@ -1930,7 +1930,7 @@ void NPC::constructScriptParameters()
 				// Fix the map position if applicable.
 				if (const auto levelPtr = getLevel(); levelPtr != nullptr && levelPtr->isGmap())
 				{
-					if (const auto mapY = levelPtr->clampMapPosition(toMapPosition(globalPosition)).y(); mapY != character.mapY)
+					if (const auto mapY = levelPtr->clampMapPositionToLevel(toMapPosition(globalPosition)).y(); mapY != character.mapY)
 					{
 						character.mapY = mapY;
 						modTime[PROPID(NPCProp::GMAPLEVELY)] = now;
@@ -2078,8 +2078,8 @@ void NPC::testForLinks(SetResults& result)
 	// Gmaps are treated as one large map, and so level npcs can freely walk across maps (source: post=1193766)
 	if (levelPtr->isGmap())
 	{
-		const auto computedMapChangeX = static_cast<int8_t>(character.localPixelX / 1024);
-		const auto computedMapChangeY = static_cast<int8_t>(character.localPixelY / 1024);
+		const auto computedMapChangeX = static_cast<MapPosition::ValueType>(character.localPixelX / 1024);
+		const auto computedMapChangeY = static_cast<MapPosition::ValueType>(character.localPixelY / 1024);
 		const auto computedLocalX = static_cast<int16_t>(std::abs(character.localPixelX % 1024));
 		const auto computedLocalY = static_cast<int16_t>(std::abs(character.localPixelY % 1024));
 
@@ -2087,7 +2087,7 @@ void NPC::testForLinks(SetResults& result)
 		// If they did, alter their map location.
 		if (computedMapChangeX != 0 || computedMapChangeY != 0)
 		{
-			auto clamped = levelPtr->clampMapPosition({character.mapX + computedMapChangeX, character.mapY + computedMapChangeY});
+			auto clamped = levelPtr->clampMapPositionToLevel({computedMapChangeX + character.mapX, computedMapChangeY + character.mapY});
 			character.mapX = clamped.x();
 			character.mapY = clamped.y();
 			result.resultPropIds.push_back(PROPID(NPCProp::GMAPLEVELX));
@@ -2109,7 +2109,7 @@ void NPC::testForLinks(SetResults& result)
 		return;
 
 	// Test for links.
-	static Position<float> touchTest[] = {{2, 1}, {0, 2}, {2, 4}, {3, 2}};
+	static TilePosition touchTest[] = {{2, 1}, {0, 2}, {2, 4}, {3, 2}};
 	const TilePosition testPos = character.getTilePosition().translate(touchTest[character.direction].x(), touchTest[character.direction].y());
 	if (const auto linkTouched = levelPtr->getLink(testPos); linkTouched.has_value())
 	{

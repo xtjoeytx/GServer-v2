@@ -35,7 +35,7 @@ PlayerClientOriginal::PlayerClientOriginal(CSocket* pSocket, const PlayerID pId)
 bool PlayerClientOriginal::warp(const std::shared_ptr<Level>& level, const PixelPosition& position, const std::optional<time_t> clientCachedTime)
 {
 	// If we are warping to the same level, just update the player's location.
-	auto localPosition = toLocalPixelPosition(position);
+	const auto localPosition = toLocalPixelPosition(position);
 	if (!m_currentLevel.expired() && account.level == level->levelName)
 	{
 		sendPropsFromResults(

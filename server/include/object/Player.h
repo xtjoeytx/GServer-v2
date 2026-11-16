@@ -317,6 +317,7 @@ public:
 public:
 	virtual void setPosition(const PixelPosition& position);
 	virtual bool warp(std::string_view levelName, const PixelPosition& position, std::optional<time_t> clientCachedTime);
+	virtual bool warp(std::string_view levelName, const LocalPixelPosition& position, std::optional<time_t> clientCachedTime);
 	virtual bool warp(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<time_t> clientCachedTime);
 	virtual bool enterLevel(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<time_t> clientCachedTime);
 	virtual bool enterLevel(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalPixelPosition& position, std::optional<time_t> clientCachedTime);
@@ -329,6 +330,7 @@ public:
 
 public:
 	[[a::inline]] bool warp(std::string_view levelName, const PixelPosition& position);
+	[[a::inline]] bool warp(std::string_view levelName, const LocalPixelPosition& position);
 	[[a::inline]] bool warp(const std::shared_ptr<Level>& level, const PixelPosition& position);
 	[[a::inline]] bool enterLevel(const std::shared_ptr<Level>& level, const PixelPosition& position);
 	[[a::inline]] bool enterLevel(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalPixelPosition& position);
@@ -523,6 +525,11 @@ using PlayerWeakPtr = std::weak_ptr<Player>;
 //----------------------------
 
 inline bool Player::warp(const std::string_view levelName, const PixelPosition& position)
+{
+	return warp(levelName, position, std::nullopt);
+}
+
+inline bool Player::warp(const std::string_view levelName, const LocalPixelPosition& position)
 {
 	return warp(levelName, position, std::nullopt);
 }

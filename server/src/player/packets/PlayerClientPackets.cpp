@@ -93,14 +93,14 @@ HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 	if (!success)
 	{
 		if (const auto level = getLevel(); level != nullptr)
-			success = warp(level->levelName, account.character.getLocalPosition());
+			success = warp(level->levelName, account.character.getGlobalPosition());
 	}
 	if (!success)
 	{
 		const auto& unstickLevel = m_server->cached.unstickMeLevel.getValue();
 		const auto& unstickX = m_server->cached.unstickMeTile[0].getValue();
 		const auto& unstickY = m_server->cached.unstickMeTile[1].getValue();
-		warp(unstickLevel, {static_cast<int16_t>(unstickX * 16.0f), static_cast<int16_t>(unstickY * 16.0f)});
+		warp(unstickLevel, toPixelPosition(TilePosition{unstickX, unstickY}));
 	}
 
 	return HandlePacketResult::Handled;
@@ -228,7 +228,7 @@ HandlePacketResult PlayerClient::msgPLI_BOMBADD(CString& pPacket)
 	{
 		if (m_server->hasNPCServer())
 		{
-			const auto position = toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]);
+			const auto position = toPixelPosition(getSubLevelOrigin(), LocalTilePosition{loc[0], loc[1]});
 			if (level->addBombFromClient(position, power, m_id, timeToExplode) == nullptr)
 				sendPacket(CString() >> (char)PLO_BOMBDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
 		}
@@ -248,7 +248,7 @@ HandlePacketResult PlayerClient::msgPLI_BOMBDEL(CString& pPacket)
 		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_BOMBDEL << (pPacket.text() + 1), getGlobalPosition(), level, {m_id});
 
 		const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
-		level->removeBomb(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]));
+		level->removeBomb(toPixelPosition(getSubLevelOrigin(), LocalTilePosition{loc[0], loc[1]}));
 	}
 
 	return HandlePacketResult::Handled;
@@ -266,7 +266,7 @@ HandlePacketResult PlayerClient::msgPLI_HORSEADD(CString& pPacket)
 		const uint8_t hbushes = dir_bush >> 2;
 		const CString image = pPacket.readString("");
 
-		level->addHorse(image, toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), hdir, hbushes);
+		level->addHorse(image, toPixelPosition(getSubLevelOrigin(), LocalTilePosition{loc[0], loc[1]}), hdir, hbushes);
 	}
 
 	return HandlePacketResult::Handled;
@@ -279,7 +279,7 @@ HandlePacketResult PlayerClient::msgPLI_HORSEDEL(CString& pPacket)
 		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_HORSEDEL << (pPacket.text() + 1), getGlobalPosition(), level, {m_id});
 
 		const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
-		level->removeHorse(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]));
+		level->removeHorse(toPixelPosition(getSubLevelOrigin(), LocalTilePosition{loc[0], loc[1]}));
 	}
 
 	return HandlePacketResult::Handled;
@@ -304,7 +304,7 @@ HandlePacketResult PlayerClient::msgPLI_ARROWADD(CString& pPacket)
 		if (m_server->hasNPCServer())
 		{
 			const PixelPosition speed = PixelPosition::playerDirectionVector(dir) * arrowSpeedInPixelsPer50ms;
-			level->addArrow(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), speed, dir, power, fromPlayer ? source::FromPlayer(m_id) : source::FromServer());
+			level->addArrow(toPixelPosition(getSubLevelOrigin(), LocalTilePosition{loc[0], loc[1]}), speed, dir, power, fromPlayer ? source::FromPlayer(m_id) : source::FromServer());
 		}
 	}
 
@@ -365,7 +365,7 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 		{
 			// Try to drop the item on the level.
 			// If the item was ultimately not dropped on the level (e.g., a gralats NPC was created), tell the client to delete it.
-			if (!dropItem(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), itemType))
+			if (!dropItem(toPixelPosition(getSubLevelOrigin(), LocalTilePosition{loc[0], loc[1]}), itemType))
 			{
 				sendPacket(CString() >> (char)PLO_ITEMDEL >> (char)(loc[0] * 2) >> (char)(loc[1] * 2));
 				return HandlePacketResult::Handled;
@@ -373,7 +373,7 @@ HandlePacketResult PlayerClient::msgPLI_ITEMADD(CString& pPacket)
 		}
 		else
 		{
-			level->addItem(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), itemType);
+			level->addItem(toPixelPosition(getSubLevelOrigin(), LocalTilePosition{loc[0], loc[1]}), itemType);
 		}
 
 		m_server->sendPacketToOneLevelPart(CString() >> (char)PLO_ITEMADD >> (char)(loc[0] * 2) >> (char)(loc[1] * 2) >> (char)item, getGlobalPosition(), level, {m_id});
@@ -391,7 +391,7 @@ HandlePacketResult PlayerClient::msgPLI_ITEMDEL(CString& pPacket)
 		const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
 
 		// Remove the item from the level, getting the type of the item in the process.
-		const LevelItemType item = level->removeItem(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]));
+		const LevelItemType item = level->removeItem(toPixelPosition(getSubLevelOrigin(), LocalTilePosition{loc[0], loc[1]}));
 		if (item == LevelItemType::INVALID) return HandlePacketResult::Handled;
 
 		// If this is a PLI_ITEMTAKE packet, give the item to the player.
@@ -562,7 +562,7 @@ HandlePacketResult PlayerClient::msgPLI_BADDYADD(CString& pPacket)
 		bImage << ".gif";
 
 	// Add the baddy.
-	LevelBaddy* baddy = level->addBaddy(toLocalPixelPosition(loc[0], loc[1]), static_cast<BaddyType>(bType));
+	LevelBaddy* baddy = level->addBaddy(toLocalPixelPosition(LocalTilePosition{loc[0], loc[1]}), static_cast<BaddyType>(bType));
 	if (baddy == nullptr) return HandlePacketResult::Handled;
 
 	// Set the baddy props.
@@ -857,7 +857,7 @@ HandlePacketResult PlayerClient::msgPLI_EXPLOSION(CString& pPacket)
 
 		// Add it to the level.
 		if (m_server->hasNPCServer())
-			level->addExplosion(toPixelPosition(getSubLevelOrigin(), loc[0], loc[1]), source::FromPlayer(m_id), eradius, epower);
+			level->addExplosion(toPixelPosition(getSubLevelOrigin(), LocalTilePosition{loc[0], loc[1]}), source::FromPlayer(m_id), eradius, epower);
 	}
 
 	return HandlePacketResult::Handled;
@@ -1060,7 +1060,7 @@ HandlePacketResult PlayerClient::msgPLI_TRIGGERACTION(CString& pPacket)
 	[[maybe_unused]] const unsigned int npcId = pPacket.readGUInt();
 	const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
 
-	PixelPosition pixelLoc{toPixelPosition(getSubLevelOrigin(), loc[0], loc[1])};
+	PixelPosition pixelLoc{toPixelPosition(getSubLevelOrigin(), LocalTilePosition{loc[0], loc[1]})};
 
 	// Tokenize the actions.
 	auto actionData = pPacket.readString("").toString();

@@ -23,7 +23,7 @@ inline constexpr uint16_t EmptyTileInBase = 0x0;
 inline constexpr uint16_t EmptyTileInLayer = 0xFFFF;
 inline constexpr uint16_t BasicGrassTilePics1 = 511;
 
-inline constexpr auto LevelPartSizeInTiles = Dimension<uint8_t>{ 64, 64 };
+inline constexpr auto LevelPartSizeInTiles = WholeTileDimension{64, 64};
 inline constexpr size_t LevelPartTileCount = static_cast<size_t>(LevelPartSizeInTiles.width()) * static_cast<size_t>(LevelPartSizeInTiles.height());
 } // end namespace constants
 

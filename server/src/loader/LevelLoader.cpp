@@ -614,7 +614,7 @@ void LevelLoader::loadBinaryLinks(const StaticLevelDataPtr& levelData, const fs:
 		const auto end = splitData.size();
 
 		// Get the positions and destinations of the link.
-		Rectangle<uint8_t, uint8_t> rect;
+		LocalWholeTileRectangleArea rect;
 		rect.position[0] = string::toNumber<uint8_t>(splitData[end - 6]);
 		rect.position[1] = string::toNumber<uint8_t>(splitData[end - 5]);
 		rect.size[0] = string::toNumber<uint8_t>(splitData[end - 4]);
@@ -650,7 +650,7 @@ void LevelLoader::loadBinaryBaddies(const StaticLevelDataPtr& levelData, const f
 		}
 
 		// Add the baddy.
-		LevelBaddy baddy{static_cast<uint8_t>(levelData->baddies.size() + 1), toLocalPixelPosition(static_cast<float>(x), static_cast<float>(y)), ENUM<BaddyType>(type), {}};
+		LevelBaddy baddy{static_cast<uint8_t>(levelData->baddies.size() + 1), toLocalPixelPositionWithHalfTilePrecision(static_cast<float>(x), static_cast<float>(y)), ENUM<BaddyType>(type), {}};
 
 		// Load the verses.
 		if (loadVerses)
@@ -829,7 +829,7 @@ bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view f
 			auto end = splitData.size();
 
 			// Get the positions and destinations of the link.
-			Rectangle<uint8_t, uint8_t> rect;
+			LocalWholeTileRectangleArea rect;
 			rect.position[0] = string::toNumber<uint8_t>(splitData[end - 6]);
 			rect.position[1] = string::toNumber<uint8_t>(splitData[end - 5]);
 			rect.size[0] = string::toNumber<uint8_t>(splitData[end - 4]);

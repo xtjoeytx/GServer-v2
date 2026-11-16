@@ -20,6 +20,7 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
+/// @brief Player that represents a 1.x client.
 class PlayerClientOriginal : public PlayerClient
 {
 public:
