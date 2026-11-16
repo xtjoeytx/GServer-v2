@@ -858,10 +858,7 @@ bool FlatFileNPCLoader::saveNPC(NPCPtr npc) noexcept
 	if (const auto info = fs.info(fs::FileCategory::NPC, file->filePath().filename()); info != nullptr)
 		info->refreshModTime();
 	// Else if the NPC doesn't exist, we want to add it to the file system so the file watcher doesn't cause a reload.
-	else
-	{
-		fs.addExisting(fs::FileCategory::NPC, file->filePath());
-	}
+	else fs.addExisting(fs::FileCategory::NPC, file->filePath());
 
 	return true;
 }

@@ -742,8 +742,9 @@ bool FlatFileAccountLoader::forceSaveAccount(const Account& account)
 	writeLine(newFile, "LASTFOLDER", account.lastFolderAccessed, "");
 
 	// Get the file name for the account.
+	auto& fs = server->getFileSystemServer();
 	auto accountFileName = std::format("{}.txt", account.name);
-	auto accountPath = server->getFileSystemServer().findi(fs::FileCategory::ACCOUNT, accountFileName);
+	auto accountPath = fs.findi(fs::FileCategory::ACCOUNT, accountFileName);
 	if (accountPath.empty())
 		accountPath = std::filesystem::path{"accounts"} / accountFileName;
 
@@ -751,6 +752,13 @@ bool FlatFileAccountLoader::forceSaveAccount(const Account& account)
 	if (fs::FileIO writer(accountPath, true); writer.opened())
 	{
 		writer.write(newFile);
+		writer.close();
+
+		// If the account exists on the filesystem, refresh its mod time to avoid any modification events.
+		if (const auto info = fs.info(fs::FileCategory::ACCOUNT, accountFileName); info != nullptr)
+			info->refreshModTime();
+		// Else if the NPC doesn't exist, we want to add it to the file system so the file watcher doesn't cause a reload.
+		else fs.addExisting(fs::FileCategory::ACCOUNT, writer.filePath());
 	}
 	else
 	{
