@@ -42,3 +42,31 @@ SCENARIO("Player", "[object]")
 		}
 	}
 }
+
+SCENARIO("Player packet handling after login", "[object]")
+{
+	BabyDI_PROVIDE(Server, new Server("test"));
+
+	GIVEN("a player that was handed over from the login handler")
+	{
+		Player player(new CSocket(), 124);
+
+		CString packet;
+		packet << (char)(PLI_LANGUAGE + 32) << "English\n";
+		CString buffer;
+		buffer << (short)packet.length() << packet;
+
+		WHEN("the login packet was already processed")
+		{
+			// Stands in for the hand-over in PlayerLogin::msgLoginPacket, which needs a socket and a full login line.
+			player.setLoginProcessed();
+			player.processBuffer(buffer);
+
+			THEN("the first packet is handled normally")
+			{
+				REQUIRE(player.InvalidPackets == 0);
+				REQUIRE(player.account.language == "English");
+			}
+		}
+	}
+}

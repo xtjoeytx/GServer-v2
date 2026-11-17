@@ -106,6 +106,7 @@ HandlePacketResult PlayerLogin::msgLoginPacket(CString& pPacket)
 
 	// Update the new player's current packet state to match ours.
 	player->PacketCount = 1;
+	player->setLoginProcessed();
 	player->setReceivedBuffer(m_recvBuffer);
 
 	// Remove ourselves from the server.
