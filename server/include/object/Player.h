@@ -343,6 +343,7 @@ public:
 	void sendRawPacket(const CString& packet, PacketQueue channel = PacketQueue::NORMAL);
 	std::pair<bool, bool> sendFile(const std::filesystem::path& file, PacketQueue channel = PacketQueue::FILE);
 	void setReceivedBuffer(const CString& buffer) { m_recvBuffer = buffer; }
+	void setLoginProcessed() { m_processedLoginPacket = true; }
 
 	// Type of player
 	bool isAdminIp() const;
