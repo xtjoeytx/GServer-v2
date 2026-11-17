@@ -504,51 +504,40 @@ GameVariable* GS1Visitor::getGameVariableFromStorage(const std::string_view iden
 			return store->getOrAdd(identifier).lock().get();
 	}
 
-	// First, try to get a built-in variable.
-	if (builtInStore != nullptr && builtInStore->contains(identifier))
-		return builtInStore->get(identifier).lock().get();
+	// We have no type.
+	// This will either be a variable in the built-in store, on the server, or a property.
+	// We shall search in this order:
+	// 1. Server store for global variables.
+	// 2. Property on the current source.
+	// 3. Property on the original source.
+	// 4. Property on the event initiator's store.
+	// 5. Variable in the built-in store.
 
-	// Second, check the server's global variable store.
+	// 1. Check the server's global variable store.
 	if (const auto serverStore = getServerStore(); serverStore != nullptr && serverStore->contains(identifier))
 		return serverStore->get(identifier).lock().get();
 
-	auto checkStore = [&](const ScriptObject& source) -> std::optional<GameVariable*>
+	// 2. Property on the current source.
+	const auto currentSource = getCurrentSource();
+	if (const auto property = getGameVariableFromSourceProperty(currentSource, identifier, allowHidden); property != nullptr)
+		return property;
+
+	// 3. Property on the original source.
+	const auto originalSource = getOriginalSource();
+	if (originalSource != currentSource)
 	{
-		auto* store = getGameVariableStoreFromSource(source);
-		const bool storeHasIdentifier = store != nullptr && store->contains(identifier);
-
-		// First, if we have a storage type, get directly from the variable store.
-		// Otherwise, we want to defer to a property.
-		if (type.has_value() && storeHasIdentifier)
-			return store->get(identifier).lock().get();
-
-		// Second, if we have no storage type, check for a property.
-		if (auto property = getGameVariableFromSourceProperty(source, identifier, allowHidden); property != nullptr)
+		if (const auto property = getGameVariableFromSourceProperty(originalSource, identifier, allowHidden); property != nullptr)
 			return property;
-
-		// Lastly, check the variable store.
-		if (storeHasIdentifier)
-			return store->get(identifier).lock().get();
-
-		return std::nullopt;
-	};
-
-	// Next, look in the current source's store.
-	if (const auto result = checkStore(getCurrentSource()); result.has_value())
-		return result.value();
-
-	// Now look in the original source's store.
-	if (const auto result = checkStore(getOriginalSource()); result.has_value())
-		return result.value();
-
-	// Lastly, look at the initiator's store.
-	if (m_event != nullptr && m_event->initiator != getOriginalSource())
-	{
-		if (const auto result = checkStore(m_event->initiator); result.has_value())
-			return result.value();
 	}
 
-	// If we still don't have a store, use the built-in store.
+	// 4. Property on the event initiator's store.
+	if (m_event != nullptr && m_event->initiator != originalSource && m_event->initiator != currentSource)
+	{
+		if (const auto property = getGameVariableFromSourceProperty(m_event->initiator, identifier, allowHidden); property != nullptr)
+			return property;
+	}
+
+	// 5. Variable in the built-in store.
 	return builtInStore->getOrAdd(identifier).lock().get();
 }
 
@@ -1620,15 +1609,9 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 		}
 	}
 
-	// Strip the storage type from the identifier, if needed.
-	fixStorageNameOnIdentifier(*identifier);
-
-	// If we have no storage value, and we are expecting a flag, force client storage.
-	if (!storage.has_value() && expectingFlag)
-		storage = ENUM(StorageType::CLIENT);
-
 	// Conformance.
 	// If we are expecting a flag, force certain variables to script storage.
+	bool allowStorageFix = true;
 	if (!expectingFlag && (scriptEngine->config.strictMode.getValue() || scriptEngine->config.alwaysScopeVariables.getValue() == false))
 	{
 		constexpr std::array alwaysScriptStorage = {
@@ -1639,8 +1622,19 @@ std::any GS1Visitor::visitIdentifierValue(GS1Parser::IdentifierValueContext* con
 			ENUM(StorageType::CLIENTRO),
 		};
 		if (storage.has_value() && inList(storage.value(), alwaysScriptStorage))
+		{
 			storage = ENUM(StorageType::LOCAL);
+			allowStorageFix = false;
+		}
 	}
+
+	// Strip the storage type from the identifier, if needed.
+	if (allowStorageFix)
+		fixStorageNameOnIdentifier(*identifier);
+
+	// If we have no storage value, and we are expecting a flag, force client storage.
+	if (!storage.has_value() && expectingFlag)
+		storage = ENUM(StorageType::CLIENT);
 
 	// Get the game variable store for the identifier.
 	// If there is no storage type, it pulls from the built-in variable store (saved on the script context).
