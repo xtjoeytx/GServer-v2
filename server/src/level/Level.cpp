@@ -916,7 +916,7 @@ void Level::reload(const StaticLevelDataPtr& staticData)
 	// Delete items.
 	for (size_t i = m_items.size(); i > 0; --i)
 	{
-		if (toMapPosition(m_items[i].position) == mapPosition)
+		if (toMapPosition(m_items[i - 1].position) == mapPosition)
 			removeItem(inform_client, i - 1);
 	}
 
