@@ -2529,7 +2529,7 @@ void Server::sendShootToOneLevel(const LevelShoot* shoot, const std::shared_ptr<
 	newPacket.power = shoot->powerIn44TileParts;
 	newPacket.gravityInTiles = shoot->gravity;
 	newPacket.gani = shoot->gani;
-	newPacket.shootParams = string::toCSV(getShootParams());
+	newPacket.shootParams = getShootParams();
 
 	const CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)0 << newPacket.constructShootV1();
 	const CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)0 << newPacket.constructShootV2();

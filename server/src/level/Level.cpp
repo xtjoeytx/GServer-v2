@@ -2583,19 +2583,19 @@ LevelShoot* Level::addShoot(const LevelShoot* existingShoot)
 	return &m_shoots.back();
 }
 
-LevelShoot* Level::addShoot(inform_client_t, const PixelPosition& position, const float angle, const float zangle, const uint8_t power, const float gravity, const std::string& gani, const ScriptObject& from)
+LevelShoot* Level::addShoot(inform_client_t, const PixelPosition& position, const float angle, const float zangle, const uint8_t power, const float gravity, const std::string& gani, const std::string& shootParams, const ScriptObject& from)
 {
 	if (!m_server->hasNPCServer())
 		return nullptr;
 
-	const auto result = addShoot(position, angle, zangle, power, gravity, gani, from);
+	const auto result = addShoot(position, angle, zangle, power, gravity, gani, shootParams, from);
 	if (result != nullptr)
 		m_server->sendShootToOneLevel(result, shared_from_this());
 
 	return result;
 }
 
-LevelShoot* Level::addShoot(const PixelPosition& position, const float angle, const float zangle, const uint8_t power, const float gravity, const std::string& gani, const ScriptObject& from)
+LevelShoot* Level::addShoot(const PixelPosition& position, const float angle, const float zangle, const uint8_t power, const float gravity, const std::string& gani, const std::string& shootParams, const ScriptObject& from)
 {
 	if (!m_server->hasNPCServer())
 		return nullptr;
@@ -2604,7 +2604,7 @@ LevelShoot* Level::addShoot(const PixelPosition& position, const float angle, co
 	const double ground = getHeightAt(position.translate(8, 16));
 	tilePosition.translate(0, 0, static_cast<float>(ground));
 
-	LevelShoot newShoot{.position = tilePosition, .angle = angle, .zangle = zangle, .powerIn44TileParts = power, .gani = gani, .gravity = gravity, .from = from};
+	LevelShoot newShoot{.position = tilePosition, .angle = angle, .zangle = zangle, .powerIn44TileParts = power, .gani = gani, .gravity = gravity, .shootParams = shootParams, .from = from};
 	if (!newShoot.gani.empty() && newShoot.gani.back() == ',')
 		newShoot.gani.pop_back();
 	newShoot.calculateSpeeds();
@@ -2612,10 +2612,10 @@ LevelShoot* Level::addShoot(const PixelPosition& position, const float angle, co
 	return &m_shoots.back();
 }
 
-LevelShoot* Level::addShoot(const PixelPosition& position, const uint8_t angle, const uint8_t zangle, const uint8_t power, const float gravity, const std::string& gani, const ScriptObject& from)
+LevelShoot* Level::addShoot(const PixelPosition& position, const uint8_t angle, const uint8_t zangle, const uint8_t power, const float gravity, const std::string& gani, const std::string& shootParams, const ScriptObject& from)
 {
 	constexpr auto pi = std::numbers::pi_v<float>;
-	return addShoot(position, (static_cast<float>(angle) / 220.0f) * (2 * pi), ((static_cast<float>(zangle) / 110.0f) - 1.0f) * (pi / 2), power, gravity, gani, from);
+	return addShoot(position, (static_cast<float>(angle) / 220.0f) * (2 * pi), ((static_cast<float>(zangle) - 110) / 110.0) * (pi / 2), power, gravity, gani, shootParams, from);
 }
 
 bool Level::removeShoot(const uint8_t index)
@@ -2680,23 +2680,24 @@ bool Level::moveShoot(LevelShoot* shoot, const int iterations) const
 	{
 		// If the shoot is out of bounds, delete it.
 		const auto levelDimensions = sizeInTiles();
-		if (shoot->position.x() < 0 || shoot->position.y() < 0 || shoot->position.x() >= static_cast<float>(levelDimensions.width()) || shoot->position.y() >= static_cast<float>(levelDimensions.height()))
+		if (shoot->lifetime > 7s ||  shoot->position.x() < 0 || shoot->position.y() < 0 || shoot->position.x() >= static_cast<float>(levelDimensions.width()) || shoot->position.y() >= static_cast<float>(levelDimensions.height()))
 			return false;
 
 		// Move the shoot.
 		shoot->move();
+		shoot->lifetime += 50ms;
 
 		bool collided = false;
 		std::string eventParams;
 		auto constructEventParams = [&collided, &eventParams, &shoot]()
 		{
-			if (!eventParams.empty()) return;
+			if (!eventParams.empty() || collided) return;
 			collided = true;
 			eventParams = std::format("{},{}", shoot->position.x(), shoot->position.y());
 			if (!shoot->shootParams.empty())
 			{
 				eventParams += ',';
-				eventParams += string::toCSV(shoot->shootParams);
+				eventParams += shoot->shootParams;
 			}
 		};
 
@@ -2710,15 +2711,29 @@ bool Level::moveShoot(LevelShoot* shoot, const int iterations) const
 		// Check for NPC collisions.
 		//log::printLine(log::server, "Collision search pos: ({}), ground: {}", searchPosition / 16.0f, currentGroundLevel / 16.0f);
 		const bool fromPlayer = (shoot->from.second == ScriptObjectType::PLAYER);
-		for (const auto& npc : findIntersectingNPCsForCollision({pixelPosition, {24_ui16, 24_ui16, 48_ui16}}))
+		const auto searchPosition = PixelRectangleArea{pixelPosition, PixelDimension{24_ui16, 24_ui16, 48_ui16}};
+		for (const auto& npc : findIntersectingNPCsForCollision(searchPosition))
 		{
 			if (shoot->from.second == ScriptObjectType::NPC && shoot->from.first == npc)
 				continue;
 			if (auto npcPtr = m_server->getNPC(npc); npcPtr != nullptr)
 			{
-				//log::printLine(log::server, "Collision ({}) with NPC '{}' at ({})", searchPosition / 16.0f, npcPtr->name, npcPos);
+				DEBUGPRINT("[SHOOT] Collision ({}) with NPC '{}' at ({})", toTilePosition(searchPosition.position), npcPtr->name, npcPtr->getTilePosition());
 				constructEventParams();
 				npcPtr->scripting.events.addEvent(ScriptEventType::TRIGGERACTION, shoot->from, (fromPlayer ? "projectile" : "sprojectile"), eventParams);
+			}
+		}
+
+		// Check for player collisions.
+		if (const auto targetIndex = testPlayer(searchPosition); targetIndex != -1)
+		{
+			if (const auto targetId = m_players.at(targetIndex); !fromPlayer || targetId != shoot->from.first)
+			{
+				constructEventParams();
+				DEBUGPRINT("[SHOOT] Collision ({}) with player at index {}", toTilePosition(searchPosition.position), targetId);
+
+				// Override this so we use the hit player in the event.
+				shoot->from = source::FromPlayer(targetId);
 			}
 		}
 
@@ -2727,12 +2742,12 @@ bool Level::moveShoot(LevelShoot* shoot, const int iterations) const
 		if (!collided && groundDiff <= 48 && (DoubleIsZero(shoot->movementPerFrame.z()) || shoot->movementPerFrame.z() <= 0.0))
 		{
 			// Check if we hit the ground.
-			if (pixelPosition.z() <= currentGroundLevel)
+			if (pixelPosition.z() <= currentGroundLevel && !DoubleIsZero(shoot->gravity))
 				constructEventParams();
 
 			// Check for wall collisions.
 			const bool onWallDetection = m_server->cached.projectilesStopOnWall.getValue() && groundDiff < 48;
-			if (!collided && onWallDetection && isOnWall2(WholeTileRectangleArea{toWholeTilePosition(pixelPosition), {1_ui8, 1_ui8}}))
+			if (!collided && onWallDetection && isOnWall2(toWholeTileRectangleArea(searchPosition)))
 				constructEventParams();
 		}
 

@@ -2521,7 +2521,7 @@ Shoots a projectile.
 | ZAngle | The upward angle of the projectile, in radians, where `0` is flat horizontal, straight up is `pi/2`, and flat horizontal, backwards, is `pi`.  Can be negative to shoot downwards.  Range of `[-pi..pi]`. |
 | Power  | Launch strength of the projectile.  Value is tiles traveled every 0.05 seconds, up to 5 tiles.  When power is `0`, the projectile has no gravity and flies like a classic arrow, moving 1 tile per 0.05 seconds (20 per second).  Range of `[0.0..5.0]`. |
 | Gani   | The gani animation to play for the projectile. |
-| Ganiattribs | A CSV formatted string of gani attributes. |
+| Gani attribs | A CSV formatted string of gani attributes. |
 
 Until client 5.1, the `X`, `Y`, and `Z` parameters have half tile (`0.5`) resolution.
 On client 5.1 and up, they have pixel resolution.

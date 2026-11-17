@@ -1354,9 +1354,12 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 		newPacket.gravityInTiles = static_cast<float>(m_server->Scripting.variables.getValue<double>("gravity").value_or(2.0));
 		newPacket.gani = pPacket.readChars(pPacket.readGUChar());
 
+		if (newPacket.power == 0)
+			newPacket.gravityInTiles = 0;
+
 		// This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
 		[[maybe_unused]] unsigned char someParam = pPacket.readGUChar();
-		newPacket.shootParams = pPacket.readString("");
+		newPacket.shootParams = pPacket.readString("").toString();
 
 		const CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
 		const CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
@@ -1367,7 +1370,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT(CString& pPacket)
 		// clang-format on
 
 		if (m_server->hasNPCServer())
-			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravityInTiles, newPacket.gani, source::FromPlayer(m_id));
+			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravityInTiles, newPacket.gani, newPacket.shootParams, source::FromPlayer(m_id));
 	}
 
 	return HandlePacketResult::Handled;
@@ -1397,7 +1400,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 
 		newPacket.gani = pPacket.readChars(pPacket.readGUShort());
 		[[maybe_unused]] unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
-		newPacket.shootParams = pPacket.readString("");
+		newPacket.shootParams = pPacket.readString("").toString();
 
 		const CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
 		const CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();
@@ -1408,7 +1411,7 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 		// clang-format on
 
 		if (m_server->hasNPCServer())
-			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravityInTiles, newPacket.gani, source::FromPlayer(m_id));
+			level->addShoot(newPacket.position, newPacket.sangle, newPacket.sanglez, newPacket.power, newPacket.gravityInTiles, newPacket.gani, newPacket.shootParams, source::FromPlayer(m_id));
 	}
 
 	return HandlePacketResult::Handled;

@@ -50,9 +50,10 @@ struct LevelShoot
 	uint8_t powerIn44TileParts = 44;
 	std::string gani;
 
-	float gravity = 2.0;
+	clock::duration lifetime = 0ms;
+	float gravity = 2.0f;
 	TilePosition movementPerFrame;
-	std::vector<std::string> shootParams;
+	std::string shootParams;
 	ScriptObject from;
 
 	[[a::inline]] void calculateSpeeds();
@@ -63,18 +64,31 @@ struct LevelShoot
 
 inline void LevelShoot::calculateSpeeds()
 {
-	const float horizSpeed = std::cos(zangle) * (static_cast<float>(powerIn44TileParts) / 44.0f);
-	const float vertSpeed = std::sin(zangle) * (static_cast<float>(powerIn44TileParts) / 44.0f);
-	movementPerFrame.x() = std::cos(angle) * horizSpeed;
-	movementPerFrame.y() = std::sin(angle) * horizSpeed;
-	movementPerFrame.z() = vertSpeed;
+	if (powerIn44TileParts == 0)
+	{
+		constexpr float horizSpeed = 1.0f;
+		movementPerFrame.x() = std::cos(angle) * horizSpeed;
+		movementPerFrame.y() = -std::sin(angle) * horizSpeed;
+		movementPerFrame.z() = 0;
+		gravity = 0;
+	}
+	else
+	{
+		const float horizSpeed = std::cos(zangle) * (static_cast<float>(powerIn44TileParts) / 44.0f);
+		const float vertSpeed = -std::sin(zangle) * (static_cast<float>(powerIn44TileParts) / 44.0f);
+		movementPerFrame.x() = horizSpeed;
+		movementPerFrame.y() = horizSpeed;
+		movementPerFrame.z() = vertSpeed;
+	}
 }
 
 inline void LevelShoot::move()
 {
-	movementPerFrame.z() -= gravity * 0.05f;
+	if (gravity != 0)
+		movementPerFrame.z() -= gravity * 0.05f;
+
 	position.x() += movementPerFrame.x();
-	position.y() -= movementPerFrame.y();
+	position.y() += movementPerFrame.y();
 	position.z() += movementPerFrame.z();
 }
 

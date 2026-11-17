@@ -459,14 +459,13 @@ public:
 	}
 
 public:
-	[[a::inline]] const std::vector<std::string>& getShootParams() const;
-	[[a::inline]] void setShootParams(std::vector<std::string>&& params);
+	[[a::inline]] const std::string& getShootParams() const;
+	[[a::inline]] void setShootParams(std::string&& params);
 
 	void setShootParams(std::ranges::forward_range auto&& params)
 		requires std::same_as<std::ranges::range_value_t<decltype(params)>, std::string>
 	{
-		m_shootParams.clear();
-		m_shootParams.assign(std::ranges::begin(params), std::ranges::end(params));
+		m_shootParams = string::toCSVFromPack(params);
 	}
 
 public:
@@ -548,7 +547,7 @@ private:
 	TriggerDispatcher m_triggerActionDispatcher;
 	void createTriggerCommands(TriggerDispatcher::Builder builder);
 
-	std::vector<std::string> m_shootParams;
+	std::string m_shootParams;
 
 	std::shared_ptr<NPCServer> m_npcServer;
 	ServerList m_serverlist;
@@ -663,12 +662,12 @@ inline std::shared_ptr<T> Server::getPlayer(const CString& account, int type) co
 	return nullptr;
 }
 
-inline const std::vector<std::string>& Server::getShootParams() const
+inline const std::string& Server::getShootParams() const
 {
 	return m_shootParams;
 }
 
-inline void Server::setShootParams(std::vector<std::string>&& params)
+inline void Server::setShootParams(std::string&& params)
 {
 	m_shootParams = std::move(params);
 }

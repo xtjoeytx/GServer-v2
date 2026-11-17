@@ -1440,8 +1440,8 @@ struct std::formatter<preagonal::Position<Unit, T>> : std::formatter<std::string
 	{
 		constexpr std::string_view units = getUnitString<Unit>();
 		if (units.empty())
-			return std::format_to(ctx.out(), "{},{},{}", pos.x(), pos.y(), pos.z());
-		return std::format_to(ctx.out(), "[{}] {},{},{}", units, pos.x(), pos.y(), pos.z());
+			return std::format_to(ctx.out(), "{}, {}, {}", pos.x(), pos.y(), pos.z());
+		return std::format_to(ctx.out(), "[{}] {}, {}, {}", units, pos.x(), pos.y(), pos.z());
 	}
 };
 
@@ -1452,8 +1452,8 @@ struct std::formatter<preagonal::Position<Unit, T>> : std::formatter<std::string
 	{
 		constexpr std::string_view units = getUnitString<Unit>();
 		if (units.empty())
-			return std::format_to(ctx.out(), "{:04.2f},{:04.2f},{:04.2f}", pos.x(), pos.y(), pos.z());
-		return std::format_to(ctx.out(), "[{}] {:04.2f},{:04.2f},{:04.2f}", units, pos.x(), pos.y(), pos.z());
+			return std::format_to(ctx.out(), "{:04.2f}, {:04.2f}, {:04.2f}", pos.x(), pos.y(), pos.z());
+		return std::format_to(ctx.out(), "[{}] {:04.2f}, {:04.2f}, {:04.2f}", units, pos.x(), pos.y(), pos.z());
 	}
 };
 
@@ -1464,8 +1464,8 @@ struct std::formatter<preagonal::Dimension<Unit, T>> : std::formatter<std::strin
 	{
 		constexpr std::string_view units = getUnitString<Unit>();
 		if (units.empty())
-			return std::format_to(ctx.out(), "{},{},{}", dim.width(), dim.height(), dim.length());
-		return std::format_to(ctx.out(), "[{}] {},{},{}", units, dim.width(), dim.height(), dim.length());
+			return std::format_to(ctx.out(), "{}, {}, {}", dim.width(), dim.height(), dim.length());
+		return std::format_to(ctx.out(), "[{}] {}, {}, {}", units, dim.width(), dim.height(), dim.length());
 	}
 };
 
@@ -1476,8 +1476,8 @@ struct std::formatter<preagonal::Dimension<Unit, T>> : std::formatter<std::strin
 	{
 		constexpr std::string_view units = getUnitString<Unit>();
 		if (units.empty())
-			return std::format_to(ctx.out(), "{:04.2f},{:04.2f},{:04.2f}", dim.width(), dim.height(), dim.length());
-		return std::format_to(ctx.out(), "[{}] {:04.2f},{:04.2f},{:04.2f}", units, dim.width(), dim.height(), dim.length());
+			return std::format_to(ctx.out(), "{:04.2f}, {:04.2f}, {:04.2f}", dim.width(), dim.height(), dim.length());
+		return std::format_to(ctx.out(), "[{}] {:04.2f}, {:04.2f}, {:04.2f}", units, dim.width(), dim.height(), dim.length());
 	}
 };
 

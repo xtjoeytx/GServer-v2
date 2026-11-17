@@ -242,7 +242,7 @@ PrototypeList registeredCommands =
     {"setshape2"sv,             "RRR"sv},       // RRR
     {"setshield"sv,             "MR"sv},        // MR
     {"setshoecolor"sv,          "C"sv},         // C
-    {"setshootparams "sv,       "K"sv},         // S
+    {"setshootparams "sv,       "S"sv},         // S
     {"setskincolor"sv,          "C"sv},         // C
     {"setsleevecolor"sv,        "C"sv},         // C
     {"setspritesimage"sv,       "S"sv},
@@ -289,7 +289,7 @@ PrototypeList registeredCommands =
     {"tokenize "sv,             "S"sv},         // S
     {"tokenize2"sv,             "SS"sv},        // SS
     {"toweapons"sv,             "M"sv},         // M
-    {"triggeraction"sv,         "RRSK"sv},      // RRSS
+    {"triggeraction"sv,         "RRSS"sv},      // RRSS
     {"unfreezeplayer"sv,        ""sv},          //
     {"unset "sv,                "V"sv},         // M
     {"updateboard "sv,          "RRRR"sv},      // RRRR  (clientside has no space)

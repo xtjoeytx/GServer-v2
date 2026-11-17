@@ -336,9 +336,9 @@ public:
 
 public:
 	LevelShoot* addShoot(const LevelShoot* existingShoot);
-	LevelShoot* addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, const ScriptObject& from);
-	LevelShoot* addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, const ScriptObject& from);
-	LevelShoot* addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, const ScriptObject& from);
+	LevelShoot* addShoot(inform_client_t, const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, const std::string& shootParams, const ScriptObject& from);
+	LevelShoot* addShoot(const PixelPosition& position, float angle, float zangle, uint8_t power, float gravity, const std::string& gani, const std::string& shootParams, const ScriptObject& from);
+	LevelShoot* addShoot(const PixelPosition& position, uint8_t angle, uint8_t zangle, uint8_t power, float gravity, const std::string& gani, const std::string& shootParams, const ScriptObject& from);
 	bool removeShoot(uint8_t index);
 	LevelShoot* getShoot(uint8_t index) const;
 

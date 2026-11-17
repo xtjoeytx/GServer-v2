@@ -227,7 +227,7 @@ static BuiltInCommandHandleMap GenerateMap()
 	BuiltInCommandHandleMap map =
 	{
 #if DEBUG
-		{hash("gr-debugger"), &fn_debugger},
+		{hash("debugger"), &fn_debugger},
 #endif
 		{hash("addguildmember"), &fn_addguildmember},
 		{hash("addstring"), &fn_addstring},
@@ -1862,7 +1862,7 @@ void fn_putnpc2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argumen
 			scriptview = scriptview.substr(1, scriptview.size() - 2);
 
 		const auto server = BabyDI::Get<Server>();
-		server->getNPCServer()->addNPC({}, scriptview, level, {x, y});
+		server->getNPCServer()->addNPC({}, scriptview, level, TilePosition{x, y});
 	}
 }
 
@@ -2825,9 +2825,9 @@ void fn_setshootparams(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& 
 	if (arguments.size() != 1)
 		throw std::invalid_argument("invalid arguments: setshootparams params");
 
-	const auto params = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
+	auto params = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[0]).value_or("");
 	const auto server = BabyDI::Get<Server>();
-	server->setShootParams(string::fromCSV(params));
+	server->setShootParams(std::move(params));
 }
 
 // setskincolor color;
@@ -2993,9 +2993,9 @@ void fn_shoot(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments
 
 	constexpr auto pi = std::numbers::pi;
 
-	const auto x = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0) * 16);
-	const auto y = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
-	const auto z = DoubleAsIntegralFloor<int16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+	const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+	const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+	const auto z = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
 	const auto angle = static_cast<float>(std::clamp(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0), 0.0, 2 * pi));
 	const auto zangle = static_cast<float>(std::clamp(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0), -(pi / 2), (pi / 2)));
 	const auto power = static_cast<uint8_t>(std::clamp(GS1Visitor::getScriptValueAsCopy<double>(*arguments[5]).value_or(0.0), 0.0, 5.0) * 44);
@@ -3003,7 +3003,7 @@ void fn_shoot(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments
 
 	const auto server = BabyDI::Get<Server>();
 	const auto gravity = static_cast<float>(server->Scripting.variables.getValue<double>("gravity").value_or(2.0));
-	level->addShoot(inform_client, {x, y, z}, angle, zangle, power, gravity, gani, visitor->getOriginalSource());
+	level->addShoot(inform_client, toPixelPosition(TilePosition{x, y, z}), angle, zangle, power, gravity, gani, server->getShootParams(), visitor->getOriginalSource());
 }
 
 // shootarrow dir;
@@ -3177,12 +3177,12 @@ void fn_showani(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argumen
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			const auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
-			const auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+			const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+			const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
 			const auto direction = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
 			const auto gani = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[4]).value_or("");
 
-			server->getNPCServer()->showGani(npc, index, {x, y}, gani, direction);
+			server->getNPCServer()->showGani(npc, index, toPixelPosition(TilePosition{x, y}), gani, direction);
 		}
 	}
 }
@@ -3200,13 +3200,13 @@ void fn_showani2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argume
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			const auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
-			const auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
-			const auto z = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
+			const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+			const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+			const auto z = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
 			const auto direction = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0));
 			const auto gani = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[5]).value_or("");
 
-			server->getNPCServer()->showGani(npc, index, {x, y, z}, gani, direction);
+			server->getNPCServer()->showGani(npc, index, toPixelPosition(TilePosition{x, y, z}), gani, direction);
 		}
 	}
 }
@@ -3240,10 +3240,10 @@ void fn_showimg(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argumen
 		{
 			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 			const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
-			const auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
-			const auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
+			const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+			const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
 
-			server->getNPCServer()->showImage(npc, index, {x, y}, filename);
+			server->getNPCServer()->showImage(npc, index, toPixelPosition(TilePosition{x, y}), filename);
 		}
 	}
 }
@@ -3262,11 +3262,11 @@ void fn_showimg2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argume
 		{
 			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
 			const auto filename = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[1]).value_or("");
-			const auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
-			const auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
-			const auto z = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0) * 16);
+			const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+			const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
+			const auto z = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[4]).value_or(0.0));
 
-			server->getNPCServer()->showImage(npc, index, {x, y, z}, filename);
+			server->getNPCServer()->showImage(npc, index, toPixelPosition(TilePosition{x, y, z}), filename);
 		}
 	}
 }
@@ -3336,13 +3336,13 @@ void fn_showtext(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argume
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			const auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
-			const auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
+			const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+			const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
 			const auto font = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[3]).value_or("");
 			const auto style = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[4]).value_or("");
 			const auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[5]).value_or("");
 
-			server->getNPCServer()->showText(npc, index, {x, y}, text, font, style);
+			server->getNPCServer()->showText(npc, index, toPixelPosition(TilePosition{x, y}), text, font, style);
 		}
 	}
 }
@@ -3360,14 +3360,14 @@ void fn_showtext2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argum
 		if (const auto npc = server->getNPC(source.value().first); npc != nullptr)
 		{
 			const auto index = DoubleAsIntegralFloor<uint8_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-			const auto x = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0) * 16);
-			const auto y = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
-			const auto z = DoubleAsIntegralFloor<int32_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
+			const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+			const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0));
+			const auto z = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0));
 			const auto font = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[4]).value_or("");
 			const auto style = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[5]).value_or("");
 			const auto text = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[6]).value_or("");
 
-			server->getNPCServer()->showText(npc, index, {x, y, z}, text, font, style);
+			server->getNPCServer()->showText(npc, index, toPixelPosition(TilePosition{x, y, z}), text, font, style);
 		}
 	}
 }
@@ -3665,22 +3665,19 @@ void fn_toweapons(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& argum
 // Sends out a trigger action.
 void fn_triggeraction(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& arguments)
 {
-	if (arguments.size() < 4)
+	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: triggeraction x,y,action,params");
 
 	const auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 	const auto action = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
-	const auto params = string::toCSV(arguments | std::views::drop(3) | std::views::transform([](const GS1ScriptValue* value)
-	{
-		return GS1Visitor::getScriptValueAsCopy<std::string>(*value).value_or("");
-	}));
+	const auto params = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
 
 	const auto server = BabyDI::Get<Server>();
 	if (action == "clientside")
 	{
 		if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::PLAYER); source.has_value())
-			server->sendTriggerAction(source.value().first, 0, {0, 0}, action, params);
+			server->sendTriggerAction(source.value().first, 0, LocalPixelPosition{0, 0}, action, params);
 	}
 	else
 	{
@@ -3688,7 +3685,7 @@ void fn_triggeraction(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& a
 		if (const auto& [id, type] = visitor->getCurrentSource(); type == ScriptObjectType::NPC)
 			npcId = id;
 		if (const LevelPtr targetLevel = visitor->findCurrentLevel(); targetLevel != nullptr)
-			server->sendTriggerAction(targetLevel, npcId, {static_cast<int16_t>(x * 16), static_cast<int16_t>(y * 16)}, action, params);
+			server->sendTriggerAction(targetLevel, npcId, toPixelPosition(TilePosition{x, y}), action, params);
 	}
 }
 
