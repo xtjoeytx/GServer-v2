@@ -2725,16 +2725,13 @@ bool Level::moveShoot(LevelShoot* shoot, const int iterations) const
 		}
 
 		// Check for player collisions.
-		if (const auto targetIndex = testPlayer(searchPosition); targetIndex != -1)
+		if (const auto [targetIndex, targetId] = testPlayer(searchPosition); targetIndex!= -1 && targetId != shoot->from.first)
 		{
-			if (const auto targetId = m_players.at(targetIndex); !fromPlayer || targetId != shoot->from.first)
-			{
-				constructEventParams();
-				DEBUGPRINT("[SHOOT] Collision ({}) with player at index {}", toTilePosition(searchPosition.position), targetId);
+			constructEventParams();
+			DEBUGPRINT("[SHOOT] Collision ({}) with player at index {}", toTilePosition(searchPosition.position), targetId);
 
-				// Override this so we use the hit player in the event.
-				shoot->from = source::FromPlayer(targetId);
-			}
+			// Override this so we use the hit player in the event.
+			shoot->from = source::FromPlayer(targetId);
 		}
 
 		// If we are within 3 tiles of the ground, and we aren't going up, check for walls and the ground.
@@ -3015,7 +3012,7 @@ bool Level::isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept
 	return false;
 }
 
-std::ptrdiff_t Level::testNPC(const PixelPosition& position, const std::optional<NPCID> initiator) const noexcept
+std::pair<std::ptrdiff_t, NPCID> Level::testNPC(const PixelPosition& position, const std::optional<NPCID> initiator) const noexcept
 {
 	std::ptrdiff_t index = 0;
 
@@ -3027,17 +3024,17 @@ std::ptrdiff_t Level::testNPC(const PixelPosition& position, const std::optional
 			if (positionInRectangle(position, npc->getCollisionBoundingBox()))
 			{
 				if (initiator.has_value() && id == initiator.value())
-					return -1;
-				return index;
+					return {-1, id};
+				return {index, id};
 			}
 		}
 		++index;
 	}
 
-	return -2;
+	return {-2, 0};
 }
 
-std::ptrdiff_t Level::testNPC(const PixelRectangleArea& pixelArea, const std::optional<NPCID> initiator) const noexcept
+std::pair<std::ptrdiff_t, NPCID> Level::testNPC(const PixelRectangleArea& pixelArea, const std::optional<NPCID> initiator) const noexcept
 {
 	std::ptrdiff_t index = 0;
 
@@ -3049,17 +3046,17 @@ std::ptrdiff_t Level::testNPC(const PixelRectangleArea& pixelArea, const std::op
 			if (rectanglesIntersect(pixelArea, npc->getCollisionBoundingBox()))
 			{
 				if (initiator.has_value() && id == initiator.value())
-					return -1;
-				return index;
+					return {-1, id};
+				return {index, id};
 			}
 		}
 		++index;
 	}
 
-	return -2;
+	return {-2, 0};
 }
 
-std::ptrdiff_t Level::testPlayer(const PixelPosition& position) const noexcept
+std::pair<std::ptrdiff_t, PlayerID> Level::testPlayer(const PixelPosition& position) const noexcept
 {
 	std::ptrdiff_t index = 0;
 
@@ -3069,15 +3066,15 @@ std::ptrdiff_t Level::testPlayer(const PixelPosition& position) const noexcept
 		if (auto player = m_server->getPlayer(id); player != nullptr)
 		{
 			if (positionInRectangle(position, player->getCollisionBoundingBox()))
-				return index;
+				return {index, id};
 		}
 		++index;
 	}
 
-	return -1;
+	return {-1, 0};
 }
 
-std::ptrdiff_t Level::testPlayer(const PixelRectangleArea& pixelArea) const noexcept
+std::pair<std::ptrdiff_t, PlayerID> Level::testPlayer(const PixelRectangleArea& pixelArea) const noexcept
 {
 	std::ptrdiff_t index = 0;
 
@@ -3087,12 +3084,12 @@ std::ptrdiff_t Level::testPlayer(const PixelRectangleArea& pixelArea) const noex
 		if (auto player = m_server->getPlayer(id); player != nullptr)
 		{
 			if (rectanglesIntersect(pixelArea, player->getCollisionBoundingBox()))
-				return index;
+				return {index, id};
 		}
 		++index;
 	}
 
-	return -1;
+	return {-1, 0};
 }
 
 tileset::TileType Level::getTileTypeAt(const WholeTilePosition& tilePosition) const noexcept

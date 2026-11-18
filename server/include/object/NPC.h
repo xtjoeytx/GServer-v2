@@ -236,7 +236,7 @@ struct NPCMove
 	clock::time_point modTime;
 
 	/// @brief The set options for the movement.
-	std::bitset<5> options;
+	std::bitset<6> options;
 
 	/// @brief Callback function to execute when the movement is complete.
 	std::function<void()> onComplete;
@@ -246,6 +246,7 @@ struct NPCMove
 	static constexpr int blockCheck = 2;          // Value: 4
 	static constexpr int informWhenDone = 3;      // Value: 8
 	static constexpr int applyDirection = 4;      // Value: 16
+	static constexpr int moveDirBlockCheck = 5;   // Value: 32 - GR extension
 
 	/// @brief Returns the current interpolated pixel position based on elapsed time.
 	/// @return A PixelPosition representing the current position interpolated between the origin and destination, based on the elapsed time.

@@ -366,10 +366,10 @@ public:
 	bool isOnNPC(const PixelRectangleArea& pixelArea) const noexcept;
 	bool isOnPlayer(const PixelPosition& position) const noexcept;
 	bool isOnPlayer(const PixelRectangleArea& pixelArea) const noexcept;
-	std::ptrdiff_t testNPC(const PixelPosition& position, std::optional<NPCID> initiator = std::nullopt) const noexcept;
-	std::ptrdiff_t testNPC(const PixelRectangleArea& pixelArea, std::optional<NPCID> initiator = std::nullopt) const noexcept;
-	std::ptrdiff_t testPlayer(const PixelPosition& position) const noexcept;
-	std::ptrdiff_t testPlayer(const PixelRectangleArea& pixelArea) const noexcept;
+	std::pair<std::ptrdiff_t, NPCID> testNPC(const PixelPosition& position, std::optional<NPCID> initiator = std::nullopt) const noexcept;
+	std::pair<std::ptrdiff_t, NPCID> testNPC(const PixelRectangleArea& pixelArea, std::optional<NPCID> initiator = std::nullopt) const noexcept;
+	std::pair<std::ptrdiff_t, PlayerID> testPlayer(const PixelPosition& position) const noexcept;
+	std::pair<std::ptrdiff_t, PlayerID> testPlayer(const PixelRectangleArea& pixelArea) const noexcept;
 	tileset::TileType getTileTypeAt(const WholeTilePosition& tilePosition) const noexcept;
 	tileset::TileType getTileTypeAt(const PixelPosition& position) const noexcept;
 

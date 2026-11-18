@@ -318,6 +318,8 @@ void NPC::addMoveToQueue(const LocalPixelPosition& moveDelta, const float durati
 		move.options.set(NPCMove::informWhenDone);
 	if (options & (1 << NPCMove::applyDirection))
 		move.options.set(NPCMove::applyDirection);
+	if (options & (1 << NPCMove::moveDirBlockCheck))
+		move.options.set(NPCMove::moveDirBlockCheck);
 
 	// Determine our start and stop positions.
 	move.origin = moveQueue.empty() ? getGlobalPosition() : moveQueue.back().destination;
@@ -417,7 +419,7 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 
 		// If we are testing for walls, do that now.
 		// If we would hit a wall, we do not move.
-		if (move.options.test(NPCMove::blockCheck))
+		if (move.options.test(NPCMove::blockCheck) || move.options.test(NPCMove::moveDirBlockCheck))
 		{
 			if (auto levelPtr = getLevel(); levelPtr != nullptr)
 			{
@@ -436,21 +438,45 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 					boundingBox.position = translatePosition(potentialPosition, 8, 16);
 				}
 
-				// The onwall check depends on direction.
-				PixelPosition onwallPosition;
-				switch (character.direction)
+				std::array<bool, 4> checkPositions{false, false, false, false};
+
+				// Mark the current direction as a check position.
+				if (move.options.test(NPCMove::blockCheck))
+					checkPositions[character.direction] = true;
+
+				// If we are also testing the current movement direction, add those too.
+				if (move.options.test(NPCMove::moveDirBlockCheck))
 				{
-					case 0: onwallPosition = boundingBox.topcenter(); break;
-					case 1: onwallPosition = boundingBox.leftcenter(); break;
-					case 3: onwallPosition = boundingBox.rightcenter(); break;
-					default: onwallPosition = boundingBox.bottomcenter(); break;
+					const auto displacement = move.destination - move.origin;
+					if (displacement.y() < 0) checkPositions[0] = true;
+					if (displacement.x() < 0) checkPositions[1] = true;
+					if (displacement.y() > 0) checkPositions[2] = true;
+					if (displacement.x() > 0) checkPositions[3] = true;
 				}
 
-				// Do the check now.
-				if (levelPtr->isOnWall(onwallPosition))
+				// Test all of our positions now.
+				for (int i = 0; i < 4; ++i)
 				{
-					movementFinished = true;
-					terminateQueue = true;
+					if (checkPositions[i] == false)
+						continue;
+
+					// Calculate the position to check.
+					PixelPosition onwallPosition;
+					switch (i)
+					{
+						case 0: onwallPosition = boundingBox.topcenter(); break;
+						case 1: onwallPosition = boundingBox.leftcenter(); break;
+						case 3: onwallPosition = boundingBox.rightcenter(); break;
+						default: onwallPosition = boundingBox.bottomcenter(); break;
+					}
+
+					// Do the check now.
+					if (levelPtr->isOnWall(onwallPosition))
+					{
+						movementFinished = true;
+						terminateQueue = true;
+						break;
+					}
 				}
 			}
 		}
@@ -494,6 +520,15 @@ void NPC::processMoveQueue(std::chrono::milliseconds deltaTime)
 			else
 				moveQueue.pop_front();
 		}
+	}
+
+	// The queue got terminated early, so force an X/Y prop to send.
+	if (terminateQueue)
+	{
+		modTime[PROPID(NPCProp::X)] = m_server->getFrameStartTime();
+		modTime[PROPID(NPCProp::Y)] = m_server->getFrameStartTime();
+		modTime[PROPID(NPCProp::X2)] = m_server->getFrameStartTime();
+		modTime[PROPID(NPCProp::Y2)] = m_server->getFrameStartTime();
 	}
 
 	// Still moving, so prevent position props from updating.
