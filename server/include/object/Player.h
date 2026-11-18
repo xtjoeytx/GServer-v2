@@ -786,7 +786,8 @@ inline bool Player::wasPropModified(const PlayerProp prop) const noexcept
 	DO(PlayerProp::Y2, PropertyPixelCoordinate, account.character.localPixelY)                                                 \
 	DO(PlayerProp::Z2, PropertyPixelCoordinateZ, account.character.localPixelZ)                                                \
 	DO(PlayerProp::PLAYERLISTCATEGORY, PropertyNumeric<GBYTE1>, (uint8_t)m_playerListCategory)                                 \
-	DO(PlayerProp::COMMUNITYNAME, PropertyString, account.communityName)
+	DO(PlayerProp::COMMUNITYNAME, PropertyString, account.communityName)                                                       \
+	DO(PlayerProp::GRALATS2, PropertyNumeric<GBYTE5>, account.character.gralats)
 
 //----------------------------
 

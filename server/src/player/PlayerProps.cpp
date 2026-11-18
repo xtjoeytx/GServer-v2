@@ -252,8 +252,9 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			if (!restrictedPropAllowed)
 				SETPROP_RETURN_REVERT;
 
-			uint32_t newGralatCount = std::min(numProp->value, 9999999u);
+			uint32_t newGralatCount = std::min(numProp->value, 9'999'999u);
 			account.character.gralats = newGralatCount;
+			result.resultPropIds.push_back(PROPID(PlayerProp::GRALATS2));
 			break;
 		}
 
@@ -1148,13 +1149,17 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 			break;
 		}
 
-		case PlayerProp::UNKNOWN83:
+		case PlayerProp::GRALATS2:
 		{
 			auto numProp = dynamic_cast<PropertyNumeric<GBYTE5>*>(base);
-			if (numProp == nullptr)
+			if (numProp == nullptr || numProp->value == account.character.gralats)
 				SETPROP_RETURN_IGNORE;
+			if (!restrictedPropAllowed)
+				SETPROP_RETURN_REVERT;
 
-			log::printLine(log::server, "Player {} set prop 83 to value {}.  This prop is currently unknown.", account.name, numProp->value);
+			const auto newGralatCount = std::clamp(static_cast<unsigned long long>(numProp->value), 0ULL, 999'999'999ULL);
+			account.character.gralats = static_cast<uint64_t>(newGralatCount);
+			result.resultPropIds.push_back(PROPID(PlayerProp::GRALATS));
 			break;
 		}
 
@@ -1206,7 +1211,7 @@ void Player::setPropsFromPacket(CString& packet, const props::SetBy setBy, const
 bool Player::checkPropSetAccess(const PlayerProp prop, SetBy setBy, const Player* originator) const
 {
 	// Admin check on changing gralats.
-	if (prop == PlayerProp::GRALATS && originator != nullptr)
+	if (inList(prop, PlayerProp::GRALATS, PlayerProp::GRALATS2) && originator != nullptr)
 	{
 		bool canSet = m_server->cached.normalAdminsCanChangeGralats.getValue();
 		canSet = canSet || (originator->isStaff() && originator->account.hasRight(PLPERM_SETRIGHTS));

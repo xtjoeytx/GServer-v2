@@ -68,8 +68,8 @@ CString LevelItem::getItemPlayerProp(const LevelItemType itemType, Player* playe
 			else
 				rupeeCount += 1;
 
-			rupeeCount = std::clamp(rupeeCount, 0_ui32, 9999999_ui32);
-			return CString() >> (char)PlayerProp::GRALATS >> (int)rupeeCount;
+			rupeeCount = std::clamp(rupeeCount, 0_ui32, 999'999'999_ui32);
+			return CString() >> (char)PlayerProp::GRALATS2 >> (long long)rupeeCount;
 		}
 
 		case LevelItemType::BOMBS: // bombs

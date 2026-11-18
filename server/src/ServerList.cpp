@@ -615,7 +615,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 		val = CString(p2->getProp<PlayerProp::ALIGNMENT>().value);
 		profile >> (char)val.length() << val;
 
-		val = CString(static_cast<int>(p2->getProp<PlayerProp::GRALATS>().value));
+		val = CString(static_cast<int>(p2->getProp<PlayerProp::GRALATS2>().value));
 		profile >> (char)val.length() << val;
 
 		val = CString(p2->getProp<PlayerProp::SWORDIMAGE>().power.value_or(1));
@@ -671,7 +671,7 @@ void ServerList::msgSVI_PROFILE(CString& pPacket)
 				if (val == "playerap")
 					return string::to_string(p2->getProp<PlayerProp::ALIGNMENT>().value);
 				if (val == "playerrupees")
-					return string::to_string(p2->getProp<PlayerProp::GRALATS>().value);
+					return string::to_string(p2->getProp<PlayerProp::GRALATS2>().value);
 				if (val == "playerswordpower")
 					return string::to_string(p2->getProp<PlayerProp::SWORDIMAGE>().power.value_or(1));
 				if (val == "canspin")

@@ -254,11 +254,12 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 		}
 		else if (section == "GRALATS" || section == "RUPEES")
 		{
-			const auto num = static_cast<uint32_t>(string::toFloat(val));
+			const auto num = static_cast<uint32_t>(std::clamp(static_cast<int32_t>(string::toFloat(val)), 0_i32, 999'999'999_i32));
 			if (account.character.gralats != num)
 			{
 				account.character.gralats = num;
 				updateModTime(PlayerProp::GRALATS);
+				updateModTime(PlayerProp::GRALATS2);
 			}
 		}
 		else if (section == "ANI")

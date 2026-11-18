@@ -1395,8 +1395,6 @@ void Player::constructScriptParameters()
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "maxhp"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::FULLHEARTS)]), .value = std::ref(account.maxHitpoints)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "mp"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::MAGICPOINTS)]), .value = std::ref(account.character.mp)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "ap"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::ALIGNMENT)]), .value = std::ref(account.character.ap)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "rupees"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GRALATS)]), .value = std::ref(account.character.gralats)});
-	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "gralats"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GRALATS)]), .value = std::ref(account.character.gralats)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "bombs"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::BOMBS)]), .value = std::ref(account.character.bombs)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "darts"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::ARROWS)]), .value = std::ref(account.character.arrows)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "bombpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::BOMBPOWER)]), .value = std::ref(account.character.bombPower)});
@@ -1404,6 +1402,22 @@ void Player::constructScriptParameters()
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "swordpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SWORDIMAGE)]), .value = std::ref(account.character.swordPower)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "shieldpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::SHIELDIMAGE)]), .value = std::ref(account.character.shieldPower)});
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::IntegralProperty{.name = "shootpower"sv, .modTime = std::ref(modTime[PROPID(PlayerProp::GANI)]), .value = std::ref(account.character.bowPower)});
+
+	auto gralatsGet = [this](std::optional<size_t>) -> GameValueVariantForGetter { return (double)account.character.gralats; };
+	auto gralatsSet = [this](const GameValueVariantForSetter& incoming, std::optional<int64_t>)
+	{
+		if (const auto value = std::get_if<std::reference_wrapper<double>>(&incoming); value != nullptr)
+		{
+			account.character.gralats = static_cast<uint32_t>(std::clamp(DoubleAsIntegralFloor<int32_t>(value->get()), 0_i32, 999'999'999_i32));
+
+			// Update the gralat props.
+			auto now = m_server->getFrameStartTime();
+			modTime[PROPID(PlayerProp::GRALATS)] = now;
+			modTime[PROPID(PlayerProp::GRALATS2)] = now;
+		}
+	};
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{.name = "rupees"sv, .getter = gralatsGet, .setter = gralatsSet});
+	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{.name = "gralats"sv, .getter = gralatsGet, .setter = gralatsSet});
 
 	bind::bindPropertyAsReadWrite(scriptParameters, bind::ManuallyDefinedProperty<double>{
 		.name = "x"sv,

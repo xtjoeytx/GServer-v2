@@ -1983,7 +1983,7 @@ void PlayerClient::dropItemsOnDeath()
 	account.character.gralats -= drop_gralats;
 	account.character.arrows -= (drop_arrows * 5);
 	account.character.bombs -= (drop_bombs * 5);
-	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::GRALATS >> (int)account.character.gralats >> (char)PlayerProp::ARROWS >> (char)account.character.arrows >> (char)PlayerProp::BOMBS >> (char)account.character.bombs);
+	sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::GRALATS >> (int)account.character.gralats >> (char)PlayerProp::ARROWS >> (char)account.character.arrows >> (char)PlayerProp::BOMBS >> (char)account.character.bombs >> (char)PlayerProp::GRALATS2 >> (long long)account.character.gralats);
 
 	// Check which gralats we can drop.
 	const bool canDropGold = std::ranges::contains(allowedDeathDrops, LevelItemType::GOLDRUPEE);
@@ -2239,7 +2239,7 @@ props::SetResults PlayerClient::addItem(const LevelItemType itemType, const prop
 		case LevelItemType::BLUERUPEE:
 		case LevelItemType::REDRUPEE:
 		case LevelItemType::GOLDRUPEE:
-			return setPropWith<PlayerProp::GRALATS>(setBy, account.character.gralats + LevelItem::GetRupeeCount(itemType));
+			return setPropWith<PlayerProp::GRALATS2>(setBy, account.character.gralats + LevelItem::GetRupeeCount(itemType));
 
 		case LevelItemType::BOMBS:
 			return setPropWith<PlayerProp::BOMBS>(setBy, std::min(99_ui8, static_cast<uint8_t>(account.character.bombs + 5)));
