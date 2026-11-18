@@ -1214,6 +1214,17 @@ bool PlayerClient::warp(const std::string_view levelName, const PixelPosition& p
 		return false;
 	}
 
+	// If this is a gmap and the level names don't match, fix the position of the warp.
+	if (newLevel->isGmap() && newLevel->levelName != levelName)
+	{
+		const auto subLevel = newLevel->getSubLevelByName(levelName);
+		if (subLevel != nullptr)
+		{
+			const auto origin = Level::getSubLevelOrigin(subLevel).value_or(PixelPosition{});
+			return warp(newLevel, position.translate(origin), clientCachedTime);
+		}
+	}
+
 	return warp(newLevel, position, clientCachedTime);
 }
 
