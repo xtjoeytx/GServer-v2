@@ -3671,7 +3671,7 @@ void fn_triggeraction(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& a
 	const auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 	const auto action = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
-	const auto params = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[2]).value_or("");
+	const auto params = GS1Visitor::getScriptValueAsCopy<std::string>(*arguments[3]).value_or("");
 
 	const auto server = BabyDI::Get<Server>();
 	if (action == "clientside")
