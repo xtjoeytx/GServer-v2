@@ -97,6 +97,7 @@ static PacketHandleArray GeneratePacketHandlers()
 	handlers[PLI_TAMPERCHECK] = &PlayerClient::msgPLI_TAMPERCHECK;
 	handlers[PLI_SHOOT] = &PlayerClient::msgPLI_SHOOT;
 	handlers[PLI_SERVERWARP] = &PlayerClient::msgPLI_SERVERWARP;
+	handlers[PLI_MUTEPLAYER] = &PlayerClient::msgPLI_MUTEPLAYER;
 	handlers[PLI_PROCESSLIST] = &PlayerClient::msgPLI_PROCESSLIST;
 	handlers[PLI_ENTERLEVEL] = &PlayerClient::msgPLI_ENTERLEVEL;
 	handlers[PLI_VERIFYWANTSEND] = &PlayerClient::msgPLI_VERIFYWANTSEND;

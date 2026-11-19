@@ -1257,9 +1257,12 @@ std::shared_ptr<Level> Server::getLoadedLevel(std::string_view levelName, const 
 	// See if this level belongs to a gmap.
 	if (level = findGmapForLevel(levelName, player); level != nullptr)
 	{
-		if (!level->loaded && LevelLoader::loadLevelInto(level->levelName, level))
-			m_levelList.insert(std::make_pair(string::toLower(level->levelName), level));
-		return level;
+		if (!level->loaded)
+		{
+			if (LevelLoader::loadLevelInto(level->levelName, level))
+				m_levelList.insert(std::make_pair(string::toLower(level->levelName), level));
+		}
+		else return level;
 	}
 
 	return getLoadedLevelNoHint(levelName);

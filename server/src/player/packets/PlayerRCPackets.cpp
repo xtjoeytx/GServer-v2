@@ -48,6 +48,12 @@ HandlePacketResult PlayerRC::msgPLI_RC_SERVEROPTIONSGET(CString& pPacket)
 	}
 
 	const auto settings = m_server->getFileSystemServer().openi(fs::FileCategory::CONFIG, "serveroptions.txt");
+	if (settings == nullptr || !settings->opened())
+	{
+		sendPacket(CString() >> (char)PLO_RC_SERVEROPTIONSGET);
+		return HandlePacketResult::Handled;
+	}
+
 	auto options = string::toCSV(settings->readAllLines());
 
 	// RC will automatically add a newline after the last line, so remove the newline if it exists to prevent an extra blank line from showing up in RC.
@@ -1575,7 +1581,7 @@ HandlePacketResult PlayerRC::msgPLI_RC_FOLDERDELETE(CString& pPacket)
 	}
 
 	// Try to remove folder.
-	if (!std::filesystem::remove(folder))
+	if (std::error_code ec; !std::filesystem::remove(folder, ec))
 	{
 		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Error removing " << folder.generic_string() << ".  Folder may not exist or may not be empty.");
 		return HandlePacketResult::Handled;

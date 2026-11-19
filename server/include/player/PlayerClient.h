@@ -199,6 +199,7 @@ public:
 	HandlePacketResult msgPLI_SHOOT(CString& pPacket);
 	HandlePacketResult msgPLI_SHOOT2(CString& pPacket);
 	HandlePacketResult msgPLI_SERVERWARP(CString& pPacket);
+	HandlePacketResult msgPLI_MUTEPLAYER(CString& pPacket);
 	HandlePacketResult msgPLI_PROCESSLIST(CString& pPacket);
 	HandlePacketResult msgPLI_ENTERLEVEL(CString& pPacket);
 	HandlePacketResult msgPLI_UPDATECLASS(CString& pPacket);

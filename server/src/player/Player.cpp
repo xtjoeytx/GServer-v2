@@ -292,6 +292,7 @@ static PacketHandleArray GeneratePacketHandlers()
 	handlers[PLI_PRIVATEMESSAGE] = &Player::msgPLI_PRIVATEMESSAGE;
 	handlers[PLI_PACKETCOUNT] = &Player::msgPLI_PACKETCOUNT;
 	handlers[PLI_LANGUAGE] = &Player::msgPLI_LANGUAGE;
+	handlers[PLI_PROCESSRUNNING] = &Player::msgPLI_PROCESSRUNNING;
 	handlers[PLI_PROFILEGET] = &Player::msgPLI_PROFILEGET;
 	handlers[PLI_PROFILESET] = &Player::msgPLI_PROFILESET;
 	handlers[PLI_REQUESTTEXT] = &Player::msgPLI_REQUESTTEXT;
@@ -1918,6 +1919,12 @@ HandlePacketResult Player::msgPLI_LANGUAGE(CString& pPacket)
 	if (language.isEmpty())
 		language = "English";
 	account.language = language.toString();
+	return HandlePacketResult::Handled;
+}
+
+HandlePacketResult Player::msgPLI_PROCESSRUNNING(CString& pPacket)
+{
+	//const uint8_t wasRunning = pPacket.readGUChar();
 	return HandlePacketResult::Handled;
 }
 

@@ -75,7 +75,9 @@ HandlePacketResult PlayerNC::msgPLI_NC_NPCDELETE(CString& pPacket)
 	if (npc != nullptr && npc->storageType == NPCStorageType::DATABASE)
 	{
 		m_server->getNPCServer()->deleteNPC(npcId);
-		m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCDELETE >> (int)npcId);
+
+		// The server's NPC delete routine sends this.
+		// m_server->sendPacketToType(PLTYPE_ANYNC, CString() >> (char)PLO_NC_NPCDELETE >> (int)npcId);
 
 		const std::string logMsg = std::format("NPC {} deleted by {}", npc->name, account.name);
 		log::printLine(log::npc, logMsg);

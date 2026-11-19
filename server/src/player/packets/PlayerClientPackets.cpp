@@ -544,7 +544,7 @@ HandlePacketResult PlayerClient::msgPLI_BADDYHURT(CString& pPacket)
 HandlePacketResult PlayerClient::msgPLI_BADDYADD(CString& pPacket)
 {
 	// Don't add a baddy if we aren't in a level!
-	if (m_currentLevel.expired())
+	if (m_currentLevel.expired() || pPacket.bytesLeft() < 4)
 		return HandlePacketResult::Handled;
 
 	const float loc[2] = {static_cast<float>(pPacket.readGUChar()) / 2.0f, static_cast<float>(pPacket.readGUChar()) / 2.0f};
@@ -1422,6 +1422,13 @@ HandlePacketResult PlayerClient::msgPLI_SERVERWARP(CString& pPacket)
 	const CString servername = pPacket.readString("");
 	log::printLine(log::server, "{} is requesting serverwarp to {}", account.name, servername);
 	m_server->getServerList().sendPacket(CString() >> (char)SVO_SERVERINFO >> (short)m_id << servername);
+	return HandlePacketResult::Handled;
+}
+
+HandlePacketResult PlayerClient::msgPLI_MUTEPLAYER(CString& pPacket)
+{
+	//const PlayerID playerId = pPacket.readGUShort();
+	//const uint8_t toggle = pPacket.readGUChar();
 	return HandlePacketResult::Handled;
 }
 

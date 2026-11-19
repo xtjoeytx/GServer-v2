@@ -29,10 +29,7 @@ namespace preagonal
 
 clock::time_point helpers::currentFrameTime()
 {
-	static Server* server = nullptr;
-	if (server == nullptr)
-		server = BabyDI::Get<Server>();
-	return server->getFrameStartTime();
+	return BabyDI::Get<Server>()->getFrameStartTime();
 }
 
 ////////////////////////////////////////////////////////////
