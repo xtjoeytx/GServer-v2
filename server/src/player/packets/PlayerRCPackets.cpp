@@ -586,6 +586,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 	}
 
 	// Save RC stuff.
+	const std::string communityName = p->account.communityName;
+	const uint32_t onlineSeconds = p->account.onlineSeconds;
+	const std::string comments = p->account.comments;
+	const std::string email = p->account.email;
 	const auto adminip = p->account.adminIpRange;
 	const auto rights = p->account.adminRights;
 	std::vector<std::string> folders;
@@ -597,6 +601,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_PLAYERPROPSRESET(CString& pPacket)
 	m_server->getAccountLoader().saveAccount(p->account);
 
 	// Add the RC stuff back in.
+	p->account.communityName = communityName;
+	p->account.onlineSeconds = onlineSeconds;
+	p->account.comments = comments;
+	p->account.email = email;
 	p->account.adminIpRange = adminip;
 	p->account.adminRights = rights;
 	p->account.folderList = folders;
