@@ -314,19 +314,19 @@ inline auto File::readPackedIntegral() const
 
 	readAndApply(1);
 
-	if constexpr (C <= 2)
+	if constexpr (C >= 2)
 	{
 		readAndApply(2);
 	}
-	if constexpr (C <= 3)
+	if constexpr (C >= 3)
 	{
 		readAndApply(3);
 	}
-	if constexpr (C <= 4)
+	if constexpr (C >= 4)
 	{
 		readAndApply(4);
 	}
-	if constexpr (C <= 5)
+	if constexpr (C >= 5)
 	{
 		readAndApply(5);
 	}
