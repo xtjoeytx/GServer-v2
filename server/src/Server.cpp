@@ -2372,6 +2372,8 @@ void Server::sendPacketToOneLevelPart(const CString& packet, const PixelPosition
 
 void Server::sendPacketToOneLevelPart(const CString& packet, const LevelPtr& level, const MapPosition& mapPosition, const std::set<PlayerID>& exclude, const PlayerPredicate& sendIf) const
 {
+	if (!running || level == nullptr) return;
+
 	for (const auto& id : level->findPlayersInLevelPart(mapPosition))
 	{
 		if (exclude.contains(id)) continue;

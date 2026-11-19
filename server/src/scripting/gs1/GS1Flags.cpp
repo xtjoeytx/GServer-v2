@@ -120,7 +120,7 @@ void setNPCFlags(const ScriptEvent& event, GameVariableStore& variableStore, con
 	if (npc == nullptr)
 		return;
 
-	variableStore.add("visible", npc->visFlags != PROPID(NPCVisFlags::HIDDEN));
+	variableStore.add("visible",  (npc->visFlags & PROPID(NPCVisFlags::VISIBLE)) != 0);
 
 	if (const auto server = BabyDI::Get<Server>(); server != nullptr && server->Generation == ServerGeneration::CLASSIC)
 	{

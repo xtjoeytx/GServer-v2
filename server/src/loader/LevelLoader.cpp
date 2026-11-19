@@ -673,7 +673,7 @@ void LevelLoader::loadBinaryNPCs(const StaticLevelDataPtr& levelData, const fs::
 		++index;
 
 		auto line = fileData->readLine();
-		if (line.empty() || line == "#") break;
+		if (line.empty() || line == "#" || line.size() < 2) break;
 
 		TilePosition position;
 		position[0] = static_cast<float>(line[0] - 32);
@@ -696,7 +696,7 @@ void LevelLoader::loadBinaryChests(const StaticLevelDataPtr& levelData, const fs
 	while (!fileData->finishedReading())
 	{
 		auto line = fileData->readLine();
-		if (line.empty() || line == "#") break;
+		if (line.empty() || line == "#" || line.size() < 4) break;
 
 		const uint8_t x = line[0] - 32;
 		const uint8_t y = line[1] - 32;
@@ -713,7 +713,7 @@ void LevelLoader::loadBinarySigns(const StaticLevelDataPtr& levelData, const fs:
 	while (!fileData->finishedReading())
 	{
 		auto line = fileData->readLine();
-		if (line.empty()) break;
+		if (line.empty() || line.size() < 2) break;
 
 		const uint8_t x = line[0] - 32;
 		const uint8_t y = line[1] - 32;
