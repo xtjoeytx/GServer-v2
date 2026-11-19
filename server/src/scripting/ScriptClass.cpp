@@ -118,8 +118,6 @@ void ScriptClass::registerWithPlayer(const std::shared_ptr<Player>& player) cons
 	{
 		if (player->getVersion() >= CLVER_5_07)
 			player->sendPacket(CString() >> (char)PLO_LOADSCRIPT << m_headerWithCRC);
-		else if (player->getVersion() >= CLVER_4_042)
-			player->sendPacket(CString() >> (char)PLO_WEAPONHASH >> (long long)m_plainChecksum << name);
 		else sendByteCodeToPlayer(player);
 	}
 }
