@@ -1301,8 +1301,15 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 
 	const std::filesystem::path file{fs::fromANSIFileName(pPacket.readChars(pPacket.readGUChar()).toString())};
 	const std::filesystem::path lastFolderAccessed{account.lastFolderAccessed};
-	const CString fileData = pPacket.subString(pPacket.readPos());
+	CString fileData = pPacket.subString(pPacket.readPos());
 	const CString checkFile = (lastFolderAccessed / file).generic_string();
+
+	// Check for bad data.
+	if (fileData.isEmpty())
+	{
+		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "No data received for " << checkFile);
+		return HandlePacketResult::Handled;
+	}
 
 	// Check if this is a protected file.
 	bool isProtected = false;
@@ -1335,6 +1342,10 @@ HandlePacketResult PlayerRC::msgPLI_RC_FILEBROWSER_UP(CString& pPacket)
 		sendPacket(CString() >> (char)PLO_RC_FILEBROWSER_MESSAGE << "Insufficent rights to upload " << checkFile);
 		return HandlePacketResult::Handled;
 	}
+
+	// Remove the newline on the file data.
+	if (fileData[fileData.length() - 1] == '\n')
+		fileData.removeI(fileData.length() - 1);
 
 	// See if we are uploading a large file or not.
 	if (!m_rcLargeFiles.contains(file))
