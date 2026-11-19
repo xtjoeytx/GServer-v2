@@ -50,9 +50,17 @@ static auto readGPacked(std::istream& stream) -> std::conditional_t<C <= 2, std:
 
 std::string getANSIFileName(const std::filesystem::path& file)
 {
+
 #ifdef PLATFORM_WINDOWS
 	return ztd::text::transcode(file.filename().native(), ztd::text::wide_utf16, ztd::text::windows_1252, ztd::text::replacement_handler);
 #else
+	// Attempt to check for existing Windows-1252 encoding.
+	// ztd.text has a bug where it will infinite loop in the ztd::text::replacement_handler if the input is not valid UTF-8.
+	// We do this by validating that we can decode as UTF-8, and, if not, just assume it's Windows-1252.
+	// https://github.com/soasis/text/issues/50
+	if (!ztd::text::validate_decodable_as(file.filename().native(), ztd::text::compat_utf8))
+		return file.filename().string();
+
 	return ztd::text::transcode(file.filename().native(), ztd::text::compat_utf8, ztd::text::windows_1252, ztd::text::replacement_handler);
 #endif
 }
