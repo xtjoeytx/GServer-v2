@@ -42,7 +42,7 @@ endif()
 vcpkg_from_git(
     OUT_SOURCE_PATH SOURCE_PATH
     URL https://github.com/Preagonal/Preagonal.Scripting.GS2Compiler.git
-    REF a87774d344149042ce76b3858c8c9f120bb17e72
+    REF 3568f38b8580c07a4b486daf9d084a12a5df0996
     HEAD_REF dev
 )
 
