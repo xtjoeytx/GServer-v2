@@ -16,6 +16,8 @@ COPY --chown=1001:1001 ./ /tmp/gserver
 
 RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
     && apk add --update --virtual .gserver-build-dependencies \
+        --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main \
+        --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
         cmake \
         gcc \
         g++ \
