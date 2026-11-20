@@ -23,6 +23,8 @@ RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
 	&& chmod 777 -R /tmp/gserver \
 	&& cd /tmp/gserver \
 	&& cmake -GNinja -S/tmp/gserver -B/tmp/gserver/build --preset "Linux Release" -DCMAKE_BUILD_TYPE:STRING=Release -DVCPKG_TARGET_TRIPLET:STRING=${ARCH}-linux -DSTATIC=ON -DVER_EXTRA=${VER_EXTRA} -DWOLFSSL=ON -DUPNP=OFF -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math" \
+	; cat /tmp/gserver/vcpkg/buildtrees/gs2compiler/dotnet-publish-${ARCH}-linux-out.log \
+	; cat /tmp/gserver/vcpkg/buildtrees/gs2compiler/dotnet-publish-${ARCH}-linux-err.log \
 	&& cmake --build /tmp/gserver/build --target clean \
 	&& cmake --build /tmp/gserver/build --target package --parallel 4 \
 	&& rm -rf /tmp/gserver/dist/_CPack_Packages \
@@ -30,6 +32,7 @@ RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
 	&& chmod 777 -R /tmp/gserver/dist \
 	&& chmod 777 -R /tmp/gserver/build \
 	&& apt purge -y libssl-dev libzstd-dev cmake git ninja-build openjdk-21-jre
+
 
 # GServer Run Environment
 FROM alpine:3.22
