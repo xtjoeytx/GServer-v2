@@ -10,6 +10,7 @@
 #include <IEnums.h>
 
 #ifdef PACKETLOGGING
+#include <algorithm>
 #include <array>
 #include <string>
 #include <utilities/Log.h>
@@ -384,12 +385,11 @@ inline void IPacketHandler::parseLoginPacket(CString& buffer)
 #ifdef PACKETLOGGING
 	const std::string_view who = whoAmI();
 	log::printLine(log::networkdump, "> Login Packet from {} ({} bytes)", who, packet.length());
-	const auto nameLength = packet.text()[10] - 32;
-	const auto passwordStart = 10 + 1 + nameLength;
-	log::print(log::networkdump, "{}", std::string_view{packet.text()}.substr(0, passwordStart));
+	const auto passwordStart = std::min(10, packet.length());
+	log::print(log::networkdump, "{}", std::string_view{packet.text(), static_cast<size_t>(passwordStart)});
 	for (int i = passwordStart; i < packet.length(); ++i)
 		log::print(log::networkdump, "*");
-	if (packet[packet.length() - 1] != '\n')
+	if (packet.length() == 0 || packet[packet.length() - 1] != '\n')
 		log::print(log::networkdump, "\n");
 	for (int i = 0; i < passwordStart; ++i)
 		log::print(log::networkdump, "{:02x} ", (unsigned char)((packet.text())[i]));
