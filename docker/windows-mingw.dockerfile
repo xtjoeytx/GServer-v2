@@ -23,7 +23,7 @@ RUN ARCH=`echo $TARGETARCH| sed "s/amd64/x64/g" | sed "s/aarch64/arm64/g"` \
     && sudo dpkg -i packages-microsoft-prod.deb \
     && rm packages-microsoft-prod.deb \
     && apt update \
-    && apt install -y wget dotnet-sdk-10.0 \
+    && apt install -y wget dotnet-sdk-11.0 \
 	&& wget -q https://github.com/berkley4/icu-74-debian/releases/download/74.2-2/libicu74_74.2-2_amd64.deb \
 	&& wget -q https://github.com/PowerShell/PowerShell/releases/download/v7.5.2/powershell_7.5.2-1.deb_amd64.deb \
     && apt -y install ./libicu74_74.2-2_amd64.deb \
