@@ -2412,8 +2412,13 @@ std::vector<std::string> NPC::getVariableDump() const
 
 	for (const auto& [flag, variable] : scripting.variables.store | variables::serializable)
 	{
+		std::string dump{std::format("{}.vars[{}]: ", npcname, flag)};
+
 		if (variable->value.has<double>())
-			result.emplace_back(std::format("{}.vars[{}]: {}", npcname, flag, variable->getCopy<double>().value_or(0.0)));
+		{
+			if (const auto value = variable->getCopy<double>().value_or(0.0); !variable->value.has<std::string>() || !DoubleIsZero(value))
+				dump += string::to_string(value);
+		}
 		if (variable->value.has<std::vector<double>>())
 		{
 			const auto values = variable->get<std::vector<double>>();
@@ -2424,9 +2429,17 @@ std::vector<std::string> NPC::getVariableDump() const
 					return std::format("{}", val);
 				});
 				auto valueString = string::join(valuesAsStrings, ", ");
-				result.emplace_back(std::format("{}.vars[{}]: {{{}}}", npcname, flag, valueString));
+
+				if (variable->value.has<double>() && !DoubleIsZero(variable->getCopy<double>().value()))
+					dump += " / ";
+
+				dump += '{';
+				dump += valueString;
+				dump += '}';
 			}
 		}
+
+		result.emplace_back(std::move(dump));
 	}
 
 	return result;
