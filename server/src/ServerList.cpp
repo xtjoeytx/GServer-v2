@@ -777,7 +777,13 @@ void ServerList::msgSVI_VERIACC2(CString& pPacket)
 	if (player == nullptr) return;
 
 	// Overwrite the player's account name with the one from the listserver.
-	player->account.name = account.toString();
+	if (account != "guest" || player->getDeviceId() == 0)
+		player->account.name = account.toString();
+
+	// Set the community name to the account name.
+	if (account == "guest" || account.left(3) == "pc:")
+		player->account.communityName = "guest";
+	else player->account.communityName = account.toString();
 
 	// If we did not get the success message, inform the client of his failure.
 	if (message != "SUCCESS")
@@ -1109,6 +1115,7 @@ void ServerList::msgSVI_ASSIGNPCID(CString& pPacket)
 		return;
 
 	player->setDeviceId(std::stoll(pcId.text()));
+	player->account.name = std::format("pc:{}", pcId.toStringView());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
