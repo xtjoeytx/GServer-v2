@@ -779,7 +779,7 @@ void Server::loadWorldFileSystem()
 		if (fileData->file.extension() == ".gupd")
 		{
 			// Look up the package by filename and skip failed loads.
-			if (auto package = getPackageManager().findOrAddResource(fs::getANSIFileName(fileData->file)); package != nullptr)
+			if (auto package = getPackageManager().findOrAddResource(fileData->file.filename()); package != nullptr)
 				package->reload(this);
 		}
 	}
@@ -1000,6 +1000,10 @@ int Server::loadServerObjects()
 		// some level scripts may require access to the databases.
 		log::printLine(log::server, "Pre-loading map levels.");
 		loadMapLevels();
+
+		// Load ganis.
+		log::printLine(log::server, "Loading ganis...");
+		loadGanis();
 	}
 
 	return 0;
@@ -1065,6 +1069,14 @@ void Server::loadMapLevels() const
 		auto sectionProfile = log::Profile(log::server, "", "(Completed in {1:0.6} ms)");
 		for (const auto& map : m_mapList)
 			map->loadMapLevels();
+	}
+}
+
+void Server::loadGanis()
+{
+	for (const auto ganiFile : m_fsWorld.info(fs::FileCategory::FILE) | toSharedPtr | std::views::filter([](const fs::FileDataPtr& data) { return string::equalsi(data->file.extension().string(), ".gani"sv); }))
+	{
+		m_animationManager.addResource(ganiFile->file.filename());
 	}
 }
 

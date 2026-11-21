@@ -15,7 +15,7 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-std::optional<UpdatePackage> UpdatePackage::load(Server* const server, const std::string& name)
+std::optional<UpdatePackage> UpdatePackage::load(Server* const server, const std::filesystem::path& name)
 {
 	// Search for the file in the filesystem.
 	if (const auto& fileSystem = server->getFileSystem(); !fileSystem.hasi(fs::FileCategory::FILE, name))

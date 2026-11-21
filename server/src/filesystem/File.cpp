@@ -322,6 +322,17 @@ std::string File::readLine()
 	return result;
 }
 
+void File::readLine(std::string& buffer)
+{
+	buffer.clear();
+	if (!opened() || finishedReading())
+		return;
+
+	std::getline(*m_inputStream, buffer);
+	if (!buffer.empty() && *buffer.crbegin() == '\r')
+		buffer.pop_back();
+}
+
 std::optional<std::string> File::readConfigLine(std::string_view key, std::string_view separator)
 {
 	if (!opened())
@@ -402,6 +413,44 @@ std::generator<std::string> File::readLinesUntilSectionEnd(const std::string_vie
 		if (string::trim(result) == endKey)
 			break;
 		co_yield result;
+	}
+}
+
+void File::skipUntil(const std::string_view delimiter) const
+{
+	size_t match = 0;
+
+	while (!finishedReading())
+	{
+		const auto result = m_inputStream->get();
+		if (result == std::istream::traits_type::eof())
+			return;
+
+		const char c = std::istream::traits_type::to_char_type(result);
+		if (c == delimiter[match])
+		{
+			if (++match == delimiter.size())
+				return;
+			continue;
+		}
+
+		// Find the longest delimiter prefix that is also a suffix of
+		// the characters matched so far, including this character.
+		size_t fallback = std::min(match, delimiter.size() - 1);
+		while (fallback > 0)
+		{
+			size_t i = 0;
+			const auto test = (match + 1 - fallback + i) < match ? delimiter[match + 1 - fallback + i] : c;
+			while (i < fallback && delimiter[i] == test)
+				++i;
+
+			if (i == fallback)
+				break;
+
+			--fallback;
+		}
+
+		match = fallback;
 	}
 }
 

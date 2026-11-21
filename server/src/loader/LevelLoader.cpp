@@ -761,14 +761,14 @@ void LevelLoader::loadBinaryHeights(const StaticLevelDataPtr& levelData, const f
 
 bool LevelLoader::loadNW(const StaticLevelDataPtr& levelData, std::string_view fileVersion, fs::FileSystem& fileSystem, fs::FilePtr& fileData)
 {
-	std::string curLine;
 	std::vector<std::string_view> splitData;
 	int npcIndex = 0;
 
+	std::string curLine;
 	while (!fileData->finishedReading())
 	{
 		// Read the line.
-		curLine = fileData->readLine();
+		fileData->readLine(curLine);
 		std::string_view line{string::trim(curLine)};
 		if (line.empty())
 			continue;

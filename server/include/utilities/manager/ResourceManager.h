@@ -1,6 +1,7 @@
 #ifndef RESOURCEMANAGER_H
 #define RESOURCEMANAGER_H
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -15,7 +16,7 @@ template<class ResourceCls, typename... PassArgs>
 class ResourceManager
 {
 	using ResourcePtr = std::shared_ptr<ResourceCls>;
-	using ResourceMap = std::unordered_map<std::string, ResourcePtr>;
+	using ResourceMap = std::unordered_map<std::filesystem::path, ResourcePtr>;
 
 public:
 	explicit ResourceManager(PassArgs&&... An) : m_tuple(std::forward<PassArgs>(An)...) {}
@@ -31,7 +32,7 @@ public:
 	//! Retrieve a resource that has already been loaded
 	//! \param resourceName resource filename
 	//! \return Shared pointer to a Resource class
-	ResourcePtr findResource(const std::string& resourceName)
+	ResourcePtr findResource(const std::filesystem::path& resourceName)
 	{
 		auto it = m_resourceMap.find(resourceName);
 		if (it != m_resourceMap.end())
@@ -44,7 +45,7 @@ public:
 	//! attempt to load the resource
 	//! \param resourceName resource filename
 	//! \return Shared pointer to a Resource class
-	ResourcePtr findOrAddResource(const std::string& resourceName)
+	ResourcePtr findOrAddResource(const std::filesystem::path& resourceName)
 	{
 		auto it = m_resourceMap.find(resourceName);
 		if (it != m_resourceMap.end())
@@ -56,7 +57,7 @@ public:
 	//! Add a resource to the resource manager
 	//! \param resourceName resource filename
 	//! \return Shared pointer to a Resource class
-	ResourcePtr addResource(const std::string& resourceName)
+	ResourcePtr addResource(const std::filesystem::path& resourceName)
 	{
 		// We will store an empty pointer in the hashmap if no resource could be loaded
 		// so successive calls to findOrAddResource() do not keep trying to load the file
@@ -72,7 +73,7 @@ public:
 	//! Delete a resource from the resource manager
 	//! \param resourceName resource filename
 	//! \return true if the resource was deleted
-	bool deleteResource(const std::string& resourceName)
+	bool deleteResource(const std::filesystem::path& resourceName)
 	{
 		auto it = m_resourceMap.find(resourceName);
 		if (it == m_resourceMap.end())

@@ -1487,23 +1487,31 @@ HandlePacketResult PlayerClient::msgPLI_UPDATEGANI(CString& pPacket)
 	// Read packet data
 	const uint32_t checksum = pPacket.readGUInt5();
 	const std::string gani = pPacket.readString("").toString();
-	const std::string ganiFile = gani + ".gani";
+	const std::string ganiFile = string::toLower(gani) + ".gani";
 
-	// Try to find the animation in memory or on disk
-	const auto findAni = m_server->getAnimationManager().findOrAddResource(ganiFile);
-	if (!findAni)
+	// If the gani is in the defaults, just tell the client to load it.
+	if (std::ranges::contains(DefaultGanis, ganiFile))
 	{
-		//printf("Client requested gani %s, but was not found\n", ganiFile.c_str());
+		sendPacket(CString() >> (char)PLO_LOADGANI >> (char)gani.length() << gani);
 		return HandlePacketResult::Handled;
 	}
 
-	// Compare the bytecode checksum from the client with the one for the
-	// current script, if it doesn't match send the updated bytecode
-	if (calculateCrc32Checksum(findAni->getByteCode()) != checksum)
-		sendPacket(findAni->getBytecodePacket());
+	// Try to find the animation in memory or on disk.
+	const auto findAni = m_server->getAnimationManager().findOrAddResource(ganiFile);
+	if (!findAni)
+	{
+		// Server doesn't have the gani so just tell the client to load what it has.
+		sendPacket(CString() >> (char)PLO_LOADGANI >> (char)gani.length() << gani);
+		return HandlePacketResult::Handled;
+	}
 
-	// Tell the client to load the gani.
-	sendPacket(CString() >> (char)PLO_LOADGANI >> (char)gani.length() << gani << "\"SETBACKTO " << findAni->getSetBackTo() << "\"");
+	// Compare the bytecode checksum from the client with the one for the current script.
+	// If it doesn't match send the updated bytecode.
+	if (!findAni->hasChecksum(checksum))
+		findAni->sendByteCodeToPlayer(shared_from_this());
+
+	// Finally, tell the client to load the gani.
+	sendPacket(CString() >> (char)PLO_LOADGANI >> (char)gani.length() << gani << string::toCSV(std::format("SETBACKTO {}", findAni->getSetBackTo()), "\n"sv, true));
 	return HandlePacketResult::Handled;
 }
 
@@ -1578,7 +1586,7 @@ HandlePacketResult PlayerClient::msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacke
 	std::vector<std::string> missingFiles;
 
 	{
-		const auto updatePackage = m_server->getPackageManager().findOrAddResource(packageName.toString());
+		const auto updatePackage = m_server->getPackageManager().findOrAddResource(std::filesystem::path{packageName.toString()});
 		if (updatePackage)
 		{
 			for (const auto& [fileName, entry] : updatePackage->getFileList())

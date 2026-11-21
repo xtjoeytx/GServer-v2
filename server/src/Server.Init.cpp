@@ -450,34 +450,20 @@ void Server::initFilesystemCallbacks()
 
 	m_fsWorld.categoryEventCallback[ENUM(fs::FileCategory::FILE)] = [this](const fs::FileEventCollection events, const fs::FileData& file)
 	{
-		const auto fileName = fs::getANSIFileName(file.file);
+		const auto fileName = fs::getANSIFileName(file.file.filename());
 		const auto ext = file.file.extension();
 		if (events.test(fs::FileEvent::Deleted))
 		{
 			if (ext == ".gupd")
-				m_packageManager.deleteResource(fileName);
+				m_packageManager.deleteResource(file.file.filename());
 		}
 		if (events.test(fs::FileEvent::Modified))
 		{
-			if (ext == ".gupd")
+			if (ext == ".gupd" && Generation == ServerGeneration::MODERN)
 			{
 				// A failed package load returns nullptr.
-				if (auto package = m_packageManager.findOrAddResource(fileName); package != nullptr)
+				if (const auto package = m_packageManager.findOrAddResource(file.file.filename()); package != nullptr)
 					package->reload(this);
-			}
-			else if (Generation == ServerGeneration::MODERN)
-			{
-				// Ganis need to be recompiled on update
-				CString bytecodePacket;
-				if (ext == ".gani")
-				{
-					// delete the resource
-					m_animationManager.deleteResource(fileName);
-
-					// reload the resource to compile the bytecode again
-					if (const auto findAni = m_animationManager.findOrAddResource(fileName); findAni)
-						bytecodePacket << findAni->getBytecodePacket();
-				}
 
 				// Send the update packet to any v4+ clients that have seen this file
 				const CString updatePacket = CString() >> (char)PLO_UPDATEPACKAGEISUPDATED << fileName;
@@ -485,10 +471,22 @@ void Server::initFilesystemCallbacks()
 				{
 					if (pl->hasSeenFile(fileName))
 						pl->sendPacket(updatePacket);
+				}
+			}
 
-					// Send GS2 gani scripts
-					if (!bytecodePacket.isEmpty())
-						pl->sendPacket(bytecodePacket);
+			if (ext == ".gani" && Generation == ServerGeneration::MODERN)
+			{
+				// Delete the resource.
+				m_animationManager.deleteResource(fileName);
+
+				// Reload the resource and send the players.
+				if (const auto findAni = m_animationManager.findOrAddResource(fileName); findAni)
+				{
+					for (const auto& [pid, pl] : players_of_type<PlayerClient>(m_playerList))
+					{
+						if (pl->hasSeenFile(fileName))
+							findAni->sendByteCodeToPlayer(pl);
+					}
 				}
 			}
 		}

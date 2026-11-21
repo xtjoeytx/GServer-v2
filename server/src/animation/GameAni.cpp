@@ -1,8 +1,7 @@
-#include <any>
 #include <cstdint>
 #include <optional>
-#include <string_view>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <CString.h>
@@ -18,111 +17,156 @@ namespace preagonal
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-std::optional<GameAni> GameAni::load(Server* const server, const std::string& name)
+std::optional<GameAni> GameAni::load(Server* const server, const std::filesystem::path& name)
 {
 	const auto& fileSystem = server->getFileSystem();
 
 	// Search for the file in the filesystem
-	const auto filePath = fileSystem.find(fs::FileCategory::FILE, name);
-	if (filePath.empty())
+	const auto fileInfo = fileSystem.infoi(fs::FileCategory::FILE, name);
+	if (fileInfo == nullptr)
 		return std::nullopt;
 
-	// Load the animation file for parsing
-	std::vector<CString> fileData = CString::loadToken(filePath.generic_string(), "\n", true);
-	if (fileData.empty())
+	const auto fileData = fileInfo->openFile();
+	if (fileData == nullptr || !fileData->opened())
 		return std::nullopt;
 
-	GameAni gameAni(name);
+	// Check for the header.
+	// GANI0001 = normal
+	// GANI0002 = movie
+	const auto header = fileData->readLine();
+	if (header != "GANI0001" && header != "GANI0002")
+		return std::nullopt;
 
-	// Parse the animation
-	for (auto i = fileData.begin(); i != fileData.end(); ++i)
+	GameAni gani(fs::getANSIFileName(name));
+
+	std::string curLine;
+	while (!fileData->finishedReading())
 	{
-		// Tokenize
-		std::vector<CString> curLine = i->tokenize();
-		if (curLine.empty())
+		// Read the line.
+		fileData->readLine(curLine);
+		std::string_view line{string::trim(curLine)};
+		if (line.empty())
 			continue;
 
-		if (curLine[0] == "CONTINUOUS")
-		{
-			if (curLine.size() == 1 || strtoint(curLine[1]) != 0)
-				gameAni.m_aniFlags |= AniFlags::Continous;
-			else
-				gameAni.m_aniFlags &= ~(AniFlags::Continous);
-		}
-		else if (curLine[0] == "LOOP")
-		{
-			if (curLine.size() == 1 || strtoint(curLine[1]) != 0)
-				gameAni.m_aniFlags |= AniFlags::LoopAnimation;
-			else
-				gameAni.m_aniFlags &= ~(AniFlags::LoopAnimation);
-		}
-		else if (curLine[0] == "SINGLEDIRECTION")
-		{
-			if (curLine.size() == 1 || strtoint(curLine[1]) != 0)
-				gameAni.m_aniFlags |= AniFlags::SingleDirOnly;
-			else
-				gameAni.m_aniFlags &= ~(AniFlags::SingleDirOnly);
-		}
-		else if (curLine[0] == "SETBACKTO")
-		{
-			if (curLine.size() >= 2)
-				gameAni.m_setBackTo = curLine[1].toString();
-		}
-		else if (curLine[0] == "SCRIPT")
-		{
-			CString code;
-			++i;
-			while (i != fileData.end())
-			{
-				if (i->find("SCRIPTEND") == 0) break;
-				code << *i << "\n";
-				++i;
-			}
-			gameAni.m_script = code.toString();
-		}
-		// SPRITE
-		// DEFAULTPARAMxx
-		// ANI / ANIEND
-		// WAIT
-		// PLAYSOUND
-		// REDBODY		- newworld, in lava
-		// BLUEBODY		- newworld, in water
+		// Get the line data.
+		const auto [section, data] = string::extractConfigParts(line);
 
-		if (i == fileData.end())
-			break;
+		// Parse each line.
+		if (section == "SPRITE")
+		{
+			// SPRITE index sheet x y width height description
+			// sheet = image or GaniSheets preset
+		}
+		else if (section == "CONTINUOUS")
+		{
+			gani.m_aniFlags.set(ENUM(GaniFlags::CONTINUOUS), data.empty() || !DoubleIsZero(string::toFloat(data)));
+		}
+		else if (section == "LOOP")
+		{
+			gani.m_aniFlags.set(ENUM(GaniFlags::LOOP), data.empty() || !DoubleIsZero(string::toFloat(data)));
+		}
+		else if (section == "SINGLEDIRECTION")
+		{
+			gani.m_aniFlags.set(ENUM(GaniFlags::SINGLEDIRECTION), data.empty() || !DoubleIsZero(string::toFloat(data)));
+		}
+		else if (section == "SETBACKTO")
+		{
+			gani.m_setBackTo = string::trim(data);
+		}
+		else if (section.starts_with("DEFAULT"))
+		{
+			// DEFAULTHEAD
+			// DEFAULTBODY
+			// DEFAULTATTR#
+			// DEFAULTPARAM#
+		}
+		else if (section == "SCRIPT")
+		{
+			gani.setScript(string::join(fileData->readLinesUntilSectionEnd("SCRIPTEND"), "\n"sv));
+		}
+		else if (section == "ANI")
+		{
+			// Animation data.
+			fileData->skipUntil("ANIEND");
+
+			// WAIT
+			// PLAYSOUND
+		}
+		else if (section == "REDBODY")
+		{
+			// New World, swimming in lava.
+		}
+		else if (section == "BLUEBODY")
+		{
+			// New World, swimming in water.
+		}
+		else if (section == "COLOREFFECT")
+		{
+			// COLOREFFECT sprite r g b a
+		}
+		else if (section == "ZOOMEFFECT")
+		{
+			// ZOOMEFFECT sprite zoom
+		}
+		else if (section == "ATTACHSPRITE")
+		{
+			// ATTACHSPRITE parent-sprite child-sprite dx dy
+		}
+		else if (section == "EFFECTMODE")
+		{
+			// EFFECTMODE sprite mode
+			// mode: 0 - lights, 1 - transparency, 2 - holes.
+		}
+		else if (section == "ROTATEPROJECTILE")
+		{
+			// ROTATEPROJECTILE
+			// Make a SINGLEDIRECTION gani with a projectile facing to the right and the game will automatically rotate it when used with shoot.
+		}
+		else if (section == "ROTATEEFFECT")
+		{
+			// ROTATEEFFECT sprite angle
+		}
+		else if (section == "STRETCHXEFFECT")
+		{
+			// STRETCHXEFFECT sprite factor (default 1)
+		}
+		else if (section == "STRETCHYEFFECT")
+		{
+			// STRETCHYEFFECT sprite factor (default 1)
+		}
 	}
 
-	// Attempt to compile the script in GS2
-	gameAni.m_bytecode.clear();
-	if (!gameAni.m_script.empty() && server->hasNPCServer())
-	{
-		// Synchronous callback
-		if (const auto result = server->getNPCServer()->scripting.getCompiledClientScript(name, gameAni.m_script); result != nullptr)
-		{
-			const auto bytecode = std::any_cast<std::vector<uint8_t>>(result->script.get());
-			if (bytecode != nullptr)
-			{
-				gameAni.m_bytecode.clear(bytecode->size());
-				gameAni.m_bytecode.write(reinterpret_cast<const char*>(bytecode->data()), static_cast<int>(bytecode->size()));
-			}
-		}
-	}
-
-	return gameAni;
+	return gani;
 }
 
-CString GameAni::getBytecodePacket() const
+///////////////////////////////////////////////////////////////////////////////
+
+GameAni::GameAni(const std::string_view gani)
+	: name{gani}
 {
-	std::string_view gani = m_aniName;
+}
+
+GameAni& GameAni::setScript(const std::string_view script)
+{
+	if (const auto server = BabyDI::Get<Server>(); server && server->hasNPCServer())
+		m_client_script = server->getNPCServer()->scripting.getCompiledClientScript(name, script);
+	return *this;
+}
+
+void GameAni::sendByteCodeToPlayer(const std::shared_ptr<Player>& player) const
+{
+	std::string_view gani = name;
 	if (gani.ends_with(".gani"))
 		gani = gani.substr(0, gani.length() - 5);
 
-	CString out;
-	// filename ".gani" protection
-	if (!gani.empty() && !m_bytecode.isEmpty())
-		out >> (char)PLO_GANISCRIPT >> (char)gani.length() << std::string(gani) << m_bytecode;
+	// Send the bytecode.
+	if (const auto& bytecode = m_script.getClientByteCode(); !bytecode.empty())
+	{
+		const auto bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
+		const std::string_view bytecodeView(bytecodePtr, bytecode.size());
 
-	return out;
+		player->sendRawPacket(CString() >> (char)PLO_GANIBYTECODE >> (char)gani.length() << gani << bytecodeView);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

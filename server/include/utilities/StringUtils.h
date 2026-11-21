@@ -1542,7 +1542,7 @@ inline auto to_string(const double value, const int width, const int precision)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/// @brief Extracts a line from a string view, using a specified delimiter.
+/// @brief Retrieves a line from a string view, using a specified delimiter, without modifying the original view.
 /// @param str A reference to the string view to extract from.
 /// @param delim The delimiter character to use for splitting lines. Defaults to '\n'.
 /// @return A string view containing the extracted line or substring up to the delimiter. If the delimiter is not found, returns the whole string.
@@ -1560,7 +1560,7 @@ inline auto retrieveLine(StringViewVariant auto const str, const char delim = '\
 	return strview.substr(0, pos);
 }
 
-/// @brief Extracts a line from a string, using a specified delimiter.
+/// @brief Retrieves a line from a string, using a specified delimiter, without modifying the original string.
 /// @param str A reference to the string to extract from.
 /// @param delim The delimiter character to use for splitting lines. Defaults to '\n'.
 /// @return A string view containing the extracted line or substring up to the delimiter. If the delimiter is not found, returns the whole string.
@@ -1572,7 +1572,7 @@ inline auto retrieveLine(StringVariant auto const& str, const char delim = '\n')
 	return retrieveLine(StringViewType{str}, delim);
 }
 
-/// @brief Extracts the next line or substring from a string view, using a specified delimiter.
+/// @brief Extracts the next line or substring from a string view, using a specified delimiter, modifying the view.
 /// @param str A reference to the string view to extract from. This will be updated to remove the extracted line.
 /// @param delim The delimiter character to use for splitting lines. Defaults to '\\n'.
 /// @return A string containing the extracted line or substring up to the delimiter. If the delimiter is not found, returns the remainder of the string.

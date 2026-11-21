@@ -57,7 +57,7 @@ public:
 	//! \param server pointer to the server instance, used to access the filesystem
 	//! \param name filename of the package (ex: base_package.gupd)
 	//! \return UpdatePackage if it was successfully loaded, otherwise a nullopt
-	static std::optional<UpdatePackage> load(Server* const server, const std::string& name);
+	static std::optional<UpdatePackage> load(Server* const server, const std::filesystem::path& name);
 
 	//! Reload the UpdatePackage from the filesystem
 	//! \param server pointer to the server instance, used to access the filesystem

@@ -240,6 +240,10 @@ public:
 	/// @return A string containing a single line, excluding the line ending.
 	virtual std::string readLine();
 
+	/// @brief Reads a line from the file, excluding the line ending.
+	/// @param buffer The string to read into.
+	virtual void readLine(std::string& buffer);
+
 	/// @brief Reads the value of a configuration entry for a given key and seeks back to the beginning of the file.
 	/// @param key The key identifying the configuration entry to read.
 	/// @param separator The separator used to split the key and value in the configuration line. Defaults to "=".
@@ -268,6 +272,10 @@ public:
 	/// @param endKey A string that, when encountered at the start of a line, ends the read.
 	/// @return A generator that produces each line as a std::string.
 	std::generator<std::string> readLinesUntilSectionEnd(std::string_view endKey);
+
+	/// Reads until the delimiter is encountered, consuming the delimiter.
+	/// @param delimiter The token to read until.
+	void skipUntil(std::string_view delimiter) const;
 
 	/// @brief Reads data into a buffer.
 	/// @param buffer The buffer to fill.
