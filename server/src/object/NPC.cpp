@@ -1265,22 +1265,39 @@ SetResults NPC::setProp(const NPCProp prop, const SetBy setBy, PropertyBase* bas
 				if (!ganiProp->bowGif.has_value())
 					SETPROP_RETURN_IGNORE;
 
-				auto& [image, power] = ganiProp->bowGif.value();
-				if (image.contains('.'))
-					image += ".gif";
+				auto& [bowImage, power] = ganiProp->bowGif.value();
+				if (bowImage.contains('.'))
+					bowImage += ".gif";
 
-				if (image == character.bowImage || power == character.bowPower)
+				if (bowImage == character.bowImage || power == character.bowPower)
 					SETPROP_RETURN_IGNORE;
 
 				character.bowPower = props::Limits::apply(power, props::Limits::MaxBowPower);
-				character.bowImage = image;
+				character.bowImage = bowImage;
 				break;
 			}
 
+			// Get the gani.
+			std::string gani = ganiProp->gani.value_or("idle");
+			const auto ganiLimited = props::Limits::apply(gani, props::Limits::GaniLength);
+			const auto ganiNoProps = string::retrieveLine(gani, ',');
+
+			// Check if the gani changed in a meaningful way.
+			bool allowChange = true;
+			if (ganiLimited == character.gani)
+			{
+				if (auto resource = m_server->getAnimationManager().findResource(std::filesystem::path{std::format("{}.gani", ganiNoProps)}); resource != nullptr)
+				{
+					if (resource->isContinuous())
+						allowChange = false;
+				}
+			}
+			if (!allowChange)
+				SETPROP_RETURN_IGNORE;
+
 			// Set the gani.
 			// Ganis can be set to themselves to play it again from the beginning, so don't check for equality here.
-			std::string gani = ganiProp->gani.value_or("idle");
-			character.gani = props::Limits::apply(gani, props::Limits::GaniLength);
+			character.gani = ganiLimited;
 			result.resultFlags.set(SetResults::getLatestOnSend);
 
 			// If we aren't a character, do that now.
