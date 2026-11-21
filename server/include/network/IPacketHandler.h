@@ -386,19 +386,51 @@ inline void IPacketHandler::parseLoginPacket(CString& buffer)
 	auto packet = buffer.readString("\n");
 
 #ifdef PACKETLOGGING
+	const size_t packetLength = static_cast<size_t>(packet.length());
 	const std::string_view who = whoAmI();
 	log::printLine(log::networkdump, "> Login Packet from {} ({} bytes)", who, packet.length());
-	const auto passwordStart = std::min(10, packet.length());
-	log::print(log::networkdump, "{}", std::string_view{packet.text(), static_cast<size_t>(passwordStart)});
-	for (int i = passwordStart; i < packet.length(); ++i)
-		log::print(log::networkdump, "*");
-	if (packet.length() == 0 || packet[packet.length() - 1] != '\n')
-		log::print(log::networkdump, "\n");
-	for (int i = 0; i < passwordStart; ++i)
-		log::print(log::networkdump, "{:02x} ", (unsigned char)((packet.text())[i]));
-	for (int i = passwordStart; i < packet.length(); ++i)
-		log::print(log::networkdump, "xx ");
-	log::print(log::networkdump, "\n\n");
+
+	// Find where the version starts.
+	size_t versionStartsAt = 2;
+	if (const auto type = (1 << packet.readGChar()); (type & PLTYPE_CLIENT) != 0)
+	{
+		if (packet.length() > 3 && packet[1] != 'G' && packet[2] != 'N' && packet[3] != 'W')
+			versionStartsAt = 1;
+	}
+
+	// Find where the other things start at.
+	const size_t usernameStartsAt = versionStartsAt + 8;
+	const size_t passwordStartsAt = packetLength > usernameStartsAt ? usernameStartsAt + 1 + (packet[usernameStartsAt] - 32) : packetLength;
+	const size_t identityStartsAt = packetLength > passwordStartsAt ? passwordStartsAt + 1 + (packet[passwordStartsAt] - 32) : packetLength;
+
+	if (passwordStartsAt >= packetLength)
+	{
+		log::print(log::networkdump, "{}", std::string_view{packet.text(), packetLength});
+		if (packetLength == 0 || packet[packetLength - 1] != '\n')
+			log::print(log::networkdump, "\n");
+		for (size_t i = 0; i < packetLength; ++i)
+			log::print(log::networkdump, "{:02x} ", (unsigned char)((packet.text())[i]));
+		log::print(log::networkdump, "\n\n");
+	}
+	else
+	{
+		// Raw print everything but the password.
+		log::print(log::networkdump, "{}", std::string_view{packet.text(), static_cast<size_t>(passwordStartsAt)});
+		log::print(log::networkdump, "***");
+		if (packetLength - identityStartsAt > 0)
+			log::print(log::networkdump, "{}", std::string_view{packet.text() + identityStartsAt, packetLength - identityStartsAt});
+		if (packetLength == 0 || packet[packetLength - 1] != '\n')
+			log::print(log::networkdump, "\n");
+
+		for (size_t i = 0; i < passwordStartsAt; ++i)
+			log::print(log::networkdump, "{:02x} ", (unsigned char)((packet.text())[i]));
+		log::print(log::networkdump, "xx xx xx ");
+		for (size_t i = identityStartsAt; i < packetLength; ++i)
+			log::print(log::networkdump, "{:02x} ", (unsigned char)((packet.text())[i]));
+		log::print(log::networkdump, "\n\n");
+	}
+
+	packet.setRead(0);
 #endif
 
 	// Call the login packet handler function.
