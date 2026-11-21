@@ -345,6 +345,10 @@ bool PlayerClient::handleLogin(CString& pPacket)
 		m_versionId = getVersionIDByVersion(m_version);
 	}
 
+	// Certain clients deal with GEN_5 encryption in different ways.
+	if (Encryption.getGeneration() == EncryptionGeneration::GEN_5 && inRangeInclusive(m_versionId, static_cast<int>(CLVER_4_0211), static_cast<int>(CLVER_5_12)))
+		Encryption.allowPartialIteration = false;
+
 	// Read Account & Password
 	account.name = pPacket.readChars(pPacket.readGUChar()).toString();
 	const CString password = pPacket.readChars(pPacket.readGUChar());
