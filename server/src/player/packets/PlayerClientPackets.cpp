@@ -1381,26 +1381,34 @@ HandlePacketResult PlayerClient::msgPLI_SHOOT2(CString& pPacket)
 	if (const auto level = getLevel(); level != nullptr)
 	{
 		PropertyPixelCoordinate x, y, z, gravity;
+
 		x.deserialize(pPacket);
 		y.deserialize(pPacket);
 		z.deserialize(pPacket);
-
-		ShootPacketWrapper newPacket{};
-		newPacket.position.x() = x.pixelCoordinate;
-		newPacket.position.y() = y.pixelCoordinate;
-		newPacket.position.z() = z.pixelCoordinate;
-		newPacket.gmapx = pPacket.readGChar();  // gmap x
-		newPacket.gmapy = pPacket.readGChar();  // gmap y
-		newPacket.sangle = pPacket.readGUChar();  // 0 to 2*pi  = 0-220
-		newPacket.sanglez = pPacket.readGUChar(); // -pi to pi  = 0-220
-		newPacket.power = pPacket.readGUChar();   // power = 44 parts of a tile, up to 5 whole tiles (220)
-
+		const int16_t mapX = pPacket.readGUChar();
+		const int16_t mapY = pPacket.readGUChar();
+		const uint8_t sangle = pPacket.readGUChar();
+		const uint8_t sanglez = pPacket.readGUChar();
+		const uint8_t power = pPacket.readGUChar();
 		gravity.deserialize(pPacket);
-		newPacket.gravityInTiles = gravity.pixelCoordinate / 256.0f;
+		std::string gani = pPacket.readChars(pPacket.readGUShort()).toString();
+		pPacket.readGUChar(); // shootParams length
+		std::string shootParams = pPacket.readString("").toString();
 
-		newPacket.gani = pPacket.readChars(pPacket.readGUShort());
-		[[maybe_unused]] unsigned char someParam = pPacket.readGUChar(); // This seems to be the length of shootparams, but the client doesn't limit itself and sends the overflow anyway
-		newPacket.shootParams = pPacket.readString("").toString();
+		// Convert from local coordinates to global.
+		const auto position = toPixelPosition(toPixelPosition(MapPosition{mapX, mapY}), LocalPixelPosition{x.pixelCoordinate, y.pixelCoordinate, z.pixelCoordinate});
+
+		// Construct the shoot wrapper.
+		ShootPacketWrapper newPacket{};
+		newPacket.position = position;
+		newPacket.gmapx = mapX;
+		newPacket.gmapy = mapY;
+		newPacket.sangle = sangle;		// 0 to 2*pi  = 0-220
+		newPacket.sanglez = sanglez;	// -pi to pi  = 0-220
+		newPacket.power = power;		// power = 44 parts of a tile, up to 5 whole tiles (220)
+		newPacket.gravityInTiles = gravity.pixelCoordinate / 256.0f;
+		newPacket.gani = std::move(gani);
+		newPacket.shootParams = std::move(shootParams);
 
 		const CString oldPacketBuf = CString() >> (char)PLO_SHOOT >> (short)m_id << newPacket.constructShootV1();
 		const CString newPacketBuf = CString() >> (char)PLO_SHOOT2 >> (short)m_id << newPacket.constructShootV2();

@@ -51,13 +51,6 @@ class Weapon;
 
 enum class LevelItemType;
 
-enum
-{
-	PLSETPROPS_SETBYPLAYER = 0x01, // if set, do serverside checks to prevent attributes from being changed
-	PLSETPROPS_FORWARD = 0x02,     // forward data to other players
-	PLSETPROPS_FORWARDSELF = 0x04, // forward data back to the player
-};
-
 enum class CursorNumbers : uint8_t
 {
 	DEFAULT = 0,

@@ -238,11 +238,13 @@ static std::array<std::string, 255> OutputPacketNamesArray = FillOutputPacketNam
 
 CString ShootPacketWrapper::constructShootV1() const
 {
+	const auto localPosition = toLocalPixelPosition(position);
+
 	CString packet;
 	packet.writeGInt(source);
-	packet.writeGChar((position.x() % 1024) / 8);
-	packet.writeGChar((position.y() % 1024) / 8);
-	packet.writeGChar((position.z() / 16) + 50);
+	packet.writeGChar(localPosition.x() / 8);
+	packet.writeGChar(localPosition.y() / 8);
+	packet.writeGChar((localPosition.z() / 16) + 50);
 	packet.writeGChar(sangle);
 	packet.writeGChar(sanglez);
 	packet.writeGChar(power);
@@ -255,9 +257,11 @@ CString ShootPacketWrapper::constructShootV1() const
 
 CString ShootPacketWrapper::constructShootV2() const
 {
-	const PropertyPixelCoordinate x{position.x()};
-	const PropertyPixelCoordinate y{position.y()};
-	const PropertyPixelCoordinate z{position.z()};
+	const auto localPosition = toLocalPixelPosition(position);
+
+	const PropertyPixelCoordinate x{localPosition.x()};
+	const PropertyPixelCoordinate y{localPosition.y()};
+	const PropertyPixelCoordinate z{localPosition.z()};
 	const PropertyPixelCoordinate pgravity{static_cast<int16_t>(gravityInTiles * 256)};
 
 	CString packet;
