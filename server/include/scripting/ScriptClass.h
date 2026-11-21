@@ -33,6 +33,7 @@ public:
 	[[a::inline]] Script& getScript();
 	[[a::inline]] const Script& getScript() const;
 	ScriptClass& setScript(std::string_view classScript);
+	void generateScriptHeader();
 
 public:
 	const std::string name;
@@ -46,7 +47,6 @@ private:
 	Script m_script;
 	uint32_t m_plainChecksum;
 	uint32_t m_encryptedChecksum;
-	std::string m_desKey;
 	std::string m_header;
 	std::string m_headerWithCRC;
 };

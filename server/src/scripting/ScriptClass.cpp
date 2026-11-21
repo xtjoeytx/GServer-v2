@@ -32,72 +32,7 @@ ScriptClass::ScriptClass(const std::string_view className, const std::string_vie
 ScriptClass& ScriptClass::setScript(std::string_view classScript)
 {
 	m_script = {name, ScriptType::CLASS, classScript};
-
-	if (const auto& bytecode = m_script.getClientByteCode(); !bytecode.empty())
-	{
-		// Set the cryptographic key to be the script's hash.
-		constexpr string::string_hash hash{};
-		auto scriptHash = static_cast<uint64_t>(hash(classScript));
-
-		// Package the key into two GYBTE5's.
-		const auto hashBytes = reinterpret_cast<uint32_t*>(&scriptHash);
-		const CString key = CString() >> (long long)(hashBytes[0]) >> (long long)(hashBytes[1]);
-		m_desKey = key.toString();
-
-		// CRC32 checksum.
-		m_plainChecksum = crc32(0L, Z_NULL, 0);
-		m_plainChecksum = crc32(m_plainChecksum, bytecode.data(), static_cast<uint32_t>(bytecode.size()));
-
-		ScriptByteCode encrypt{bytecode};
-		{
-			// Convert the hash into individual bytes.
-			std::array<uint8_t, 8> keyBytes{};
-			for (size_t i = 0; i < 4; ++i)
-			{
-				keyBytes[i] = static_cast<uint8_t>(hashBytes[0] >> (8 * i));
-				keyBytes[i + 4] = static_cast<uint8_t>(hashBytes[1] >> (8 * i));
-			}
-
-			// Reverse the bits.
-			// The client has a non-standard DES method that reads every byte of the key in a bit-reversed way.
-			for (size_t i = 0; i < 8; ++i)
-			{
-				uint8_t& b = keyBytes[i];
-				b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
-				b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
-				b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
-			}
-
-			// Encrypt the bytecode.
-			symmetric_key skey;
-			if (des_setup(keyBytes.data(), static_cast<int>(keyBytes.size()), 0, &skey) == CRYPT_OK)
-			{
-				for (size_t i = 0; i + 8 <= encrypt.size(); i += 8)
-					des_ecb_encrypt(&encrypt[i], &encrypt[i], &skey);
-				des_done(&skey);
-			}
-		}
-
- 		m_encryptedChecksum = crc32(0L, Z_NULL, 0);
-		m_encryptedChecksum = crc32(m_encryptedChecksum, encrypt.data(), static_cast<uint32_t>(encrypt.size()));
-
-		// Create the header.
-		// [GBYTE2 length_header_and_bytecode]
-		// [STRING type,name,[0/1 save_to_disk],[GBYTE[10] desKey]]
-		std::vector<std::string> headerParts =
-		{
-			"class",
-			name,
-			"1",
-			m_desKey
-		};
-		m_header = string::toCSV(headerParts);
-
-		// Header with CRC32.
-		const CString crc32 = CString() >> (long long)m_encryptedChecksum;
-		headerParts.push_back(crc32.toString());
-		m_headerWithCRC = string::toCSV(headerParts);
-	}
+	generateScriptHeader();
 
 	// Set the modification time to now.
 	modTime = std::chrono::system_clock::now();
@@ -106,6 +41,32 @@ ScriptClass& ScriptClass::setScript(std::string_view classScript)
 	onScriptModified.post(this);
 
 	return *this;
+}
+
+void ScriptClass::generateScriptHeader()
+{
+	if (const auto& bytecode = m_script.getClientByteCode(); bytecode.empty())
+		return;
+
+	std::string desKey;
+	m_script.calculateClientByteCodeChecksums(desKey, m_plainChecksum, m_encryptedChecksum);
+
+	// Create the header.
+	// [GBYTE2 length_header_and_bytecode]
+	// [STRING type,name,[0/1 save_to_disk],[GBYTE[10] desKey]]
+	std::vector<std::string> headerParts =
+	{
+		"class",
+		name,
+		"1",
+		desKey
+	};
+	m_header = string::toCSV(headerParts);
+
+	// Header with CRC32.
+	const CString crc32 = CString() >> (long long)m_encryptedChecksum;
+	headerParts.push_back(crc32.toString());
+	m_headerWithCRC = string::toCSV(headerParts);
 }
 
 void ScriptClass::registerWithPlayer(const std::shared_ptr<Player>& player) const

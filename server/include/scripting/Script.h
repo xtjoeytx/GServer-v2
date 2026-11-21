@@ -51,6 +51,7 @@ public:
 	[[a::inline]] [[nodiscard]] std::string_view getClientSide() const noexcept;
 	[[a::inline]] [[nodiscard]] std::string_view getServerSide() const noexcept;
 	[[nodiscard]] const ScriptByteCode& getClientByteCode() const noexcept;
+	void calculateClientByteCodeChecksums(std::string& outDesKeyPacket, uint32_t& outPlainChecksum, uint32_t& outEncryptedChecksum) const noexcept;
 
 public:
 	[[a::inline]] Script& setOriginalSource(std::string_view who, ScriptType type, std::string&& source) noexcept;

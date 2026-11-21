@@ -71,7 +71,7 @@ public:
 
 protected:
 	std::string getClientSideScript() const;
-	void calculateHeaderChecksum();
+	void generateScriptHeader();
 	void updateScriptClass(ScriptClass* scriptClass) const;
 
 protected:
@@ -80,7 +80,6 @@ protected:
 	Script m_script;
 	uint32_t m_plainChecksum = 0;
 	uint32_t m_encryptedChecksum = 0;
-	std::string m_desKey;
 	std::string m_header;
 	std::string m_headerWithCRC;
 

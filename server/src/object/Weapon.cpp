@@ -11,9 +11,6 @@
 #include <utility>
 #include <vector>
 
-#include <tomcrypt.h>
-#include <zlib.h>
-
 #include <BabyDI.h>
 #include <CString.h>
 #include <IEnums.h>
@@ -140,7 +137,7 @@ bool Weapon::saveWeapon()
 
 	file->close();
 
-	calculateHeaderChecksum();
+	generateScriptHeader();
 
 	// Queue the created event.
 	scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
@@ -155,7 +152,7 @@ Weapon& Weapon::updateWeapon(const std::string_view newImage, const std::string_
 	image = newImage;
 	modTime = clock::now();
 
-	calculateHeaderChecksum();
+	generateScriptHeader();
 
 	// Queue the created event.
 	scripting.events.addEvent(ScriptEventType::CREATED, source::FromServer());
@@ -336,59 +333,13 @@ std::string Weapon::getClientSideScript() const
 	return result;
 }
 
-void Weapon::calculateHeaderChecksum()
+void Weapon::generateScriptHeader()
 {
-	const auto& script = m_script.getOriginalSource();
-	const auto& bytecode = m_script.getClientByteCode();
-	if (bytecode.empty())
+	if (const auto& bytecode = m_script.getClientByteCode(); bytecode.empty())
 		return;
 
-	// Set the cryptographic key to be the script's hash.
-	// This will become the DES encryption key the client will use to encrypt the bytecode.
-	constexpr string::string_hash hash{};
-	auto scriptHash = static_cast<uint64_t>(hash(script));
-
-	// Package the key into two GYBTE5's.
-	const auto hashBytes = reinterpret_cast<uint32_t*>(&scriptHash);
-	const CString key = CString() >> (long long)(hashBytes[0]) >> (long long)(hashBytes[1]);
-	m_desKey = key.toString();
-
-	// CRC32 checksum the bytecode.
-	m_plainChecksum = crc32(0L, Z_NULL, 0);
-	m_plainChecksum = crc32(m_plainChecksum, bytecode.data(), static_cast<uint32_t>(bytecode.size()));
-
-	ScriptByteCode encrypt{bytecode};
-	{
-		// Convert the hash into individual bytes.
-		std::array<uint8_t, 8> keyBytes{};
-		for (size_t i = 0; i < 4; ++i)
-		{
-			keyBytes[i] = static_cast<uint8_t>(hashBytes[0] >> (8 * i));
-			keyBytes[i + 4] = static_cast<uint8_t>(hashBytes[1] >> (8 * i));
-		}
-
-		// Reverse the bits.
-		// The client has a non-standard DES method that reads every byte of the key in a bit-reversed way.
-		for (size_t i = 0; i < 8; ++i)
-		{
-			uint8_t& b = keyBytes[i];
-			b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
-			b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
-			b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
-		}
-
-		// Encrypt the bytecode.
-		symmetric_key skey;
-		if (des_setup(keyBytes.data(), static_cast<int>(keyBytes.size()), 0, &skey) == CRYPT_OK)
-		{
-			for (size_t i = 0; i + 8 <= encrypt.size(); i += 8)
-				des_ecb_encrypt(&encrypt[i], &encrypt[i], &skey);
-			des_done(&skey);
-		}
-	}
-
- 	m_encryptedChecksum = crc32(0L, Z_NULL, 0);
-	m_encryptedChecksum = crc32(m_encryptedChecksum, encrypt.data(), static_cast<uint32_t>(encrypt.size()));
+	std::string desKey;
+	m_script.calculateClientByteCodeChecksums(desKey, m_plainChecksum, m_encryptedChecksum);
 
 	// Create the header.
 	// [GBYTE2 length_header_and_bytecode]
@@ -398,7 +349,7 @@ void Weapon::calculateHeaderChecksum()
 		"weapon",
 		name,
 		"1",
-		m_desKey
+		desKey
 	};
 	m_header = string::toCSV(headerParts);
 
