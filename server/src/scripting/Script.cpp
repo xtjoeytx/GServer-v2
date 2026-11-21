@@ -2,8 +2,8 @@
 #include <any>
 #include <array>
 #include <format>
-#include <numeric>
 #include <iterator>
+#include <numeric>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -21,6 +21,7 @@
 #include <scripting/ScriptContainers.h>
 #include <scripting/ScriptSystem.h>
 #include <scripting/ScriptTypes.h>
+#include <scripting/gs1/ScriptEngineGS1.h>
 #include <utilities/CommonTypes.h>
 #include <utilities/StringUtils.h>
 #include <utilities/std/generator.h>
@@ -369,11 +370,16 @@ std::string Script::minify(const std::string& src) noexcept
 
 	// If we have an NPC-Server, then skip the serverside code.
 	// We won't minify the code so that script errors have correct line numbers.
+	// Also, skip the clientside code if our default script engine isn't GS1.
 	if (const auto server = BabyDI::Get<Server>(); server && server->hasNPCServer())
 	{
 		// No clientside?  Just return the whole script.
 		const auto clientsidePos = srcView.find(clientSideTerminator);
 		if (clientsidePos == std::string_view::npos)
+			return src;
+
+		// Default clientside script engine is not GS1?  Return it all.
+		if (server->getNPCServer()->scripting.defaultScriptEngineClient != gs1::ScriptEngineGS1::EngineName)
 			return src;
 
 		minified = srcView.substr(0, clientsidePos);
@@ -507,11 +513,19 @@ void Script::compileScript() noexcept
 	m_server_script.reset();
 
 	const auto server = BabyDI::Get<Server>();
-	if (!(server && server->hasNPCServer()))
+	if (server == nullptr)
 		return;
 
-	const auto npcServer = server->getNPCServer();
+	// If we have no NPC-Server, just mangle the script and return.
+	if (!server->hasNPCServer())
+	{
+		// Mangle the clientside line terminators.
+		const auto clientside = determineClientSideLocation(m_modified_source);
+		std::replace(clientside, m_modified_source.end(), '\n', '\xa7');
+		return;
+	}
 
+	const auto npcServer = server->getNPCServer();
 	if (server->Generation == ServerGeneration::NEWMAIN)
 	{
 		// Mangle the clientside line terminators.
@@ -534,7 +548,16 @@ void Script::compileScript() noexcept
 
 		// If we failed to compile the script, remove the clientside code so it doesn't get sent raw.
 		if (m_client_script == nullptr)
-			m_clientside = {};
+		{
+			// Unless we are defaulting to GS1 clientside script.
+			// If so, mangle the line terminators.
+			if (npcServer->scripting.defaultScriptEngineClient == gs1::ScriptEngineGS1::EngineName)
+			{
+				const auto clientside = determineClientSideLocation(m_modified_source);
+				std::replace(clientside, m_modified_source.end(), '\n', '\xa7');
+			}
+			else m_clientside = {};
+		}
 	}
 }
 
