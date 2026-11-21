@@ -77,15 +77,29 @@ void FileSystem::bind(const std::filesystem::path& directory)
 {
 	std::scoped_lock guard{m_file_mutex};
 
+	auto doneSearching = [this]()
+	{
+		// We are done searching our file system.
+		m_searching_files = false;
+		m_searching_files_condition.notify_all();
+	};
+
 	// If we are already watching this directory, abort.
 	if (std::ranges::contains(m_directories, directory))
+	{
+		doneSearching();
 		return;
+	}
 
 	// We are starting our file search.
 	m_searching_files = true;
 
 	// Create directories that don't exist.
-	std::filesystem::create_directories(directory);
+	if (std::error_code ec; !std::filesystem::create_directories(directory, ec) && ec)
+	{
+		doneSearching();
+		return;
+	}
 
 	// Fill our filesystem with file information.
 	for (const auto& file : std::filesystem::recursive_directory_iterator(directory))
@@ -240,10 +254,13 @@ void FileSystem::defaultWatchCallback(uint32_t id, const std::filesystem::path& 
 				iter = m_files.find(oldFile.filename());
 				if (iter != m_files.end())
 				{
+					std::error_code ec;
+					const auto modTime = std::filesystem::last_write_time(iter->second->file, ec);
+					if (!ec) iter->second->modifiedTime = modTime;
+
 					// Update the file entry.
 					iter->second->file = dir / file;
 					iter->second->file.make_preferred();
-					iter->second->modifiedTime = std::filesystem::last_write_time(iter->second->file);
 					iter->second->categories.reset();
 					assignCategoriesToFileData(*iter->second.get());
 
@@ -269,13 +286,17 @@ void FileSystem::defaultWatchCallback(uint32_t id, const std::filesystem::path& 
 			}
 
 			// New file.
-			if (iter == m_files.end() && e.test(FileEvent::Added) && std::filesystem::is_regular_file(dir / file))
+			if (std::error_code ec; iter == m_files.end() && e.test(FileEvent::Added) && std::filesystem::is_regular_file(dir / file, ec) && !ec)
 			{
 				auto entry = std::make_unique<FileData>();
+
+				const auto modTime = std::filesystem::last_write_time(entry->file, ec);
+				if (!ec) entry->modifiedTime = modTime;
+				const auto fileSize = std::filesystem::file_size(entry->file, ec);
+				if (!ec) entry->fileSize = fileSize;
+
 				entry->file = dir / file;
 				entry->file.make_preferred();
-				entry->fileSize = std::filesystem::file_size(entry->file);
-				entry->modifiedTime = std::filesystem::last_write_time(entry->file);
 				assignCategoriesToFileData(*entry);
 
 				iter = m_files.insert(std::make_pair(file.filename(), std::move(entry)));
@@ -316,7 +337,7 @@ void FileSystem::update()
 
 bool FileSystem::has(FileCategory category, const std::filesystem::path& file) const noexcept
 {
-	if (std::filesystem::exists(file))
+	if (std::error_code ec; std::filesystem::exists(file, ec))
 		return true;
 
 	// If we don't have a folders config, skip the category test.
@@ -337,7 +358,7 @@ bool FileSystem::has(FileCategory category, const std::filesystem::path& file) c
 
 bool FileSystem::has(const std::filesystem::path& file) const noexcept
 {
-	if (std::filesystem::exists(file))
+	if (std::error_code ec; std::filesystem::exists(file, ec))
 		return true;
 
 	// Check if our file is saved in the file system list.
@@ -352,7 +373,7 @@ bool FileSystem::has(const std::filesystem::path& file) const noexcept
 
 bool FileSystem::hasi(FileCategory category, const std::filesystem::path& file) const noexcept
 {
-	if (std::filesystem::exists(file))
+	if (std::error_code ec; std::filesystem::exists(file, ec))
 		return true;
 
 	const bool skipTest = !hasFoldersConfig();
@@ -473,7 +494,7 @@ std::vector<FileDataWeakPtr> FileSystem::infoi(const std::filesystem::path& file
 std::shared_ptr<File> FileSystem::open(const FileCategory category, const std::filesystem::path& file) const
 {
 	// Check if the file exists in the native file system and file is a direct path.
-	if (std::filesystem::exists(file))
+	if (std::error_code ec; std::filesystem::exists(file, ec))
 	{
 		if (auto f = std::make_shared<File>(file); f->opened())
 			return f;
@@ -495,7 +516,7 @@ std::vector<std::shared_ptr<File>> FileSystem::open(const std::filesystem::path&
 	std::vector<std::shared_ptr<File>> result;
 
 	// Check if the file exists in the native file system and file is a direct path.
-	if (std::filesystem::exists(file))
+	if (std::error_code ec; std::filesystem::exists(file, ec))
 	{
 		const auto f = std::make_shared<File>();
 		f->setFilePath(file);
@@ -515,7 +536,7 @@ std::vector<std::shared_ptr<File>> FileSystem::open(const std::filesystem::path&
 
 std::shared_ptr<File> FileSystem::open(const FileData& fileData)
 {
-	if (std::filesystem::exists(fileData.file))
+	if (std::error_code ec; std::filesystem::exists(fileData.file, ec))
 	{
 		if (auto f = std::make_shared<File>(fileData.file); f->opened())
 			return f;
@@ -527,7 +548,7 @@ std::shared_ptr<File> FileSystem::open(const FileData& fileData)
 std::shared_ptr<File> FileSystem::openi(const FileCategory category, const std::filesystem::path& file) const
 {
 	// Check if the file exists in the native file system and file is a direct path.
-	if (std::filesystem::exists(file))
+	if (std::error_code ec; std::filesystem::exists(file, ec))
 	{
 		if (auto f = std::make_shared<File>(file); f->opened())
 			return f;
@@ -551,7 +572,7 @@ std::shared_ptr<FileIO> FileSystem::openForWriting(const FileCategory category, 
 	FileIOPtr result = nullptr;
 
 	// Check if the file exists in the native file system and file is a direct path.
-	if (std::filesystem::exists(file))
+	if (std::error_code ec; std::filesystem::exists(file, ec))
 		result = std::make_shared<FileIO>(file);
 
 	// Check if the file exists in the native file system and file is a filename we want to find.
@@ -585,7 +606,7 @@ std::vector<std::shared_ptr<FileIO>> FileSystem::openForWriting(const std::files
 	std::vector<std::shared_ptr<FileIO>> result;
 
 	// Check if the file exists in the native file system and file is a direct path.
-	if (std::filesystem::exists(file))
+	if (std::error_code ec; std::filesystem::exists(file, ec))
 	{
 		const auto f = std::make_shared<FileIO>();
 		f->setFilePath(file);
@@ -605,7 +626,7 @@ std::vector<std::shared_ptr<FileIO>> FileSystem::openForWriting(const std::files
 
 std::shared_ptr<FileIO> FileSystem::openForWriting(const FileData& fileData)
 {
-	if (std::filesystem::exists(fileData.file))
+	if (std::error_code ec; std::filesystem::exists(fileData.file, ec))
 	{
 		if (auto f = std::make_shared<FileIO>(fileData.file); f->opened())
 			return f;
@@ -619,7 +640,7 @@ std::shared_ptr<FileIO> FileSystem::openiForWriting(const FileCategory category,
 	FileIOPtr result = nullptr;
 
 	// Check if the file exists in the native file system and file is a direct path.
-	if (std::filesystem::exists(file))
+	if (std::error_code ec; std::filesystem::exists(file, ec))
 		result = std::make_shared<FileIO>(file);
 
 	// Check if the file exists in the native file system and file is a filename we want to find.
@@ -652,7 +673,7 @@ std::shared_ptr<FileIO> FileSystem::openiForWriting(const FileCategory category,
 
 void FileSystem::addExisting(FileCategory category, const std::filesystem::path& fullFilePath)
 {
-	if (!std::filesystem::exists(fullFilePath))
+	if (std::error_code ec; std::filesystem::exists(fullFilePath, ec))
 		return;
 
 	std::scoped_lock guard{m_file_mutex};
@@ -661,10 +682,15 @@ void FileSystem::addExisting(FileCategory category, const std::filesystem::path&
 		return;
 
 	auto entry = std::make_unique<FileData>();
+
+	std::error_code ec;
+	const auto fileSize = std::filesystem::file_size(fullFilePath, ec);
+	if (!ec) entry->fileSize = fileSize;
+	const auto modTime = std::filesystem::last_write_time(fullFilePath, ec);
+	if (!ec) entry->modifiedTime = modTime;
+
 	entry->file = fullFilePath;
 	entry->file.make_preferred();
-	entry->fileSize = std::filesystem::file_size(entry->file);
-	entry->modifiedTime = std::filesystem::last_write_time(entry->file);
 	assignCategoriesToFileData(*entry);
 
 	m_files.insert(std::make_pair(fullFilePath.filename(), std::move(entry)));
@@ -674,7 +700,7 @@ void FileSystem::addExisting(FileCategory category, const std::filesystem::path&
 
 FileData* FileSystem::rename(const FileData& fileData, const std::filesystem::path& newFileName)
 {
-	if (!std::filesystem::exists(fileData.file))
+	if (std::error_code ec; !std::filesystem::exists(fileData.file, ec) || ec)
 		return nullptr;
 
 	std::scoped_lock guard{m_file_mutex};
