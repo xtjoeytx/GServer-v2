@@ -131,7 +131,7 @@ void ScriptClass::sendByteCodeToPlayer(const std::shared_ptr<Player>& player) co
 		const std::string_view bytecodeView(bytecodePtr, bytecode.size());
 
 		if (player->getVersion() >= CLVER_5_07)
-			player->sendRawPacket(CString() >> (char)PLO_WEAPONBYTECODE2 >> (short)m_header.length() << m_header << bytecodeView);
+			player->sendRawPacket(CString() >> (char)PLO_HEADEREDBYTECODE >> (short)m_header.length() << m_header << bytecodeView);
 		else player->sendRawPacket(CString() >> (char)PLO_CLASSBYTECODE >> (char)name.length() << name << bytecodeView);
 	}
 }

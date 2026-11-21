@@ -261,9 +261,9 @@ bool ServerList::connectServer()
 	m_fileQueue.clearBuffers();
 
 	// Use the new protocol for communicating with the listserver
-	m_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
+	m_fileQueue.setCodec(EncryptionGeneration::GEN_1, 0);
 	sendPacket(CString() >> (char)SVO_REGISTERV3 << version, true);
-	m_fileQueue.setCodec(ENCRYPT_GEN_2, 0);
+	m_fileQueue.setCodec(EncryptionGeneration::GEN_2, 0);
 
 	// Send before SVO_NEWSERVER or else we will get an incorrect name.
 	const auto& adminsettings = m_server->getAdminSettings();

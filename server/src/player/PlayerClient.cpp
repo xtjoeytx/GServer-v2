@@ -104,7 +104,7 @@ static PacketHandleArray GeneratePacketHandlers()
 	handlers[PLI_SHOOT2] = &PlayerClient::msgPLI_SHOOT2;
 	handlers[PLI_REQUESTUPDATEBOARD] = &PlayerClient::msgPLI_REQUESTUPDATEBOARD;
 	handlers[PLI_UPDATEGANI] = &PlayerClient::msgPLI_UPDATEGANI;
-	handlers[PLI_UPDATESCRIPT] = &PlayerClient::msgPLI_UPDATESCRIPT;
+	handlers[PLI_UPDATEWEAPON] = &PlayerClient::msgPLI_UPDATEWEAPON;
 	handlers[PLI_UPDATEPACKAGEREQUESTFILE] = &PlayerClient::msgPLI_UPDATEPACKAGEREQUESTFILE;
 	handlers[PLI_UPDATECLASS] = &PlayerClient::msgPLI_UPDATECLASS;
 
@@ -301,18 +301,18 @@ bool PlayerClient::handleLogin(CString& pPacket)
 	switch (m_type)
 	{
 		case PLTYPE_CLIENT:
-			Encryption.setGen(ENCRYPT_GEN_2);
+			Encryption.setGeneration(EncryptionGeneration::GEN_2);
 			break;
 		case PLTYPE_CLIENT2:
-			Encryption.setGen(ENCRYPT_GEN_4);
+			Encryption.setGeneration(EncryptionGeneration::GEN_4);
 			break;
 		default:
 		case PLTYPE_CLIENT3:
-			Encryption.setGen(ENCRYPT_GEN_5);
+			Encryption.setGeneration(EncryptionGeneration::GEN_5);
 			break;
 		case PLTYPE_WEB:
-			Encryption.setGen(ENCRYPT_GEN_1);
-			m_fileQueue.setCodec(ENCRYPT_GEN_1, 0);
+			Encryption.setGeneration(EncryptionGeneration::GEN_1);
+			m_fileQueue.setCodec(EncryptionGeneration::GEN_1, 0);
 			break;
 	}
 
@@ -326,7 +326,7 @@ bool PlayerClient::handleLogin(CString& pPacket)
 		// 1.41 registers itself as PLTYPE_CLIENT, but does include an encryption key.
 		if (m_versionId == CLVER_UNKNOWN)
 		{
-			Encryption.setGen(ENCRYPT_GEN_3);
+			Encryption.setGeneration(EncryptionGeneration::GEN_3);
 			pPacket.setRead(1);
 		}
 	}
@@ -337,8 +337,8 @@ bool PlayerClient::handleLogin(CString& pPacket)
 		m_encryptionKey = static_cast<unsigned char>(pPacket.readGChar());
 
 		Encryption.reset(m_encryptionKey);
-		if (Encryption.getGen() > ENCRYPT_GEN_3)
-			m_fileQueue.setCodec(Encryption.getGen(), m_encryptionKey);
+		if (Encryption.getGeneration() > EncryptionGeneration::GEN_3)
+			m_fileQueue.setCodec(Encryption.getGeneration(), m_encryptionKey);
 
 		// Read Client-Version
 		m_version = pPacket.readChars(8);

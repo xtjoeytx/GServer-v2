@@ -1507,7 +1507,7 @@ HandlePacketResult PlayerClient::msgPLI_UPDATEGANI(CString& pPacket)
 	return HandlePacketResult::Handled;
 }
 
-HandlePacketResult PlayerClient::msgPLI_UPDATESCRIPT(CString& pPacket)
+HandlePacketResult PlayerClient::msgPLI_UPDATEWEAPON(CString& pPacket)
 {
 	const CString weaponName = pPacket.readString("");
 
@@ -1548,7 +1548,7 @@ HandlePacketResult PlayerClient::msgPLI_UPDATECLASS(CString& pPacket)
 			// Header disables client caching of this empty class.
 			const auto header = string::toCSVFromPack("class"sv, std::string_view{className}, "0"sv, des, crc);
 
-			sendPacket(CString() >> (char)PLO_WEAPONBYTECODE2 >> (short)header.length() << header);
+			sendPacket(CString() >> (char)PLO_HEADEREDBYTECODE >> (short)header.length() << header);
 		}
 		// v4
 		else

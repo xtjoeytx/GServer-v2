@@ -213,7 +213,7 @@ void Weapon::sendByteCodeToPlayer(const std::shared_ptr<Player>& player) const
 		const std::string_view bytecodeView(bytecodePtr, bytecode.size());
 
 		if (player->getVersion() >= CLVER_5_07)
-			player->sendRawPacket(CString() >> (char)PLO_WEAPONBYTECODE2 >> (short)m_header.length() << m_header << bytecodeView);
+			player->sendRawPacket(CString() >> (char)PLO_HEADEREDBYTECODE >> (short)m_header.length() << m_header << bytecodeView);
 		else player->sendRawPacket(CString() >> (char)PLO_WEAPONBYTECODE >> (char)name.length() << name << bytecodeView);
 	}
 }

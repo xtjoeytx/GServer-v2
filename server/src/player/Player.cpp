@@ -170,8 +170,8 @@ static constexpr std::array<std::string_view, 30> ganiAttributePropertyNames = {
 		DO(PLO_NPCBYTECODE)            \
 		DO(PLO_WEAPONBYTECODE)         \
 		DO(PLO_CLASSBYTECODE)          \
-		DO(PLO_GANISCRIPT)             \
-		DO(PLO_WEAPONBYTECODE2)        \
+		DO(PLO_GANIBYTECODE)           \
+		DO(PLO_HEADEREDBYTECODE)       \
 		DO(PLO_NPCDEL2)                \
 		DO(PLO_HIDENPCS)               \
 		DO(PLO_SAY2)                   \

@@ -468,7 +468,7 @@ public:
 	HandlePacketResult msgPLI_SENDTEXT(CString& pPacket);
 
 	//HandlePacketResult msgPLI_UPDATEGANI(CString& pPacket);
-	//HandlePacketResult msgPLI_UPDATESCRIPT(CString& pPacket);
+	//HandlePacketResult msgPLI_UPDATEWEAPON(CString& pPacket);
 	//HandlePacketResult msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket);
 
 protected:

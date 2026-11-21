@@ -204,7 +204,7 @@ public:
 	HandlePacketResult msgPLI_ENTERLEVEL(CString& pPacket);
 	HandlePacketResult msgPLI_UPDATECLASS(CString& pPacket);
 	HandlePacketResult msgPLI_UPDATEGANI(CString& pPacket);
-	HandlePacketResult msgPLI_UPDATESCRIPT(CString& pPacket);
+	HandlePacketResult msgPLI_UPDATEWEAPON(CString& pPacket);
 	HandlePacketResult msgPLI_VERIFYWANTSEND(CString& pPacket);
 	HandlePacketResult msgPLI_UPDATEPACKAGEREQUESTFILE(CString& pPacket);
 

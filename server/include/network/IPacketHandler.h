@@ -143,7 +143,7 @@ namespace preagonal
 	DO(PLI_RC_LARGEFILESTART) \
 	DO(PLI_RC_LARGEFILEEND) \
 	DO(PLI_UPDATEGANI) \
-	DO(PLI_UPDATESCRIPT) \
+	DO(PLI_UPDATEWEAPON) \
 	DO(PLI_UPDATEPACKAGEREQUESTFILE) \
 	DO(PLI_RC_FOLDERDELETE) \
 	DO(PLI_UPDATECLASS) \
@@ -255,45 +255,48 @@ inline void IPacketHandler::processPacketBundle(CString& bundle)
 	bool usedDeflate = false;
 
 	// No encryption or compression.
-	if (Encryption.getGen() == ENCRYPT_GEN_1)
+	if (Encryption.getGeneration() == EncryptionGeneration::GEN_1)
 		return;
 
 	// Version 1.41 - 2.18 non-client.
 	// Not encrypted, but zlib compressed.
-	if (Encryption.getGen() == ENCRYPT_GEN_2)
+	if (Encryption.getGeneration() == EncryptionGeneration::GEN_2)
 	{
 		bundle.zuncompress2I(usedDeflate);
 	}
 	// Version 1.41 - 2.18 client encryption
 	// Compressed with zlib, individual packets in bundle encrypted.
-	else if (Encryption.getGen() == ENCRYPT_GEN_3)
+	else if (Encryption.getGeneration() == EncryptionGeneration::GEN_3)
 	{
 		bundle.zuncompress2I(usedDeflate);
 	}
 	// Version 2.19+ encryption.
 	// Bundle compressed and then encrypted.  Always BZ2 compressed.
-	else if (Encryption.getGen() == ENCRYPT_GEN_4)
+	else if (Encryption.getGeneration() == EncryptionGeneration::GEN_4)
 	{
 		// Decrypt the bundle.
-		Encryption.limitFromType(COMPRESS_BZ2);
+		Encryption.setIterationLimitFromCompressionType(EncryptionCompression::BZ2);
 		Encryption.decrypt(bundle);
 
 		// Uncompress bundle.
 		bundle.bzuncompressI();
 	}
 	// Compressed and then encrypted.  Encryption depends on the compression type.
-	else if (Encryption.getGen() >= ENCRYPT_GEN_5)
+	else if (Encryption.getGeneration() >= EncryptionGeneration::GEN_5)
 	{
 		// Find the compression type and remove it.
-		const auto pType = bundle.readChar();
+		const auto pType = ENUM<EncryptionCompression>(bundle.readChar());
 		bundle.removeI(0, 1);
 
+		// Uncompressed packets always allow partial iteration.
+		SetAndRestore partialInteration{Encryption.allowPartialIteration, Encryption.allowPartialIteration || pType == EncryptionCompression::UNCOMPRESSED};
+
 		// Decrypt the bundle.
-		Encryption.limitFromType(pType); // Encryption is partially related to compression.
+		Encryption.setIterationLimitFromCompressionType(pType); // Encryption is partially related to compression.
 		Encryption.decrypt(bundle);
 
 		// Uncompress bundle
-		if (pType == COMPRESS_ZLIB)
+		if (pType == EncryptionCompression::ZLIB)
 		{
 			bundle.zuncompress2I(usedDeflate);
 
@@ -302,9 +305,9 @@ inline void IPacketHandler::processPacketBundle(CString& bundle)
 			if (usedDeflate)
 				Encryption.rollbackIterator();
 		}
-		else if (pType == COMPRESS_BZ2)
+		else if (pType == EncryptionCompression::BZ2)
 			bundle.bzuncompressI();
-		else if (pType != COMPRESS_UNCOMPRESSED)
+		else if (pType != EncryptionCompression::UNCOMPRESSED)
 			; // log::printLine(log::server, "** [ERROR] Client gave incorrect packet compression type! [{}]", pType);
 	}
 }
@@ -333,7 +336,7 @@ inline void IPacketHandler::parsePacketsFromBundle(CString& bundle)
 			curPacket = bundle.readString("\n");
 
 		// Generation 3 encrypts individual packets so decrypt it now.
-		if (Encryption.getGen() == ENCRYPT_GEN_3)
+		if (Encryption.getGeneration() == EncryptionGeneration::GEN_3)
 			Encryption.decrypt(curPacket);
 
 		// Get the packet id.

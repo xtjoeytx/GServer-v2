@@ -112,18 +112,18 @@ bool PlayerNC::handleLogin(CString& pPacket)
 	{
 		default:
 		case PLTYPE_NC:
-			Encryption.setGen(ENCRYPT_GEN_2);
+			Encryption.setGeneration(EncryptionGeneration::GEN_2);
 			break;
 	}
 
 	// Newer RC clients have an encryption key.
-	if (Encryption.getGen() > ENCRYPT_GEN_3)
+	if (Encryption.getGeneration() > EncryptionGeneration::GEN_3)
 	{
 		m_encryptionKey = static_cast<unsigned char>(pPacket.readGChar());
 
 		Encryption.reset(m_encryptionKey);
-		if (Encryption.getGen() > ENCRYPT_GEN_3)
-			m_fileQueue.setCodec(Encryption.getGen(), m_encryptionKey);
+		if (Encryption.getGeneration() > EncryptionGeneration::GEN_3)
+			m_fileQueue.setCodec(Encryption.getGeneration(), m_encryptionKey);
 	}
 
 	// Read Client-Version
