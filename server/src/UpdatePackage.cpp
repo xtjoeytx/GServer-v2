@@ -22,7 +22,7 @@ std::optional<UpdatePackage> UpdatePackage::load(Server* const server, const std
 		return std::nullopt;
 
 	// Calculate the checksum for the gupd file.
-	UpdatePackage updatePackage(name);
+	UpdatePackage updatePackage(fs::getANSIFileName(name));
 	updatePackage.reload(server);
 
 	return updatePackage;
