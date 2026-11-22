@@ -83,7 +83,7 @@ std::shared_ptr<Weapon> Weapon::loadWeapon(const std::filesystem::path& fileName
 	auto weapon = std::make_shared<Weapon>(weaponName.value(), weaponImage.value_or(""s), weaponScript.value_or(""s));
 
 	// Check for script limits.
-	if (const auto& script = weapon->getScript(); script.getClientByteCode().empty() && script.getClientSide().length() > 0x705F)
+	if (const auto& script = weapon->getScript(); script.getClientSideByteCode().empty() && script.getClientSideSource().length() > 0x705F)
 		log::printLine(log::server, "WARNING: Clientside script of weapon ({}) exceeds the limit of 28767 bytes.", *weaponName);
 
 	// Set the mod time to the file mod time.
@@ -174,7 +174,7 @@ void Weapon::registerWeaponWithPlayer(const std::shared_ptr<Player>& player) con
 	weaponPacket >> (char)PLO_NPCWEAPONADD >> (char)name.length() << name >> (char)NPCProp::IMAGE >> (char)image.length() << image;
 
 	// Classic weapons.
-	if (m_script.getClientByteCode().empty() && player->getVersion() <= CLVER_5_07)
+	if (m_script.getClientSideByteCode().empty() && player->getVersion() <= CLVER_5_07)
 	{
 		const std::string script = getClientSideScript();
 		weaponPacket >> (char)NPCProp::SCRIPT >> (short)script.length() << script;
@@ -204,7 +204,7 @@ void Weapon::registerWeaponWithPlayer(const std::shared_ptr<Player>& player) con
 void Weapon::sendByteCodeToPlayer(const std::shared_ptr<Player>& player) const
 {
 	// Send the bytecode.
-	if (const auto& bytecode = m_script.getClientByteCode(); !bytecode.empty())
+	if (const auto& bytecode = m_script.getClientSideByteCode(); !bytecode.empty())
 	{
 		const auto bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
 		const std::string_view bytecodeView(bytecodePtr, bytecode.size());
@@ -318,12 +318,12 @@ void Weapon::leaveClass(const std::string_view className)
 
 std::string Weapon::getClientSideScript() const
 {
-	std::string result{m_script.getClientSide()};
+	std::string result{m_script.getClientSideSource()};
 	for (const auto& classPtr : m_joinedClasses | std::views::values)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
-			if (const auto& clientSide = scriptClass->getScript().getClientSide(); !clientSide.empty())
+			if (const auto& clientSide = scriptClass->getScript().getClientSideSource(); !clientSide.empty())
 			{
 				result += '\xa7';
 				result += clientSide;
@@ -335,7 +335,7 @@ std::string Weapon::getClientSideScript() const
 
 void Weapon::generateScriptHeader()
 {
-	if (const auto& bytecode = m_script.getClientByteCode(); bytecode.empty())
+	if (const auto& bytecode = m_script.getClientSideByteCode(); bytecode.empty())
 		return;
 
 	std::string desKey;

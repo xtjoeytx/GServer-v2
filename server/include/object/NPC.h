@@ -307,6 +307,7 @@ public:
 	[[a::inline]] bool isCreated() const noexcept;
 	[[a::inline]] bool isBlocking() const noexcept;
 	[[a::inline]] bool isVisible() const noexcept;
+	[[a::inline]] bool isSparringZone() const noexcept;
 	[[a::inline]] PixelDimension getComputedShape() const noexcept;
 	[[a::inline]] PixelRectangleArea getBoundingBox() const noexcept;
 	[[a::inline]] PixelRectangleArea getCollisionBoundingBox() const noexcept;
@@ -475,6 +476,7 @@ private:
 	std::array<std::optional<clock::time_point>, NPCPROP_COUNT> m_savedModTime;
 	bool m_warping = false;
 	bool m_blockPositionUpdates = false;
+	bool m_sparringzone = false;
 	mutable bool m_hadShowImgs = false;
 
 	Script m_script;
@@ -526,6 +528,11 @@ inline bool NPC::isBlocking() const noexcept
 inline bool NPC::isVisible() const noexcept
 {
 	return (visFlags & ENUM(NPCVisFlags::VISIBLE)) != 0;
+}
+
+inline bool NPC::isSparringZone() const noexcept
+{
+	return m_sparringzone;
 }
 
 inline std::generator<std::shared_ptr<ScriptClass>> NPC::getJoinedClasses() const

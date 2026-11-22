@@ -166,7 +166,7 @@ static std::string performClientSideJoinHack(std::string_view code)
 			{
 				if (result.back() != '\n')
 					result += '\n';
-				result += classObject->getScript().getClientSide();
+				result += classObject->getScript().getClientSideSource();
 			}
 		}
 	}
@@ -189,6 +189,8 @@ static std::string performClientSideJoinHack(std::string_view code)
 	return result;
 }
 
+namespace
+{
 /// @brief Profiler for script execution time.
 struct ExecutionProfiler
 {
@@ -223,16 +225,17 @@ struct ExecutionProfiler
 		compiledScript->executionProfiles.erase(it, compiledScript->executionProfiles.end());
 	}
 };
+} // namespace
 
 //----------------------------
 
 // NOLINTNEXTLINE(*-no-recursion)
 std::generator<decltype(ScriptExecutionContext::joinedClasses)::const_reference> Script::getServerJoinedClasses() const noexcept
 {
-	if (m_server_script == nullptr)
+	if (m_server_compiled == nullptr)
 		co_return;
 
-	for (const auto& kvp : m_server_script->joinedClasses)
+	for (const auto& kvp : m_server_compiled->joinedClasses)
 	{
 		co_yield kvp;
 
@@ -247,14 +250,14 @@ std::generator<decltype(ScriptExecutionContext::joinedClasses)::const_reference>
 
 //----------------------------
 
-const ScriptByteCode& Script::getClientByteCode() const noexcept
+const ScriptByteCode& Script::getClientSideByteCode() const noexcept
 {
 	static ScriptByteCode empty;
 
-	if (m_client_script == nullptr || m_client_script->script == nullptr || !m_client_script->script->has_value())
+	if (m_client_compiled == nullptr || m_client_compiled->script == nullptr || !m_client_compiled->script->has_value())
 		return empty;
 
-	if (auto* bytecode = std::any_cast<ScriptByteCode>(m_client_script->script.get()); bytecode != nullptr)
+	if (auto* bytecode = std::any_cast<ScriptByteCode>(m_client_compiled->script.get()); bytecode != nullptr)
 		return *bytecode;
 
 	return empty;
@@ -263,7 +266,7 @@ const ScriptByteCode& Script::getClientByteCode() const noexcept
 void Script::calculateClientByteCodeChecksums(std::string& outDesKeyPacket, uint32_t& outPlainChecksum, uint32_t& outEncryptedChecksum) const noexcept
 {
 	const auto& script = getOriginalSource();
-	const auto& bytecode = getClientByteCode();
+	const auto& bytecode = getClientSideByteCode();
 	if (bytecode.empty())
 		return;
 
@@ -324,16 +327,16 @@ void Script::executeEvents(ScriptContainer& container, const ScriptObject& sourc
 
 void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source) const
 {
-	if (m_server_script == nullptr || m_server_script->engine == nullptr)
+	if (m_server_compiled == nullptr || m_server_compiled->engine == nullptr)
 		return;
 
-	auto* engine = m_server_script->engine;
+	auto* engine = m_server_compiled->engine;
 	auto& queue = events.queue();
 
 	if (queue.size() == 1)
 	{
-		ExecutionProfiler profiler{m_server_script.get()};
-		engine->execute(queue.front(), source, m_server_script);
+		ExecutionProfiler profiler{m_server_compiled.get()};
+		engine->execute(queue.front(), source, m_server_compiled);
 		return;
 	}
 
@@ -341,7 +344,7 @@ void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source)
 	std::vector<ScriptEventType> processedTypes;
 
 	bool hadTimeout = false;
-	ExecutionProfiler profiler{m_server_script.get()};
+	ExecutionProfiler profiler{m_server_compiled.get()};
 	for (auto& event : queue)
 	{
 		// Save timeouts for the very end.  Many things break unless you do that one last.
@@ -354,7 +357,7 @@ void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source)
 		// Execute events with args individually.
 		if (!event.args.empty())
 		{
-			engine->execute(event, source, m_server_script);
+			engine->execute(event, source, m_server_compiled);
 			processedTypes.emplace_back(event.type);
 			continue;
 		}
@@ -378,7 +381,7 @@ void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source)
 				}
 			});
 
-			engine->execute(event, &types, source, m_server_script);
+			engine->execute(event, &types, source, m_server_compiled);
 			processedTypes.emplace_back(event.type);
 		}
 	}
@@ -391,7 +394,7 @@ void Script::executeEvents(ScriptEventQueue& events, const ScriptObject& source)
 			if (event.type != ScriptEventType::TIMEOUT)
 				continue;
 
-			engine->execute(event, source, m_server_script);
+			engine->execute(event, source, m_server_compiled);
 			break;
 		}
 	}
@@ -411,11 +414,11 @@ void Script::executeEvents(clear_container_t, ScriptEventQueue& events, const Sc
 
 bool Script::runUserDefinedFunction(const std::string_view functionName, ScriptEvent& event, const ScriptObject& source) const
 {
-	if (m_server_script == nullptr || m_server_script->engine == nullptr)
+	if (m_server_compiled == nullptr || m_server_compiled->engine == nullptr)
 		return false;
 
-	ExecutionProfiler profiler{m_server_script.get()};
-	return m_server_script->engine->executeFunction(functionName, event, source, m_server_script);
+	ExecutionProfiler profiler{m_server_compiled.get()};
+	return m_server_compiled->engine->executeFunction(functionName, event, source, m_server_compiled);
 }
 
 //----------------------------
@@ -428,6 +431,8 @@ std::string Script::minify(const std::string& src) noexcept
 	std::string minified;
 	std::string_view srcView{src};
 
+	bool onlyRemoveCarriageReturn = false;
+
 	// If we have an NPC-Server, then skip the serverside code.
 	// We won't minify the code so that script errors have correct line numbers.
 	// Also, skip the clientside code if our default script engine isn't GS1.
@@ -436,15 +441,25 @@ std::string Script::minify(const std::string& src) noexcept
 		// No clientside?  Just return the whole script.
 		const auto clientsidePos = srcView.find(clientSideTerminator);
 		if (clientsidePos == std::string_view::npos)
-			return src;
+			onlyRemoveCarriageReturn = true;
 
 		// Default clientside script engine is not GS1?  Return it all.
 		if (server->getNPCServer()->scripting.defaultScriptEngineClient != gs1::ScriptEngineGS1::EngineName)
-			return src;
+			onlyRemoveCarriageReturn = true;
 
-		minified = srcView.substr(0, clientsidePos);
-		srcView.remove_prefix(clientsidePos);
+		// Extract the clientside portion, unless we are only going to remove carriage returns.
+		if (!onlyRemoveCarriageReturn)
+		{
+			minified = srcView.substr(0, clientsidePos);
+			srcView.remove_prefix(clientsidePos);
+		}
 	}
+
+	// If we are only removing the carriage returns, do so now.
+	// We are doing this even though the script engines could handle it because we want to special-case sparringzone later.
+	// If there are carriage returns in the clientside script, it can cause problems when we mangle.
+	if (onlyRemoveCarriageReturn)
+		return string::eraseChars(src, "\r"sv);
 
 	// Trim the lines.
 	while (!srcView.empty())
@@ -542,8 +557,9 @@ void Script::split(std::string& source) noexcept
 	// If we don't have an npc-server, we don't support serverside code.
 	if (!hasServerSide)
 	{
-		m_serverside = {};
-		m_clientside = string::trim(source);
+		m_serverside_source = {};
+		m_clientside_source = string::trim(source);
+		m_clientside_script = m_clientside_source;
 		return;
 	}
 
@@ -554,23 +570,23 @@ void Script::split(std::string& source) noexcept
 		if (endOfLine == std::string::npos)
 			endOfLine = clientSep + clientSideTerminator.size();
 
-		m_serverside = string::trim(std::string_view{source}.substr(0, clientSep));
-		m_clientside = {};
+		m_serverside_source = string::trim(std::string_view{source}.substr(0, clientSep));
+		m_clientside_source = {};
 
 		if (endOfLine + 1 < source.size())
-			m_clientside = string::trim(std::string_view{source}.substr(endOfLine + 1));
+			m_clientside_source = string::trim(std::string_view{source}.substr(endOfLine + 1));
 	}
 	else
 	{
-		m_serverside = string::trim(source);
-		m_clientside = {};
+		m_serverside_source = string::trim(source);
+		m_clientside_source = {};
 	}
 }
 
 void Script::compileScript() noexcept
 {
-	m_client_script.reset();
-	m_server_script.reset();
+	m_client_compiled.reset();
+	m_server_compiled.reset();
 
 	const auto server = BabyDI::Get<Server>();
 	if (server == nullptr)
@@ -582,6 +598,7 @@ void Script::compileScript() noexcept
 		// Mangle the clientside line terminators.
 		const auto clientside = determineClientSideLocation(m_modified_source);
 		std::replace(clientside, m_modified_source.end(), '\n', '\xa7');
+		m_clientside_script = m_clientside_source;
 		return;
 	}
 
@@ -591,32 +608,37 @@ void Script::compileScript() noexcept
 		// Mangle the clientside line terminators.
 		const auto clientside = determineClientSideLocation(m_modified_source);
 		std::replace(clientside, m_modified_source.end(), '\n', '\xa7');
+		m_clientside_script = m_clientside_source;
 
 		// Compile serverside scripts.
-		m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
-		if (m_server_script != nullptr && m_server_script->identifier.empty())
-			m_server_script->identifier = m_who.empty() ? "(server:unnamed)" : m_who;
+		m_server_compiled = npcServer->scripting.getCompiledServerScript(m_who, m_serverside_source);
+		if (m_server_compiled != nullptr && m_server_compiled->identifier.empty())
+			m_server_compiled->identifier = m_who.empty() ? "(server:unnamed)" : m_who;
 	}
 	else if (server->Generation == ServerGeneration::MODERN)
 	{
-		m_client_script = npcServer->scripting.getCompiledClientScript(m_who, m_clientside);
-		m_server_script = npcServer->scripting.getCompiledServerScript(m_who, m_serverside);
-		if (m_client_script != nullptr && m_client_script->identifier.empty())
-			m_client_script->identifier = m_who.empty() ? "(client:unnamed)" : m_who;
-		if (m_server_script != nullptr && m_server_script->identifier.empty())
-			m_server_script->identifier = m_who.empty() ? "(server:unnamed)" : m_who;
+		// Special case sparringzone.
+		// Even though modern servers support clientside GS2, a sparringzone script is still kept as-is and sent with NPCProp::SCRIPT.
+		const bool isSparringZone = m_clientside_source == "sparringzone" || m_clientside_source == "//#CLIENTSIDE\nsparringzone";
+
+		if (!isSparringZone) m_client_compiled = npcServer->scripting.getCompiledClientScript(m_who, m_clientside_source);
+		m_server_compiled = npcServer->scripting.getCompiledServerScript(m_who, m_serverside_source);
+		if (m_client_compiled != nullptr && m_client_compiled->identifier.empty())
+			m_client_compiled->identifier = m_who.empty() ? "(client:unnamed)" : m_who;
+		if (m_server_compiled != nullptr && m_server_compiled->identifier.empty())
+			m_server_compiled->identifier = m_who.empty() ? "(server:unnamed)" : m_who;
 
 		// If we failed to compile the script, remove the clientside code so it doesn't get sent raw.
-		if (m_client_script == nullptr)
+		if (m_client_compiled == nullptr)
 		{
-			// Unless we are defaulting to GS1 clientside script.
-			// If so, mangle the line terminators.
-			if (npcServer->scripting.defaultScriptEngineClient == gs1::ScriptEngineGS1::EngineName)
+			// Unless we are defaulting to GS1 clientside script, or if it is a sparringzone.
+			// If so, mangle the line terminators and set the script to the source.
+			if (isSparringZone || npcServer->scripting.defaultScriptEngineClient == gs1::ScriptEngineGS1::EngineName)
 			{
 				const auto clientside = determineClientSideLocation(m_modified_source);
 				std::replace(clientside, m_modified_source.end(), '\n', '\xa7');
+				m_clientside_script = m_clientside_source;
 			}
-			else m_clientside = {};
 		}
 	}
 }

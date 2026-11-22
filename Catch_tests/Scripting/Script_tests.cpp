@@ -79,19 +79,14 @@ TEST_CASE("Script minify handles block comments at end of input", "[Scripting][S
 {
 	SECTION("Unterminated comment consumes the remaining source")
 	{
-		CHECK(Script::minify("/* unfinished").empty());
-		CHECK(Script::minify("echo(1); /* unfinished") == "echo(1);");
-		CHECK(Script::minify("echo(1);\n/* unfinished\necho(2);") == "echo(1);");
-	}
-
-	SECTION("Clientside directive before an unterminated comment is retained")
-	{
 		CHECK(Script::minify("//#CLIENTSIDE\n/*\nfunction onCreated() { echo(1); }") == "//#CLIENTSIDE");
+		CHECK(Script::minify("//#CLIENTSIDE\necho(1); /* unfinished") == "//#CLIENTSIDE\necho(1);");
+		CHECK(Script::minify("//#CLIENTSIDE\necho(1);\n/* unfinished\necho(2);") == "//#CLIENTSIDE\necho(1);");
 	}
 
 	SECTION("Source after a terminated comment is retained")
 	{
-		CHECK(Script::minify("/* closed */echo(2);") == "echo(2);");
+		CHECK(Script::minify("//#CLIENTSIDE\n/* closed */echo(2);") == "//#CLIENTSIDE\necho(2);");
 	}
 }
 
@@ -101,17 +96,17 @@ TEST_CASE("Script client bytecode", "[Scripting][Script]")
 	auto context = std::make_shared<ScriptExecutionContext>();
 	context->script = std::make_shared<std::any>(std::vector<uint8_t>{1, 2, 3});
 	script.setClientCompiledScript(context);
-	REQUIRE(script.getClientByteCode() == std::vector<uint8_t>{1, 2, 3});
+	REQUIRE(script.getClientSideByteCode() == std::vector<uint8_t>{1, 2, 3});
 
 	context = std::make_shared<ScriptExecutionContext>();
 	context->script = nullptr;
 	script.setClientCompiledScript(context);
-	REQUIRE(script.getClientByteCode().empty());
+	REQUIRE(script.getClientSideByteCode().empty());
 
 	context = std::make_shared<ScriptExecutionContext>();
 	context->script = std::make_shared<std::any>(std::string{"bytecode"});
 	script.setClientCompiledScript(context);
-	REQUIRE(script.getClientByteCode().empty());
+	REQUIRE(script.getClientSideByteCode().empty());
 }
 
 TEST_CASE_METHOD(ServerFixture, "Script joins", "[Scripting][IScriptEngine][GS1]")
@@ -135,8 +130,8 @@ TEST_CASE_METHOD(ServerFixture, "Script joins", "[Scripting][IScriptEngine][GS1]
 		REQUIRE(npc != nullptr);
 
 		npc->setScript(script);
-		REQUIRE_FALSE(npc->getScript().getClientSide().empty());
-		CHECK(npc->getScript().getClientSide() == "//#CLIENTSIDE\xA7;\xA7if (created) { this.test = 42; }"s);
+		REQUIRE_FALSE(npc->getScript().getClientSideScript().empty());
+		CHECK(npc->getScript().getClientSideScript() == "//#CLIENTSIDE\xA7;\xA7if (created) { this.test = 42; }"s);
 	}
 
 	SECTION("clientside join hack ignores sign")
@@ -152,7 +147,7 @@ TEST_CASE_METHOD(ServerFixture, "Script joins", "[Scripting][IScriptEngine][GS1]
 		REQUIRE(npc != nullptr);
 
 		npc->setScript(script);
-		REQUIRE_FALSE(npc->getScript().getClientSide().empty());
-		CHECK(npc->getScript().getClientSide() == "//#CLIENTSIDE\xA7say2 join TestClass#b\xA7join TestClass;\xA7if (created) { say2 join TestClass; }"s);
+		REQUIRE_FALSE(npc->getScript().getClientSideScript().empty());
+		CHECK(npc->getScript().getClientSideScript() == "//#CLIENTSIDE\xA7say2 join TestClass#b\xA7join TestClass;\xA7if (created) { say2 join TestClass; }"s);
 	}
 }

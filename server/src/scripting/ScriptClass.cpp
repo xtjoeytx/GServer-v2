@@ -45,7 +45,7 @@ ScriptClass& ScriptClass::setScript(std::string_view classScript)
 
 void ScriptClass::generateScriptHeader()
 {
-	if (const auto& bytecode = m_script.getClientByteCode(); bytecode.empty())
+	if (const auto& bytecode = m_script.getClientSideByteCode(); bytecode.empty())
 		return;
 
 	std::string desKey;
@@ -86,7 +86,7 @@ void ScriptClass::registerWithPlayer(const std::shared_ptr<Player>& player) cons
 void ScriptClass::sendByteCodeToPlayer(const std::shared_ptr<Player>& player) const
 {
 	// Send the bytecode.
-	if (const auto& bytecode = m_script.getClientByteCode(); !bytecode.empty())
+	if (const auto& bytecode = m_script.getClientSideByteCode(); !bytecode.empty())
 	{
 		const auto bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
 		const std::string_view bytecodeView(bytecodePtr, bytecode.size());

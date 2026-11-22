@@ -160,7 +160,7 @@ void GameAni::sendByteCodeToPlayer(const std::shared_ptr<Player>& player) const
 		gani = gani.substr(0, gani.length() - 5);
 
 	// Send the bytecode.
-	if (const auto& bytecode = m_script.getClientByteCode(); !bytecode.empty())
+	if (const auto& bytecode = m_script.getClientSideByteCode(); !bytecode.empty())
 	{
 		const auto bytecodePtr = reinterpret_cast<const char*>(bytecode.data());
 		const std::string_view bytecodeView(bytecodePtr, bytecode.size());

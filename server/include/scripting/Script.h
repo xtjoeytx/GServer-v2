@@ -48,9 +48,12 @@ public:
 	[[a::inline]] [[nodiscard]] ScriptType getType() const noexcept;
 	[[a::inline]] [[nodiscard]] const std::string& getOriginalSource() const noexcept;
 	[[a::inline]] [[nodiscard]] const std::string& getModifiedSource() const noexcept;
-	[[a::inline]] [[nodiscard]] std::string_view getClientSide() const noexcept;
-	[[a::inline]] [[nodiscard]] std::string_view getServerSide() const noexcept;
-	[[nodiscard]] const ScriptByteCode& getClientByteCode() const noexcept;
+	[[a::inline]] [[nodiscard]] std::string_view getClientSideSource() const noexcept;
+	[[a::inline]] [[nodiscard]] std::string_view getServerSideSource() const noexcept;
+
+public:
+	[[a::inline]] [[nodiscard]] std::string_view getClientSideScript() const noexcept;
+	[[nodiscard]] const ScriptByteCode& getClientSideByteCode() const noexcept;
 	void calculateClientByteCodeChecksums(std::string& outDesKeyPacket, uint32_t& outPlainChecksum, uint32_t& outEncryptedChecksum) const noexcept;
 
 public:
@@ -77,10 +80,11 @@ private:
 	std::string m_who;
 	std::string m_original_source;
 	std::string m_modified_source;
-	std::string_view m_clientside;
-	std::string_view m_serverside;
-	CompiledScriptResultPtr m_client_script;
-	CompiledScriptResultPtr m_server_script;
+	std::string_view m_clientside_source;
+	std::string_view m_serverside_source;
+	std::string_view m_clientside_script;
+	CompiledScriptResultPtr m_client_compiled;
+	CompiledScriptResultPtr m_server_compiled;
 	size_t m_hash = 0;
 	ScriptType m_type = ScriptType::SERVER;
 
@@ -109,8 +113,9 @@ inline Script& Script::operator=(const Script& o) noexcept
 	m_original_source = o.m_original_source;
 	m_modified_source = o.m_modified_source;
 	split(m_modified_source);
-	m_client_script = o.m_client_script;
-	m_server_script = o.m_server_script;
+	m_clientside_script = o.m_clientside_script;
+	m_client_compiled = o.m_client_compiled;
+	m_server_compiled = o.m_server_compiled;
 	m_hash = o.m_hash;
 	return *this;
 }
@@ -123,10 +128,11 @@ inline Script& Script::operator=(Script&& o) noexcept
 	m_who = std::move(o.m_who);
 	m_original_source = std::move(o.m_original_source);
 	m_modified_source = std::move(o.m_modified_source);
-	m_clientside = o.m_clientside;
-	m_serverside = o.m_serverside;
-	m_client_script = std::move(o.m_client_script);
-	m_server_script = std::move(o.m_server_script);
+	m_clientside_source = o.m_clientside_source;
+	m_serverside_source = o.m_serverside_source;
+	m_clientside_script = o.m_clientside_script;
+	m_client_compiled = std::move(o.m_client_compiled);
+	m_server_compiled = std::move(o.m_server_compiled);
 	m_hash = o.m_hash;
 	return *this;
 }
@@ -141,14 +147,19 @@ inline const std::string& Script::getModifiedSource() const noexcept
 	return m_modified_source;
 }
 
-inline std::string_view Script::getClientSide() const noexcept
+inline std::string_view Script::getClientSideSource() const noexcept
 {
-	return m_clientside;
+	return m_clientside_source;
 }
 
-inline std::string_view Script::getServerSide() const noexcept
+inline std::string_view Script::getServerSideSource() const noexcept
 {
-	return m_serverside;
+	return m_serverside_source;
+}
+
+inline std::string_view Script::getClientSideScript() const noexcept
+{
+	return m_clientside_script;
 }
 
 //----------------------------
@@ -181,13 +192,13 @@ inline Script& Script::setModifiedSource(const std::string& source) noexcept
 
 inline Script& Script::setClientCompiledScript(CompiledScriptResultPtr script) noexcept
 {
-	m_client_script = std::move(script);
+	m_client_compiled = std::move(script);
 	return *this;
 }
 
 inline Script& Script::setServerCompiledScript(CompiledScriptResultPtr script) noexcept
 {
-	m_server_script = std::move(script);
+	m_server_compiled = std::move(script);
 	return *this;
 }
 

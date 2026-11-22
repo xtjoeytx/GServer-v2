@@ -1458,6 +1458,10 @@ void Level::sendNPCsToPlayer(const std::shared_ptr<Player>& player, const std::o
 			player->sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << npcLevel->levelName);
 			currentLevel = npcLevel.get();
 		}
+		// Else, if the NPC is a sparringzone NPC and it is not on the same map segment as the player, skip it.
+		// Sparringzones on gmaps is still mostly non-working on 2.x clients due to client limitations.
+		else if (npc->isSparringZone() && toMapPosition(npc->getGlobalPosition()) != toMapPosition(player->getGlobalPosition()))
+			continue;
 
 		sendNPCToPlayer(npc, player, time);
 	}
@@ -1472,10 +1476,10 @@ void Level::sendNPCToPlayer(const std::shared_ptr<NPC>& npc, const std::shared_p
 	{
 		player->sendPacket(CString() >> (char)PLO_NPCPROPS >> (int)npc->id << packet);
 
-		if (m_server->Generation == ServerGeneration::MODERN && !npc->getScript().getClientByteCode().empty())
+		if (m_server->Generation == ServerGeneration::MODERN && !npc->getScript().getClientSideByteCode().empty())
 		{
 			CString byteCodePacket = CString() >> (char)PLO_NPCBYTECODE >> (int)npc->id;
-			byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientByteCode().data()), static_cast<int>(npc->getScript().getClientByteCode().size()));
+			byteCodePacket.write(reinterpret_cast<const char*>(npc->getScript().getClientSideByteCode().data()), static_cast<int>(npc->getScript().getClientSideByteCode().size()));
 			player->sendRawPacket(byteCodePacket);
 		}
 	}
@@ -1573,9 +1577,9 @@ bool Level::addNPC(const std::shared_ptr<NPC>& npc)
 
 	if (const auto part = getSubLevelAtPosition(npc->getGlobalPosition()); part != nullptr)
 	{
-		const auto script = string::trimLeft(npc->getScript().getClientSide());
+		const auto script = string::trimLeft(npc->getScript().getClientSideScript());
 
-		if (script.starts_with("sparringzone"))
+		if (npc->isSparringZone())
 			part->isSparringZone = true;
 
 		if (script.starts_with("noplayerkilling"))

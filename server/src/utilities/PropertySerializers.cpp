@@ -558,13 +558,6 @@ std::format_context::iterator PropertyTileCoordinateZ::format(std::format_contex
 
 CString PropertyGS1Script::serialize() const
 {
-	auto server = BabyDI::Get<Server>();
-
-	// TODO: v4 GS1 scripts!
-	// Modern sends scripts in a different way.
-	if (server->Generation == ServerGeneration::MODERN)
-		return CString() >> (short)0;
-
 	return CString() >> (short)(script.length() > 0x705F ? 0x705F : script.length()) << std::string_view{script}.substr(0, 0x705F);
 }
 

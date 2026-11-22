@@ -770,18 +770,22 @@ void NPC::setScript(const Script& script)
 	const auto classes = string::join(m_script.getServerJoinedClasses() | std::views::keys);
 	setJoinedClasses(classes);
 
-	const auto clientside = m_script.getClientSide();
+	const auto clientside = m_script.getClientSideScript();
 
 	// Check for position update blocking.
 	if (m_server->hasNPCServer() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
 		m_blockPositionUpdates = true;
+
+	// Check for a sparringzone identifier.
+	if (clientside == "sparringzone" || clientside == "//#CLIENTSIDE\xa7sparringzone")
+		m_sparringzone = true;
 
 	// If we have no npc-server, we support toweapons, so extract the weapon name.
 	if (!m_server->hasNPCServer())
 		m_weaponName = toWeaponName(clientside);
 
 	// Just a little warning for people who don't know.
-	if (m_script.getClientByteCode().empty() && m_script.getClientSide().length() > 0x705F)
+	if (m_script.getClientSideByteCode().empty() && m_script.getClientSideScript().length() > 0x705F)
 		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (!image.empty() ? image : std::to_string(id)));
 }
 
@@ -814,7 +818,7 @@ void NPC::setScript(const std::string_view script)
 		}
 	}
 
-	const auto clientside = m_script.getClientSide();
+	const auto clientside = m_script.getClientSideScript();
 
 	// Check for position update blocking.
 	if (m_server->hasNPCServer() || clientside.contains("//#BLOCKPOSITIONUPDATES"))
@@ -825,18 +829,18 @@ void NPC::setScript(const std::string_view script)
 		m_weaponName = toWeaponName(clientside);
 
 	// Just a little warning for people who don't know.
-	if (m_script.getClientByteCode().empty() && m_script.getClientSide().length() > 0x705F)
+	if (m_script.getClientSideByteCode().empty() && m_script.getClientSideScript().length() > 0x705F)
 		log::printLine(log::server, "WARNING: Clientside script of NPC ({}) exceeds the limit of 28767 bytes.", (!image.empty() ? image : std::to_string(id)));
 }
 
 std::string NPC::getClientSideScript() const
 {
-	std::string result{m_script.getClientSide()};
+	std::string result{m_script.getClientSideScript()};
 	for (const auto& classPtr : m_joinedClasses | std::views::values)
 	{
 		if (auto scriptClass = classPtr.lock(); scriptClass != nullptr)
 		{
-			if (const auto& clientSide = scriptClass->getScript().getClientSide(); !clientSide.empty())
+			if (const auto& clientSide = scriptClass->getScript().getClientSideScript(); !clientSide.empty())
 			{
 				result += '\xa7';
 				result += clientSide;
@@ -913,7 +917,7 @@ void NPC::setJoinedClasses(std::string_view classes)
 			lastUpdateTime = m_server->getFrameStartTime();
 
 			// If the joined script has clientside code, delete the NPC and resend the new code.
-			if (!scriptClass->getScript().getClientSide().empty())
+			if (!scriptClass->getScript().getClientSideScript().empty() || !scriptClass->getScript().getClientSideByteCode().empty())
 				sendToLevel = true;
 		}
 	}
@@ -942,7 +946,7 @@ void NPC::joinClass(std::string_view className)
 		lastUpdateTime = m_server->getFrameStartTime();
 
 		// If the joined script has clientside code, delete the NPC and resend the new code.
-		if (!scriptClass->getScript().getClientSide().empty())
+		if (!scriptClass->getScript().getClientSideScript().empty() || !scriptClass->getScript().getClientSideByteCode().empty())
 			sendScriptUpdatesToLevel(lastUpdateTime);
 	}
 	else
@@ -971,7 +975,7 @@ void NPC::leaveClass(std::string_view className)
 		lastUpdateTime = m_server->getFrameStartTime();
 
 		// If the joined script has clientside code, delete the NPC and resend the new code.
-		if (!scriptClass->getScript().getClientSide().empty())
+		if (!scriptClass->getScript().getClientSideScript().empty() || !scriptClass->getScript().getClientSideByteCode().empty())
 			sendToLevel = true;
 	}
 
@@ -995,7 +999,7 @@ void NPC::sendScriptUpdatesToLevel(const clock::time_point fromWhen) const
 
 			const CString packet = CString() >> (char)PLO_NPCDEL2 >> (char)levelName.length() << levelName >> (int)id;
 			m_server->sendPacketToLevelAndPastVisitorsAfter(levelData.get(), fromWhen, packet);
-			m_server->sendPacketToNearby(CString() >> (char)PLO_NPCPROPS >> (int)id << getAllPropsPacket(), character.getGlobalPosition(), npclevel);
+			npclevel->sendNPCToNearbyPlayers(m_server->getNPC(id), std::nullopt);
 		}
 	}
 }
@@ -1004,7 +1008,7 @@ void NPC::updateScriptClass(ScriptClass* scriptClass)
 {
 	if (scriptClass == nullptr || !m_server->hasNPCServer())
 		return;
-	if (scriptClass->getScript().getClientSide().empty())
+	if (scriptClass->getScript().getClientSideScript().empty() && scriptClass->getScript().getClientSideByteCode().empty())
 		return;
 
 	sendScriptUpdatesToLevel(lastUpdateTime);
