@@ -1004,8 +1004,12 @@ HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	{
 		if (const auto subLevel = currentLevel->getSubLevelByName(levelName); subLevel != nullptr)
 		{
-			sendStaticLevelData(subLevel->staticData.lock(), subLevel, modTime);
-			sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << currentLevel->levelName);
+			if (const auto staticData = subLevel->staticData.lock(); staticData != nullptr)
+			{
+				sendStaticLevelData(staticData, subLevel, modTime);
+				cacheStaticLevelAsSeen(staticData);
+				sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << currentLevel->levelName);
+			}
 			return HandlePacketResult::Handled;
 		}
 	}
@@ -1014,6 +1018,7 @@ HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	if (const auto cachedData = m_server->getCachedLevelData(levelName); cachedData != nullptr)
 	{
 		sendStaticLevelData(cachedData, nullptr, modTime);
+		cacheStaticLevelAsSeen(cachedData);
 		sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << levelName);
 	}
 

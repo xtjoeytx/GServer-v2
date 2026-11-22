@@ -668,6 +668,11 @@ bool PlayerClient::sendLogin()
 	return true;
 }
 
+clock::time_point PlayerClient::getFrameStartTime() const noexcept
+{
+	return m_server->getFrameStartTime();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PlayerClient::processChat(const CString& pChat)
@@ -1444,36 +1449,11 @@ bool PlayerClient::leaveSubLevel(const std::shared_ptr<SubLevel>& subLevel)
 	const auto staticData = subLevel->staticData.lock();
 	if (staticData == nullptr) return false;
 
-	auto curTime = m_server->getFrameStartTime();
-	auto cacheLevel = [&curTime]<typename T>(std::vector<std::unique_ptr<CachedLevel<T>>>& cache, const std::shared_ptr<T>& level)
-	{
-		// Save the time we left the level for the client-side caching.
-		bool found = false;
-		for (auto& cl : cache)
-		{
-			if (const auto cllevel = cl->level.lock(); cllevel == level)
-			{
-				cl->lastEnteredTime = curTime;
-				found = true;
-				break;
-			}
-		}
-
-		if (!found)
-			cache.push_back(std::make_unique<CachedLevel<T>>(CachedLevel<T>{.level = level, .lastEnteredTime = curTime}));
-	};
-
 	// Static levels.
-	cacheLevel(m_cachedStaticLevels, staticData);
+	cacheStaticLevelAsSeen(staticData);
 
 	// Dynamic levels.
-	std::string groupName = account.groupName;
-	if (!groupName.empty())
-	{
-		if (const auto level = subLevel->parentLevel.lock(); level != nullptr && !level->isGroupMap)
-			groupName.clear();
-	}
-	cacheLevel(m_cachedDynamicLevels[groupName], subLevel);
+	cacheDynamicLevelAsSeen(subLevel);
 
 	return true;
 }
@@ -1770,6 +1750,22 @@ void PlayerClient::resetLevelCache(const std::string_view group)
 
 	// Finally, clear the cache for the group.
 	m_cachedDynamicLevels.erase(std::string{group});
+}
+
+void PlayerClient::cacheStaticLevelAsSeen(const StaticLevelDataPtr& staticData)
+{
+	cacheLevelAsSeen(m_cachedStaticLevels, staticData);
+}
+
+void PlayerClient::cacheDynamicLevelAsSeen(const SubLevelPtr& subLevel)
+{
+	std::string groupName = account.groupName;
+	if (!groupName.empty())
+	{
+		if (const auto level = subLevel->parentLevel.lock(); level != nullptr && !level->isGroupMap)
+			groupName.clear();
+	}
+	cacheLevelAsSeen(m_cachedDynamicLevels[groupName], subLevel);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

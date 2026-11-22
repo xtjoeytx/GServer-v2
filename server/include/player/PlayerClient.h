@@ -89,6 +89,7 @@ public:
 	bool doTimedEvents() override;
 	bool handleLogin(CString& pPacket) override;
 	bool sendLogin() override;
+	clock::time_point getFrameStartTime() const noexcept;
 
 	bool processChat(const CString& pChat);
 
@@ -138,6 +139,12 @@ public:
 	void resetLevelCache(const StaticLevelData* level) const;
 	void resetLevelCache(const SubLevel* level, std::string_view group = ""sv);
 	void resetLevelCache(std::string_view group);
+	void cacheStaticLevelAsSeen(const StaticLevelDataPtr& staticData);
+	void cacheDynamicLevelAsSeen(const SubLevelPtr& subLevel);
+
+protected:
+	template<typename T>
+	[[a::inline]] void cacheLevelAsSeen(std::vector<std::unique_ptr<CachedLevel<T>>>& cache, const std::shared_ptr<T>& level);
 
 public:
 	[[a::inline]] bool hasSeenFile(const std::string& file) const;
@@ -257,6 +264,27 @@ inline void PlayerClient::setLastMovementTime(const clock::time_point time)
 {
 	m_lastMovement = time;
 	m_grMovementUpdated = true;
+}
+
+template<typename T>
+inline void PlayerClient::cacheLevelAsSeen(std::vector<std::unique_ptr<CachedLevel<T>>>& cache, const std::shared_ptr<T>& level)
+{
+	const auto curTime = getFrameStartTime();
+
+	// Save the time we left the level for the client-side caching.
+	bool found = false;
+	for (auto& cl : cache)
+	{
+		if (const auto cllevel = cl->level.lock(); cllevel == level)
+		{
+			cl->lastEnteredTime = curTime;
+			found = true;
+			break;
+		}
+	}
+
+	if (!found)
+		cache.push_back(std::make_unique<CachedLevel<T>>(CachedLevel<T>{.level = level, .lastEnteredTime = curTime}));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
