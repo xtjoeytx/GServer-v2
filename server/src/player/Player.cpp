@@ -262,7 +262,7 @@ CString ShootPacketWrapper::constructShootV2() const
 	const PropertyPixelCoordinate x{localPosition.x()};
 	const PropertyPixelCoordinate y{localPosition.y()};
 	const PropertyPixelCoordinate z{localPosition.z()};
-	const PropertyPixelCoordinate pgravity{static_cast<int16_t>(gravityInTiles * 256)};
+	const PropertyPixelCoordinate pgravity{DoubleAsIntegralRound<int16_t>(gravityInTiles * 256)};
 
 	CString packet;
 	packet.write(x.serialize());

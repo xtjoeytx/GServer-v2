@@ -2532,17 +2532,20 @@ void Server::sendShootToOneLevel(const LevelShoot* shoot, const std::shared_ptr<
 		return;
 
 	constexpr float pi = std::numbers::pi_v<float>;
+	constexpr float twopi = pi * 2;
 	constexpr float halfpi = pi / 2;
 
 	const auto mapPosition = level->clampMapPositionToLevel(toMapPosition(shoot->position));
+	const auto shootAngle = std::clamp(shoot->angle, 0.0f, twopi);
+	const auto shootZAngle = std::clamp(shoot->zangle, -halfpi, halfpi);
 
 	ShootPacketWrapper newPacket{};
 	newPacket.source = (shoot->from.second == ScriptObjectType::NPC ? shoot->from.first : 0);
 	newPacket.position = toPixelPosition(shoot->position);
 	newPacket.gmapx = mapPosition.x();
 	newPacket.gmapy = mapPosition.y();
-	newPacket.sangle = static_cast<uint8_t>(220 * (std::clamp(shoot->angle, 0.0f, 2 * pi) / (2 * pi)));
-	newPacket.sanglez = std::clamp(110 + static_cast<uint8_t>(110 * (std::clamp(shoot->zangle, -halfpi, halfpi) / halfpi)), 0, 220);
+	newPacket.sangle = DoubleAsIntegralRound<uint8_t>(220 * shootAngle / twopi);
+	newPacket.sanglez = DoubleAsIntegralRound<uint8_t>(110 + (110 * shootZAngle / halfpi));
 	newPacket.power = shoot->powerIn44TileParts;
 	newPacket.gravityInTiles = shoot->gravity;
 	newPacket.gani = shoot->gani;

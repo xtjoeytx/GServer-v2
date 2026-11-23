@@ -134,6 +134,11 @@ std::optional<GameAni> GameAni::load(Server* const server, const std::filesystem
 		{
 			// STRETCHYEFFECT sprite factor (default 1)
 		}
+		else if (section == "LAYER")
+		{
+			// LAYER layer (0 = below player, 2 = above player)
+			// Only for ganis set like player.attr[1] = "hat.gani";
+		}
 	}
 
 	return gani;

@@ -389,6 +389,15 @@ inline static T DoubleAsIntegralFloor(const double value)
 		return static_cast<T>(value + std::numeric_limits<double>::epsilon());
 }
 
+template<std::integral T>
+inline static T DoubleAsIntegralRound(const double value)
+{
+	if (value < 0.0)
+		return static_cast<T>(value - 0.5 - std::numeric_limits<double>::epsilon());
+	else
+		return static_cast<T>(value + 0.5 + std::numeric_limits<double>::epsilon());
+}
+
 //----------------------------
 // Pointer helpers
 

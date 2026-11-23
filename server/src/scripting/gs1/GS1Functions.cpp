@@ -884,12 +884,6 @@ GS1ScriptValue fn_int(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>& a
 
 	const auto value = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
 	return GameValue{static_cast<double>(static_cast<int64_t>(value))};
-	/*
-	if (value < 0.0)
-		return static_cast<double>(static_cast<int64_t>(value - 0.5));
-	else
-		return static_cast<double>(static_cast<int64_t>(value + 0.5));
-	*/
 }
 
 // keycode(key)
@@ -1118,12 +1112,14 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: onwall(x, y)");
 
-	const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-	const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+	const auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+	const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
+	const auto flooredPosition = toPixelPosition(WholeTilePosition{DoubleAsIntegralFloor<WholeTilePosition::ValueType>(x), DoubleAsIntegralFloor<WholeTilePosition::ValueType>(y)});
+	const auto position = toPixelPosition(TilePosition{static_cast<float>(x), static_cast<float>(y)});
 
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (level->isOnWall(toPixelPosition(TilePosition{x, y})))
+		if (level->isOnWall(flooredPosition))
 			return GameValue{true};
 
 		if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
@@ -1134,9 +1130,9 @@ GS1ScriptValue fn_onwall(GS1Visitor* visitor, const std::vector<GS1ScriptValue*>
 				const auto subLevel = level->getSubLevelAtPosition(npc->character.getMapPosition());
 				if (subLevel == nullptr)
 					return GameValue{true};
-				if (!npc->noPlayerOnWall && !subLevel->isNoPkZone && level->isOnPlayer(toPixelPosition(TilePosition{x, y})))
+				if (!npc->noPlayerOnWall && !subLevel->isNoPkZone && level->isOnPlayer(position))
 					return GameValue{true};
-				if (level->testNPC(toPixelPosition(TilePosition{x, y}), npc->id).first >= 0)
+				if (level->testNPC(position, npc->id).first >= 0)
 					return GameValue{true};
 			}
 		}
@@ -1154,14 +1150,15 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: onwall2(x, y, width, height)");
 
-	const auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-	const auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+	const auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+	const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 	const auto width = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
 	const auto height = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
+	const auto position = toPixelPosition(TilePosition{static_cast<float>(x), static_cast<float>(y)});
 
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (level->isOnWall2(PixelRectangleArea{toPixelPosition(TilePosition{x, y}), {width, height}}))
+		if (level->isOnWall2(PixelRectangleArea{position, {width, height}}))
 			return GameValue{true};
 
 		if (const auto source = visitor->findNearestScriptObjectSourceFromStack(ScriptObjectType::NPC); source.has_value())
@@ -1173,7 +1170,7 @@ GS1ScriptValue fn_onwall2(GS1Visitor* visitor, const std::vector<GS1ScriptValue*
 				if (subLevel == nullptr)
 					return GameValue{true};
 
-				const PixelRectangleArea searchRect{toPixelPosition(TilePosition{x, y}), {width, height}};
+				const PixelRectangleArea searchRect{position, {width, height}};
 				if (!npc->noPlayerOnWall && !subLevel->isNoPkZone && level->isOnPlayer(searchRect))
 					return GameValue{true};
 				if (level->testNPC(searchRect, npc->id).first >= 0)
@@ -1192,12 +1189,13 @@ GS1ScriptValue fn_onwater(GS1Visitor* visitor, const std::vector<GS1ScriptValue*
 	if (arguments.size() != 2)
 		throw std::invalid_argument("invalid arguments: onwater(x, y)");
 
-	auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-	auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+	const auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+	const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
+	const auto flooredPosition = toPixelPosition(WholeTilePosition{DoubleAsIntegralFloor<WholeTilePosition::ValueType>(x), DoubleAsIntegralFloor<WholeTilePosition::ValueType>(y)});
 
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (level->isOnWater(toPixelPosition(TilePosition{x, y})))
+		if (level->isOnWater(flooredPosition))
 			return GameValue{true};
 	}
 
@@ -1211,14 +1209,15 @@ GS1ScriptValue fn_onwater2(GS1Visitor* visitor, const std::vector<GS1ScriptValue
 	if (arguments.size() != 4)
 		throw std::invalid_argument("invalid arguments: onwater2(x, y, width, height)");
 
-	auto x = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
-	auto y = static_cast<float>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+	const auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
+	const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
 	auto width = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[2]).value_or(0.0) * 16);
 	auto height = DoubleAsIntegralFloor<uint16_t>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[3]).value_or(0.0) * 16);
+	const auto position = toPixelPosition(TilePosition{static_cast<float>(x), static_cast<float>(y)});
 
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		if (level->isOnWater2(PixelRectangleArea{toPixelPosition(TilePosition{x, y}), {width, height}}))
+		if (level->isOnWater2(PixelRectangleArea{position, {width, height}}))
 			return GameValue{true};
 	}
 
@@ -1704,9 +1703,9 @@ GS1ScriptValue fn_tiletype(GS1Visitor* visitor, const std::vector<GS1ScriptValue
 
 	if (const auto level = visitor->findCurrentLevel(); level != nullptr)
 	{
-		const auto x = GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0);
-		const auto y = GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0);
-		return GameValue{static_cast<double>(ENUM(level->getTileTypeAt(toWholeTilePosition(TilePosition{x, y}))))};
+		const auto x = DoubleAsIntegralFloor<WholeTilePosition::ValueType>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[0]).value_or(0.0));
+		const auto y = DoubleAsIntegralFloor<WholeTilePosition::ValueType>(GS1Visitor::getScriptValueAsCopy<double>(*arguments[1]).value_or(0.0));
+		return GameValue{static_cast<double>(ENUM(level->getTileTypeAt(WholeTilePosition{x, y})))};
 	}
 
 	// Not found?  Default to blocking.
