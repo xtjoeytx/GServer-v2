@@ -1308,6 +1308,11 @@ bool Player::enterLevel(const std::shared_ptr<Level>& level, std::optional<time_
 	return true;
 }
 
+bool Player::enterSubLevel(const std::shared_ptr<SubLevel>& subLevel, const std::optional<time_t> clientCachedTime)
+{
+	return true;
+}
+
 bool Player::leaveLevel(bool keepLevelReference)
 {
 	auto now = m_server->getFrameStartTime();

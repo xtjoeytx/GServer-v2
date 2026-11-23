@@ -1443,14 +1443,27 @@ void Level::sendHorsesToPlayer(const std::shared_ptr<Player>& player) const
 }
 
 // TODO(refactor): Replace with a function in server that sends npc props from a list of ids.
-void Level::sendNPCsToPlayer(const std::shared_ptr<Player>& player, const std::optional<clock::time_point> time) const
+void Level::sendNPCsToPlayer(const std::shared_ptr<Player>& player, std::optional<clock::time_point> time) const
 {
 	const Level* currentLevel = nullptr;
 
+	const auto playerClient = std::dynamic_pointer_cast<PlayerClient>(player);
 	for (const auto& npcId : findNPCsInRangeForData(player->getGlobalPosition()))
 	{
 		const auto npc = m_server->getNPC(npcId);
 		if (!npc) continue;
+
+		// Check if we should actually send this NPC.
+		if (playerClient != nullptr)
+		{
+			const auto npcSubLevel = getSubLevelAtPosition(npc->getGlobalPosition());
+			if (npcSubLevel != nullptr)
+			{
+				// If the last entered time for this sub level is greater than the given time, use the last entered time.
+				if (const auto lastEntered = playerClient->getLevelLastEnteredTime(npcSubLevel.get(), player->account.groupName); lastEntered.has_value() && lastEntered.value() > time.value())
+					time = lastEntered.value();
+			}
+		}
 
 		// If this NPC belongs on a different level, tell the client to change the active level.
 		if (auto npcLevel = npc->getLevel(); currentLevel != npcLevel.get())

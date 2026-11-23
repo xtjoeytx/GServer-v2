@@ -315,6 +315,7 @@ public:
 	virtual bool enterLevel(const std::shared_ptr<Level>& level, const PixelPosition& position, std::optional<time_t> clientCachedTime);
 	virtual bool enterLevel(const std::shared_ptr<Level>& level, const MapPosition& mapPosition, const LocalPixelPosition& position, std::optional<time_t> clientCachedTime);
 	virtual bool enterLevel(const std::shared_ptr<Level>& level, std::optional<time_t> clientCachedTime);
+	virtual bool enterSubLevel(const std::shared_ptr<SubLevel>& subLevel, std::optional<time_t> clientCachedTime);
 	virtual bool leaveLevel(bool keepLevelReference);
 	virtual bool leaveSubLevel(const std::shared_ptr<SubLevel>& subLevel);
 	virtual bool sendStaticLevelData(const std::shared_ptr<StaticLevelData>& staticLevelData, const std::shared_ptr<SubLevel>& subLevel, std::optional<time_t> clientCachedTime);

@@ -117,6 +117,8 @@ public:
 	bool enterLevel(const std::shared_ptr<Level>& level, std::optional<time_t> clientCachedTime) override;
 	using Player::enterLevel;
 
+	bool enterSubLevel(const std::shared_ptr<SubLevel>& subLevel, std::optional<time_t> clientCachedTime) override;
+
 	bool leaveLevel(bool keepLevelReference) override;
 	using Player::leaveLevel;
 

@@ -1008,7 +1008,6 @@ HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 			{
 				sendStaticLevelData(staticData, subLevel, modTime);
 				cacheStaticLevelAsSeen(staticData);
-				sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << currentLevel->levelName);
 			}
 			return HandlePacketResult::Handled;
 		}
@@ -1019,7 +1018,6 @@ HandlePacketResult PlayerClient::msgPLI_ADJACENTLEVEL(CString& pPacket)
 	{
 		sendStaticLevelData(cachedData, nullptr, modTime);
 		cacheStaticLevelAsSeen(cachedData);
-		sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << levelName);
 	}
 
 	return HandlePacketResult::Handled;
@@ -1453,6 +1451,36 @@ HandlePacketResult PlayerClient::msgPLI_PROCESSLIST(CString& pPacket)
 
 HandlePacketResult PlayerClient::msgPLI_ENTERLEVEL(CString& pPacket)
 {
+	if (const auto subLevel = getSubLevel(); subLevel != nullptr)
+	{
+		std::optional<time_t> lastEnteredTime = std::nullopt;
+		if (const auto staticData = subLevel->staticData.lock(); staticData != nullptr)
+			lastEnteredTime = getLevelLastEnteredTimeForWarping(staticData.get());
+
+		enterSubLevel(subLevel, lastEnteredTime);
+		cacheDynamicLevelAsSeen(subLevel);
+
+		if (subLevel->isOnGmap)
+		{
+			if (const auto level = subLevel->parentLevel.lock(); level != nullptr)
+			{
+				for (int j = -1; j <= 1; ++j)
+				{
+					for (int k = -1; k <= 1; ++k)
+					{
+						if (j == 0 && k == 0) continue;
+						const auto pos = getMapPosition().translate(j, k);
+						if (const auto adjacentSubLevel = level->getSubLevelAtPosition(pos); adjacentSubLevel != nullptr)
+						{
+							adjacentSubLevel->updateTimeSinceLastUsed();
+							cacheDynamicLevelAsSeen(adjacentSubLevel);
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return HandlePacketResult::Handled;
 }
 

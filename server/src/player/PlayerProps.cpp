@@ -915,24 +915,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				leaveSubLevel(subLevel);
 
 			auto mapPosition = level->clampMapPositionToLevel({numProp->value, account.character.mapY});
-			if (auto levelData = level->getStaticLevelDataAtPosition(mapPosition); levelData != nullptr)
-			{
-				account.character.mapX = mapPosition.x();
-				auto lastEnteredTime = player->getLevelLastEnteredTimeForWarping(levelData.get());
-				sendDynamicLevelData(level, lastEnteredTime);
-			}
-			else SETPROP_RETURN_REVERT;
-
-			for (int j = -1; j <= 1; ++j)
-			{
-				for (int k = -1; k <= 1; ++k)
-				{
-					if (j == 0 && k == 0) continue;
-					const auto pos = getMapPosition().translate(j, k);
-					if (const auto subLevel = level->getSubLevelAtPosition(pos); subLevel != nullptr)
-						subLevel->updateTimeSinceLastUsed();
-				}
-			}
+			account.character.mapX = mapPosition.x();
 			break;
 		}
 
@@ -948,24 +931,7 @@ SetResults Player::setProp(PlayerProp prop, SetBy setBy, PropertyBase* base)
 				leaveSubLevel(subLevel);
 
 			auto mapPosition = level->clampMapPositionToLevel({account.character.mapX, numProp->value});
-			if (auto levelData = level->getStaticLevelDataAtPosition(mapPosition); levelData != nullptr)
-			{
-				account.character.mapY = mapPosition.y();
-				auto lastEnteredTime = player->getLevelLastEnteredTimeForWarping(levelData.get());
-				sendDynamicLevelData(level, lastEnteredTime);
-			}
-			else SETPROP_RETURN_REVERT;
-
-			for (int j = -1; j <= 1; ++j)
-			{
-				for (int k = -1; k <= 1; ++k)
-				{
-					if (j == 0 && k == 0) continue;
-					const auto pos = getMapPosition().translate(j, k);
-					if (const auto subLevel = level->getSubLevelAtPosition(pos); subLevel != nullptr)
-						subLevel->updateTimeSinceLastUsed();
-				}
-			}
+			account.character.mapY = mapPosition.y();
 			break;
 		}
 

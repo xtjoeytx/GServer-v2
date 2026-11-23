@@ -1356,9 +1356,29 @@ bool PlayerClient::enterLevel(const std::shared_ptr<Level>& level, const std::op
 		sendPacket(CString() >> (char)PLO_PLAYERPROPS >> (char)PlayerProp::Z << getProp<PlayerProp::Z>().serialize());
 	}
 
+	succeed = enterSubLevel(subLevel, clientCachedTime);
+	if (!succeed)
+	{
+		leaveLevel();
+		sendPacket(CString() >> (char)PLO_WARPFAILED << level->levelName);
+		return false;
+	}
+
+	return true;
+}
+
+bool PlayerClient::enterSubLevel(const std::shared_ptr<SubLevel>& subLevel, const std::optional<time_t> clientCachedTime)
+{
+	const auto level = subLevel->parentLevel.lock();
+	if (level == nullptr)
+		return false;
+
+	if (!sendDynamicLevelData(subLevel->parentLevel.lock(), clientCachedTime))
+		return false;
+
 	// If the level is a sparring zone and you have 100 AP, change AP to 99 and
 	// the apcounter to 1.
-	if (level->isSparringZone(getMapPosition()) && account.character.ap == 100)
+	if (subLevel->isSparringZone && account.character.ap == 100)
 	{
 		account.apCounter = 1;
 		sendPropsFromResults(setPropWith<PlayerProp::ALIGNMENT>(props::SetBy::SERVER, 99_ui8));
@@ -1465,8 +1485,11 @@ bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& s
 
 	const PlayerPtr self = shared_from_this();
 	auto levelModTime = clock::to_time_t(staticLevelData->modTime);
-	const auto cachedModTime = getLevelLastEnteredTimeForWarping(staticLevelData.get());
 	if (!clientCachedTime.has_value()) clientCachedTime = levelModTime;
+	if (!m_loaded) clientCachedTime = std::nullopt;
+
+	if (m_loaded && clientCachedTime == levelModTime)
+		return true;
 
 	bool sentBoard = false;
 
@@ -1483,7 +1506,7 @@ bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& s
 	// If we have not entered this level during this session, send board data.
 	// Also send if the client sends a cache time that doesn't match the level.
 	// Clients will cache level data so this can be skipped if nothing has changed.
-	if (!cachedModTime.has_value() || clientCachedTime.value() < levelModTime)
+	if (!clientCachedTime.has_value() || clientCachedTime.value() < levelModTime)
 	{
 		// Send board data (tiles, layers, heights).
 		if (subLevel != nullptr)
@@ -1533,8 +1556,13 @@ bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& s
 
 	// Fix the level name.
 	// If the player is on a gmap, we need to set the level back to the gmap.
+	if (subLevel != nullptr && subLevel->isOnGmap)
+	{
+		sendPacket(CString() >> (char)PLO_LEVELNAME << getLevelName());
+		sendPacket(CString() >> (char)PLO_LEVELBOARD);
+	}
+
 	// If the player is the leader on their level, also send the isleader packet.
-	sendPacket(CString() >> (char)PLO_LEVELNAME << getLevelName());
 	checkAndInformIfLevelLeader();
 
 	return true;
@@ -1571,9 +1599,9 @@ bool PlayerClient::sendDynamicLevelData(const std::shared_ptr<Level>& level, std
 	level->sendNPCsToPlayer(self, cachedModTime);
 
 	// Move the carry NPC to the new level.
-	sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
 	if (m_carryNPC != 0)
 	{
+		sendPacket(CString() >> (char)PLO_SETACTIVELEVEL << level->levelName);
 		if (const auto npc = m_server->getNPC(m_carryNPC); npc)
 		{
 			if (npc->level != level->levelName)
@@ -1632,7 +1660,7 @@ void PlayerClient::checkAndInformIfLevelLeader()
 	if (level == nullptr)
 		return;
 
-	if (level->isSinglePlayer || level->isPlayerLeader(m_id) || level->isGmap())
+	if (!level->isGmap() && (level->isSinglePlayer || level->isPlayerLeader(m_id)))
 		sendPacket(CString() >> (char)PLO_ISLEADER);
 }
 
