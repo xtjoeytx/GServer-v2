@@ -388,7 +388,7 @@ inline void IPacketHandler::parseLoginPacket(CString& buffer)
 #ifdef PACKETLOGGING
 	const size_t packetLength = static_cast<size_t>(packet.length());
 	const std::string_view who = whoAmI();
-	log::printLine(log::networkdump, "> Login Packet from {} ({} bytes)", who, packet.length());
+	log::printLine(log::networkdump, "> Login Packet from {}", who);
 
 	// Find where the version starts.
 	size_t versionStartsAt = 2;
