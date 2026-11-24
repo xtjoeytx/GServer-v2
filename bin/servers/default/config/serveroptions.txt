@@ -324,6 +324,7 @@ language = English
 clientsidesigns = false
 
 # If true, level links are sent to players (only takes effect if serverside is true).
+# True also means that the server accepts client requests to change level.
 clientsidelinks = false
 
 # If true, emulates joins on clientside code.

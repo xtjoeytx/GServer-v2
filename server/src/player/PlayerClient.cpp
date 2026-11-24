@@ -1484,8 +1484,7 @@ bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& s
 		return false;
 
 	const PlayerPtr self = shared_from_this();
-	auto levelModTime = clock::to_time_t(staticLevelData->modTime);
-	if (!clientCachedTime.has_value()) clientCachedTime = levelModTime;
+	const auto levelModTime = clock::to_time_t(staticLevelData->modTime);
 	if (!m_loaded) clientCachedTime = std::nullopt;
 
 	if (m_loaded && clientCachedTime == levelModTime)

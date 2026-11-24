@@ -52,7 +52,6 @@ namespace preagonal
 HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 {
 	std::optional<time_t> modTime;
-
 	if (pPacket[0] - 32 == PLI_LEVELWARPMOD)
 		modTime = static_cast<time_t>(pPacket.readGUInt5());
 
@@ -62,29 +61,37 @@ HandlePacketResult PlayerClient::msgPLI_LEVELWARP(CString& pPacket)
 
 	bool success = false;
 
-	// If this is a gmap, in order to prevent the client from glitching out, forcefully warp them to the gmap.
-	if (newLevel.ends_with(".gmap"))
+	// Only allow the client to change their own level if we don't have an NPC server, or if we are allowing clientside links.
+	if (m_server->hasNPCServer() && m_server->cached.forceClientsideLinks.getValue() == false)
 	{
-		success = warp(newLevel, toPixelPosition({0, 0}, pos), modTime);
+		sendPacket(CString() >> (char)PLO_WARPFAILED << newLevel);
 	}
 	else
 	{
-		if (const auto level = m_server->getLoadedLevel(newLevel, shared_from_this()); level != nullptr)
+		// If this is a gmap, in order to prevent the client from glitching out, forcefully warp them to the gmap.
+		if (newLevel.ends_with(".gmap"))
 		{
-			// If this level is part of a gmap, send the static data first, then warp second (so the appear on the correct level).
-			if (level->isGmap() && level->levelName != newLevel)
+			success = warp(newLevel, toPixelPosition({0, 0}, pos), modTime);
+		}
+		else
+		{
+			if (const auto level = m_server->getLoadedLevel(newLevel, shared_from_this()); level != nullptr)
 			{
-				// Send the static data first.
-				const auto subLevel = level->getSubLevelByName(newLevel);
-				success = sendStaticLevelData(subLevel->staticData.lock(), subLevel, modTime);
+				// If this level is part of a gmap, send the static data first, then warp second (so the appear on the correct level).
+				if (level->isGmap() && level->levelName != newLevel)
+				{
+					// Send the static data first.
+					const auto subLevel = level->getSubLevelByName(newLevel);
+					success = sendStaticLevelData(subLevel->staticData.lock(), subLevel, modTime);
 
-				// Now warp.
-				success = success && warp(level, toPixelPosition(Level::getSubLevelOrigin(subLevel).value_or(PixelPosition{}), pos), modTime);
-			}
-			// Otherwise, just enter the level.
-			else
-			{
-				success = enterLevel(level, toPixelPosition({0, 0}, pos), modTime);
+					// Now warp.
+					success = success && warp(level, toPixelPosition(Level::getSubLevelOrigin(subLevel).value_or(PixelPosition{}), pos), modTime);
+				}
+				// Otherwise, just enter the level.
+				else
+				{
+					success = enterLevel(level, toPixelPosition({0, 0}, pos), modTime);
+				}
 			}
 		}
 	}
