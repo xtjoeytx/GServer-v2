@@ -125,6 +125,9 @@ void ExternalServerCachedSettings::bind(Server* server)
 	settings.track(enableAPSystem, apSystemThresholdSeconds[0], apSystemThresholdSeconds[1], apSystemThresholdSeconds[2], apSystemThresholdSeconds[3], apSystemThresholdSeconds[4]);
 	settings.track(playerProfileVariables, playerStatusList, playerSwordGanis);
 
+	// account
+	settings.track(saveGuestAccounts, allowGuestAccountConversion);
+
 	// diagnostics
 	settings.track(warnOnMissingFiles, warnOnLargeFiles, warnOnFilesystemIssues, warnOnInvalidLevelSections, logCorruptPackets);
 }
@@ -2311,7 +2314,7 @@ bool Server::processRCChat(std::string_view message, const std::weak_ptr<Player>
 		{
 			auto account = string::trim(message.substr(words[0].size()));
 			if (auto pl = getPlayer(account, PLTYPE_ANYPLAYER); pl != nullptr)
-				player->sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,lister,ban," << pl->account.name << "," << std::to_string(pl->getDeviceId()));
+				player->sendPacket(CString() >> (char)PLO_SERVERTEXT << "GraalEngine,lister,ban," << pl->account.name << "," << std::to_string(pl->getDeviceId().value_or(0)));
 			else
 			{
 				// TODO: Player not logged in, load from offline?

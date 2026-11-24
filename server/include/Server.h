@@ -176,6 +176,9 @@ struct ExternalServerCachedSettings
 	SettingCache<std::vector<std::string>> playerProfileVariables{"profilevars", {"Kills:=playerkills", "Deaths:=playerdeaths", "Maxpower:=playerfullhearts", "Rating:=playerrating", "Alignment:=playerap", "Gralat:=playerrupees", "Swordpower:=playerswordpower", "Spin Attack:=canspin"}};
 	SettingCache<std::vector<std::string>> playerStatusList{"playerlisticons", {"Online", "Away", "DND", "Eating", "Hiding", "No PMs", "RPing", "Sparring", "PKing"}};
 	SettingCache<std::vector<std::string>> playerSwordGanis{"playerswordganis", {"sword"}};
+	// account
+	SettingCache<bool> saveGuestAccounts{"saveguestaccounts", false};
+	SettingCache<bool> allowGuestAccountConversion{"allowguestaccountconversion", true};
 	// diagnostics
 	SettingCache<bool> warnOnMissingFiles{"warnonmissingfiles", false};
 	SettingCache<bool> warnOnLargeFiles{"warnonlargefiles", false};

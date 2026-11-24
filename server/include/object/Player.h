@@ -177,7 +177,7 @@ public:
 	const std::string& getServerName() const { return m_serverName; }
 	const std::string& getPlatform() const { return account.platform; }
 	[[a::inline]] std::string_view getLanguage() const;
-	int64_t getDeviceId() const { return m_deviceId; }
+	std::optional<int64_t> getDeviceId() const { return m_deviceId; }
 	NPCID getCarryNPC() const { return m_carryNPC; }
 	NPCID getAttachedNPC() const { return m_attachNPC; }
 	uint8_t getCarrySprite() const { return m_carrySprite; }
@@ -490,7 +490,7 @@ protected:
 	uint8_t m_encryptionKey = 0;
 	int64_t m_accountIp = 0;
 	uint16_t m_udpport = 0;
-	int64_t m_deviceId = 0;
+	std::optional<int64_t> m_deviceId = std::nullopt;
 	std::array<std::optional<clock::time_point>, PLAYERPROP_COUNT> m_savedModTime;
 
 	uint8_t m_horseBombCount = 0;

@@ -355,6 +355,12 @@ runallscriptevents = false
 # default_scriptengine_client =
 # default_scriptengine_server =
 
+# Guest player accounts get saved as a pc:id account.
+saveguestaccounts = false
+
+# Allow guest pc:id accounts to convert to normal accounts upon registration.
+allowguestaccountconversion = true
+
 # Diagnostics
 # warnonmissingfiles = false
 # warnonlargefiles = false

@@ -109,8 +109,15 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 
 	// Find the account to load.
 	bool loadedFromDefault = false;
+	bool loadedFromPCID = false;
 	auto& accountFS = server->getFileSystemServer();
 	auto path = accountFS.findi(fs::FileCategory::ACCOUNT, std::format("{}.txt", accountName));
+	if (path.empty() && player != nullptr && player->getDeviceId().has_value())
+	{
+		path = accountFS.findi(fs::FileCategory::ACCOUNT, std::format("pc_{}.txt", player->getDeviceId().value()));
+		if (!path.empty())
+			loadedFromPCID = true;
+	}
 	if (path.empty())
 	{
 		path = "accounts/(defaultaccount).txt";
@@ -591,6 +598,21 @@ bool FlatFileAccountLoader::loadAccount(const std::string_view accountName, Acco
 		player->synchronizeWeapons(weaponList);
 	else
 		account.weapons = weaponList;
+
+	// If this is a pc:id account, check if we should make it load only.
+	if (loadedFromPCID && server->cached.saveGuestAccounts.getValue() == false)
+		account.loadOnly = true;
+
+	// If this was a pc:id account, see if we can convert to a normal account.
+	if (loadedFromPCID && !account.name.starts_with("pc:") && server->cached.allowGuestAccountConversion.getValue() == true)
+	{
+		saveAccount(account);
+		if (const auto pcidAccountData = accountFS.infoi(fs::FileCategory::ACCOUNT, std::format("pc_{}.txt", player->getDeviceId().value())); pcidAccountData != nullptr)
+		{
+			const auto destination = std::format("{}.txt", account.name);
+			accountFS.rename(*pcidAccountData, destination);
+		}
+	}
 
 	// If we loaded from the default account, check if the settings is overriding the start level and position.
 	// Also, save the account and add it to the file system.

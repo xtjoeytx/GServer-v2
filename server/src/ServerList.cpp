@@ -777,7 +777,7 @@ void ServerList::msgSVI_VERIACC2(CString& pPacket)
 	if (player == nullptr) return;
 
 	// Overwrite the player's account name with the one from the listserver.
-	if (account != "guest" || player->getDeviceId() == 0)
+	if (account != "guest" || !player->getDeviceId().has_value())
 		player->account.name = account.toString();
 
 	// Set the community name to the account name.
