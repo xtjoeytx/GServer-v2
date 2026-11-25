@@ -1487,6 +1487,16 @@ bool PlayerClient::sendStaticLevelData(const std::shared_ptr<StaticLevelData>& s
 	const auto levelModTime = clock::to_time_t(staticLevelData->modTime);
 	if (!m_loaded) clientCachedTime = std::nullopt;
 
+	// Newmain clients have a bug where animated tiles on cached level data don't animate.
+	// Because of this, always send the level to the client.
+	// TODO(optimize): During level loading, check if there are any animated tiles before we do this.
+	if (m_server->Generation == ServerGeneration::NEWMAIN)
+	{
+		if (const auto cachedModTime = getLevelLastEnteredTimeForWarping(staticLevelData.get()); !cachedModTime.has_value())
+			clientCachedTime = std::nullopt;
+	}
+
+	// The client already knows this data, so don't send it.
 	if (m_loaded && clientCachedTime == levelModTime)
 		return true;
 
