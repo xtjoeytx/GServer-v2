@@ -596,8 +596,7 @@ void Script::compileScript() noexcept
 	if (!server->hasNPCServer())
 	{
 		// Mangle the clientside line terminators.
-		const auto clientside = determineClientSideLocation(m_modified_source);
-		std::replace(clientside, m_modified_source.end(), '\n', '\xa7');
+		std::ranges::replace(m_modified_source, '\n', '\xa7');
 		m_clientside_script = m_clientside_source;
 		return;
 	}
